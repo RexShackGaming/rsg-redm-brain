@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Loyalty Rewards System">
+    <title></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="loyaltyUI" class="loyalty-container hidden">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-title">
+                <h1 id="headerTitle"></h1>
+                <div id="headerSubtitle" class="header-subtitle"></div>
+            </div>
+            <button id="closeBtn" class="icon-btn close-btn" >&times;</button>
+        </div>
+
+        <!-- Points Display -->
+        <div class="points-display">
+            <div class="points-card current">
+                <div id="currentPointsLabel" class="points-label"></div>
+                <div id="currentPoints" class="points-value">0</div>
+            </div>
+            <div class="points-card lifetime">
+                <div id="lifetimePointsLabel" class="points-label"></div>
+                <div id="lifetimePoints" class="points-value">0</div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button id="tabCash" class="tab-btn active" data-tab="cash"></button>
+            <button id="tabItems" class="tab-btn" data-tab="items"></button>
+            <button id="tabLeaderboard" class="tab-btn" data-tab="leaderboard"></button>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- Cash Rewards Tab -->
+            <div id="cashTab" class="tab-content active">
+                <div id="cashRewardsContainer" class="rewards-grid">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Item Rewards Tab -->
+            <div id="itemsTab" class="tab-content">
+                <div id="itemRewardsContainer" class="rewards-grid">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Leaderboard Tab -->
+            <div id="leaderboardTab" class="tab-content">
+                <div class="leaderboard-container">
+                    <div class="leaderboard-section">
+                        <h3 id="topCurrentHeading"></h3>
+                        <div id="currentLeaderboard" class="leaderboard-list">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="leaderboard-section">
+                        <h3 id="topLifetimeHeading"></h3>
+                        <div id="lifetimeLeaderboard" class="leaderboard-list">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

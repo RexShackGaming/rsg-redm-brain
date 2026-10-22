@@ -1,0 +1,14 @@
+{
+  "chat_title": "チャット",
+  "ooc_prefix": "OOC",
+  "server_prefix": "サーバー",
+  "slow_down": "メッセージの送信が速すぎます。",
+  "unknown_command": "不明なコマンド: /%s",
+  "no_permission": "その操作を行う権限がありません。",
+  "unknown_player": "不明",
+  "console_name": "コンソール",
+  "param_message": "メッセージ",
+  "param_message_help": "送信するメッセージ",
+  "help_ooc": "キャラクター外のメッセージを送信",
+  "help_clearchat": "チャットウィンドウをクリア"
+}

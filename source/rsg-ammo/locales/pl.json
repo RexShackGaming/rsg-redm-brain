@@ -1,0 +1,6 @@
+{
+    "ammo_unknown": "Nieznany typ amunicji",
+    "ammo_max_reached": "Osiągnięto maksymalną ilość amunicji",
+    "opening_box": "Otwieranie: %s",
+    "ammo_replenished": "Uzupełniono amunicję x%s"
+}

@@ -1,0 +1,17 @@
+{
+    "error_title": "エラー",
+    "backpack_title": "バックパック",
+    "backpack_config_missing": "バックパックの設定が見つかりません。",
+    "backpack_not_found": "バックパックが見つかりません。",
+    "backpack_taken_off": "バックパックを外しました",
+    "backpack_lost": "バックパックがインベントリにありません。",
+    "backpack_serial_failed": "バックパックを準備できませんでした。もう一度お試しください。",
+    "backpack_nested_blocked": "バックパックを別のバックパックに入れることはできません。",
+    "backpack_recovered": "バックパック内にあった%s個のバックパックを回収しました。",
+    "backpack_nothing_recovered": "閉じ込められたバックパックはありません。",
+    "cmd_recover_help": "自分のバックパック内に閉じ込められたバックパックを回収する",
+    "backpack_not_worn": "バックパックを背負っていません。",
+    "cmd_remove_help": "背負っているバックパックを外す",
+    "backpack_only_one": "バックパックは一度に1つしか持てません。",
+    "backpack_drop_extra": "バックパックを複数持っています。余分なものを捨てるか保管すると使用できます。"
+}

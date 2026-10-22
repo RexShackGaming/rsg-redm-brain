@@ -1,0 +1,35 @@
+# ITEMSET natives (11)
+Source: VORPCORE/RDR3natives `rdr3natives.json`. Grep by NAME or hash.
+
+## ADD_TO_ITEMSET
+`0xABE74510883C7950` | `BOOL ADD_TO_ITEMSET(Entity entity, ItemSet itemset)` | build 1207
+
+## CLEAN_ITEMSET
+`0x85F3A86CA9021FB0` | `void CLEAN_ITEMSET(ItemSet itemset)` | build 1207
+
+## CREATE_ITEMSET
+`0xA1AF16083320065A` | `ItemSet CREATE_ITEMSET(BOOL p0)` | build 1207
+
+## DESTROY_ITEMSET
+`0x712BC69F10549B92` | `void DESTROY_ITEMSET(ItemSet itemset)` | build 1207
+
+## GET_INDEXED_ITEM_IN_ITEMSET
+`0x275A2E2C0FAB7612` | `ScrHandle GET_INDEXED_ITEM_IN_ITEMSET(int index, ItemSet itemset)` | build 1207
+
+## GET_INDEXED_SCENARIO_POINT_INDEX_IN_ITEMSET
+`0x9FC3CDB5CE815901` | `Any GET_INDEXED_SCENARIO_POINT_INDEX_IN_ITEMSET(int index, ItemSet itemset)` | build 1207
+
+## GET_ITEMSET_SIZE
+`0x55F2E375AC6018A9` | `int GET_ITEMSET_SIZE(ItemSet itemset)` | build 1207
+
+## IS_IN_ITEMSET
+`0xD1503C2EE2FE688C` | `BOOL IS_IN_ITEMSET(Entity entity, ItemSet itemset)` | build 1207
+
+## IS_ITEMSET_VALID
+`0xD30765D153EF5C76` | `BOOL IS_ITEMSET_VALID(ItemSet itemset)` | build 1207
+
+## REMOVE_FROM_ITEMSET
+`0xC5BAA432B429DC24` | `void REMOVE_FROM_ITEMSET(Entity entity, ItemSet itemset)` | build 1207
+
+## _CLEAR_ITEMSET
+`0x20A4BF0E09BEE146` | `void _CLEAR_ITEMSET(ItemSet itemset)` | build 1207

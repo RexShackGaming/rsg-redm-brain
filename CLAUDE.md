@@ -1,0 +1,41 @@
+# RedM Brain — entry point for AI assistants
+
+You are helping build RedM resources for a server running the **RSG Framework (rsg-core 3.0.3)**, Lua 5.4, ox_lib, oxmysql and ox_target.
+Read this file first, then open only the files you need for the task.
+
+## Golden rules
+1. **Never guess** hashes, model names, anim dicts, scenarios, flag IDs, item names or native hashes. Look them up in `data/rdr3_discoveries/` (open `MAP.md`, then search the file; never read big files whole), `natives/db/`, `natives/` or `server/environment.md` (cross-check online via `data/redm-info.md`). Tell the user which file each value came from.
+2. **Never trust the client.** All money and item changes happen on the server, after validation (`conventions/security.md`).
+3. Notifications go through **ox_lib** (`lib.notify` / `ox_lib:notify`). Player-facing text goes in **locales** (`conventions/notify-locales.md`).
+4. NUI follows the house style (`ui/design-standard.md`, `ui/theme.css`). No vignette.
+5. New resources start from `templates/rsg-template/`.
+6. Give complete, runnable code split by file path. Put coords, timers, prices and text in config or locales.
+7. If sources disagree, follow this precedence: `server/environment.md` > `source/` (real code) > `framework/` > everything else.
+8. **Before calling any RSG resource's export, event or callback, check `framework/resources/<resource>.md`** for the exact name and parameters. If you need behaviour details, read that resource's code in `source/<resource>/`.
+9. When building something similar to an existing RSG resource (shops, jobs, NUI menus, placeable props), study that resource in `source/` first and follow its patterns.
+
+## Map
+| Folder | Use it for |
+|---|---|
+| `server/environment.md` | What's installed on this server, item names, resources that are removed |
+| `conventions/` | Coding style, security rules, notify/locale rules |
+| `framework/` | Hand-written RSGCore, rsg-inventory and rsg-banking guides |
+| `framework/resources/` | **Generated** API reference for ~70 RSG resources: exports with params, net events, callbacks, usable items, commands, DB tables |
+| `source/` | Code-only mirror of the Rexshack-RedM repos (filled by `tools/refresh.sh`). Search it for real examples |
+| `tools/` | Refresh scripts that re-pull the repos and regenerate the reference |
+| `natives/` | RedM natives guides: ped AI/combat, game events, prompts, blips, entities |
+| `natives/db/` | **Full natives database** (~8k, hash + signature + notes). Grep `INDEX.tsv` first |
+| `data/redm-info.md` | redm.info online lookup: what's on the site and its local equivalents |
+| `data/rdr3_discoveries/` | **Local copy of femga/rdr3_discoveries**: peds, props, anims, scenarios, weapons, PTFX, blips, controls, doors, interiors, AI flags, events. Start at `MAP.md`, then search the file |
+| `data/README.md` | Fallback lookup index (Forza RedM-AI-Knowledge-Brain) for things not in rdr3_discoveries |
+| `patterns/` | Tested snippets: secure server events, NUI bridge, entity cleanup, prompts |
+| `templates/rsg-template/` | Skeleton resource to copy for new scripts |
+| `ui/` | NUI design standard and drop-in theme CSS |
+| `audit/` | Checklist for auditing or converting existing scripts |
+
+## Workflow for a new script
+1. Read `server/environment.md` and `conventions/coding-rules.md`.
+2. Copy `templates/rsg-template/` and rename it (`rsg-<name>`).
+3. Find similar RSG resources in `framework/resources/README.md` and read their code in `source/`.
+4. Pull APIs from `framework/` and natives from `natives/`. Look up any data values.
+5. Before finishing, check the script against `audit/audit-checklist.md`.

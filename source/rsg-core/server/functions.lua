@@ -1,0 +1,755 @@
+RSGCore.Functions = {}
+RSGCore.Player_Buckets = {}
+RSGCore.Entity_Buckets = {}
+RSGCore.UsableItems = {}
+
+-- Getters
+-- Get your player first and then trigger a function on them
+-- ex: local player = RSGCore.Functions.GetPlayer(source)
+-- ex: local example = player.Functions.functionname(parameter)
+
+---Gets the coordinates of an entity
+---@param entity number
+---@return vector4
+function RSGCore.Functions.GetCoords(entity)
+    local coords = GetEntityCoords(entity, false)
+    local heading = GetEntityHeading(entity)
+    return vector4(coords.x, coords.y, coords.z, heading)
+end
+
+---Gets player identifier of the given type
+---@param source any
+---@param idtype string
+---@return string?
+function RSGCore.Functions.GetIdentifier(source, idtype)
+    return GetPlayerIdentifierByType(source, idtype or 'license')
+end
+
+---Gets a players server id (source). Returns 0 if no player is found.
+---@param identifier string
+---@return number
+function RSGCore.Functions.GetSource(identifier)
+    for src, _ in pairs(RSGCore.Players) do
+        local idens = GetPlayerIdentifiers(src)
+        for _, id in pairs(idens) do
+            if identifier == id then
+                return src
+            end
+        end
+    end
+    return 0
+end
+
+---Get player with given server id (source)
+---@param source any
+---@return table
+function RSGCore.Functions.GetPlayer(source)
+    -- numeric strings (e.g. from GetPlayers() or command args) are treated as server ids
+    local id = tonumber(source)
+    if id then return RSGCore.Players[id] end
+    return RSGCore.Players[RSGCore.Functions.GetSource(source)]
+end
+
+---Get player by citizen id
+---@param citizenid string
+---@return table?
+function RSGCore.Functions.GetPlayerByCitizenId(citizenid)
+    for src in pairs(RSGCore.Players) do
+        if RSGCore.Players[src].PlayerData.citizenid == citizenid then
+            return RSGCore.Players[src]
+        end
+    end
+    return nil
+end
+
+---Get offline player by citizen id
+---@param citizenid string
+---@return table?
+function RSGCore.Functions.GetOfflinePlayerByCitizenId(citizenid)
+    return RSGCore.Player.GetOfflinePlayer(citizenid)
+end
+
+---Get player by license
+---@param license string
+---@return table?
+function RSGCore.Functions.GetPlayerByLicense(license)
+    return RSGCore.Player.GetPlayerByLicense(license)
+end
+
+---Get player by account id
+---@param account string
+---@return table?
+function RSGCore.Functions.GetPlayerByAccount(account)
+    for src in pairs(RSGCore.Players) do
+        if RSGCore.Players[src].PlayerData.charinfo.account == account then
+            return RSGCore.Players[src]
+        end
+    end
+    return nil
+end
+
+---Get player passing property and value to check exists
+---@param property string
+---@param value string
+---@return table?
+function RSGCore.Functions.GetPlayerByCharInfo(property, value)
+    for src in pairs(RSGCore.Players) do
+        local charinfo = RSGCore.Players[src].PlayerData.charinfo
+        if charinfo[property] ~= nil and charinfo[property] == value then
+            return RSGCore.Players[src]
+        end
+    end
+    return nil
+end
+
+---Get all players. Returns the server ids of all players.
+---@return table
+function RSGCore.Functions.GetPlayers()
+    local sources = {}
+    for k in pairs(RSGCore.Players) do
+        sources[#sources + 1] = k
+    end
+    return sources
+end
+
+---Will return an array of RSG Player class instances
+---unlike the GetPlayers() wrapper which only returns IDs
+---@return table
+function RSGCore.Functions.GetRSGPlayers()
+    return RSGCore.Players
+end
+
+---Gets a list of all on duty players of a specified job and the number
+---@param job string
+---@return table, number
+function RSGCore.Functions.GetPlayersOnDuty(job)
+    local players = {}
+    local count = 0
+    for src, Player in pairs(RSGCore.Players) do
+        if Player.PlayerData.job.name == job and Player.PlayerData.job.onduty then
+            players[#players + 1] = src
+            count += 1
+        end
+    end
+    return players, count
+end
+
+---Returns only the amount of players on duty for the specified job
+---@param job string
+---@return number
+function RSGCore.Functions.GetDutyCount(job)
+    local _, count = RSGCore.Functions.GetPlayersOnDuty(job)
+    return count
+end
+
+--- @param source number source player's server ID.
+--- @param coords vector The coordinates to calculate the distance from. Can be a table with x, y, z fields or a vector3. If not provided, the source player's Ped's coordinates are used.
+--- @return string closestPlayer - The Player that is closest to the source player (or the provided coordinates). Returns -1 if no Players are found.
+--- @return number closestDistance - The distance to the closest Player. Returns -1 if no Players are found.
+function RSGCore.Functions.GetClosestPlayer(source, coords)
+    local ped = GetPlayerPed(source)
+    local players = GetPlayers()
+    local closestDistance, closestPlayer = -1, -1
+    if coords then coords = type(coords) == 'table' and vector3(coords.x, coords.y, coords.z) or coords end
+    if not coords then coords = GetEntityCoords(ped) end
+    for i = 1, #players do
+        local playerId = players[i]
+        local playerPed = GetPlayerPed(playerId)
+        if playerPed ~= ped then
+            local playerCoords = GetEntityCoords(playerPed)
+            local distance = #(playerCoords - coords)
+            if closestDistance == -1 or distance < closestDistance then
+                closestPlayer = tonumber(playerId) -- GetPlayers() returns strings
+                closestDistance = distance
+            end
+        end
+    end
+    return closestPlayer, closestDistance
+end
+
+--- @param source number source player's server ID.
+--- @param coords vector The coordinates to calculate the distance from. Can be a table with x, y, z fields or a vector3. If not provided, the source player's Ped's coordinates are used.
+--- @return number closestObject - The Object that is closest to the source player (or the provided coordinates). Returns -1 if no Objects are found.
+--- @return number closestDistance - The distance to the closest Object. Returns -1 if no Objects are found.
+function RSGCore.Functions.GetClosestObject(source, coords)
+    local ped = GetPlayerPed(source)
+    local objects = GetAllObjects()
+    local closestDistance, closestObject = -1, -1
+    if coords then coords = type(coords) == 'table' and vector3(coords.x, coords.y, coords.z) or coords end
+    if not coords then coords = GetEntityCoords(ped) end
+    for i = 1, #objects do
+        local objectCoords = GetEntityCoords(objects[i])
+        local distance = #(objectCoords - coords)
+        if closestDistance == -1 or closestDistance > distance then
+            closestObject = objects[i]
+            closestDistance = distance
+        end
+    end
+    return closestObject, closestDistance
+end
+
+--- @param source number source player's server ID.
+--- @param coords vector The coordinates to calculate the distance from. Can be a table with x, y, z fields or a vector3. If not provided, the source player's Ped's coordinates are used.
+--- @return number closestVehicle - The Vehicle that is closest to the source player (or the provided coordinates). Returns -1 if no Vehicles are found.
+--- @return number closestDistance - The distance to the closest Vehicle. Returns -1 if no Vehicles are found.
+function RSGCore.Functions.GetClosestVehicle(source, coords)
+    local ped = GetPlayerPed(source)
+    local vehicles = GetAllVehicles()
+    local closestDistance, closestVehicle = -1, -1
+    if coords then coords = type(coords) == 'table' and vector3(coords.x, coords.y, coords.z) or coords end
+    if not coords then coords = GetEntityCoords(ped) end
+    for i = 1, #vehicles do
+        local vehicleCoords = GetEntityCoords(vehicles[i])
+        local distance = #(vehicleCoords - coords)
+        if closestDistance == -1 or closestDistance > distance then
+            closestVehicle = vehicles[i]
+            closestDistance = distance
+        end
+    end
+    return closestVehicle, closestDistance
+end
+
+--- @param source number source player's server ID.
+--- @param coords vector The coordinates to calculate the distance from. Can be a table with x, y, z fields or a vector3. If not provided, the source player's Ped's coordinates are used.
+--- @return number closestPed - The Ped that is closest to the source player (or the provided coordinates). Returns -1 if no Peds are found.
+--- @return number closestDistance - The distance to the closest Ped. Returns -1 if no Peds are found.
+function RSGCore.Functions.GetClosestPed(source, coords)
+    local ped = GetPlayerPed(source)
+    local peds = GetAllPeds()
+    local closestDistance, closestPed = -1, -1
+    if coords then coords = type(coords) == 'table' and vector3(coords.x, coords.y, coords.z) or coords end
+    if not coords then coords = GetEntityCoords(ped) end
+    for i = 1, #peds do
+        if peds[i] ~= ped then
+            local pedCoords = GetEntityCoords(peds[i])
+            local distance = #(pedCoords - coords)
+            if closestDistance == -1 or closestDistance > distance then
+                closestPed = peds[i]
+                closestDistance = distance
+            end
+        end
+    end
+    return closestPed, closestDistance
+end
+
+-- Routing buckets (Only touch if you know what you are doing)
+
+---Returns the objects related to buckets, first returned value is the player buckets, second one is entity buckets
+---@return table, table
+function RSGCore.Functions.GetBucketObjects()
+    return RSGCore.Player_Buckets, RSGCore.Entity_Buckets
+end
+
+---Will set the provided player id / source into the provided bucket id
+---@param source any
+---@param bucket any
+---@return boolean
+function RSGCore.Functions.SetPlayerBucket(source, bucket)
+    if source and bucket then
+        local plicense = RSGCore.Functions.GetIdentifier(source, 'license')
+        Player(source).state:set('instance', bucket, true)
+        SetPlayerRoutingBucket(source, bucket)
+        RSGCore.Player_Buckets[plicense] = { id = source, bucket = bucket }
+        return true
+    else
+        return false
+    end
+end
+
+---Will set any entity into the provided bucket, for example peds / vehicles / props / etc.
+---@param entity number
+---@param bucket number
+---@return boolean
+function RSGCore.Functions.SetEntityBucket(entity, bucket)
+    if entity and bucket then
+        SetEntityRoutingBucket(entity, bucket)
+        RSGCore.Entity_Buckets[entity] = { id = entity, bucket = bucket }
+        return true
+    else
+        return false
+    end
+end
+
+---Will return an array of all the player ids inside the current bucket
+---@param bucket number
+---@return table|boolean
+function RSGCore.Functions.GetPlayersInBucket(bucket)
+    local curr_bucket_pool = {}
+    if RSGCore.Player_Buckets and next(RSGCore.Player_Buckets) then
+        for _, v in pairs(RSGCore.Player_Buckets) do
+            if v.bucket == bucket then
+                curr_bucket_pool[#curr_bucket_pool + 1] = v.id
+            end
+        end
+        return curr_bucket_pool
+    else
+        return false
+    end
+end
+
+---Will return an array of all the entities inside the current bucket
+---(not for player entities, use GetPlayersInBucket for that)
+---@param bucket number
+---@return table|boolean
+function RSGCore.Functions.GetEntitiesInBucket(bucket)
+    local curr_bucket_pool = {}
+    if RSGCore.Entity_Buckets and next(RSGCore.Entity_Buckets) then
+        for _, v in pairs(RSGCore.Entity_Buckets) do
+            if v.bucket == bucket then
+                curr_bucket_pool[#curr_bucket_pool + 1] = v.id
+            end
+        end
+        return curr_bucket_pool
+    else
+        return false
+    end
+end
+
+---Server side vehicle creation with optional callback
+---the CreateVehicle RPC still uses the client for creation so players must be near
+---@param source any
+---@param model any
+---@param coords vector
+---@param warp boolean
+---@return number
+function RSGCore.Functions.SpawnVehicle(source, model, coords, warp)
+    local ped = GetPlayerPed(source)
+    model = type(model) == 'string' and joaat(model) or model
+    if not coords then coords = GetEntityCoords(ped) end
+    local heading = coords.w and coords.w or 0.0
+    local veh = CreateVehicle(model, coords.x, coords.y, coords.z, heading, true, true)
+    -- all waits are bounded so a failed spawn can never hang the calling thread forever
+    local timeout = GetGameTimer() + 5000
+    while not DoesEntityExist(veh) do
+        if GetGameTimer() > timeout then return nil end
+        Wait(0)
+    end
+    if warp then
+        timeout = GetGameTimer() + 5000
+        while GetVehiclePedIsIn(ped, false) ~= veh and GetGameTimer() < timeout do
+            TaskWarpPedIntoVehicle(ped, veh, -1)
+            Wait(50)
+        end
+    end
+    timeout = GetGameTimer() + 5000
+    while NetworkGetEntityOwner(veh) ~= source and GetGameTimer() < timeout do Wait(0) end
+    return veh
+end
+
+--- New & more reliable server side native for creating vehicles
+---comment
+---@param source any
+---@param model any
+---@param vehtype any
+-- The appropriate vehicle type for the model info.
+-- Can be one of automobile, bike, boat, heli, plane, submarine, trailer, and (potentially), train.
+-- This should be the same type as the type field in vehicles.meta.
+---@param coords vector
+---@param warp boolean
+---@return number
+function RSGCore.Functions.CreateVehicle(source, model, vehtype, coords, warp)
+    model = type(model) == 'string' and joaat(model) or model
+    if not coords then coords = GetEntityCoords(GetPlayerPed(source)) end
+    local heading = coords.w and coords.w or 0.0
+    local veh = CreateVehicleServerSetter(model, vehtype, coords.x, coords.y, coords.z, heading)
+    local timeout = GetGameTimer() + 5000
+    while not DoesEntityExist(veh) do
+        if GetGameTimer() > timeout then return nil end
+        Wait(0)
+    end
+    if warp then TaskWarpPedIntoVehicle(GetPlayerPed(source), veh, -1) end
+    return veh
+end
+
+-- Notifications (backwards compatibility - many resources, e.g. rsg-inventory /giveitem, still call these)
+
+local notifyTypes = { primary = 'inform', inform = 'inform', info = 'inform', success = 'success', error = 'error', warning = 'warning' }
+
+---Send an ox_lib notification to a player
+---@param source number
+---@param text string|table message, or a full lib.notify props table
+---@param notifyType? string 'primary' | 'inform' | 'success' | 'error' | 'warning'
+---@param duration? number milliseconds (default 5000)
+function RSGCore.Functions.Notify(source, text, notifyType, duration)
+    if not source or source == 0 then return end
+    local data = type(text) == 'table' and text or {
+        description = tostring(text),
+        type = notifyTypes[notifyType] or 'inform',
+        duration = tonumber(duration) or 5000,
+    }
+    TriggerClientEvent('ox_lib:notify', source, data)
+end
+
+---Paychecks (standalone - don't touch)
+local function notifyPaycheck(src, title, notifyType)
+    TriggerClientEvent('ox_lib:notify', src, { title = title, type = notifyType, duration = 5000 })
+end
+
+---Pays into the player's rsg-banking home branch. Falls back to cash if they have no home branch yet.
+local function payWage(Player, payment)
+    if GetResourceState('rsg-banking') == 'started' then
+        local ok, branch = pcall(function()
+            return exports['rsg-banking']:AddHomeMoney(Player.PlayerData.citizenid, payment, 'Paycheck')
+        end)
+        if ok and branch then return true end
+    end
+    return Player.Functions.AddMoney('cash', payment, 'paycheck')
+end
+
+function PaycheckInterval()
+    -- schedule the next run first so an error below can never stop paychecks permanently
+    SetTimeout(RSGCore.Config.Money.PayCheckTimeOut * (60 * 1000), PaycheckInterval)
+    for _, Player in pairs(RSGCore.Players) do
+        local job = Player.PlayerData.job
+        local jobInfo = job and RSGShared.Jobs[job.name]
+        -- guard against jobs/grades removed from shared/jobs.lua (previously errored and killed the paycheck loop)
+        local gradeInfo = jobInfo and jobInfo.grades and jobInfo.grades[tostring(job.grade and job.grade.level)]
+        local payment = (gradeInfo and gradeInfo.payment) or (job and job.payment) or 0
+        local src = Player.PlayerData.source
+
+        if jobInfo and payment > 0 and (jobInfo.offDutyPay or job.onduty) then
+            if RSGCore.Config.Money.PayCheckSociety then
+                print('^3[rsg-core] PayCheckSociety is not supported with rsg-banking v3 - paying normally^7')
+            end
+            if payWage(Player, payment) then
+                notifyPaycheck(src, locale('info.received_paycheck', payment), 'inform')
+            end
+        end
+    end
+end
+
+-- Callback Functions --
+
+---Internal: key used to store a pending client callback for a specific player
+function RSGCore.Functions.ClientCallbackKey(source, name)
+    return ('%s:%s'):format(source, name)
+end
+
+---Trigger Client Callback
+---@param name string
+---@param source any
+---@param cb function
+---@param ... any
+function RSGCore.Functions.TriggerClientCallback(name, source, cb, ...)
+    RSGCore.ClientCallbacks[RSGCore.Functions.ClientCallbackKey(source, name)] = cb
+    TriggerClientEvent('RSGCore:Client:TriggerClientCallback', source, name, ...)
+end
+
+---Create Server Callback
+---@param name string
+---@param cb function
+function RSGCore.Functions.CreateCallback(name, cb)
+    RSGCore.ServerCallbacks[name] = cb
+end
+
+---Trigger Server Callback
+---@param name string
+---@param source any
+---@param cb function
+---@param ... any
+function RSGCore.Functions.TriggerCallback(name, source, cb, ...)
+    if not RSGCore.ServerCallbacks[name] then return end
+    RSGCore.ServerCallbacks[name](source, cb, ...)
+end
+
+-- Items
+
+---Create a usable item
+---@param item string
+---@param data function
+function RSGCore.Functions.CreateUseableItem(item, data)
+    RSGCore.UsableItems[item] = data
+end
+
+---Checks if the given item is usable
+---@param item string
+---@return any
+function RSGCore.Functions.CanUseItem(item)
+    return RSGCore.UsableItems[item]
+end
+
+---Use item
+---@param source any
+---@param item string
+function RSGCore.Functions.UseItem(source, item)
+    if GetResourceState('rsg-inventory') == 'missing' then return end
+    exports['rsg-inventory']:UseItem(source, item)
+end
+
+---Kick Player
+---@param source any
+---@param reason string
+---@param setKickReason boolean
+---@param deferrals boolean
+function RSGCore.Functions.Kick(source, reason, setKickReason, deferrals)
+    reason = '\n' .. tostring(reason) .. '\n' .. locale('info.check_discord', RSGCore.Config.Server.Discord)
+    if setKickReason then
+        setKickReason(reason)
+    end
+    CreateThread(function()
+        if deferrals then
+            deferrals.update(reason)
+            Wait(2500)
+        end
+        if source then
+            DropPlayer(source, reason)
+        end
+    end)
+end
+
+---Open or close the server. Closing kicks everyone without the whitelist permission.
+---@param closed boolean
+---@param reason string?
+function RSGCore.Functions.SetServerClosed(closed, reason)
+    RSGCore.Config.Server.Closed = closed
+    if not closed then return end
+    reason = type(reason) == 'string' and reason ~= '' and reason or locale('info.no_reason')
+    RSGCore.Config.Server.ClosedReason = reason
+    for src in pairs(RSGCore.Players) do
+        if not RSGCore.Functions.HasPermission(src, RSGCore.Config.Server.WhitelistPermission) then
+            RSGCore.Functions.Kick(src, reason)
+        end
+    end
+end
+
+---Check if player is whitelisted, kept like this for backwards compatibility or future plans
+---@param source any
+---@return boolean
+function RSGCore.Functions.IsWhitelisted(source)
+    if not RSGCore.Config.Server.Whitelist then return true end
+    if RSGCore.Functions.HasPermission(source, RSGCore.Config.Server.WhitelistPermission) then return true end
+    return false
+end
+
+-- Setting & Removing Permissions
+
+---Returns true if the permission is one of RSGConfig.Server.Permissions
+---(also stops arbitrary text from being passed into ExecuteCommand)
+---@param permission any
+---@return boolean
+function RSGCore.Functions.IsValidPermission(permission)
+    if type(permission) ~= 'string' then return false end
+    for _, v in ipairs(RSGCore.Config.Server.Permissions) do
+        if v == permission then return true end
+    end
+    return false
+end
+
+---Add permission for player
+---@param source any
+---@param permission string
+---@return boolean
+function RSGCore.Functions.AddPermission(source, permission)
+    if not RSGCore.Functions.IsValidPermission(permission) then return false end
+    if not IsPlayerAceAllowed(source, permission) then
+        ExecuteCommand(('add_principal player.%s rsgcore.%s'):format(source, permission))
+        RSGCore.Commands.Refresh(source)
+    end
+    return true
+end
+
+---Remove permission from player (all configured permissions when permission is nil)
+---@param source any
+---@param permission string?
+---@return boolean
+function RSGCore.Functions.RemovePermission(source, permission)
+    if permission then
+        if not RSGCore.Functions.IsValidPermission(permission) then return false end
+        if IsPlayerAceAllowed(source, permission) then
+            ExecuteCommand(('remove_principal player.%s rsgcore.%s'):format(source, permission))
+            RSGCore.Commands.Refresh(source)
+        end
+    else
+        for _, v in pairs(RSGCore.Config.Server.Permissions) do
+            if IsPlayerAceAllowed(source, v) then
+                ExecuteCommand(('remove_principal player.%s rsgcore.%s'):format(source, v))
+                RSGCore.Commands.Refresh(source)
+            end
+        end
+    end
+    return true
+end
+
+-- Checking for Permission Level
+
+---Check if player has permission
+---@param source any
+---@param permission string
+---@return boolean
+function RSGCore.Functions.HasPermission(source, permission)
+    if type(permission) == 'string' then
+        if IsPlayerAceAllowed(source, permission) then return true end
+    elseif type(permission) == 'table' then
+        for _, permLevel in pairs(permission) do
+            if IsPlayerAceAllowed(source, permLevel) then return true end
+        end
+    end
+
+    return false
+end
+
+---Get the players permissions
+---@param source any
+---@return table
+function RSGCore.Functions.GetPermission(source)
+    local src = source
+    local perms = {}
+    for _, v in pairs(RSGCore.Config.Server.Permissions) do
+        if IsPlayerAceAllowed(src, v) then
+            perms[v] = true
+        end
+    end
+    return perms
+end
+
+---Get admin messages opt-in state for player
+---@param source any
+---@return boolean
+function RSGCore.Functions.IsOptin(source)
+    local license = RSGCore.Functions.GetIdentifier(source, 'license')
+    if not license or not RSGCore.Functions.HasPermission(source, 'admin') then return false end
+    local Player = RSGCore.Functions.GetPlayer(source)
+    return Player ~= nil and Player.PlayerData.optin
+end
+
+---Toggle opt-in to admin messages
+---@param source any
+function RSGCore.Functions.ToggleOptin(source)
+    local license = RSGCore.Functions.GetIdentifier(source, 'license')
+    if not license or not RSGCore.Functions.HasPermission(source, 'admin') then return end
+    local Player = RSGCore.Functions.GetPlayer(source)
+    if not Player then return end
+    Player.Functions.SetPlayerData('optin', not Player.PlayerData.optin)
+end
+
+---Check if player is banned
+---@param source any
+---@return boolean, string?
+function RSGCore.Functions.IsPlayerBanned(source)
+    local plicense = RSGCore.Functions.GetIdentifier(source, 'license')
+    if not plicense then return false end
+    local result = MySQL.single.await('SELECT id, reason, expire FROM bans WHERE license = ?', { plicense })
+    if not result then return false end
+    local expire = tonumber(result.expire) or 0
+    if os.time() < expire then
+        return true, locale('info.ban_message', result.reason or '', os.date('%d/%m/%Y %H:%M', expire))
+    else
+        MySQL.query('DELETE FROM bans WHERE id = ?', { result.id })
+    end
+    return false
+end
+
+-- Retrieves information about the database connection.
+--- @return table; A table containing the database information.
+function RSGCore.Functions.GetDatabaseInfo()
+    local details = {
+        exists = false,
+        database = "",
+    }
+    local connectionString = GetConvar("mysql_connection_string", "")
+
+    if connectionString == "" then
+        return details
+    elseif connectionString:find("mysql://") then
+        connectionString = connectionString:sub(9, -1)
+        details.database = connectionString:sub(connectionString:find("/") + 1, -1):gsub("[%?]+[%w%p]*$", "")
+        details.exists = true
+        return details
+    else
+        connectionString = { string.strsplit(";", connectionString) }
+
+        for i = 1, #connectionString do
+            local v = connectionString[i]
+            if v:match("database") then
+                details.database = v:sub(10, #v)
+                details.exists = true
+                return details
+            end
+        end
+        return details
+    end
+end
+
+---Check for duplicate license
+---@param license any
+---@return boolean
+function RSGCore.Functions.IsLicenseInUse(license)
+    local players = GetPlayers()
+    for _, player in pairs(players) do
+        local playerLicense = RSGCore.Functions.GetIdentifier(player, 'license')
+        if playerLicense == license then return true end
+    end
+    return false
+end
+
+-- Utility functions
+
+---Check if a player has an item [deprecated]
+---@param source any
+---@param items table|string
+---@param amount number
+---@return boolean
+function RSGCore.Functions.HasItem(source, items, amount)
+    if GetResourceState('rsg-inventory') == 'missing' then return end
+    return exports['rsg-inventory']:HasItem(source, items, amount)
+end
+
+---Validates that the whole string matches the given pattern (logs an anticheat entry otherwise)
+---@param source any
+---@param data any
+---@param pattern any
+---@return boolean
+function RSGCore.Functions.PrepForSQL(source, data, pattern)
+    data = tostring(data)
+    local result = string.match(data, pattern)
+    if not result or string.len(result) ~= string.len(data) then
+        local license = RSGCore.Functions.GetIdentifier(source, 'license') or tostring(source)
+        TriggerEvent('rsg-log:server:CreateLog', 'anticheat', 'SQL Exploit Attempted', 'red', string.format('%s attempted to exploit SQL!', license))
+        return false
+    end
+    return true
+end
+
+---Change weight to player
+---@param source any
+---@param weight number
+---@return boolean
+function RSGCore.Functions.ChangeWeight(source, weight)
+    local Player = RSGCore.Functions.GetPlayer(source)
+    if not Player then return end
+
+    Player.Functions.SetPlayerData('weight', weight)
+end
+
+---Change slots to player
+---@param source any
+---@param slots number
+---@return boolean
+function RSGCore.Functions.ChangeSlots(source, slots)
+    local Player = RSGCore.Functions.GetPlayer(source)
+    if not Player then return end
+
+    Player.Functions.SetPlayerData('slots', slots)
+end
+
+--- Checks if a player has enough weight capacity to carry a specific amount of an item
+---@param source number
+---@param item string
+---@param amount number
+---@return boolean
+function RSGCore.Functions.CanCarryItem(source, item, amount)
+    local Player = RSGCore.Functions.GetPlayer(source)
+    if not Player or type(item) ~= 'string' then return false end
+
+    amount = tonumber(amount) or 1
+    local itemData = RSGCore.Shared.Items[item:lower()]
+    if not itemData then
+        print(("^1[RSG-Core] Error:^7 Item '%s' does not exist in shared items."):format(item))
+        return false
+    end
+
+    local currentWeight = exports['rsg-inventory']:GetTotalWeight(Player.PlayerData.items) or 0
+    -- previously read PlayerData.MaxWeight, which does not exist, so the 120000 fallback was always used
+    local maxWeight = Player.PlayerData.weight or RSGCore.Config.Player.PlayerDefaults.weight
+    return currentWeight + (itemData.weight or 0) * amount <= maxWeight
+end

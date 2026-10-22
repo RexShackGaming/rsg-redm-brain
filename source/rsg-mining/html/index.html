@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+  <div class="panel">
+    <div class="header">
+      <button class="circle-btn" id="refreshBtn" data-i18n-title="ui_refresh" title="Refresh">&#x21bb;</button>
+      <div class="titles">
+        <div class="title" id="mineLabel"></div>
+        <div class="subtitle" data-i18n="ui_subtitle"></div>
+      </div>
+      <button class="circle-btn" id="closeBtn" data-i18n-title="ui_close" title="Close">&#x2715;</button>
+    </div>
+    <div class="divider"><span>&#x2726;</span></div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="overview" data-i18n="ui_tab_overview"></button>
+      <button class="tab" data-tab="crew" data-i18n="ui_tab_crew"></button>
+      <button class="tab" data-tab="hire" data-i18n="ui_tab_hire"></button>
+      <button class="tab" data-tab="supplies" data-i18n="ui_tab_supplies"></button>
+      <button class="tab" data-tab="storage" data-i18n="ui_tab_storage"></button>
+    </div>
+
+    <div class="content">
+      <section id="tab-overview" class="tab-page"></section>
+      <section id="tab-crew" class="tab-page hidden"></section>
+      <section id="tab-hire" class="tab-page hidden"></section>
+      <section id="tab-supplies" class="tab-page hidden"></section>
+      <section id="tab-storage" class="tab-page hidden"></section>
+    </div>
+  </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

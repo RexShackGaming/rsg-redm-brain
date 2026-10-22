@@ -1,0 +1,245 @@
+Config = {}
+
+----------------------------------
+-- needs settings
+----------------------------------
+Config.StatusInterval = 5000 -- how often to update hunger/thirst status in milliseconds
+Config.HungerRate = 0.01 -- Rate at which hunger goes down.
+Config.ThirstRate = 0.01 -- Rate at which thirst goes down.
+
+----------------------------------
+-- stress settings
+----------------------------------
+Config.StressChance = 0.1 -- Default: 10% -- Percentage Stress Chance When Shooting (0-1)
+Config.MinimumStress = 50 -- Minimum Stress Level For Screen Shaking
+Config.MinimumSpeed = 100 -- Going Over This Speed Will Cause Stress
+Config.StressDecayRate = 0.01 -- Rate at which stress goes down.
+
+----------------------------------
+-- hud player display settings
+----------------------------------
+Config.HidePlayerHealthNative  = true
+Config.HidePlayerStaminaNative = true
+Config.HidePlayerDeadEyeNative = true
+
+----------------------------------
+-- hud horse display settings
+----------------------------------
+Config.HideHorseHealthNative  = true
+Config.HideHorseStaminaNative = true
+Config.HideHorseCourageNative = true
+
+----------------------------------
+-- voice icon settings
+----------------------------------
+Config.ShowVoice = false          -- true = show the voice icon on the HUD, false = voice icon disabled
+Config.VoiceAlwaysVisible = true  -- true = always visible, false = only when talking
+Config.ShowPercentages = false    -- default for the % under circle icons (players can toggle with /togglehudpct, saved per player)
+
+----------------------------------
+-- hud layout presets (players change with /hudpreset, saved per player)
+----------------------------------
+Config.PresetCommand = 'hudpreset'
+Config.DefaultPreset = {
+    size = 'medium',          -- 'small' | 'medium' | 'large'
+    align = 'bottom-center',  -- 'bottom-left' | 'bottom-center' | 'bottom-right' | 'top-left' | 'top-center' | 'top-right'
+    orientation = 'horizontal' -- 'horizontal' | 'vertical'
+}
+
+----------------------------------
+-- minimap / compass settings
+----------------------------------
+Config.OnFootMinimap = true -- set to true/false to disable/enable minimap when on foot
+Config.OnFootCompass = false -- true = have the minimap set to a compass instead of off or normal minimap
+Config.MountMinimap = true  -- set to false if you want to disable the minimap when on mount
+Config.MountCompass  = false -- set to true if you want to have a compass instead of normal minimap while on a mount
+
+----------------------------------
+-- turn health damage on/off
+----------------------------------
+Config.DoHealthDamage = true
+
+----------------------------------
+-- turn screen effect on/off
+----------------------------------
+Config.DoHealthDamageFx = false
+
+----------------------------------
+-- turn health damage sound on/off
+----------------------------------
+Config.DoHealthPainSound = true
+
+----------------------------------
+-- temp settings (only one setting)
+----------------------------------
+Config.TempFormat = 'celsius'
+--Config.TempFormat = 'fahrenheit'
+
+----------------------------------
+-- temp feature (does damage to player if too hot or cold)
+----------------------------------
+Config.TempFeature = false
+
+----------------------------------
+-- warmth add while wearing, in °C (temp feature must be enabled)
+----------------------------------
+Config.WearingHat      = 0
+Config.WearingShirt    = 0
+Config.WearingPants    = 0
+Config.WearingBoots    = 0
+Config.WearingCoat     = 15
+Config.WearingOpenCoat = 15
+Config.WearingGloves   = 0
+Config.WearingVest     = 0
+Config.WearingPoncho   = 0
+Config.WearingSkirt    = 0
+Config.WearingChaps    = 0
+
+----------------------------------
+-- job type warmth exemptions (temp feature must be enabled)
+----------------------------------
+Config.EnableNoWarmthJobs = true  -- set to true/false to enable/disable the feature
+
+Config.NoWarmthJobs = {
+    'leo',      -- Law enforcement (sheriff, deputy, marshal, etc.)
+    'medic',    -- Medical jobs (doctor, surgeon, etc.)
+    -- add more job types here
+}
+
+----------------------------------
+-- warmth limit before impacts health, always in °C regardless of TempFormat (temp feature must be enabled)
+----------------------------------
+Config.MinTemp = -5
+Config.MaxTemp = 55
+
+----------------------------------
+-- cleanliness limit before impacts health
+----------------------------------
+Config.FlyEffect = true -- toggle flies on/off
+Config.MinCleanliness = 30
+
+----------------------------------
+-- amount of health to remove if min/max temp reached
+----------------------------------
+Config.RemoveHealth = 1
+
+----------------------------------
+-- stress settings
+----------------------------------
+Config.Intensity = {
+    ["shake"] = {
+        [1] = {
+            min = 50,
+            max = 60,
+            intensity = 0.12,
+        },
+        [2] = {
+            min = 60,
+            max = 70,
+            intensity = 0.17,
+        },
+        [3] = {
+            min = 70,
+            max = 80,
+            intensity = 0.22,
+        },
+        [4] = {
+            min = 80,
+            max = 90,
+            intensity = 0.28,
+        },
+        [5] = {
+            min = 90,
+            max = 100,
+            intensity = 0.32,
+        },
+    }
+}
+
+Config.EffectInterval = {
+    [1] = {
+        min = 50,
+        max = 60,
+        timeout = { 50000, 60000 } -- ms, random between min/max each cycle
+    },
+    [2] = {
+        min = 60,
+        max = 70,
+        timeout = { 40000, 50000 } -- ms, random between min/max each cycle
+    },
+    [3] = {
+        min = 70,
+        max = 80,
+        timeout = { 30000, 40000 } -- ms, random between min/max each cycle
+    },
+    [4] = {
+        min = 80,
+        max = 90,
+        timeout = { 20000, 30000 } -- ms, random between min/max each cycle
+    },
+    [5] = {
+        min = 90,
+        max = 100,
+        timeout = { 15000, 20000 } -- ms, random between min/max each cycle
+    }
+}
+
+----------------------------------
+-- HUD icon colors configuration
+----------------------------------
+Config.IconColors = {
+    -- Player Status Icons (RDR2 leather & gold: monochrome + semantic states)
+    ['voice'] = {
+        normal = '#FFFFFF',      -- White when not talking
+        active = '#e0554f'       -- Red when talking
+    },
+    ['health'] = {
+        normal = '#FFFFFF',      -- White when healthy
+        low = '#e0554f'          -- Red when low health (<=30%)
+    },
+    ['stamina'] = {
+        normal = '#FFFFFF',      -- White when full
+        low = '#e0554f'          -- Red when low stamina (<=30%)
+    },
+    ['hunger'] = {
+        normal = '#FFFFFF',      -- White when full
+        low = '#e0554f'          -- Red when low hunger (<=30%)
+    },
+    ['thirst'] = {
+        normal = '#FFFFFF',      -- White when full
+        low = '#e0554f'          -- Red when low thirst (<=30%)
+    },
+    ['cleanliness'] = {
+        normal = '#FFFFFF',      -- White when clean
+        low = '#e0554f'          -- Red when dirty (<=30%)
+    },
+    ['stress'] = {
+        normal = '#FFFFFF',      -- White (stress icon color)
+    },
+    ['temp'] = {
+        cold = '#d9a441',        -- Amber when cold
+        normal = '#f2f2f2'       -- Soft white when normal
+    },
+    ['mail'] = {
+        normal = '#FFFFFF',      -- White when no mail
+        hasmail = '#ffffff'      -- White highlight when has mail
+    },
+    ['outlaw'] = {
+        normal = '#6fbf73',      -- Green when not outlaw
+        active = '#e0554f'       -- Red when outlaw
+    },
+
+    -- Horse Status Icons
+    ['horse_health'] = {
+        normal = '#f2f2f2',      -- Soft white for horse health
+        low = '#e0554f'          -- Red when low
+    },
+    ['horse_stamina'] = {
+        normal = '#f2f2f2',      -- Soft white for horse stamina
+        low = '#e0554f'          -- Red when low
+    },
+    ['horse_clean'] = {
+        normal = '#f2f2f2',      -- Soft white for horse cleanliness
+        low = '#e0554f'          -- Red when dirty
+    }
+}

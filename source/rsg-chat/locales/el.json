@@ -1,0 +1,14 @@
+{
+  "chat_title": "Συνομιλία",
+  "ooc_prefix": "OOC",
+  "server_prefix": "ΔΙΑΚΟΜΙΣΤΗΣ",
+  "slow_down": "Στέλνεις μηνύματα πολύ γρήγορα.",
+  "unknown_command": "Άγνωστη εντολή: /%s",
+  "no_permission": "Δεν έχεις άδεια να το κάνεις αυτό.",
+  "unknown_player": "Άγνωστος",
+  "console_name": "Κονσόλα",
+  "param_message": "μήνυμα",
+  "param_message_help": "Το μήνυμα προς αποστολή",
+  "help_ooc": "Στείλε ένα μήνυμα εκτός ρόλου",
+  "help_clearchat": "Καθάρισε το παράθυρο συνομιλίας"
+}

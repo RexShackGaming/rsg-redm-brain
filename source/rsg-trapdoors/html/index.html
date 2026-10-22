@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>rsg-trapdoors</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app" class="hidden">
+        <div class="panel" id="panel">
+            <header class="panel-header">
+                <span class="spacer"></span>
+                <div class="titles">
+                    <h1 id="door-title"></h1>
+                    <p id="subtitle"></p>
+                </div>
+                <button class="round-btn" id="btn-close">&#10005;</button>
+            </header>
+
+            <div class="divider"><span>&#9670;</span></div>
+
+            <p class="step-label" id="step-label"></p>
+
+            <div class="slots" id="slots">
+                <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+            </div>
+
+            <p class="message" id="message">&nbsp;</p>
+
+            <div class="keypad" id="keypad">
+                <button class="key" data-key="1">1</button>
+                <button class="key" data-key="2">2</button>
+                <button class="key" data-key="3">3</button>
+                <button class="key" data-key="4">4</button>
+                <button class="key" data-key="5">5</button>
+                <button class="key" data-key="6">6</button>
+                <button class="key" data-key="7">7</button>
+                <button class="key" data-key="8">8</button>
+                <button class="key" data-key="9">9</button>
+                <button class="key key-muted" data-key="clear" id="key-clear"></button>
+                <button class="key" data-key="0">0</button>
+                <button class="key key-muted" data-key="back">&#9003;</button>
+            </div>
+
+            <div class="actions">
+                <button class="wood-btn wood-btn-muted" id="btn-cancel"></button>
+                <button class="wood-btn" id="btn-confirm" disabled></button>
+            </div>
+
+            <p class="hint" id="hint"></p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

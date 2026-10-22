@@ -1,0 +1,17 @@
+{
+    "error_title": "Fehler",
+    "backpack_title": "Rucksack",
+    "backpack_config_missing": "Rucksack-Konfiguration nicht gefunden.",
+    "backpack_not_found": "Rucksack nicht gefunden.",
+    "backpack_taken_off": "Rucksack abgenommen",
+    "backpack_lost": "Dein Rucksack ist nicht mehr in deinem Inventar.",
+    "backpack_serial_failed": "Dein Rucksack konnte nicht vorbereitet werden. Versuche es erneut.",
+    "backpack_nested_blocked": "Rucksäcke können nicht in einem anderen Rucksack verstaut werden.",
+    "backpack_recovered": "%s Rucksack/Rucksäcke aus einem Rucksack zurückgeholt.",
+    "backpack_nothing_recovered": "Keine eingeschlossenen Rucksäcke gefunden.",
+    "cmd_recover_help": "Rucksäcke zurückholen, die in deinen eigenen Rucksäcken feststecken",
+    "backpack_not_worn": "Du trägst keinen Rucksack.",
+    "cmd_remove_help": "Den getragenen Rucksack abnehmen",
+    "backpack_only_one": "Du kannst immer nur einen Rucksack tragen.",
+    "backpack_drop_extra": "Du trägst mehr als einen Rucksack. Lege den zusätzlichen ab oder verstaue ihn, um deinen Rucksack zu benutzen."
+}

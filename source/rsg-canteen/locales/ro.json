@@ -1,0 +1,14 @@
+{
+    "notify_title": "Bidon",
+    "target_fill": "Umple bidonul",
+    "progress_fill": "Se umple bidonul...",
+    "progress_drink": "Bei...",
+    "no_canteen": "Ai nevoie de un bidon",
+    "canteen_empty": "Bidonul tău este gol, umple-l la o pompă de apă",
+    "canteens_full": "Bidonul tău este deja plin",
+    "canteen_filled": "Bidon umplut (%s utilizări)",
+    "drank": "Ai băut (au rămas %s/%s utilizări)",
+    "too_far": "Ești prea departe de pompă",
+    "busy": "Ești ocupat",
+    "target_fill_water": "Umple bidonul"
+}

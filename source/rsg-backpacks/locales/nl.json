@@ -1,0 +1,17 @@
+{
+    "error_title": "Fout",
+    "backpack_title": "Rugzak",
+    "backpack_config_missing": "Rugzakconfiguratie niet gevonden.",
+    "backpack_not_found": "Rugzak niet gevonden.",
+    "backpack_taken_off": "Rugzak afgedaan",
+    "backpack_lost": "Je rugzak zit niet meer in je inventaris.",
+    "backpack_serial_failed": "Je rugzak kon niet worden voorbereid. Probeer het opnieuw.",
+    "backpack_nested_blocked": "Rugzakken kunnen niet in een andere rugzak worden opgeborgen.",
+    "backpack_recovered": "%s rugzak(ken) teruggehaald uit een rugzak.",
+    "backpack_nothing_recovered": "Geen vastzittende rugzakken gevonden.",
+    "cmd_recover_help": "Rugzakken terughalen die vastzitten in je eigen rugzakken",
+    "backpack_not_worn": "Je draagt geen rugzak.",
+    "cmd_remove_help": "De rugzak die je draagt afdoen",
+    "backpack_only_one": "Je kunt maar één rugzak tegelijk dragen.",
+    "backpack_drop_extra": "Je draagt meer dan één rugzak. Leg de extra rugzak neer of berg hem op om je rugzak te gebruiken."
+}

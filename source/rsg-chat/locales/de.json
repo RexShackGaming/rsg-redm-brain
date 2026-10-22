@@ -1,0 +1,14 @@
+{
+  "chat_title": "Chat",
+  "ooc_prefix": "OOC",
+  "server_prefix": "SERVER",
+  "slow_down": "Du sendest Nachrichten zu schnell.",
+  "unknown_command": "Unbekannter Befehl: /%s",
+  "no_permission": "Dazu hast du keine Berechtigung.",
+  "unknown_player": "Unbekannt",
+  "console_name": "Konsole",
+  "param_message": "nachricht",
+  "param_message_help": "Die zu sendende Nachricht",
+  "help_ooc": "Eine Out-of-Character-Nachricht senden",
+  "help_clearchat": "Deinen Chat leeren"
+}

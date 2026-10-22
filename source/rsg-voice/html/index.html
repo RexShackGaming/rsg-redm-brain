@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --rdr-black:#000;--rdr-panel:#0a0a0a;--rdr-panel-2:#141414;--rdr-gold:#fff;--rdr-gold-dim:#5a5a5a;
+  --rdr-text:#f2f2f2;--rdr-muted:#9a9a9a;--rdr-cost-ok:#6fbf73;--rdr-cost-over:#e0554f;--rdr-shadow:rgba(0,0,0,.85);--rdr-amber:#d9a441;
+}
+html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden;user-select:none;font-family:'Roboto',sans-serif}
+#root{position:fixed;inset:0;pointer-events:none}
+.hidden{display:none!important}
+.panel{
+  border:1px solid var(--rdr-gold-dim);outline:1px solid rgba(0,0,0,.6);outline-offset:-5px;border-radius:3px;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.015) 0 1px,transparent 1px 3px),
+             linear-gradient(160deg,var(--rdr-panel-2),var(--rdr-panel) 60%,var(--rdr-black));
+  box-shadow:0 20px 60px var(--rdr-shadow),inset 0 0 40px rgba(0,0,0,.5);color:var(--rdr-text);
+}
+#v{position:absolute;left:1.2vw;bottom:2.2vh;display:flex;align-items:center;gap:10px;padding:8px 14px;
+   font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;text-shadow:0 1px 2px #000;
+   transition:border-color .15s ease}
+#dot{width:12px;height:12px;border-radius:50%;border:1px solid var(--rdr-gold-dim);
+     background:radial-gradient(circle,#2e2e2e,#0a0a0a);transition:all .15s ease}
+#v.talking #dot{background:radial-gradient(circle,#7fcf82,var(--rdr-cost-ok));box-shadow:0 0 8px var(--rdr-cost-ok);border-color:var(--rdr-cost-ok)}
+#v.muted #dot{background:radial-gradient(circle,#ec7a75,var(--rdr-cost-over));border-color:var(--rdr-cost-over);box-shadow:none}
+#v.muted #label{color:var(--rdr-cost-over);text-decoration:line-through}
+#bars{display:flex;gap:2px;align-items:flex-end}
+#bars span{width:4px;border-radius:1px;background:rgba(0,0,0,.45);border:1px solid var(--rdr-gold-dim);transition:background-color .25s ease}
+#bars span.on{background:var(--rdr-gold)}
+#v.edit{pointer-events:auto;cursor:move;border-color:var(--rdr-gold)}
+#hint{position:absolute;top:3vh;left:50%;transform:translateX(-50%);padding:8px 16px;
+      font-size:12px;font-style:italic;color:var(--rdr-muted);letter-spacing:.5px}
+
+/* HUD party tag */
+#ptag{display:none;padding:1px 6px;border:1px solid var(--rdr-gold-dim);border-radius:2px;font-size:10px;letter-spacing:1px;color:var(--rdr-muted)}
+#ptag.show{display:inline-block}
+#v.ptalk{border-color:var(--rdr-amber)}
+#v.ptalk #ptag{color:var(--rdr-amber);border-color:var(--rdr-amber)}
+#v.ptalk #dot{background:radial-gradient(circle,#eec06a,var(--rdr-amber));box-shadow:0 0 8px var(--rdr-amber);border-color:var(--rdr-amber)}
+/* Party menu */
+#party{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:420px;padding:18px 20px 20px;pointer-events:auto}
+.hdr{display:flex;align-items:center;justify-content:space-between}
+.hdr .t{text-align:center;flex:1}
+.hdr h1{margin:0;font-size:24px;font-weight:700;text-transform:uppercase;letter-spacing:1px;text-shadow:0 2px 4px #000}
+.hdr small{display:block;margin-top:2px;font-size:10.5px;text-transform:uppercase;letter-spacing:3px;color:var(--rdr-muted)}
+.cbtn{width:32px;height:32px;border-radius:50%;border:1px solid var(--rdr-gold-dim);background:radial-gradient(circle,#2e2e2e,#0a0a0a);
+      color:var(--rdr-text);font-size:15px;cursor:pointer;transition:all .15s ease;display:flex;align-items:center;justify-content:center}
+.cbtn:hover{border-color:var(--rdr-gold);filter:brightness(1.3)}
+.div{display:flex;align-items:center;gap:10px;margin:16px 0 10px;font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--rdr-muted)}
+.div::before,.div::after{content:'';flex:1;height:1px}
+.div::before{background:linear-gradient(90deg,transparent,var(--rdr-gold-dim))}
+.div::after{background:linear-gradient(90deg,var(--rdr-gold-dim),transparent)}
+.list{display:flex;flex-direction:column;gap:6px;max-height:210px;overflow-y:auto}
+.list::-webkit-scrollbar{width:4px}.list::-webkit-scrollbar-thumb{background:var(--rdr-gold-dim)}
+.row{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:2px;border:1px solid rgba(201,162,75,.18);
+     background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.15));transition:all .15s ease}
+.row:hover{border-color:var(--rdr-gold-dim);background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.1));transform:translateX(2px)}
+.row.dis{opacity:.45}
+.badge{width:30px;height:30px;flex:none;border-radius:50%;border:1px solid var(--rdr-gold-dim);background:radial-gradient(circle,#2e2e2e,#0a0a0a);
+       display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+.row .n{flex:1;min-width:0}
+.row .n b{display:block;font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .n i{font-size:11.5px;color:var(--rdr-muted)}
+.row.talk .badge{border-color:var(--rdr-amber);box-shadow:0 0 6px var(--rdr-amber)}
+.pill{padding:2px 6px;border:1px solid var(--rdr-gold-dim);border-radius:2px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--rdr-muted)}
+.empty{padding:10px 4px;font-size:12.5px;font-style:italic;color:var(--rdr-muted);text-align:center}
+.wbtn{padding:6px 12px;border:1px solid var(--rdr-gold-dim);border-radius:2px;background:linear-gradient(180deg,#2e2e2e,#141414);
+      color:var(--rdr-text);font:500 12px 'Roboto',sans-serif;text-transform:uppercase;letter-spacing:1.5px;cursor:pointer;transition:all .15s ease}
+.wbtn:hover{border-color:var(--rdr-gold);filter:brightness(1.3)}
+.wbtn.mut{background:linear-gradient(180deg,#1c1c1c,#0a0a0a);color:var(--rdr-muted)}
+.wbtn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.foot{display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:10px}
+.foot i{font-size:11.5px;color:var(--rdr-muted)}
+</style>
+</head>
+<body>
+<div id="root">
+  <div id="hint" class="panel hidden"></div>
+  <div id="v" class="panel hidden"><div id="dot"></div><span id="label"></span><div id="bars"></div><span id="ptag"></span></div>
+  <div id="party" class="panel hidden"></div>
+</div>
+<script>
+const v=document.getElementById('v'),label=document.getElementById('label'),bars=document.getElementById('bars'),hint=document.getElementById('hint');
+const KEY='rsgvoice_pos';let editing=false,drag=null,lastTotal=0;
+
+function applyPos(p){
+  if(p){v.style.left=p.x+'px';v.style.top=p.y+'px';v.style.bottom='auto';}
+  else{v.style.left=v.style.top=v.style.bottom='';}
+}
+try{applyPos(JSON.parse(localStorage.getItem(KEY)));}catch(e){}
+
+function buildBars(total){
+  bars.innerHTML='';
+  for(let i=1;i<=total;i++){const s=document.createElement('span');s.style.height=(4+i*4)+'px';bars.appendChild(s);}
+  lastTotal=total;
+}
+
+function stopEdit(){
+  editing=false;drag=null;v.classList.remove('edit');hint.classList.add('hidden');
+  try{v.style.top?localStorage.setItem(KEY,JSON.stringify({x:parseInt(v.style.left),y:parseInt(v.style.top)})):localStorage.removeItem(KEY);}catch(e){}
+  fetch(`https://${GetParentResourceName()}/closeEdit`,{method:'POST',body:'{}'}).catch(()=>{});
+}
+
+window.addEventListener('message',({data:d})=>{
+  switch(d.action){
+    case 'update':
+      v.classList.toggle('hidden',!d.show);
+      label.textContent=d.label;
+      v.classList.toggle('muted',!!d.muted);
+      if(d.total!==lastTotal)buildBars(d.total);
+      [...bars.children].forEach((s,i)=>s.classList.toggle('on',i<d.index));
+      break;
+    case 'talking':v.classList.toggle('talking',!!d.state);break;
+    case 'locale':hint.textContent=d.hint;break;
+    case 'edit':editing=true;v.classList.add('edit');hint.classList.remove('hidden');break;
+  }
+});
+
+v.addEventListener('mousedown',e=>{if(!editing)return;const r=v.getBoundingClientRect();drag={dx:e.clientX-r.left,dy:e.clientY-r.top};});
+window.addEventListener('mousemove',e=>{
+  if(!drag)return;
+  applyPos({x:Math.max(0,Math.min(innerWidth-v.offsetWidth,e.clientX-drag.dx)),
+            y:Math.max(0,Math.min(innerHeight-v.offsetHeight,e.clientY-drag.dy))});
+});
+window.addEventListener('mouseup',()=>drag=null);
+window.addEventListener('keydown',e=>{
+  if(!editing)return;
+  if(e.key==='Escape'||e.key==='Enter')stopEdit();
+  else if(e.key.toLowerCase()==='r')applyPos(null);
+});
+
+/* ---------- Riding party ---------- */
+const party=document.getElementById('party'),ptag=document.getElementById('ptag');
+let S={},PD=null;
+const post=(n,b={})=>fetch(`https://${GetParentResourceName()}/${n}`,{method:'POST',body:JSON.stringify(b)}).catch(()=>{});
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const initials=n=>esc(String(n).trim().split(/\s+/).map(w=>w[0]||'').join('').slice(0,2).toUpperCase());
+
+function renderParty(){
+  const d=PD||{nearby:[]},p=d.party,me=d.me,amLeader=p&&p.leader===me,full=p&&p.members.length>=p.max;
+  let h=`<div class="hdr"><button class="cbtn" data-a="refresh" title="${esc(S.refresh)}">&#8635;</button>
+    <div class="t"><h1>${esc(S.title)}</h1><small>${esc(S.subtitle)}</small></div>
+    <button class="cbtn" data-a="close">&#10005;</button></div>`;
+  h+=`<div class="div">${esc(S.members)}${p?` &middot; ${p.members.length}/${p.max}`:''}</div><div class="list">`;
+  if(!p)h+=`<div class="empty">${esc(S.none)}</div>`;
+  else p.members.forEach(m=>{
+    h+=`<div class="row"><div class="badge">${initials(m.name)}</div><div class="n"><b>${esc(m.name)}</b><i>#${m.id}</i></div>`;
+    if(m.leader)h+=`<span class="pill">${esc(S.leader)}</span>`;
+    if(amLeader&&m.id!==me)h+=`<button class="wbtn mut" data-a="kick" data-id="${m.id}">${esc(S.kick)}</button>`;
+    h+=`</div>`;
+  });
+  h+=`</div><div class="div">${esc(S.nearby)}</div><div class="list">`;
+  if(!d.nearby.length)h+=`<div class="empty">${esc(S.noNearby)}</div>`;
+  else d.nearby.forEach(n=>{
+    const can=!n.busy&&(!p||(amLeader&&!full));
+    h+=`<div class="row${n.busy?' dis':''}"><div class="badge">${initials(n.name)}</div><div class="n"><b>${esc(n.name)}</b><i>#${n.id}</i></div>`;
+    h+=n.busy?`<span class="pill">${esc(S.busy)}</span>`:`<button class="wbtn" data-a="invite" data-id="${n.id}" ${can?'':'disabled'}>${esc(S.invite)}</button>`;
+    h+=`</div>`;
+  });
+  h+=`</div><div class="foot"><i>${esc(S.hint)}</i>${p?`<button class="wbtn mut" data-a="leave">${esc(S.leave)}</button>`:''}</div>`;
+  party.innerHTML=h;
+}
+party.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
+  const a=b.dataset.a,id=Number(b.dataset.id);
+  if(a==='close')closeParty();
+  else if(a==='refresh')post('partyRefresh');
+  else if(a==='invite'){b.disabled=true;post('partyInvite',{id});}
+  else if(a==='kick')post('partyKick',{id});
+  else if(a==='leave')post('partyLeave');
+});
+function closeParty(){party.classList.add('hidden');post('partyClose');}
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!party.classList.contains('hidden'))closeParty();});
+window.addEventListener('message',({data:d})=>{
+  switch(d.action){
+    case 'partyOpen':S=d.strings||{};PD=null;renderParty();party.classList.remove('hidden');break;
+    case 'partyData':PD=d.data;renderParty();break;
+    case 'partyClose':party.classList.add('hidden');break;
+    case 'partyHud':ptag.textContent=d.count>1?`⚑ ${d.count}`:'';ptag.classList.toggle('show',d.count>1);break;
+    case 'partyTalk':v.classList.toggle('ptalk',!!d.state);break;
+  }
+});
+</script>
+</body>
+</html>

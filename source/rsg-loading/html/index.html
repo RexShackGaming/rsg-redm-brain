@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title></title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="vignette"></div>
+<div id="particles"></div>
+
+<div id="root">
+
+  <div id="bg-texture">
+    <div id="bg-image"></div>
+  </div>
+
+  <div id="center">
+    <div class="brand">
+      <div class="brand-seal">★</div>
+      <h1 class="brand-title" id="brandTitle"></h1>
+      <p class="brand-subtitle" id="brandSubtitle"></p>
+    </div>
+
+    <div class="divider">
+      <span class="line"></span>
+      <span class="mark">✦</span>
+      <span class="line"></span>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-meta">
+        <span id="statusText"></span>
+        <span id="percentText">0%</span>
+      </div>
+    </div>
+
+    <p class="tip" id="tipText"></p>
+  </div>
+
+  <div class="footer">
+    <span id="clock">--:--</span>
+    <span class="footer-sep">•</span>
+    <span id="footerResourceName"></span>
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

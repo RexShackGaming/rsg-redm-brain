@@ -1,0 +1,769 @@
+# AUDIO natives (221)
+Source: VORPCORE/RDR3natives `rdr3natives.json`. Grep by NAME or hash.
+
+## ADD_ENTITY_TO_AUDIO_MIX_GROUP
+`0x153973AB99FE8980` | `void ADD_ENTITY_TO_AUDIO_MIX_GROUP(Entity entity, char* groupName, float p2)` | build 1207
+
+## ADD_PED_TO_CONVERSATION
+`0x95D9F4BC443956E7` | `void ADD_PED_TO_CONVERSATION(char* convoRoot, Ped ped, char* characterName)` | build 1207
+
+## AUDIO_IS_MUSIC_PLAYING
+`0x845FFC3A4FEEFA3E` | `BOOL AUDIO_IS_MUSIC_PLAYING()` | build 1207
+Old name: AUDIO_IS_SCRIPTED_MUSIC_PLAYING
+
+## AUDIO_TRIGGER_EXPLOSION
+`0x374F0E716BFCDE82` | `void AUDIO_TRIGGER_EXPLOSION(char* name, float x, float y, float z)` | build 1207
+
+## CANCEL_MUSIC_EVENT
+`0x5B17A90291133DA5` | `BOOL CANCEL_MUSIC_EVENT(char* eventName)` | build 1207
+
+## CLEAR_AMBIENT_ZONE_LIST_STATE
+`0x120C48C614909FA4` | `void CLEAR_AMBIENT_ZONE_LIST_STATE(char* ambientZone, BOOL p1)` | build 1207
+
+## CLEAR_AMBIENT_ZONE_STATE
+`0x218DD44AAAC964FF` | `void CLEAR_AMBIENT_ZONE_STATE(char* zoneName, BOOL p1)` | build 1207
+
+## CLEAR_CONVERSATION_HISTORY
+`0x33D51F801CB16E4F` | `void CLEAR_CONVERSATION_HISTORY()` | build 1207
+
+## CREATE_NEW_SCRIPTED_CONVERSATION
+`0xD2C91A0B572AAE56` | `BOOL CREATE_NEW_SCRIPTED_CONVERSATION(char* convoRoot)` | build 1207
+
+## DISABLE_PED_PAIN_AUDIO
+`0xA9A41C1E940FB0E8` | `void DISABLE_PED_PAIN_AUDIO(Ped ped, BOOL toggle)` | build 1207
+
+## DOES_CONTEXT_EXIST_FOR_THIS_PED
+`0x49B99BF3FDA89A7A` | `BOOL DOES_CONTEXT_EXIST_FOR_THIS_PED(Ped ped, char* speechName, BOOL unk)` | build 1207
+Checks if the ped can play the speech or has the speech file, last parameter is usually false.
+
+## FORCE_PED_PANIC_WALLA
+`0x062D5EAD4DA2FA6A` | `void FORCE_PED_PANIC_WALLA()` | build 1207
+
+## FORCE_USE_AUDIO_GAME_OBJECT
+`0x4F0C413926060B38` | `void FORCE_USE_AUDIO_GAME_OBJECT(Vehicle vehicle, char* audioName)` | build 1207
+Old name: _FORCE_VEHICLE_ENGINE_AUDIO
+
+## GET_CURRENT_SCRIPTED_CONVERSATION_LINE
+`0x480357EE890C295A` | `int GET_CURRENT_SCRIPTED_CONVERSATION_LINE(char* p0)` | build 1207
+
+## GET_MUSIC_PLAYTIME
+`0xE7A0D23DC414507B` | `int GET_MUSIC_PLAYTIME()` | build 1207
+
+## GET_SOUND_ID
+`0x430386FE9BF80B45` | `int GET_SOUND_ID()` | build 1207
+
+## IS_AMBIENT_SPEECH_DISABLED
+`0x932C2D096A2C3FFF` | `BOOL IS_AMBIENT_SPEECH_DISABLED(Ped ped)` | build 1207
+
+## IS_AMBIENT_SPEECH_PLAYING
+`0x9072C8B49907BFAD` | `BOOL IS_AMBIENT_SPEECH_PLAYING(Ped ped)` | build 1207
+
+## IS_ANIMAL_VOCALIZATION_PLAYING
+`0xC265DF9FB44A9FBD` | `BOOL IS_ANIMAL_VOCALIZATION_PLAYING(Ped pedHandle)` | build 1207
+
+## IS_ANY_SPEECH_PLAYING
+`0x729072355FA39EC9` | `BOOL IS_ANY_SPEECH_PLAYING(Ped ped)` | build 1207
+
+## IS_AUDIO_SCENE_ACTIVE
+`0xB65B60556E2A9225` | `BOOL IS_AUDIO_SCENE_ACTIVE(char* scene)` | build 1207
+
+## IS_HORN_ACTIVE
+`0x9D6BFC12B05C6121` | `BOOL IS_HORN_ACTIVE(Vehicle vehicle)` | build 1207
+Checks whether the horn of a vehicle is currently played.
+
+## IS_PED_IN_CURRENT_CONVERSATION
+`0x049E937F18F4020C` | `BOOL IS_PED_IN_CURRENT_CONVERSATION(char* p0, Ped ped, Any p2)` | build 1207
+
+## IS_SCRIPTED_CONVERSATION_LOADED
+`0xDF0D54BE7A776737` | `BOOL IS_SCRIPTED_CONVERSATION_LOADED(char* convoRoot)` | build 1207
+
+## IS_SCRIPTED_CONVERSATION_PLAYING
+`0x1ECC76792F661CF5` | `BOOL IS_SCRIPTED_CONVERSATION_PLAYING(char* p0)` | build 1207
+
+## IS_SCRIPTED_SPEECH_PLAYING
+`0xCC9AA18DCC7084F4` | `BOOL IS_SCRIPTED_SPEECH_PLAYING(Any p0)` | build 1207
+
+## IS_STREAM_PLAYING
+`0xD11FA52EB849D978` | `BOOL IS_STREAM_PLAYING(int streamId)` | build 1207
+
+## LOAD_STREAM
+`0x1F1F957154EC51DF` | `BOOL LOAD_STREAM(char* streamName, char* soundSet)` | build 1207
+
+## PAUSE_SCRIPTED_CONVERSATION
+`0x8530AD776CD72B12` | `void PAUSE_SCRIPTED_CONVERSATION(char* p0, BOOL p1, BOOL p2, BOOL p3, BOOL p4)` | build 1207
+
+## PLAY_AMBIENT_SPEECH_FROM_POSITION_NATIVE
+`0xED640017ED337E45` | `BOOL PLAY_AMBIENT_SPEECH_FROM_POSITION_NATIVE(float x, float y, float z, Any* params)` | build 1207
+Old name: _PLAY_AMBIENT_SPEECH_AT_COORDS
+
+## PLAY_ANIMAL_VOCALIZATION
+`0xEE066C7006C49C0A` | `void PLAY_ANIMAL_VOCALIZATION(Ped ped, char* vocalizationName, BOOL p2)` | build 1207
+
+## PLAY_END_CREDITS_MUSIC
+`0xCD536C4D33DCC900` | `void PLAY_END_CREDITS_MUSIC(BOOL play)` | build 1207
+
+## PLAY_PAIN
+`0xBC9AE166038A5CEC` | `void PLAY_PAIN(Ped ped, int painId, float p2, BOOL p3, BOOL isNetwork)` | build 1207
+Valid pain IDs: 0..12  these names are not official, but here is a list of the IDs:
+ 1 burning,
+ 2 drowning,
+ 3 coughing,
+ 4 nothing,
+ 5 nothing,
+ 6 coughing_2,
+ 7 nothing,
+ 8 nothing,
+ 9 hurtingSick?,
+ 10 hurtingFall?,
+ 11 nothing,
+ 12 choking
+
+## PLAY_PED_AMBIENT_SPEECH_NATIVE
+`0x8E04FEDD28D42462` | `BOOL PLAY_PED_AMBIENT_SPEECH_NATIVE(Ped speaker, Any* params)` | build 1207
+struct ScriptedSpeechParams
+{
+	const char* speechName;
+	const char* voiceName;
+	alignas(8) int variation;
+	alignas(8) Hash speechParamHash;
+	alignas(8) Ped listenerPed;
+	alignas(8) BOOL syncOverNetwork;
+	alignas(8) int v7;
+	alignas(8) int v8;
+};
+
+static_assert(sizeof(ScriptedSpeechParams) == 0x40, "incorrect ScriptedSpeechParams size");
+
+
+Example:
+
+ScriptedSpeechParams params{"RE_PH_RHD_V3_AGGRO", "0405_U_M_M_RhdSheriff_01", 1, joaat("SPEECH_PARAMS_BEAT_SHOUTED_CLEAR"), 0, true, 1, 1};
+PLAY_PED_AMBIENT_SPEECH_NATIVE(PLAYER_PED_ID(), (Any*)&params);
+
+Old name: _PLAY_AMBIENT_SPEECH1
+https://github.com/femga/rdr3_discoveries/tree/master/audio/audio_banks
+
+## PLAY_SOUND
+`0x7FF4944CC209192D` | `void PLAY_SOUND(char* audioName, char* audioRef, BOOL p2, Any p3, BOOL p4, Any p5)` | build 1207
+
+## PLAY_SOUND_FROM_COORD
+`0xCCE219C922737BFA` | `void PLAY_SOUND_FROM_COORD(char* SoundName, float positionX, float positionY, float positionZ, char* SetName, BOOL bOverNetwork, int nNetworkRange, BOOL isExteriorLoc, int p8)` | build 1207
+Old name: _PLAY_SOUND_FROM_POSITION
+
+## PLAY_SOUND_FROM_ENTITY
+`0x6FB1DA3CA9DA7D90` | `void PLAY_SOUND_FROM_ENTITY(char* audioName, Entity entity, char* audioRef, BOOL isNetwork, Any p4, Any p5)` | build 1207
+
+## PLAY_SOUND_FRONTEND
+`0x67C540AA08E4A6F5` | `void PLAY_SOUND_FRONTEND(char* audioName, char* audioRef, BOOL p2, Any p3)` | build 1207
+see a list of frontend sounds here: https://github.com/femga/rdr3_discoveries/tree/master/audio/frontend_soundsets
+
+## PLAY_STREAM_FROM_PED
+`0x89049DD63C08B5D1` | `void PLAY_STREAM_FROM_PED(Ped ped, int streamId)` | build 1207
+
+## PLAY_STREAM_FROM_POSITION
+`0x21442F412E8DE56B` | `void PLAY_STREAM_FROM_POSITION(float x, float y, float z, int streamId)` | build 1207
+
+## PLAY_STREAM_FRONTEND
+`0x58FCE43488F9F5F4` | `void PLAY_STREAM_FRONTEND(int streamId)` | build 1207
+
+## PRELOAD_SCRIPT_CONVERSATION
+`0x3B3CAD6166916D87` | `void PRELOAD_SCRIPT_CONVERSATION(char* convoRoot, BOOL p1, BOOL p2, BOOL clone)` | build 1207
+
+## PREPARE_MUSIC_EVENT
+`0x1E5185B72EF5158A` | `BOOL PREPARE_MUSIC_EVENT(char* eventName)` | build 1207
+
+## PREPARE_SOUND
+`0xE368E8422C860BA7` | `BOOL PREPARE_SOUND(char* soundName, char* soundsetName, int soundId)` | build 1207
+soundId maybe be incorrect name for param p2, in the decompiles is always -2
+
+## PREPARE_SOUNDSET
+`0xD9130842D7226045` | `BOOL PREPARE_SOUNDSET(char* soundsetName, BOOL p1)` | build 1207
+https://github.com/femga/rdr3_discoveries/tree/master/audio/soundsets
+
+## PREPARE_SOUND_WITH_ENTITY
+`0x4AD019591E94C064` | `BOOL PREPARE_SOUND_WITH_ENTITY(char* soundName, Entity entity, char* soundsetName, int soundId)` | build 1207
+
+## REGISTER_SCRIPT_WITH_AUDIO
+`0xC6ED9D5092438D91` | `void REGISTER_SCRIPT_WITH_AUDIO(BOOL p0)` | build 1207
+nullsub, doesn't do anything
+
+## RELEASE_NAMED_SCRIPT_AUDIO_BANK
+`0x77ED170667F50170` | `void RELEASE_NAMED_SCRIPT_AUDIO_BANK(char* audioBank)` | build 1207
+
+## RELEASE_SCRIPT_AUDIO_BANK
+`0x7A2D8AD0A9EB9C3F` | `void RELEASE_SCRIPT_AUDIO_BANK()` | build 1207
+
+## RELEASE_SOUND_ID
+`0x353FC880830B88FA` | `void RELEASE_SOUND_ID(int soundId)` | build 1207
+
+## REMOVE_ENTITY_FROM_AUDIO_MIX_GROUP
+`0x18EB48CFC41F2EA0` | `void REMOVE_ENTITY_FROM_AUDIO_MIX_GROUP(Entity entity, float p1)` | build 1207
+
+## REMOVE_PORTAL_SETTINGS_OVERRIDE
+`0xB4BBFD9CD8B3922B` | `void REMOVE_PORTAL_SETTINGS_OVERRIDE(char* p0)` | build 1207
+
+## REQUEST_SCRIPT_AUDIO_BANK
+`0x2F844A8B08D76685` | `BOOL REQUEST_SCRIPT_AUDIO_BANK(char* audioBank)` | build 1207
+
+## RESTART_SCRIPTED_CONVERSATION
+`0x9AEB285D1818C9AC` | `void RESTART_SCRIPTED_CONVERSATION(char* p0)` | build 1207
+
+## SET_AMBIENT_VOICE_NAME
+`0x6C8065A3B780185B` | `void SET_AMBIENT_VOICE_NAME(Ped ped, char* name)` | build 1207
+
+## SET_AMBIENT_ZONE_LIST_STATE
+`0x9748FA4DE50CCE3E` | `void SET_AMBIENT_ZONE_LIST_STATE(char* ambientZone, BOOL p1, BOOL p2)` | build 1207
+
+## SET_AMBIENT_ZONE_LIST_STATE_PERSISTENT
+`0xF3638DAE8C4045E1` | `void SET_AMBIENT_ZONE_LIST_STATE_PERSISTENT(char* ambientZone, BOOL p1, BOOL p2)` | build 1207
+
+## SET_AMBIENT_ZONE_STATE
+`0xBDA07E5950085E46` | `void SET_AMBIENT_ZONE_STATE(char* zoneName, BOOL isEnabled, BOOL p2)` | build 1207
+
+## SET_AMBIENT_ZONE_STATE_PERSISTENT
+`0x1D6650420CEC9D3B` | `void SET_AMBIENT_ZONE_STATE_PERSISTENT(char* ambientZone, BOOL p1, BOOL p2)` | build 1207
+
+## SET_ANIMAL_MOOD
+`0xCC97B29285B1DC3B` | `void SET_ANIMAL_MOOD(Ped animal, int mood)` | build 1207
+Not implemented.
+
+## SET_AUDIO_FLAG
+`0xB9EFD5C25018725A` | `void SET_AUDIO_FLAG(char* flagName, BOOL toggle)` | build 1207
+https://github.com/femga/rdr3_discoveries/tree/master/audio/audio_flags
+
+## SET_AUDIO_ONLINE_TRANSITION_STAGE
+`0x9B1FC259187C97C0` | `void SET_AUDIO_ONLINE_TRANSITION_STAGE(char* p0)` | build 1207
+
+## SET_AUDIO_SCENE_VARIABLE
+`0xEF21A9EF089A2668` | `void SET_AUDIO_SCENE_VARIABLE(char* scene, char* variable, float value)` | build 1207
+
+## SET_AUDIO_VEHICLE_PRIORITY
+`0xE5564483E407F914` | `void SET_AUDIO_VEHICLE_PRIORITY(Vehicle vehicle, Any p1)` | build 1207
+
+## SET_GPS_ACTIVE
+`0x3BD3F52BA9B1E4E8` | `void SET_GPS_ACTIVE(BOOL active)` | build 1207
+nullsub, doesn't do anything
+
+## SET_HORN_ENABLED
+`0x76D683C108594D0E` | `void SET_HORN_ENABLED(Vehicle vehicle, BOOL toggle)` | build 1207
+
+## SET_IS_SCRIPTED_SPEECH_DISABLED
+`0xB2DE3AEBE31150E2` | `Any SET_IS_SCRIPTED_SPEECH_DISABLED(Ped ped, BOOL disabled)` | build 1207
+
+## SET_PED_INTERIOR_WALLA_DENSITY
+`0x8BF907833BE275DE` | `void SET_PED_INTERIOR_WALLA_DENSITY(float p0, float p1)` | build 1207
+
+## SET_PED_IS_DRUNK
+`0x95D2D383D5396B8A` | `void SET_PED_IS_DRUNK(Ped ped, BOOL toggle)` | build 1207
+
+## SET_PED_WALLA_DENSITY
+`0x149AEE66F0CB3A99` | `void SET_PED_WALLA_DENSITY(float p0, float p1)` | build 1207
+https://en.m.wikipedia.org/wiki/Walla
+
+## SET_PORTAL_SETTINGS_OVERRIDE
+`0x044DBAD7A7FA2BE5` | `void SET_PORTAL_SETTINGS_OVERRIDE(char* p0, char* p1)` | build 1207
+
+## SET_STATIC_EMITTER_ENABLED
+`0x399D2D3B33F1B8EB` | `void SET_STATIC_EMITTER_ENABLED(char* emitterName, BOOL toggle)` | build 1207
+
+## SET_VARIABLE_ON_SOUND
+`0x503703EC1781B7D6` | `void SET_VARIABLE_ON_SOUND(int soundId, char* variableName, float variableValue)` | build 1207
+Old Name: _SET_VARIABLE_ON_SOUND_WITH_ID
+
+## SKIP_TO_NEXT_SCRIPTED_CONVERSATION_LINE
+`0x9663FE6B7A61EB00` | `void SKIP_TO_NEXT_SCRIPTED_CONVERSATION_LINE(char* p0)` | build 1207
+
+## START_AUDIO_SCENE
+`0x013A80FC08F6E4F2` | `BOOL START_AUDIO_SCENE(char* scene)` | build 1207
+
+## START_PRELOADED_CONVERSATION
+`0x23641AFE870AF385` | `void START_PRELOADED_CONVERSATION(char* convoRoot)` | build 1207
+
+## START_SCRIPT_CONVERSATION
+`0x6B17C62C9635D2DC` | `void START_SCRIPT_CONVERSATION(char* convoRoot, BOOL p1, BOOL p2, BOOL clone)` | build 1207
+
+## STOP_AUDIO_SCENE
+`0xDFE8422B3B94E688` | `void STOP_AUDIO_SCENE(char* scene)` | build 1207
+
+## STOP_AUDIO_SCENES
+`0xBAC7FC81A75EC1A1` | `void STOP_AUDIO_SCENES()` | build 1207
+
+## STOP_CURRENT_PLAYING_AMBIENT_SPEECH
+`0xB8BEC0CA6F0EDB0F` | `void STOP_CURRENT_PLAYING_AMBIENT_SPEECH(Ped ped, Any p1)` | build 1207
+
+## STOP_CURRENT_PLAYING_SPEECH
+`0x79D2F0E66F81D90D` | `void STOP_CURRENT_PLAYING_SPEECH(Ped ped, Any p1)` | build 1207
+
+## STOP_PED_SPEAKING
+`0x9D64D7405520E3D3` | `void STOP_PED_SPEAKING(Ped ped, BOOL shaking)` | build 1207
+
+## STOP_SCRIPTED_CONVERSATION
+`0xD79DEEFB53455EBA` | `int STOP_SCRIPTED_CONVERSATION(char* p0, BOOL p1, BOOL p2)` | build 1207
+
+## STOP_SOUND
+`0x3210BCB36AF7621B` | `void STOP_SOUND(int soundId)` | build 1207
+Old Name: _STOP_SOUND_WITH_ID
+
+## STOP_STREAM
+`0xA4718A1419D18151` | `void STOP_STREAM(int streamId)` | build 1207
+
+## TRIGGER_MUSIC_EVENT
+`0x706D57B0F50DA710` | `BOOL TRIGGER_MUSIC_EVENT(char* eventName)` | build 1207
+https://github.com/femga/rdr3_discoveries/blob/master/audio/music_events/music_events.lua
+
+## UNREGISTER_SCRIPT_WITH_AUDIO
+`0xA8638BE228D4751A` | `void UNREGISTER_SCRIPT_WITH_AUDIO()` | build 1207
+nullsub, doesn't do anything
+
+## UPDATE_SOUND_COORD
+`0x0286617C8FC50A53` | `void UPDATE_SOUND_COORD(int soundId, float x, float y, float z)` | build 1207
+Only used in R* SP Scripts
+Old Name: _UPDATE_SOUND_POSITION
+
+## USE_FOOTSTEP_SCRIPT_SWEETENERS
+`0xBF4DC1784BE94DFA` | `void USE_FOOTSTEP_SCRIPT_SWEETENERS(Ped ped, BOOL p1, Hash hash)` | build 1207
+
+## _0x017492B2201E3428
+`0x017492B2201E3428` | `void _0x017492B2201E3428(Any p0, Any p1, Any p2, Any p3)` | build 1207
+
+## _0x018ABE833CA64D2A
+`0x018ABE833CA64D2A` | `void _0x018ABE833CA64D2A(Ped ped, Hash hash)` | build 1232
+_RESET_PED_* hash used is MOONSHINE_BAND used along side 0xBC07CA8FD710E7FD
+
+## _0x06C5DF5EE444BC6B
+`0x06C5DF5EE444BC6B` | `void _0x06C5DF5EE444BC6B(Any p0, Any p1, Any p2, Any p3, Any p4)` | build 1207
+
+## _0x078F77FD1A43EAB3
+`0x078F77FD1A43EAB3` | `void _0x078F77FD1A43EAB3(Any p0, Any p1)` | build 1207
+
+## _0x0CB3D1919E8D7CBA
+`0x0CB3D1919E8D7CBA` | `BOOL _0x0CB3D1919E8D7CBA(const char* convoRoot)` | build 1207
+
+## _0x0D7FD6A55FD63AEF
+`0x0D7FD6A55FD63AEF` | `void _0x0D7FD6A55FD63AEF(int speechEventType, int p1, BOOL p2)` | build 1207
+speechEventType: https://github.com/Halen84/RDR3-Native-Flags-And-Enums/tree/main/naSpeechEventType 
+p1 is possibly naSpeechAudibility, naSpeechType, or naSpeechEventTypeRequestPriority
+SKIP_* - START_*
+
+## _0x0FAF7171BF613B80
+`0x0FAF7171BF613B80` | `void _0x0FAF7171BF613B80(Any p0)` | build 1207
+
+## _0x131EC9247E7A2903
+`0x131EC9247E7A2903` | `Any _0x131EC9247E7A2903(Any p0)` | build 1207
+
+## _0x138ADB94F8B90616
+`0x138ADB94F8B90616` | `void _0x138ADB94F8B90616()` | build 1207
+
+## _0x139A4B9DF2D26CBF
+`0x139A4B9DF2D26CBF` | `void _0x139A4B9DF2D26CBF(Ped ped, int p1)` | build 1232
+p1 is an int seems to be a duration returned from 0x886657C5B3D8EDE3
+
+## _0x152ED1B56E8F1F50
+`0x152ED1B56E8F1F50` | `Ped _0x152ED1B56E8F1F50(const char* p0, int currentScriptedConvoLine)` | build 1207
+
+## _0x1E6F9A9FE1A99F36
+`0x1E6F9A9FE1A99F36` | `void _0x1E6F9A9FE1A99F36(const char* audSpeechEvent)` | build 1207
+
+## _0x254B0241E964B450
+`0x254B0241E964B450` | `Ped _0x254B0241E964B450(const char* p0, int currentScriptedConvoLine)` | build 1207
+
+## _0x259ACC5B52A2B2D9
+`0x259ACC5B52A2B2D9` | `void _0x259ACC5B52A2B2D9(Any p0, Any p1)` | build 1207
+
+## _0x2651DDC0EA269073
+`0x2651DDC0EA269073` | `void _0x2651DDC0EA269073(int ropeId, float p1)` | build 1207
+
+## _0x295859EB18F48D82
+`0x295859EB18F48D82` | `int _0x295859EB18F48D82(const char* p0)` | build 1207
+
+## _0x2B101AD9F651243A
+`0x2B101AD9F651243A` | `Any _0x2B101AD9F651243A()` | build 1207
+
+## _0x2B9C37C01BF25EDB
+`0x2B9C37C01BF25EDB` | `Any _0x2B9C37C01BF25EDB(Any p0)` | build 1207
+
+## _0x2FFF4A78384AFFDF
+`0x2FFF4A78384AFFDF` | `Any _0x2FFF4A78384AFFDF(Entity entity)` | build 1436
+
+## _0x341CDD17EFC2472E
+`0x341CDD17EFC2472E` | `void _0x341CDD17EFC2472E(Any p0, Any p1)` | build 1207
+
+## _0x35B8C070E0C16E2F
+`0x35B8C070E0C16E2F` | `void _0x35B8C070E0C16E2F(Any p0, Any p1)` | build 1207
+
+## _0x380A2E353AD30917
+`0x380A2E353AD30917` | `void _0x380A2E353AD30917(Any p0, Any p1, Any p2)` | build 1207
+
+## _0x3A00D87B20A2A5E4
+`0x3A00D87B20A2A5E4` | `void _0x3A00D87B20A2A5E4(Any p0, Any p1)` | build 1207
+
+## _0x3A3BE6B920525237
+`0x3A3BE6B920525237` | `void _0x3A3BE6B920525237(Any p0, Any p1)` | build 1207
+
+## _0x3D0BBCCF401B5FDB
+`0x3D0BBCCF401B5FDB` | `void _0x3D0BBCCF401B5FDB()` | build 1207
+
+## _0x3E93DDDCBB6111E4
+`0x3E93DDDCBB6111E4` | `void _0x3E93DDDCBB6111E4(const char* p0, float p1)` | build 1207
+
+## _0x3E98AC9D8C56C62C
+`0x3E98AC9D8C56C62C` | `void _0x3E98AC9D8C56C62C(Any p0)` | build 1207
+
+## _0x40CA665AB9D8D505
+`0x40CA665AB9D8D505` | `void _0x40CA665AB9D8D505(const char* convoRoot, int singleLineIndex)` | build 1207
+
+## _0x43037ABFE214A851
+`0x43037ABFE214A851` | `void _0x43037ABFE214A851()` | build 1207
+
+## _0x448F2647DD6F2E27
+`0x448F2647DD6F2E27` | `void _0x448F2647DD6F2E27(Ped ped, Hash hash, int p2, char* gestureAnim, int p4)` | build 1232
+_SET_PED_PLAY_GESTURE_ANIMS? p2 seems to be a flag string used example 
+ AI_GESTURES@INSTRUMENTS@FIDDLE@STANDING@MALE@NORMAL
+
+## _0x44A5EEF54F62E823
+`0x44A5EEF54F62E823` | `Any _0x44A5EEF54F62E823(Any p0)` | build 1207
+
+## _0x4A98E228A936DBCC
+`0x4A98E228A936DBCC` | `Hash _0x4A98E228A936DBCC(Ped ped)` | build 1207
+Gets the hash for the currently playing speech line.
+
+## _0x4BE3EC91C01F0FE8
+`0x4BE3EC91C01F0FE8` | `void _0x4BE3EC91C01F0FE8()` | build 1207
+
+## _0x569ABC36E28DDEAA
+`0x569ABC36E28DDEAA` | `void _0x569ABC36E28DDEAA()` | build 1207
+
+## _0x580D71DFE0088E34
+`0x580D71DFE0088E34` | `BOOL _0x580D71DFE0088E34(const char* audioName, const char* audioRef)` | build 1207
+_IS_SOUND_RUNNING(?)
+
+## _0x5A13586A9447931F
+`0x5A13586A9447931F` | `BOOL _0x5A13586A9447931F(BOOL p0)` | build 1207
+
+## _0x5AE0CB5F35F034FD
+`0x5AE0CB5F35F034FD` | `void _0x5AE0CB5F35F034FD(Any p0, Any p1, Any p2, Any p3, Any p4, Any p5, Any p6, Any p7)` | build 1207
+
+## _0x5BC885EBD75FAA7D
+`0x5BC885EBD75FAA7D` | `void _0x5BC885EBD75FAA7D(Any p0, Any p1)` | build 1207
+
+## _0x5E3CCF03995388B5
+`0x5E3CCF03995388B5` | `void _0x5E3CCF03995388B5(Any p0, Any p1, Any p2, Any p3)` | build 1207
+
+## _0x62377977E4F08668
+`0x62377977E4F08668` | `AnimScene _0x62377977E4F08668(Entity entity)` | build 1436
+
+## _0x64B956F4E761DF5C
+`0x64B956F4E761DF5C` | `void _0x64B956F4E761DF5C(Any p0)` | build 1207
+
+## _0x660A8F876DF1D4F8
+`0x660A8F876DF1D4F8` | `void _0x660A8F876DF1D4F8(int speechEventType)` | build 1207
+speechEventType: https://github.com/Halen84/RDR3-Native-Flags-And-Enums/tree/main/naSpeechEventType 
+SKIP_* - START_*
+
+## _0x6652B0C8F3D414D0
+`0x6652B0C8F3D414D0` | `void _0x6652B0C8F3D414D0(Any p0)` | build 1207
+
+## _0x6AB944DF68B512D3
+`0x6AB944DF68B512D3` | `void _0x6AB944DF68B512D3(Any p0)` | build 1207
+_STOP_AUDIO_*
+
+## _0x6B7A88A61B41E589
+`0x6B7A88A61B41E589` | `void _0x6B7A88A61B41E589(Any p0)` | build 1207
+
+## _0x6DA15746D5CC1A92
+`0x6DA15746D5CC1A92` | `void _0x6DA15746D5CC1A92(Any p0, Any p1, Any p2, Any p3, Any p4, Any p5)` | build 1207
+
+## _0x7455CD705F7E933E
+`0x7455CD705F7E933E` | `void _0x7455CD705F7E933E()` | build 1207
+_AUDIO_IS_* - _AUDIO_TRIGGER*
+
+## _0x7678FE0455ED1145
+`0x7678FE0455ED1145` | `Any _0x7678FE0455ED1145(Any p0, Any p1, Any p2)` | build 1207
+
+## _0x79F9C57B8D0DFE90
+`0x79F9C57B8D0DFE90` | `BOOL _0x79F9C57B8D0DFE90(const char* convoRoot, AnimScene animScene)` | build 1207
+Only used in R* SP Script cv_mus_shared
+
+## _0x7E176C676F8652A9
+`0x7E176C676F8652A9` | `void _0x7E176C676F8652A9(Any p0)` | build 1207
+
+## _0x821C32C728B24477
+`0x821C32C728B24477` | `void _0x821C32C728B24477(Any p0, Any p1, Any p2)` | build 1207
+
+## _0x839C9F124BE74D94
+`0x839C9F124BE74D94` | `void _0x839C9F124BE74D94(Any p0, Any p1, Any p2, Any p3, Any p4)` | build 1207
+
+## _0x847748AE5D7B1071
+`0x847748AE5D7B1071` | `BOOL _0x847748AE5D7B1071(BOOL p0)` | build 1207
+
+## _0x864A842B86993851
+`0x864A842B86993851` | `void _0x864A842B86993851(Ped ped)` | build 1207
+Not implemented.
+
+## _0x886657C5B3D8EDE3
+`0x886657C5B3D8EDE3` | `int _0x886657C5B3D8EDE3(Ped ped)` | build 1232
+seems to return a duration to be used in 0x139A4B9DF2D26CBF
+
+## _0x8D29FDF565DED9AE
+`0x8D29FDF565DED9AE` | `void _0x8D29FDF565DED9AE(Any p0, Any p1, Any p2)` | build 1232
+
+## _0x8E901B65206C2D3E
+`0x8E901B65206C2D3E` | `void _0x8E901B65206C2D3E(Ped ped)` | build 1207
+
+## _0x935DBD96D4A3DA1F
+`0x935DBD96D4A3DA1F` | `int _0x935DBD96D4A3DA1F(const char* p0, int currentScriptedConvoLine)` | build 1207
+
+## _0x9D6DEC9791A4E501
+`0x9D6DEC9791A4E501` | `BOOL _0x9D6DEC9791A4E501(Ped ped, char* speechName, BOOL p2, BOOL p3)` | build 1207
+Returns true or false if the ped can say a specific speech line with PLAY_PED_AMBIENT_SPEECH_NATIVE, similar to DOES_CONTEXT_EXIST_FOR_THIS_PED
+
+## _0x9EB779765E68C52E
+`0x9EB779765E68C52E` | `void _0x9EB779765E68C52E(Any p0, Any p1)` | build 1207
+
+## _0xA2323A2EAE32A290
+`0xA2323A2EAE32A290` | `void _0xA2323A2EAE32A290(Ped listeningToPed, Ped ped, const char* listenerName)` | build 1207
+
+## _0xA2B851605748AD0E
+`0xA2B851605748AD0E` | `void _0xA2B851605748AD0E()` | build 1207
+
+## _0xA6847BBA4FCDD13F
+`0xA6847BBA4FCDD13F` | `void _0xA6847BBA4FCDD13F(Any p0, Any p1)` | build 1207
+
+## _0xA6A3A3F96B8B030E
+`0xA6A3A3F96B8B030E` | `Any _0xA6A3A3F96B8B030E()` | build 1207
+
+## _0xABDB4863D3D72021
+`0xABDB4863D3D72021` | `void _0xABDB4863D3D72021(Entity entity, Any p1, Any p2, float p3, Any p4)` | build 1207
+
+## _0xB93A769B8B726950
+`0xB93A769B8B726950` | `void _0xB93A769B8B726950(Ped ped, Hash p1)` | build 1207
+seems to be for moonshine_band stuff heres some hashes it accepts
+1949731019, -1542215752, 978192019 == moonshine_band, 533120, 1180906091, 1260094407, 1057811885, -1044357807,487746791,51469403
+
+## _0xBC07CA8FD710E7FD
+`0xBC07CA8FD710E7FD` | `void _0xBC07CA8FD710E7FD(Ped ped, Hash hash)` | build 1232
+_RESET_PED_* hash used is MOONSHINE_BAND used along side 0x018ABE833CA64D2A
+
+## _0xBE28DB99556FF8D9
+`0xBE28DB99556FF8D9` | `Hash _0xBE28DB99556FF8D9(Ped ped)` | build 1207
+Checks if ped  has moonshine_band _GET_PED_*
+
+## _0xC369E2234E34A0CA
+`0xC369E2234E34A0CA` | `Any _0xC369E2234E34A0CA(Any p0, Any p1)` | build 1207
+
+## _0xC4CFCE4C656EF480
+`0xC4CFCE4C656EF480` | `void _0xC4CFCE4C656EF480(Ped ped)` | build 1207
+
+## _0xC68C02DE259C927C
+`0xC68C02DE259C927C` | `Any _0xC68C02DE259C927C(Any p0)` | build 1232
+
+## _0xC886CD666ADD42E1
+`0xC886CD666ADD42E1` | `void _0xC886CD666ADD42E1(Any p0, Any p1)` | build 1207
+
+## _0xCBF2BEBB468A34F3
+`0xCBF2BEBB468A34F3` | `void _0xCBF2BEBB468A34F3(Any p0)` | build 1207
+
+## _0xCFAD2C8CD1054523
+`0xCFAD2C8CD1054523` | `void _0xCFAD2C8CD1054523(Any p0, Any p1, Any p2, Any p3)` | build 1207
+
+## _0xD05A460328560477
+`0xD05A460328560477` | `Any _0xD05A460328560477(Any p0)` | build 1232
+
+## _0xD0730C1FA40348D9
+`0xD0730C1FA40348D9` | `BOOL _0xD0730C1FA40348D9(const char* convoRoot)` | build 1207
+_IS_SCRIPTED_CONVERSATION_*
+
+## _0xD47D47EFBF103FB8
+`0xD47D47EFBF103FB8` | `void _0xD47D47EFBF103FB8(Any p0, Any p1)` | build 1207
+
+## _0xD733528B6C35647A
+`0xD733528B6C35647A` | `void _0xD733528B6C35647A(Any p0, Any p1)` | build 1207
+
+## _0xDAD6CD07CAA4F382
+`0xDAD6CD07CAA4F382` | `void _0xDAD6CD07CAA4F382()` | build 1207
+
+## _0xDC2F83A0612CA34D
+`0xDC2F83A0612CA34D` | `Any _0xDC2F83A0612CA34D(Any p0)` | build 1207
+
+## _0xDC93F0948F2C28F4
+`0xDC93F0948F2C28F4` | `void _0xDC93F0948F2C28F4(Any p0)` | build 1207
+
+## _0xDF947FE0D551684E
+`0xDF947FE0D551684E` | `BOOL _0xDF947FE0D551684E(Ped ped, const char* p1)` | build 1207
+
+## _0xE600F61F54A444A6
+`0xE600F61F54A444A6` | `Any _0xE600F61F54A444A6()` | build 1207
+
+## _0xE7E6CB8B713ED190
+`0xE7E6CB8B713ED190` | `void _0xE7E6CB8B713ED190()` | build 1207
+
+## _0xE891504B2F0E2DBA
+`0xE891504B2F0E2DBA` | `void _0xE891504B2F0E2DBA(Any p0, Any p1)` | build 1207
+
+## _0xE9694B2D6CB87B06
+`0xE9694B2D6CB87B06` | `void _0xE9694B2D6CB87B06(Ped ped, int p1)` | build 1232
+seems to be a _SET_PED_* that accepts p1 from GET_PED_SONG_INDEX_HOST
+
+## _0xEA546C31FD45F8CD
+`0xEA546C31FD45F8CD` | `void _0xEA546C31FD45F8CD(Any p0)` | build 1207
+
+## _0xEB4D592620B8C209
+`0xEB4D592620B8C209` | `void _0xEB4D592620B8C209(Any p0)` | build 1207
+
+## _0xF092B6030D6FD49C
+`0xF092B6030D6FD49C` | `void _0xF092B6030D6FD49C(int ropeId, const char* name)` | build 1207
+Name: ROPE_SETTINGS_DEFAULT
+
+## _0xF0EE69F500952FA5
+`0xF0EE69F500952FA5` | `Any _0xF0EE69F500952FA5(Any p0)` | build 1207
+
+## _0xF232C2C546AC16D0
+`0xF232C2C546AC16D0` | `void _0xF232C2C546AC16D0(const char* p0)` | build 1207
+
+## _0xF336E9F989B3518F
+`0xF336E9F989B3518F` | `int _0xF336E9F989B3518F(const char* p0)` | build 1207
+
+## _0xF64034D533CE8AAC
+`0xF64034D533CE8AAC` | `void _0xF64034D533CE8AAC(Any p0, Any p1, Any p2)` | build 1207
+
+## _0xFCDEC42B1C78B7F8
+`0xFCDEC42B1C78B7F8` | `void _0xFCDEC42B1C78B7F8(Any p0, Any p1)` | build 1207
+
+## _0xFD461D0ABA5559B1
+`0xFD461D0ABA5559B1` | `void _0xFD461D0ABA5559B1(Any p0, Any p1)` | build 1207
+
+## _0xFE5C6177064BD390
+`0xFE5C6177064BD390` | `BOOL _0xFE5C6177064BD390(BOOL p0)` | build 1207
+
+## _0xFFE9C53DEEA3DB0B
+`0xFFE9C53DEEA3DB0B` | `Any _0xFFE9C53DEEA3DB0B(Any p0, Any p1, float x, float y, float z, BOOL isSrlLoaded, Any p6)` | build 1207
+
+## _BLOCK_SPEECH_CONTEXT
+`0x6378A235374B852F` | `void _BLOCK_SPEECH_CONTEXT(char* context, BOOL block)` | build 1207
+
+## _CLEAR_CONVERSATION_HISTORY_FOR_SCRIPTED_CONVERSATION
+`0xEF51242E35242B47` | `void _CLEAR_CONVERSATION_HISTORY_FOR_SCRIPTED_CONVERSATION(char* convoRoot)` | build 1207
+
+## _CREATE_NEW_SCRIPTED_SPEECH
+`0x72E4D1C4639BC465` | `int _CREATE_NEW_SCRIPTED_SPEECH(Ped ped, Any params)` | build 1207
+Create a scripted speech to control speech. If handle is less than 0, it's invalid.
+params struct for ScriptedSpeechParams see: PLAY_PED_AMBIENT_SPEECH_NATIVE
+Returns scriptedSpeech handle.
+
+## _GET_ENTITY_AUDIO_MIX_GROUP
+`0x8B25A18E390F75BF` | `Hash _GET_ENTITY_AUDIO_MIX_GROUP(Entity entity)` | build 1207
+
+## _GET_LAST_PLAYED_SPEECH_FOR_PED
+`0x6BFFB7C276866996` | `Hash _GET_LAST_PLAYED_SPEECH_FOR_PED(Ped ped)` | build 1207
+Gets the hash for the last played speech line.
+
+## _GET_LOADED_STREAM_ID_FROM_CREATION
+`0x0556C784FA056628` | `int _GET_LOADED_STREAM_ID_FROM_CREATION(char* streamName, char* soundSet)` | build 1207
+Creates stream and returns streamId handle to be used with PLAY_STREAM_* natives
+https://github.com/femga/rdr3_discoveries/tree/master/audio/create_stream
+
+## _GET_PED_SONG_INDEX_HOST
+`0x2DBBF0C5E19383EE` | `int _GET_PED_SONG_INDEX_HOST(Ped ped)` | build 1232
+seems to be used for  0xE9694B2D6CB87B06
+
+## _HAS_SOUND_AUDIO_NAME_FINISHED
+`0x714A0EA7DE1167BE` | `BOOL _HAS_SOUND_AUDIO_NAME_FINISHED(char* audioName, char* soundsetName)` | build 1207
+
+## _HAS_SOUND_ID_FINISHED
+`0x84848E1C0FC67DBB` | `BOOL _HAS_SOUND_ID_FINISHED(int soundId)` | build 1207
+
+## _IS_ANY_CONVERSATION_PLAYING
+`0xA2CAC9DEF0195E6F` | `BOOL _IS_ANY_CONVERSATION_PLAYING(BOOL p0)` | build 1207
+
+## _IS_PED_IN_ANY_CONVERSATION
+`0x54B187F111D9C6F8` | `BOOL _IS_PED_IN_ANY_CONVERSATION(Ped ped, BOOL p1)` | build 1207
+
+## _IS_SCRIPTED_AUDIO_CUSTOM
+`0x6DF942C4179BE5AB` | `BOOL _IS_SCRIPTED_AUDIO_CUSTOM(Hash item, Hash soundSet)` | build 1207
+item: FUSE, value returned from 0x2E1CDC1FF3B8473E
+soundSet: HUD_SHOP_SOUNDSET, COMPANIONS_ROBBERIES_SOUNDSET
+
+## _IS_SCRIPTED_CONVERSATION_CREATED
+`0xD89504D9D7D5057D` | `BOOL _IS_SCRIPTED_CONVERSATION_CREATED(char* convoRoot)` | build 1207
+
+## _IS_SCRIPTED_CONVERSION_ONGOING
+`0xF01C570E0A0A1E67` | `BOOL _IS_SCRIPTED_CONVERSION_ONGOING(char* p0)` | build 1207
+
+## _PLAY_ANIMAL_VOCALIZATION_PHEROMONE_VIAL_RESPONSE
+`0x0E53530D9B2DB01D` | `void _PLAY_ANIMAL_VOCALIZATION_PHEROMONE_VIAL_RESPONSE(Ped ped, Hash p1, BOOL p2)` | build 1311
+
+## _PLAY_SOUND_FROM_ENTITY_WITH_SET
+`0xF1C5310FEAA36B48` | `void _PLAY_SOUND_FROM_ENTITY_WITH_SET(int soundId, char* soundName, Entity entity, char* soundsetName, BOOL p4, Any p5)` | build 1207
+Params: p5 seems to be always 0
+
+## _PLAY_SOUND_FROM_ITEM
+`0xE8EAFF7B41EDD291` | `void _PLAY_SOUND_FROM_ITEM(Hash item, Hash soundSet, Any p2)` | build 1207
+item: value returned from 0x2E1CDC1FF3B8473E
+soundSet: HUD_SHOP_SOUNDSET, COMPANIONS_ROBBERIES_SOUNDSET
+
+## _PLAY_SOUND_FROM_POSITION_WITH_ID
+`0xDCF5BA95BBF0FABA` | `void _PLAY_SOUND_FROM_POSITION_WITH_ID(int soundId, char* soundName, float x, float y, float z, char* soundsetName, BOOL p6, int p7, BOOL p8)` | build 1207
+Starts Audio Loop
+_PLAY_SOUND_FROM_ENTITY* - _PLAY_SOUND_FRONTEND*
+
+## _PLAY_SOUND_FROM_SCRIPTED_SPEECH
+`0xB18FEC133C7C6C69` | `Any _PLAY_SOUND_FROM_SCRIPTED_SPEECH(int scriptedSpeech)` | build 1207
+Play/advance a scripted speech created via _CREATE_NEW_SCRIPTED_PED_AMBIENT_SPEECH and return a status code.
+Return values:
+  0 = not ready/invalid/failed
+  1 = started/playing
+  2 = finished/consumed (you can drop the handle)
+Typical usage: poll this in a tick after creating the speech; when it returns 2, clear your handle.
+
+## _PLAY_SOUND_FRONTEND_WITH_SOUND_ID
+`0xCE5D0FFE83939AF1` | `void _PLAY_SOUND_FRONTEND_WITH_SOUND_ID(int soundId, char* name, char* soundSet, BOOL p3)` | build 1207
+
+## _RELEASE_SHARD_SOUNDS
+`0x9D746964E0CF2C5F` | `void _RELEASE_SHARD_SOUNDS(char* soundName, char* soundsetName)` | build 1207
+
+## _RELEASE_SOUNDSET
+`0x531A78D6BF27014B` | `void _RELEASE_SOUNDSET(char* soundsetName)` | build 1207
+
+## _SET_AMBIENT_ZONE_POSITION
+`0x3743CE6948194349` | `void _SET_AMBIENT_ZONE_POSITION(char* ambientZone, float x, float y, float z, float heading)` | build 1207
+
+## _SET_AUDIO_SCENESET
+`0xAC84686C06184B0D` | `BOOL _SET_AUDIO_SCENESET(char* audioName, char* sceneset)` | build 1207
+
+## _SET_SOUND_RELATIONSHIP_ON_PED
+`0x2E31ACA7477CF00F` | `void _SET_SOUND_RELATIONSHIP_ON_PED(Ped ped, char* p1, char* p2)` | build 1207
+p1: Entity.Relationship
+p2: Player, Enemy, Teammate, Neutral
+
+## _SET_VARIABLE_ON_SOUND_WITH_NAME
+`0x9821B68CD3E05F2B` | `void _SET_VARIABLE_ON_SOUND_WITH_NAME(char* variableName, float variableValue, char* audioName, char* audioRef)` | build 1207
+
+## _SET_VOFX_PED_VOICE
+`0x2703EFB583F0949A` | `void _SET_VOFX_PED_VOICE(Ped ped, Hash voice)` | build 1207
+Hashes: VOFX_PLAYER_MALE01, VOFX_PLAYER_MALE02, VOFX_PLAYER_MALE03, VOFX_PLAYER_FEMALE01, VOFX_PLAYER_FEMALE02, VOFX_PLAYER_FEMALE03
+
+## _SET_WHISTLE_CONFIG_FOR_PED
+`0x9963681A8BC69BF3` | `void _SET_WHISTLE_CONFIG_FOR_PED(Ped ped, char* whistleConfig, float value)` | build 1207
+whistleConfig: Ped.WhistlePitch (0.0 - 1.0), Ped.WhistleClarity (0.0 - 1.0), Ped.WhistleShape (0.0 - 10.0)
+
+## _START_AUDIO_SCENESET
+`0x6339C1EA3979B5F7` | `BOOL _START_AUDIO_SCENESET(char* audioName, char* sceneset)` | build 1207
+
+## _STOP_ALL_SCRIPTED_AUDIO_SOUNDS
+`0x2E399EAFBEEA74D5` | `void _STOP_ALL_SCRIPTED_AUDIO_SOUNDS()` | build 1207
+
+## _STOP_ALL_SCRIPTED_CONVERSIONS
+`0x36559148B78853B3` | `void _STOP_ALL_SCRIPTED_CONVERSIONS(BOOL p0, BOOL p1, BOOL p2)` | build 1207
+
+## _STOP_AUDIO_SCENESET
+`0x9428447DED71FC7E` | `void _STOP_AUDIO_SCENESET(char* sceneset)` | build 1207
+
+## _STOP_SOUND_WITH_NAME
+`0x0F2A2175734926D8` | `void _STOP_SOUND_WITH_NAME(char* audioName, char* audioRef)` | build 1207
+
+## _TRIGGER_MUSIC_EVENT_WITH_HASH
+`0x05D6195FB4D428F4` | `Any _TRIGGER_MUSIC_EVENT_WITH_HASH(Hash eventName)` | build 1207
+
+## _UNLOAD_SPEECH_CONTEXT
+`0x87E6302FC61208CC` | `void _UNLOAD_SPEECH_CONTEXT(char* speechContext)` | build 1207
+_UNLOAD_[A-C]* - USE_*

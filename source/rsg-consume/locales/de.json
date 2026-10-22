@@ -1,0 +1,12 @@
+{
+    "title_consume": "Verzehren",
+    "busy": "Du isst oder trinkst bereits",
+    "drunk_title": "🍺 Betrunken",
+    "drunk_desc": "Du fühlst dich langsam beschwipst...",
+    "passout_title": "💀 Unwohlsein",
+    "passout_desc": "Dir geht es gar nicht gut...",
+    "wakeup_title": "🤕 Böses Erwachen",
+    "wakeup_desc": "Du wachst mit furchtbaren Kopfschmerzen auf...",
+    "sober_title": "✨ Erholt",
+    "sober_desc": "Du hast wieder einen klaren Kopf."
+}

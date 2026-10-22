@@ -1,0 +1,14 @@
+{
+    "notify_title": "水筒",
+    "target_fill": "水筒に水を入れる",
+    "progress_fill": "水筒に水を入れています...",
+    "progress_drink": "飲んでいます...",
+    "no_canteen": "水筒が必要です",
+    "canteen_empty": "水筒が空です。井戸ポンプで水を入れてください",
+    "canteens_full": "水筒はすでに満タンです",
+    "canteen_filled": "水筒に水を入れました（%s 回分）",
+    "drank": "水を飲みました（残り %s/%s 回）",
+    "too_far": "ポンプから離れすぎています",
+    "busy": "他の動作中です",
+    "target_fill_water": "水筒に水を汲む"
+}

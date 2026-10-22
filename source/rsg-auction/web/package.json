@@ -1,0 +1,30 @@
+{
+  "name": "rsg-auction-web",
+  "version": "1.0.0",
+  "scripts": {
+    "build:js": "esbuild index.tsx --bundle --outfile=dist/index.js --target=es2020 --jsx=automatic --jsx-import-source=react --minify",
+    "build:js:dev": "esbuild index.tsx --bundle --outfile=dist/index.js --target=es2020 --jsx=automatic --jsx-import-source=react",
+    "build:css": "tailwindcss -i ./styles.css -o ./dist/index.css --minify",
+    "build:css:dev": "tailwindcss -i ./styles.css -o ./dist/index.css",
+    "build": "npm run build:js && npm run build:css",
+    "build:dev": "npm run build:js:dev && npm run build:css:dev"
+  },
+  "dependencies": {
+    "lucide-react": "^0.460.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "autoprefixer": "^10.4.20",
+    "esbuild": "^0.28.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.0.0"
+  },
+  "main": "/web/index.tsx",
+  "allowScripts": {
+    "esbuild@0.28.0": true
+  }
+}

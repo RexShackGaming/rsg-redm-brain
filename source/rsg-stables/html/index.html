@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>rsg-stables</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app" class="hidden">
+    <!-- Main menu panel -->
+    <div id="panel" class="panel hidden">
+      <div class="panel-header">
+        <button id="backBtn" class="chevron-btn hidden" title="Back" data-i18n-title="ui_back">&#10094;</button>
+        <div class="header-text">
+          <h1 id="panelTitle" data-i18n="ui_stable">Stable</h1>
+          <p id="panelSubtitle" class="subtitle"></p>
+        </div>
+        <button id="closeBtn" class="seal-btn" title="Close" data-i18n-title="ui_close">&#10005;</button>
+      </div>
+      <div class="panel-divider"><span>&#10022;</span></div>
+      <div id="panelHint" class="panel-hint hidden"></div>
+      <div id="optionsList" class="options-list"></div>
+
+      <!-- Tack style picker: replaces optionsList while cycling one category's styles -->
+      <div id="tackPicker" class="tack-picker hidden">
+        <div id="tackCategoryDots" class="tack-dots"></div>
+
+        <div class="tack-style-row">
+          <button id="tackPrevStyle" class="chevron-btn" title="Previous style (&#8592;)" data-i18n-title="ui_prev_style">&#10094;</button>
+          <div class="tack-style-card">
+            <div id="tackStyleName" class="tack-style-name">Style</div>
+            <div id="tackStyleMeta" class="tack-style-meta">$0</div>
+            <div id="tackStyleIndex" class="tack-style-index">1 / 1</div>
+          </div>
+          <button id="tackNextStyle" class="chevron-btn" title="Next style (&#8594;)" data-i18n-title="ui_next_style">&#10095;</button>
+        </div>
+
+        <div class="tack-hint" data-i18n="ui_tack_hint">&#8592; / &#8594; cycle styles &nbsp;&#8226;&nbsp; &#8593; / &#8595; or Enter next category</div>
+
+        <div id="tackCostTotal" class="tack-cost">Total Spend: $0</div>
+
+        <div class="tack-nav-row">
+          <button id="tackPrevCategory" class="wood-btn wood-btn-muted" data-i18n="ui_prev_category">&#10094; Category</button>
+          <button id="tackNextCategory" class="wood-btn" data-i18n="ui_next_category">Next Category &#10095;</button>
+        </div>
+      </div>
+
+      <!-- Coat colour editor: sliders for coat / markings / nose / mane / tail -->
+      <div id="coatPicker" class="coat-picker hidden">
+        <div class="coat-presets-label" data-i18n="ui_coat_presets">Presets</div>
+        <div id="coatPresets" class="coat-presets"></div>
+        <div id="coatRows" class="coat-rows"></div>
+        <div id="coatCost" class="tack-cost">Total Spend: $0</div>
+        <div class="tack-nav-row">
+          <button id="coatResetBtn" class="wood-btn wood-btn-muted" data-i18n="ui_coat_reset">Restore Natural</button>
+          <button id="coatApplyBtn" class="wood-btn">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input modal -->
+    <div id="inputModal" class="modal hidden">
+      <div class="modal-card">
+        <h2 id="inputTitle">Title</h2>
+        <div class="ink-divider"></div>
+        <input id="inputField" type="text" maxlength="40" autocomplete="off" />
+        <div class="modal-actions">
+          <button id="inputCancelBtn" class="wood-btn wood-btn-muted" data-i18n="ui_cancel">Cancel</button>
+          <button id="inputSubmitBtn" class="wood-btn" data-i18n="ui_confirm">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alert modal -->
+    <div id="alertModal" class="modal hidden">
+      <div class="modal-card">
+        <h2 id="alertHeader" data-i18n="ui_notice">Notice</h2>
+        <div class="ink-divider"></div>
+        <p id="alertContent" class="alert-content"></p>
+        <div class="modal-actions modal-actions-center">
+          <button id="alertOkBtn" class="wood-btn" data-i18n="ui_understood">Understood</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Horse stats modal: bar readout instead of a plain-text alert -->
+    <div id="statsModal" class="modal hidden">
+      <div class="modal-card stats-card">
+        <h2 id="statsHeader" data-i18n="ui_horse_stats">Horse Stats</h2>
+        <div class="ink-divider"></div>
+        <div id="statsList" class="stats-list"></div>
+        <div class="modal-actions modal-actions-center">
+          <button id="statsOkBtn" class="wood-btn" data-i18n="ui_close">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

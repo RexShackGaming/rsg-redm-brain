@@ -1,0 +1,257 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   RDR2 Leather & Gold theme (monochrome accent, no vignette)
+   ============================================ */
+:root {
+  --rdr-black: #000000;
+  --rdr-panel: #0a0a0a;
+  --rdr-panel-2: #141414;
+  --rdr-leather: #1c1c1c;
+  --rdr-red: #4a4a4a;
+  --rdr-red-bright: #2a2a2a;
+  --rdr-gold: #ffffff;
+  --rdr-gold-dim: #5a5a5a;
+  --rdr-parchment: #ffffff;
+  --rdr-text: #f2f2f2;
+  --rdr-muted: #9a9a9a;
+  --rdr-green: #5a7d4f;
+  --rdr-cost-ok: #6fbf73;
+  --rdr-cost-over: #e0554f;
+  --rdr-amber: #d9a441;
+  --rdr-shadow: rgba(0, 0, 0, 0.85);
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+  font-family: 'Roboto', sans-serif;
+  color: var(--rdr-text);
+}
+
+.hidden { display: none; }
+
+::selection { background: rgba(255, 255, 255, 0.2); color: #fff; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.35); }
+::-webkit-scrollbar-thumb { background: var(--rdr-gold-dim); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--rdr-gold); }
+
+/* ---------- Panel chrome (double engraved border) ---------- */
+.rdr-panel {
+  position: relative;
+  border: 1px solid var(--rdr-gold-dim) !important;
+  border-radius: 3px;
+  outline: 1px solid rgba(0, 0, 0, 0.6);
+  outline-offset: -5px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 3px),
+    linear-gradient(160deg, var(--rdr-panel-2), var(--rdr-panel) 60%, var(--rdr-black)) !important;
+  box-shadow: 0 20px 60px var(--rdr-shadow), inset 0 0 40px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------- Header ---------- */
+.rdr-title {
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--rdr-parchment);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+}
+.rdr-subtitle {
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--rdr-muted);
+}
+
+.rdr-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--rdr-gold-dim);
+  font-size: 10px;
+  margin: 10px 0 2px;
+}
+.rdr-divider::before,
+.rdr-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+}
+.rdr-divider::before { background: linear-gradient(90deg, transparent, var(--rdr-gold-dim)); }
+.rdr-divider::after { background: linear-gradient(270deg, transparent, var(--rdr-gold-dim)); }
+
+.ink-divider {
+  width: 70%;
+  height: 1px;
+  margin: 8px auto;
+  background: linear-gradient(90deg, transparent, var(--rdr-gold-dim), transparent);
+}
+
+/* Circular icon button (close / back) */
+.rdr-icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rdr-muted);
+  background: radial-gradient(circle at 35% 30%, #2e2e2e, #0a0a0a 70%);
+  border: 1px solid var(--rdr-gold-dim);
+  transition: all 0.15s ease;
+}
+.rdr-icon-btn:hover { color: var(--rdr-gold); border-color: var(--rdr-gold); filter: brightness(1.3); }
+
+/* ---------- Rows / cards ---------- */
+.rdr-row {
+  border-radius: 2px !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.15)) !important;
+  border: 1px solid rgba(201, 162, 75, 0.18) !important;
+  transition: all 0.15s ease !important;
+}
+.rdr-row:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.1)) !important;
+  border-color: var(--rdr-gold-dim) !important;
+  transform: translateX(2px) !important;
+}
+.rdr-row.is-active { border-color: var(--rdr-gold) !important; }
+
+/* Category/badge pills */
+.rdr-pill {
+  border: 1px solid var(--rdr-gold-dim);
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ---------- Buttons ("wood") ----------
+   Primary action buttons in App.tsx use solid accent/green/red fills; those become the
+   wood treatment, and secondary stone-800 buttons become the muted variant. */
+.wood-btn,
+button[class*="bg-amber-6"], button[class*="bg-amber-7"],
+button[class*="bg-emerald-6"], button[class*="bg-emerald-7"],
+button[class*="bg-green-6"], button[class*="bg-green-7"],
+button[class*="bg-red-7"], button[class*="bg-red-8"] {
+  background: linear-gradient(180deg, #2e2e2e, #141414) !important;
+  border: 1px solid var(--rdr-gold-dim) !important;
+  border-radius: 2px !important;
+  color: var(--rdr-text) !important;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.wood-btn:hover:not(:disabled),
+button[class*="bg-amber-6"]:hover:not(:disabled), button[class*="bg-amber-7"]:hover:not(:disabled),
+button[class*="bg-emerald-6"]:hover:not(:disabled), button[class*="bg-emerald-7"]:hover:not(:disabled),
+button[class*="bg-green-6"]:hover:not(:disabled), button[class*="bg-green-7"]:hover:not(:disabled),
+button[class*="bg-red-7"]:hover:not(:disabled), button[class*="bg-red-8"]:hover:not(:disabled) {
+  border-color: var(--rdr-gold) !important;
+  filter: brightness(1.3);
+}
+/* Semantic accents on the wood: buy/collect (green) and destructive (red) */
+button[class*="bg-emerald-6"], button[class*="bg-emerald-7"],
+button[class*="bg-green-6"], button[class*="bg-green-7"] { color: var(--rdr-cost-ok) !important; }
+button[class*="bg-red-7"], button[class*="bg-red-8"] { color: var(--rdr-cost-over) !important; }
+
+.wood-btn-muted,
+button[class*="bg-stone-800"]:not(.rdr-nav) {
+  background: linear-gradient(180deg, #1c1c1c, #0a0a0a) !important;
+  border: 1px solid var(--rdr-gold-dim);
+  border-radius: 2px !important;
+  color: var(--rdr-muted) !important;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-size: 12.5px;
+}
+button[class*="bg-stone-800"]:not(.rdr-nav):hover:not(:disabled) {
+  border-color: var(--rdr-gold);
+  filter: brightness(1.3);
+}
+
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Sidebar navigation */
+.rdr-nav {
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-size: 12px !important;
+  border: 1px solid transparent;
+  border-radius: 2px !important;
+}
+.rdr-nav:hover { border-color: rgba(201, 162, 75, 0.18); }
+.rdr-nav.is-active {
+  background: linear-gradient(180deg, #2e2e2e, #141414) !important;
+  border-color: var(--rdr-gold-dim);
+  color: var(--rdr-gold) !important;
+}
+
+/* ---------- Inputs ---------- */
+input, select, textarea {
+  background: rgba(0, 0, 0, 0.35) !important;
+  border: 1px solid var(--rdr-gold-dim) !important;
+  border-radius: 2px !important;
+  color: var(--rdr-text) !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--rdr-gold) !important;
+  box-shadow: 0 0 0 2px rgba(201, 162, 75, 0.15) !important;
+}
+select option { background: var(--rdr-panel-2); color: var(--rdr-text); }
+input::placeholder { color: var(--rdr-muted); font-style: italic; }
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; }
+
+/* ---------- Toasts ---------- */
+.rdr-toast {
+  border: 1px solid var(--rdr-gold-dim);
+  border-left-width: 4px;
+  border-radius: 3px;
+  background: linear-gradient(160deg, var(--rdr-panel-2), var(--rdr-panel) 60%, var(--rdr-black));
+  box-shadow: 0 10px 30px var(--rdr-shadow);
+  animation: rdrToastIn 0.25s ease;
+}
+.rdr-toast.t-success { border-left-color: var(--rdr-cost-ok); }
+.rdr-toast.t-error { border-left-color: var(--rdr-cost-over); }
+.rdr-toast.t-warning { border-left-color: var(--rdr-amber); }
+.rdr-toast.t-info { border-left-color: var(--rdr-gold); }
+.rdr-toast-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--rdr-muted);
+}
+@keyframes rdrToastIn {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ---------- Misc ---------- */
+@keyframes pulse-warning { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+.ending-soon { animation: pulse-warning 1.5s ease-in-out infinite; }
+
+@keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }
+.skeleton {
+  background: linear-gradient(90deg, #141414 0px, #2a2a2a 40px, #141414 80px);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Secondary/descriptive text */
+.rdr-desc { font-style: italic; color: var(--rdr-muted); }

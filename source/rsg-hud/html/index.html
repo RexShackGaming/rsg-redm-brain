@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.prod.js" defer></script>
+    <script src="app.js" defer></script>
+</head>
+
+<body>
+    <div id="main-container">
+        <div id="money-container" class="draggable-element" data-element="money">
+            <div class="drag-handle" v-show="editMode">{{ locales.money_hud_label || 'Money' }}</div>
+            <div class="resize-handle" v-show="editMode"></div>
+            <div id="money-cash" class="money-chip">
+                <transition name="slide-fade">
+                    <div class="money-line" v-if="showCash"><i class="fa-solid fa-money-bill"></i><span class="money-value">{{ formatMoney(cash) }}</span></div>
+                </transition>
+            </div>
+            <div id="money-bloodmoney" class="money-chip money-chip-blood">
+                <transition name="slide-fade">
+                    <div class="money-line" v-if="showBloodmoney"><i class="fa-solid fa-droplet"></i><span class="money-value">{{ formatMoney(bloodmoney) }}</span></div>
+                </transition>
+            </div>
+            <div id="money-bank" class="money-chip">
+                <transition name="slide-fade">
+                    <div class="money-line" v-if="showBank"><i class="fa-solid fa-building-columns"></i><span class="money-value">{{ formatMoney(bank) }}</span></div>
+                </transition>
+            </div>
+            <div id="money-change" class="money-chip money-chip-change" v-if="showUpdate">
+                <div class="money-line"><span class="money-delta" :class="minus ? 'money-delta-minus' : 'money-delta-plus'">{{ minus ? '-' : '+' }}&nbsp;{{ formatMoney(amount) }}</span></div>
+            </div>
+        </div>
+        <div id="ui-container">
+            <div id="playerHud" v-show="show || editMode" :class="{ 'no-pct': !showPct }">
+                <div id="mini-badges">
+                    <div class="mini-badge draggable-element" data-element="mail" :class="{ hasmail: youhavemail }" :style="{ color: iconColor('mail', youhavemail) }" v-show="vis.mail">
+                        <div class="drag-handle" v-show="editMode">{{ locales.mail_label || 'Mail' }}</div>
+                        <div class="resize-handle" v-show="editMode"></div>
+                        <i class="fa-regular fa-envelope"></i>
+                    </div>
+                    <div class="mini-badge draggable-element" data-element="outlaw" :class="{ outlaw: isOutlaw }" :style="{ color: iconColor('outlaw', isOutlaw) }" v-show="vis.outlaw">
+                        <div class="drag-handle" v-show="editMode">{{ locales.outlaw_label || 'Outlaw' }}</div>
+                        <div class="resize-handle" v-show="editMode"></div>
+                        <i class="fa-solid fa-mask"></i>
+                    </div>
+                </div>
+
+                <div id="stat-strip">
+                    <div class="stat-group stat-group-player">
+                        <div class="mini-badge voice-inline draggable-element" data-element="voice" v-show="vis.voice" :style="{ color: iconColor('voice', talking) }" :class="{ talking }">
+                        <div class="drag-handle" v-show="editMode">{{ locales.voice_label || 'Voice' }}</div>
+                        <div class="resize-handle" v-show="editMode"></div>
+                        <i class="fa-solid fa-microphone"></i>
+                    </div>
+                        <div class="stat-row draggable-element stat-circle" data-element="health" v-show="vis.health">
+                            <div class="drag-handle" v-show="editMode">{{ locales.health_label || 'Health' }}</div>
+                            <div class="resize-handle" v-show="editMode"></div>
+                            <svg class="stat-ring" viewBox="0 0 36 36"><circle class="ring-track" cx="18" cy="18" r="15.5"/><circle class="ring-fill" :class="barClass(health)" cx="18" cy="18" r="15.5" :style="{ strokeDasharray: clampPct(health) + ' 100' }"/></svg>
+                            <div class="stat-circle-inner"><span class="stat-icon" :style="{ color: iconColor('health', health <= 30) }"><i class="fa-solid fa-heart-pulse"></i></span><span class="stat-pct" v-show="showPct">{{ Math.round(health) }}%</span></div>
+                        </div>
+
+                        <div class="stat-row draggable-element stat-circle" data-element="stamina" v-show="vis.stamina">
+                            <div class="drag-handle" v-show="editMode">{{ locales.stamina_label || 'Stamina' }}</div>
+                            <div class="resize-handle" v-show="editMode"></div>
+                            <svg class="stat-ring" viewBox="0 0 36 36"><circle class="ring-track" cx="18" cy="18" r="15.5"/><circle class="ring-fill" :class="barClass(stamina)" cx="18" cy="18" r="15.5" :style="{ strokeDasharray: clampPct(stamina) + ' 100' }"/></svg>
+                            <div class="stat-circle-inner"><span class="stat-icon" :style="{ color: iconColor('stamina', stamina <= 30) }"><i class="fa-solid fa-bolt"></i></span><span class="stat-pct" v-show="showPct">{{ Math.round(stamina) }}%</span></div>
+                        </div>
+
+                        <div class="stat-row draggable-element stat-circle" data-element="hunger" v-show="vis.hunger">
+                            <div class="drag-handle" v-show="editMode">{{ locales.hunger_label || 'Hunger' }}</div>
+                            <div class="resize-handle" v-show="editMode"></div>
+                            <svg class="stat-ring" viewBox="0 0 36 36"><circle class="ring-track" cx="18" cy="18" r="15.5"/><circle class="ring-fill" :class="barClass(hunger)" cx="18" cy="18" r="15.5" :style="{ strokeDasharray: clampPct(hunger) + ' 100' }"/></svg>
+                            <div class="stat-circle-inner"><span class="stat-icon" :style="{ color: iconColor('hunger', hunger <= 30) }"><i class="fa-solid fa-drumstick-bite"></i></span><span class="stat-pct" v-show="showPct">{{ Math.round(hunger) }}%</span></div>
+                        </div>
+
+                        <div class="stat-row draggable-element stat-circle" data-element="thirst" v-show="vis.thirst">
+                            <div class="drag-handle" v-show="editMode">{{ locales.thirst_label || 'Thirst' }}</div>
+                            <div class="resize-handle" v-show="editMode"></div>
+                            <svg class="stat-ring" viewBox="0 0 36 36"><circle class="ring-track" cx="18" cy="18" r="15.5"/><circle class="ring-fill" :class="barClass(thirst)" cx="18" cy="18" r="15.5" :style="{ strokeDasharray: clampPct(thirst) + ' 100' }"/></svg>
+                            <div class="stat-circle-inner"><span class="stat-icon" :style="{ color: iconColor('thirst', thirst <= 30) }"><i class="fa-solid fa-droplet"></i></span><span class="stat-pct" v-show="showPct">{{ Math.round(thirst) }}%</span></div>
+                        </div>
+
+                        <div class="stat-row draggable-element stat-circle" data-element="cleanliness" v-show="vis.cleanliness">
+                            <div class="drag-handle" v-show="editMode">{{ locales.clean_label || 'Clean' }}</div>
+                            <div class="resize-handle" v-show="editMode"></div>
+                            <svg class="stat-ring" viewBox="0 0 36 36"><circle class="ring-track" cx="18" cy="18" r="15.5"/><circle class="ring-fill" :class="barClass(cleanliness)" cx="18" cy="18" r="15.5" :style="{ strokeDasharray: clampPct(cleanliness) + ' 100' }"/></svg>
+                            <div class="stat-circle-inner"><span class="stat-icon" :style="{ color: iconColor('cleanliness', cleanliness <= 30) }"><i class="fa-solid fa-pump-soap"></i></span><span class="stat-pct" v-show="showPct">{{ Math.round(cleanliness) }}%</span></div>
+                        </div>
+
+                        <div class="stat-row draggable-element stat-circle" data-element="stress" v-show="vis.stress">
+                            <div class="drag-handle" v-show="editMode">{{ locales.stress_label || 'Stress' }}</div>
+                            <div class="resize-handle" v-show="editMode"></div>
+                            <svg class="stat-ring" viewBox="0 0 36 36"><circle class="ring-track" cx="18" cy="18" r="15.5"/><circle class="ring-fill" :class="barClassInvert(stress)" cx="18" cy="18" r="15.5" :style="{ strokeDasharray: clampPct(stress) + ' 100' }"/></svg>
+                            <div class="stat-circle-inner"><span class="stat-icon" :style="{ color: iconColor('stress', stress >= 70) }"><i class="fa-solid fa-brain"></i></span><span class="stat-pct" v-show="showPct">{{ Math.round(stress) }}%</span></div>
+                        </div>
+
+                        <div class="stat-row draggable-element stat-circle" data-element="temp" v-show="vis.temp">
+                            <div class="drag-handle" v-show="editMode">{{ locales.temp_label || 'Temp' }}</div>
+                            <div class="resize-handle" v-show="editMode"></div>
+                            <svg class="stat-ring" viewBox="0 0 36 36"><circle class="ring-track" cx="18" cy="18" r="15.5"/><circle class="ring-fill" :class="tempClass" cx="18" cy="18" r="15.5" :style="{ strokeDasharray: tempPct + ' 100' }"/></svg>
+                            <div class="stat-circle-inner"><span class="stat-icon" :style="{ color: tempColor }"><i class="fa-solid fa-temperature-half"></i></span><span class="stat-pct" v-show="showPct">{{ temp }}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="stat-group stat-group-horse" v-show="vis.horse">
+                        <div class="stat-group-rows">
+                            <div class="stat-row draggable-element stat-circle horse-stat" data-element="horse-health" v-show="vis.horse">
+                                <div class="drag-handle" v-show="editMode">{{ locales.horse_health_label || 'Horse HP' }}</div>
+                                <div class="resize-handle" v-show="editMode"></div>
+                                <span class="horse-tag"><i class="fa-solid fa-horse-head"></i></span>
+                                <svg class="stat-ring" viewBox="0 0 36 36"><circle class="ring-track" cx="18" cy="18" r="15.5"/><circle class="ring-fill" :class="barClass(horsehealth)" cx="18" cy="18" r="15.5" :style="{ strokeDasharray: clampPct(horsehealth) + ' 100' }"/></svg>
+                                <div class="stat-circle-inner"><span class="stat-icon" :style="{ color: iconColor('horse_health', horsehealth <= 30) }"><i class="fa-solid fa-heart"></i></span><span class="stat-pct" v-show="showPct">{{ Math.round(horsehealth) }}%</span></div>
+                            </div>
+
+                            <div class="stat-row draggable-element stat-circle horse-stat" data-element="horse-stamina" v-show="vis.horse">
+                                <div class="drag-handle" v-show="editMode">{{ locales.horse_stamina_label || 'Horse SP' }}</div>
+                                <div class="resize-handle" v-show="editMode"></div>
+                                <span class="horse-tag"><i class="fa-solid fa-horse-head"></i></span>
+                                <svg class="stat-ring" viewBox="0 0 36 36"><circle class="ring-track" cx="18" cy="18" r="15.5"/><circle class="ring-fill" :class="barClass(horsestamina)" cx="18" cy="18" r="15.5" :style="{ strokeDasharray: clampPct(horsestamina) + ' 100' }"/></svg>
+                                <div class="stat-circle-inner"><span class="stat-icon" :style="{ color: iconColor('horse_stamina', horsestamina <= 30) }"><i class="fa-solid fa-bolt"></i></span><span class="stat-pct" v-show="showPct">{{ Math.round(horsestamina) }}%</span></div>
+                            </div>
+
+                            <div class="stat-row draggable-element stat-circle horse-stat" data-element="horse-clean" v-show="vis.horse">
+                                <div class="drag-handle" v-show="editMode">{{ locales.horse_clean_label || 'Horse Clean' }}</div>
+                                <div class="resize-handle" v-show="editMode"></div>
+                                <span class="horse-tag"><i class="fa-solid fa-horse-head"></i></span>
+                                <svg class="stat-ring" viewBox="0 0 36 36"><circle class="ring-track" cx="18" cy="18" r="15.5"/><circle class="ring-fill" :class="barClass(horseclean)" cx="18" cy="18" r="15.5" :style="{ strokeDasharray: clampPct(horseclean) + ' 100' }"/></svg>
+                                <div class="stat-circle-inner"><span class="stat-icon" :style="{ color: iconColor('horse_clean', horseclean <= 30) }"><i class="fa-solid fa-pump-soap"></i></span><span class="stat-pct" v-show="showPct">{{ Math.round(horseclean) }}%</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="preset-menu" class="hidden" v-cloak>
+            <div class="preset-panel" v-if="open">
+                <div class="preset-header">
+                    <div class="preset-title">{{ t('preset_title', 'HUD Preset') }}</div>
+                    <div class="preset-subtitle">{{ t('preset_subtitle', 'Layout Presets') }}</div>
+                    <button class="circle-btn preset-close" @click="cancel"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="ornament-divider"><span>&#10022;</span></div>
+
+                <div class="preset-section">
+                    <div class="preset-label">{{ t('preset_size', 'Icon Size') }}</div>
+                    <div class="preset-options cols-3">
+                        <button v-for="s in sizes" :key="s" class="preset-opt" :class="{ active: preset.size === s }" @click="pick('size', s)">
+                            <span class="size-dot" :class="'dot-' + s"></span>{{ t('preset_size_' + s, s) }}
+                        </button>
+                    </div>
+                </div>
+
+                <div class="preset-section">
+                    <div class="preset-label">{{ t('preset_align', 'Position') }}</div>
+                    <div class="preset-screen">
+                        <button v-for="a in aligns" :key="a" class="screen-spot" :class="['spot-' + a, { active: preset.align === a }]" @click="pick('align', a)" :title="t('preset_align_' + a.replace('-', '_'), a)">
+                            <span class="spot-bar" :class="preset.orientation"></span>
+                        </button>
+                    </div>
+                    <div class="preset-current">{{ t('preset_align_' + preset.align.replace('-', '_'), preset.align) }}</div>
+                </div>
+
+                <div class="preset-section">
+                    <div class="preset-label">{{ t('preset_orientation', 'Layout') }}</div>
+                    <div class="preset-options cols-2">
+                        <button v-for="o in orientations" :key="o" class="preset-opt" :class="{ active: preset.orientation === o }" @click="pick('orientation', o)">
+                            <i class="fa-solid" :class="o === 'horizontal' ? 'fa-grip' : 'fa-grip-vertical'"></i>{{ t('preset_orient_' + o, o) }}
+                        </button>
+                    </div>
+                </div>
+
+                <div class="preset-section">
+                    <div class="preset-label">{{ t('preset_offset', 'Fine Position') }}</div>
+                    <div class="offset-box">
+                        <div class="arrow-pad">
+                            <span class="key k-up" :class="{ pressed: pressed === 'ArrowUp' }" @click="nudge(0, -1, false)"><i class="fa-solid fa-caret-up"></i></span>
+                            <span class="key k-left" :class="{ pressed: pressed === 'ArrowLeft' }" @click="nudge(-1, 0, false)"><i class="fa-solid fa-caret-left"></i></span>
+                            <span class="key k-down" :class="{ pressed: pressed === 'ArrowDown' }" @click="nudge(0, 1, false)"><i class="fa-solid fa-caret-down"></i></span>
+                            <span class="key k-right" :class="{ pressed: pressed === 'ArrowRight' }" @click="nudge(1, 0, false)"><i class="fa-solid fa-caret-right"></i></span>
+                        </div>
+                        <div class="offset-readout">
+                            <div class="offset-val"><span>X</span><b :class="{ bump: bumpX }">{{ fmt(preset.offsetX) }}</b></div>
+                            <div class="offset-val"><span>Y</span><b :class="{ bump: bumpY }">{{ fmt(preset.offsetY) }}</b></div>
+                            <button class="wood-btn muted small" @click="resetOffset" :disabled="!preset.offsetX && !preset.offsetY">{{ t('preset_offset_reset', 'Reset') }}</button>
+                        </div>
+                    </div>
+                    <div class="preset-current">{{ t('preset_offset_hint', 'Arrow keys to move · Shift for bigger steps') }}</div>
+                </div>
+
+                <div class="preset-actions">
+                    <button class="wood-btn muted" @click="cancel">{{ t('preset_cancel', 'Cancel') }}</button>
+                    <button class="wood-btn" @click="save">{{ t('preset_save', 'Apply') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

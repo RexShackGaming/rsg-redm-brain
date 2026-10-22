@@ -1,0 +1,7 @@
+{
+  "ui_title": "General Store",
+  "target_label": "Browse",
+  "inventory_full": "Your inventory is full",
+  "not_enough_money": "You do not have enough money",
+  "bought_success": "You bought %s for $%s"
+}

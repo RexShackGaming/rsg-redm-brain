@@ -1,0 +1,434 @@
+{
+    "blips": {
+        "clothing_store": "Κατάστημα ρούχων",
+        "wardrobe": "Ντουλάπα"
+    },
+    "texts": {
+        "body": "Σώμα",
+        "face": "Πρόσωπο",
+        "hair_beard": "Μαλλιά & Γένια",
+        "hair_style": "Χτένισμα",
+        "hair_color": "Χρώμα μαλλιών",
+        "beard_style": "Στυλ γενιών",
+        "beard_color": "Χρώμα γενιών",
+        "makeup": "Μακιγιάζ",
+        "appearance": "Εμφάνιση",
+        "slim": "Αδύνατος",
+        "sporty": "Αθλητικός",
+        "medium": "Μέτριος",
+        "fat": "Χοντρός",
+        "strong": "Δυνατός",
+        "face_width": "Πλάτος προσώπου",
+        "skin_tone": "Τόνος δέρματος",
+        "eyes": "Μάτια",
+        "eyelids": "Βλέφαρα",
+        "eyebrows": "Φρύδια",
+        "nose": "Μύτη",
+        "mouth": "Στόμα",
+        "teeth": "Δόντια",
+        "cheekbones": "Ζυγωματικά",
+        "jaw": "Σαγόνι",
+        "ears": "Αυτιά",
+        "chin": "Πηγούνι",
+        "defects": "Ατέλειες",
+        "hair": "Μαλλιά",
+        "beard": "Γένια",
+        "type": "Τύπος",
+        "visibility": "Ορατότητα",
+        "color_palette": "Παλέτα χρωμάτων ",
+        "color_firstrate": "Κύριο χρώμα",
+        "eyebrow": "Φρύδια",
+        "nose_curvature": "Καμπυλότητα μύτης",
+        "up_down": "ΠΑΝΩ / ΚΑΤΩ",
+        "left_right": "αριστερά / δεξιά",
+        "upper_lip_height": "Ύψος άνω χείλους",
+        "upper_lip_width": "Πλάτος άνω χείλους",
+        "upper_lip_depth": "Βάθος άνω χείλους",
+        "lower_lip_height": "Ύψος κάτω χείλους",
+        "lower_lip_width": "Πλάτος κάτω χείλους",
+        "lower_lip_depth": "Βάθος κάτω χείλους",
+        "make_up": "Μακιγιάζ",
+        "older": "Γήρανση",
+        "scars": "Τύπος ουλών",
+        "freckles": "Τύπος φακίδων",
+        "moles": "Ελιές",
+        "disadvantages": "Ατέλειες",
+        "spots": "Κηλίδες",
+        "shadow": "Σκιά ματιών",
+        "color_shadow": "Χρώμα σκιάς",
+        "color_first_class": "Κύριο χρώμα σκιάς",
+        "blushing_cheek": "Ροδισμένα μάγουλα",
+        "blush_id": "Χρώμα ρουζ",
+        "blush_c1": "Κύριο χρώμα ρουζ",
+        "lipstick": "Τύπος κραγιόν",
+        "color_lipstick": "Χρώμα κραγιόν",
+        "lipsticks_c1": "Κύριο χρώμα κραγιόν",
+        "lipsticks_c2": "Δευτερεύον χρώμα κραγιόν",
+        "eyeliners": "Άιλάινερ",
+        "eyeliners_id": "Χρώμα άιλάινερ",
+        "eyeliners_c1": "Κύριο χρώμα άιλάινερ",
+        "save": "Αποθήκευση",
+        "options": "Επιλογές",
+        "align": "top-left",
+        "style": "Στυλ ",
+        "color": "Χρώμα ",
+        "size": "Μέγεθος",
+        "width": "Πλάτος ",
+        "height": "Ύψος",
+        "depth": "Βάθος",
+        "waist": "Μέση",
+        "chest": "Στήθος",
+        "distance": "Απόσταση",
+        "angle": "Γωνία",
+        "clarity": "Ευκρίνεια",
+        "creator": "ΔΗΜΙΟΥΡΓΙΑ ΧΑΡΑΚΤΗΡΑ",
+        "first_menu": {
+            "label_firstname": "Όνομα",
+            "label_lastname": "Επώνυμο",
+            "desc": "Πώς θέλεις να σε αποκαλούν;",
+            "none": "Κενό",
+            "start": "Ξεκίνα το ταξίδι σου",
+            "empty": "Συμπλήρωσε πρώτα τα πάντα",
+            "nationality": "Εθνικότητα",
+            "birthdate": "Ημερομηνία γέννησης"
+        }
+    },
+    "labels": {
+        "boot_accessories": "Αξεσουάρ μπότας",
+        "pants": "Παντελόνια",
+        "cloaks": "Κάπες",
+        "hats": "Καπέλα",
+        "vests": "Γιλέκα",
+        "chaps": "Περισκελίδες",
+        "shirts_full": "Πουκάμισα",
+        "badges": "Σήματα",
+        "masks": "Μάσκες",
+        "spats": "Γκέτες",
+        "neckwear": "Μαντήλια λαιμού",
+        "boots": "Μπότες",
+        "accessories": "Αξεσουάρ",
+        "jewelry_rings_right": "Δαχτυλίδια δεξιά",
+        "jewelry_rings_left": "Δαχτυλίδια αριστερά",
+        "jewelry_bracelets": "Βραχιόλια",
+        "gauntlets": "Γάντια με μανσέτα",
+        "neckties": "Γραβάτες",
+        "holsters_knife": "Θήκες μαχαιριού",
+        "loadouts": "Εξοπλισμοί",
+        "suspenders": "Τιράντες",
+        "satchels": "Τσάντες",
+        "gunbelts": "Ζώνες όπλων",
+        "belts": "Ζώνες",
+        "belt_buckles": "Πόρπες",
+        "holsters_left": "Θήκες αριστερά",
+        "holsters_right": "Θήκες δεξιά",
+        "coats": "Παλτά",
+        "coats_closed": "Κλειστά παλτά",
+        "ponchos": "Πόντσο",
+        "eyewear": "Γυαλιά",
+        "gloves": "Γάντια",
+        "holsters_crossdraw": "Χιαστί θήκες",
+        "skirts": "Φούστες",
+        "hair_accessories": "Αξεσουάρ μαλλιών",
+        "armor": "Πανοπλία",
+        "dresses": "Φορέματα",
+        "ammunition_belts": "Φυσιγγιοθήκες",
+        "gunbelt_ammunition": "Πυρομαχικά ζώνης",
+        "gunbelt_accs": "Αξεσουάρ ζώνης",
+        "leg_attachments": "Αξεσουάρ ποδιού",
+        "save": "Αποθήκευση ρούχων",
+        "clothes": "Ρούχα",
+        "options": "επιλογές",
+        "color": "Χρώμα ",
+        "choose": "διάλεξε τα ρούχα σου",
+        "wear": "Φόρεσε το σύνολο",
+        "wear_desc": "ντύσου",
+        "delete": "Διαγραφή συνόλου",
+        "delete_desc": "διαγραφή συνόλου",
+        "shop": "Κατάστημα ρούχων",
+        "total": "Τιμή"
+    },
+    "menu_elements": {
+        "head": {
+            "label": "Κεφάλι"
+        },
+        "shirts_vests": {
+            "label": "Πουκάμισα & Γιλέκα"
+        },
+        "belts_holsters": {
+            "label": "Ζώνες & Θήκες"
+        },
+        "coats_outerwear": {
+            "label": "Παλτά & Εξωτερικά"
+        },
+        "legs": {
+            "label": "Πόδια"
+        },
+        "foot": {
+            "label": "Πέλματα"
+        },
+        "hands": {
+            "label": "Χέρια"
+        },
+        "belts_satchels": {
+            "label": "Ζώνες & Τσάντες"
+        },
+        "misc_gear": {
+            "label": "Διάφορος εξοπλισμός"
+        }
+    },
+    "prompts": {
+        "cloakroom_text": "Άνοιγμα δοκιμαστηρίων",
+        "clothing_store_label": "Κατάστημα ρούχων",
+        "zoom_label": "Μεγέθυνση/Σμίκρυνση",
+        "camera_up_label": "Κάμερα πάνω/κάτω",
+        "camera_turn_label": "Περιστροφή αριστερά/δεξιά"
+    },
+    "cloack_room_prompt_button": "Γκαρνταρόμπα",
+    "save_outfit_1": "Αποθήκευση συνόλου",
+    "save_outfit_2_header": "Αποθήκευση συνόλου",
+    "save_outfit_2_input_label": "Όνομα συνόλου",
+    "invalid_character_name": {
+        "title": "Σφάλμα",
+        "description": "Πρέπει να ξεκινά με κεφαλαίο γράμμα και να περιέχει μόνο γράμματα."
+    },
+    "loadskin_blocked": {
+        "title": "Δεν είναι δυνατή η επαναφόρτωση εμφάνισης",
+        "description": "Δεν μπορείς να το κάνεις τώρα (νεκρός, με χειροπέδες, δεμένος, στη φυλακή ή σε πτώση)."
+    },
+    "missing_character_info": {
+        "title": "Σφάλμα",
+        "description": "Συμπλήρωσε πρώτα όλες τις πληροφορίες για σένα! (Όνομα, Επώνυμο, Εθνικότητα, Ημερομηνία γέννησης)"
+    },
+    "insufficient_funds": {
+        "title": "Ανεπαρκή χρήματα",
+        "description": "Δεν έχεις αρκετά μετρητά"
+    },
+    "creator": {
+        "appearance": {
+            "label": "Εμφάνιση",
+            "desc": "Διάλεξε την εμφάνισή σου"
+        },
+        "sections": {
+            "look": "Στυλ",
+            "details": "Στοιχεία χαρακτήρα"
+        },
+        "randomize": {
+            "label": "Τυχαία εμφάνιση",
+            "desc": "Δημιουργεί νέα τυχαία εμφάνιση (κάθε πάτημα ξαναδιαλέγει)"
+        },
+        "clothing": {
+            "label": "Ρούχα",
+            "desc": "Διάλεξε τα ρούχα σου"
+        },
+        "firstname": {
+            "desc": "Διάλεξε το όνομά σου",
+            "input": {
+                "header": "Εγγραφή",
+                "label": "Όνομα",
+                "placeholder": "Hank"
+            }
+        },
+        "lastname": {
+            "desc": "Διάλεξε το επώνυμό σου",
+            "input": {
+                "header": "Εγγραφή",
+                "label": "Επώνυμο",
+                "placeholder": "Jordan"
+            }
+        },
+        "nationality": {
+            "desc": "Διάλεξε την εθνικότητά σου",
+            "input": {
+                "header": "Εγγραφή",
+                "label": "Εθνικότητα",
+                "placeholder": "Μεξικανός"
+            }
+        },
+        "birthdate": {
+            "desc": "Διάλεξε την ημερομηνία γέννησης",
+            "input": {
+                "header": "Εγγραφή",
+                "label": "Ημερομηνία γέννησης"
+            }
+        },
+        "male": "Άνδρας",
+        "female": "Γυναίκα",
+        "confirm": "Επιβεβαίωση",
+        "select_gender_1": "Επιλογή φύλου",
+        "select_gender_2": "Επιλογή φύλου",
+        "photo_tip": "Τράβηξε στιγμιότυπο τώρα"
+    },
+    "clothing_menu": {
+        "category_desc": "Επιλογές ρούχων για αυτή την κατηγορία",
+        "confirm_purhcase": "Επιβεβαίωση αγοράς",
+        "remove_all": {
+            "label": "Αφαίρεση όλων των ρούχων",
+            "desc": "Βγάλε τα πάντα και επέστρεψε στην προεπιλεγμένη εμφάνιση",
+            "confirm": "Αφαίρεση όλων των ρούχων;"
+        }
+    },
+    "camera_prompt_text": "Πάνω/Κάτω",
+    "rotate_prompt_text": "Αριστερά/Δεξιά",
+    "zoom_prompt_text": "Ζουμ",
+    "group_prompt_text": "Δημιουργός RSGCore",
+    "charselect": {
+        "title": "Επιλογή χαρακτήρα",
+        "subtitle": "Διάλεξε χαρακτήρα ή δημιούργησε νέο",
+        "unnamed": "Χωρίς όνομα",
+        "existing": {
+            "desc": "Συνέχισε με αυτόν τον χαρακτήρα"
+        },
+        "hint": {
+            "select": "Κλικ για να παίξεις ως ~g~%s~s~",
+            "create": "Κλικ για δημιουργία νέου χαρακτήρα",
+            "controls": "← → Περιήγηση    [Enter] Επιλογή    [DEL] Διαγραφή"
+        },
+        "empty": {
+            "label": "Δημιουργία νέου χαρακτήρα",
+            "desc": "Αυτή η θέση είναι κενή - δημιούργησε εδώ νέο χαρακτήρα"
+        },
+        "exploit_dropped": "Εντοπίστηκε ασυμφωνία χαρακτήρα/άδειας.",
+        "login_failed": {
+            "title": "Σφάλμα",
+            "description": "Δεν ήταν δυνατή η φόρτωση του χαρακτήρα - δοκίμασε ξανά."
+        },
+        "slot_label": "Θέση %s",
+        "slot_taken": {
+            "title": "Μη διαθέσιμη θέση",
+            "desc": "Αυτή η θέση μόλις καταλήφθηκε - διάλεξε άλλη."
+        },
+        "delete": {
+            "label": "Διαγραφή χαρακτήρα",
+            "desc": "Οριστική διαγραφή χαρακτήρα - δεν αναιρείται",
+            "confirm_header": "Διαγραφή αυτού του χαρακτήρα; Δεν αναιρείται.",
+            "loading": "Διαγραφή χαρακτήρα..."
+        },
+        "info": {
+            "job": "Εργασία",
+            "birthdate": "Ημερομηνία γέννησης",
+            "nationality": "Εθνικότητα",
+            "cash": "Μετρητά",
+            "unemployed": "Άνεργος",
+            "play": "Παίξε",
+            "delete": "Διαγραφή",
+            "create": "Δημιουργία"
+        },
+        "gender": {
+            "title": "Επιλογή φύλου",
+            "subtitle": "Δεν μπορεί να αλλάξει αργότερα",
+            "male": "Άνδρας",
+            "female": "Γυναίκα"
+        },
+        "loading": "Δημιουργία χαρακτήρα...",
+        "play_loading": "Φόρτωση χαρακτήρα..."
+    },
+    "spawn": {
+        "title": "Πού θέλεις να εμφανιστείς;",
+        "subtitle": "Διάλεξε τοποθεσία για να μπεις στον κόσμο",
+        "last_location": {
+            "label": "Τελευταία τοποθεσία",
+            "desc": "Επέστρεψε εκεί που αποσυνδέθηκες"
+        },
+        "preset": {
+            "desc": "Εμφάνιση εδώ"
+        },
+        "loading": "Ταξίδι..."
+    },
+    "ui": {
+        "back": "Πίσω",
+        "camera": {
+            "rotate": "Περιστροφή",
+            "height": "Πάνω/Κάτω",
+            "zoom": "Ζουμ",
+            "rotate_left_title": "Περιστροφή χαρακτήρα αριστερά",
+            "rotate_right_title": "Περιστροφή χαρακτήρα δεξιά",
+            "up_title": "Κάμερα πάνω",
+            "down_title": "Κάμερα κάτω",
+            "zoom_in_title": "Μεγέθυνση κάμερας",
+            "zoom_out_title": "Σμίκρυνση κάμερας",
+            "reset": "Επαναφορά",
+            "reset_title": "Επαναφορά κάμερας"
+        },
+        "total": "ΣΥΝΟΛΟ",
+        "cancel": "Ακύρωση",
+        "confirm": "Επιβεβαίωση"
+    },
+    "clothing_validation": {
+        "title": "Σφάλμα",
+        "invalid_data": "Μη έγκυρα δεδομένα ρούχων",
+        "invalid_item": "Μη έγκυρα δεδομένα αντικειμένου για %s",
+        "invalid_category": "Μη έγκυρη κατηγορία: %s",
+        "invalid_hash": "Μη έγκυρο hash για την κατηγορία: %s"
+    },
+    "webhooks": {
+        "common": {
+            "player_field": "Παίκτης",
+            "discord_field": "Discord",
+            "na": "Δ/Υ",
+            "unknown": "Άγνωστο",
+            "username": "Αρχεία χαρακτήρων"
+        },
+        "character_created": {
+            "title": "Δημιουργήθηκε χαρακτήρας",
+            "description": "Ο/Η **%s %s** δημιουργήθηκε στη θέση **%s**.",
+            "field_citizenid": "ID πολίτη",
+            "field_gender": "Φύλο",
+            "field_nationality": "Εθνικότητα",
+            "field_birthdate": "Ημερομηνία γέννησης",
+            "male": "Άνδρας",
+            "female": "Γυναίκα"
+        },
+        "character_selected": {
+            "title": "Επιλέχθηκε χαρακτήρας",
+            "description": "Ο/Η **%s %s** συνδέθηκε στο ID πολίτη **%s**."
+        },
+        "character_deleted": {
+            "title": "Διαγράφηκε χαρακτήρας",
+            "description": "Ο/Η **%s %s** (ID πολίτη **%s**) διαγράφηκε."
+        },
+        "appearance_saved": {
+            "title_initial": "Αποθηκεύτηκε η αρχική εμφάνιση",
+            "description": "Η εμφάνιση/τα ρούχα αποθηκεύτηκαν για το ID πολίτη **%s**.",
+            "field_citizenid": "ID πολίτη"
+        },
+        "outfit_purchased": {
+            "title": "Αγοράστηκε σύνολο",
+            "description": "Αγοράστηκε σύνολο για **$%s**.",
+            "field_citizenid": "ID πολίτη",
+            "field_outfit_name": "Όνομα συνόλου"
+        }
+    },
+    "spawn_locations": {
+        "valentine": "Valentine",
+        "rhodes": "Rhodes",
+        "saint_denis": "Saint Denis",
+        "blackwater": "Blackwater"
+    },
+    "nationalities": {
+        "american": "Αμερικανός",
+        "british": "Βρετανός",
+        "irish": "Ιρλανδός",
+        "scottish": "Σκωτσέζος",
+        "welsh": "Ουαλός",
+        "french": "Γάλλος",
+        "german": "Γερμανός",
+        "italian": "Ιταλός",
+        "spanish": "Ισπανός",
+        "mexican": "Μεξικανός",
+        "dutch": "Ολλανδός",
+        "swedish": "Σουηδός",
+        "norwegian": "Νορβηγός",
+        "danish": "Δανός",
+        "polish": "Πολωνός",
+        "russian": "Ρώσος",
+        "chinese": "Κινέζος",
+        "japanese": "Ιάπωνας",
+        "cuban": "Κουβανός",
+        "native_american": "Ιθαγενής Αμερικανός",
+        "other": "Άλλο"
+    },
+    "outfit_limit_reached": "You can only store %s outfits - this one was not saved to your wardrobe",
+    "outfit_delete_confirm": "Delete this outfit?",
+    "default_outfit_name": "Default",
+    "auto_outfit_name": "Outfit %s"
+}

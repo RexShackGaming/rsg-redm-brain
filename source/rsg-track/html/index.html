@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSG Track - Horse Race</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="root" class="hidden">
+        <div class="app">
+            <!-- Main Panel -->
+            <div class="panel" id="mainPanel">
+                <div class="panel-header">
+                    <button class="circle-btn" id="btnBack" title="Back" style="visibility:hidden;">&#8249;</button>
+                    <div class="header-center">
+                        <h1 class="panel-title" id="panelTitle">HORSE RACE</h1>
+                        <p class="panel-subtitle" id="panelSubtitle">Rexshack Racing Circuit</p>
+                    </div>
+                    <button class="circle-btn" id="btnClose" title="Close">&#10005;</button>
+                </div>
+
+                <div class="ink-divider-wrap">
+                    <div class="ink-divider"></div>
+                    <span class="divider-diamond">&#9670;</span>
+                    <div class="ink-divider"></div>
+                </div>
+
+                <!-- Race Status Bar -->
+                <div class="status-bar" id="statusBar">
+                    <div class="status-item">
+                        <span class="status-label" id="statusTrackLabel">Track</span>
+                        <span class="status-value" id="statusTrack">None</span>
+                    </div>
+                    <div class="status-sep"></div>
+                    <div class="status-item">
+                        <span class="status-label" id="statusLapsLabel">Laps</span>
+                        <span class="status-value" id="statusLaps">1</span>
+                    </div>
+                    <div class="status-sep"></div>
+                    <div class="status-item">
+                        <span class="status-label" id="statusRidersLabel">Riders</span>
+                        <span class="status-value" id="statusRiders">0</span>
+                    </div>
+                </div>
+
+                <!-- Content area switches views -->
+                <div class="panel-body" id="panelBody">
+                    <!-- MAIN VIEW -->
+                    <div class="view" id="viewMain">
+                        <div class="options-list" id="optionsList"></div>
+                    </div>
+
+                    <!-- LOAD TRACK VIEW -->
+                    <div class="view hidden" id="viewLoadTracks">
+                        <div class="view-desc">Select a saved track to load</div>
+                        <div class="options-list" id="loadTracksList"></div>
+                    </div>
+
+                    <!-- DELETE TRACK VIEW -->
+                    <div class="view hidden" id="viewDeleteTracks">
+                        <div class="view-desc">Select a track to delete</div>
+                        <div class="options-list" id="deleteTracksList"></div>
+                    </div>
+
+                    <!-- PARTICIPANTS VIEW -->
+                    <div class="view hidden" id="viewParticipants">
+                        <div class="view-desc">Riders currently in race</div>
+                        <div class="options-list" id="participantsList"></div>
+                    </div>
+
+                    <!-- RESULTS / WINNERS VIEW -->
+                    <div class="view hidden" id="viewResults">
+                        <div class="view-desc">Last race results &amp; winners</div>
+                        <div class="winners-podium hidden" id="winnersPodium"></div>
+                        <div class="options-list" id="resultsList"></div>
+                        <div class="history-label hidden" id="historyLabel">Previous Races</div>
+                        <div class="history-list" id="historyList"></div>
+                    </div>
+                </div>
+
+                <div class="panel-footer">
+                    <span class="footer-hint">J to place points &bull; ESC to close</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Set Laps Modal -->
+        <div class="modal-overlay hidden" id="modalSetLaps">
+            <div class="modal-card">
+                <h2 class="modal-title">Set Laps</h2>
+                <div class="ink-divider" style="width:70%; margin: 10px auto;"></div>
+                <p class="modal-desc">Choose laps for this circuit (1-5)</p>
+                <div class="laps-selector">
+                    <button class="circle-btn" id="lapsMinus">&#8722;</button>
+                    <div class="laps-value-wrap">
+                        <span class="laps-value" id="lapsValue">1</span>
+                        <span class="laps-label">LAPS</span>
+                    </div>
+                    <button class="circle-btn" id="lapsPlus">&#43;</button>
+                </div>
+                <div class="stat-track" style="margin: 14px 0 6px 0;">
+                    <div class="stat-fill" id="lapsBarFill" style="width:20%"></div>
+                </div>
+                <div class="modal-actions">
+                    <button class="wood-btn muted" id="btnCancelLaps">Cancel</button>
+                    <button class="wood-btn" id="btnConfirmLaps">Confirm</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Set Max Markers Modal -->
+        <div class="modal-overlay hidden" id="modalSetMaxMarkers">
+            <div class="modal-card">
+                <h2 class="modal-title">Max Markers</h2>
+                <div class="ink-divider" style="width:70%; margin: 10px auto;"></div>
+                <p class="modal-desc">How many checkpoints allowed (2-30) — 1st=start last=finish</p>
+                <div class="laps-selector">
+                    <button class="circle-btn" id="maxMinus">&#8722;</button>
+                    <div class="laps-value-wrap">
+                        <span class="laps-value" id="maxValue">15</span>
+                        <span class="laps-label">MARKERS</span>
+                    </div>
+                    <button class="circle-btn" id="maxPlus">&#43;</button>
+                </div>
+                <div class="stat-track" style="margin: 14px 0 6px 0;">
+                    <div class="stat-fill" id="maxBarFill" style="width:50%"></div>
+                </div>
+                <div class="modal-actions">
+                    <button class="wood-btn muted" id="btnCancelMax">Cancel</button>
+                    <button class="wood-btn" id="btnConfirmMax">Confirm</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Track Modal -->
+        <div class="modal-overlay hidden" id="modalCreateTrack">
+            <div class="modal-card">
+                <h2 class="modal-title">Name Your Track</h2>
+                <div class="ink-divider" style="width:70%; margin: 10px auto;"></div>
+                <p class="modal-desc">Give this circuit a name — 1st point = start, last = finish</p>
+                <div class="view-desc hidden" style="text-align:center; margin:6px 0 8px 0;"><span id="creationCounter">0 / 15</span></div>
+                <input type="text" class="rdr-input" id="inputTrackName" placeholder="e.g. Valentine Circuit" maxlength="50" autocomplete="off">
+                <div class="modal-actions">
+                    <button class="wood-btn muted" id="btnCancelCreate">Cancel</button>
+                    <button class="wood-btn" id="btnConfirmCreate">Create</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirm Delete Modal -->
+        <div class="modal-overlay hidden" id="modalConfirmDelete">
+            <div class="modal-card">
+                <h2 class="modal-title">Confirm Deletion</h2>
+                <div class="ink-divider" style="width:70%; margin: 10px auto;"></div>
+                <p class="modal-desc" id="deleteConfirmText">Delete this track?</p>
+                <div class="modal-actions">
+                    <button class="wood-btn muted" id="btnCancelDelete">Cancel</button>
+                    <button class="wood-btn danger" id="btnConfirmDelete">Delete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Winners Celebration Modal (auto shown on finish) -->
+        <div class="modal-overlay hidden" id="modalWinners">
+            <div class="modal-card winners-modal">
+                <h2 class="modal-title">Race Finished</h2>
+                <div class="ink-divider" style="width:70%; margin: 10px auto;"></div>
+                <div class="winners-podium large" id="winnersPodiumModal"></div>
+                <div class="options-list small" id="winnersFullListModal"></div>
+                <div class="modal-actions" style="justify-content:center;">
+                    <button class="wood-btn" id="btnCloseWinners">Close</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+    <script src="script.js"></script>
+</body>
+</html>

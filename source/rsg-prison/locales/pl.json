@@ -1,0 +1,22 @@
+{
+    "cl_lang_1" : "Otwórz ",
+    "cl_returning" : "Powrót do więzienia",
+    "cl_prison_menu" : "Menu Więzienia",
+    "cl_prison_shop" : "Sklep Więzienny",
+    "cl_keep" : "dbaj o siebie",
+    "cl_post_office" : "Poczta",
+    "cl_keep_in" : "utrzymuj kontakt z bliskimi",
+    "cl_telegram" : "Menu Telegram",
+    "cl_read" : "Przeczytaj Wiadomości",
+    "cl_read_your" : "przeczytaj swoje wiadomości z Telegrama",
+    "cl_send" : "Wyślij Telegram",
+    "cl_send_a" : "wyślij telegram",
+    "cl_property" : "Zajęty Majątek",
+    "cl_freedom_in" : "Wolność za ",
+    "cl_time" : " minut!",
+    "cl_getting" : "Przygotowania do zwolnienia!",
+    "cl_freedom" : "Wolność",
+    "cl_free" : "Jesteś wolny z więzienia, powodzenia",
+    "cl_property_returned" : "Majątek Zwrocony",
+    "cl_property_has_been" : "Twój majątek został zwrócony do ekwipunku"
+}

@@ -1,0 +1,14 @@
+{
+    "notify_title": "Manierka",
+    "target_fill": "Napełnij manierkę",
+    "progress_fill": "Napełnianie manierki...",
+    "progress_drink": "Pijesz...",
+    "no_canteen": "Potrzebujesz manierki",
+    "canteen_empty": "Twoja manierka jest pusta, napełnij ją przy pompie wody",
+    "canteens_full": "Twoja manierka jest już pełna",
+    "canteen_filled": "Manierka napełniona (%s użyć)",
+    "drank": "Napiłeś się (pozostało %s/%s użyć)",
+    "too_far": "Jesteś za daleko od pompy",
+    "busy": "Jesteś zajęty",
+    "target_fill_water": "Napełnij manierkę"
+}

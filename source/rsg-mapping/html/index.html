@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+  <div class="panel">
+    <div class="header">
+      <button class="circle-btn" id="refreshBtn" data-i18n-title="ui_rescan">&#8635;</button>
+      <div class="titles">
+        <div class="title" data-i18n="ui_title">IMAP Finder</div>
+        <div class="subtitle" id="subtitle"></div>
+      </div>
+      <button class="circle-btn" id="closeBtn" data-i18n-title="ui_close">&#10005;</button>
+    </div>
+    <div class="divider"><span>&#10022;</span></div>
+
+    <div class="controls">
+      <input id="search" class="input" data-i18n-ph="ui_search">
+      <div class="row">
+        <label class="lbl" for="radius" data-i18n="ui_radius">Radius</label>
+        <input id="radius" class="input small" type="number" min="1">
+        <div class="seg" id="filters">
+          <button data-f="all" class="active" data-i18n="ui_all">All</button>
+          <button data-f="active" data-i18n="ui_active">Active</button>
+          <button data-f="inactive" data-i18n="ui_inactive">Inactive</button>
+        </div>
+      </div>
+      <div class="row stats">
+        <span id="countActive"></span>
+        <div class="track"><div class="fill stat-good" id="activeBar"></div></div>
+        <button class="wood-btn muted" id="labelsBtn"></button>
+      </div>
+    </div>
+
+    <div class="list" id="list"></div>
+  </div>
+
+  <div id="modal" class="modal-wrap hidden">
+    <div class="modal">
+      <div class="modal-handle" id="mHandle">
+        <div class="modal-title" id="mTitle"></div>
+        <div class="ink-divider"></div>
+      </div>
+      <div class="kv"><span data-i18n="ui_imap">IMAP</span><b id="mRaw"></b></div>
+      <div class="label-row">
+        <input id="mLabel" class="input" maxlength="100" data-i18n-ph="ui_label_ph">
+        <button class="wood-btn" id="mSaveLabel" data-i18n="ui_save">Save</button>
+      </div>
+      <div class="kv"><span data-i18n="ui_status">Status</span><b id="mStatus"></b></div>
+      <div class="kv"><span data-i18n="ui_saved_state">Saved state</span><b id="mSaved"></b></div>
+      <div class="kv"><span data-i18n="ui_distance">Distance</span><b id="mDist"></b></div>
+      <div class="kv"><span data-i18n="ui_hash">Hash</span><b id="mHash"></b></div>
+      <div class="kv"><span data-i18n="ui_coords">Coords</span><b id="mCoords"></b></div>
+      <div class="grid">
+        <button class="wood-btn" id="mToggle"></button>
+        <button class="wood-btn" id="mWaypoint" data-i18n="ui_waypoint">Set Waypoint</button>
+        <button class="wood-btn span2" id="mView" data-i18n="ui_view">View</button>
+        <button class="wood-btn muted" data-copy="name" data-i18n="ui_copy_name">Copy Name</button>
+        <button class="wood-btn muted" data-copy="hash" data-i18n="ui_copy_hash">Copy Hash</button>
+        <button class="wood-btn muted" data-copy="lua" data-i18n="ui_copy_lua">Copy Lua</button>
+        <button class="wood-btn muted" data-copy="coords" data-i18n="ui_copy_coords">Copy Coords</button>
+      </div>
+      <div class="actions">
+        <button class="wood-btn muted" id="mForget" data-i18n="ui_forget">Forget Saved State</button>
+        <button class="wood-btn" id="mClose" data-i18n="ui_back">Back</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toasts"></div>
+<textarea id="clip"></textarea>
+<script src="script.js"></script>
+</body>
+</html>

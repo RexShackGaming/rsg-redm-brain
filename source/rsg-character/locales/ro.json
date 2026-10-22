@@ -1,0 +1,434 @@
+{
+    "blips": {
+        "clothing_store": "Magazin de haine",
+        "wardrobe": "Garderobă"
+    },
+    "texts": {
+        "body": "Corp",
+        "face": "Față",
+        "hair_beard": "Păr și barbă",
+        "hair_style": "Coafură",
+        "hair_color": "Culoarea părului",
+        "beard_style": "Stilul bărbii",
+        "beard_color": "Culoarea bărbii",
+        "makeup": "Machiaj",
+        "appearance": "Aspect",
+        "slim": "Slab",
+        "sporty": "Sportiv",
+        "medium": "Mediu",
+        "fat": "Gras",
+        "strong": "Puternic",
+        "face_width": "Lățimea feței",
+        "skin_tone": "Nuanța pielii",
+        "eyes": "Ochi",
+        "eyelids": "Pleoape",
+        "eyebrows": "Sprâncene",
+        "nose": "Nas",
+        "mouth": "Gură",
+        "teeth": "Dinți",
+        "cheekbones": "Pomeți",
+        "jaw": "Maxilar",
+        "ears": "Urechi",
+        "chin": "Bărbie",
+        "defects": "Defecte",
+        "hair": "Păr",
+        "beard": "Barbă",
+        "type": "Tip",
+        "visibility": "Vizibilitate",
+        "color_palette": "Paletă de culori ",
+        "color_firstrate": "Culoare principală",
+        "eyebrow": "Sprâncene",
+        "nose_curvature": "Curbura nasului",
+        "up_down": "SUS / JOS",
+        "left_right": "stânga / dreapta",
+        "upper_lip_height": "Înălțimea buzei superioare",
+        "upper_lip_width": "Lățimea buzei superioare",
+        "upper_lip_depth": "Adâncimea buzei superioare",
+        "lower_lip_height": "Înălțimea buzei inferioare",
+        "lower_lip_width": "Lățimea buzei inferioare",
+        "lower_lip_depth": "Adâncimea buzei inferioare",
+        "make_up": "Machiaj",
+        "older": "Îmbătrânire",
+        "scars": "Tip cicatrici",
+        "freckles": "Tip pistrui",
+        "moles": "Alunițe",
+        "disadvantages": "Imperfecțiuni",
+        "spots": "Pete",
+        "shadow": "Fard de pleoape",
+        "color_shadow": "Culoare fard",
+        "color_first_class": "Culoare principală fard",
+        "blushing_cheek": "Obraji îmbujorați",
+        "blush_id": "Culoare blush",
+        "blush_c1": "Culoare principală blush",
+        "lipstick": "Tip ruj",
+        "color_lipstick": "Culoare ruj",
+        "lipsticks_c1": "Culoare principală ruj",
+        "lipsticks_c2": "Culoare secundară ruj",
+        "eyeliners": "Tuș de ochi",
+        "eyeliners_id": "Culoare tuș",
+        "eyeliners_c1": "Culoare principală tuș",
+        "save": "Salvează",
+        "options": "Opțiuni",
+        "align": "top-left",
+        "style": "Stil ",
+        "color": "Culoare ",
+        "size": "Mărime",
+        "width": "Lățime ",
+        "height": "Înălțime",
+        "depth": "Adâncime",
+        "waist": "Talie",
+        "chest": "Piept",
+        "distance": "Distanță",
+        "angle": "Unghi",
+        "clarity": "Claritate",
+        "creator": "CREATOR DE PERSONAJ",
+        "first_menu": {
+            "label_firstname": "Prenume",
+            "label_lastname": "Nume",
+            "desc": "Cum vrei să-ți spună oamenii?",
+            "none": "Gol",
+            "start": "Începe-ți călătoria",
+            "empty": "Completează mai întâi totul",
+            "nationality": "Naționalitate",
+            "birthdate": "Data nașterii"
+        }
+    },
+    "labels": {
+        "boot_accessories": "Accesorii cizme",
+        "pants": "Pantaloni",
+        "cloaks": "Pelerine",
+        "hats": "Pălării",
+        "vests": "Veste",
+        "chaps": "Chaps",
+        "shirts_full": "Cămăși",
+        "badges": "Insigne",
+        "masks": "Măști",
+        "spats": "Ghetre",
+        "neckwear": "Eșarfe",
+        "boots": "Cizme",
+        "accessories": "Accesorii",
+        "jewelry_rings_right": "Inele dreapta",
+        "jewelry_rings_left": "Inele stânga",
+        "jewelry_bracelets": "Brățări",
+        "gauntlets": "Mănuși lungi",
+        "neckties": "Cravate",
+        "holsters_knife": "Teci de cuțit",
+        "loadouts": "Echipamente",
+        "suspenders": "Bretele",
+        "satchels": "Genți",
+        "gunbelts": "Centuri de arme",
+        "belts": "Curele",
+        "belt_buckles": "Catarame",
+        "holsters_left": "Tocuri stânga",
+        "holsters_right": "Tocuri dreapta",
+        "coats": "Paltoane",
+        "coats_closed": "Paltoane închise",
+        "ponchos": "Ponchouri",
+        "eyewear": "Ochelari",
+        "gloves": "Mănuși",
+        "holsters_crossdraw": "Tocuri încrucișate",
+        "skirts": "Fuste",
+        "hair_accessories": "Accesorii păr",
+        "armor": "Armură",
+        "dresses": "Rochii",
+        "ammunition_belts": "Cartușiere",
+        "gunbelt_ammunition": "Muniție centură",
+        "gunbelt_accs": "Accesorii centură",
+        "leg_attachments": "Accesorii picior",
+        "save": "Salvează hainele",
+        "clothes": "Haine",
+        "options": "opțiuni",
+        "color": "Culoare ",
+        "choose": "alege-ți hainele",
+        "wear": "Îmbracă ținuta",
+        "wear_desc": "îmbracă-te",
+        "delete": "Șterge ținuta",
+        "delete_desc": "șterge ținuta",
+        "shop": "Magazin de haine",
+        "total": "Preț"
+    },
+    "menu_elements": {
+        "head": {
+            "label": "Cap"
+        },
+        "shirts_vests": {
+            "label": "Cămăși și veste"
+        },
+        "belts_holsters": {
+            "label": "Curele și tocuri"
+        },
+        "coats_outerwear": {
+            "label": "Paltoane și îmbrăcăminte exterioară"
+        },
+        "legs": {
+            "label": "Picioare"
+        },
+        "foot": {
+            "label": "Tălpi"
+        },
+        "hands": {
+            "label": "Mâini"
+        },
+        "belts_satchels": {
+            "label": "Curele și genți"
+        },
+        "misc_gear": {
+            "label": "Echipament divers"
+        }
+    },
+    "prompts": {
+        "cloakroom_text": "Deschide cabinele de probă",
+        "clothing_store_label": "Magazin de haine",
+        "zoom_label": "Apropie/Depărtează",
+        "camera_up_label": "Cameră sus/jos",
+        "camera_turn_label": "Rotește stânga/dreapta"
+    },
+    "cloack_room_prompt_button": "Vestiar",
+    "save_outfit_1": "Salvează ținuta",
+    "save_outfit_2_header": "Salvează ținuta",
+    "save_outfit_2_input_label": "Numele ținutei",
+    "invalid_character_name": {
+        "title": "Eroare",
+        "description": "Textul trebuie să înceapă cu majusculă și poate conține doar litere."
+    },
+    "loadskin_blocked": {
+        "title": "Nu se poate reîncărca aspectul",
+        "description": "Nu poți face asta acum (mort, încătușat, legat, în închisoare sau în cădere)."
+    },
+    "missing_character_info": {
+        "title": "Eroare",
+        "description": "Completează mai întâi toate informațiile despre tine! (Prenume, Nume, Naționalitate, Data nașterii)"
+    },
+    "insufficient_funds": {
+        "title": "Fonduri insuficiente",
+        "description": "Nu ai destui bani"
+    },
+    "creator": {
+        "appearance": {
+            "label": "Aspect",
+            "desc": "Alege-ți aspectul"
+        },
+        "sections": {
+            "look": "Look",
+            "details": "Detalii personaj"
+        },
+        "randomize": {
+            "label": "Aspect aleatoriu",
+            "desc": "Generează un aspect nou aleatoriu (fiecare apăsare regenerează)"
+        },
+        "clothing": {
+            "label": "Haine",
+            "desc": "Alege-ți hainele"
+        },
+        "firstname": {
+            "desc": "Alege-ți prenumele",
+            "input": {
+                "header": "Înregistrare",
+                "label": "Prenume",
+                "placeholder": "Hank"
+            }
+        },
+        "lastname": {
+            "desc": "Alege-ți numele",
+            "input": {
+                "header": "Înregistrare",
+                "label": "Nume",
+                "placeholder": "Jordan"
+            }
+        },
+        "nationality": {
+            "desc": "Alege-ți naționalitatea",
+            "input": {
+                "header": "Înregistrare",
+                "label": "Naționalitate",
+                "placeholder": "Mexican"
+            }
+        },
+        "birthdate": {
+            "desc": "Alege-ți data nașterii",
+            "input": {
+                "header": "Înregistrare",
+                "label": "Data nașterii"
+            }
+        },
+        "male": "Bărbat",
+        "female": "Femeie",
+        "confirm": "Confirmă",
+        "select_gender_1": "Alege sexul",
+        "select_gender_2": "Alege sexul",
+        "photo_tip": "Fă o captură de ecran acum"
+    },
+    "clothing_menu": {
+        "category_desc": "Opțiuni de haine pentru această categorie",
+        "confirm_purhcase": "Confirmă achiziția",
+        "remove_all": {
+            "label": "Scoate toate hainele",
+            "desc": "Scoate totul și revino la aspectul implicit",
+            "confirm": "Scoți toate hainele?"
+        }
+    },
+    "camera_prompt_text": "Sus/Jos",
+    "rotate_prompt_text": "Stânga/Dreapta",
+    "zoom_prompt_text": "Zoom",
+    "group_prompt_text": "Creator RSGCore",
+    "charselect": {
+        "title": "Alege personajul",
+        "subtitle": "Alege un personaj sau creează unul nou",
+        "unnamed": "Fără nume",
+        "existing": {
+            "desc": "Continuă cu acest personaj"
+        },
+        "hint": {
+            "select": "Click pentru a juca drept ~g~%s~s~",
+            "create": "Click pentru a crea un personaj nou",
+            "controls": "← → Răsfoiește    [Enter] Alege    [DEL] Șterge"
+        },
+        "empty": {
+            "label": "Creează personaj nou",
+            "desc": "Acest slot e gol - creează aici un personaj nou"
+        },
+        "exploit_dropped": "Nepotrivire personaj/licență detectată.",
+        "login_failed": {
+            "title": "Eroare",
+            "description": "Personajul nu a putut fi încărcat - încearcă din nou."
+        },
+        "slot_label": "Slot %s",
+        "slot_taken": {
+            "title": "Slot indisponibil",
+            "desc": "Slotul tocmai a fost ocupat - alege altul."
+        },
+        "delete": {
+            "label": "Șterge personajul",
+            "desc": "Șterge definitiv acest personaj - acțiunea nu poate fi anulată",
+            "confirm_header": "Ștergi acest personaj? Acțiunea nu poate fi anulată.",
+            "loading": "Se șterge personajul..."
+        },
+        "info": {
+            "job": "Ocupație",
+            "birthdate": "Data nașterii",
+            "nationality": "Naționalitate",
+            "cash": "Numerar",
+            "unemployed": "Șomer",
+            "play": "Joacă",
+            "delete": "Șterge",
+            "create": "Creează"
+        },
+        "gender": {
+            "title": "Alege sexul",
+            "subtitle": "Nu poate fi schimbat mai târziu",
+            "male": "Bărbat",
+            "female": "Femeie"
+        },
+        "loading": "Se creează personajul...",
+        "play_loading": "Se încarcă personajul..."
+    },
+    "spawn": {
+        "title": "Unde vrei să apari?",
+        "subtitle": "Alege o locație pentru a intra în lume",
+        "last_location": {
+            "label": "Ultima locație",
+            "desc": "Revino unde te-ai deconectat ultima dată"
+        },
+        "preset": {
+            "desc": "Apari aici"
+        },
+        "loading": "Călătorești..."
+    },
+    "ui": {
+        "back": "Înapoi",
+        "camera": {
+            "rotate": "Rotire",
+            "height": "Sus/Jos",
+            "zoom": "Zoom",
+            "rotate_left_title": "Rotește personajul la stânga",
+            "rotate_right_title": "Rotește personajul la dreapta",
+            "up_title": "Mută camera în sus",
+            "down_title": "Mută camera în jos",
+            "zoom_in_title": "Apropie camera",
+            "zoom_out_title": "Depărtează camera",
+            "reset": "Resetează",
+            "reset_title": "Resetează camera"
+        },
+        "total": "TOTAL",
+        "cancel": "Anulează",
+        "confirm": "Confirmă"
+    },
+    "clothing_validation": {
+        "title": "Eroare",
+        "invalid_data": "Date haine invalide",
+        "invalid_item": "Date articol invalide pentru %s",
+        "invalid_category": "Categorie invalidă: %s",
+        "invalid_hash": "Hash invalid pentru categoria: %s"
+    },
+    "webhooks": {
+        "common": {
+            "player_field": "Jucător",
+            "discord_field": "Discord",
+            "na": "N/A",
+            "unknown": "Necunoscut",
+            "username": "Jurnale personaje"
+        },
+        "character_created": {
+            "title": "Personaj creat",
+            "description": "**%s %s** a fost creat în slotul **%s**.",
+            "field_citizenid": "ID cetățean",
+            "field_gender": "Sex",
+            "field_nationality": "Naționalitate",
+            "field_birthdate": "Data nașterii",
+            "male": "Bărbat",
+            "female": "Femeie"
+        },
+        "character_selected": {
+            "title": "Personaj selectat",
+            "description": "**%s %s** s-a conectat pe ID-ul de cetățean **%s**."
+        },
+        "character_deleted": {
+            "title": "Personaj șters",
+            "description": "**%s %s** (ID cetățean **%s**) a fost șters."
+        },
+        "appearance_saved": {
+            "title_initial": "Aspect inițial salvat",
+            "description": "Aspectul/hainele au fost salvate pentru ID-ul de cetățean **%s**.",
+            "field_citizenid": "ID cetățean"
+        },
+        "outfit_purchased": {
+            "title": "Ținută cumpărată",
+            "description": "O ținută a fost cumpărată pentru **$%s**.",
+            "field_citizenid": "ID cetățean",
+            "field_outfit_name": "Numele ținutei"
+        }
+    },
+    "spawn_locations": {
+        "valentine": "Valentine",
+        "rhodes": "Rhodes",
+        "saint_denis": "Saint Denis",
+        "blackwater": "Blackwater"
+    },
+    "nationalities": {
+        "american": "American",
+        "british": "Britanic",
+        "irish": "Irlandez",
+        "scottish": "Scoțian",
+        "welsh": "Galez",
+        "french": "Francez",
+        "german": "German",
+        "italian": "Italian",
+        "spanish": "Spaniol",
+        "mexican": "Mexican",
+        "dutch": "Olandez",
+        "swedish": "Suedez",
+        "norwegian": "Norvegian",
+        "danish": "Danez",
+        "polish": "Polonez",
+        "russian": "Rus",
+        "chinese": "Chinez",
+        "japanese": "Japonez",
+        "cuban": "Cubanez",
+        "native_american": "Nativ american",
+        "other": "Altul"
+    },
+    "outfit_limit_reached": "You can only store %s outfits - this one was not saved to your wardrobe",
+    "outfit_delete_confirm": "Delete this outfit?",
+    "default_outfit_name": "Default",
+    "auto_outfit_name": "Outfit %s"
+}

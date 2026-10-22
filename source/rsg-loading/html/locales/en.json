@@ -1,0 +1,15 @@
+{
+  "brand_title": "Rex Shack",
+  "brand_subtitle": "R E D E M P T I O N  A W A I T S",
+  "status_loading": "Saddling up…",
+  "status_ready": "Ready.",
+  "footer_resource_name": "rsg-loading",
+  "tips": [
+    "Tip: Add tip 1 here.",
+    "Tip: Add tip 2 here.",
+    "Tip: Add tip 3 here.",
+    "Tip: Add tip 4 here.",
+    "Tip: Add tip 5 here.",
+    "Tip: Add tip 6 here."
+  ]
+}

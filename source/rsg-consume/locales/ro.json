@@ -1,0 +1,12 @@
+{
+    "title_consume": "Consumă",
+    "busy": "Deja mănânci sau bei",
+    "drunk_title": "🍺 Beat",
+    "drunk_desc": "Începi să te simți amețit...",
+    "passout_title": "💀 Rău",
+    "passout_desc": "Nu te simți prea bine...",
+    "wakeup_title": "🤕 Trezire grea",
+    "wakeup_desc": "Te trezești cu o durere de cap cumplită...",
+    "sober_title": "✨ Refăcut",
+    "sober_desc": "Ai din nou mintea limpede."
+}

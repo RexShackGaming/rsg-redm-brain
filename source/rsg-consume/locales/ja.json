@@ -1,0 +1,12 @@
+{
+    "title_consume": "消費",
+    "busy": "すでに飲食中です",
+    "drunk_title": "🍺 酔っ払い",
+    "drunk_desc": "ほろ酔い気分になってきた...",
+    "passout_title": "💀 気分が悪い",
+    "passout_desc": "どうも気分が優れない...",
+    "wakeup_title": "🤕 最悪の目覚め",
+    "wakeup_desc": "ひどい頭痛で目が覚めた...",
+    "sober_title": "✨ 回復",
+    "sober_desc": "頭がすっきりした。"
+}

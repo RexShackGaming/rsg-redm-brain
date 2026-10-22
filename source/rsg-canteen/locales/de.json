@@ -1,0 +1,14 @@
+{
+    "notify_title": "Feldflasche",
+    "target_fill": "Feldflasche füllen",
+    "progress_fill": "Feldflasche wird gefüllt...",
+    "progress_drink": "Trinken...",
+    "no_canteen": "Du brauchst eine Feldflasche",
+    "canteen_empty": "Deine Feldflasche ist leer, fülle sie an einer Wasserpumpe",
+    "canteens_full": "Deine Feldflasche ist bereits voll",
+    "canteen_filled": "Feldflasche gefüllt (%s Anwendungen)",
+    "drank": "Du hast getrunken (%s/%s Anwendungen übrig)",
+    "too_far": "Du bist zu weit von der Pumpe entfernt",
+    "busy": "Du bist beschäftigt",
+    "target_fill_water": "Feldflasche füllen"
+}

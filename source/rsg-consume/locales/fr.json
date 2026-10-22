@@ -1,0 +1,12 @@
+{
+    "title_consume": "Consommer",
+    "busy": "Vous êtes déjà en train de manger ou de boire",
+    "drunk_title": "🍺 Ivre",
+    "drunk_desc": "Vous commencez à être éméché...",
+    "passout_title": "💀 Malaise",
+    "passout_desc": "Vous ne vous sentez pas très bien...",
+    "wakeup_title": "🤕 Réveil difficile",
+    "wakeup_desc": "Vous vous réveillez avec un terrible mal de tête...",
+    "sober_title": "✨ Rétabli",
+    "sober_desc": "Vous avez de nouveau les idées claires."
+}

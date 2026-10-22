@@ -1,0 +1,12 @@
+{
+    "title_consume": "Consumir",
+    "busy": "Ya estás comiendo o bebiendo",
+    "drunk_title": "🍺 Borracho",
+    "drunk_desc": "Empiezas a sentirte achispado...",
+    "passout_title": "💀 Malestar",
+    "passout_desc": "No te sientes nada bien...",
+    "wakeup_title": "🤕 Despertar difícil",
+    "wakeup_desc": "Te despiertas con un dolor de cabeza terrible...",
+    "sober_title": "✨ Recuperado",
+    "sober_desc": "Vuelves a tener la mente despejada."
+}

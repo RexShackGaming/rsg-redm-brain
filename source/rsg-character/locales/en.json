@@ -1,0 +1,434 @@
+{
+    "blips": {
+        "clothing_store": "Clothing Store",
+        "wardrobe": "Wardrobe"
+    },
+    "texts": {
+        "body": "Body",
+        "face": "Face",
+        "hair_beard": "Hair & Beard",
+        "hair_style": "Hair Style",
+        "hair_color": "Hair Color",
+        "beard_style": "Beard Style",
+        "beard_color": "Beard Color",
+        "makeup": "Makeup",
+        "appearance": "Appearance",
+        "slim": "Slim",
+        "sporty": "Sporty",
+        "medium": "Medium",
+        "fat": "Fat",
+        "strong": "Strong",
+        "face_width": "Face Width",
+        "skin_tone": "Skin Tone",
+        "eyes": "Eyes",
+        "eyelids": "Eyelids",
+        "eyebrows": "Eyebrows",
+        "nose": "Nose",
+        "mouth": "Mouth",
+        "teeth": "Teeth",
+        "cheekbones": "Cheek Bones",
+        "jaw": "Jaw",
+        "ears": "Ears",
+        "chin": "Chin",
+        "defects": "Defects",
+        "hair": "Hair",
+        "beard": "Beard",
+        "type": "Type",
+        "visibility": "Visibility",
+        "color_palette": "Color Palette ",
+        "color_firstrate": "Color First-rate",
+        "eyebrow": "Eyebrows",
+        "nose_curvature": "Nose Curvature",
+        "up_down": "UP / DOWN",
+        "left_right": "left / right",
+        "upper_lip_height": "Upper Lip Height",
+        "upper_lip_width": "Upper Lip Width",
+        "upper_lip_depth": "Upper Lip Depth",
+        "lower_lip_height": "Lower Lip Height",
+        "lower_lip_width": "Lower Lip Width",
+        "lower_lip_depth": "Lower Lip Depth",
+        "make_up": "Make-up",
+        "older": "Older",
+        "scars": "Type Scars",
+        "freckles": "Type Freckles",
+        "moles": "Moles",
+        "disadvantages": "Disadvantages",
+        "spots": "Spots",
+        "shadow": "Shadow",
+        "color_shadow": "Color Shadow",
+        "color_first_class": "Color First-Class Delusion",
+        "blushing_cheek": "Blushing Cheek",
+        "blush_id": "Cheek Blush Color",
+        "blush_c1": "Color First Degree Cheek Redness",
+        "lipstick": "Type Lipstick",
+        "color_lipstick": "Color Lipstick",
+        "lipsticks_c1": "First-Class Color Lipstick",
+        "lipsticks_c2": "Second Color Lipstick",
+        "eyeliners": "Eyeliners",
+        "eyeliners_id": "Color Eyeliners",
+        "eyeliners_c1": "Color main Eyeliners",
+        "save": "Save",
+        "options": "Options",
+        "align": "top-left",
+        "style": "Style ",
+        "color": "Color ",
+        "size": "Size",
+        "width": "Width ",
+        "height": "Height",
+        "depth": "Depth",
+        "waist": "Waist",
+        "chest": "Chest",
+        "distance": "Distance",
+        "angle": "Angle",
+        "clarity": "Clarity",
+        "creator": "CHARACTER CREATOR",
+        "first_menu": {
+            "label_firstname": "First Name",
+            "label_lastname": "Last Name",
+            "desc": "How do you want to be called by people?",
+            "none": "Empty",
+            "start": "Start Your Journey",
+            "empty": "Fill out everything first",
+            "nationality": "Nationality",
+            "birthdate": "Birth Date"
+        }
+    },
+    "labels": {
+        "boot_accessories": "Boot Accessories",
+        "pants": "Pants",
+        "cloaks": "Cloaks",
+        "hats": "Hats",
+        "vests": "Vests",
+        "chaps": "Chaps",
+        "shirts_full": "Shirts Full",
+        "badges": "Badges",
+        "masks": "Masks",
+        "spats": "Spats",
+        "neckwear": "Neck Wear",
+        "boots": "Boots",
+        "accessories": "Accessories",
+        "jewelry_rings_right": "Jewelry Rings Right",
+        "jewelry_rings_left": "Jewelry Rings Left",
+        "jewelry_bracelets": "Jewelry Bracelets",
+        "gauntlets": "Gauntlets",
+        "neckties": "Neck Ties",
+        "holsters_knife": "Holsters Knife",
+        "loadouts": "Loadouts",
+        "suspenders": "Suspenders",
+        "satchels": "Satchels",
+        "gunbelts": "Gun Belts",
+        "belts": "Belts",
+        "belt_buckles": "Belt Buckles",
+        "holsters_left": "Holsters Left",
+        "holsters_right": "Holsters Right",
+        "coats": "Coats",
+        "coats_closed": "Coats Closed",
+        "ponchos": "Ponchos",
+        "eyewear": "Eyewear",
+        "gloves": "Gloves",
+        "holsters_crossdraw": "Holsters Crossdraw",
+        "skirts": "Skirts",
+        "hair_accessories": "Hair Accessories",
+        "armor": "Armor",
+        "dresses": "Dresses",
+        "ammunition_belts": "Ammunition Belts",
+        "gunbelt_ammunition": "Gunbelt Ammunition",
+        "gunbelt_accs": "Gunbelt Accessories",
+        "leg_attachments": "Leg Attachments",
+        "save": "Save Clothes",
+        "clothes": "Clothes",
+        "options": "options",
+        "color": "Color ",
+        "choose": "choose your clothes",
+        "wear": "Wear Outfit",
+        "wear_desc": "dress up",
+        "delete": "Delete Outfit",
+        "delete_desc": "delete outfit",
+        "shop": "Clothing Store",
+        "total": "Price"
+    },
+    "menu_elements": {
+        "head": {
+            "label": "Head"
+        },
+        "shirts_vests": {
+            "label": "Shirts & Vests"
+        },
+        "belts_holsters": {
+            "label": "Belts & Holsters"
+        },
+        "coats_outerwear": {
+            "label": "Coats & Outerwear"
+        },
+        "legs": {
+            "label": "Legs"
+        },
+        "foot": {
+            "label": "Foot"
+        },
+        "hands": {
+            "label": "Hands"
+        },
+        "belts_satchels": {
+            "label": "Belts & Satchels"
+        },
+        "misc_gear": {
+            "label": "Misc. Gear"
+        }
+    },
+    "prompts": {
+        "cloakroom_text": "Open Changing Rooms",
+        "clothing_store_label": "Clothing Store",
+        "zoom_label": "Zoom In/Zoom Out",
+        "camera_up_label": "Camera Up/Down",
+        "camera_turn_label": "Turn Left/Right"
+    },
+    "cloack_room_prompt_button": "Cloak Room",
+    "save_outfit_1": "Save Outfit",
+    "save_outfit_2_header": "Save Outfit",
+    "save_outfit_2_input_label": "Outfit Name",
+    "invalid_character_name": {
+        "title": "Error",
+        "description": "Input must start with a capital letter, and only letters are allowed."
+    },
+    "loadskin_blocked": {
+        "title": "Can't Reload Appearance",
+        "description": "You can't do this right now (dead, cuffed, hogtied, jailed, or falling)."
+    },
+    "missing_character_info": {
+        "title": "Error",
+        "description": "Need to fill out all of the informations about yourself first! (Firstname, Lastname, Nationality, Birthdate)"
+    },
+    "insufficient_funds": {
+        "title": "Insufficient Funds",
+        "description": "You don't have enough cash"
+    },
+    "creator": {
+        "appearance": {
+            "label": "Appearance",
+            "desc": "Choose Your Appearance"
+        },
+        "sections": {
+            "look": "Look",
+            "details": "Character Details"
+        },
+        "randomize": {
+            "label": "Random Appearance",
+            "desc": "Generate a new random look (each press re-rolls)"
+        },
+        "clothing": {
+            "label": "Clothing",
+            "desc": "Choose Your Clothes"
+        },
+        "firstname": {
+            "desc": "Choose Your First Name",
+            "input": {
+                "header": "Registration",
+                "label": "First Name",
+                "placeholder": "Hank"
+            }
+        },
+        "lastname": {
+            "desc": "Choose Your Last Name",
+            "input": {
+                "header": "Registration",
+                "label": "Last Name",
+                "placeholder": "Jordan"
+            }
+        },
+        "nationality": {
+            "desc": "Choose Your Nationality",
+            "input": {
+                "header": "Registration",
+                "label": "Nationality",
+                "placeholder": "Mexican"
+            }
+        },
+        "birthdate": {
+            "desc": "Choose Your Birth Date",
+            "input": {
+                "header": "Registration",
+                "label": "Birth Date"
+            }
+        },
+        "male": "Male",
+        "female": "Female",
+        "confirm": "Confirm",
+        "select_gender_1": "Select Gender",
+        "select_gender_2": "Select Gender",
+        "photo_tip": "Take a screenshot now"
+    },
+    "clothing_menu": {
+        "category_desc": "Clothing options for this category",
+        "confirm_purhcase": "Confirm purchase",
+        "remove_all": {
+            "label": "Remove All Clothing",
+            "desc": "Take off everything and return to the default look",
+            "confirm": "Remove all clothing?"
+        }
+    },
+    "camera_prompt_text": "Up/Down",
+    "rotate_prompt_text": "Left/Right",
+    "zoom_prompt_text": "Zoom",
+    "group_prompt_text": "RSGCore Creator",
+    "charselect": {
+        "title": "Select Character",
+        "subtitle": "Choose a character or create a new one",
+        "unnamed": "Unnamed",
+        "existing": {
+            "desc": "Continue playing as this character"
+        },
+        "hint": {
+            "select": "Click to play as ~g~%s~s~",
+            "create": "Click to create a new character",
+            "controls": "← → Browse    [Enter] Select    [DEL] Delete"
+        },
+        "empty": {
+            "label": "Create New Character",
+            "desc": "This slot is empty - start a new character here"
+        },
+        "exploit_dropped": "Character/license mismatch detected.",
+        "login_failed": {
+            "title": "Error",
+            "description": "Couldn't load your character - please try again."
+        },
+        "slot_label": "Slot %s",
+        "slot_taken": {
+            "title": "Slot Unavailable",
+            "desc": "That character slot was just taken - pick another."
+        },
+        "delete": {
+            "label": "Delete Character",
+            "desc": "Permanently delete this character - this cannot be undone",
+            "confirm_header": "Delete this character? This cannot be undone.",
+            "loading": "Deleting character..."
+        },
+        "info": {
+            "job": "Job",
+            "birthdate": "Birth Date",
+            "nationality": "Nationality",
+            "cash": "Cash",
+            "unemployed": "Unemployed",
+            "play": "Play",
+            "delete": "Delete",
+            "create": "Create"
+        },
+        "gender": {
+            "title": "Choose Gender",
+            "subtitle": "This can't be changed later",
+            "male": "Male",
+            "female": "Female"
+        },
+        "loading": "Creating your character...",
+        "play_loading": "Loading your character..."
+    },
+    "spawn": {
+        "title": "Where do you want to spawn?",
+        "subtitle": "Pick a location to enter the world",
+        "last_location": {
+            "label": "Last Location",
+            "desc": "Return to where you last logged off"
+        },
+        "preset": {
+            "desc": "Spawn here"
+        },
+        "loading": "Traveling..."
+    },
+    "ui": {
+        "back": "Back",
+        "camera": {
+            "rotate": "Rotate",
+            "height": "Up/Down",
+            "zoom": "Zoom",
+            "rotate_left_title": "Rotate character left",
+            "rotate_right_title": "Rotate character right",
+            "up_title": "Move camera up",
+            "down_title": "Move camera down",
+            "zoom_in_title": "Zoom camera in",
+            "zoom_out_title": "Zoom camera out",
+            "reset": "Reset",
+            "reset_title": "Reset camera to default"
+        },
+        "total": "TOTAL",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+    },
+    "clothing_validation": {
+        "title": "Error",
+        "invalid_data": "Invalid clothes data",
+        "invalid_item": "Invalid item data for %s",
+        "invalid_category": "Invalid category: %s",
+        "invalid_hash": "Invalid hash for category: %s"
+    },
+    "webhooks": {
+        "common": {
+            "player_field": "Player",
+            "discord_field": "Discord",
+            "na": "N/A",
+            "unknown": "Unknown",
+            "username": "Character Logs"
+        },
+        "character_created": {
+            "title": "Character Created",
+            "description": "**%s %s** was created in slot **%s**.",
+            "field_citizenid": "Citizen ID",
+            "field_gender": "Gender",
+            "field_nationality": "Nationality",
+            "field_birthdate": "Birthdate",
+            "male": "Male",
+            "female": "Female"
+        },
+        "character_selected": {
+            "title": "Character Selected",
+            "description": "**%s %s** logged into citizen ID **%s**."
+        },
+        "character_deleted": {
+            "title": "Character Deleted",
+            "description": "**%s %s** (citizen ID **%s**) was deleted."
+        },
+        "appearance_saved": {
+            "title_initial": "Initial Appearance Saved",
+            "description": "Appearance/clothing was saved for citizen ID **%s**.",
+            "field_citizenid": "Citizen ID"
+        },
+        "outfit_purchased": {
+            "title": "Outfit Purchased",
+            "description": "An outfit was purchased for **$%s**.",
+            "field_citizenid": "Citizen ID",
+            "field_outfit_name": "Outfit Name"
+        }
+    },
+    "spawn_locations": {
+        "valentine": "Valentine",
+        "rhodes": "Rhodes",
+        "saint_denis": "Saint Denis",
+        "blackwater": "Blackwater"
+    },
+    "nationalities": {
+        "american": "American",
+        "british": "British",
+        "irish": "Irish",
+        "scottish": "Scottish",
+        "welsh": "Welsh",
+        "french": "French",
+        "german": "German",
+        "italian": "Italian",
+        "spanish": "Spanish",
+        "mexican": "Mexican",
+        "dutch": "Dutch",
+        "swedish": "Swedish",
+        "norwegian": "Norwegian",
+        "danish": "Danish",
+        "polish": "Polish",
+        "russian": "Russian",
+        "chinese": "Chinese",
+        "japanese": "Japanese",
+        "cuban": "Cuban",
+        "native_american": "Native American",
+        "other": "Other"
+    },
+    "outfit_limit_reached": "You can only store %s outfits - this one was not saved to your wardrobe",
+    "outfit_delete_confirm": "Delete this outfit?",
+    "default_outfit_name": "Default",
+    "auto_outfit_name": "Outfit %s"
+}

@@ -1,0 +1,12 @@
+{
+    "title_consume": "Consumeren",
+    "busy": "Je bent al aan het eten of drinken",
+    "drunk_title": "🍺 Dronken",
+    "drunk_desc": "Je begint je aangeschoten te voelen...",
+    "passout_title": "💀 Onwel",
+    "passout_desc": "Je voelt je niet zo lekker...",
+    "wakeup_title": "🤕 Ruw ontwaken",
+    "wakeup_desc": "Je wordt wakker met een vreselijke hoofdpijn...",
+    "sober_title": "✨ Hersteld",
+    "sober_desc": "Je hebt weer een helder hoofd."
+}

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>rsg-fishmonger</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+    <div class="panel">
+        <header class="panel-header">
+            <div class="circle-btn ghost">&#10022;</div>
+            <div class="titles">
+                <h1 id="title"></h1>
+                <div class="subtitle" id="subtitle"></div>
+            </div>
+            <button class="circle-btn" id="closeBtn" data-i18n-title="ui_close">&#10005;</button>
+        </header>
+        <div class="divider"><span>&#10022;</span></div>
+
+        <div class="body">
+            <!-- fish list -->
+            <section class="col col-fish">
+                <div class="toolbar">
+                    <input type="text" id="search" class="input" data-i18n-ph="ui_search">
+                    <label class="toggle"><input type="checkbox" id="ownedOnly" checked> <span data-i18n="ui_owned_only"></span></label>
+                    <button class="wood-btn" id="addAllBtn" data-i18n="ui_add_all_cart"></button>
+                </div>
+                <div class="fish-list" id="fishList"></div>
+            </section>
+
+            <!-- cart -->
+            <section class="col col-cart">
+                <div class="section-title" data-i18n="ui_cart"></div>
+                <div class="ink-divider"></div>
+                <div class="cart-list" id="cartList"></div>
+                <div class="totals">
+                    <div class="total-row"><span data-i18n="ui_fish"></span><strong id="totFish">0</strong></div>
+                    <div class="total-row"><span data-i18n="ui_sell_value"></span><strong class="ok" id="totCash">$0.00</strong></div>
+                    <div class="total-row"><span id="filletName"></span><strong id="totFillets">0</strong></div>
+                </div>
+                <div class="cart-actions">
+                    <button class="wood-btn" id="sellBtn" data-i18n="ui_sell"></button>
+                    <button class="wood-btn" id="processBtn" data-i18n="ui_process"></button>
+                    <button class="wood-btn muted" id="clearBtn" data-i18n="ui_clear"></button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div id="modal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div class="modal-title" id="modalTitle"></div>
+            <div class="ink-divider"></div>
+            <p class="modal-text" id="modalText"></p>
+            <div class="modal-actions">
+                <button class="wood-btn muted" id="modalCancel" data-i18n="ui_cancel"></button>
+                <button class="wood-btn" id="modalConfirm" data-i18n="ui_confirm"></button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

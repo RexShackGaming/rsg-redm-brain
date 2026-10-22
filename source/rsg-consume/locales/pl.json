@@ -1,0 +1,12 @@
+{
+    "title_consume": "Spożycie",
+    "busy": "Już jesz lub pijesz",
+    "drunk_title": "🍺 Pijany",
+    "drunk_desc": "Zaczynasz czuć się wstawiony...",
+    "passout_title": "💀 Złe samopoczucie",
+    "passout_desc": "Nie czujesz się najlepiej...",
+    "wakeup_title": "🤕 Ciężka pobudka",
+    "wakeup_desc": "Budzisz się z okropnym bólem głowy...",
+    "sober_title": "✨ Wróciłeś do siebie",
+    "sober_desc": "Znów masz jasny umysł."
+}

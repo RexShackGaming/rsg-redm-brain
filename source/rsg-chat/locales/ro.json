@@ -1,0 +1,14 @@
+{
+  "chat_title": "Chat",
+  "ooc_prefix": "OOC",
+  "server_prefix": "SERVER",
+  "slow_down": "Trimiți mesaje prea repede.",
+  "unknown_command": "Comandă necunoscută: /%s",
+  "no_permission": "Nu ai permisiunea să faci asta.",
+  "unknown_player": "Necunoscut",
+  "console_name": "Consolă",
+  "param_message": "mesaj",
+  "param_message_help": "Mesajul de trimis",
+  "help_ooc": "Trimite un mesaj în afara personajului",
+  "help_clearchat": "Golește fereastra de chat"
+}

@@ -1,0 +1,434 @@
+{
+    "blips": {
+        "clothing_store": "Magasin de vêtements",
+        "wardrobe": "Garde-robe"
+    },
+    "texts": {
+        "body": "Corps",
+        "face": "Visage",
+        "hair_beard": "Cheveux & Barbe",
+        "hair_style": "Coiffure",
+        "hair_color": "Couleur des cheveux",
+        "beard_style": "Style de barbe",
+        "beard_color": "Couleur de barbe",
+        "makeup": "Maquillage",
+        "appearance": "Apparence",
+        "slim": "Mince",
+        "sporty": "Sportif",
+        "medium": "Moyen",
+        "fat": "Gros",
+        "strong": "Costaud",
+        "face_width": "Largeur du visage",
+        "skin_tone": "Teint",
+        "eyes": "Yeux",
+        "eyelids": "Paupières",
+        "eyebrows": "Sourcils",
+        "nose": "Nez",
+        "mouth": "Bouche",
+        "teeth": "Dents",
+        "cheekbones": "Pommettes",
+        "jaw": "Mâchoire",
+        "ears": "Oreilles",
+        "chin": "Menton",
+        "defects": "Défauts",
+        "hair": "Cheveux",
+        "beard": "Barbe",
+        "type": "Type",
+        "visibility": "Visibilité",
+        "color_palette": "Palette de couleurs ",
+        "color_firstrate": "Couleur principale",
+        "eyebrow": "Sourcils",
+        "nose_curvature": "Courbure du nez",
+        "up_down": "HAUT / BAS",
+        "left_right": "gauche / droite",
+        "upper_lip_height": "Hauteur lèvre supérieure",
+        "upper_lip_width": "Largeur lèvre supérieure",
+        "upper_lip_depth": "Profondeur lèvre supérieure",
+        "lower_lip_height": "Hauteur lèvre inférieure",
+        "lower_lip_width": "Largeur lèvre inférieure",
+        "lower_lip_depth": "Profondeur lèvre inférieure",
+        "make_up": "Maquillage",
+        "older": "Vieillissement",
+        "scars": "Type de cicatrices",
+        "freckles": "Type de taches de rousseur",
+        "moles": "Grains de beauté",
+        "disadvantages": "Imperfections",
+        "spots": "Taches",
+        "shadow": "Fard à paupières",
+        "color_shadow": "Couleur du fard",
+        "color_first_class": "Couleur principale du fard",
+        "blushing_cheek": "Joues rosées",
+        "blush_id": "Couleur du blush",
+        "blush_c1": "Couleur principale du blush",
+        "lipstick": "Type de rouge à lèvres",
+        "color_lipstick": "Couleur du rouge à lèvres",
+        "lipsticks_c1": "Couleur principale du rouge à lèvres",
+        "lipsticks_c2": "Couleur secondaire du rouge à lèvres",
+        "eyeliners": "Eye-liners",
+        "eyeliners_id": "Couleur de l'eye-liner",
+        "eyeliners_c1": "Couleur principale de l'eye-liner",
+        "save": "Enregistrer",
+        "options": "Options",
+        "align": "top-left",
+        "style": "Style ",
+        "color": "Couleur ",
+        "size": "Taille",
+        "width": "Largeur ",
+        "height": "Hauteur",
+        "depth": "Profondeur",
+        "waist": "Taille (tour)",
+        "chest": "Poitrine",
+        "distance": "Distance",
+        "angle": "Angle",
+        "clarity": "Netteté",
+        "creator": "CRÉATION DE PERSONNAGE",
+        "first_menu": {
+            "label_firstname": "Prénom",
+            "label_lastname": "Nom",
+            "desc": "Comment veux-tu que les gens t'appellent ?",
+            "none": "Vide",
+            "start": "Commencer ton voyage",
+            "empty": "Remplis d'abord tous les champs",
+            "nationality": "Nationalité",
+            "birthdate": "Date de naissance"
+        }
+    },
+    "labels": {
+        "boot_accessories": "Accessoires de bottes",
+        "pants": "Pantalons",
+        "cloaks": "Capes",
+        "hats": "Chapeaux",
+        "vests": "Gilets",
+        "chaps": "Jambières",
+        "shirts_full": "Chemises",
+        "badges": "Insignes",
+        "masks": "Masques",
+        "spats": "Guêtres",
+        "neckwear": "Foulards",
+        "boots": "Bottes",
+        "accessories": "Accessoires",
+        "jewelry_rings_right": "Bagues droite",
+        "jewelry_rings_left": "Bagues gauche",
+        "jewelry_bracelets": "Bracelets",
+        "gauntlets": "Gantelets",
+        "neckties": "Cravates",
+        "holsters_knife": "Étuis à couteau",
+        "loadouts": "Équipements",
+        "suspenders": "Bretelles",
+        "satchels": "Sacoches",
+        "gunbelts": "Ceintures d'armes",
+        "belts": "Ceintures",
+        "belt_buckles": "Boucles de ceinture",
+        "holsters_left": "Étuis gauche",
+        "holsters_right": "Étuis droite",
+        "coats": "Manteaux",
+        "coats_closed": "Manteaux fermés",
+        "ponchos": "Ponchos",
+        "eyewear": "Lunettes",
+        "gloves": "Gants",
+        "holsters_crossdraw": "Étuis croisés",
+        "skirts": "Jupes",
+        "hair_accessories": "Accessoires de cheveux",
+        "armor": "Armure",
+        "dresses": "Robes",
+        "ammunition_belts": "Cartouchières",
+        "gunbelt_ammunition": "Munitions de ceinture",
+        "gunbelt_accs": "Accessoires de ceinture",
+        "leg_attachments": "Accessoires de jambe",
+        "save": "Enregistrer la tenue",
+        "clothes": "Vêtements",
+        "options": "options",
+        "color": "Couleur ",
+        "choose": "choisis tes vêtements",
+        "wear": "Porter la tenue",
+        "wear_desc": "s'habiller",
+        "delete": "Supprimer la tenue",
+        "delete_desc": "supprimer la tenue",
+        "shop": "Magasin de vêtements",
+        "total": "Prix"
+    },
+    "menu_elements": {
+        "head": {
+            "label": "Tête"
+        },
+        "shirts_vests": {
+            "label": "Chemises & Gilets"
+        },
+        "belts_holsters": {
+            "label": "Ceintures & Étuis"
+        },
+        "coats_outerwear": {
+            "label": "Manteaux & Vêtements d'extérieur"
+        },
+        "legs": {
+            "label": "Jambes"
+        },
+        "foot": {
+            "label": "Pieds"
+        },
+        "hands": {
+            "label": "Mains"
+        },
+        "belts_satchels": {
+            "label": "Ceintures & Sacoches"
+        },
+        "misc_gear": {
+            "label": "Équipement divers"
+        }
+    },
+    "prompts": {
+        "cloakroom_text": "Ouvrir la cabine d'essayage",
+        "clothing_store_label": "Magasin de vêtements",
+        "zoom_label": "Zoom avant/arrière",
+        "camera_up_label": "Caméra haut/bas",
+        "camera_turn_label": "Tourner gauche/droite"
+    },
+    "cloack_room_prompt_button": "Vestiaire",
+    "save_outfit_1": "Enregistrer la tenue",
+    "save_outfit_2_header": "Enregistrer la tenue",
+    "save_outfit_2_input_label": "Nom de la tenue",
+    "invalid_character_name": {
+        "title": "Erreur",
+        "description": "La saisie doit commencer par une majuscule et ne contenir que des lettres."
+    },
+    "loadskin_blocked": {
+        "title": "Impossible de recharger l'apparence",
+        "description": "Tu ne peux pas faire ça maintenant (mort, menotté, ligoté, en prison ou en chute)."
+    },
+    "missing_character_info": {
+        "title": "Erreur",
+        "description": "Tu dois d'abord remplir toutes les informations te concernant ! (Prénom, Nom, Nationalité, Date de naissance)"
+    },
+    "insufficient_funds": {
+        "title": "Fonds insuffisants",
+        "description": "Tu n'as pas assez d'argent liquide"
+    },
+    "creator": {
+        "appearance": {
+            "label": "Apparence",
+            "desc": "Choisis ton apparence"
+        },
+        "sections": {
+            "look": "Allure",
+            "details": "Détails du personnage"
+        },
+        "randomize": {
+            "label": "Apparence aléatoire",
+            "desc": "Génère une nouvelle apparence aléatoire (chaque appui relance)"
+        },
+        "clothing": {
+            "label": "Vêtements",
+            "desc": "Choisis tes vêtements"
+        },
+        "firstname": {
+            "desc": "Choisis ton prénom",
+            "input": {
+                "header": "Enregistrement",
+                "label": "Prénom",
+                "placeholder": "Hank"
+            }
+        },
+        "lastname": {
+            "desc": "Choisis ton nom",
+            "input": {
+                "header": "Enregistrement",
+                "label": "Nom",
+                "placeholder": "Jordan"
+            }
+        },
+        "nationality": {
+            "desc": "Choisis ta nationalité",
+            "input": {
+                "header": "Enregistrement",
+                "label": "Nationalité",
+                "placeholder": "Mexicain"
+            }
+        },
+        "birthdate": {
+            "desc": "Choisis ta date de naissance",
+            "input": {
+                "header": "Enregistrement",
+                "label": "Date de naissance"
+            }
+        },
+        "male": "Homme",
+        "female": "Femme",
+        "confirm": "Confirmer",
+        "select_gender_1": "Choisir le sexe",
+        "select_gender_2": "Choisir le sexe",
+        "photo_tip": "Fais une capture d'écran maintenant"
+    },
+    "clothing_menu": {
+        "category_desc": "Options vestimentaires pour cette catégorie",
+        "confirm_purhcase": "Confirmer l'achat",
+        "remove_all": {
+            "label": "Retirer tous les vêtements",
+            "desc": "Tout enlever et revenir à l'apparence par défaut",
+            "confirm": "Retirer tous les vêtements ?"
+        }
+    },
+    "camera_prompt_text": "Haut/Bas",
+    "rotate_prompt_text": "Gauche/Droite",
+    "zoom_prompt_text": "Zoom",
+    "group_prompt_text": "Créateur RSGCore",
+    "charselect": {
+        "title": "Choisir un personnage",
+        "subtitle": "Choisis un personnage ou crées-en un nouveau",
+        "unnamed": "Sans nom",
+        "existing": {
+            "desc": "Continuer avec ce personnage"
+        },
+        "hint": {
+            "select": "Cliquer pour jouer ~g~%s~s~",
+            "create": "Cliquer pour créer un nouveau personnage",
+            "controls": "← → Parcourir    [Entrée] Choisir    [SUPPR] Supprimer"
+        },
+        "empty": {
+            "label": "Créer un nouveau personnage",
+            "desc": "Cet emplacement est vide - crée un nouveau personnage ici"
+        },
+        "exploit_dropped": "Incohérence personnage/licence détectée.",
+        "login_failed": {
+            "title": "Erreur",
+            "description": "Impossible de charger ton personnage - réessaie."
+        },
+        "slot_label": "Emplacement %s",
+        "slot_taken": {
+            "title": "Emplacement indisponible",
+            "desc": "Cet emplacement vient d'être pris - choisis-en un autre."
+        },
+        "delete": {
+            "label": "Supprimer le personnage",
+            "desc": "Supprimer définitivement ce personnage - action irréversible",
+            "confirm_header": "Supprimer ce personnage ? Action irréversible.",
+            "loading": "Suppression du personnage..."
+        },
+        "info": {
+            "job": "Métier",
+            "birthdate": "Date de naissance",
+            "nationality": "Nationalité",
+            "cash": "Argent liquide",
+            "unemployed": "Sans emploi",
+            "play": "Jouer",
+            "delete": "Supprimer",
+            "create": "Créer"
+        },
+        "gender": {
+            "title": "Choisir le sexe",
+            "subtitle": "Cela ne pourra pas être modifié plus tard",
+            "male": "Homme",
+            "female": "Femme"
+        },
+        "loading": "Création de ton personnage...",
+        "play_loading": "Chargement de ton personnage..."
+    },
+    "spawn": {
+        "title": "Où veux-tu apparaître ?",
+        "subtitle": "Choisis un lieu pour entrer dans le monde",
+        "last_location": {
+            "label": "Dernière position",
+            "desc": "Retourner là où tu t'es déconnecté"
+        },
+        "preset": {
+            "desc": "Apparaître ici"
+        },
+        "loading": "Voyage en cours..."
+    },
+    "ui": {
+        "back": "Retour",
+        "camera": {
+            "rotate": "Rotation",
+            "height": "Haut/Bas",
+            "zoom": "Zoom",
+            "rotate_left_title": "Tourner le personnage à gauche",
+            "rotate_right_title": "Tourner le personnage à droite",
+            "up_title": "Monter la caméra",
+            "down_title": "Descendre la caméra",
+            "zoom_in_title": "Rapprocher la caméra",
+            "zoom_out_title": "Éloigner la caméra",
+            "reset": "Réinitialiser",
+            "reset_title": "Réinitialiser la caméra"
+        },
+        "total": "TOTAL",
+        "cancel": "Annuler",
+        "confirm": "Confirmer"
+    },
+    "clothing_validation": {
+        "title": "Erreur",
+        "invalid_data": "Données de vêtements invalides",
+        "invalid_item": "Données d'article invalides pour %s",
+        "invalid_category": "Catégorie invalide : %s",
+        "invalid_hash": "Hash invalide pour la catégorie : %s"
+    },
+    "webhooks": {
+        "common": {
+            "player_field": "Joueur",
+            "discord_field": "Discord",
+            "na": "N/D",
+            "unknown": "Inconnu",
+            "username": "Journaux des personnages"
+        },
+        "character_created": {
+            "title": "Personnage créé",
+            "description": "**%s %s** a été créé dans l'emplacement **%s**.",
+            "field_citizenid": "ID citoyen",
+            "field_gender": "Sexe",
+            "field_nationality": "Nationalité",
+            "field_birthdate": "Date de naissance",
+            "male": "Homme",
+            "female": "Femme"
+        },
+        "character_selected": {
+            "title": "Personnage sélectionné",
+            "description": "**%s %s** s'est connecté avec l'ID citoyen **%s**."
+        },
+        "character_deleted": {
+            "title": "Personnage supprimé",
+            "description": "**%s %s** (ID citoyen **%s**) a été supprimé."
+        },
+        "appearance_saved": {
+            "title_initial": "Apparence initiale enregistrée",
+            "description": "L'apparence/les vêtements ont été enregistrés pour l'ID citoyen **%s**.",
+            "field_citizenid": "ID citoyen"
+        },
+        "outfit_purchased": {
+            "title": "Tenue achetée",
+            "description": "Une tenue a été achetée pour **$%s**.",
+            "field_citizenid": "ID citoyen",
+            "field_outfit_name": "Nom de la tenue"
+        }
+    },
+    "spawn_locations": {
+        "valentine": "Valentine",
+        "rhodes": "Rhodes",
+        "saint_denis": "Saint Denis",
+        "blackwater": "Blackwater"
+    },
+    "nationalities": {
+        "american": "Américain",
+        "british": "Britannique",
+        "irish": "Irlandais",
+        "scottish": "Écossais",
+        "welsh": "Gallois",
+        "french": "Français",
+        "german": "Allemand",
+        "italian": "Italien",
+        "spanish": "Espagnol",
+        "mexican": "Mexicain",
+        "dutch": "Néerlandais",
+        "swedish": "Suédois",
+        "norwegian": "Norvégien",
+        "danish": "Danois",
+        "polish": "Polonais",
+        "russian": "Russe",
+        "chinese": "Chinois",
+        "japanese": "Japonais",
+        "cuban": "Cubain",
+        "native_american": "Amérindien",
+        "other": "Autre"
+    },
+    "outfit_limit_reached": "You can only store %s outfits - this one was not saved to your wardrobe",
+    "outfit_delete_confirm": "Delete this outfit?",
+    "default_outfit_name": "Default",
+    "auto_outfit_name": "Outfit %s"
+}

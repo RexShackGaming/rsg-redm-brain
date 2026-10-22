@@ -1,0 +1,14 @@
+{
+    "notify_title": "Cantimplora",
+    "target_fill": "Llenar cantimplora",
+    "progress_fill": "Llenando cantimplora...",
+    "progress_drink": "Bebiendo...",
+    "no_canteen": "Necesitas una cantimplora",
+    "canteen_empty": "Tu cantimplora está vacía, llénala en una bomba de agua",
+    "canteens_full": "Tu cantimplora ya está llena",
+    "canteen_filled": "Cantimplora llena (%s usos)",
+    "drank": "Has bebido (quedan %s/%s usos)",
+    "too_far": "Estás demasiado lejos de la bomba",
+    "busy": "Estás ocupado",
+    "target_fill_water": "Llenar cantimplora"
+}

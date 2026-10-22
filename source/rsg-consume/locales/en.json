@@ -1,0 +1,12 @@
+{
+    "title_consume": "Consume",
+    "busy": "You are already eating or drinking",
+    "drunk_title": "🍺 Drunk",
+    "drunk_desc": "You start feeling tipsy...",
+    "passout_title": "💀 Feeling Unwell",
+    "passout_desc": "You don't feel so good...",
+    "wakeup_title": "🤕 Rough Awakening",
+    "wakeup_desc": "You wake up with a terrible headache...",
+    "sober_title": "✨ Recovered",
+    "sober_desc": "You feel clear-headed again."
+}

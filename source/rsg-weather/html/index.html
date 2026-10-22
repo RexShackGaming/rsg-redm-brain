@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>rsg-weather</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="forecast" class="hidden">
+  <div class="panel fc-panel" id="fcPanel">
+    <header class="panel-header">
+      <span class="circle-btn ghost"></span>
+      <div class="titles">
+        <h1 data-l="ui_forecast">Forecast</h1>
+        <div class="subtitle" id="fcSub">Weather Bulletin</div>
+      </div>
+      <span class="circle-btn ghost"></span>
+    </header>
+    <div class="divider"><span>✦</span></div>
+    <div class="fc-now">
+      <div class="fc-icon" id="fcIcon">☀</div>
+      <div class="grow">
+        <div class="fc-weather" id="fcWeather">-</div>
+        <div class="fc-meta" id="fcTimeNow">-</div>
+      </div>
+    </div>
+    <div class="fc-stats">
+      <div class="fc-stat"><div class="lbl" data-l="ui_temp">Temp</div><div class="val" id="fcTemp">-</div></div>
+      <div class="fc-stat"><div class="lbl" data-l="ui_wind">Wind</div><div class="val"><span class="fc-arrow" id="fcArrow">↑</span> <span id="fcWind">-</span></div></div>
+      <div class="fc-stat"><div class="lbl" data-l="ui_altitude">Altitude</div><div class="val" id="fcAlt">-</div></div>
+    </div>
+    <div class="divider small"><span>✦</span></div>
+    <div class="fc-list" id="fcList"></div>
+    <div class="fc-foot" id="fcFoot" data-l="ui_forecast_close">/forecast to close</div>
+  </div>
+</div>
+<div id="app" class="hidden">
+  <div class="panel">
+    <header class="panel-header">
+      <span class="circle-btn ghost"></span>
+      <div class="titles">
+        <h1 data-l="ui_weather_office">Weather Office</h1>
+        <div class="subtitle" data-l="ui_sky_and_season_ledger">Sky &amp; Season Ledger</div>
+      </div>
+      <button class="circle-btn" id="closeBtn" title="Close">✕</button>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="weather" data-l="ui_weather">Weather</button>
+      <button class="tab" data-tab="time" data-l="ui_time">Time</button>
+      <button class="tab" data-tab="wind" data-l="ui_wind">Wind</button>
+      <button class="tab" data-tab="patterns" data-l="ui_patterns">Patterns</button>
+    </nav>
+    <div class="divider"><span>✦</span></div>
+
+    <div class="content">
+      <!-- WEATHER -->
+      <section class="tab-page" id="tab-weather">
+        <div class="row info"><div class="badge-ico">☁</div><div class="grow"><div class="t" data-l="ui_current">Current</div><div class="d" id="curWeather">-</div></div><span class="pill" id="curPattern">default</span></div>
+        <label data-l="ui_weather_type">Weather type</label>
+        <select id="wType"></select>
+        <div class="grid2">
+          <div><label data-l="ui_transition_sec">Transition (sec)</label><input type="number" id="wTrans" value="10" min="0.1" step="0.1"></div>
+          <div class="checks">
+            <label class="check"><input type="checkbox" id="wFreeze"> <span data-l="ui_freeze">Freeze</span></label>
+            <label class="check"><input type="checkbox" id="wSnow"> <span data-l="ui_permanent_snow">Permanent snow</span></label>
+          </div>
+        </div>
+        <div class="actions"><button class="wood-btn" id="wApply" data-l="ui_set_weather">Set Weather</button></div>
+        <div class="divider small"><span>✦</span></div>
+        <div class="row info"><div class="badge-ico" id="seasonIcon">✦</div><div class="grow"><div class="t" data-l="ui_seasonal_event">Seasonal event</div><div class="d" id="curSeason">none</div></div><span class="pill" id="seasonMode">auto</span></div>
+        <label data-l="ui_mode">Mode</label>
+        <select id="sMode"></select>
+        <p class="hint" id="seasonHint">Auto switches events on and off by the server's real date.</p>
+        <div class="actions"><button class="wood-btn" id="sApply" data-l="ui_set_season_mode">Set Season Mode</button></div>
+      </section>
+
+      <!-- TIME -->
+      <section class="tab-page hidden" id="tab-time">
+        <div class="row info"><div class="badge-ico">◷</div><div class="grow"><div class="t" data-l="ui_server_time">Server time</div><div class="d" id="curTime">-</div></div><span class="pill" id="curScale">x4</span></div>
+        <div class="grid3">
+          <div><label data-l="ui_day">Day</label><select id="tDay"><option value="0" data-l="ui_sun">Sun</option><option value="1" data-l="ui_mon">Mon</option><option value="2" data-l="ui_tue">Tue</option><option value="3" data-l="ui_wed">Wed</option><option value="4" data-l="ui_thu">Thu</option><option value="5" data-l="ui_fri">Fri</option><option value="6" data-l="ui_sat">Sat</option></select></div>
+          <div><label data-l="ui_hour">Hour</label><input type="number" id="tHour" min="0" max="23" value="12"></div>
+          <div><label data-l="ui_minute">Minute</label><input type="number" id="tMin" min="0" max="59" value="0"></div>
+        </div>
+        <div class="grid2">
+          <div><label data-l="ui_transition_ms">Transition (ms)</label><input type="number" id="tTrans" min="0" value="0"></div>
+          <div class="checks"><label class="check"><input type="checkbox" id="tFreeze"> <span data-l="ui_freeze_time">Freeze time</span></label></div>
+        </div>
+        <div class="actions"><button class="wood-btn" id="tApply" data-l="ui_set_time">Set Time</button></div>
+        <div class="divider small"><span>✦</span></div>
+        <div class="grid2">
+          <div><label data-l="ui_timescale_0_real_clock">Timescale (0 = real clock)</label><input type="number" id="tScale" min="0" step="0.5"></div>
+          <div><label data-l="ui_sync_delay_ms">Sync delay (ms)</label><input type="number" id="tSync" min="500" step="100"></div>
+        </div>
+        <div class="actions"><button class="wood-btn" id="scaleApply" data-l="ui_set_timescale">Set Timescale</button><button class="wood-btn" id="syncApply" data-l="ui_set_sync">Set Sync</button></div>
+      </section>
+
+      <!-- WIND -->
+      <section class="tab-page hidden" id="tab-wind">
+        <div class="row info"><div class="badge-ico" id="windArrow">↑</div><div class="grow"><div class="t" data-l="ui_wind">Wind</div><div class="d" id="curWind">-</div></div></div>
+        <label><span data-l="ui_direction">Direction</span> <span class="muted" id="dirVal">0°</span></label>
+        <input type="range" id="wdDir" min="0" max="359" value="0">
+        <div class="grid2">
+          <div><label data-l="ui_base_speed">Base speed</label><input type="number" id="wdSpeed" min="0" step="0.5" value="0"></div>
+          <div class="checks"><label class="check"><input type="checkbox" id="wdFreeze"> <span data-l="ui_freeze_direction">Freeze direction</span></label></div>
+        </div>
+        <div class="actions"><button class="wood-btn" id="wdApply" data-l="ui_set_wind">Set Wind</button></div>
+        <div class="divider small"><span>✦</span></div>
+        <div class="actions"><button class="wood-btn muted" id="resetAll" data-l="ui_reset_everything_to_config">Reset Everything To Config</button></div>
+      </section>
+
+      <!-- PATTERNS -->
+      <section class="tab-page hidden" id="tab-patterns">
+        <div id="patternList"></div>
+        <div class="actions"><button class="wood-btn" id="newPattern" data-l="ui_new_pattern">✚ New Pattern</button></div>
+      </section>
+
+      <!-- PATTERN EDITOR -->
+      <section class="tab-page hidden" id="tab-editor">
+        <label data-l="ui_pattern_name">Pattern name</label>
+        <input type="text" id="pName" maxlength="32" placeholder="e.g. Wet Spring" data-lp="ui_pattern_name_placeholder">
+        <p class="hint" data-l="ui_pattern_hint">For each weather, set what can follow it and the chance (must total 100%). Every weather used as a "next" needs its own block.</p>
+        <div id="blocks"></div>
+        <div class="add-block">
+          <select id="addFrom"></select>
+          <button class="wood-btn" id="addBlock" data-l="ui_add_weather">Add Weather</button>
+        </div>
+        <div class="actions">
+          <button class="wood-btn muted" id="pCancel" data-l="ui_back">Back</button>
+          <button class="wood-btn" id="pSave" data-l="ui_save">Save</button>
+          <button class="wood-btn" id="pSaveApply" data-l="ui_save_and_apply">Save &amp; Apply</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- confirm modal -->
+  <div id="modal" class="modal-wrap hidden">
+    <div class="modal">
+      <h2 id="modalTitle">Confirm</h2>
+      <div class="ink-divider"></div>
+      <p id="modalText"></p>
+      <div class="actions"><button class="wood-btn muted" id="modalNo" data-l="ui_cancel">Cancel</button><button class="wood-btn" id="modalYes" data-l="ui_confirm">Confirm</button></div>
+    </div>
+  </div>
+</div>
+<div id="toasts"></div>
+<script src="script.js"></script>
+</body>
+</html>

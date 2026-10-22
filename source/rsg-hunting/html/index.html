@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+    <div id="vignette"></div>
+
+    <div class="layout">
+        <!-- items the trapper buys -->
+        <section class="panel panel-items">
+            <header class="panel-header">
+                <div class="header-spacer"></div>
+                <div class="header-text">
+                    <h1 id="vendor-title">Trapper</h1>
+                    <div class="subtitle">Goods Wanted</div>
+                </div>
+                <button class="round-btn" id="btn-close" title="Close">&#10005;</button>
+            </header>
+            <div class="divider"><span>&#10022;</span></div>
+
+            <div class="toolbar">
+                <input type="text" id="search" placeholder="Search goods..." autocomplete="off">
+                <label class="toggle"><input type="checkbox" id="owned-only"> <span>Owned only</span></label>
+                <button class="wood-btn" id="btn-add-all">Add All Owned</button>
+            </div>
+
+            <div class="item-grid" id="item-grid"></div>
+        </section>
+
+        <!-- basket -->
+        <section class="panel panel-basket">
+            <header class="panel-header">
+                <div class="header-text">
+                    <h1>Basket</h1>
+                    <div class="subtitle" id="basket-count">0 items</div>
+                </div>
+            </header>
+            <div class="divider"><span>&#10022;</span></div>
+
+            <div class="basket-list" id="basket-list"></div>
+
+            <div class="basket-footer">
+                <div class="total-row"><span>Total</span><span id="basket-total">$0.00</span></div>
+                <div class="actions">
+                    <button class="wood-btn muted" id="btn-clear">Clear</button>
+                    <button class="wood-btn" id="btn-sell" disabled>Sell to Trapper</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- confirm modal -->
+    <div id="modal" class="modal-backdrop hidden">
+        <div class="modal">
+            <h2>Confirm Sale</h2>
+            <div class="ink-divider"></div>
+            <p id="modal-text"></p>
+            <div class="actions">
+                <button class="wood-btn muted" id="modal-cancel">Cancel</button>
+                <button class="wood-btn" id="modal-confirm">Sell</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

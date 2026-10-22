@@ -1,0 +1,434 @@
+{
+    "blips": {
+        "clothing_store": "洋服店",
+        "wardrobe": "ワードローブ"
+    },
+    "texts": {
+        "body": "体型",
+        "face": "顔",
+        "hair_beard": "髪 & ひげ",
+        "hair_style": "髪型",
+        "hair_color": "髪色",
+        "beard_style": "ひげの形",
+        "beard_color": "ひげの色",
+        "makeup": "メイク",
+        "appearance": "外見",
+        "slim": "細身",
+        "sporty": "スポーティ",
+        "medium": "標準",
+        "fat": "太め",
+        "strong": "たくましい",
+        "face_width": "顔の幅",
+        "skin_tone": "肌の色",
+        "eyes": "目",
+        "eyelids": "まぶた",
+        "eyebrows": "眉",
+        "nose": "鼻",
+        "mouth": "口",
+        "teeth": "歯",
+        "cheekbones": "頬骨",
+        "jaw": "あご",
+        "ears": "耳",
+        "chin": "下あご",
+        "defects": "欠点",
+        "hair": "髪",
+        "beard": "ひげ",
+        "type": "タイプ",
+        "visibility": "表示",
+        "color_palette": "カラーパレット ",
+        "color_firstrate": "メインカラー",
+        "eyebrow": "眉",
+        "nose_curvature": "鼻の曲がり",
+        "up_down": "上 / 下",
+        "left_right": "左 / 右",
+        "upper_lip_height": "上唇の高さ",
+        "upper_lip_width": "上唇の幅",
+        "upper_lip_depth": "上唇の奥行き",
+        "lower_lip_height": "下唇の高さ",
+        "lower_lip_width": "下唇の幅",
+        "lower_lip_depth": "下唇の奥行き",
+        "make_up": "メイク",
+        "older": "老化",
+        "scars": "傷のタイプ",
+        "freckles": "そばかすのタイプ",
+        "moles": "ほくろ",
+        "disadvantages": "肌の欠点",
+        "spots": "シミ",
+        "shadow": "アイシャドウ",
+        "color_shadow": "アイシャドウの色",
+        "color_first_class": "アイシャドウのメインカラー",
+        "blushing_cheek": "頬の赤み",
+        "blush_id": "チークの色",
+        "blush_c1": "チークのメインカラー",
+        "lipstick": "口紅のタイプ",
+        "color_lipstick": "口紅の色",
+        "lipsticks_c1": "口紅のメインカラー",
+        "lipsticks_c2": "口紅のサブカラー",
+        "eyeliners": "アイライナー",
+        "eyeliners_id": "アイライナーの色",
+        "eyeliners_c1": "アイライナーのメインカラー",
+        "save": "保存",
+        "options": "オプション",
+        "align": "top-left",
+        "style": "スタイル ",
+        "color": "色 ",
+        "size": "サイズ",
+        "width": "幅 ",
+        "height": "高さ",
+        "depth": "奥行き",
+        "waist": "ウエスト",
+        "chest": "胸",
+        "distance": "距離",
+        "angle": "角度",
+        "clarity": "鮮明さ",
+        "creator": "キャラクター作成",
+        "first_menu": {
+            "label_firstname": "名",
+            "label_lastname": "姓",
+            "desc": "人々になんと呼ばれたいですか？",
+            "none": "空",
+            "start": "旅を始める",
+            "empty": "先にすべて入力してください",
+            "nationality": "国籍",
+            "birthdate": "生年月日"
+        }
+    },
+    "labels": {
+        "boot_accessories": "ブーツアクセサリー",
+        "pants": "ズボン",
+        "cloaks": "クローク",
+        "hats": "帽子",
+        "vests": "ベスト",
+        "chaps": "チャップス",
+        "shirts_full": "シャツ",
+        "badges": "バッジ",
+        "masks": "マスク",
+        "spats": "スパッツ",
+        "neckwear": "ネックウェア",
+        "boots": "ブーツ",
+        "accessories": "アクセサリー",
+        "jewelry_rings_right": "指輪（右）",
+        "jewelry_rings_left": "指輪（左）",
+        "jewelry_bracelets": "ブレスレット",
+        "gauntlets": "ガントレット",
+        "neckties": "ネクタイ",
+        "holsters_knife": "ナイフホルスター",
+        "loadouts": "装備",
+        "suspenders": "サスペンダー",
+        "satchels": "サッチェル",
+        "gunbelts": "ガンベルト",
+        "belts": "ベルト",
+        "belt_buckles": "バックル",
+        "holsters_left": "ホルスター（左）",
+        "holsters_right": "ホルスター（右）",
+        "coats": "コート",
+        "coats_closed": "クローズドコート",
+        "ponchos": "ポンチョ",
+        "eyewear": "アイウェア",
+        "gloves": "手袋",
+        "holsters_crossdraw": "クロスドローホルスター",
+        "skirts": "スカート",
+        "hair_accessories": "髪飾り",
+        "armor": "防具",
+        "dresses": "ドレス",
+        "ammunition_belts": "弾薬ベルト",
+        "gunbelt_ammunition": "ガンベルト弾薬",
+        "gunbelt_accs": "ガンベルトアクセサリー",
+        "leg_attachments": "脚アクセサリー",
+        "save": "服を保存",
+        "clothes": "服",
+        "options": "オプション",
+        "color": "色 ",
+        "choose": "服を選んでください",
+        "wear": "衣装を着る",
+        "wear_desc": "着替える",
+        "delete": "衣装を削除",
+        "delete_desc": "衣装を削除",
+        "shop": "洋服店",
+        "total": "価格"
+    },
+    "menu_elements": {
+        "head": {
+            "label": "頭"
+        },
+        "shirts_vests": {
+            "label": "シャツ & ベスト"
+        },
+        "belts_holsters": {
+            "label": "ベルト & ホルスター"
+        },
+        "coats_outerwear": {
+            "label": "コート & アウター"
+        },
+        "legs": {
+            "label": "脚"
+        },
+        "foot": {
+            "label": "足"
+        },
+        "hands": {
+            "label": "手"
+        },
+        "belts_satchels": {
+            "label": "ベルト & バッグ"
+        },
+        "misc_gear": {
+            "label": "その他の装備"
+        }
+    },
+    "prompts": {
+        "cloakroom_text": "更衣室を開く",
+        "clothing_store_label": "洋服店",
+        "zoom_label": "ズームイン/アウト",
+        "camera_up_label": "カメラ上/下",
+        "camera_turn_label": "左右に回転"
+    },
+    "cloack_room_prompt_button": "更衣室",
+    "save_outfit_1": "衣装を保存",
+    "save_outfit_2_header": "衣装を保存",
+    "save_outfit_2_input_label": "衣装名",
+    "invalid_character_name": {
+        "title": "エラー",
+        "description": "大文字で始まり、英字のみ使用できます。"
+    },
+    "loadskin_blocked": {
+        "title": "外見を再読み込みできません",
+        "description": "現在は実行できません（死亡、拘束、縛られ、投獄中、または落下中）。"
+    },
+    "missing_character_info": {
+        "title": "エラー",
+        "description": "先にすべての情報を入力してください！（名、姓、国籍、生年月日）"
+    },
+    "insufficient_funds": {
+        "title": "資金不足",
+        "description": "現金が足りません"
+    },
+    "creator": {
+        "appearance": {
+            "label": "外見",
+            "desc": "外見を選択"
+        },
+        "sections": {
+            "look": "ルック",
+            "details": "キャラクター詳細"
+        },
+        "randomize": {
+            "label": "ランダム外見",
+            "desc": "新しいランダムな外見を生成（押すたびに再抽選）"
+        },
+        "clothing": {
+            "label": "服装",
+            "desc": "服を選択"
+        },
+        "firstname": {
+            "desc": "名を選択",
+            "input": {
+                "header": "登録",
+                "label": "名",
+                "placeholder": "Hank"
+            }
+        },
+        "lastname": {
+            "desc": "姓を選択",
+            "input": {
+                "header": "登録",
+                "label": "姓",
+                "placeholder": "Jordan"
+            }
+        },
+        "nationality": {
+            "desc": "国籍を選択",
+            "input": {
+                "header": "登録",
+                "label": "国籍",
+                "placeholder": "メキシコ人"
+            }
+        },
+        "birthdate": {
+            "desc": "生年月日を選択",
+            "input": {
+                "header": "登録",
+                "label": "生年月日"
+            }
+        },
+        "male": "男性",
+        "female": "女性",
+        "confirm": "確認",
+        "select_gender_1": "性別を選択",
+        "select_gender_2": "性別を選択",
+        "photo_tip": "今スクリーンショットを撮ってください"
+    },
+    "clothing_menu": {
+        "category_desc": "このカテゴリの服装オプション",
+        "confirm_purhcase": "購入を確認",
+        "remove_all": {
+            "label": "すべての服を脱ぐ",
+            "desc": "すべて脱いでデフォルトの外見に戻す",
+            "confirm": "すべての服を脱ぎますか？"
+        }
+    },
+    "camera_prompt_text": "上/下",
+    "rotate_prompt_text": "左/右",
+    "zoom_prompt_text": "ズーム",
+    "group_prompt_text": "RSGCore クリエイター",
+    "charselect": {
+        "title": "キャラクター選択",
+        "subtitle": "キャラクターを選ぶか新しく作成してください",
+        "unnamed": "名前なし",
+        "existing": {
+            "desc": "このキャラクターでプレイを続ける"
+        },
+        "hint": {
+            "select": "クリックして ~g~%s~s~ でプレイ",
+            "create": "クリックして新しいキャラクターを作成",
+            "controls": "← → 切替    [Enter] 選択    [DEL] 削除"
+        },
+        "empty": {
+            "label": "新しいキャラクターを作成",
+            "desc": "このスロットは空です - ここで新しいキャラクターを作成"
+        },
+        "exploit_dropped": "キャラクター/ライセンスの不一致を検出しました。",
+        "login_failed": {
+            "title": "エラー",
+            "description": "キャラクターを読み込めませんでした - もう一度お試しください。"
+        },
+        "slot_label": "スロット %s",
+        "slot_taken": {
+            "title": "スロット使用不可",
+            "desc": "そのスロットは使用されたばかりです - 別のスロットを選んでください。"
+        },
+        "delete": {
+            "label": "キャラクターを削除",
+            "desc": "このキャラクターを完全に削除します - 元に戻せません",
+            "confirm_header": "このキャラクターを削除しますか？元に戻せません。",
+            "loading": "キャラクターを削除中..."
+        },
+        "info": {
+            "job": "職業",
+            "birthdate": "生年月日",
+            "nationality": "国籍",
+            "cash": "現金",
+            "unemployed": "無職",
+            "play": "プレイ",
+            "delete": "削除",
+            "create": "作成"
+        },
+        "gender": {
+            "title": "性別を選択",
+            "subtitle": "後から変更できません",
+            "male": "男性",
+            "female": "女性"
+        },
+        "loading": "キャラクターを作成中...",
+        "play_loading": "キャラクターを読み込み中..."
+    },
+    "spawn": {
+        "title": "どこにスポーンしますか？",
+        "subtitle": "世界に入る場所を選んでください",
+        "last_location": {
+            "label": "最後の場所",
+            "desc": "最後にログアウトした場所に戻る"
+        },
+        "preset": {
+            "desc": "ここにスポーン"
+        },
+        "loading": "移動中..."
+    },
+    "ui": {
+        "back": "戻る",
+        "camera": {
+            "rotate": "回転",
+            "height": "上/下",
+            "zoom": "ズーム",
+            "rotate_left_title": "キャラクターを左に回転",
+            "rotate_right_title": "キャラクターを右に回転",
+            "up_title": "カメラを上へ",
+            "down_title": "カメラを下へ",
+            "zoom_in_title": "カメラをズームイン",
+            "zoom_out_title": "カメラをズームアウト",
+            "reset": "リセット",
+            "reset_title": "カメラをデフォルトに戻す"
+        },
+        "total": "合計",
+        "cancel": "キャンセル",
+        "confirm": "確認"
+    },
+    "clothing_validation": {
+        "title": "エラー",
+        "invalid_data": "無効な服データ",
+        "invalid_item": "%s のアイテムデータが無効です",
+        "invalid_category": "無効なカテゴリ: %s",
+        "invalid_hash": "カテゴリのハッシュが無効です: %s"
+    },
+    "webhooks": {
+        "common": {
+            "player_field": "プレイヤー",
+            "discord_field": "Discord",
+            "na": "なし",
+            "unknown": "不明",
+            "username": "キャラクターログ"
+        },
+        "character_created": {
+            "title": "キャラクター作成",
+            "description": "**%s %s** がスロット **%s** に作成されました。",
+            "field_citizenid": "市民ID",
+            "field_gender": "性別",
+            "field_nationality": "国籍",
+            "field_birthdate": "生年月日",
+            "male": "男性",
+            "female": "女性"
+        },
+        "character_selected": {
+            "title": "キャラクター選択",
+            "description": "**%s %s** が市民ID **%s** でログインしました。"
+        },
+        "character_deleted": {
+            "title": "キャラクター削除",
+            "description": "**%s %s**（市民ID **%s**）が削除されました。"
+        },
+        "appearance_saved": {
+            "title_initial": "初期外見を保存",
+            "description": "市民ID **%s** の外見/服装を保存しました。",
+            "field_citizenid": "市民ID"
+        },
+        "outfit_purchased": {
+            "title": "衣装購入",
+            "description": "衣装が **$%s** で購入されました。",
+            "field_citizenid": "市民ID",
+            "field_outfit_name": "衣装名"
+        }
+    },
+    "spawn_locations": {
+        "valentine": "ヴァレンタイン",
+        "rhodes": "ローズ",
+        "saint_denis": "サンドニ",
+        "blackwater": "ブラックウォーター"
+    },
+    "nationalities": {
+        "american": "アメリカ人",
+        "british": "イギリス人",
+        "irish": "アイルランド人",
+        "scottish": "スコットランド人",
+        "welsh": "ウェールズ人",
+        "french": "フランス人",
+        "german": "ドイツ人",
+        "italian": "イタリア人",
+        "spanish": "スペイン人",
+        "mexican": "メキシコ人",
+        "dutch": "オランダ人",
+        "swedish": "スウェーデン人",
+        "norwegian": "ノルウェー人",
+        "danish": "デンマーク人",
+        "polish": "ポーランド人",
+        "russian": "ロシア人",
+        "chinese": "中国人",
+        "japanese": "日本人",
+        "cuban": "キューバ人",
+        "native_american": "アメリカ先住民",
+        "other": "その他"
+    },
+    "outfit_limit_reached": "You can only store %s outfits - this one was not saved to your wardrobe",
+    "outfit_delete_confirm": "Delete this outfit?",
+    "default_outfit_name": "Default",
+    "auto_outfit_name": "Outfit %s"
+}

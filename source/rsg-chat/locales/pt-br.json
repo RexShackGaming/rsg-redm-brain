@@ -1,0 +1,14 @@
+{
+  "chat_title": "Chat",
+  "ooc_prefix": "OOC",
+  "server_prefix": "SERVIDOR",
+  "slow_down": "Você está enviando mensagens rápido demais.",
+  "unknown_command": "Comando desconhecido: /%s",
+  "no_permission": "Você não tem permissão para fazer isso.",
+  "unknown_player": "Desconhecido",
+  "console_name": "Console",
+  "param_message": "mensagem",
+  "param_message_help": "A mensagem a ser enviada",
+  "help_ooc": "Enviar uma mensagem fora do personagem",
+  "help_clearchat": "Limpar sua janela de chat"
+}

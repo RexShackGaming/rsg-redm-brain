@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>rsg-farming</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+
+    <!-- single plant view -->
+    <div id="plant-panel" class="panel hidden">
+        <div class="header">
+            <button class="circle-btn" id="btn-list" title="My plants" data-i18n-title="ui_my_plants">&#9776;</button>
+            <div class="titles">
+                <div class="title" id="p-label">Crop</div>
+                <div class="subtitle" id="p-sub">Stage 1 / 4</div>
+            </div>
+            <button class="circle-btn btn-close" title="Close" data-i18n-title="ui_close">&#10005;</button>
+        </div>
+        <div class="divider"><span>&#10022;</span></div>
+
+        <div class="status-pill" id="p-status">Growing</div>
+
+        <div class="stat"><div class="stat-row"><span data-i18n="ui_growth">Growth</span><span id="v-growth">0%</span></div>
+            <div class="track"><div class="fill" id="b-growth"></div></div></div>
+        <div class="stat"><div class="stat-row"><span data-i18n="ui_water">Water</span><span id="v-water">0%</span></div>
+            <div class="track"><div class="fill" id="b-water"></div></div></div>
+        <div class="stat"><div class="stat-row"><span data-i18n="ui_fertiliser">Fertiliser</span><span id="v-fert">0%</span></div>
+            <div class="track"><div class="fill" id="b-fert"></div></div></div>
+        <div class="stat"><div class="stat-row"><span data-i18n="ui_health">Health</span><span id="v-health">0%</span></div>
+            <div class="track"><div class="fill" id="b-health"></div></div></div>
+
+        <div class="note" id="p-note"></div>
+
+        <div class="actions grid">
+            <button class="wood-btn" data-act="water" data-i18n="ui_btn_water">Water</button>
+            <button class="wood-btn" data-act="fertilize" data-i18n="ui_btn_fertilise">Fertilise</button>
+            <button class="wood-btn" data-act="harvest" data-i18n="ui_btn_harvest">Harvest</button>
+            <button class="wood-btn muted" data-act="destroy" data-i18n="ui_btn_remove">Remove</button>
+        </div>
+    </div>
+
+    <!-- list view -->
+    <div id="list-panel" class="panel wide hidden">
+        <div class="header">
+            <button class="circle-btn" id="btn-back" title="Back" data-i18n-title="ui_back">&#8249;</button>
+            <div class="titles">
+                <div class="title" data-i18n="ui_my_crops">My Crops</div>
+                <div class="subtitle" id="l-sub">0 plants</div>
+            </div>
+            <button class="circle-btn btn-close" title="Close" data-i18n-title="ui_close">&#10005;</button>
+        </div>
+        <div class="divider"><span>&#10022;</span></div>
+        <div id="list" class="list"></div>
+    </div>
+
+</div>
+<script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,434 @@
+{
+    "blips": {
+        "clothing_store": "Kledingwinkel",
+        "wardrobe": "Kledingkast"
+    },
+    "texts": {
+        "body": "Lichaam",
+        "face": "Gezicht",
+        "hair_beard": "Haar & Baard",
+        "hair_style": "Kapsel",
+        "hair_color": "Haarkleur",
+        "beard_style": "Baardstijl",
+        "beard_color": "Baardkleur",
+        "makeup": "Make-up",
+        "appearance": "Uiterlijk",
+        "slim": "Slank",
+        "sporty": "Sportief",
+        "medium": "Gemiddeld",
+        "fat": "Dik",
+        "strong": "Sterk",
+        "face_width": "Gezichtsbreedte",
+        "skin_tone": "Huidskleur",
+        "eyes": "Ogen",
+        "eyelids": "Oogleden",
+        "eyebrows": "Wenkbrauwen",
+        "nose": "Neus",
+        "mouth": "Mond",
+        "teeth": "Tanden",
+        "cheekbones": "Jukbeenderen",
+        "jaw": "Kaak",
+        "ears": "Oren",
+        "chin": "Kin",
+        "defects": "Gebreken",
+        "hair": "Haar",
+        "beard": "Baard",
+        "type": "Type",
+        "visibility": "Zichtbaarheid",
+        "color_palette": "Kleurenpalet ",
+        "color_firstrate": "Primaire kleur",
+        "eyebrow": "Wenkbrauwen",
+        "nose_curvature": "Neuskromming",
+        "up_down": "OMHOOG / OMLAAG",
+        "left_right": "links / rechts",
+        "upper_lip_height": "Hoogte bovenlip",
+        "upper_lip_width": "Breedte bovenlip",
+        "upper_lip_depth": "Diepte bovenlip",
+        "lower_lip_height": "Hoogte onderlip",
+        "lower_lip_width": "Breedte onderlip",
+        "lower_lip_depth": "Diepte onderlip",
+        "make_up": "Make-up",
+        "older": "Veroudering",
+        "scars": "Type littekens",
+        "freckles": "Type sproeten",
+        "moles": "Moedervlekken",
+        "disadvantages": "Onvolkomenheden",
+        "spots": "Vlekken",
+        "shadow": "Oogschaduw",
+        "color_shadow": "Kleur oogschaduw",
+        "color_first_class": "Primaire kleur oogschaduw",
+        "blushing_cheek": "Blozende wangen",
+        "blush_id": "Kleur blush",
+        "blush_c1": "Primaire kleur blush",
+        "lipstick": "Type lippenstift",
+        "color_lipstick": "Kleur lippenstift",
+        "lipsticks_c1": "Primaire kleur lippenstift",
+        "lipsticks_c2": "Secundaire kleur lippenstift",
+        "eyeliners": "Eyeliners",
+        "eyeliners_id": "Kleur eyeliner",
+        "eyeliners_c1": "Hoofdkleur eyeliner",
+        "save": "Opslaan",
+        "options": "Opties",
+        "align": "top-left",
+        "style": "Stijl ",
+        "color": "Kleur ",
+        "size": "Grootte",
+        "width": "Breedte ",
+        "height": "Hoogte",
+        "depth": "Diepte",
+        "waist": "Taille",
+        "chest": "Borst",
+        "distance": "Afstand",
+        "angle": "Hoek",
+        "clarity": "Helderheid",
+        "creator": "PERSONAGE MAKEN",
+        "first_menu": {
+            "label_firstname": "Voornaam",
+            "label_lastname": "Achternaam",
+            "desc": "Hoe wil je dat mensen je noemen?",
+            "none": "Leeg",
+            "start": "Begin je reis",
+            "empty": "Vul eerst alles in",
+            "nationality": "Nationaliteit",
+            "birthdate": "Geboortedatum"
+        }
+    },
+    "labels": {
+        "boot_accessories": "Laarsaccessoires",
+        "pants": "Broeken",
+        "cloaks": "Capes",
+        "hats": "Hoeden",
+        "vests": "Vesten",
+        "chaps": "Chaps",
+        "shirts_full": "Overhemden",
+        "badges": "Insignes",
+        "masks": "Maskers",
+        "spats": "Slobkousen",
+        "neckwear": "Halsdoeken",
+        "boots": "Laarzen",
+        "accessories": "Accessoires",
+        "jewelry_rings_right": "Ringen rechts",
+        "jewelry_rings_left": "Ringen links",
+        "jewelry_bracelets": "Armbanden",
+        "gauntlets": "Kaphandschoenen",
+        "neckties": "Stropdassen",
+        "holsters_knife": "Messenholsters",
+        "loadouts": "Uitrustingen",
+        "suspenders": "Bretels",
+        "satchels": "Schoudertassen",
+        "gunbelts": "Wapengordels",
+        "belts": "Riemen",
+        "belt_buckles": "Riemgespen",
+        "holsters_left": "Holsters links",
+        "holsters_right": "Holsters rechts",
+        "coats": "Jassen",
+        "coats_closed": "Gesloten jassen",
+        "ponchos": "Poncho's",
+        "eyewear": "Brillen",
+        "gloves": "Handschoenen",
+        "holsters_crossdraw": "Crossdraw-holsters",
+        "skirts": "Rokken",
+        "hair_accessories": "Haaraccessoires",
+        "armor": "Harnas",
+        "dresses": "Jurken",
+        "ammunition_belts": "Munitiegordels",
+        "gunbelt_ammunition": "Gordelmunitie",
+        "gunbelt_accs": "Gordelaccessoires",
+        "leg_attachments": "Beenaccessoires",
+        "save": "Kleding opslaan",
+        "clothes": "Kleding",
+        "options": "opties",
+        "color": "Kleur ",
+        "choose": "kies je kleding",
+        "wear": "Outfit aantrekken",
+        "wear_desc": "aankleden",
+        "delete": "Outfit verwijderen",
+        "delete_desc": "outfit verwijderen",
+        "shop": "Kledingwinkel",
+        "total": "Prijs"
+    },
+    "menu_elements": {
+        "head": {
+            "label": "Hoofd"
+        },
+        "shirts_vests": {
+            "label": "Overhemden & Vesten"
+        },
+        "belts_holsters": {
+            "label": "Riemen & Holsters"
+        },
+        "coats_outerwear": {
+            "label": "Jassen & Bovenkleding"
+        },
+        "legs": {
+            "label": "Benen"
+        },
+        "foot": {
+            "label": "Voeten"
+        },
+        "hands": {
+            "label": "Handen"
+        },
+        "belts_satchels": {
+            "label": "Riemen & Tassen"
+        },
+        "misc_gear": {
+            "label": "Overige uitrusting"
+        }
+    },
+    "prompts": {
+        "cloakroom_text": "Kleedkamers openen",
+        "clothing_store_label": "Kledingwinkel",
+        "zoom_label": "In-/uitzoomen",
+        "camera_up_label": "Camera omhoog/omlaag",
+        "camera_turn_label": "Draai links/rechts"
+    },
+    "cloack_room_prompt_button": "Kleedkamer",
+    "save_outfit_1": "Outfit opslaan",
+    "save_outfit_2_header": "Outfit opslaan",
+    "save_outfit_2_input_label": "Outfitnaam",
+    "invalid_character_name": {
+        "title": "Fout",
+        "description": "Invoer moet met een hoofdletter beginnen en mag alleen letters bevatten."
+    },
+    "loadskin_blocked": {
+        "title": "Kan uiterlijk niet herladen",
+        "description": "Je kunt dit nu niet doen (dood, geboeid, vastgebonden, in de gevangenis of vallend)."
+    },
+    "missing_character_info": {
+        "title": "Fout",
+        "description": "Vul eerst alle informatie over jezelf in! (Voornaam, Achternaam, Nationaliteit, Geboortedatum)"
+    },
+    "insufficient_funds": {
+        "title": "Onvoldoende geld",
+        "description": "Je hebt niet genoeg contant geld"
+    },
+    "creator": {
+        "appearance": {
+            "label": "Uiterlijk",
+            "desc": "Kies je uiterlijk"
+        },
+        "sections": {
+            "look": "Look",
+            "details": "Personagegegevens"
+        },
+        "randomize": {
+            "label": "Willekeurig uiterlijk",
+            "desc": "Genereer een nieuw willekeurig uiterlijk (elke druk opnieuw)"
+        },
+        "clothing": {
+            "label": "Kleding",
+            "desc": "Kies je kleding"
+        },
+        "firstname": {
+            "desc": "Kies je voornaam",
+            "input": {
+                "header": "Registratie",
+                "label": "Voornaam",
+                "placeholder": "Hank"
+            }
+        },
+        "lastname": {
+            "desc": "Kies je achternaam",
+            "input": {
+                "header": "Registratie",
+                "label": "Achternaam",
+                "placeholder": "Jordan"
+            }
+        },
+        "nationality": {
+            "desc": "Kies je nationaliteit",
+            "input": {
+                "header": "Registratie",
+                "label": "Nationaliteit",
+                "placeholder": "Mexicaans"
+            }
+        },
+        "birthdate": {
+            "desc": "Kies je geboortedatum",
+            "input": {
+                "header": "Registratie",
+                "label": "Geboortedatum"
+            }
+        },
+        "male": "Man",
+        "female": "Vrouw",
+        "confirm": "Bevestigen",
+        "select_gender_1": "Kies geslacht",
+        "select_gender_2": "Kies geslacht",
+        "photo_tip": "Maak nu een screenshot"
+    },
+    "clothing_menu": {
+        "category_desc": "Kledingopties voor deze categorie",
+        "confirm_purhcase": "Aankoop bevestigen",
+        "remove_all": {
+            "label": "Alle kleding uittrekken",
+            "desc": "Alles uittrekken en terug naar het standaarduiterlijk",
+            "confirm": "Alle kleding uittrekken?"
+        }
+    },
+    "camera_prompt_text": "Omhoog/Omlaag",
+    "rotate_prompt_text": "Links/Rechts",
+    "zoom_prompt_text": "Zoom",
+    "group_prompt_text": "RSGCore Maker",
+    "charselect": {
+        "title": "Kies personage",
+        "subtitle": "Kies een personage of maak een nieuw",
+        "unnamed": "Naamloos",
+        "existing": {
+            "desc": "Verder spelen met dit personage"
+        },
+        "hint": {
+            "select": "Klik om te spelen als ~g~%s~s~",
+            "create": "Klik om een nieuw personage te maken",
+            "controls": "← → Bladeren    [Enter] Kiezen    [DEL] Verwijderen"
+        },
+        "empty": {
+            "label": "Nieuw personage maken",
+            "desc": "Dit slot is leeg - begin hier een nieuw personage"
+        },
+        "exploit_dropped": "Personage/licentie-mismatch gedetecteerd.",
+        "login_failed": {
+            "title": "Fout",
+            "description": "Kon je personage niet laden - probeer het opnieuw."
+        },
+        "slot_label": "Slot %s",
+        "slot_taken": {
+            "title": "Slot niet beschikbaar",
+            "desc": "Dat slot is net bezet - kies een ander."
+        },
+        "delete": {
+            "label": "Personage verwijderen",
+            "desc": "Dit personage permanent verwijderen - dit kan niet ongedaan worden gemaakt",
+            "confirm_header": "Dit personage verwijderen? Dit kan niet ongedaan worden gemaakt.",
+            "loading": "Personage verwijderen..."
+        },
+        "info": {
+            "job": "Baan",
+            "birthdate": "Geboortedatum",
+            "nationality": "Nationaliteit",
+            "cash": "Contant",
+            "unemployed": "Werkloos",
+            "play": "Spelen",
+            "delete": "Verwijderen",
+            "create": "Maken"
+        },
+        "gender": {
+            "title": "Kies geslacht",
+            "subtitle": "Dit kan later niet worden gewijzigd",
+            "male": "Man",
+            "female": "Vrouw"
+        },
+        "loading": "Je personage wordt gemaakt...",
+        "play_loading": "Je personage wordt geladen..."
+    },
+    "spawn": {
+        "title": "Waar wil je spawnen?",
+        "subtitle": "Kies een locatie om de wereld te betreden",
+        "last_location": {
+            "label": "Laatste locatie",
+            "desc": "Keer terug naar waar je het laatst uitlogde"
+        },
+        "preset": {
+            "desc": "Hier spawnen"
+        },
+        "loading": "Onderweg..."
+    },
+    "ui": {
+        "back": "Terug",
+        "camera": {
+            "rotate": "Draaien",
+            "height": "Omhoog/Omlaag",
+            "zoom": "Zoom",
+            "rotate_left_title": "Personage naar links draaien",
+            "rotate_right_title": "Personage naar rechts draaien",
+            "up_title": "Camera omhoog",
+            "down_title": "Camera omlaag",
+            "zoom_in_title": "Camera inzoomen",
+            "zoom_out_title": "Camera uitzoomen",
+            "reset": "Resetten",
+            "reset_title": "Camera naar standaard resetten"
+        },
+        "total": "TOTAAL",
+        "cancel": "Annuleren",
+        "confirm": "Bevestigen"
+    },
+    "clothing_validation": {
+        "title": "Fout",
+        "invalid_data": "Ongeldige kledinggegevens",
+        "invalid_item": "Ongeldige itemgegevens voor %s",
+        "invalid_category": "Ongeldige categorie: %s",
+        "invalid_hash": "Ongeldige hash voor categorie: %s"
+    },
+    "webhooks": {
+        "common": {
+            "player_field": "Speler",
+            "discord_field": "Discord",
+            "na": "n.v.t.",
+            "unknown": "Onbekend",
+            "username": "Personagelogs"
+        },
+        "character_created": {
+            "title": "Personage gemaakt",
+            "description": "**%s %s** is gemaakt in slot **%s**.",
+            "field_citizenid": "Burger-ID",
+            "field_gender": "Geslacht",
+            "field_nationality": "Nationaliteit",
+            "field_birthdate": "Geboortedatum",
+            "male": "Man",
+            "female": "Vrouw"
+        },
+        "character_selected": {
+            "title": "Personage gekozen",
+            "description": "**%s %s** logde in op burger-ID **%s**."
+        },
+        "character_deleted": {
+            "title": "Personage verwijderd",
+            "description": "**%s %s** (burger-ID **%s**) is verwijderd."
+        },
+        "appearance_saved": {
+            "title_initial": "Eerste uiterlijk opgeslagen",
+            "description": "Uiterlijk/kleding opgeslagen voor burger-ID **%s**.",
+            "field_citizenid": "Burger-ID"
+        },
+        "outfit_purchased": {
+            "title": "Outfit gekocht",
+            "description": "Er is een outfit gekocht voor **$%s**.",
+            "field_citizenid": "Burger-ID",
+            "field_outfit_name": "Outfitnaam"
+        }
+    },
+    "spawn_locations": {
+        "valentine": "Valentine",
+        "rhodes": "Rhodes",
+        "saint_denis": "Saint Denis",
+        "blackwater": "Blackwater"
+    },
+    "nationalities": {
+        "american": "Amerikaans",
+        "british": "Brits",
+        "irish": "Iers",
+        "scottish": "Schots",
+        "welsh": "Welsh",
+        "french": "Frans",
+        "german": "Duits",
+        "italian": "Italiaans",
+        "spanish": "Spaans",
+        "mexican": "Mexicaans",
+        "dutch": "Nederlands",
+        "swedish": "Zweeds",
+        "norwegian": "Noors",
+        "danish": "Deens",
+        "polish": "Pools",
+        "russian": "Russisch",
+        "chinese": "Chinees",
+        "japanese": "Japans",
+        "cuban": "Cubaans",
+        "native_american": "Inheems Amerikaans",
+        "other": "Anders"
+    },
+    "outfit_limit_reached": "You can only store %s outfits - this one was not saved to your wardrobe",
+    "outfit_delete_confirm": "Delete this outfit?",
+    "default_outfit_name": "Default",
+    "auto_outfit_name": "Outfit %s"
+}

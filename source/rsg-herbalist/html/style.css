@@ -1,0 +1,291 @@
+:root {
+    --bg-panel: #14120f;
+    --bg-card: #1d1a15;
+    --bg-card-hover: #26221b;
+    --border: #332d23;
+    --accent: #c9973f;
+    --accent-soft: rgba(201, 151, 63, 0.16);
+    --text-main: #ece6d9;
+    --text-dim: #a49a86;
+    --text-faint: #6f6656;
+    --danger: #b3503f;
+    --ok: #6c9463;
+    --shadow: rgba(0, 0, 0, 0.55);
+    font-size: 15px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+    color: var(--text-main);
+    overflow: hidden;
+}
+
+#app {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#app.hidden {
+    display: none;
+}
+
+#panel {
+    width: 560px;
+    max-height: 640px;
+    background: linear-gradient(180deg, var(--bg-panel), #0f0d0a);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 20px 60px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.03);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* While being dragged, position is switched to fixed left/top (set inline by
+   script.js) and everything below suppresses the usual drag side-effects -
+   text getting selected, the browser's native "you're dragging something"
+   cursor/ghost image, transitions lagging behind the pointer. */
+#panel.dragging {
+    user-select: none;
+    cursor: grabbing;
+}
+#panel.dragging * {
+    user-select: none;
+}
+
+#panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+    background: rgba(0,0,0,0.25);
+    border-bottom: 1px solid var(--border);
+    cursor: grab;
+}
+
+#panel-header:active {
+    cursor: grabbing;
+}
+
+.title-main {
+    display: block;
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: var(--text-main);
+}
+
+.title-sub {
+    display: block;
+    font-size: 12px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-top: 2px;
+}
+
+#closeBtn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+#closeBtn:hover {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+}
+
+#recipe-list {
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#recipe-list::-webkit-scrollbar {
+    width: 8px;
+}
+#recipe-list::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+.recipe-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    gap: 14px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.recipe-card:hover {
+    background: var(--bg-card-hover);
+    border-color: #453d2e;
+}
+
+.recipe-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 6px;
+    background: #0e0c09 center/cover no-repeat;
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+}
+
+.recipe-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.recipe-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.recipe-top-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.recipe-name {
+    font-size: 15.5px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.recipe-time {
+    font-size: 12px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.recipe-time .clock {
+    opacity: 0.8;
+}
+
+.recipe-desc {
+    font-size: 12.5px;
+    color: var(--text-dim);
+    line-height: 1.35;
+}
+
+.ingredient-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.ingredient-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px 9px 3px 4px;
+    font-size: 11.5px;
+}
+
+.ingredient-pill img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    border-radius: 3px;
+    background: #0e0c09;
+}
+
+.ingredient-count {
+    font-weight: 600;
+}
+
+.ingredient-pill.ok .ingredient-count {
+    color: var(--ok);
+}
+
+.ingredient-pill.short .ingredient-count {
+    color: var(--danger);
+}
+
+.recipe-bottom-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+}
+
+.output-label {
+    font-size: 11.5px;
+    color: var(--text-faint);
+}
+
+.output-label b {
+    color: var(--accent);
+}
+
+.craft-btn {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid rgba(201, 151, 63, 0.4);
+    border-radius: 6px;
+    padding: 7px 16px;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.craft-btn:hover:not(:disabled) {
+    background: var(--accent);
+    color: #16130d;
+}
+
+.craft-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.empty-state {
+    padding: 30px;
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 13px;
+}

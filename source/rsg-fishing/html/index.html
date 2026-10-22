@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --rdr-black:#000;--rdr-panel:#0a0a0a;--rdr-panel-2:#141414;--rdr-leather:#1c1c1c;
+  --rdr-gold:#fff;--rdr-gold-dim:#5a5a5a;--rdr-text:#f2f2f2;--rdr-muted:#9a9a9a;
+  --rdr-green:#5a7d4f;--rdr-cost-ok:#6fbf73;--rdr-cost-over:#e0554f;--rdr-amber:#d9a441;--rdr-shadow:rgba(0,0,0,.85);
+}
+html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden;user-select:none;font-family:'Roboto',sans-serif;color:var(--rdr-text)}
+#root{position:fixed;inset:0;pointer-events:none}
+.hidden{display:none!important}
+.panel{position:absolute;top:24px;left:24px;width:300px;padding:14px 16px 16px;border-radius:3px;
+  border:1px solid var(--rdr-gold-dim);outline:1px solid rgba(0,0,0,.6);outline-offset:-5px;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.015) 0 1px,transparent 1px 3px),
+             linear-gradient(160deg,var(--rdr-panel-2),var(--rdr-panel) 60%,var(--rdr-black));
+  box-shadow:0 20px 60px var(--rdr-shadow),inset 0 0 40px rgba(0,0,0,.5);
+  opacity:0;transform:translateX(-20px);transition:opacity .25s ease,transform .25s ease,border-color .25s ease}
+.panel.show{opacity:1;transform:translateX(0)}
+.panel.hooked{border-color:var(--rdr-cost-ok)}
+.panel.caught{border-color:var(--rdr-amber)}
+.head{text-align:center}
+.title{font-size:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase;text-shadow:0 2px 4px #000}
+.sub{margin-top:4px;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--rdr-muted)}
+.panel.hooked .sub{color:var(--rdr-cost-ok)}
+.panel.caught .sub{color:var(--rdr-amber);letter-spacing:1px;font-style:italic;text-transform:none;font-size:12px}
+.info{margin-top:6px;font-size:12px;font-style:italic;color:var(--rdr-text)}
+.panel.nobait{border-color:var(--rdr-cost-over)}
+.panel.nobait .sub{color:var(--rdr-cost-over)}
+.divider{display:flex;align-items:center;gap:8px;margin:10px 0;color:var(--rdr-gold-dim);font-size:11px}
+.divider::before,.divider::after{content:"";flex:1;height:1px}
+.divider::before{background:linear-gradient(90deg,transparent,var(--rdr-gold-dim))}
+.divider::after{background:linear-gradient(90deg,var(--rdr-gold-dim),transparent)}
+.rows{display:flex;flex-direction:column;gap:6px}
+.row{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:2px;
+  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.15));border:1px solid rgba(201,162,75,.18)}
+.key{min-width:44px;padding:4px 6px;text-align:center;font-size:11px;font-weight:700;letter-spacing:1.5px;
+  border:1px solid var(--rdr-gold-dim);border-radius:2px;background:linear-gradient(180deg,#2e2e2e,#141414)}
+.row,.key{transition:background .12s ease,border-color .12s ease,transform .12s ease,box-shadow .12s ease}
+.row.pressed{border-color:var(--rdr-gold);background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(0,0,0,.1));transform:translateX(2px)}
+.row.pressed .key{background:linear-gradient(180deg,#f2f2f2,#bdbdbd);color:#0a0a0a;border-color:#fff;transform:translateY(1px);box-shadow:0 0 10px rgba(255,255,255,.35)}
+.panel.hooked .row.pressed{border-color:var(--rdr-cost-ok)}
+.panel.hooked .row.pressed .key{background:linear-gradient(180deg,#7fcf82,var(--rdr-cost-ok));border-color:var(--rdr-cost-ok)}
+.label{font-size:13px;font-weight:500;letter-spacing:.5px;text-transform:uppercase}
+#bobber{position:absolute;left:0;top:0;width:46px;height:46px;transform:translate(-50%,-100%);
+  filter:drop-shadow(0 0 6px rgba(0,0,0,.9)) drop-shadow(0 0 10px rgba(255,80,40,.55));transition:filter .2s ease;will-change:left,top}
+#bobber svg{width:100%;height:100%;animation:bob 1.6s ease-in-out infinite;transform-origin:50% 100%}
+#bobber.hooked{filter:drop-shadow(0 0 6px rgba(0,0,0,.9)) drop-shadow(0 0 14px rgba(111,191,115,.9))}
+#bobber.hooked svg{animation:tug .35s ease-in-out infinite}
+#bobber .fish{display:none}
+#bobber.hooked .float{display:none}
+#bobber.hooked .fish{display:block;transform-origin:50% 50%}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes tug{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(5px) rotate(-8deg)}75%{transform:translateY(3px) rotate(8deg)}}
+</style>
+</head>
+<body>
+<div id="root">
+  <div id="bobber" class="hidden">
+    <svg class="float" viewBox="0 0 40 60" xmlns="http://www.w3.org/2000/svg">
+      <line x1="20" y1="2" x2="20" y2="14" stroke="#f2f2f2" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M6 30 A14 14 0 0 1 34 30 Z" fill="#e0554f" stroke="#111" stroke-width="1.5"/>
+      <path d="M6 30 A14 14 0 0 0 34 30 Z" fill="#f2f2f2" stroke="#111" stroke-width="1.5"/>
+      <rect x="5" y="28.5" width="30" height="3" fill="#141414"/>
+      <line x1="20" y1="44" x2="20" y2="54" stroke="#9a9a9a" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <svg class="fish" viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg">
+      <path d="M48 20 L62 8 L60 20 L62 32 Z" fill="#5a7d4f" stroke="#111" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M4 20 C10 6 34 4 50 20 C34 36 10 34 4 20 Z" fill="#6fbf73" stroke="#111" stroke-width="1.5"/>
+      <path d="M22 9 C28 4 36 6 38 11" fill="none" stroke="#111" stroke-width="1.5"/>
+      <path d="M26 20 C30 16 30 24 26 28" fill="none" stroke="#2d4a2a" stroke-width="1.5"/>
+      <circle cx="14" cy="18" r="2.6" fill="#f2f2f2" stroke="#111" stroke-width="1"/>
+      <circle cx="14" cy="18" r="1.1" fill="#111"/>
+    </svg>
+  </div>
+  <div id="panel" class="panel hidden">
+    <div class="head">
+      <div class="title">Fishing</div>
+      <div class="sub" id="sub"></div>
+      <div class="info hidden" id="info"></div>
+    </div>
+    <div class="divider">✦</div>
+    <div class="rows" id="rows"></div>
+  </div>
+</div>
+<script>
+const panel=document.getElementById('panel'),sub=document.getElementById('sub'),rowsEl=document.getElementById('rows');
+let hideTimer=null;
+const bob=document.getElementById('bobber');
+const infoEl=document.getElementById('info');
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+window.addEventListener('message',e=>{
+  const d=e.data; if(!d)return;
+  if(d.action==='bobber'){
+    if(!d.show){bob.classList.add('hidden');return;}
+    if(d.size){bob.style.width=d.size+'px';bob.style.height=d.size+'px';}
+    bob.style.left=(d.x*100)+'%';bob.style.top=(d.y*100)+'%';
+    bob.classList.toggle('hooked',!!d.hooked);
+    bob.classList.remove('hidden');
+    return;
+  }
+  if(d.action==='pressed'){
+    rowsEl.querySelectorAll('.row').forEach(el=>el.classList.toggle('pressed',!!(d.pressed||{})[el.dataset.id]));
+    return;
+  }
+  if(d.action!=='controls')return;
+  if(d.show){
+    clearTimeout(hideTimer);
+    sub.textContent=d.title||'';
+    panel.classList.remove('hooked','caught','nobait');
+    infoEl.textContent=d.info||'';infoEl.classList.toggle('hidden',!d.info);
+    if(d.mode)panel.classList.add(d.mode);
+    rowsEl.innerHTML=(d.rows||[]).map(r=>`<div class="row" data-id="${esc(r.id)}"><span class="key">${esc(r.key)}</span><span class="label">${esc(r.label)}</span></div>`).join('');
+    panel.classList.remove('hidden');
+    requestAnimationFrame(()=>panel.classList.add('show'));
+  }else{
+    panel.classList.remove('show');
+    hideTimer=setTimeout(()=>panel.classList.add('hidden'),250);
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "chat_title": "Czat",
+  "ooc_prefix": "OOC",
+  "server_prefix": "SERWER",
+  "slow_down": "Wysyłasz wiadomości zbyt szybko.",
+  "unknown_command": "Nieznana komenda: /%s",
+  "no_permission": "Nie masz uprawnień, aby to zrobić.",
+  "unknown_player": "Nieznany",
+  "console_name": "Konsola",
+  "param_message": "wiadomość",
+  "param_message_help": "Wiadomość do wysłania",
+  "help_ooc": "Wyślij wiadomość poza postacią",
+  "help_clearchat": "Wyczyść okno czatu"
+}

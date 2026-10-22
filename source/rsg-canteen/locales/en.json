@@ -1,0 +1,14 @@
+{
+    "notify_title": "Canteen",
+    "target_fill": "Fill Canteen",
+    "progress_fill": "Filling canteen...",
+    "progress_drink": "Drinking...",
+    "no_canteen": "You need a canteen",
+    "canteen_empty": "Your canteen is empty, fill it at a water pump",
+    "canteens_full": "Your canteen is already full",
+    "canteen_filled": "Canteen filled (%s uses)",
+    "drank": "You took a drink (%s/%s uses left)",
+    "too_far": "You are too far from the pump",
+    "busy": "You are busy",
+    "target_fill_water": "Fill Canteen"
+}

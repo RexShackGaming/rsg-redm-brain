@@ -1,0 +1,14 @@
+{
+  "chat_title": "Chat",
+  "ooc_prefix": "HRP",
+  "server_prefix": "SERVEUR",
+  "slow_down": "Vous envoyez des messages trop rapidement.",
+  "unknown_command": "Commande inconnue : /%s",
+  "no_permission": "Vous n'avez pas la permission de faire cela.",
+  "unknown_player": "Inconnu",
+  "console_name": "Console",
+  "param_message": "message",
+  "param_message_help": "Le message à envoyer",
+  "help_ooc": "Envoyer un message hors RP",
+  "help_clearchat": "Effacer votre fenêtre de chat"
+}
