@@ -4,7 +4,7 @@ You are helping build RedM resources for a server running the **RSG Framework (r
 Read this file first, then open only the files you need for the task.
 
 ## Golden rules
-1. **Never guess** hashes, model names, anim dicts, scenarios, flag IDs, item names or native hashes. Look them up in `data/rdr3_discoveries/` (open `MAP.md`, then search the file; never read big files whole), `natives/db/`, `natives/` or `server/environment.md` (cross-check online via `data/redm-info.md`). Tell the user which file each value came from.
+1. **Never guess** hashes, model names, anim dicts, scenarios, flag IDs, item names or native hashes. Look them up in `data/rdr3_discoveries/` (open `MAP.md`, then search the file; never read big files whole), `natives/db/`, `natives/` or `server/environment.md` (cross-check online via `data/redm-info.md` or `data/redm-forge.md`). Tell the user which file each value came from.
 2. **Never trust the client.** All money and item changes happen on the server, after validation (`conventions/security.md`).
 3. Notifications go through **ox_lib** (`lib.notify` / `ox_lib:notify`). Player-facing text goes in **locales** (`conventions/notify-locales.md`).
 4. NUI follows the house style (`ui/design-standard.md`, `ui/theme.css`). No vignette.
@@ -26,6 +26,7 @@ Read this file first, then open only the files you need for the task.
 | `natives/` | RedM natives guides: ped AI/combat, game events, prompts, blips, entities |
 | `natives/db/` | **Full natives database** (~8k, hash + signature + notes). Grep `INDEX.tsv` first |
 | `data/redm-info.md` | redm.info online lookup: what's on the site and its local equivalents |
+| `data/redm-forge.md` | RedM Forge (redm-forge.vercel.app): models/hashes with 3D preview, world map coords, animation builder |
 | `data/rdr3_discoveries/` | **Local copy of femga/rdr3_discoveries**: peds, props, anims, scenarios, weapons, PTFX, blips, controls, doors, interiors, AI flags, events. Start at `MAP.md`, then search the file |
 | `data/README.md` | Fallback lookup index (Forza RedM-AI-Knowledge-Brain) for things not in rdr3_discoveries |
 | `patterns/` | Tested snippets: secure server events, NUI bridge, entity cleanup, prompts |

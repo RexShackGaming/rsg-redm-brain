@@ -40,6 +40,7 @@ If a path 404s, list the folder with the GitHub API: `https://api.github.com/rep
 ## Local additions
 - `../natives/db/` — full natives database (same data as redm.info/natives).
 - `redm-info.md` — redm.info lookup guide.
+- `redm-forge.md` — RedM Forge (models with hashes + 3D view, world map coords, animation builder).
 Add verified values here as you use them (model name / hash / notes):
 
 | Type | Name | Hash | Notes |
