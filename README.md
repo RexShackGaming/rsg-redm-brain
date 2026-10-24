@@ -43,6 +43,7 @@ The result: scripts that use the right item names, call real exports, keep money
 | `natives/db/` | Full natives database (~8k natives, hash + signature + notes) by namespace, with `INDEX.tsv` | Checking a native's exact name/params |
 | `data/rdr3_discoveries/` | Local copy of femga/rdr3_discoveries: peds, props, anims, scenarios, weapons, PTFX, controls, doors, interiors, AI flags, clothing | Any model, hash, anim or flag |
 | `data/rdr3_discoveries/MAP.md` | Index of the folder above with sample line formats | Start here for data lookups |
+| `data/rdr3-decompiled-scripts.md` | Guide to the decompiled RDR2 singleplayer scripts (optional local clone in `data/rdr3-decompiled/`) | Seeing how Rockstar calls natives; recreating RDR2 features |
 | `data/redm-info.md`, `data/redm-forge.md` | Online lookup sites and what they cover | Cross-checking / 3D previews / coords |
 | `data/README.md` | Fallback lookup index | Things rdr3_discoveries lacks |
 | `patterns/` | Tested snippets: secure reward event, NUI bridge, entity cleanup, ox_target | Building blocks |
@@ -258,6 +259,9 @@ rg -i "WEAPON_REVOLVER" data/rdr3_discoveries/weapons
 rg -i "fire" data/rdr3_discoveries/graphics/ptfx
 rg -i "valentine" data/rdr3_discoveries/doorHashes/doorhashes.lua
 
+# How Rockstar uses a native (needs the decompiled scripts cloned)
+rg -l "TASK_START_SCENARIO_IN_PLACE" data/rdr3-decompiled/1491.50
+
 # How an RSG resource really does something
 rg -i "RegisterNetEvent" source/rsg-stores
 rg -i "exports\['rsg-inventory'\]" source/
@@ -273,6 +277,7 @@ Where to look for what:
 | Prompts, blips, entity handling | `natives/prompts-blips-entities.md` |
 | Models, props, anims, sounds, clothes | `data/rdr3_discoveries/MAP.md` then the folder |
 | Blip sprites, textures, colours | `data/rdr3_discoveries/useful_info_from_rpfs/` |
+| How a native is really used / RDR2 feature logic | `data/rdr3-decompiled-scripts.md` → grep `data/rdr3-decompiled/1491.50/` |
 | Coords / 3D previews | `data/redm-forge.md`, `data/redm-info.md` |
 | RSG export / event / callback | `framework/resources/<resource>.md` |
 | Server item names | `server/environment.md` |
@@ -361,6 +366,7 @@ The brain is built on the work of these projects and sites. All credit for the u
 | [CitizenFX / Cfx.re](https://github.com/citizenfx) | RedM itself and the CFX natives | `natives/db/CFX.md` |
 | [Rexshack-RedM (RSG Framework)](https://github.com/Rexshack-RedM) | rsg-core and the RSG resources, plus the [txAdmin recipe](https://github.com/Rexshack-RedM/txAdminRecipe) | `source/`, `framework/` |
 | [Forza-Studios/RedM-AI-Knowledge-Brain](https://github.com/Forza-Studios/RedM-AI-Knowledge-Brain) | Fallback lookup index for game data | `data/README.md` |
+| [Halen84/RDR3-Decompiled-Scripts](https://github.com/Halen84/RDR3-Decompiled-Scripts) (mirrored at [RexShack/RDR3-Decompiled-Scripts](https://github.com/RexShack/RDR3-Decompiled-Scripts)) | Decompiled RDR2 singleplayer scripts, build 1491.50 | `data/rdr3-decompiled-scripts.md` |
 | [redm.info (RedM Index)](https://redm.info/) | Searchable natives, hashes, clothes, blips and props | `data/redm-info.md` |
 | [RedM Forge](https://redm-forge.vercel.app/) by DatMayo | Model previews with 3D view, world map coords, animation builder | `data/redm-forge.md` |
 | [Overextended](https://github.com/overextended) | ox_lib, ox_target, oxmysql | `framework/other-exports.md`, `patterns/` |

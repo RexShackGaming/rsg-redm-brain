@@ -25,6 +25,7 @@ Read this file first, then open only the files you need for the task.
 | `tools/` | Refresh scripts that re-pull the repos and regenerate the reference |
 | `natives/` | RedM natives guides: ped AI/combat, game events, prompts, blips, entities |
 | `natives/db/` | **Full natives database** (~8k, hash + signature + notes). Grep `INDEX.tsv` first |
+| `data/rdr3-decompiled-scripts.md` | **RDR3 decompiled SP scripts** (Halen84, build 1491.50): how Rockstar calls natives in real gameplay. Grep `data/rdr3-decompiled/1491.50/` if cloned |
 | `data/redm-info.md` | redm.info online lookup: what's on the site and its local equivalents |
 | `data/redm-forge.md` | RedM Forge (redm-forge.vercel.app): models/hashes with 3D preview, world map coords, animation builder |
 | `data/rdr3_discoveries/` | **Local copy of femga/rdr3_discoveries**: peds, props, anims, scenarios, weapons, PTFX, blips, controls, doors, interiors, AI flags, events. Start at `MAP.md`, then search the file |
