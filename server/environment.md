@@ -4,7 +4,7 @@ This file is the source of truth. It overrides anything else in the brain.
 
 ## Core stack
 - rsg-core 3.0.3, rsg-inventory, rsg-banking v3
-- `[standalone]`: ox_lib, oxmysql, ox_target, PolyZone, pma-voice, interact-sound, xsound, progressbar, rNotify
+- `[standalone]`: ox_lib, oxmysql, ox_target, PolyZone, interact-sound, xsound, progressbar, rNotify
 - `[framework]` holds the `rsg-*` resources. `[community]` holds third-party resources (Nt_Blackjack, Nt_Holdem).
 
 ## Installed systems (use these)
@@ -15,11 +15,13 @@ This file is the source of truth. It overrides anything else in the brain.
 | Jobs | rsg-multijob (github.com/Rexshack-RedM/rsg-multijob) |
 | Telegrams | rsg-telegram (github.com/Rexshack-RedM/rsg-telegram) |
 | Clothing | rsg-wardrobe (github.com/Rexshack-RedM/rsg-wardrobe) |
+| Voice | rsg-voice (github.com/Rexshack-RedM/rsg-voice) |
 | Targeting | ox_target (some older scripts reference rsg-target) |
 
 ## Removed or not installed (never depend on these)
 - **weathersync** has been removed. Use rsg-weather.
 - **rsg-horses** is not installed. Use rsg-stables.
+- **pma-voice** has been replaced. Use rsg-voice.
 - **RSGCore.Shared.Jobs** is no longer where jobs are defined. Jobs live in the database via rsg-multijob.
 
 ## Item names on this server
