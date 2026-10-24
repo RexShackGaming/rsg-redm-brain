@@ -21,6 +21,7 @@ The result: scripts that use the right item names, call real exports, keep money
 9. [Auditing and converting existing scripts](#auditing-and-converting-existing-scripts)
 10. [Keeping the brain up to date](#keeping-the-brain-up-to-date)
 11. [Troubleshooting](#troubleshooting)
+12. [Credits](#credits)
 
 ---
 
@@ -295,6 +296,27 @@ The checklist covers security, notifications, locales, environment (removed reso
 | AI loads a huge data file and loses context | Tell it to grep, per `data/rdr3_discoveries/MAP.md` |
 | NUI stuck on screen | Ensure `SetNuiFocus(false, false)` on close and `onResourceStop` (`patterns/nui-bridge.lua`) |
 | Exploit found | Re-run `audit/audit-checklist.md` section 1 and follow `conventions/security.md` |
+
+---
+
+## Credits
+
+The brain is built on the work of these projects and sites. All credit for the underlying data goes to them; please support and star their work.
+
+| Source | What it provides | Used in |
+|---|---|---|
+| [femga/rdr3_discoveries](https://github.com/femga/rdr3_discoveries) | RDR2/RedM game data: peds, props, anims, scenarios, weapons, PTFX, controls, doors, interiors, AI flags, events, clothing | `data/rdr3_discoveries/` |
+| [VORPCORE/RDR3natives](https://github.com/VORPCORE/RDR3natives) | Native names, hashes, signatures and notes | `natives/db/` |
+| [CitizenFX / Cfx.re](https://github.com/citizenfx) | RedM itself and the CFX natives | `natives/db/CFX.md` |
+| [Rexshack-RedM (RSG Framework)](https://github.com/Rexshack-RedM) | rsg-core and the RSG resources, plus the [txAdmin recipe](https://github.com/Rexshack-RedM/txAdminRecipe) | `source/`, `framework/` |
+| [Forza-Studios/RedM-AI-Knowledge-Brain](https://github.com/Forza-Studios/RedM-AI-Knowledge-Brain) | Fallback lookup index for game data | `data/README.md` |
+| [redm.info (RedM Index)](https://redm.info/) | Searchable natives, hashes, clothes, blips and props | `data/redm-info.md` |
+| [RedM Forge](https://redm-forge.vercel.app/) by DatMayo | Model previews with 3D view, world map coords, animation builder | `data/redm-forge.md` |
+| [Overextended](https://github.com/overextended) | ox_lib, ox_target, oxmysql | `framework/other-exports.md`, `patterns/` |
+
+redm.info credits its own sources as rdr3natives.com, VORPCORE/RDR3natives, CitizenFX shared natives and femga/rdr3_discoveries.
+
+This project is unofficial and not affiliated with Rockstar Games, Take-Two Interactive or Cfx.re.
 
 ---
 
