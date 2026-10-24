@@ -632,8 +632,8 @@ end
 -- ═══════════════════════════════════════════════════════════
 Citizen.CreateThread(function()
     while true do
-        Wait(0)
         local id = PlayerId()
+        Wait(IsPlayerTargettingAnything(id) and 0 or 200) -- prompts only exist while targeting
         if IsPlayerTargettingAnything(id) then
             local result, entity = GetPlayerTargetEntity(id)
 

@@ -21,6 +21,7 @@ The result: scripts that use the right item names, call real exports, keep money
 9. [Auditing and converting existing scripts](#auditing-and-converting-existing-scripts)
 10. [Keeping the brain up to date](#keeping-the-brain-up-to-date)
 11. [Troubleshooting](#troubleshooting)
+    - see also [Windows setup](#windows-setup)
 12. [Credits](#credits)
 
 ---
@@ -64,11 +65,59 @@ The result: scripts that use the right item names, call real exports, keep money
    ```bash
    cd rsg-redm-brain/tools
    ./refresh.sh          # Linux / macOS / Git Bash
-   # or
-   .\refresh.ps1         # Windows PowerShell
    ```
+   On Windows, see [Windows setup](#windows-setup) below.
 3. Check `server/environment.md` matches **your** server (resources, item names). Edit it if not.
 4. Open the folder in your AI tool (see below) and ask for a script.
+
+### Windows setup
+
+Requirements: [Git for Windows](https://git-scm.com/download/win) and [Python 3](https://www.python.org/downloads/) installed and on your PATH (tick *"Add python.exe to PATH"* in the installer). Check with `git --version` and `python --version`.
+
+**Changing to the brain folder.** The command depends on your terminal. In Command Prompt, plain `cd` won't switch drives.
+
+| Terminal | Command |
+|---|---|
+| Command Prompt (cmd) | `cd /d D:\GitHub\rex-scripts\rsg-redm-brain` |
+| PowerShell | `cd "D:\GitHub\rex-scripts\rsg-redm-brain"` |
+| Git Bash | `cd /d/GitHub/rex-scripts/rsg-redm-brain` |
+
+Replace the path with wherever you cloned the brain. If you get *"path not found"*, check the spelling with `dir D:\GitHub\rex-scripts`.
+
+**Running the refresh.** The script lives in `tools\`, and Command Prompt can't run `.ps1` files directly. That's what causes the error *"'.\refresh.ps1' is not recognized as an internal or external command"*.
+
+From **PowerShell** (recommended):
+```powershell
+cd "D:\GitHub\rex-scripts\rsg-redm-brain\tools"
+.\refresh.ps1
+```
+
+From **Command Prompt**:
+```cmd
+cd /d D:\GitHub\rex-scripts\rsg-redm-brain\tools
+powershell -ExecutionPolicy Bypass -File .\refresh.ps1
+```
+
+From **Git Bash**:
+```bash
+cd /d/GitHub/rex-scripts/rsg-redm-brain/tools
+./refresh.sh
+```
+
+If PowerShell says *"running scripts is disabled on this system"*, allow local scripts for your account once:
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+**Searching on Windows.** The `rg` examples in [Looking things up](#looking-things-up) work in any terminal once ripgrep is installed (`winget install BurntSushi.ripgrep.MSVC`). Without it, use PowerShell:
+```powershell
+Select-String -Path natives\db\INDEX.tsv -Pattern "TASK_START_SCENARIO"
+Get-ChildItem data\rdr3_discoveries\peds -Recurse | Select-String "a_c_horse_arabian"
+```
+or Command Prompt:
+```cmd
+findstr /s /i "a_c_horse_arabian" data\rdr3_discoveries\peds\*
+```
 
 ---
 
@@ -295,6 +344,8 @@ The checklist covers security, notifications, locales, environment (removed reso
 | Hash or model doesn't work in-game | Ask which file it came from, re-check via `data/redm-forge.md` / `data/redm-info.md` |
 | AI loads a huge data file and loses context | Tell it to grep, per `data/rdr3_discoveries/MAP.md` |
 | NUI stuck on screen | Ensure `SetNuiFocus(false, false)` on close and `onResourceStop` (`patterns/nui-bridge.lua`) |
+| `'.\refresh.ps1' is not recognized` | You're in Command Prompt or the wrong folder; see [Windows setup](#windows-setup) |
+| `cd` won't change to `D:\...` in cmd | Use `cd /d D:\...`; see [Windows setup](#windows-setup) |
 | Exploit found | Re-run `audit/audit-checklist.md` section 1 and follow `conventions/security.md` |
 
 ---

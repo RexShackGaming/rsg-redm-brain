@@ -1,6 +1,6 @@
 # rsg-track
 
-Version 2.0.1. rsg-track
+Version 3.0.1. rsg-track
 
 A custom horse race track builder and race manager for **RSG-Core** RedM servers. Players (or staff) lay out a checkpoint route in the open world with a couple of keybinds, save it to the database, invite riders, and run multi-lap races with automatic winner tracking, cash rewards, and optional Discord logging — all through a themed NUI menu. - **In-world track creation** — press `J` to drop the s
 
@@ -24,7 +24,7 @@ Has NUI (`ui_page`).
 
 **server:** `/racewebhooktest`
 
-**client:** `/race`, `/racerace`
+**client:** `/race`
 
 ## Server events it triggers in other resources
 

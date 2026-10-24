@@ -1,6 +1,6 @@
 # rsg-inventory
 
-Version 3.0.5. rsg-inventory
+Version 3.0.7. rsg-inventory
 
 Slot/weight inventory for RSG-Core with hotbar, persistent stashes, ground drops, shops and a legacy-compatible API. 1. Start order: `oxmysql`, `ox_lib`, `rsg-core`, then `rsg-inventory`. 2. Item images go in `html/images/` (same PNGs as the original rsg-inventory).
 

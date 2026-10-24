@@ -25,14 +25,14 @@ Source: VORPCORE/RDR3natives `natives_cfx.json`. Grep by NAME or hash.
 ## ADD_CONVAR_CHANGE_LISTENER
 `0xAB7F7241` | `void ADD_CONVAR_CHANGE_LISTENER(char* conVarFilter, func handler)`
 ```js
-// listen for all convar changes
-AddConvarChangeListener(null, (conVarName, reserved) => {
-    print(GetConvarInt(conVarName))
-})
-
-// listen to convars that start with "script:"
-AddConvarChangeListener("script:*", (conVarName, reserved) => {
-    print(GetConvarInt(conVarName))
+// listen for all convar changes
+AddConvarChangeListener(null, (conVarName, reserved) => {
+    print(GetConvarInt(conVarName))
+})
+
+// listen to convars that start with "script:"
+AddConvarChangeListener("script:*", (conVarName, reserved) => {
+    print(GetConvarInt(conVarName))
 })
 ```
 
@@ -54,58 +54,58 @@ AddConvarChangeListener("script:*", (conVarName, reserved) => {
 ## ADD_STATE_BAG_CHANGE_HANDLER
 `0x5BA35AAF` | `void ADD_STATE_BAG_CHANGE_HANDLER(char* keyFilter, char* bagFilter, func handler)`
 ```js
-AddStateBagChangeHandler("blockTasks", null, async (bagName, key, value /* boolean */) => {
-    let entity = GetEntityFromStateBagName(bagName);
-    // Whoops, we don't have a valid entity!
-    if (entity === 0) return;
-    // We don't want to freeze the entity position if the entity collision hasn't loaded yet
-    while (!HasCollisionLoadedAroundEntity(entity)) {
-        // The entity went out of our scope before the collision loaded
-        if (!DoesEntityExist(entity)) return;
-        await Delay(250);
-    }
-    SetEntityInvincible(entity, value)
-    FreezeEntityPosition(entity, value)
-    TaskSetBlockingOfNonTemporaryEvents(entity, value)
+AddStateBagChangeHandler("blockTasks", null, async (bagName, key, value /* boolean */) => {
+    let entity = GetEntityFromStateBagName(bagName);
+    // Whoops, we don't have a valid entity!
+    if (entity === 0) return;
+    // We don't want to freeze the entity position if the entity collision hasn't loaded yet
+    while (!HasCollisionLoadedAroundEntity(entity)) {
+        // The entity went out of our scope before the collision loaded
+        if (!DoesEntityExist(entity)) return;
+        await Delay(250);
+    }
+    SetEntityInvincible(entity, value)
+    FreezeEntityPosition(entity, value)
+    TaskSetBlockingOfNonTemporaryEvents(entity, value)
 })
 ```
 ```lua
-AddStateBagChangeHandler("blockTasks", nil, function(bagName, key, value) 
-    local entity = GetEntityFromStateBagName(bagName)
-    -- Whoops, we don't have a valid entity!
-    if entity == 0 then return end
-    -- We don't want to freeze the entity position if the entity collision hasn't loaded yet
-    while not HasCollisionLoadedAroundEntity(entity) do
-        -- The entity went out of our scope before the collision loaded
-        if not DoesEntityExist(entity) then return end
-        Wait(250)
-    end
-    SetEntityInvincible(entity, value)
-    FreezeEntityPosition(entity, value)
-    TaskSetBlockingOfNonTemporaryEvents(entity, value)
+AddStateBagChangeHandler("blockTasks", nil, function(bagName, key, value) 
+    local entity = GetEntityFromStateBagName(bagName)
+    -- Whoops, we don't have a valid entity!
+    if entity == 0 then return end
+    -- We don't want to freeze the entity position if the entity collision hasn't loaded yet
+    while not HasCollisionLoadedAroundEntity(entity) do
+        -- The entity went out of our scope before the collision loaded
+        if not DoesEntityExist(entity) then return end
+        Wait(250)
+    end
+    SetEntityInvincible(entity, value)
+    FreezeEntityPosition(entity, value)
+    TaskSetBlockingOfNonTemporaryEvents(entity, value)
 end)
 ```
 ```cs
-AddStateBagChangeHandler("blockTasks", null,
-    new Action<string, string, object, int, bool>
-    (async (bagName, key, value, res, rep) =>
-    {
-        bool val = (bool)value;
-
-        var entity = GetEntityFromStateBagName(bagName);
-        //-- Whoops, we don't have a valid entity!
-        if (entity == 0) return;
-        //-- We don't want to freeze the entity position if the entity collision hasn't loaded yet
-        while (!HasCollisionLoadedAroundEntity(entity))
-        {
-            //--The entity went out of our scope before the collision loaded
-            if (!DoesEntityExist(entity)) return;
-
-            await Delay(250);
-        }
-        SetEntityInvincible(entity, val);
-        FreezeEntityPosition(entity, val);
-        TaskSetBlockingOfNonTemporaryEvents(entity, val);
+AddStateBagChangeHandler("blockTasks", null,
+    new Action<string, string, object, int, bool>
+    (async (bagName, key, value, res, rep) =>
+    {
+        bool val = (bool)value;
+
+        var entity = GetEntityFromStateBagName(bagName);
+        //-- Whoops, we don't have a valid entity!
+        if (entity == 0) return;
+        //-- We don't want to freeze the entity position if the entity collision hasn't loaded yet
+        while (!HasCollisionLoadedAroundEntity(entity))
+        {
+            //--The entity went out of our scope before the collision loaded
+            if (!DoesEntityExist(entity)) return;
+
+            await Delay(250);
+        }
+        SetEntityInvincible(entity, val);
+        FreezeEntityPosition(entity, val);
+        TaskSetBlockingOfNonTemporaryEvents(entity, val);
     }));
 ```
 
@@ -121,21 +121,21 @@ AddStateBagChangeHandler("blockTasks", null,
 ## APPLY_WEATHER_CYCLES
 `0x3422291C` | `void APPLY_WEATHER_CYCLES(int numEntries, int msPerCycle)`
 ```lua
--- Cycle between XMAS weather for 30 seconds (3 * 10000 milliseconds), and SMOG weather for 20 seconds (2 * 10000 milliseconds)
-local success = SetWeatherCycleEntry(0, "XMAS", 3) and
-                SetWeatherCycleEntry(1, "SMOG", 2) and
+-- Cycle between XMAS weather for 30 seconds (3 * 10000 milliseconds), and SMOG weather for 20 seconds (2 * 10000 milliseconds)
+local success = SetWeatherCycleEntry(0, "XMAS", 3) and
+                SetWeatherCycleEntry(1, "SMOG", 2) and
                 ApplyWeatherCycles(2, 10000)
 ```
 
 ## BREAK_OFF_VEHICLE_WHEEL
 `0xA274CADB` | `void BREAK_OFF_VEHICLE_WHEEL(Vehicle vehicle, int wheelIndex, BOOL leaveDebrisTrail, BOOL deleteWheel, BOOL unknownFlag, BOOL putOnFire)`
 ```lua
-local vehicle = GetVehiclePedIsIn(PlayerPedId())
-
-if DoesEntityExist(vehicle) then
-  for i = 0, 3 do
-    BreakOffVehicleWheel(vehicle, i, true, false, true, false)
-  end
+local vehicle = GetVehiclePedIsIn(PlayerPedId())
+
+if DoesEntityExist(vehicle) then
+  for i = 0, 3 do
+    BreakOffVehicleWheel(vehicle, i, true, false, true, false)
+  end
 end
 ```
 
@@ -172,12 +172,12 @@ end
 ## CLONE_TIMECYCLE_MODIFIER
 `0x54D636B3` | `void CLONE_TIMECYCLE_MODIFIER(char* sourceModifierName, char* clonedModifierName)`
 ```lua
-local sourceName = "underwater"
-local cloneName = "my_awesome_timecycle"
-
-local clonedIndex = CloneTimecycleModifier(sourceName, cloneName)
-if clonedIndex ~= -1 then
-  SetTimecycleModifier(cloneName)
+local sourceName = "underwater"
+local cloneName = "my_awesome_timecycle"
+
+local clonedIndex = CloneTimecycleModifier(sourceName, cloneName)
+if clonedIndex ~= -1 then
+  SetTimecycleModifier(cloneName)
 end
 ```
 
@@ -220,11 +220,11 @@ end
 ## CREATE_TIMECYCLE_MODIFIER
 `0x70FA2AFA` | `void CREATE_TIMECYCLE_MODIFIER(char* modifierName)`
 ```lua
-local modifierName = "my_awesome_timecycle"
-local createdIndex = CreateTimecycleModifier(modifierName)
-
-if createdIndex ~= -1 then
-  SetTimecycleModifier(modifierName)
+local modifierName = "my_awesome_timecycle"
+local createdIndex = CreateTimecycleModifier(modifierName)
+
+if createdIndex ~= -1 then
+  SetTimecycleModifier(modifierName)
 end
 ```
 
@@ -234,7 +234,7 @@ end
 ## CREATE_VEHICLE_SERVER_SETTER
 `0x6AE51D4B` | `void CREATE_VEHICLE_SERVER_SETTER(Hash modelHash, char* type, float x, float y, float z, float heading)`
 ```lua
-local heli = CreateVehicleServerSetter(`seasparrow`, 'heli', GetEntityCoords(GetPlayerPed(GetPlayers()[1])) + vector3(0, 0, 15), 0.0)
+local heli = CreateVehicleServerSetter(`seasparrow`, 'heli', GetEntityCoords(GetPlayerPed(GetPlayers()[1])) + vector3(0, 0, 15), 0.0)
 print(GetEntityCoords(heli)) -- should return correct coordinates
 ```
 
@@ -268,15 +268,15 @@ DeleteResourceKvp('liberty_city')
 ## DISABLE_RAW_KEY_THIS_FRAME
 `0x8BCF0014` | `void DISABLE_RAW_KEY_THIS_FRAME(int rawKeyIndex)`
 ```lua
-local KEY_SPACE = 32
-DisableRawKeyThisFrame(KEY_SPACE)
--- This will not get triggered this frame
-if IsRawKeyDown(KEY_SPACE) then
-	print("unreachable :(")
-end
--- this will get triggered
-if IsDisabledRawKeyDown(KEY_SPACE) then
-    print("Spacebar is down")
+local KEY_SPACE = 32
+DisableRawKeyThisFrame(KEY_SPACE)
+-- This will not get triggered this frame
+if IsRawKeyDown(KEY_SPACE) then
+	print("unreachable :(")
+end
+-- this will get triggered
+if IsDisabledRawKeyDown(KEY_SPACE) then
+    print("Spacebar is down")
 end
 ```
 
@@ -295,25 +295,25 @@ end
 ## DOES_PLAYER_EXIST
 `0x12038599` | `void DOES_PLAYER_EXIST(char* playerSrc)`
 ```lua
-local deferralMessages = { "Isn't this just magical!", "We can defer all day!", "You'll get in eventually", "You're totally not going to sit here forever", "The Fruit Tree is a lie" }
-AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
-    local source = source
-    deferrals.defer()
-
-    Wait(0)
-
-
-    local messageIndex = 0
-
-    repeat
-        Wait(2000)
-        if messageIndex >= #deferralMessages then
-            deferrals.done()
-        else
-            messageIndex = messageIndex + 1
-        end
-        deferrals.update(deferralMessages[messageIndex])
-    until not DoesPlayerExist(source)
+local deferralMessages = { "Isn't this just magical!", "We can defer all day!", "You'll get in eventually", "You're totally not going to sit here forever", "The Fruit Tree is a lie" }
+AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
+    local source = source
+    deferrals.defer()
+
+    Wait(0)
+
+
+    local messageIndex = 0
+
+    repeat
+        Wait(2000)
+        if messageIndex >= #deferralMessages then
+            deferrals.done()
+        else
+            messageIndex = messageIndex + 1
+        end
+        deferrals.update(deferralMessages[messageIndex])
+    until not DoesPlayerExist(source)
 end)
 ```
 
@@ -329,19 +329,19 @@ end)
 ## DOES_TIMECYCLE_MODIFIER_HAS_VAR
 `0xC53BB6D3` | `void DOES_TIMECYCLE_MODIFIER_HAS_VAR(char* modifierName, char* varName)`
 ```lua
-local modifierName = "superDARK"
-local varName = "postfx_noise"
-
-if DoesTimecycleModifierHasVar(modifierName, varName) then
-  local success, value1, value2 = GetTimecycleModifierVar(modifierName, varName)
-
-  if success then
-    print(string.format("[%s] removed var %s with values: %f %f", modifierName, varName, value1, value2))
-    RemoveTimecycleModifierVar(modifierName, varName)
-  end
-else
-    SetTimecycleModifierVar(modifierName, varName, 1.0, 1.0)
-    print(string.format("[%s] created var %s", modifierName, varName))
+local modifierName = "superDARK"
+local varName = "postfx_noise"
+
+if DoesTimecycleModifierHasVar(modifierName, varName) then
+  local success, value1, value2 = GetTimecycleModifierVar(modifierName, varName)
+
+  if success then
+    print(string.format("[%s] removed var %s with values: %f %f", modifierName, varName, value1, value2))
+    RemoveTimecycleModifierVar(modifierName, varName)
+  end
+else
+    SetTimecycleModifierVar(modifierName, varName, 1.0, 1.0)
+    print(string.format("[%s] created var %s", modifierName, varName))
 end
 ```
 
@@ -363,12 +363,12 @@ end
 ## DRAW_CORONA
 `0xFF44780E` | `void DRAW_CORONA(float posX, float posY, float posZ, float size, int alpha, int red, int green, int blue, float intensity, float zBias, float dirX, float dirY, float dirZ, float viewThreshold, float innerAngle, float outerAngle, int flags)`
 ```lua
-local pedCoords = GetEntityCoords(PlayerPedId())
-Citizen.CreateThread(function()
-    while true do
-        DrawCorona(pedCoords.x, pedCoords.y, pedCoords.z, 5.0, 255, 255, 255, 255, 4.0, 0.2, pedCoords.x, pedCoords.y, pedCoords.z, 1.0, 0.0, 90.0, 2)
-        Wait(0)
-    end
+local pedCoords = GetEntityCoords(PlayerPedId())
+Citizen.CreateThread(function()
+    while true do
+        DrawCorona(pedCoords.x, pedCoords.y, pedCoords.z, 5.0, 255, 255, 255, 255, 4.0, 0.2, pedCoords.x, pedCoords.y, pedCoords.z, 1.0, 0.0, 90.0, 2)
+        Wait(0)
+    end
 end)
 ```
 
@@ -429,10 +429,10 @@ end)
 ## EXECUTE_COMMAND
 `0x561C060B` | `void EXECUTE_COMMAND(char* commandString)`
 ```lua
-Citizen.CreateThread(function()
-  -- stop the server after 1 minute
-  Citizen.Wait(60000)
-  ExecuteCommand("quit Shortlived")
+Citizen.CreateThread(function()
+  -- stop the server after 1 minute
+  Citizen.Wait(60000)
+  ExecuteCommand("quit Shortlived")
 end)
 ```
 
@@ -481,14 +481,14 @@ end)
 ## FLUSH_RESOURCE_KVP
 `0xE27C97A0` | `void FLUSH_RESOURCE_KVP()`
 ```lua
--- Bulk write many <key, value> pairs to the resource KVP.
-local key = "bug_%d"
-local value = "unintended_feature_%d"
-for i=1,10000 do
-	SetResourceKvpNoSync(key:format(i), value:format(i))
-end
-
--- Ensure all data is synchronized to the filesystem
+-- Bulk write many <key, value> pairs to the resource KVP.
+local key = "bug_%d"
+local value = "unintended_feature_%d"
+for i=1,10000 do
+	SetResourceKvpNoSync(key:format(i), value:format(i))
+end
+
+-- Ensure all data is synchronized to the filesystem
 FlushResourceKvp()
 ```
 
@@ -513,16 +513,16 @@ FlushResourceKvp()
 ## GET_ALL_PEDS
 `0xB8584FEF` | `void GET_ALL_PEDS()`
 ```lua
--- This example prints information of every ped that has an owner.
-
-for i, ped in ipairs(GetAllPeds()) do
-    local pedOwner = NetworkGetEntityOwner(ped)
-    if pedOwner > 0 then
-       local playerName = GetPlayerName(pedOwner)
-       local pedModel = GetEntityModel(ped)
-       local pedArmour = GetPedArmour(ped)
-       print("Ped : "..ped.." | Owner name : "..playerName.." | Model : "..pedModel.." | Armour : "..pedArmour)
-    end
+-- This example prints information of every ped that has an owner.
+
+for i, ped in ipairs(GetAllPeds()) do
+    local pedOwner = NetworkGetEntityOwner(ped)
+    if pedOwner > 0 then
+       local playerName = GetPlayerName(pedOwner)
+       local pedModel = GetEntityModel(ped)
+       local pedArmour = GetPedArmour(ped)
+       print("Ped : "..ped.." | Owner name : "..playerName.." | Model : "..pedModel.." | Armour : "..pedArmour)
+    end
 end
 ```
 
@@ -538,13 +538,13 @@ end
 ## GET_ALL_VEHICLE_MODELS
 `0xD7531645` | `void GET_ALL_VEHICLE_MODELS()`
 ```lua
-RegisterCommand("spawnrandomcar", function()
-	local vehicles = GetAllVehicleModels()
-	local veh = vehicles[math.random(1, #vehicles)]
-	RequestModel(veh)
-	repeat Wait(0) until HasModelLoaded(veh)
-	local veh = CreateVehicle(veh, GetEntityCoords(PlayerPedId()), GetEntityHeading(PlayerPedId()), true, false)
-	SetPedIntoVehicle(PlayerPedId(), veh, -1)
+RegisterCommand("spawnrandomcar", function()
+	local vehicles = GetAllVehicleModels()
+	local veh = vehicles[math.random(1, #vehicles)]
+	RequestModel(veh)
+	repeat Wait(0) until HasModelLoaded(veh)
+	local veh = CreateVehicle(veh, GetEntityCoords(PlayerPedId()), GetEntityHeading(PlayerPedId()), true, false)
+	SetPedIntoVehicle(PlayerPedId(), veh, -1)
 end)
 ```
 
@@ -560,7 +560,7 @@ end)
 ## GET_CALMING_QUAD_AT_COORDS
 `0x870E8B40` | `void GET_CALMING_QUAD_AT_COORDS(float x, float y)`
 ```lua
-local currentPedPosition = GetEntityCoords(PlayerPedId())
+local currentPedPosition = GetEntityCoords(PlayerPedId())
 local calmingQuadIndex = GetCalmingQuadAtCoords(currentPedPosition.x, currentPedPosition.y)
 ```
 
@@ -597,16 +597,16 @@ local success, dampening = GetCalmingQuadDampening(1)
 ## GET_CONVAR
 `0x6CCD2564` | `void GET_CONVAR(char* varName, char* default_)`
 ```lua
-if GetConvar('voice_useNativeAudio', 'false') == 'true' then
-    Citizen.Trace('Native Audio is enabled.')
+if GetConvar('voice_useNativeAudio', 'false') == 'true' then
+    Citizen.Trace('Native Audio is enabled.')
 end
 ```
 
 ## GET_CONVAR_BOOL
 `0x7E8EBFE5` | `void GET_CONVAR_BOOL(char* varName, BOOL defaultValue)`
 ```lua
-if GetConvarBool('dev_mode', false) then
-    print("Dev Mode is eanbled, load dev mode menus")
+if GetConvarBool('dev_mode', false) then
+    print("Dev Mode is eanbled, load dev mode menus")
 end
 ```
 
@@ -616,8 +616,8 @@ end
 ## GET_CONVAR_INT
 `0x935C0AB2` | `void GET_CONVAR_INT(char* varName, int default_)`
 ```lua
-if GetConvarInt('remainingRounds', 0) < 900 then
-    Citizen.Trace("Less than 900 rounds remaining...")
+if GetConvarInt('remainingRounds', 0) < 900 then
+    Citizen.Trace("Less than 900 rounds remaining...")
 end
 ```
 
@@ -657,77 +657,77 @@ end
 ## GET_ENTITY_COORDS
 `0x1647F1CB` | `void GET_ENTITY_COORDS(Entity entity)`
 ```lua
-local function ShowCoordinates()
-    local player = source
-    local ped = GetPlayerPed(player)
-    local playerCoords = GetEntityCoords(ped)
-
-    print(playerCoords) -- vector3(...)
-end
-
-RegisterNetEvent("myCoordinates")
+local function ShowCoordinates()
+    local player = source
+    local ped = GetPlayerPed(player)
+    local playerCoords = GetEntityCoords(ped)
+
+    print(playerCoords) -- vector3(...)
+end
+
+RegisterNetEvent("myCoordinates")
 AddEventHandler("myCoordinates", ShowCoordinates)
 ```
 ```js
-onNet('myCoordinates', () => {
-  const player = global.source; // use (global as any).source for Typescript
-  const ped = GetPlayerPed(player);
-  const [playerX, playerY, playerZ] = GetEntityCoords(ped);
-
-  console.log(`${playerX}, ${playerY}, ${playerZ}`);
+onNet('myCoordinates', () => {
+  const player = global.source; // use (global as any).source for Typescript
+  const ped = GetPlayerPed(player);
+  const [playerX, playerY, playerZ] = GetEntityCoords(ped);
+
+  console.log(`${playerX}, ${playerY}, ${playerZ}`);
 });
 ```
 ```cs
-using static CitizenFX.Core.Native.API;
-// ...
-
-// In class constructor
-EventHandlers["myCoordinates"] += new Action<Player>(ShowCoordinates);
-
-// Delegate method
-private void ShowCoordinates([FromSource]Player player) {
-    Vector3 playerCoords = GetEntityCoords(player.Character);
-
-    // or the preferred use of C# wrapper
-    Vector3 playerCoords = player.Character.Position;
-
-    Debug.WriteLine($"{playerCoords}");
-}
+using static CitizenFX.Core.Native.API;
+// ...
+
+// In class constructor
+EventHandlers["myCoordinates"] += new Action<Player>(ShowCoordinates);
+
+// Delegate method
+private void ShowCoordinates([FromSource]Player player) {
+    Vector3 playerCoords = GetEntityCoords(player.Character);
+
+    // or the preferred use of C# wrapper
+    Vector3 playerCoords = player.Character.Position;
+
+    Debug.WriteLine($"{playerCoords}");
+}
 
 ```
 
 ## GET_ENTITY_FROM_STATE_BAG_NAME
 `0x4BDF1867` | `void GET_ENTITY_FROM_STATE_BAG_NAME(char* bagName)`
 ```js
-AddStateBagChangeHandler("blockTasks", null, async (bagName, key, value /* boolean */) => {
-    let entity = GetEntityFromStateBagName(bagName);
-    // Whoops, we were don't have a valid entity!
-    if (entity === 0) return;
-    // We don't want to freeze the entity position if the entity collision hasn't loaded yet
-    while (!HasCollisionLoadedAroundEntity(entity)) {
-        // The entity went out of our scope before the collision loaded
-        if (!DoesEntityExist(entity)) return;
-        await Delay(250);
-    }
-    SetEntityInvincible(entity, value)
-    FreezeEntityPosition(entity, value)
-    TaskSetBlockingOfNonTemporaryEvents(entity, value)
+AddStateBagChangeHandler("blockTasks", null, async (bagName, key, value /* boolean */) => {
+    let entity = GetEntityFromStateBagName(bagName);
+    // Whoops, we were don't have a valid entity!
+    if (entity === 0) return;
+    // We don't want to freeze the entity position if the entity collision hasn't loaded yet
+    while (!HasCollisionLoadedAroundEntity(entity)) {
+        // The entity went out of our scope before the collision loaded
+        if (!DoesEntityExist(entity)) return;
+        await Delay(250);
+    }
+    SetEntityInvincible(entity, value)
+    FreezeEntityPosition(entity, value)
+    TaskSetBlockingOfNonTemporaryEvents(entity, value)
 })
 ```
 ```lua
-AddStateBagChangeHandler("blockTasks", nil, function(bagName, key, value) 
-    local entity = GetEntityFromStateBagName(bagName)
-    -- Whoops, we don't have a valid entity!
-    if entity == 0 then return end
-    -- We don't want to freeze the entity position if the entity collision hasn't loaded yet
-    while not HasCollisionLoadedAroundEntity(entity) do
-        -- The entity went out of our scope before the collision loaded
-        if not DoesEntityExist(entity) then return end
-        Wait(250)
-    end
-    SetEntityInvincible(entity, value)
-    FreezeEntityPosition(entity, value)
-    TaskSetBlockingOfNonTemporaryEvents(entity, value)
+AddStateBagChangeHandler("blockTasks", nil, function(bagName, key, value) 
+    local entity = GetEntityFromStateBagName(bagName)
+    -- Whoops, we don't have a valid entity!
+    if entity == 0 then return end
+    -- We don't want to freeze the entity position if the entity collision hasn't loaded yet
+    while not HasCollisionLoadedAroundEntity(entity) do
+        -- The entity went out of our scope before the collision loaded
+        if not DoesEntityExist(entity) then return end
+        Wait(250)
+    end
+    SetEntityInvincible(entity, value)
+    FreezeEntityPosition(entity, value)
+    TaskSetBlockingOfNonTemporaryEvents(entity, value)
 end)
 ```
 
@@ -782,27 +782,27 @@ end)
 ## GET_EXTERNAL_KVP_FLOAT
 `0x3CC98B25` | `void GET_EXTERNAL_KVP_FLOAT(char* resource, char* key)`
 ```lua
-local kvpValue = GetExternalKvpFloat('drugs', 'mollis') 
-if kvpValue then
-	-- do something!
+local kvpValue = GetExternalKvpFloat('drugs', 'mollis') 
+if kvpValue then
+	-- do something!
 end
 ```
 
 ## GET_EXTERNAL_KVP_INT
 `0x12B8D689` | `void GET_EXTERNAL_KVP_INT(char* resource, char* key)`
 ```lua
-local kvpValue = GetExternalKvpInt('food', 'bananabread') 
-if kvpValue then
-	-- do something!
+local kvpValue = GetExternalKvpInt('food', 'bananabread') 
+if kvpValue then
+	-- do something!
 end
 ```
 
 ## GET_EXTERNAL_KVP_STRING
 `0x9080363A` | `void GET_EXTERNAL_KVP_STRING(char* resource, char* key)`
 ```lua
-local kvpValue = GetExternalKvpString('food', 'codfish') 
-if kvpValue then
-	-- do something!
+local kvpValue = GetExternalKvpString('food', 'codfish') 
+if kvpValue then
+	-- do something!
 end
 ```
 
@@ -827,11 +827,11 @@ end
 ## GET_GAME_POOL
 `0x2B9D4F50` | `void GET_GAME_POOL(char* poolName)`
 ```lua
-local vehiclePool = GetGamePool('CVehicle') -- Get the list of vehicles (entities) from the pool
-for i = 1, #vehiclePool do -- loop through each vehicle (entity)
-    if GetPedInVehicleSeat(vehiclePool[i], -1) == 0 then
-        DeleteEntity(vehiclePool[i]) -- Delete vehicles (entities) that don't have a driver
-    end
+local vehiclePool = GetGamePool('CVehicle') -- Get the list of vehicles (entities) from the pool
+for i = 1, #vehiclePool do -- loop through each vehicle (entity)
+    if GetPedInVehicleSeat(vehiclePool[i], -1) == 0 then
+        DeleteEntity(vehiclePool[i]) -- Delete vehicles (entities) that don't have a driver
+    end
 end
 ```
 
@@ -904,261 +904,261 @@ end
 ## GET_INTERIOR_ENTITIES_EXTENTS
 `0x322B1192` | `void GET_INTERIOR_ENTITIES_EXTENTS(int interiorId, float* bbMinX, float* bbMinY, float* bbMinZ, float* bbMaxX, float* bbMaxY, float* bbMaxZ)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-
-if interiorId ~= 0 then
-  local minX, minY, minZ, maxX, maxY, maxZ = GetInteriorEntitiesExtents(interiorId, roomId)
-  print("current entities extents is: " .. vec(minX, minY, minZ) .." / " .. vec(maxX, maxY, maxZ))
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+
+if interiorId ~= 0 then
+  local minX, minY, minZ, maxX, maxY, maxZ = GetInteriorEntitiesExtents(interiorId, roomId)
+  print("current entities extents is: " .. vec(minX, minY, minZ) .." / " .. vec(maxX, maxY, maxZ))
 end
 ```
 
 ## GET_INTERIOR_PORTAL_CORNER_POSITION
 `0xF772BB2C` | `void GET_INTERIOR_PORTAL_CORNER_POSITION(int interiorId, int portalIndex, int cornerIndex, float* posX, float* posY, float* posZ)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-
-if interiorId ~= 0 then
-  local portalIndex = 0
-  local cornerIndex = 0
-
-  local x, y, z = GetInteriorPortalCornerPosition(interiorId, portalIndex, cornerIndex)
-  print("position of portal " .. portalIndex .. "corner index " .. cornerIndex .. " is: " .. vec(x, y, z))
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+
+if interiorId ~= 0 then
+  local portalIndex = 0
+  local cornerIndex = 0
+
+  local x, y, z = GetInteriorPortalCornerPosition(interiorId, portalIndex, cornerIndex)
+  print("position of portal " .. portalIndex .. "corner index " .. cornerIndex .. " is: " .. vec(x, y, z))
 end
 ```
 
 ## GET_INTERIOR_PORTAL_COUNT
 `0xD05BB8B1` | `void GET_INTERIOR_PORTAL_COUNT(int interiorId)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-
-if interiorId ~= 0 then
-  local count = GetInteriorPortalCount(interiorId)
-  print("interior " .. interiorId .. "has " .. count .. " portals")
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+
+if interiorId ~= 0 then
+  local count = GetInteriorPortalCount(interiorId)
+  print("interior " .. interiorId .. "has " .. count .. " portals")
 end
 ```
 
 ## GET_INTERIOR_PORTAL_ENTITY_ARCHETYPE
 `0x9A0E1700` | `void GET_INTERIOR_PORTAL_ENTITY_ARCHETYPE(int interiorId, int portalIndex, int entityIndex)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-local portalIndex = 0
-
-if interiorId ~= 0 then
-  local count = GetInteriorPortalEntityCount(interiorId, portalIndex)
-  for i=0, count-1 do
-    local archetype = GetInteriorPortalEntityArchetype(interiorId, portalIndex, i)
-    print("portal " .. portalIndex .." entity " .. i .. " archetype is: " .. archetype)
-  end
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+local portalIndex = 0
+
+if interiorId ~= 0 then
+  local count = GetInteriorPortalEntityCount(interiorId, portalIndex)
+  for i=0, count-1 do
+    local archetype = GetInteriorPortalEntityArchetype(interiorId, portalIndex, i)
+    print("portal " .. portalIndex .." entity " .. i .. " archetype is: " .. archetype)
+  end
 end
 ```
 
 ## GET_INTERIOR_PORTAL_ENTITY_COUNT
 `0xC68021B` | `void GET_INTERIOR_PORTAL_ENTITY_COUNT(int interiorId, int portalIndex)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-local portalIndex = 0
-
-if interiorId ~= 0 then
-  local count = GetInteriorPortalEntityCount(interiorId, portalIndex)
-  print("portal " .. portalIndex .." entity count is: " .. count)
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+local portalIndex = 0
+
+if interiorId ~= 0 then
+  local count = GetInteriorPortalEntityCount(interiorId, portalIndex)
+  print("portal " .. portalIndex .." entity count is: " .. count)
 end
 ```
 
 ## GET_INTERIOR_PORTAL_ENTITY_FLAG
 `0x9DA2E811` | `void GET_INTERIOR_PORTAL_ENTITY_FLAG(int interiorId, int portalIndex, int entityIndex)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-local portalIndex = 0
-
-if interiorId ~= 0 then
-  local count = GetInteriorPortalEntityCount(interiorId, portalIndex)
-  for i=0, count-1 do
-    local flag = GetInteriorPortalEntityFlag(interiorId, portalIndex, i)
-    print("portal " .. portalIndex .." entity " .. i .. " flag is: " .. flag)
-  end
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+local portalIndex = 0
+
+if interiorId ~= 0 then
+  local count = GetInteriorPortalEntityCount(interiorId, portalIndex)
+  for i=0, count-1 do
+    local flag = GetInteriorPortalEntityFlag(interiorId, portalIndex, i)
+    print("portal " .. portalIndex .." entity " .. i .. " flag is: " .. flag)
+  end
 end
 ```
 
 ## GET_INTERIOR_PORTAL_ENTITY_POSITION
 `0x9B7AB83C` | `void GET_INTERIOR_PORTAL_ENTITY_POSITION(int interiorId, int portalIndex, int entityIndex, float* posX, float* posY, float* posZ)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-local portalIndex = 0
-
-if interiorId ~= 0 then
-  local count = GetInteriorPortalEntityCount(interiorId, portalIndex)
-  for i=0, count-1 do
-    local x, y, z = GetInteriorPortalEntityPosition(interiorId, portalIndex, i)
-    print("portal " .. portalIndex .." entity " .. i .. " position is: " .. vec3(x, y, z))
-  end
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+local portalIndex = 0
+
+if interiorId ~= 0 then
+  local count = GetInteriorPortalEntityCount(interiorId, portalIndex)
+  for i=0, count-1 do
+    local x, y, z = GetInteriorPortalEntityPosition(interiorId, portalIndex, i)
+    print("portal " .. portalIndex .." entity " .. i .. " position is: " .. vec3(x, y, z))
+  end
 end
 ```
 
 ## GET_INTERIOR_PORTAL_ENTITY_ROTATION
 `0x9F9CEB63` | `void GET_INTERIOR_PORTAL_ENTITY_ROTATION(int interiorId, int portalIndex, int entityIndex, float* rotX, float* rotY, float* rotZ, float* rotW)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-local portalIndex = 0
-
-if interiorId ~= 0 then
-  local count = GetInteriorPortalEntityCount(interiorId, portalIndex)
-  for i=0, count-1 do
-    local x, y, z, w = GetInteriorPortalEntityRotation(interiorId, portalIndex, i)
-    print("portal " .. portalIndex .." entity " .. i .. " rotation is: " .. vec4(x, y, z, w))
-  end
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+local portalIndex = 0
+
+if interiorId ~= 0 then
+  local count = GetInteriorPortalEntityCount(interiorId, portalIndex)
+  for i=0, count-1 do
+    local x, y, z, w = GetInteriorPortalEntityRotation(interiorId, portalIndex, i)
+    print("portal " .. portalIndex .." entity " .. i .. " rotation is: " .. vec4(x, y, z, w))
+  end
 end
 ```
 
 ## GET_INTERIOR_PORTAL_FLAG
 `0xC74DA47C` | `void GET_INTERIOR_PORTAL_FLAG(int interiorId, int portalIndex)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-
-if interiorId ~= 0 then
-  local portalFlag = GetInteriorPortalFlag(interiorId, 0)
-  print("portal 0 flag is: " .. portalRoomFrom)
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+
+if interiorId ~= 0 then
+  local portalFlag = GetInteriorPortalFlag(interiorId, 0)
+  print("portal 0 flag is: " .. portalRoomFrom)
 end
 ```
 
 ## GET_INTERIOR_PORTAL_ROOM_FROM
 `0xAA9C141D` | `void GET_INTERIOR_PORTAL_ROOM_FROM(int interiorId, int portalIndex)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-
-if interiorId ~= 0 then
-  local roomIndex = 0
-
-  local portalRoomFrom = GetInteriorPortalRoomFrom(interiorId, 0)
-  print("portal " .. roomIndex .. " room FROM is: " .. portalRoomFrom)
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+
+if interiorId ~= 0 then
+  local roomIndex = 0
+
+  local portalRoomFrom = GetInteriorPortalRoomFrom(interiorId, 0)
+  print("portal " .. roomIndex .. " room FROM is: " .. portalRoomFrom)
 end
 ```
 
 ## GET_INTERIOR_PORTAL_ROOM_TO
 `0x3F47F0E8` | `void GET_INTERIOR_PORTAL_ROOM_TO(int interiorId, int portalIndex)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-
-if interiorId ~= 0 then
-  local roomIndex = 0
-
-  local portalRoomTo = GetInteriorPortalRoomTo(interiorId, 0)
-  print("portal " .. roomIndex .. " room TO is: " .. portalRoomTo)
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+
+if interiorId ~= 0 then
+  local roomIndex = 0
+
+  local portalRoomTo = GetInteriorPortalRoomTo(interiorId, 0)
+  print("portal " .. roomIndex .. " room TO is: " .. portalRoomTo)
 end
 ```
 
 ## GET_INTERIOR_POSITION
 `0x77A435B0` | `void GET_INTERIOR_POSITION(int interiorId, float* posX, float* posY, float* posZ)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-
-if interiorId ~= 0 then
-  local x, y, z = GetInteriorPosition(interiorId)
-  print("current interior " .. interiorId .. " position is: " .. vec(x, y, z))
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+
+if interiorId ~= 0 then
+  local x, y, z = GetInteriorPosition(interiorId)
+  print("current interior " .. interiorId .. " position is: " .. vec(x, y, z))
 end
 ```
 
 ## GET_INTERIOR_ROOM_COUNT
 `0xA2737C2C` | `void GET_INTERIOR_ROOM_COUNT(int interiorId)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-
-if interiorId ~= 0 then
-  local count = GetInteriorRoomCount(interiorId)
-  print("interior " .. interiorId .. "has " .. count .. " rooms")
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+
+if interiorId ~= 0 then
+  local count = GetInteriorRoomCount(interiorId)
+  print("interior " .. interiorId .. "has " .. count .. " rooms")
 end
 ```
 
 ## GET_INTERIOR_ROOM_EXTENTS
 `0xF9E795DD` | `void GET_INTERIOR_ROOM_EXTENTS(int interiorId, int roomIndex, float* bbMinX, float* bbMinY, float* bbMinZ, float* bbMaxX, float* bbMaxY, float* bbMaxZ)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-local roomHash = GetRoomKeyFromEntity(playerPed)
-local roomId = GetInteriorRoomIndexByHash(interiorId, roomHash)
-
-if roomId ~= -1 then
-  local minX, minY, minZ, maxX, maxY, maxZ = GetInteriorRoomExtents(interiorId, roomId)
-  print("current room extents is: " .. vec(minX, minY, minZ) .." / " .. vec(maxX, maxY, maxZ))
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+local roomHash = GetRoomKeyFromEntity(playerPed)
+local roomId = GetInteriorRoomIndexByHash(interiorId, roomHash)
+
+if roomId ~= -1 then
+  local minX, minY, minZ, maxX, maxY, maxZ = GetInteriorRoomExtents(interiorId, roomId)
+  print("current room extents is: " .. vec(minX, minY, minZ) .." / " .. vec(maxX, maxY, maxZ))
 end
 ```
 
 ## GET_INTERIOR_ROOM_FLAG
 `0x6B7AF743` | `void GET_INTERIOR_ROOM_FLAG(int interiorId, int roomIndex)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-local roomHash = GetRoomKeyFromEntity(playerPed)
-local roomId = GetInteriorRoomIndexByHash(interiorId, roomHash)
-
-if roomId ~= -1 then
-  local roomFlag = GetInteriorRoomFlag(interiorId, roomId)
-  print("current room flag is: " .. roomFlag)
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+local roomHash = GetRoomKeyFromEntity(playerPed)
+local roomId = GetInteriorRoomIndexByHash(interiorId, roomHash)
+
+if roomId ~= -1 then
+  local roomFlag = GetInteriorRoomFlag(interiorId, roomId)
+  print("current room flag is: " .. roomFlag)
 end
 ```
 
 ## GET_INTERIOR_ROOM_INDEX_BY_HASH
 `0xE0EE05F8` | `void GET_INTERIOR_ROOM_INDEX_BY_HASH(int interiorId, int roomHash)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-local roomHash = GetRoomKeyFromEntity(playerPed)
-local roomId = GetInteriorRoomIndexByHash(interiorId, roomHash)
-
-if roomId ~= -1 then
-  print("current room index is: " .. roomId)
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+local roomHash = GetRoomKeyFromEntity(playerPed)
+local roomId = GetInteriorRoomIndexByHash(interiorId, roomHash)
+
+if roomId ~= -1 then
+  print("current room index is: " .. roomId)
 end
 ```
 
 ## GET_INTERIOR_ROOM_NAME
 `0x11755DF2` | `void GET_INTERIOR_ROOM_NAME(int interiorId, int roomIndex)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-local roomHash = GetRoomKeyFromEntity(playerPed)
-local roomId = GetInteriorRoomIndexByHash(interiorId, roomHash)
-
-if roomId ~= -1 then
-  local roomName = GetInteriorRoomName(interiorId, roomId)
-  print("current room name is: " .. roomName)
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+local roomHash = GetRoomKeyFromEntity(playerPed)
+local roomId = GetInteriorRoomIndexByHash(interiorId, roomHash)
+
+if roomId ~= -1 then
+  local roomName = GetInteriorRoomName(interiorId, roomId)
+  print("current room name is: " .. roomName)
 end
 ```
 
 ## GET_INTERIOR_ROOM_TIMECYCLE
 `0x82BA3F88` | `void GET_INTERIOR_ROOM_TIMECYCLE(int interiorId, int roomIndex)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-local roomHash = GetRoomKeyFromEntity(playerPed)
-local roomId = GetInteriorRoomIndexByHash(interiorId, roomHash)
-
-if roomId ~= -1 then
-  local roomTimecycle = GetInteriorRoomTimecycle(interiorId, roomId)
-  print("current room timecycle hash is: " .. roomTimecycle)
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+local roomHash = GetRoomKeyFromEntity(playerPed)
+local roomId = GetInteriorRoomIndexByHash(interiorId, roomHash)
+
+if roomId ~= -1 then
+  local roomTimecycle = GetInteriorRoomTimecycle(interiorId, roomId)
+  print("current room timecycle hash is: " .. roomTimecycle)
 end
 ```
 
 ## GET_INTERIOR_ROTATION
 `0x5A039998` | `void GET_INTERIOR_ROTATION(int interiorId, float* rotx, float* rotY, float* rotZ, float* rotW)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-
-if interiorId ~= 0 then
-  local x, y, z, w = GetInteriorRotation(interiorId)
-  print("current interior " .. interiorId .. " rotation is: " .. vec(x, y, z, w))
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+
+if interiorId ~= 0 then
+  local x, y, z, w = GetInteriorRotation(interiorId)
+  print("current interior " .. interiorId .. " rotation is: " .. vec(x, y, z, w))
 end
 ```
 
@@ -1264,68 +1264,68 @@ local fowardVector, rightVector, upVector, position = GetPedBoneMatrix(PlayerPed
 ## GET_PED_COLLECTIONS_COUNT
 `0x45946359` | `void GET_PED_COLLECTIONS_COUNT(Ped ped)`
 ```lua
-local ped = PlayerPedId()
-local count = GetPedCollectionsCount(ped)
-for i = 0, count - 1 do
-  print(GetPedCollectionName(ped, i))
+local ped = PlayerPedId()
+local count = GetPedCollectionsCount(ped)
+for i = 0, count - 1 do
+  print(GetPedCollectionName(ped, i))
 end
 ```
 
 ## GET_PED_COLLECTION_LOCAL_INDEX_FROM_DRAWABLE
 `0x94EB1FE4` | `void GET_PED_COLLECTION_LOCAL_INDEX_FROM_DRAWABLE(Ped ped, int componentId, int drawableId)`
 ```lua
-local ped = PlayerPedId()
--- Top for mp_f_freemode_01. From female_freemode_beach collection under index 1.
--- Global index is 17 because there is 16 top variations in the base game collection that goes before the female_freemode_beach collection.
-local name = GetPedDrawableCollectionName(ped, 11, 17)
-local index = GetPedDrawableCollectionLocalIndex(ped, 11, 17)
--- Equivalent to SetPedComponentVariation(ped, 11, 17, 0, 0)
+local ped = PlayerPedId()
+-- Top for mp_f_freemode_01. From female_freemode_beach collection under index 1.
+-- Global index is 17 because there is 16 top variations in the base game collection that goes before the female_freemode_beach collection.
+local name = GetPedDrawableCollectionName(ped, 11, 17)
+local index = GetPedDrawableCollectionLocalIndex(ped, 11, 17)
+-- Equivalent to SetPedComponentVariation(ped, 11, 17, 0, 0)
 SetPedCollectionComponentVariation(ped, 11, name, index, 0, 0)
 ```
 
 ## GET_PED_COLLECTION_LOCAL_INDEX_FROM_PROP
 `0xFBDB885F` | `void GET_PED_COLLECTION_LOCAL_INDEX_FROM_PROP(Ped ped, int anchorPoint, int propIndex)`
 ```lua
-local ped = PlayerPedId()
--- Hat for mp_f_freemode_01. From female_freemode_beach collection under index 1.
--- Global index is 21 because there is 20 head prop variations in the base game collection that goes before the female_freemode_beach collection.
-local name = GetPedPropCollectionName(ped, 0, 21)
-local index = GetPedPropCollectionLocalIndex(ped, 0, 21)
--- Equivalent to SetPedPropIndex(ped, 0, 21, 0, false)
+local ped = PlayerPedId()
+-- Hat for mp_f_freemode_01. From female_freemode_beach collection under index 1.
+-- Global index is 21 because there is 20 head prop variations in the base game collection that goes before the female_freemode_beach collection.
+local name = GetPedPropCollectionName(ped, 0, 21)
+local index = GetPedPropCollectionLocalIndex(ped, 0, 21)
+-- Equivalent to SetPedPropIndex(ped, 0, 21, 0, false)
 SetPedCollectionPropIndex(ped, 0, name, index, 0, false)
 ```
 
 ## GET_PED_COLLECTION_NAME
 `0xFED5D83A` | `void GET_PED_COLLECTION_NAME(Ped ped, int index)`
 ```lua
-local ped = PlayerPedId()
-local count = GetPedCollectionsCount(ped)
-for i = 0, count - 1 do
-  print(GetPedCollectionName(ped, i))
+local ped = PlayerPedId()
+local count = GetPedCollectionsCount(ped)
+for i = 0, count - 1 do
+  print(GetPedCollectionName(ped, i))
 end
 ```
 
 ## GET_PED_COLLECTION_NAME_FROM_DRAWABLE
 `0xD6BBA48B` | `void GET_PED_COLLECTION_NAME_FROM_DRAWABLE(Ped ped, int componentId, int drawableId)`
 ```lua
-local ped = PlayerPedId()
--- Top for mp_f_freemode_01. From female_freemode_beach collection under index 1.
--- Global index is 17 because there is 16 top variations in the base game collection that goes before the female_freemode_beach collection.
-local name = GetPedDrawableCollectionName(ped, 11, 17)
-local index = GetPedDrawableCollectionLocalIndex(ped, 11, 17)
--- Equivalent to SetPedComponentVariation(ped, 11, 17, 0, 0)
+local ped = PlayerPedId()
+-- Top for mp_f_freemode_01. From female_freemode_beach collection under index 1.
+-- Global index is 17 because there is 16 top variations in the base game collection that goes before the female_freemode_beach collection.
+local name = GetPedDrawableCollectionName(ped, 11, 17)
+local index = GetPedDrawableCollectionLocalIndex(ped, 11, 17)
+-- Equivalent to SetPedComponentVariation(ped, 11, 17, 0, 0)
 SetPedCollectionComponentVariation(ped, 11, name, index, 0, 0)
 ```
 
 ## GET_PED_COLLECTION_NAME_FROM_PROP
 `0x8ED0C17` | `void GET_PED_COLLECTION_NAME_FROM_PROP(Ped ped, int anchorPoint, int propIndex)`
 ```lua
-local ped = PlayerPedId()
--- Hat for mp_f_freemode_01. From female_freemode_beach collection under index 1.
--- Global index is 21 because there is 20 head prop variations in the base game collection that goes before the female_freemode_beach collection.
-local name = GetPedPropCollectionName(ped, 0, 21)
-local index = GetPedPropCollectionLocalIndex(ped, 0, 21)
--- Equivalent to SetPedPropIndex(ped, 0, 21, 0, false)
+local ped = PlayerPedId()
+-- Hat for mp_f_freemode_01. From female_freemode_beach collection under index 1.
+-- Global index is 21 because there is 20 head prop variations in the base game collection that goes before the female_freemode_beach collection.
+local name = GetPedPropCollectionName(ped, 0, 21)
+local index = GetPedPropCollectionLocalIndex(ped, 0, 21)
+-- Equivalent to SetPedPropIndex(ped, 0, 21, 0, false)
 SetPedCollectionPropIndex(ped, 0, name, index, 0, false)
 ```
 
@@ -1350,47 +1350,47 @@ SetPedCollectionPropIndex(ped, 0, name, index, 0, false)
 ## GET_PED_EYE_COLOR
 `0xA47B860F` | `void GET_PED_EYE_COLOR(Ped ped)`
 ```lua
-local pedEyeColour = GetPedEyeColor(PlayerPedId())
-if pedEyeColour == 7 then
-  print("Gray eyes!")
+local pedEyeColour = GetPedEyeColor(PlayerPedId())
+if pedEyeColour == 7 then
+  print("Gray eyes!")
 end
 ```
 
 ## GET_PED_FACE_FEATURE
 `0xBA352ADD` | `void GET_PED_FACE_FEATURE(Ped ped, int index)`
 ```lua
-local noseWidth = GetPedFaceFeature(PlayerPedId(), 0)
-if noseWidth == 1.0 then
-  print("You have big nose!")
+local noseWidth = GetPedFaceFeature(PlayerPedId(), 0)
+if noseWidth == 1.0 then
+  print("You have big nose!")
 end
 ```
 
 ## GET_PED_HAIR_COLOR
 `0xA3EA2893` | `void GET_PED_HAIR_COLOR(Ped ped)`
 ```lua
-local primaryColour = GetPedHairColor(PlayerPedId())
-if primaryColour == 18 then
-  print("You have red hair!")
+local primaryColour = GetPedHairColor(PlayerPedId())
+if primaryColour == 18 then
+  print("You have red hair!")
 end
 ```
 
 ## GET_PED_HAIR_HIGHLIGHT_COLOR
 `0x4B087305` | `void GET_PED_HAIR_HIGHLIGHT_COLOR(Ped ped)`
 ```lua
-local secondaryColour = GetPedHairHighlightColor(PlayerPedId())
-if secondaryColour == 32 then
-  print("You have pink hair highlight colour!")
+local secondaryColour = GetPedHairHighlightColor(PlayerPedId())
+if secondaryColour == 32 then
+  print("You have pink hair highlight colour!")
 end
 ```
 
 ## GET_PED_HEAD_OVERLAY_DATA
 `0xC46EE605` | `void GET_PED_HEAD_OVERLAY_DATA(Ped ped, int index, int* overlayValue, int* colourType, int* firstColour, int* secondColour, float* overlayOpacity)`
 ```lua
--- getting beard overlay data
-local success, overlayValue, colourType, firstColour, secondColour, overlayOpacity = GetPedHeadOverlayData(PlayerPedId(), 1)
-if success then
-  -- incrementing value
-  SetPedHeadOverlay(PlayerPedId(), 1, overlayValue + 1, overlayOpacity)
+-- getting beard overlay data
+local success, overlayValue, colourType, firstColour, secondColour, overlayOpacity = GetPedHeadOverlayData(PlayerPedId(), 1)
+if success then
+  -- incrementing value
+  SetPedHeadOverlay(PlayerPedId(), 1, overlayValue + 1, overlayOpacity)
 end
 ```
 
@@ -1475,35 +1475,35 @@ local sweat = GetPedSweat(PlayerPedId())
 ## GET_PLAYER_FROM_SERVER_ID
 `0x344EA166` | `void GET_PLAYER_FROM_SERVER_ID(int serverId)`
 ```lua
---We will assume the serverId is '4' in this scenario and that it's a valid serverId.
-
--- Passing invalid Player IDs such as 'nil' or IDs that don't exist will result in playerId being -1.
-
-local playerId = GetPlayerFromServerId(serverId);
-
--- If the resulting playerId is not invalid (not equal to -1)
-if playerId ~= -1 then
-    -- Do our stuff on this player.
-end
+--We will assume the serverId is '4' in this scenario and that it's a valid serverId.
+
+-- Passing invalid Player IDs such as 'nil' or IDs that don't exist will result in playerId being -1.
+
+local playerId = GetPlayerFromServerId(serverId);
+
+-- If the resulting playerId is not invalid (not equal to -1)
+if playerId ~= -1 then
+    -- Do our stuff on this player.
+end
 
 ```
 
 ## GET_PLAYER_FROM_STATE_BAG_NAME
 `0xA56135E0` | `void GET_PLAYER_FROM_STATE_BAG_NAME(char* bagName)`
 ```js
-AddStateBagChangeHandler("isDead", null, async (bagName, key, value /* boolean */) => {
-    const ply = GetPlayerFromStateBagName(bagName);
-    // The player doesn't exist!
-    if (ply === 0) return;
-    console.log(`Player: ${GetPlayerName(ply)} ${value ? 'died!' : 'is alive!'`)
+AddStateBagChangeHandler("isDead", null, async (bagName, key, value /* boolean */) => {
+    const ply = GetPlayerFromStateBagName(bagName);
+    // The player doesn't exist!
+    if (ply === 0) return;
+    console.log(`Player: ${GetPlayerName(ply)} ${value ? 'died!' : 'is alive!'`)
 })
 ```
 ```lua
-AddStateBagChangeHandler("isDead", nil, function(bagName, key, value) 
-    local ply = GetPlayerFromStateBagName(bagName)
-    -- The player doesn't exist!
-    if ply == 0 then return end
-    print("Player: " .. GetPlayerName(ply) .. value and 'died!' or 'is alive!')
+AddStateBagChangeHandler("isDead", nil, function(bagName, key, value) 
+    local ply = GetPlayerFromStateBagName(bagName)
+    -- The player doesn't exist!
+    if ply == 0 then return end
+    print("Player: " .. GetPlayerName(ply) .. value and 'died!' or 'is alive!')
 end)
 ```
 
@@ -1516,33 +1516,33 @@ end)
 ## GET_PLAYER_IDENTIFIER_BY_TYPE
 `0xA61C8FC6` | `void GET_PLAYER_IDENTIFIER_BY_TYPE(char* playerSrc, char* identifierType)`
 ```lua
-local playerLicenses = {}
-
-AddEventHandler('playerJoining', function()
-    playerLicenses[source] = GetPlayerIdentifierByType(source, 'license')
+local playerLicenses = {}
+
+AddEventHandler('playerJoining', function()
+    playerLicenses[source] = GetPlayerIdentifierByType(source, 'license')
 end)
 ```
 ```js
-let playerLicenses = {};
-
-on('playerJoining', () => {
-    playerLicenses[source] = GetPlayerIdentifierByType(source, 'license');
+let playerLicenses = {};
+
+on('playerJoining', () => {
+    playerLicenses[source] = GetPlayerIdentifierByType(source, 'license');
 });
 ```
 ```cs
-using System.Collections.Generic;
-using static CitizenFX.Core.Native.API;
-// ...
-
-// In class
-private Dictionary<int, string> PlayerLicenses = new Dictionary<int, string>();
-
-// In class constructor
-EventHandlers["playerJoining"] += new Action<Player>(SetLicense);
-
-// Delegate method
-private void SetLicense([FromSource]Player player) {
-    PlayerLicenses.Add(player.Handle, GetPlayerIdentifierByType(player.Handle, "license"));
+using System.Collections.Generic;
+using static CitizenFX.Core.Native.API;
+// ...
+
+// In class
+private Dictionary<int, string> PlayerLicenses = new Dictionary<int, string>();
+
+// In class constructor
+EventHandlers["playerJoining"] += new Action<Player>(SetLicense);
+
+// Delegate method
+private void SetLicense([FromSource]Player player) {
+    PlayerLicenses.Add(player.Handle, GetPlayerIdentifierByType(player.Handle, "license"));
 }
 ```
 
@@ -1579,46 +1579,46 @@ private void SetLicense([FromSource]Player player) {
 ## GET_PLAYER_PED
 `0x6E31E993` | `void GET_PLAYER_PED(char* playerSrc)`
 ```lua
--- Let's assume source is a valid ID
-local pedId = GetPlayerPed(source);
-
--- If pedId is valid (not equal to 0)
-if pedId ~= 0 then
-    -- Do something with this ped!
+-- Let's assume source is a valid ID
+local pedId = GetPlayerPed(source);
+
+-- If pedId is valid (not equal to 0)
+if pedId ~= 0 then
+    -- Do something with this ped!
 end
 ```
 
 ## GET_PLAYER_PEER_STATISTICS
 `0x9A928294` | `void GET_PLAYER_PEER_STATISTICS(char* playerSrc, int peerStatistic)`
 ```js
-
-setInterval(() => {
-	const ENET_PACKET_LOSS_SCALE = 65536;
-
-	const PLAYER_SERVER_ID = 1;
-
-	const packetLoss = GetPlayerPeerStatistics(PLAYER_SERVER_ID, 0 /* PacketLoss */);
-	const packetLossVariance = GetPlayerPeerStatistics(PLAYER_SERVER_ID, 1 /* PacketLossVariance */);
-	const packetLossEpoch = GetPlayerPeerStatistics(PLAYER_SERVER_ID, 2 /* PacketLossEpoch */)
-	const rtt = GetPlayerPeerStatistics(PLAYER_SERVER_ID, 3 /* RoundTripTime */);
-	const rttVariance = GetPlayerPeerStatistics(PLAYER_SERVER_ID, 4 /* RoundTripTimeVariance */);
-	const lastRtt = GetPlayerPeerStatistics(PLAYER_SERVER_ID, 5 /* LastRoundTripTime */);
-	const lastRttVariance = GetPlayerPeerStatistics(PLAYER_SERVER_ID, 6 /* LastRoundTripTimeVariance */);
-	const packetThrottleEpoch = GetPlayerPeerStatistics(PLAYER_SERVER_ID, 7 /* PacketThrottleEpoch */);
-
-	console.log(`packetLoss: ${packetLoss}`);
-	console.log(`packetLossVariance: ${packetLossVariance}`);
-	console.log(`packetLossEpch: ${packetLossEpoch}`);
-
-	console.log(`packetLossScaled: ${packetLoss / ENET_PACKET_LOSS_SCALE}`);
-	console.log(`packetLossVarianceScaled: ${packetLossVariance / ENET_PACKET_LOSS_SCALE}`);
-
-	console.log(`rtt: ${rtt}`);
-	console.log(`rttVariance: ${rttVariance}`);
-
-	console.log(`lastRtt: ${lastRtt}`);
-	console.log(`lastRttVariance: ${lastRttVariance}`);
-	console.log(`packetThrottleEpoch: ${packetThrottleEpoch}`);
+
+setInterval(() => {
+	const ENET_PACKET_LOSS_SCALE = 65536;
+
+	const PLAYER_SERVER_ID = 1;
+
+	const packetLoss = GetPlayerPeerStatistics(PLAYER_SERVER_ID, 0 /* PacketLoss */);
+	const packetLossVariance = GetPlayerPeerStatistics(PLAYER_SERVER_ID, 1 /* PacketLossVariance */);
+	const packetLossEpoch = GetPlayerPeerStatistics(PLAYER_SERVER_ID, 2 /* PacketLossEpoch */)
+	const rtt = GetPlayerPeerStatistics(PLAYER_SERVER_ID, 3 /* RoundTripTime */);
+	const rttVariance = GetPlayerPeerStatistics(PLAYER_SERVER_ID, 4 /* RoundTripTimeVariance */);
+	const lastRtt = GetPlayerPeerStatistics(PLAYER_SERVER_ID, 5 /* LastRoundTripTime */);
+	const lastRttVariance = GetPlayerPeerStatistics(PLAYER_SERVER_ID, 6 /* LastRoundTripTimeVariance */);
+	const packetThrottleEpoch = GetPlayerPeerStatistics(PLAYER_SERVER_ID, 7 /* PacketThrottleEpoch */);
+
+	console.log(`packetLoss: ${packetLoss}`);
+	console.log(`packetLossVariance: ${packetLossVariance}`);
+	console.log(`packetLossEpch: ${packetLossEpoch}`);
+
+	console.log(`packetLossScaled: ${packetLoss / ENET_PACKET_LOSS_SCALE}`);
+	console.log(`packetLossVarianceScaled: ${packetLossVariance / ENET_PACKET_LOSS_SCALE}`);
+
+	console.log(`rtt: ${rtt}`);
+	console.log(`rttVariance: ${rttVariance}`);
+
+	console.log(`lastRtt: ${lastRtt}`);
+	console.log(`lastRttVariance: ${lastRttVariance}`);
+	console.log(`packetThrottleEpoch: ${packetThrottleEpoch}`);
 }, 10000)
 ```
 
@@ -1643,17 +1643,17 @@ setInterval(() => {
 ## GET_PLAYER_TIME_ONLINE
 `0x67D2E605` | `void GET_PLAYER_TIME_ONLINE(char* playerSrc)`
 ```lua
-local function ShowTimeOnline()
-    local player = source
-    local secondsTotalOnline = GetPlayerTimeOnline(player)
-
-    print(("Time online : %f H %f min %f"):format(
-        (secondsTotalOnline / 3600),
-        ((secondsTotalOnline / 60) % 60),
-        (secondsTotalOnline % 60)
-    ))
-end
-
+local function ShowTimeOnline()
+    local player = source
+    local secondsTotalOnline = GetPlayerTimeOnline(player)
+
+    print(("Time online : %f H %f min %f"):format(
+        (secondsTotalOnline / 3600),
+        ((secondsTotalOnline / 60) % 60),
+        (secondsTotalOnline % 60)
+    ))
+end
+
 RegisterNetEvent("myTimeOnline", ShowTimeOnline)
 ```
 
@@ -1690,13 +1690,13 @@ RegisterNetEvent("myTimeOnline", ShowTimeOnline)
 ## GET_RESOURCE_BY_FIND_INDEX
 `0x387246B7` | `void GET_RESOURCE_BY_FIND_INDEX(int findIndex)`
 ```lua
-local resourceList = {}
-for i = 0, GetNumResources(), 1 do
-  local resource_name = GetResourceByFindIndex(i)
-  if resource_name and GetResourceState(resource_name) == "started" then
-    table.insert(resourceList, resource_name)
-  end
-end
+local resourceList = {}
+for i = 0, GetNumResources(), 1 do
+  local resource_name = GetResourceByFindIndex(i)
+  if resource_name and GetResourceState(resource_name) == "started" then
+    table.insert(resourceList, resource_name)
+  end
+end
 print(table.unpack(resourceList))
 ```
 
@@ -1706,27 +1706,27 @@ print(table.unpack(resourceList))
 ## GET_RESOURCE_KVP_FLOAT
 `0x35BDCEEA` | `void GET_RESOURCE_KVP_FLOAT(char* key)`
 ```lua
-local kvpValue = GetResourceKvpFloat('mollis')
-if kvpValue ~= 0.0 then
-	-- do something!
+local kvpValue = GetResourceKvpFloat('mollis')
+if kvpValue ~= 0.0 then
+	-- do something!
 end
 ```
 
 ## GET_RESOURCE_KVP_INT
 `0x557B586A` | `void GET_RESOURCE_KVP_INT(char* key)`
 ```lua
-local kvpValue = GetResourceKvpInt('bananabread') 
-if kvpValue ~= 0 then
-	-- do something!
+local kvpValue = GetResourceKvpInt('bananabread') 
+if kvpValue ~= 0 then
+	-- do something!
 end
 ```
 
 ## GET_RESOURCE_KVP_STRING
 `0x5240DA5A` | `void GET_RESOURCE_KVP_STRING(char* key)`
 ```lua
-local kvpValue = GetResourceKvpString('codfish') 
-if kvpValue then
-	-- do something!
+local kvpValue = GetResourceKvpString('codfish') 
+if kvpValue then
+	-- do something!
 end
 ```
 
@@ -1787,29 +1787,29 @@ end
 ## GET_TIMECYCLE_MODIFIER_COUNT
 `0xFE2A1D4D` | `void GET_TIMECYCLE_MODIFIER_COUNT()`
 ```lua
-local count = GetTimecycleModifierCount()
+local count = GetTimecycleModifierCount()
 print("we have  " .. count .. "timecycle modifiers loaded")
 ```
 
 ## GET_TIMECYCLE_MODIFIER_INDEX_BY_NAME
 `0x5F4CD0E2` | `void GET_TIMECYCLE_MODIFIER_INDEX_BY_NAME(char* modifierName)`
 ```lua
-local modifierIndex = GetTimecycleModifierIndexByName("underwater")
-local currentIndex = GetTimecycleModifierIndex()
-
-if currentIndex ~= -1 and currentIndex == modifierIndex then
-  print("we're actually using 'underwater' timecycle!")
+local modifierIndex = GetTimecycleModifierIndexByName("underwater")
+local currentIndex = GetTimecycleModifierIndex()
+
+if currentIndex ~= -1 and currentIndex == modifierIndex then
+  print("we're actually using 'underwater' timecycle!")
 end
 ```
 
 ## GET_TIMECYCLE_MODIFIER_NAME_BY_INDEX
 `0x28CB8608` | `void GET_TIMECYCLE_MODIFIER_NAME_BY_INDEX(int modifierIndex)`
 ```lua
-local modifierIndex = GetTimecycleModifierIndex()
-
-if modifierIndex ~= -1 then
-  local modifierName = GetTimecycleModifierNameByIndex(modifierIndex)
-  print("current timecycle name is " .. modifierName)
+local modifierIndex = GetTimecycleModifierIndex()
+
+if modifierIndex ~= -1 then
+  local modifierName = GetTimecycleModifierNameByIndex(modifierIndex)
+  print("current timecycle name is " .. modifierName)
 end
 ```
 
@@ -1819,92 +1819,92 @@ end
 ## GET_TIMECYCLE_MODIFIER_VAR
 `0xA7109E12` | `void GET_TIMECYCLE_MODIFIER_VAR(char* modifierName, char* varName, float* value1, float* value2)`
 ```lua
-local modifierName = "superDARK"
-local varName = "postfx_noise"
-
-if DoesTimecycleModifierHasVar(modifierName, varName) then
-  local success, value1, value2 = GetTimecycleModifierVar(modifierName, varName)
-
-  if success then
-    print(string.format("[%s] removed var %s with values: %f %f", modifierName, varName, value1, value2))
-    RemoveTimecycleModifierVar(modifierName, varName)
-  end
-else
-    SetTimecycleModifierVar(modifierName, varName, 1.0, 1.0)
-    print(string.format("[%s] created var %s", modifierName, varName))
+local modifierName = "superDARK"
+local varName = "postfx_noise"
+
+if DoesTimecycleModifierHasVar(modifierName, varName) then
+  local success, value1, value2 = GetTimecycleModifierVar(modifierName, varName)
+
+  if success then
+    print(string.format("[%s] removed var %s with values: %f %f", modifierName, varName, value1, value2))
+    RemoveTimecycleModifierVar(modifierName, varName)
+  end
+else
+    SetTimecycleModifierVar(modifierName, varName, 1.0, 1.0)
+    print(string.format("[%s] created var %s", modifierName, varName))
 end
 ```
 
 ## GET_TIMECYCLE_MODIFIER_VAR_COUNT
 `0x60FB60FE` | `void GET_TIMECYCLE_MODIFIER_VAR_COUNT(char* modifierName)`
 ```lua
-local varCount = GetTimecycleModifierVarCount("underwater")
-
-if varCount ~= 0 then
-  for index = 0, varCount - 1 do
-    local varName = GetTimecycleModifierVarNameByIndex(index)
-
-    print(string.format("[%d] %s", index, varName))
-  end
+local varCount = GetTimecycleModifierVarCount("underwater")
+
+if varCount ~= 0 then
+  for index = 0, varCount - 1 do
+    local varName = GetTimecycleModifierVarNameByIndex(index)
+
+    print(string.format("[%d] %s", index, varName))
+  end
 end
 ```
 
 ## GET_TIMECYCLE_MODIFIER_VAR_NAME_BY_INDEX
 `0xE874AB1D` | `void GET_TIMECYCLE_MODIFIER_VAR_NAME_BY_INDEX(char* modifierName, int modifierVarIndex)`
 ```lua
-local varCount = GetTimecycleModifierVarCount("underwater")
-
-if varCount ~= 0 then
-  for index = 0, varCount - 1 do
-    local varName = GetTimecycleModifierVarNameByIndex(index)
-
-    print(string.format("[%d] %s", index, varName))
-  end
+local varCount = GetTimecycleModifierVarCount("underwater")
+
+if varCount ~= 0 then
+  for index = 0, varCount - 1 do
+    local varName = GetTimecycleModifierVarNameByIndex(index)
+
+    print(string.format("[%d] %s", index, varName))
+  end
 end
 ```
 
 ## GET_TIMECYCLE_VAR_COUNT
 `0x838B34D8` | `void GET_TIMECYCLE_VAR_COUNT()`
 ```lua
-local varCount = GetTimecycleVarCount()
-
-if varCount ~= 0 then
-  for index = 0, varCount - 1 do
-    local varName = GetTimecycleVarNameByIndex(index)
-    local varDefault = GetTimecycleVarDefaultValueByIndex(index)
-
-    print(string.format("[%d] %s (%f)", index, varName, varDefault))
-  end
+local varCount = GetTimecycleVarCount()
+
+if varCount ~= 0 then
+  for index = 0, varCount - 1 do
+    local varName = GetTimecycleVarNameByIndex(index)
+    local varDefault = GetTimecycleVarDefaultValueByIndex(index)
+
+    print(string.format("[%d] %s (%f)", index, varName, varDefault))
+  end
 end
 ```
 
 ## GET_TIMECYCLE_VAR_DEFAULT_VALUE_BY_INDEX
 `0x3B90238` | `void GET_TIMECYCLE_VAR_DEFAULT_VALUE_BY_INDEX(int varIndex)`
 ```lua
-local varCount = GetTimecycleVarCount()
-
-if varCount ~= 0 then
-  for index = 0, varCount - 1 do
-    local varName = GetTimecycleVarNameByIndex(index)
-    local varDefault = GetTimecycleVarDefaultValueByIndex(index)
-
-    print(string.format("[%d] %s (%f)", index, varName, varDefault))
-  end
+local varCount = GetTimecycleVarCount()
+
+if varCount ~= 0 then
+  for index = 0, varCount - 1 do
+    local varName = GetTimecycleVarNameByIndex(index)
+    local varDefault = GetTimecycleVarDefaultValueByIndex(index)
+
+    print(string.format("[%d] %s (%f)", index, varName, varDefault))
+  end
 end
 ```
 
 ## GET_TIMECYCLE_VAR_NAME_BY_INDEX
 `0xC6C55AAF` | `void GET_TIMECYCLE_VAR_NAME_BY_INDEX(int varIndex)`
 ```lua
-local varCount = GetTimecycleVarCount()
-
-if varCount ~= 0 then
-  for index = 0, varCount - 1 do
-    local varName = GetTimecycleVarNameByIndex(index)
-    local varDefault = GetTimecycleVarDefaultValueByIndex(index)
-
-    print(string.format("[%d] %s (%f)", index, varName, varDefault))
-  end
+local varCount = GetTimecycleVarCount()
+
+if varCount ~= 0 then
+  for index = 0, varCount - 1 do
+    local varName = GetTimecycleVarNameByIndex(index)
+    local varDefault = GetTimecycleVarDefaultValueByIndex(index)
+
+    print(string.format("[%d] %s (%f)", index, varName, varDefault))
+  end
 end
 ```
 
@@ -1944,18 +1944,18 @@ end
 ## GET_TRAIN_DOOR_OPEN_RATIO
 `0x40B16551` | `void GET_TRAIN_DOOR_OPEN_RATIO(Vehicle train, int doorIndex)`
 ```lua
-local doorCount = GetTrainDoorCount(train)
-for doorIndex = 0, doorCount - 1 do
-    local ratio = GetTrainDoorOpenRatio(train, doorIndex)
-    print("Door " .. tostring(doorIndex) .. " is open by a ratio of " .. tostring(ratio))
+local doorCount = GetTrainDoorCount(train)
+for doorIndex = 0, doorCount - 1 do
+    local ratio = GetTrainDoorOpenRatio(train, doorIndex)
+    print("Door " .. tostring(doorIndex) .. " is open by a ratio of " .. tostring(ratio))
 end
 ```
 ```cs
-int doorCount = API.GetTrainDoorCount(train);
-for (int doorIndex = 0; doorIndex < doorCount; doorIndex++)
-{
-    float ratio = API.GetTrainDoorOpenRatio(train, doorIndex);
-    Debug.WriteLine($"Door {doorIndex} is open by a ratio of {ratio}");
+int doorCount = API.GetTrainDoorCount(train);
+for (int doorIndex = 0; doorIndex < doorCount; doorIndex++)
+{
+    float ratio = API.GetTrainDoorOpenRatio(train, doorIndex);
+    Debug.WriteLine($"Door {doorIndex} is open by a ratio of {ratio}");
 }
 ```
 
@@ -2067,23 +2067,23 @@ for (int doorIndex = 0; doorIndex < doorCount; doorIndex++)
 ## GET_VEHICLE_GEAR_RATIO
 `0x82E794B7` | `void GET_VEHICLE_GEAR_RATIO(Vehicle vehicle, int gear)`
 ```lua
-local vehicle = GetVehiclePedIsIn(PlayerPedId(-1))
-local currentGear = GetVehicleCurrentGear(Vehicle)
-
+local vehicle = GetVehiclePedIsIn(PlayerPedId(-1))
+local currentGear = GetVehicleCurrentGear(Vehicle)
+
 print(GetVehicleGearRatio(vehicle, currentGear)) -- will print current vehicle gear to console
 ```
 ```js
-const vehicle = GetVehiclePedIsIn(PlayerPedId(-1));
-const currentGear = GetVehicleCurrentGear(Vehicle);
-
+const vehicle = GetVehiclePedIsIn(PlayerPedId(-1));
+const currentGear = GetVehicleCurrentGear(Vehicle);
+
 console.log(GetVehicleGearRatio(vehicle, currentGear)); // will print current vehicle gear to console
 ```
 ```cs
-using static CitizenFX.Core.API;
-
-Vehicle vehicle = Game.PlayerPed.CurrentVehicle;
-int currentGear = GetVehicleCurrentGear(vehicle.Handle);
-
+using static CitizenFX.Core.API;
+
+Vehicle vehicle = Game.PlayerPed.CurrentVehicle;
+int currentGear = GetVehicleCurrentGear(vehicle.Handle);
+
 Debug.WriteLine($"{GetVehicleGearRatio(vehicle.Handle, currentGear)}");
 ```
 
@@ -2138,41 +2138,41 @@ Debug.WriteLine($"{GetVehicleGearRatio(vehicle.Handle, currentGear)}");
 ## GET_VEHICLE_NEON_COLOUR
 `0xD9319DCB` | `void GET_VEHICLE_NEON_COLOUR(Vehicle vehicle, int* red, int* green, int* blue)`
 ```lua
-local vehicle = GetVehiclePedIsIn(GetPlayerPed(1), false) -- 1 is the source here
-local red, green, blue = GetVehicleNeonColour(vehicle)
+local vehicle = GetVehiclePedIsIn(GetPlayerPed(1), false) -- 1 is the source here
+local red, green, blue = GetVehicleNeonColour(vehicle)
 print(red, green, blue)
 ```
 ```js
-const vehicle = GetVehiclePedIsIn(GetPlayerPed(1), false); // 1 is the source here
-const [red, green, blue] = GetVehicleNeonColour(vehicle);
+const vehicle = GetVehiclePedIsIn(GetPlayerPed(1), false); // 1 is the source here
+const [red, green, blue] = GetVehicleNeonColour(vehicle);
 console.log(red, green, blue);
 ```
 ```cs
-using static CitizenFX.Core.Native.API;
-
-int vehicle = GetVehiclePedIsIn(GetPlayerPed(1), false); // 1 is the source here
-int red, green, blue;
-GetVehicleNeonColour(vehicle, out red, out green, out blue);
+using static CitizenFX.Core.Native.API;
+
+int vehicle = GetVehiclePedIsIn(GetPlayerPed(1), false); // 1 is the source here
+int red, green, blue;
+GetVehicleNeonColour(vehicle, out red, out green, out blue);
 Debug.WriteLine($"{red}, {green}, {blue}");
 ```
 
 ## GET_VEHICLE_NEON_ENABLED
 `0x684BDBF2` | `void GET_VEHICLE_NEON_ENABLED(Vehicle vehicle, int neonIndex)`
 ```lua
-local vehicle = GetVehiclePedIsIn(GetPlayerPed(1), false) -- 1 is the source here
-local isRightNeonOn = GetVehicleNeonEnabled(vehicle, 1)
+local vehicle = GetVehiclePedIsIn(GetPlayerPed(1), false) -- 1 is the source here
+local isRightNeonOn = GetVehicleNeonEnabled(vehicle, 1)
 print(isRightNeonOn)
 ```
 ```js
-const vehicle = GetVehiclePedIsIn(GetPlayerPed(1), false); // 1 is the source here
-const isRightNeonOn = GetVehicleNeonEnabled(vehicle, 1);
+const vehicle = GetVehiclePedIsIn(GetPlayerPed(1), false); // 1 is the source here
+const isRightNeonOn = GetVehicleNeonEnabled(vehicle, 1);
 console.log(isRightNeonOn);
 ```
 ```cs
-using static CitizenFX.Core.Native.API;
-
-int vehicle = GetVehiclePedIsIn(GetPlayerPed(1), false); // 1 is the source here
-bool isRightNeonOn = GetVehicleNeonEnabled(vehicle, 1);
+using static CitizenFX.Core.Native.API;
+
+int vehicle = GetVehiclePedIsIn(GetPlayerPed(1), false); // 1 is the source here
+bool isRightNeonOn = GetVehicleNeonEnabled(vehicle, 1);
 Debug.WriteLine($"{isRightNeonOn}");
 ```
 
@@ -2233,22 +2233,22 @@ Debug.WriteLine($"{isRightNeonOn}");
 ## GET_VEHICLE_WHEELIE_STATE
 `0x137260D1` | `void GET_VEHICLE_WHEELIE_STATE(Vehicle vehicle)`
 ```lua
-Citizen.CreateThread(function()
-  while true do
-    Wait(1)
-
-    local veh = GetVehiclePedIsUsing(PlayerPedId())
-    if veh ~= 0 then
-      local wheelieState = GetVehicleWheelieState(veh)
-      if wheelieState == 1 then
-        print("Nothing")
-      elseif wheelieState == 65 then
-        print("Ready to wheelie!")
-      elseif wheelieState == 129 then
-        print("Doing wheelie!")
-      end
-    end
-  end
+Citizen.CreateThread(function()
+  while true do
+    Wait(1)
+
+    local veh = GetVehiclePedIsUsing(PlayerPedId())
+    if veh ~= 0 then
+      local wheelieState = GetVehicleWheelieState(veh)
+      if wheelieState == 1 then
+        print("Nothing")
+      elseif wheelieState == 65 then
+        print("Ready to wheelie!")
+      elseif wheelieState == 129 then
+        print("Doing wheelie!")
+      end
+    end
+  end
 end)
 ```
 
@@ -2330,14 +2330,14 @@ local success, a0, a1, a2, a3 = GetWaterQuadAlpha(0)
 ## GET_WATER_QUAD_AT_COORDS
 `0x17321452` | `void GET_WATER_QUAD_AT_COORDS(float x, float y)`
 ```lua
-local currentPedPosition = GetEntityCoords(PlayerPedId())
+local currentPedPosition = GetEntityCoords(PlayerPedId())
 local waterQuadIndex = GetWaterQuadAtCoords(currentPedPosition.x, currentPedPosition.y)
 ```
 
 ## GET_WATER_QUAD_AT_COORDS_3D
 `0xF8E03DB8` | `void GET_WATER_QUAD_AT_COORDS_3D(float x, float y, float z)`
 ```lua
-local currentPedPosition = GetEntityCoords(PlayerPedId())
+local currentPedPosition = GetEntityCoords(PlayerPedId())
 local waterQuadIndex = GetWaterQuadAtCoords(currentPedPosition.x, currentPedPosition.y, currentPedPosition.z)
 ```
 
@@ -2392,7 +2392,7 @@ local success, amplitude = GetWaveQuadAmplitude(1)
 ## GET_WAVE_QUAD_AT_COORDS
 `0x3F5A61A7` | `void GET_WAVE_QUAD_AT_COORDS(float x, float y)`
 ```lua
-local currentPedPosition = GetEntityCoords(PlayerPedId())
+local currentPedPosition = GetEntityCoords(PlayerPedId())
 local waveQuadIndex = GetWaveQuadAtCoords(currentPedPosition.x, currentPedPosition.y)
 ```
 
@@ -2453,21 +2453,21 @@ local weaponAnimation = GetWeaponAnimationOverride(PlayerPedId())
 ## GET_WORLD_COORD_FROM_SCREEN_COORD
 `0xC81D0659` | `void GET_WORLD_COORD_FROM_SCREEN_COORD(float screenX, float screenY, Vector3* worldVector, Vector3* normalVector)`
 ```lua
-CreateThread(function()
-  while true do
-    local screenX = GetDisabledControlNormal(0, 239)
-    local screenY = GetDisabledControlNormal(0, 240)
-
-    local world, normal = GetWorldCoordFromScreenCoord(screenX, screenY)
-
-    local depth = 10
-
-    local target = world + normal * depth
-
-    DrawSphere(target.x, target.y, target.z, 0.5, 255, 0, 0, 0.5)
-
-    Wait(0)
-  end
+CreateThread(function()
+  while true do
+    local screenX = GetDisabledControlNormal(0, 239)
+    local screenY = GetDisabledControlNormal(0, 240)
+
+    local world, normal = GetWorldCoordFromScreenCoord(screenX, screenY)
+
+    local depth = 10
+
+    local target = world + normal * depth
+
+    DrawSphere(target.x, target.y, target.z, 0.5, 255, 0, 0, 0.5)
+
+    Wait(0)
+  end
 end)
 ```
 
@@ -2495,28 +2495,28 @@ end)
 ## IS_BIGMAP_ACTIVE
 `0xFFF65C63` | `void IS_BIGMAP_ACTIVE()`
 ```lua
-local expanded = IsBigmapActive()
-local fullMap = IsBigmapFull()
+local expanded = IsBigmapActive()
+local fullMap = IsBigmapFull()
 print("The minimap is currently " .. (expanded and "expanded" or "normal size") .. " and the full map is currently " .. (fullMap and "revealed" or "not revealed") .. ".")
 ```
 ```cs
-bool expanded = IsBigmapActive();
-bool fullMap = IsBigmapFull();
-
+bool expanded = IsBigmapActive();
+bool fullMap = IsBigmapFull();
+
 Debug.WriteLine($"The minimap is currently {(expanded ? "expanded" : "normal size")} and the full map is currently {(fullMap ? "revealed" : "not revealed")}.");
 ```
 
 ## IS_BIGMAP_FULL
 `0x66EE14B2` | `void IS_BIGMAP_FULL()`
 ```lua
-local expanded = IsBigmapActive()
-local fullMap = IsBigmapFull()
+local expanded = IsBigmapActive()
+local fullMap = IsBigmapFull()
 print("The minimap is currently " .. (expanded and "expanded" or "normal size") .. " and the full map is currently " .. (fullMap and "revealed" or "not revealed") .. ".")
 ```
 ```cs
-bool expanded = IsBigmapActive();
-bool fullMap = IsBigmapFull();
-
+bool expanded = IsBigmapActive();
+bool fullMap = IsBigmapFull();
+
 Debug.WriteLine($"The minimap is currently {(expanded ? "expanded" : "normal size")} and the full map is currently {(fullMap ? "revealed" : "not revealed")}.");
 ```
 
@@ -2529,32 +2529,32 @@ Debug.WriteLine($"The minimap is currently {(expanded ? "expanded" : "normal siz
 ## IS_DISABLED_RAW_KEY_DOWN
 `0x36366EC3` | `void IS_DISABLED_RAW_KEY_DOWN(int rawKeyIndex)`
 ```lua
-if IsDisabledRawKeyDown(32) then -- KEY_SPACE
-    print("Spacebar is down")
+if IsDisabledRawKeyDown(32) then -- KEY_SPACE
+    print("Spacebar is down")
 end
 ```
 
 ## IS_DISABLED_RAW_KEY_PRESSED
 `0x1F7CBBAA` | `void IS_DISABLED_RAW_KEY_PRESSED(int rawKeyIndex)`
 ```lua
-if IsDisabledRawKeyPressed(32) then -- KEY_SPACE
-    print("Spacebar pressed")
+if IsDisabledRawKeyPressed(32) then -- KEY_SPACE
+    print("Spacebar pressed")
 end
 ```
 
 ## IS_DISABLED_RAW_KEY_RELEASED
 `0x72B66C09` | `void IS_DISABLED_RAW_KEY_RELEASED(int rawKeyIndex)`
 ```lua
-if IsDisabledRawKeyReleased(32) then -- KEY_SPACE
-    print("Spacebar released")
+if IsDisabledRawKeyReleased(32) then -- KEY_SPACE
+    print("Spacebar released")
 end
 ```
 
 ## IS_DISABLED_RAW_KEY_UP
 `0x2C033875` | `void IS_DISABLED_RAW_KEY_UP(int rawKeyIndex)`
 ```lua
-if IsDisabledRawKeyUp(32) then -- KEY_SPACE
-    print("Spacebar is up")
+if IsDisabledRawKeyUp(32) then -- KEY_SPACE
+    print("Spacebar is up")
 end
 ```
 
@@ -2606,16 +2606,16 @@ const isFrozen = IsEntityPositionFrozen(PlayerPedId());
 ## IS_PED_COMPONENT_VARIATION_GEN9_EXCLUSIVE
 `0xC767B581` | `void IS_PED_COMPONENT_VARIATION_GEN9_EXCLUSIVE(Ped ped, int componentId, int drawableId)`
 ```lua
-local ped = PlayerPedId()
-
-for component = 0, 12 do
-  local count = GetNumberOfPedDrawableVariations(ped, component)
-
-  for drawable = 0, count - 1 do
-    if IsPedComponentVariationGen9Exclusive(ped, component, drawable) then
-      print("Component " .. component .. " drawable " .. drawable .. " is a gen9 exclusive, skip!")
-    end
-  end
+local ped = PlayerPedId()
+
+for component = 0, 12 do
+  local count = GetNumberOfPedDrawableVariations(ped, component)
+
+  for drawable = 0, count - 1 do
+    if IsPedComponentVariationGen9Exclusive(ped, component, drawable) then
+      print("Component " .. component .. " drawable " .. drawable .. " is a gen9 exclusive, skip!")
+    end
+  end
 end
 ```
 
@@ -2664,32 +2664,32 @@ end
 ## IS_RAW_KEY_DOWN
 `0xD95A7387` | `void IS_RAW_KEY_DOWN(int rawKeyIndex)`
 ```lua
-if IsRawKeyDown(32) then -- KEY_SPACE
-    print("Spacebar is down")
+if IsRawKeyDown(32) then -- KEY_SPACE
+    print("Spacebar is down")
 end
 ```
 
 ## IS_RAW_KEY_PRESSED
 `0x69F7C29E` | `void IS_RAW_KEY_PRESSED(int rawKeyIndex)`
 ```lua
-if IsRawKeyPressed(32) then -- KEY_SPACE
-    print("Spacebar pressed")
+if IsRawKeyPressed(32) then -- KEY_SPACE
+    print("Spacebar pressed")
 end
 ```
 
 ## IS_RAW_KEY_RELEASED
 `0xEAA50861` | `void IS_RAW_KEY_RELEASED(int rawKeyIndex)`
 ```lua
-if IsRawKeyReleased(32) then -- KEY_SPACE
-    print("Spacebar released")
+if IsRawKeyReleased(32) then -- KEY_SPACE
+    print("Spacebar released")
 end
 ```
 
 ## IS_RAW_KEY_UP
 `0x36F4E505` | `void IS_RAW_KEY_UP(int rawKeyIndex)`
 ```lua
-if IsRawKeyUp(32) then -- KEY_SPACE
-    print("Spacebar is up")
+if IsRawKeyUp(32) then -- KEY_SPACE
+    print("Spacebar is up")
 end
 ```
 
@@ -2735,11 +2735,11 @@ end
 ## IS_VEHICLE_WHEEL_BROKEN_OFF
 `0xCF1BC668` | `void IS_VEHICLE_WHEEL_BROKEN_OFF(Vehicle vehicle, int wheelIndex)`
 ```lua
-local vehicle = GetVehiclePedIsIn(PlayerPedId())
-
-if DoesEntityExist(vehicle) then
-  local isWheelBroken = IsVehicleWheelBrokenOff(vehicle, 1)
-  print("Is wheel 1 broken? ", isWheelBroken)
+local vehicle = GetVehiclePedIsIn(PlayerPedId())
+
+if DoesEntityExist(vehicle) then
+  local isWheelBroken = IsVehicleWheelBrokenOff(vehicle, 1)
+  print("Is wheel 1 broken? ", isWheelBroken)
 end
 ```
 
@@ -2755,24 +2755,24 @@ end
 ## LOAD_PLAYER_COMMERCE_DATA_EXT
 `0x7995539E` | `void LOAD_PLAYER_COMMERCE_DATA_EXT(char* playerSrc)`
 ```lua
-RegisterNetEvent("doesOwnPackage", function(packageIdSku)
-	-- source isn't valid across waits, so we localize it
-	local source = source
-
-	-- input isn't right
-	if type(packageIdSku) ~= "number" then
-		return
-	end
-
-	-- The native will cache the results
-	LoadPlayerCommerceDataExt(source)
-	-- Wait for the players data to load
-	while not IsPlayerCommerceInfoLoadedExt(source) do
-		Wait(0)
-	end
-
-	-- Tell the client if they own the package or not
-	TriggerClientEvent("doesOwnPackage", source, DoesPlayerOwnSkuExt(source, packageIdSku))
+RegisterNetEvent("doesOwnPackage", function(packageIdSku)
+	-- source isn't valid across waits, so we localize it
+	local source = source
+
+	-- input isn't right
+	if type(packageIdSku) ~= "number" then
+		return
+	end
+
+	-- The native will cache the results
+	LoadPlayerCommerceDataExt(source)
+	-- Wait for the players data to load
+	while not IsPlayerCommerceInfoLoadedExt(source) do
+		Wait(0)
+	end
+
+	-- Tell the client if they own the package or not
+	TriggerClientEvent("doesOwnPackage", source, DoesPlayerOwnSkuExt(source, packageIdSku))
 end)
 ```
 
@@ -2854,10 +2854,10 @@ local success = LoadWaterFromPath('my-resource-name', 'water-all-over-the-place.
 ## MUMBLE_SET_AUDIO_INPUT_INTENT
 `0x6383526B` | `void MUMBLE_SET_AUDIO_INPUT_INTENT(Hash intentHash)`
 ```lua
--- disable noise suppression and high pass filter
-MumbleSetAudioInputIntent(`music`)
-
--- set the default intent (enable noise suppression and high pass filter)
+-- disable noise suppression and high pass filter
+MumbleSetAudioInputIntent(`music`)
+
+-- set the default intent (enable noise suppression and high pass filter)
 MumbleSetAudioInputIntent(`speech`)
 ```
 
@@ -2918,14 +2918,14 @@ MumbleSetAudioInputIntent(`speech`)
 ## OVERRIDE_POP_GROUPS
 `0xD3BC438F` | `void OVERRIDE_POP_GROUPS(char* path)`
 ```lua
--- fxmanifest.lua:
-file 'popgroups_dlc.xml'
-
--- client.lua:
-OverridePopGroups('popgroups_dlc.xml')
-
--- restore the original after five minutes
-Wait(1000 * 60 * 5)
+-- fxmanifest.lua:
+file 'popgroups_dlc.xml'
+
+-- client.lua:
+OverridePopGroups('popgroups_dlc.xml')
+
+-- restore the original after five minutes
+Wait(1000 * 60 * 5)
 OverridePopGroups(nil)
 ```
 
@@ -2959,70 +2959,70 @@ OverridePopGroups(nil)
 ## REGISTER_ARCHETYPES
 `0x3C2F9037` | `void REGISTER_ARCHETYPES(func factory)`
 ```lua
-RegisterArchetypes(function()
-	return {
-		{
-			flags = 32,
-			bbMin = vector3(-39.99570000, -8.00155600, -2.56818800),
-			bbMax = vector3(40.00439000, 7.99858000, 1.44575100),
-			bsCentre = vector3(0.00434110, -0.00148870, -0.56121830),
-			bsRadius = 40.84160000,
-			name = 'my_asset',
-			textureDictionary = 'my_asset',
-			physicsDictionary = 'my_asset',
-			assetName = 'my_asset',
-			assetType = 'ASSET_TYPE_DRAWABLE',
-			lodDist = 450.45,
-			specialAttribute = 0
-		}
-	}
+RegisterArchetypes(function()
+	return {
+		{
+			flags = 32,
+			bbMin = vector3(-39.99570000, -8.00155600, -2.56818800),
+			bbMax = vector3(40.00439000, 7.99858000, 1.44575100),
+			bsCentre = vector3(0.00434110, -0.00148870, -0.56121830),
+			bsRadius = 40.84160000,
+			name = 'my_asset',
+			textureDictionary = 'my_asset',
+			physicsDictionary = 'my_asset',
+			assetName = 'my_asset',
+			assetType = 'ASSET_TYPE_DRAWABLE',
+			lodDist = 450.45,
+			specialAttribute = 0
+		}
+	}
 end)
 ```
 
 ## REGISTER_COMMAND
 `0x5FA79B0F` | `void REGISTER_COMMAND(char* commandName, func handler, BOOL restricted)`
 ```lua
--- (server side script)
--- Registers a command named 'ping'.
-RegisterCommand("ping", function(source, args, rawCommand)
-    -- If the source is > 0, then that means it must be a player.
-    if (source > 0) then
-    
-        -- result (using the default GTA:O chat theme) https://i.imgur.com/TaCnG09.png
-        TriggerClientEvent("chat:addMessage", -1, {
-            args = {
-                GetPlayerName(source),
-                "PONG!"
-            },
-            color = { 5, 255, 255 }
-        })
-    
-    -- If it's not a player, then it must be RCON, a resource, or the server console directly.
-    else
-        print("This command was executed by the server console, RCON client, or a resource.")
-    end
+-- (server side script)
+-- Registers a command named 'ping'.
+RegisterCommand("ping", function(source, args, rawCommand)
+    -- If the source is > 0, then that means it must be a player.
+    if (source > 0) then
+    
+        -- result (using the default GTA:O chat theme) https://i.imgur.com/TaCnG09.png
+        TriggerClientEvent("chat:addMessage", -1, {
+            args = {
+                GetPlayerName(source),
+                "PONG!"
+            },
+            color = { 5, 255, 255 }
+        })
+    
+    -- If it's not a player, then it must be RCON, a resource, or the server console directly.
+    else
+        print("This command was executed by the server console, RCON client, or a resource.")
+    end
 end, false --[[this command is not restricted, everyone can use this.]])
 ```
 ```cs
-RegisterCommand("ping", new Action<int, List<object>, string>((source, args, rawCommand) =>
-{
-    if (source > 0) // it's a player.
-    {
-        // Create a message object.
-        dynamic messageObject = new ExpandoObject();
-        // Set the message object args (message author, message content)
-        messageObject.args = new string[] { GetPlayerName(source.ToString()), "PONG!" };
-        // Set the message color (r, g, b)
-        messageObject.color = new int[] { 5, 255, 255 };
-
-        // Trigger the client event with the message object on all clients.
-        TriggerClientEvent("chat:addMessage", messageObject);
-    }
-    // It's not a player, so it's the server console, a RCON client, or a resource.
-    else
-    {
-        Debug.WriteLine("This command was executed by the server console, RCON client, or a resource.");
-    }
+RegisterCommand("ping", new Action<int, List<object>, string>((source, args, rawCommand) =>
+{
+    if (source > 0) // it's a player.
+    {
+        // Create a message object.
+        dynamic messageObject = new ExpandoObject();
+        // Set the message object args (message author, message content)
+        messageObject.args = new string[] { GetPlayerName(source.ToString()), "PONG!" };
+        // Set the message color (r, g, b)
+        messageObject.color = new int[] { 5, 255, 255 };
+
+        // Trigger the client event with the message object on all clients.
+        TriggerClientEvent("chat:addMessage", messageObject);
+    }
+    // It's not a player, so it's the server console, a RCON client, or a resource.
+    else
+    {
+        Debug.WriteLine("This command was executed by the server console, RCON client, or a resource.");
+    }
 }), false /*This command is also not restricted, anyone can use it.*/ );
 ```
 
@@ -3038,25 +3038,25 @@ RegisterCommand("ping", new Action<int, List<object>, string>((source, args, raw
 ## REGISTER_KEY_MAPPING
 `0xD7664FD1` | `void REGISTER_KEY_MAPPING(char* commandString, char* description, char* defaultMapper, char* defaultParameter)`
 ```lua
-local handsUp = false
-CreateThread(function()
-    while true do
-        Wait(0)
-        if handsUp then
-            TaskHandsUp(PlayerPedId(), 250, PlayerPedId(), -1, true)
-        end
-    end
-end)
-RegisterCommand('+handsup', function()
-    handsUp = true
-end, false)
-RegisterCommand('-handsup', function()
-    handsUp = false
-end, false)
-
-RegisterKeyMapping('+handsup', 'Hands Up', 'keyboard', 'i')
-
--- Alternate keybinding syntax
+local handsUp = false
+CreateThread(function()
+    while true do
+        Wait(0)
+        if handsUp then
+            TaskHandsUp(PlayerPedId(), 250, PlayerPedId(), -1, true)
+        end
+    end
+end)
+RegisterCommand('+handsup', function()
+    handsUp = true
+end, false)
+RegisterCommand('-handsup', function()
+    handsUp = false
+end, false)
+
+RegisterKeyMapping('+handsup', 'Hands Up', 'keyboard', 'i')
+
+-- Alternate keybinding syntax
 RegisterKeyMapping('~!+handsup', 'Hands Up - Alternate Key', 'keyboard', 'o')
 ```
 
@@ -3069,18 +3069,18 @@ RegisterKeyMapping('~!+handsup', 'Hands Up - Alternate Key', 'keyboard', 'o')
 ## REGISTER_RAW_KEYMAP
 `0x49C1F6DC` | `void REGISTER_RAW_KEYMAP(char* keymapName, func onKeyDown, func onKeyUp, int rawKeyIndex, BOOL canBeDisabled)`
 ```lua
-function on_key_up()
-	print("key no longer pressed")
-end
-
-function on_key_down()
-	print("key is pressed")
-end
-
-local KEY_E = 69
-local canBeDisabled = false
-
-
+function on_key_up()
+	print("key no longer pressed")
+end
+
+function on_key_down()
+	print("key is pressed")
+end
+
+local KEY_E = 69
+local canBeDisabled = false
+
+
 RegisterRawKeymap("our_keymap", on_key_up, on_key_down, KEY_E, canBeDisabled)
 ```
 
@@ -3099,12 +3099,12 @@ RegisterRawKeymap("our_keymap", on_key_up, on_key_down, KEY_E, canBeDisabled)
 ## REGISTER_ROPE_DATA
 `0xF213AE8D` | `void REGISTER_ROPE_DATA(int numSections, float radius, char* diffuseTextureName, char* normalMapName, float distanceMappingScale, float uvScaleX, float uvScaleY, float specularFresnel, float specularFalloff, float specularIntensity, float bumpiness, int color)`
 ```lua
--- Create a thick steel cable rope above the players head
-local ropeType = RegisterRopeData(6, 0.15, "steel_cable", "steel_cable_n", 1.0, 1.0, 8.775, 0.97, 30.0, 0.25, 1.775, 0x00FFFF00)
-if ropeType ~= -1 then
-    local coords = GetEntityCoords(PlayerPedId()) + vector3(0.0, 0.0, 5.0)
-	AddRope(coords.x, coords.y, coords.z, 0.0, 0.0, 0.0, 25.0, ropeType, 10.0, 0.0, 1.0, false, false, false, 1.0, false, 0)
-    RopeLoadTextures()
+-- Create a thick steel cable rope above the players head
+local ropeType = RegisterRopeData(6, 0.15, "steel_cable", "steel_cable_n", 1.0, 1.0, 8.775, 0.97, 30.0, 0.25, 1.775, 0x00FFFF00)
+if ropeType ~= -1 then
+    local coords = GetEntityCoords(PlayerPedId()) + vector3(0.0, 0.0, 5.0)
+	AddRope(coords.x, coords.y, coords.z, 0.0, 0.0, 0.0, 25.0, ropeType, 10.0, 0.0, 1.0, false, false, false, 1.0, false, 0)
+    RopeLoadTextures()
 end
 ```
 
@@ -3123,22 +3123,22 @@ end
 ## REMAP_RAW_KEYMAP
 `0x6E38C1B9` | `void REMAP_RAW_KEYMAP(char* keymapName, int newRawKeyIndex)`
 ```lua
-
-function on_key_up()
-	print("key no longer pressed")
-end
-
-function on_key_down()
-	print("key is pressed")
-end
-
-local KEY_SPACE = 32
-local canBeDisabled = false
-
-local KEY_E = 69
-
-RegisterRawKeymap("our_keymap", on_key_up, on_key_down, KEY_SPACE, canBeDisabled)
-
+
+function on_key_up()
+	print("key no longer pressed")
+end
+
+function on_key_down()
+	print("key is pressed")
+end
+
+local KEY_SPACE = 32
+local canBeDisabled = false
+
+local KEY_E = 69
+
+RegisterRawKeymap("our_keymap", on_key_up, on_key_down, KEY_SPACE, canBeDisabled)
+
 RemapRawKeymap("our_keymap", KEY_E)
 ```
 
@@ -3169,26 +3169,26 @@ RemapRawKeymap("our_keymap", KEY_E)
 ## REMOVE_TIMECYCLE_MODIFIER
 `0x36DF8612` | `void REMOVE_TIMECYCLE_MODIFIER(char* modifierName)`
 ```lua
-local modifierName = "my_awesome_timecycle"
+local modifierName = "my_awesome_timecycle"
 RemoveTimecycleModifier(modifierName)
 ```
 
 ## REMOVE_TIMECYCLE_MODIFIER_VAR
 `0x5A5E0D05` | `void REMOVE_TIMECYCLE_MODIFIER_VAR(char* modifierName, char* varName)`
 ```lua
-local modifierName = "superDARK"
-local varName = "postfx_noise"
-
-if DoesTimecycleModifierHasVar(modifierName, varName) then
-  local success, value1, value2 = GetTimecycleModifierVar(modifierName, varName)
-
-  if success then
-    print(string.format("[%s] removed var %s with values: %f %f", modifierName, varName, value1, value2))
-    RemoveTimecycleModifierVar(modifierName, varName)
-  end
-else
-    SetTimecycleModifierVar(modifierName, varName, 1.0, 1.0)
-    print(string.format("[%s] created var %s", modifierName, varName))
+local modifierName = "superDARK"
+local varName = "postfx_noise"
+
+if DoesTimecycleModifierHasVar(modifierName, varName) then
+  local success, value1, value2 = GetTimecycleModifierVar(modifierName, varName)
+
+  if success then
+    print(string.format("[%s] removed var %s with values: %f %f", modifierName, varName, value1, value2))
+    RemoveTimecycleModifierVar(modifierName, varName)
+  end
+else
+    SetTimecycleModifierVar(modifierName, varName, 1.0, 1.0)
+    print(string.format("[%s] created var %s", modifierName, varName))
 end
 ```
 
@@ -3207,30 +3207,30 @@ end
 ## REQUEST_RESOURCE_FILE_SET
 `0xE7490533` | `void REQUEST_RESOURCE_FILE_SET(char* setName)`
 ```lua
--- fxmanifest.lua
-file_set 'dummies' {
-    'dummy/**.txt',
-    'potato.txt',
-}
-
--- main script
-local function PrintTest()
-    local tests = { 'potato.txt', 'dummy/1.txt', 'dummy/b/2.txt' }
-
-    for _, v in ipairs(tests) do
-        local data = LoadResourceFile(GetCurrentResourceName(), v)
-        print(v, data)
-    end
-end
-
-RegisterCommand('fileset', function()
-    PrintTest()
-
-    while not RequestResourceFileSet('dummies') do
-        Wait(100)
-    end
-
-    PrintTest()
+-- fxmanifest.lua
+file_set 'dummies' {
+    'dummy/**.txt',
+    'potato.txt',
+}
+
+-- main script
+local function PrintTest()
+    local tests = { 'potato.txt', 'dummy/1.txt', 'dummy/b/2.txt' }
+
+    for _, v in ipairs(tests) do
+        local data = LoadResourceFile(GetCurrentResourceName(), v)
+        print(v, data)
+    end
+end
+
+RegisterCommand('fileset', function()
+    PrintTest()
+
+    while not RequestResourceFileSet('dummies') do
+        Wait(100)
+    end
+
+    PrintTest()
 end)
 ```
 
@@ -3306,13 +3306,13 @@ ResetWater()
 ## SET_AUDIO_SUBMIX_EFFECT_RADIO_FX
 `0xAAA94D53` | `void SET_AUDIO_SUBMIX_EFFECT_RADIO_FX(int submixId, int effectSlot)`
 ```lua
--- we want to change the master output
-local submix = 0
-
--- add a RadioFX effect to slot 0
-SetAudioSubmixEffectRadioFx(submix, 0)
-
--- set the default values
+-- we want to change the master output
+local submix = 0
+
+-- add a RadioFX effect to slot 0
+SetAudioSubmixEffectRadioFx(submix, 0)
+
+-- set the default values
 SetAudioSubmixEffectParamInt(submix, 0, `default`, 1)
 ```
 
@@ -3361,10 +3361,10 @@ SetConvarReplicated('voice_useNativeAudio', 'true')
 ## SET_DEFAULT_VEHICLE_NUMBER_PLATE_TEXT_PATTERN
 `0x79780FD2` | `void SET_DEFAULT_VEHICLE_NUMBER_PLATE_TEXT_PATTERN(int plateIndex, char* pattern)`
 ```lua
-SetDefaultVehicleNumberPlateTextPattern(-1, ' AAA111 ')
-SetDefaultVehicleNumberPlateTextPattern(4 , ' AAAAAA ')
-
--- fixed characters: plate will be FAYUM69C for example
+SetDefaultVehicleNumberPlateTextPattern(-1, ' AAA111 ')
+SetDefaultVehicleNumberPlateTextPattern(4 , ' AAAAAA ')
+
+-- fixed characters: plate will be FAYUM69C for example
 SetDefaultVehicleNumberPlateTextPattern(-1, 'F^AYUM11A')
 ```
 
@@ -3395,16 +3395,16 @@ SetDefaultVehicleNumberPlateTextPattern(-1, 'F^AYUM11A')
 ## SET_EMITTER_PROBE_LENGTH
 `0x8AA1F3C2` | `void SET_EMITTER_PROBE_LENGTH(float probeLength)`
 ```lua
-RegisterCommand("setEmitterProbeLength", function(src, args, raw)
-    local probeLength = (tonumber(args[1]) + 0.0)
-
-    print("Extending emitter probes to: ", probeLength)
-    SetEmitterProbeLength(probeLength)
-end)
-
-RegisterCommand("resetEmitterProbeLength", function()
-    print("Resetting emitter probes to default settings")
-    SetEmitterProbeLength(20.0)
+RegisterCommand("setEmitterProbeLength", function(src, args, raw)
+    local probeLength = (tonumber(args[1]) + 0.0)
+
+    print("Extending emitter probes to: ", probeLength)
+    SetEmitterProbeLength(probeLength)
+end)
+
+RegisterCommand("resetEmitterProbeLength", function()
+    print("Resetting emitter probes to default settings")
+    SetEmitterProbeLength(20.0)
 end)
 ```
 
@@ -3525,14 +3525,14 @@ end)
 ## SET_HTTP_HANDLER
 `0xF5C6330C` | `void SET_HTTP_HANDLER(func handler)`
 ```lua
-SetHttpHandler(function(request, response)
-  if request.method == 'GET' and request.path == '/ping' then -- if a GET request was sent to the `/ping` path
-      response.writeHead(200, { ['Content-Type'] = 'text/plain' }) -- set the response status code to `200 OK` and the body content type to plain text
-      response.send('pong') -- respond to the request with `pong`
-  else -- otherwise
-      response.writeHead(404) -- set the response status code to `404 Not Found`
-      response.send() -- respond to the request with no data
-  end
+SetHttpHandler(function(request, response)
+  if request.method == 'GET' and request.path == '/ping' then -- if a GET request was sent to the `/ping` path
+      response.writeHead(200, { ['Content-Type'] = 'text/plain' }) -- set the response status code to `200 OK` and the body content type to plain text
+      response.send('pong') -- respond to the request with `pong`
+  else -- otherwise
+      response.writeHead(404) -- set the response status code to `404 Not Found`
+      response.send() -- respond to the request with no data
+  end
 end)
 ```
 
@@ -3548,135 +3548,135 @@ end)
 ## SET_INTERIOR_PORTAL_CORNER_POSITION
 `0x87F43553` | `void SET_INTERIOR_PORTAL_CORNER_POSITION(int interiorId, int portalIndex, int cornerIndex, float posX, float posY, float posZ)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-
-if interiorId ~= 0 then
-  local portalCount = GetInteriorPortalCount(interiorId)
-
-  -- rip portals
-  for portalIndex = 0, portalCount - 1 do
-    for cornerIndex = 0, 3 do -- 4 corners
-      SetInteriorPortalCornerPosition(interiorId, portalIndex, cornerIndex, 0.0, 0.0, 0.0)
-    end
-  end
-  
-  RefreshInterior(interiorId)
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+
+if interiorId ~= 0 then
+  local portalCount = GetInteriorPortalCount(interiorId)
+
+  -- rip portals
+  for portalIndex = 0, portalCount - 1 do
+    for cornerIndex = 0, 3 do -- 4 corners
+      SetInteriorPortalCornerPosition(interiorId, portalIndex, cornerIndex, 0.0, 0.0, 0.0)
+    end
+  end
+  
+  RefreshInterior(interiorId)
 end
 ```
 
 ## SET_INTERIOR_PORTAL_ENTITY_FLAG
 `0x8349CD76` | `void SET_INTERIOR_PORTAL_ENTITY_FLAG(int interiorId, int portalIndex, int entityIndex, int flag)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-local portalIndex = 0
-
-if interiorId ~= 0 then
-  local count = GetInteriorPortalEntityCount(interiorId, portalIndex)
-  for i=0, count-1 do
-    SetInteriorPortalEntityFlag(interiorId, portalIndex, i, 0)
-  end
-  RefreshInterior(interiorId)
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+local portalIndex = 0
+
+if interiorId ~= 0 then
+  local count = GetInteriorPortalEntityCount(interiorId, portalIndex)
+  for i=0, count-1 do
+    SetInteriorPortalEntityFlag(interiorId, portalIndex, i, 0)
+  end
+  RefreshInterior(interiorId)
 end
 ```
 
 ## SET_INTERIOR_PORTAL_FLAG
 `0x88B2355E` | `void SET_INTERIOR_PORTAL_FLAG(int interiorId, int portalIndex, int flag)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-
-if interiorId ~= 0 then
-  local portalIndex = 0
-
-  SetInteriorPortalFlag(interiorId, portalIndex, 1)
-  RefreshInterior(interiorId)
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+
+if interiorId ~= 0 then
+  local portalIndex = 0
+
+  SetInteriorPortalFlag(interiorId, portalIndex, 1)
+  RefreshInterior(interiorId)
 end
 ```
 
 ## SET_INTERIOR_PORTAL_ROOM_FROM
 `0x298FC783` | `void SET_INTERIOR_PORTAL_ROOM_FROM(int interiorId, int portalIndex, int roomFrom)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-
-if interiorId ~= 0 then
-  local portalIndex = 0
-
-  SetInteriorPortalRoomFrom(interiorId, portalIndex, 0)
-  RefreshInterior(interiorId)
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+
+if interiorId ~= 0 then
+  local portalIndex = 0
+
+  SetInteriorPortalRoomFrom(interiorId, portalIndex, 0)
+  RefreshInterior(interiorId)
 end
 ```
 
 ## SET_INTERIOR_PORTAL_ROOM_TO
 `0x58982680` | `void SET_INTERIOR_PORTAL_ROOM_TO(int interiorId, int portalIndex, int roomTo)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-
-if interiorId ~= 0 then
-  local portalIndex = 0
-
-  SetInteriorPortalRoomTo(interiorId, portalIndex, 0)
-  RefreshInterior(interiorId)
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+
+if interiorId ~= 0 then
+  local portalIndex = 0
+
+  SetInteriorPortalRoomTo(interiorId, portalIndex, 0)
+  RefreshInterior(interiorId)
 end
 ```
 
 ## SET_INTERIOR_PROBE_LENGTH
 `0x423F7E39` | `void SET_INTERIOR_PROBE_LENGTH(float probeLength)`
 ```lua
-RegisterCommand("setInteriorProbeLength", function(src, args, raw)
-    local probeLength = (tonumber(args[1]) + 0.0)
-
-    print("Extending interior detection probes to: ", probeLength)
-    SetInteriorProbeLength(probeLength)
-end)
-
-RegisterCommand("resetInteriorProbeLength", function()
-    print("Resetting interior detection probes to default settings")
-    SetInteriorProbeLength(0.0)
+RegisterCommand("setInteriorProbeLength", function(src, args, raw)
+    local probeLength = (tonumber(args[1]) + 0.0)
+
+    print("Extending interior detection probes to: ", probeLength)
+    SetInteriorProbeLength(probeLength)
+end)
+
+RegisterCommand("resetInteriorProbeLength", function()
+    print("Resetting interior detection probes to default settings")
+    SetInteriorProbeLength(0.0)
 end)
 ```
 
 ## SET_INTERIOR_ROOM_EXTENTS
 `0x4FDCF51E` | `void SET_INTERIOR_ROOM_EXTENTS(int interiorId, int roomIndex, float bbMinX, float bbMinY, float bbMinZ, float bbMaxX, float bbMaxY, float bbMaxZ)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-
-if interiorId ~= 0 then
-  SetInteriorRoomExtents(interiorId, 0, -999.0, -999.0, -100.0, 999.0, 999.0, 100.0) -- 0 is a limbo usually
-  RefreshInterior(interiorId)
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+
+if interiorId ~= 0 then
+  SetInteriorRoomExtents(interiorId, 0, -999.0, -999.0, -100.0, 999.0, 999.0, 100.0) -- 0 is a limbo usually
+  RefreshInterior(interiorId)
 end
 ```
 
 ## SET_INTERIOR_ROOM_FLAG
 `0x5518D60B` | `void SET_INTERIOR_ROOM_FLAG(int interiorId, int roomIndex, int flag)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-local roomHash = GetRoomKeyFromEntity(playerPed)
-local roomId = GetInteriorRoomIndexByHash(interiorId, roomHash)
-
-if roomId ~= -1 then
-  SetInteriorRoomFlag(interiorId, roomId, 64)
-  RefreshInterior(interiorId)
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+local roomHash = GetRoomKeyFromEntity(playerPed)
+local roomId = GetInteriorRoomIndexByHash(interiorId, roomHash)
+
+if roomId ~= -1 then
+  SetInteriorRoomFlag(interiorId, roomId, 64)
+  RefreshInterior(interiorId)
 end
 ```
 
 ## SET_INTERIOR_ROOM_TIMECYCLE
 `0x31C9A848` | `void SET_INTERIOR_ROOM_TIMECYCLE(int interiorId, int roomIndex, int timecycleHash)`
 ```lua
-local playerPed = PlayerPedId()
-local interiorId = GetInteriorFromEntity(playerPed)
-local roomHash = GetRoomKeyFromEntity(playerPed)
-local roomId = GetInteriorRoomIndexByHash(interiorId, roomHash)
-
-if roomId ~= -1 then
-  local timecycleHash = GetHashKey("scanline_cam")
-  SetInteriorRoomTimecycle(interiorId, roomId, timecycleHash)
-  RefreshInterior(interiorId)
+local playerPed = PlayerPedId()
+local interiorId = GetInteriorFromEntity(playerPed)
+local roomHash = GetRoomKeyFromEntity(playerPed)
+local roomId = GetInteriorRoomIndexByHash(interiorId, roomHash)
+
+if roomId ~= -1 then
+  local timecycleHash = GetHashKey("scanline_cam")
+  SetInteriorRoomTimecycle(interiorId, roomId, timecycleHash)
+  RefreshInterior(interiorId)
 end
 ```
 
@@ -3851,11 +3851,11 @@ end
 ## SET_PED_MODEL_HEALTH_CONFIG
 `0xAF12A05D` | `void SET_PED_MODEL_HEALTH_CONFIG(Hash modelHash, char* configName)`
 ```lua
-local pedModel = `mp_f_freemode_01`
-SetPedModelHealthConfig(pedModel, "Strong")
-
-SetPlayerModel(PlayerId(), pedModel)
-SetPedDefaultComponentVariation(PlayerPedId())
+local pedModel = `mp_f_freemode_01`
+SetPedModelHealthConfig(pedModel, "Strong")
+
+SetPlayerModel(PlayerId(), pedModel)
+SetPedDefaultComponentVariation(PlayerPedId())
 
 ```
 
@@ -3925,7 +3925,7 @@ SetResourceKvp('mollis', 'vesuvius citrate')
 ## SET_RESOURCE_KVP_FLOAT
 `0x9ADD2938` | `void SET_RESOURCE_KVP_FLOAT(char* key, float value)`
 ```lua
-local lickMy = 42.5
+local lickMy = 42.5
 SetResourceKvpFloat('bananabread', lickMy)
 ```
 
@@ -3935,7 +3935,7 @@ SetResourceKvpFloat('bananabread', lickMy)
 ## SET_RESOURCE_KVP_INT
 `0x6A2B1E8` | `void SET_RESOURCE_KVP_INT(char* key, int value)`
 ```lua
-local lickMy = 42
+local lickMy = 42
 SetResourceKvp('bananabread', lickMy)
 ```
 
@@ -3990,19 +3990,19 @@ SetResourceKvp('bananabread', lickMy)
 ## SET_TIMECYCLE_MODIFIER_VAR
 `0x6E0A422B` | `void SET_TIMECYCLE_MODIFIER_VAR(char* modifierName, char* varName, float value1, float value2)`
 ```lua
-local modifierName = "superDARK"
-local varName = "postfx_noise"
-
-if DoesTimecycleModifierHasVar(modifierName, varName) then
-  local success, value1, value2 = GetTimecycleModifierVar(modifierName, varName)
-
-  if success then
-    print(string.format("[%s] removed var %s with values: %f %f", modifierName, varName, value1, value2))
-    RemoveTimecycleModifierVar(modifierName, varName)
-  end
-else
-    SetTimecycleModifierVar(modifierName, varName, 1.0, 1.0)
-    print(string.format("[%s] created var %s", modifierName, varName))
+local modifierName = "superDARK"
+local varName = "postfx_noise"
+
+if DoesTimecycleModifierHasVar(modifierName, varName) then
+  local success, value1, value2 = GetTimecycleModifierVar(modifierName, varName)
+
+  if success then
+    print(string.format("[%s] removed var %s with values: %f %f", modifierName, varName, value1, value2))
+    RemoveTimecycleModifierVar(modifierName, varName)
+  end
+else
+    SetTimecycleModifierVar(modifierName, varName, 1.0, 1.0)
+    print(string.format("[%s] created var %s", modifierName, varName))
 end
 ```
 
@@ -4024,18 +4024,18 @@ end
 ## SET_TRAIN_DOOR_OPEN_RATIO
 `0x2468DBE8` | `void SET_TRAIN_DOOR_OPEN_RATIO(Vehicle train, int doorIndex, float ratio)`
 ```lua
--- open all doors on a train
-local doorCount = GetTrainDoorCount(train)
-for doorIndex = 0, doorCount - 1 do
-    SetTrainDoorOpenRatio(train, doorIndex, 1.0)
+-- open all doors on a train
+local doorCount = GetTrainDoorCount(train)
+for doorIndex = 0, doorCount - 1 do
+    SetTrainDoorOpenRatio(train, doorIndex, 1.0)
 end
 ```
 ```cs
-// open all doors on a train
-int doorCount = API.GetTrainDoorCount(train);
-for (int doorIndex = 0; doorIndex < doorCount; doorIndex++)
-{
-    API.SetTrainDoorOpenRatio(train, doorIndex, 1.0f);
+// open all doors on a train
+int doorCount = API.GetTrainDoorCount(train);
+for (int doorIndex = 0; doorIndex < doorCount; doorIndex++)
+{
+    API.SetTrainDoorOpenRatio(train, doorIndex, 1.0f);
 }
 ```
 
@@ -4099,45 +4099,45 @@ for (int doorIndex = 0; doorIndex < doorCount; doorIndex++)
 ## SET_VEHICLE_GEAR_RATIO
 `0x496EF2F2` | `void SET_VEHICLE_GEAR_RATIO(Vehicle vehicle, int gear, float ratio)`
 ```lua
-local function Set8SpeedVehicleGears(Vehicle)
-    SetVehicleGearRatio(Vehicle, 0, -3.32)  -- reverse gear at -3.21:1
-    SetVehicleGearRatio(Vehicle, 1, 4.71)   -- 1st gear at 4.71:1
-    SetVehicleGearRatio(Vehicle, 2, 3.14)   -- 2nd gear at 3.14:1
-    SetVehicleGearRatio(Vehicle, 3, 2.11)   -- 3rd gear at 2.11:1
-    SetVehicleGearRatio(Vehicle, 4, 1.67)   -- 4th gear at 1.67:1
-    SetVehicleGearRatio(Vehicle, 5, 1.29)   -- 5th gear at 1.29:1
-    SetVehicleGearRatio(Vehicle, 6, 1.0)    -- 6th gear at 1.0:1
-    SetVehicleGearRatio(Vehicle, 7, 0.84)   -- 7th gear at 0.84:1
-    SetVehicleGearRatio(Vehicle, 8, 0.67)   -- 8th gear at 0.67:1
+local function Set8SpeedVehicleGears(Vehicle)
+    SetVehicleGearRatio(Vehicle, 0, -3.32)  -- reverse gear at -3.21:1
+    SetVehicleGearRatio(Vehicle, 1, 4.71)   -- 1st gear at 4.71:1
+    SetVehicleGearRatio(Vehicle, 2, 3.14)   -- 2nd gear at 3.14:1
+    SetVehicleGearRatio(Vehicle, 3, 2.11)   -- 3rd gear at 2.11:1
+    SetVehicleGearRatio(Vehicle, 4, 1.67)   -- 4th gear at 1.67:1
+    SetVehicleGearRatio(Vehicle, 5, 1.29)   -- 5th gear at 1.29:1
+    SetVehicleGearRatio(Vehicle, 6, 1.0)    -- 6th gear at 1.0:1
+    SetVehicleGearRatio(Vehicle, 7, 0.84)   -- 7th gear at 0.84:1
+    SetVehicleGearRatio(Vehicle, 8, 0.67)   -- 8th gear at 0.67:1
 end
 ```
 ```js
-function Set8SpeedVehicleGears(Vehicle) {
-    SetVehicleGearRatio(Vehicle, 0, -3.32);  // reverse gear at -3.21:1
-    SetVehicleGearRatio(Vehicle, 1, 4.71);   // 1st gear at 4.71:1
-    SetVehicleGearRatio(Vehicle, 2, 3.14);   // 2nd gear at 3.14:1
-    SetVehicleGearRatio(Vehicle, 3, 2.11);   // 3rd gear at 2.11:1
-    SetVehicleGearRatio(Vehicle, 4, 1.67);   // 4th gear at 1.67:1
-    SetVehicleGearRatio(Vehicle, 5, 1.29);   // 5th gear at 1.29:1
-    SetVehicleGearRatio(Vehicle, 6, 1.0);    // 6th gear at 1.0:1
-    SetVehicleGearRatio(Vehicle, 7, 0.84);   // 7th gear at 0.84:1
-    SetVehicleGearRatio(Vehicle, 8, 0.67);   // 8th gear at 0.67:1
+function Set8SpeedVehicleGears(Vehicle) {
+    SetVehicleGearRatio(Vehicle, 0, -3.32);  // reverse gear at -3.21:1
+    SetVehicleGearRatio(Vehicle, 1, 4.71);   // 1st gear at 4.71:1
+    SetVehicleGearRatio(Vehicle, 2, 3.14);   // 2nd gear at 3.14:1
+    SetVehicleGearRatio(Vehicle, 3, 2.11);   // 3rd gear at 2.11:1
+    SetVehicleGearRatio(Vehicle, 4, 1.67);   // 4th gear at 1.67:1
+    SetVehicleGearRatio(Vehicle, 5, 1.29);   // 5th gear at 1.29:1
+    SetVehicleGearRatio(Vehicle, 6, 1.0);    // 6th gear at 1.0:1
+    SetVehicleGearRatio(Vehicle, 7, 0.84);   // 7th gear at 0.84:1
+    SetVehicleGearRatio(Vehicle, 8, 0.67);   // 8th gear at 0.67:1
 }
 ```
 ```cs
-using static CitizenFX.Core.API;
-
-public static void Set8SpeedVehicleGears(int Vehicle)
-{
-    SetVehicleGearRatio(Vehicle, 0, -3.32);  // reverse gear at -3.21:1
-    SetVehicleGearRatio(Vehicle, 1, 4.71);   // 1st gear at 4.71:1
-    SetVehicleGearRatio(Vehicle, 2, 3.14);   // 2nd gear at 3.14:1
-    SetVehicleGearRatio(Vehicle, 3, 2.11);   // 3rd gear at 2.11:1
-    SetVehicleGearRatio(Vehicle, 4, 1.67);   // 4th gear at 1.67:1
-    SetVehicleGearRatio(Vehicle, 5, 1.29);   // 5th gear at 1.29:1
-    SetVehicleGearRatio(Vehicle, 6, 1.0);    // 6th gear at 1.0:1
-    SetVehicleGearRatio(Vehicle, 7, 0.84);   // 7th gear at 0.84:1
-    SetVehicleGearRatio(Vehicle, 8, 0.67);   // 8th gear at 0.67:1
+using static CitizenFX.Core.API;
+
+public static void Set8SpeedVehicleGears(int Vehicle)
+{
+    SetVehicleGearRatio(Vehicle, 0, -3.32);  // reverse gear at -3.21:1
+    SetVehicleGearRatio(Vehicle, 1, 4.71);   // 1st gear at 4.71:1
+    SetVehicleGearRatio(Vehicle, 2, 3.14);   // 2nd gear at 3.14:1
+    SetVehicleGearRatio(Vehicle, 3, 2.11);   // 3rd gear at 2.11:1
+    SetVehicleGearRatio(Vehicle, 4, 1.67);   // 4th gear at 1.67:1
+    SetVehicleGearRatio(Vehicle, 5, 1.29);   // 5th gear at 1.29:1
+    SetVehicleGearRatio(Vehicle, 6, 1.0);    // 6th gear at 1.0:1
+    SetVehicleGearRatio(Vehicle, 7, 0.84);   // 7th gear at 0.84:1
+    SetVehicleGearRatio(Vehicle, 8, 0.67);   // 8th gear at 0.67:1
 }
 ```
 
@@ -4192,24 +4192,24 @@ public static void Set8SpeedVehicleGears(int Vehicle)
 ## SET_VEHICLE_WHEELIE_STATE
 `0xEAB8DB65` | `void SET_VEHICLE_WHEELIE_STATE(Vehicle vehicle, int state)`
 ```lua
-Citizen.CreateThread(function()
-  while true do
-    Wait(1)
-
-    local ped = PlayerPedId()
-    local veh = GetVehiclePedIsUsing(ped)
-
-    if veh ~= 0 then
-      -- is vehicle a musclecar
-      if GetVehicleClass(veh) == 4 then
-        -- is ped a driver
-        if GetPedInVehicleSeat(veh, -1) == ped then
-          -- don't let vehicle to do wheelie
-          SetVehicleWheelieState(veh, 1)
-        end
-      end
-    end
-  end
+Citizen.CreateThread(function()
+  while true do
+    Wait(1)
+
+    local ped = PlayerPedId()
+    local veh = GetVehiclePedIsUsing(ped)
+
+    if veh ~= 0 then
+      -- is vehicle a musclecar
+      if GetVehicleClass(veh) == 4 then
+        -- is ped a driver
+        if GetPedInVehicleSeat(veh, -1) == ped then
+          -- don't let vehicle to do wheelie
+          SetVehicleWheelieState(veh, 1)
+        end
+      end
+    end
+  end
 end)
 ```
 
@@ -4231,12 +4231,12 @@ SetVehicleWheelIsPowered(vehicle, 0, true);
 SetVehicleWheelIsPowered(vehicle, 0, true);
 ```
 ```cs
-using static CitizenFX.Core.API;
-// ...
-// The elusive Left Wheel Drive
-Vehicle veh = Game.PlayerPed.CurrentVehicle;
-for(int i = 0; i < veh.Wheels.Count; i++){
-    SetVehicleWheelIsPowered(veh.Handle, i, i % 2 == 0);
+using static CitizenFX.Core.API;
+// ...
+// The elusive Left Wheel Drive
+Vehicle veh = Game.PlayerPed.CurrentVehicle;
+for(int i = 0; i < veh.Wheels.Count; i++){
+    SetVehicleWheelIsPowered(veh.Handle, i, i % 2 == 0);
 }
 ```
 
@@ -4273,13 +4273,13 @@ for(int i = 0; i < veh.Wheels.Count; i++){
 ## SET_VEHICLE_XENON_LIGHTS_CUSTOM_COLOR
 `0x1683E7F0` | `void SET_VEHICLE_XENON_LIGHTS_CUSTOM_COLOR(Vehicle vehicle, int red, int green, int blue)`
 ```lua
-local vehicle = GetVehiclePedIsUsing(PlayerPedId())
-if DoesEntityExist(vehicle) then
-  -- Toggle xenon lights mod.
-  ToggleVehicleMod(vehicle, 22, true)
-
-  -- Set pink lights color.
-  SetVehicleXenonLightsCustomColor(vehicle, 244, 5, 82)
+local vehicle = GetVehiclePedIsUsing(PlayerPedId())
+if DoesEntityExist(vehicle) then
+  -- Toggle xenon lights mod.
+  ToggleVehicleMod(vehicle, 22, true)
+
+  -- Set pink lights color.
+  SetVehicleXenonLightsCustomColor(vehicle, 244, 5, 82)
 end
 ```
 
@@ -4388,48 +4388,48 @@ SetWetClothPinRadiusScale(1.0)
 ## START_FIND_EXTERNAL_KVP
 `0x8F2EECC3` | `void START_FIND_EXTERNAL_KVP(char* resourceName, char* prefix)`
 ```lua
-local kvpHandle = StartFindExternalKvp('drugs', 'mollis:')
-
-if kvpHandle ~= -1 then 
-	local key
-	
-	repeat
-		key = FindKvp(kvpHandle)
-
-		if key then
-			print(('%s: %s'):format(key, GetResourceKvpString(key)))
-		end
-	until not key
-
-	EndFindKvp(kvpHandle)
-else
-	print('No KVPs found')
+local kvpHandle = StartFindExternalKvp('drugs', 'mollis:')
+
+if kvpHandle ~= -1 then 
+	local key
+	
+	repeat
+		key = FindKvp(kvpHandle)
+
+		if key then
+			print(('%s: %s'):format(key, GetResourceKvpString(key)))
+		end
+	until not key
+
+	EndFindKvp(kvpHandle)
+else
+	print('No KVPs found')
 end
 ```
 
 ## START_FIND_KVP
 `0xDD379006` | `void START_FIND_KVP(char* prefix)`
 ```lua
-SetResourceKvp('mollis:2', 'should be taken with alcohol')
-SetResourceKvp('mollis:1', 'vesuvius citrate')
-SetResourceKvp('mollis:manufacturer', 'Betta Pharmaceuticals')
-
-local kvpHandle = StartFindKvp('mollis:')
-
-if kvpHandle ~= -1 then 
-	local key
-	
-	repeat
-		key = FindKvp(kvpHandle)
-
-		if key then
-			print(('%s: %s'):format(key, GetResourceKvpString(key)))
-		end
-	until not key
-
-	EndFindKvp(kvpHandle)
-else
-	print('No KVPs found')
+SetResourceKvp('mollis:2', 'should be taken with alcohol')
+SetResourceKvp('mollis:1', 'vesuvius citrate')
+SetResourceKvp('mollis:manufacturer', 'Betta Pharmaceuticals')
+
+local kvpHandle = StartFindKvp('mollis:')
+
+if kvpHandle ~= -1 then 
+	local key
+	
+	repeat
+		key = FindKvp(kvpHandle)
+
+		if key then
+			print(('%s: %s'):format(key, GetResourceKvpString(key)))
+		end
+	until not key
+
+	EndFindKvp(kvpHandle)
+else
+	print('No KVPs found')
 end
 ```
 

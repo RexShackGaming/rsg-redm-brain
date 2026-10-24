@@ -353,6 +353,8 @@ RegisterNUICallback('parkTrain', function(data, cb)
     SendNUIMessage({ action = 'closeStation' })
     SetNuiFocus(false, false)
     cb({ success = true })
+    -- Deliberate put-away: warn before destroying a loaded train storage.
+    if not ConfirmStoragePutAway() then return end
     ParkPlayerTrain()
 end)
 
@@ -360,6 +362,7 @@ RegisterNUICallback('despawnTrain', function(data, cb)
     SendNUIMessage({ action = 'closeStation' })
     SetNuiFocus(false, false)
     cb({ success = true })
+    if not ConfirmStoragePutAway() then return end
     DespawnPlayerTrain()
 end)
 

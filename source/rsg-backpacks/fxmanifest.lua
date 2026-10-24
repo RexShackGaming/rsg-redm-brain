@@ -5,7 +5,7 @@ lua54 'yes'
 
 name 'rsg-backpacks'
 description 'RSG Backpacks: wearable backpacks with stashes and belt/back attachments (lanterns, lasso, machete, quiver)'
-version '3.0.0'
+version '3.0.3'
 
 shared_scripts {
     '@ox_lib/init.lua',

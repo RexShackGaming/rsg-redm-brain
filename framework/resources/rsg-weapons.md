@@ -1,12 +1,12 @@
 # rsg-weapons
 
-Version 2.1.10. rsg-weapons
+Version 3.1.0. rsg-weapons
 
-**Weapon handling, degradation & repair for RSG Framework.** > Degradation over time, damage modifiers, repair workflow with a usable repair kit, and an admin `/infinityammo` toggle. > Includes an ammo type map for bows, thrown weapons and firearms.
+**Weapon handling for RSG Framework: dual wield, serial-based equipping, weapon wear, repairs, saved loadouts and damage tuning.** rsg-weapons controls what happens when a player uses a weapon from their inventory. Every gun is tracked by its **serial number**, so two of the same model behave as two separate weapons with their own wear and repair state. All item and quality changes happen **on the
 
 Source: https://github.com/Rexshack-RedM/rsg-weapons
 
-**Dependencies:** `rsg-core`, `ox_lib`, `oxmysql`
+**Dependencies:** `rsg-core`, `rsg-inventory`, `ox_lib`, `oxmysql`
 
 ## Exports (call as exports['rsg-weapons']:Name)
 
@@ -14,25 +14,13 @@ Source: https://github.com/Rexshack-RedM/rsg-weapons
 
 ## Net events registered
 
-**server:** `rsg-weapons:requestToggle`, `rsg-weapons:server:degradeWeapon`, `rsg-weapons:server:repairweapon`, `rsg-weapons:server:saveEquippedKnife`, `rsg-weapons:server:saveEquippedWeapon`
+**server:** `rsg-weapons:requestToggle`, `rsg-weapons:server:cancelRepair`, `rsg-weapons:server:degradeWeapon`, `rsg-weapons:server:finishRepair`, `rsg-weapons:server:saveEquippedKnife`, `rsg-weapons:server:saveEquippedWeapon`
 
-**client:** `RSGCore:Client:OnPlayerLoaded`, `rsg-weapons:client:UseEquipment`, `rsg-weapons:client:UseThrownWeapon`, `rsg-weapons:client:UseWeapon`, `rsg-weapons:client:brokenweapon`, `rsg-weapons:client:repairbrokenweapon`, `rsg-weapons:client:repairweapon`, `rsg-weapons:toggle`
-
-## Event handlers
-
-**server:** `rsg-weapons:server:removeitem`
-
-## Callbacks (RSGCore.Functions.CreateCallback)
-
-**server:** `rsg-weapons:server:getEquippedKnives`, `rsg-weapons:server:getEquippedWeapons`, `rsg-weapons:server:getWeaponBySerial`, `rsg-weapons:server:getweaponinfo`
+**client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `rsg-weapons:client:UseEquipment`, `rsg-weapons:client:UseThrownWeapon`, `rsg-weapons:client:UseWeapon`, `rsg-weapons:client:brokenweapon`, `rsg-weapons:client:repairweapon`, `rsg-weapons:toggle`
 
 ## Callbacks (lib.callback)
 
-**server:** `rsg-weapons:server:getweaponinfo`
-
-## Usable items
-
-**server:** `weapon_repair_kit`
+**server:** `rsg-weapons:server:consumeItem`, `rsg-weapons:server:getEquipped`, `rsg-weapons:server:startRepair`
 
 ## Commands (RegisterCommand)
 

@@ -3,7 +3,7 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 
 description 'rsg-railroad'
-version '3.0.0'
+version '3.1.1'
 
 shared_scripts {
     '@ox_lib/init.lua',
@@ -19,6 +19,7 @@ client_scripts {
     'client/train_ambient.lua',
     'client/train_hud.lua',
     'client/cargo.lua',
+    'client/preview.lua',
     'client/missions.lua',
 	'client/tickets.lua',
     'client/passengers.lua',
@@ -28,6 +29,7 @@ server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/db.lua',
     'server/webhook.lua',
+    'server/storage.lua',
     'server/main.lua',
     'server/companies.lua',
     'server/upgrades.lua',
@@ -54,6 +56,7 @@ dependencies {
     'ox_lib',
     'ox_target',
     'oxmysql',
+    'rsg-inventory',
 }
 
 lua54 'yes'

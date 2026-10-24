@@ -1,6 +1,6 @@
 # rsg-hunting
 
-Version 2.0.2. Hunting, trapper and butcher script for RSG Framework
+Version 3.0.0. Hunting, trapper and butcher script for RSG Framework
 
 A hunting, trapper-vending, and butcher system for the RSG Framework (RedM). Players can hunt and skin animals for crafting materials, sell those materials to trapper vendors scattered across the map, or sell whole carcasses directly to butchers for cash and meat. 1. [Features](#features) 2. [Installation](#installation)
 

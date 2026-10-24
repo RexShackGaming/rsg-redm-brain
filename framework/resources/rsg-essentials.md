@@ -1,6 +1,6 @@
 # rsg-essentials
 
-Version 3.0.2. rsg-essentials
+Version 3.1.0. rsg-essentials
 
 **Quality-of-life utilities and fixes for RedM using RSG Core.** > A collection of small but essential features: AFK kick, Discord rich presence, eagle eye access, first-person shooting handling, bandana toggle, map zone labels, door unlocks, water interactions, and more. Modular client/server files make it easy to enable only what you need. - [**rsg-core**](https://github.com/Rexshack-RedM/rsg-co
 

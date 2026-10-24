@@ -17,10 +17,10 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-beekeeper](rsg-beekeeper.md) | Beekeeper script for RSG Framework | 0 | 22 |
 | [rsg-bossmenu](rsg-bossmenu.md) | Boss management menu for RedM servers using RSG Core. > ox_lib–based menu system allowing job bosses t | 0 | 13 |
 | [rsg-canteen](rsg-canteen.md) | Fill a canteen at water pumps with ox_target and drink from it to restore thirst. - Target `p_waterpump01x | 0 | 4 |
-| [rsg-character](rsg-character.md) | Character selection, creation, clothing store and spawn system for RSG-Core (RedM). - In-world character s | 14 | 19 |
+| [rsg-character](rsg-character.md) | Character selection, creation, clothing store and spawn system for RSG-Core (RedM). - In-world character s | 14 | 20 |
 | [rsg-chat](rsg-chat.md) | A chat resource for RedM servers running RSG-Core. It replaces the default chat. Every message shows t | 0 | 11 |
 | [rsg-consume](rsg-consume.md) | Universal consumption system for RedM using RSG Core. > Immersive eating and drinking system for RedM serv | 0 | 2 |
-| [rsg-cooking](rsg-cooking.md) | A cooking system for RSG-Core (RedM). Players cook food through a full-screen NUI, cook several of the sam | 18 | 8 |
+| [rsg-cooking](rsg-cooking.md) | A cooking system for RSG-Core (RedM) that works the same way as [rsg-moonshine](https://github.com/Rexshac | 8 | 7 |
 | [rsg-core](rsg-core.md) | The core framework for RSG RedM servers: players, characters, money, jobs, gangs, permissions, commands, callb | 17 | 33 |
 | [rsg-crafting](rsg-crafting.md) | An XP-based crafting book for RSG-Core (RedM). Players use a crafting book item to open a NUI menu. From t | 5 | 2 |
 | [rsg-deliveries](rsg-deliveries.md) | Wagon delivery system RSG Framework | 0 | 4 |
@@ -54,25 +54,29 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-moonshine](rsg-moonshine.md) | Placeable moonshine stills for RedM on the RSG Framework. Players set up a still in the wild, load a m | 0 | 7 |
 | [rsg-multijob](rsg-multijob.md) | A multi-job system for RSG-Core (RedM). Lets players hold and switch between several jobs at once, gives a | 8 | 7 |
 | [rsg-noticeboard](rsg-noticeboard.md) | rsg-noticeboard - player notice boards with NUI, fees, expiry/renewal and admin management | 0 | 3 |
-| [rsg-npcs](rsg-npcs.md) | Dynamic NPC spawner and ambient sound system for RedM using RSG Core. > Spawns NPCs dynamically based on p | 0 | 0 |
+| [rsg-npcs](rsg-npcs.md) | Lightweight, distance-based ambient NPC spawner with optional blips, scenarios and proximity audio for RedM. | 0 | 0 |
 | [rsg-playerinfo](rsg-playerinfo.md) | Player information / quick stats display for RedM (RSG Core). > Shows a small context menu with the player | 0 | 1 |
 | [rsg-poison](rsg-poison.md) | Poison script for RSG Framework | 1 | 3 |
 | [rsg-prison](rsg-prison.md) | Complete prison system for RedM servers using RSG Core. > Fully integrated jail and sentence system for Re | 0 | 15 |
 | [rsg-radialmenu](rsg-radialmenu.md) | Radial interaction menu for RedM using RSG Core. A fast, themed radial menu with nested submenus, job-spec | 2 | 7 |
-| [rsg-railroad](rsg-railroad.md) | Advanced train management system for RedM (rsg-core). Buy railroad companies, hire drivers, manage trains, run | 0 | 31 |
+| [rsg-railroad](rsg-railroad.md) | Advanced train management system for RedM (rsg-core). Buy railroad companies, hire drivers, manage trains, run | 0 | 32 |
 | [rsg-ranch](rsg-ranch.md) | A complete livestock ranching system for RedM servers running the RSG Framework. Buy a ranch, hire sta | 31 | 100 |
 | [rsg-roulette](rsg-roulette.md) | Multiplayer roulette tables for RSG Framework | 1 | 11 |
 | [rsg-samples](rsg-samples.md) | Animal sample collector for RedM (best version) with leaderboard, certificate, and milestone rewards. - Sedate | 0 | 3 |
 | [rsg-smelting](rsg-smelting.md) | Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for RSG-Core (RedM) with ox_lib, ox_t | 1 | 1 |
 | [rsg-stables](rsg-stables.md) | Horse and stables script for RSG Framework | 0 | 9 |
 | [rsg-stores](rsg-stores.md) | Create NPC shopkeepers, shops and map blips in-game for RSG-Core (RedM), all from an admin menu with no co | 1 | 17 |
+| [rsg-targetpractise](rsg-targetpractise.md) | Placeable archery and throwing-knife practice targets for RSG Framework | 0 | 18 |
 | [rsg-telegram](rsg-telegram.md) |  | 0 | 2 |
+| [rsg-telephone](rsg-telephone.md) | rsg-telephone - persistent telephone props with private voice calls | 0 | 14 |
 | [rsg-track](rsg-track.md) | A custom horse race track builder and race manager for RSG-Core RedM servers. Players (or staff) lay out a | 0 | 16 |
 | [rsg-trader](rsg-trader.md) | Dynamic-price NPC traders for RSG-Core (RedM). Players buy and sell items at prices that move with stock l | 1 | 1 |
 | [rsg-trapdoors](rsg-trapdoors.md) | Synced, animated trapdoors for RSG-Core (RedM) with an optional 4-digit passcode lock, a themed keypad UI, | 1 | 1 |
+| [rsg-treasure](rsg-treasure.md) | Treasure map hunting for RSG Framework | 1 | 3 |
 | [rsg-voice](rsg-voice.md) | rsg-voice - proximity voice for RSG Framework | 3 | 10 |
 | [rsg-wagons](rsg-wagons.md) | A wagon ownership, customisation and storage system for RedM servers running the RSG-Core framework. P | 0 | 27 |
 | [rsg-wardrobe](rsg-wardrobe.md) | Toggle individual clothing items on/off via chat commands for RSG Framework (RedM). - [rsg-core](https://githu | 6 | 4 |
 | [rsg-weaponcomp](rsg-weaponcomp.md) | Weapon customisation for RSG Framework (RedM). Players place a portable gunsmith workbench, then use it to | 0 | 16 |
-| [rsg-weapons](rsg-weapons.md) | Weapon handling, degradation & repair for RSG Framework. > Degradation over time, damage modifiers, repair | 6 | 13 |
+| [rsg-weapons](rsg-weapons.md) | Weapon handling for RSG Framework: dual wield, serial-based equipping, weapon wear, repairs, saved loadouts  | 6 | 14 |
 | [rsg-weather](rsg-weather.md) | rsg-weather - time, weather and wind sync for RSG Framework (weathersync compatible) | 16 | 15 |
+| [rsg-zonenotify](rsg-zonenotify.md) | rsg-zonenotify - location banner when entering states, districts and towns | 1 | 2 |

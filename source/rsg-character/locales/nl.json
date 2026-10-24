@@ -271,6 +271,12 @@
     "rotate_prompt_text": "Links/Rechts",
     "zoom_prompt_text": "Zoom",
     "group_prompt_text": "RSGCore Maker",
+    "logout": {
+        "title": "Logout",
+        "help": "Save and return to character selection",
+        "cooldown": "You must wait before logging out again",
+        "dead": "You cannot log out while dead or downed"
+    },
     "charselect": {
         "title": "Kies personage",
         "subtitle": "Kies een personage of maak een nieuw",
@@ -381,6 +387,10 @@
         "character_selected": {
             "title": "Personage gekozen",
             "description": "**%s %s** logde in op burger-ID **%s**."
+        },
+        "character_logout": {
+            "title": "Character Logout",
+            "description": "**%s %s** logged out of citizen ID **%s**."
         },
         "character_deleted": {
             "title": "Personage verwijderd",

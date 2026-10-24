@@ -1,6 +1,6 @@
 # rsg-crafting
 
-Version 3.0.1. rsg-crafting
+Version 3.0.2. rsg-crafting
 
 An XP-based crafting book for **RSG-Core (RedM)**. Players use a crafting book item to open a NUI menu. From there they pick a recipe and a batch size, then craft it while an animation plays. They earn crafting XP that unlocks more recipes. - Usable `craftingbook` item opens a draggable NUI (position saved per player, double-click header or ↺ to reset) - Recipe categories, locked recipes shown wit
 

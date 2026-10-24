@@ -1,0 +1,19 @@
+CREATE TABLE IF NOT EXISTS `rsg_telephones` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `number` VARCHAR(16) NOT NULL,
+    `label` VARCHAR(64) NOT NULL DEFAULT 'Telephone',
+    `model` VARCHAR(64) NOT NULL,
+    `x` DOUBLE NOT NULL,
+    `y` DOUBLE NOT NULL,
+    `z` DOUBLE NOT NULL,
+    `heading` DOUBLE NOT NULL DEFAULT 0,
+    `listed` TINYINT(1) NOT NULL DEFAULT 1,
+    `room` BIGINT NOT NULL DEFAULT 0,
+    `job` VARCHAR(64) DEFAULT NULL,
+    `owner` VARCHAR(64) DEFAULT NULL,
+    `stored` TINYINT(1) NOT NULL DEFAULT 0,
+    `created_by` VARCHAR(64) DEFAULT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `number` (`number`)
+);

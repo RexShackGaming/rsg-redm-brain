@@ -77,7 +77,7 @@ MySQL.ready(function()
         local ok, err = pcall(BuildDatabase)
         if not ok then
             print(('^1[rsg-backpacks] database setup failed: %s^0'):format(tostring(err)))
-            print('^1[rsg-backpacks] import install/player_backpack.sql manually^0')
+            print('^1[rsg-backpacks] import installation/player_backpack.sql manually^0')
         end
     end
     BP.DatabaseReady = true

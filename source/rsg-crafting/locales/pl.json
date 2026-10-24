@@ -64,5 +64,8 @@
     "ui_have_need": "%s / %s",
     "amount_item": "%sx %s",
     "seconds": "%ss",
-    "minutes_seconds": "%sm %ss"
+    "minutes_seconds": "%sm %ss",
+    "ui_required_tools": "Wymagane narzędzia",
+    "ui_missing_tools": "Brak narzędzi",
+    "tools_required_desc": "Potrzebujesz %s w ekwipunku, aby to wytworzyć."
 }

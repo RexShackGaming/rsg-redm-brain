@@ -608,3 +608,20 @@ CreateThread(function()
         end
     end
 end)
+-- /logout: fade out and tidy the ped before the server unloads the character
+RegisterNetEvent('rsg-character:client:BeginLogout', function()
+    DoScreenFadeOut(800)
+    while not IsScreenFadedOut() do Wait(10) end
+    local ped = PlayerPedId()
+    ClearPedTasksImmediately(ped)
+    if IsPedOnMount(ped) then
+        local mount = GetMount(ped)
+        SetEntityCoords(ped, GetEntityCoords(ped), false, false, false, false)
+        if mount and mount ~= 0 then TaskDismountAnimal(ped, 0, 0, 0, 0, mount) end
+    end
+    if IsPedInAnyVehicle(ped, false) then
+        TaskLeaveAnyVehicle(ped, 0, 16)
+    end
+    FreezeEntityPosition(ped, true)
+    SetEntityVisible(ped, false, false)
+end)

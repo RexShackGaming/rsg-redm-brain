@@ -8,6 +8,7 @@ An XP-based crafting book for **RSG-Core (RedM)**. Players use a crafting book i
 - Batch crafting (up to `Config.MaxBatch`); time, output and XP scale with quantity
 - Live ingredient counts (have / need) and max-craftable indicator
 - Optional job / job-type restriction per recipe
+- Optional required tools per recipe (e.g. a hammer) that must be in the inventory but are never consumed
 - Cancel at any time (Stop button, closing the book, or dying). Nothing is taken until the craft completes
 - Fully server-authoritative: the server picks the recipe, validates timing, removes ingredients, gives items and XP, and refunds if anything fails
 - ox_lib notifications and locales (`locales/*.json`)
@@ -43,13 +44,16 @@ An XP-based crafting book for **RSG-Core (RedM)**. Players use a crafting book i
     crafttime = 30000,                     -- ms per craft
     requiredxp = 25, xpreward = 3,         -- XP to unlock / XP earned per craft
     requiredjob = 'blacksmith',            -- optional: job name or job type
+    requireditems = {                      -- optional: tools needed but NOT consumed
+        { item = 'hammer' },               -- amount defaults to 1
+    },
     ingredients = {
         { item = 'resource_wood', amount = 1 },
         { item = 'resource_steel_bar', amount = 1 },
     },
 },
 ```
-Recipes are checked on resource start. Invalid ones are disabled and an error is printed to the console. This covers unknown items, bad amounts, a missing ingredient list and duplicate ingredients.
+Recipes are checked on resource start. Invalid ones are disabled and an error is printed to the console. This covers unknown items, bad amounts, a missing ingredient list, duplicate ingredients or tools, and a tool that is also listed as an ingredient.
 
 ## Discord Webhooks (`server/sv_config.lua`)
 Webhook URLs are kept in a **server-only** config file, so clients can never read them. Paste a URL into each log type you want. Leave a type as `''` to turn it off, or use the same URL for every type.
@@ -93,5 +97,5 @@ Set the language in server.cfg, e.g. `setr ox:locale de`. To add another languag
 ## Security notes
 - The client only sends a recipe index and a quantity. Both are re-validated on the server.
 - One active session per player. The finish request is rejected if it arrives sooner than the craft time minus a 1.5s latency grace.
-- Book ownership, job and XP are checked again when the craft finishes.
+- Book ownership, job, XP and required tools are checked again when the craft finishes.
 - Ingredients are removed and the result added only on the server. Removed items are refunded if any step fails.

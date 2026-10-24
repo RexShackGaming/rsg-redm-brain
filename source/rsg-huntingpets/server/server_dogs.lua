@@ -73,8 +73,10 @@ AddEventHandler('rsg-huntingpets:server:sellDog', function(dogId)
     local result = MySQL.query.await('SELECT * FROM player_dogs WHERE id = ? AND identifier = ? AND charid = ?', {dogId, cid, charid})
     if result and result[1] then
         local sellPrice = math.floor(result[1].price * 0.5)
-        MySQL.execute('DELETE FROM player_dogs WHERE id = ?', {dogId})
-        Player.Functions.AddMoney('cash', sellPrice)
+        -- atomic: only the request that actually deletes the row gets paid (stops spam double-sells)
+        local deleted = MySQL.update.await('DELETE FROM player_dogs WHERE id = ? AND identifier = ? AND charid = ?', {dogId, cid, charid})
+        if not deleted or deleted < 1 then return end
+        Player.Functions.AddMoney('cash', sellPrice, 'rsg-huntingpets-sell')
         TriggerClientEvent('rsg-huntingpets:client:putawayDog', src)
         TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_dog_sold', sellPrice), duration = 5000, type = 'success'})
     end

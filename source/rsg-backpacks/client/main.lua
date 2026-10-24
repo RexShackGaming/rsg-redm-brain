@@ -47,7 +47,7 @@ local function EquipBackpackProp(cfg, serial)
     AttachEntityToEntity(entity, ped, bone,
         cfg.position.x, cfg.position.y, cfg.position.z,
         cfg.rotation.x, cfg.rotation.y, cfg.rotation.z,
-        true, true, false, true, 1, true)
+        false, false, false, false, 2, true) -- hard pinned, no collision
 
     worn = { cfg = cfg, serial = serial, entity = entity, ped = ped }
     return true

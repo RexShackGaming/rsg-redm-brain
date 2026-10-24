@@ -1,0 +1,15 @@
+{
+    "cl_title": "Locatie",
+    "cl_indoors": "Je kunt je locatie niet binnen controleren",
+    "cl_unknown": "Je bent midden in de wildernis",
+    "cl_enabled": "Locatiemeldingen ingeschakeld",
+    "cl_disabled": "Locatiemeldingen uitgeschakeld",
+    "cl_cmd_location": "Laat zien waar je bent",
+    "cl_cmd_toggle": "Locatiemeldingen aan- of uitzetten",
+    "cl_time_am": "AM",
+    "cl_time_pm": "PM",
+    "cl_temp_c": "%s°C",
+    "cl_temp_f": "%s°F",
+    "cl_wind_kph": "%s km/u",
+    "cl_wind_mph": "%s mph"
+}

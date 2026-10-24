@@ -9,7 +9,7 @@ RSGCore.Commands.Add('testalert', locale('sv_test'), {}, false, function(source)
     local playerCoords = GetEntityCoords(GetPlayerPed(source))
     local text = locale('sv_test_a')
     TriggerClientEvent('rsg-lawman:client:lawmanAlert', src, playerCoords, text)
-end)
+end, 'admin')
 
 ------------------------------------------
 -- search players inventory
@@ -78,6 +78,7 @@ RSGCore.Commands.Add('unjail', locale('sv_unjail'), { { name = 'id', help = loca
                 local TargetPlayer = RSGCore.Functions.GetPlayer(playerId)
                 if TargetPlayer then
                     -- Trigger the unjail event for the target player
+                    TargetPlayer.Functions.SetMetaData('injail', 0) -- server-side release so rsg-prison accepts it
                     TriggerClientEvent('rsg-prison:client:freedom', TargetPlayer.PlayerData.source)
                     -- Notify the player issuing the command
                     TriggerClientEvent('ox_lib:notify', src,

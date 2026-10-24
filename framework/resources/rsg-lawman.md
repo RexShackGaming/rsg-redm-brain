@@ -1,6 +1,6 @@
 # rsg-lawman
 
-Version 2.0.6. rsg-lawman
+Version 3.0.1. rsg-lawman
 
 **Law enforcement and sheriff management system for RedM using RSG Core.** > Full-featured law enforcement framework for RedM built on RSG Core. > Provides arrest, search, alerts, and law office management systems with ox_lib menus and configurable prompts.
 

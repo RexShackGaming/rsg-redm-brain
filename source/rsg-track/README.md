@@ -11,7 +11,7 @@ A custom horse race track builder and race manager for **RSG-Core** RedM servers
 - **Full race lifecycle** — join, start, run (with a 10-second countdown), and finish, with GPS routing to the next checkpoint and live progress toasts.
 - **Multi-lap support** — 1–5 laps, configurable per race by an admin before it starts.
 - **Automatic results & rewards** — the first rider to finish wins a configurable cash reward; all finishers are recorded with their placement, a podium/winners screen pops up automatically, and the last 5 race results are kept for a "previous races" history view.
-- **Themed NUI menu** (`J` near a track's start, or `/racerace`) — create/load/delete tracks, join/leave/start a race, adjust laps and max checkpoints, view current participants, and view results/winners, all from an in-game panel.
+- **Themed NUI menu** (`J` near a track's start, or `/race`) — create/load/delete tracks, join/leave/start a race, adjust laps and max checkpoints, view current participants, and view results/winners, all from an in-game panel.
 - **Server-authoritative race logic** — lap counts, race state, and finish timing are all tracked server-side (not trusted from the client), so the race can't be won by sending a fake "finished" event or an inflated lap count.
 - **Admin-gated race control** — starting a track edit, deleting tracks, changing lap count/marker limits, and resetting a race all require an RSGCore permission (configurable), so random players can't grief an ongoing race.
 - **Optional Discord webhook logging** — track created/deleted, race started/finished (with full standings), settings changes, and database errors can all be posted to a Discord channel as embeds.
@@ -57,7 +57,7 @@ A MySQL/MariaDB database reachable by `oxmysql` is required. The `horse_race_tra
    )
    ```
 
-4. In-game, run `/racerace` (or `/race`) to open the menu and confirm the resource loaded correctly.
+4. In-game, run `/race` to open the menu and confirm the resource loaded correctly.
 
 ---
 
@@ -125,14 +125,14 @@ These live at the top of **`server/server.lua`** rather than `shared/config.lua`
 
 ### For players
 
-1. **Open the menu** — press `J` while standing near a currently-loaded track's start marker, or run `/racerace` (alias `/race`) from anywhere.
+1. **Open the menu** — press `J` while standing near a currently-loaded track's start marker, or run `/race` from anywhere.
 2. **Join a race** — from the menu, select *Join Race* once a track is loaded and no race is currently running.
 3. **Race** — once an admin starts the race, a 10-second countdown plays, then GPS routes you to each checkpoint in order. Ride through each marker to register it; the last checkpoint is the finish line. Complete the configured number of laps to finish.
 4. **View results** — the *View Winners* option (and an automatic popup for anyone still watching when the race ends) shows the podium and full finisher list. Reward money is paid automatically to whoever finishes 1st.
 
 ### For track builders / admins
 
-1. Open the menu (`/racerace`) and select **Create Track**.
+1. Open the menu (`/race`) and select **Create Track**.
 2. In the world: press **J** once to set the **start** point, press **J** again for each additional checkpoint, then press **G** at your current position to set the **finish** and complete the route (minimum 2 points, start + finish).
 3. Name the track when prompted — it's saved to the database and becomes the active track immediately.
 4. From the menu you can also:
@@ -145,7 +145,7 @@ These live at the top of **`server/server.lua`** rather than `shared/config.lua`
 
 | Command | Description |
 |---|---|
-| `/racerace`, `/race` | Open the race menu. |
+| `/race` | Open the race menu. |
 | `/racewebhooktest` | Server console or in-game admin command. Posts a test embed to your configured Discord webhook so you can confirm the URL and formatting work before going live. |
 
 ---
@@ -164,7 +164,7 @@ All player-facing text lives in `locales/<lang>.json` and is loaded according to
 
 ## Troubleshooting
 
-- **Menu doesn't open / `/racerace` does nothing** — confirm `rsg-core`, `ox_lib`, and `oxmysql` all started successfully before `rsg-track` in your `server.cfg`.
+- **Menu doesn't open / `/race` does nothing** — confirm `rsg-core`, `ox_lib`, and `oxmysql` all started successfully before `rsg-track` in your `server.cfg`.
 - **"Failed to save track!" toast** — check your server console for a `[rsg-track] Failed to save track: ...` line; this usually means `oxmysql` can't reach the database, or the track name exceeds 50 characters (names are trimmed and truncated automatically, but very unusual input can still fail).
 - **Discord messages not arriving** — confirm `Config.Webhook.enabled = true`, the URL is a valid `https://discord.com/api/webhooks/...` link, and run `/racewebhooktest` to isolate the issue from your race flow.
 - **"Cannot change markers/laps/delete/load/reset" with no toast** — these actions silently no-op for players without the `RACE_ADMIN_PERMISSION` permission; this is expected, not a bug.

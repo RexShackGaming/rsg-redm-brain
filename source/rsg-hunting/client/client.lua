@@ -67,13 +67,9 @@ CreateThread(function()
                                         DeleteEntity(holding)
                                     end
 
-                                    TriggerServerEvent('rsg-hunting:server:giverewards', {
-                                        animal.rewarditem1,
-                                        animal.rewarditem2,
-                                        animal.rewarditem3,
-                                        animal.rewarditem4,
-                                        animal.rewarditem5,
-                                    })
+                                    -- send only the carcass; the server works out the rewards itself
+                                    local netId = NetworkGetEntityIsNetworked(pedGathered) and NetworkGetNetworkIdFromEntity(pedGathered) or 0
+                                    TriggerServerEvent('rsg-hunting:server:giverewards', netId)
 
                                     if animal.skinable and Config.DeleteCarcass then
                                         Wait(1000)

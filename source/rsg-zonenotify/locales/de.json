@@ -1,0 +1,15 @@
+{
+    "cl_title": "Standort",
+    "cl_indoors": "Du kannst deinen Standort nicht in Gebäuden prüfen",
+    "cl_unknown": "Du bist mitten in der Wildnis",
+    "cl_enabled": "Standortanzeigen aktiviert",
+    "cl_disabled": "Standortanzeigen deaktiviert",
+    "cl_cmd_location": "Zeigt, wo du bist",
+    "cl_cmd_toggle": "Standortanzeigen ein- oder ausschalten",
+    "cl_time_am": "AM",
+    "cl_time_pm": "PM",
+    "cl_temp_c": "%s°C",
+    "cl_temp_f": "%s°F",
+    "cl_wind_kph": "%s km/h",
+    "cl_wind_mph": "%s mph"
+}

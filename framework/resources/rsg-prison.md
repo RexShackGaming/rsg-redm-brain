@@ -1,6 +1,6 @@
 # rsg-prison
 
-Version 2.0.4. rsg-prison
+Version 3.0.0. rsg-prison
 
 **Complete prison system for RedM servers using RSG Core.** > Fully integrated jail and sentence system for RedM built on RSG Core. > Handles jailing, job removal, sentence timers, and automatic release with ox_lib prompts and blips.
 

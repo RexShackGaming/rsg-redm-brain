@@ -1,6 +1,6 @@
 # rsg-telegram
 
-Version 3.0.0. rsg-telegram
+Version 3.0.1. rsg-telegram
 
 Source: https://github.com/Rexshack-RedM/rsg-telegram
 

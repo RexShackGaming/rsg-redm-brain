@@ -1,10 +1,9 @@
-local RSGCore = exports['rsg-core']:GetCoreObject()
 lib.locale()
 
 local UI_LOCALE_KEYS = {
     'menu_title', 'menu_current_xp', 'ui_locked', 'ui_requires', 'ui_makes', 'ui_select', 'ui_ingredients',
     'ui_quantity', 'ui_craft', 'ui_stop', 'ui_missing', 'ui_close', 'ui_xp', 'ui_time', 'ui_crafting',
-    'ui_cancelled', 'ui_next_unlock', 'ui_reset_pos', 'ui_xp_label', 'ui_all', 'ui_count', 'ui_have_need', 'amount_item', 'seconds', 'minutes_seconds',
+    'ui_cancelled', 'ui_next_unlock', 'ui_reset_pos', 'ui_xp_label', 'ui_all', 'ui_count', 'ui_have_need', 'ui_required_tools', 'ui_missing_tools', 'amount_item', 'seconds', 'minutes_seconds',
 }
 
 local uiOpen = false
@@ -36,6 +35,7 @@ local function failReason(result)
     if reason == 'job' then return locale('job_required_desc', result.requiredJob) end
     if reason == 'xp' then return locale('xp_required_desc', result.requiredXP, result.currentXP) end
     if reason == 'missing' then return locale('ui_missing') end
+    if reason == 'tools' then return locale('tools_required_desc', result.tools or '') end
     if reason == 'inventory_full' then return locale('inventory_full', result.label or '') end
     return locale('craft_error')
 end

@@ -23,6 +23,7 @@ end
 ---------------------------------------------
 local function InitializeLookup()
     for _, category in pairs(Belt.categories) do
+        if category.enabled == false then goto continue end
         for _, item in ipairs(category) do
             local names = type(item.hashName) == 'table' and item.hashName or { item.hashName }
             for _, hashName in ipairs(names) do
@@ -37,19 +38,15 @@ local function InitializeLookup()
                 }
             end
         end
+        ::continue::
     end
 end
 
 ---------------------------------------------
 -- HELPERS
 ---------------------------------------------
-local function IsMale(ped)
-    local result = Citizen.InvokeNative(0x6D9F5FAA7488BA46, ped, Citizen.ReturnResultAnyway(), Citizen.ResultAsInteger())
-    return result == 1 or result == true
-end
-
 local function PickBySex(tbl, ped)
-    if not IsMale(ped) then
+    if not IsPedMale(ped) then
         local female = tbl.female
         if female ~= nil and female ~= false then
             return female
@@ -92,7 +89,7 @@ local function AttachItem(key, cfg)
     AttachEntityToEntity(entity, ped, boneIndex,
         offset.x, offset.y, offset.z,
         offset.pitch, offset.roll, offset.yaw,
-        true, true, false, true, 1, true)
+        false, false, false, false, 2, true) -- hard pinned, no collision: no wobble / physics
 
     attached[key] = entity
     return true

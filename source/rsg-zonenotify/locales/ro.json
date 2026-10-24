@@ -1,0 +1,15 @@
+{
+    "cl_title": "Locație",
+    "cl_indoors": "Nu îți poți verifica locația în interior",
+    "cl_unknown": "Ești în mijlocul sălbăticiei",
+    "cl_enabled": "Notificările de locație au fost activate",
+    "cl_disabled": "Notificările de locație au fost dezactivate",
+    "cl_cmd_location": "Arată unde te afli",
+    "cl_cmd_toggle": "Activează sau dezactivează notificările de locație",
+    "cl_time_am": "AM",
+    "cl_time_pm": "PM",
+    "cl_temp_c": "%s°C",
+    "cl_temp_f": "%s°F",
+    "cl_wind_kph": "%s km/h",
+    "cl_wind_mph": "%s mph"
+}

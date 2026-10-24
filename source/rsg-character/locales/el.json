@@ -271,6 +271,12 @@
     "rotate_prompt_text": "Αριστερά/Δεξιά",
     "zoom_prompt_text": "Ζουμ",
     "group_prompt_text": "Δημιουργός RSGCore",
+    "logout": {
+        "title": "Logout",
+        "help": "Save and return to character selection",
+        "cooldown": "You must wait before logging out again",
+        "dead": "You cannot log out while dead or downed"
+    },
     "charselect": {
         "title": "Επιλογή χαρακτήρα",
         "subtitle": "Διάλεξε χαρακτήρα ή δημιούργησε νέο",
@@ -381,6 +387,10 @@
         "character_selected": {
             "title": "Επιλέχθηκε χαρακτήρας",
             "description": "Ο/Η **%s %s** συνδέθηκε στο ID πολίτη **%s**."
+        },
+        "character_logout": {
+            "title": "Character Logout",
+            "description": "**%s %s** logged out of citizen ID **%s**."
         },
         "character_deleted": {
             "title": "Διαγράφηκε χαρακτήρας",

@@ -1,6 +1,6 @@
 # rsg-character
 
-Version 3.0.5. rsg-character
+Version 3.0.6. rsg-character
 
 Character selection, creation, clothing store and spawn system for **RSG-Core** (RedM). - In-world character select screen: your characters' peds line up at a location you can configure. - Multiple character slots per player license (default **4**, configurable).
 
@@ -18,7 +18,7 @@ Has NUI (`ui_page`).
 
 **server:** `rsg-character:server:DeleteCharacterSlot`, `rsg-character:server:DeleteOutfit`, `rsg-character:server:LoadSkin`, `rsg-character:server:RequestCharacterSlots`, `rsg-character:server:RequestCreateCharacterSlot`, `rsg-character:server:SaveSkin`, `rsg-character:server:SelectCharacterSlot`, `rsg-character:server:SetPlayerBucket`, `rsg-character:server:saveOutfit`, `rsg-multicharacter:server:createCharacter`
 
-**client:** `RSGCore:Client:OnPlayerLoaded`, `rsg-character:client:ApplyClothes`, `rsg-character:client:ApplySkin`, `rsg-character:client:CharSelectFailed`, `rsg-character:client:OpenCharSelect`, `rsg-character:client:OpenCreator`, `rsg-character:client:OpenSpawnSelect`, `rsg-character:client:ReceiveCharacterSlots`, `rsg-character:client:outfits`
+**client:** `RSGCore:Client:OnPlayerLoaded`, `rsg-character:client:ApplyClothes`, `rsg-character:client:ApplySkin`, `rsg-character:client:BeginLogout`, `rsg-character:client:CharSelectFailed`, `rsg-character:client:OpenCharSelect`, `rsg-character:client:OpenCreator`, `rsg-character:client:OpenSpawnSelect`, `rsg-character:client:ReceiveCharacterSlots`, `rsg-character:client:outfits`
 
 ## Event handlers
 

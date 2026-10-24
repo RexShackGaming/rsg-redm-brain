@@ -271,6 +271,12 @@
     "rotate_prompt_text": "Gauche/Droite",
     "zoom_prompt_text": "Zoom",
     "group_prompt_text": "Créateur RSGCore",
+    "logout": {
+        "title": "Logout",
+        "help": "Save and return to character selection",
+        "cooldown": "You must wait before logging out again",
+        "dead": "You cannot log out while dead or downed"
+    },
     "charselect": {
         "title": "Choisir un personnage",
         "subtitle": "Choisis un personnage ou crées-en un nouveau",
@@ -381,6 +387,10 @@
         "character_selected": {
             "title": "Personnage sélectionné",
             "description": "**%s %s** s'est connecté avec l'ID citoyen **%s**."
+        },
+        "character_logout": {
+            "title": "Character Logout",
+            "description": "**%s %s** logged out of citizen ID **%s**."
         },
         "character_deleted": {
             "title": "Personnage supprimé",

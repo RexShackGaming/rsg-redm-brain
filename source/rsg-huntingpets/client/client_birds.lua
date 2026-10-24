@@ -380,7 +380,11 @@ end)
 --------------------------------------------------------
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(1)
+        if not (birdOnShoulder or birdIsFollowing) then
+            Citizen.Wait(500) -- no bird out: nothing to prompt
+        else
+            Citizen.Wait(0)
+        end
         if birdOnShoulder == true and menuOpen == false and birdisFlyingHome == false and nearby == false and birdisHunting == false and selling == false then
             local label  = CreateVarString(10, 'LITERAL_STRING', BirdName)
             PromptSetActiveGroupThisFrame(OnShoulderPrompts, label)
@@ -431,10 +435,12 @@ end)
 ------------------------------------------------------
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(1)
-        if #SellPointsC and playerCoords ~= nil then
+        local sleep = 1000 -- only tick per-frame when a sell point is within draw range
+        if SellPointsC and next(SellPointsC) and playerCoords ~= nil then
+            local myId = GetPlayerServerId(PlayerId())
             for i, v in pairs(SellPointsC) do
-                if tonumber(v.owner) ~= GetPlayerServerId(PlayerId()) then
+                if GetDistanceBetweenCoords(playerCoords, v.sellcoords, true) < 12.0 then sleep = 0 end
+                if tonumber(v.owner) ~= myId then
                     local dist = GetDistanceBetweenCoords(playerCoords, v.sellcoords, true)
                     if dist < 10.0 then
                         Citizen.InvokeNative(0x2A32FAA57B937173, 0x6903B113, v.sellcoords.x, v.sellcoords.y, v.sellcoords.z-0.9 , 0, 0, 0, 0, 0, 0, 2.0, 2.0, 0.3, Config.Checkpoints.shop[1], Config.Checkpoints.shop[2], Config.Checkpoints.shop[3], 100, 0, 0, 2, 0, 0, 0, 0)
@@ -447,7 +453,7 @@ Citizen.CreateThread(function()
                         end
                     end
                 end
-                if tonumber(v.owner) == GetPlayerServerId(PlayerId()) then
+                if tonumber(v.owner) == myId then
                     local dist = GetDistanceBetweenCoords(playerCoords, v.sellcoords, true)
                     if dist < 2.0 then
                         Citizen.InvokeNative(0x2A32FAA57B937173, 0x6903B113, v.sellcoords.x, v.sellcoords.y, v.sellcoords.z-0.9 , 0, 0, 0, 0, 0, 0, 2.0, 2.0, 0.3,  Config.Checkpoints.shop[1], Config.Checkpoints.shop[2], Config.Checkpoints.shop[3], 100, 0, 0, 2, 0, 0, 0, 0)
@@ -455,12 +461,13 @@ Citizen.CreateThread(function()
                 end
             end
         end
+        Citizen.Wait(sleep)
     end
 end)
 ------------------------------------------------------
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(1)
+        Citizen.Wait(selling and 0 or 500)
         if selling == true then
             DisableControlAction(0, 0xF8982F00, true)
             while SellPointsC[CalledBirdData.id] == nil do

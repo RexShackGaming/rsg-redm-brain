@@ -271,6 +271,12 @@
     "rotate_prompt_text": "左/右",
     "zoom_prompt_text": "ズーム",
     "group_prompt_text": "RSGCore クリエイター",
+    "logout": {
+        "title": "Logout",
+        "help": "Save and return to character selection",
+        "cooldown": "You must wait before logging out again",
+        "dead": "You cannot log out while dead or downed"
+    },
     "charselect": {
         "title": "キャラクター選択",
         "subtitle": "キャラクターを選ぶか新しく作成してください",
@@ -381,6 +387,10 @@
         "character_selected": {
             "title": "キャラクター選択",
             "description": "**%s %s** が市民ID **%s** でログインしました。"
+        },
+        "character_logout": {
+            "title": "Character Logout",
+            "description": "**%s %s** logged out of citizen ID **%s**."
         },
         "character_deleted": {
             "title": "キャラクター削除",

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en" style="background: transparent !important; color-scheme: normal !important;">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title data-i18n="ui_document_title"></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="app.js" defer></script>
+</head>
+<body style="background: transparent !important;">
+    <aside id="placer" class="placer hidden" aria-live="polite">
+        <div class="placer-head"><span class="placer-title" data-i18n="ui_place_title"></span><span class="placer-time" id="placer-time"></span></div>
+        <div class="placer-bar"><i id="placer-bar"></i></div>
+        <div class="placer-keys">
+            <div class="pk" data-k="confirm"><kbd>Enter</kbd><span data-i18n="ui_place_confirm"></span></div>
+            <div class="pk" data-k="cancel"><kbd>Backspace</kbd><span data-i18n="ui_place_cancel"></span></div>
+            <div class="pk" data-k="rotate"><span class="kgroup"><kbd data-k="left">&larr;</kbd><kbd data-k="right">&rarr;</kbd></span><span data-i18n="ui_place_rotate"></span></div>
+            <div class="pk" data-k="height"><span class="kgroup"><kbd data-k="up">&uarr;</kbd><kbd data-k="down">&darr;</kbd></span><span data-i18n="ui_place_height"></span></div>
+            <div class="pk"><kbd>W A S D</kbd><span data-i18n="ui_place_move"></span></div>
+        </div>
+        <div class="placer-stats">
+            <div><span data-i18n="ui_place_heading"></span><strong id="placer-heading">0&deg;</strong></div>
+            <div><span data-i18n="ui_place_height"></span><strong id="placer-height">+0.00 m</strong><div class="hmeter"><i id="placer-hmeter"></i></div></div>
+        </div>
+        <div class="placer-ground" id="placer-ground"></div>
+        <div class="placer-result hidden" id="placer-result"></div>
+    </aside>
+    <div id="announce" class="announce hidden" aria-live="polite">
+        <div class="announce-title" id="ann-title"></div>
+        <div class="announce-label" id="ann-label"></div>
+        <div class="announce-lines" id="ann-lines"></div>
+    </div>
+    <main id="board" class="hidden" style="display: none !important; visibility: hidden; pointer-events: none;" aria-hidden="true" aria-labelledby="title">
+        <section class="panel" role="dialog" aria-modal="true" aria-labelledby="title">
+            <header>
+                <div>
+                    <p class="eyebrow" data-i18n="ui_brand"></p>
+                    <h1 id="title" data-i18n="ui_title"></h1>
+                    <p class="subtitle" data-i18n="ui_subtitle"></p>
+                </div>
+                <button id="close" class="seal-button" type="button" data-i18n-aria="ui_close" data-i18n-title="ui_close"><span aria-hidden="true">&times;</span></button>
+            </header>
+            <div class="ink-divider" aria-hidden="true">&#9830;</div>
+            <section class="summary" data-i18n-aria="ui_summary">
+                <article><span data-i18n="ui_leader"></span><strong id="leader"></strong><small id="leader-points"></small></article>
+                <article><span data-i18n="ui_your_standing"></span><strong id="your-rank"></strong><small id="your-points"></small></article>
+                <article><span data-i18n="ui_scoring_players"></span><strong id="players">0</strong><small id="scope" data-i18n="ui_session"></small></article>
+            </section>
+            <div class="board-body">
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col" data-i18n="ui_rank"></th><th scope="col" data-i18n="ui_player"></th><th scope="col" data-i18n="ui_points"></th><th scope="col" data-i18n="ui_hits"></th><th scope="col" data-i18n="ui_bullseyes"></th><th scope="col" data-i18n="ui_arrows"></th><th scope="col" data-i18n="ui_knives"></th><th scope="col" data-i18n="ui_best"></th><th scope="col" data-i18n="ui_average"></th></tr></thead>
+                        <tbody id="scores"></tbody>
+                    </table>
+                    <div id="empty" class="empty"><span class="target-symbol" aria-hidden="true">&#9678;</span><h2 data-i18n="ui_empty_title"></h2><p data-i18n="ui_empty_description"></p></div>
+                </div>
+                <aside class="side-panel">
+                    <section class="records" data-i18n-aria="ui_range_records">
+                        <h2 data-i18n="ui_range_records"></h2>
+                        <article class="record">
+                            <span class="record-kind arrow" data-i18n="ui_furthest_arrow"></span>
+                            <strong id="record-arrow-name">&mdash;</strong>
+                            <small id="record-arrow-distance">&mdash;</small>
+                        </article>
+                        <article class="record">
+                            <span class="record-kind knife" data-i18n="ui_furthest_knife"></span>
+                            <strong id="record-knife-name">&mdash;</strong>
+                            <small id="record-knife-distance">&mdash;</small>
+                        </article>
+                    </section>
+                    <section class="impact-panel" data-i18n-aria="ui_hit_map">
+                        <h2 data-i18n="ui_hit_map"></h2>
+                        <div class="target-face" id="target-face" role="img" data-i18n-aria="ui_hit_map_aria">
+                            <div class="target-rings" id="target-rings" aria-hidden="true"></div>
+                            <div class="target-crosshair" aria-hidden="true"></div>
+                            <div class="target-marks" id="target-marks" aria-hidden="true"></div>
+                        </div>
+                        <div class="map-legend" aria-hidden="true">
+                            <span><i class="legend-dot arrow"></i><span data-i18n="ui_arrows"></span></span>
+                            <span><i class="legend-dot knife"></i><span data-i18n="ui_knives"></span></span>
+                            <span><i class="legend-dot bullseye"></i><span data-i18n="ui_bullseyes"></span></span>
+                        </div>
+                        <p class="target-summary" id="target-summary"></p>
+                    </section>
+                </aside>
+            </div>
+            <footer><span><i aria-hidden="true"></i> <span id="status" role="status" data-i18n="ui_live"></span></span><span data-i18n="ui_reset"></span><kbd data-i18n="ui_escape"></kbd></footer>
+        </section>
+    </main>
+</body>
+</html>

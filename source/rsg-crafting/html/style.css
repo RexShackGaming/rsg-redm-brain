@@ -196,6 +196,7 @@ html, body {
 .ing-count { font-size: 13px; font-weight: 600; }
 .ing-count.ok { color: var(--rdr-cost-ok); }
 .ing-count.bad { color: var(--rdr-cost-over); }
+.tools-label { margin-top: 12px; }
 
 .qty-row { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
 .qty-row .section-label { margin: 0; }

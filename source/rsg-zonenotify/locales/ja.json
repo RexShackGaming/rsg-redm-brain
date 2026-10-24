@@ -1,0 +1,15 @@
+{
+    "cl_title": "現在地",
+    "cl_indoors": "屋内では現在地を確認できません",
+    "cl_unknown": "荒野の真っただ中にいます",
+    "cl_enabled": "地名表示をオンにしました",
+    "cl_disabled": "地名表示をオフにしました",
+    "cl_cmd_location": "現在地を表示",
+    "cl_cmd_toggle": "地名表示のオン/オフを切り替え",
+    "cl_time_am": "午前",
+    "cl_time_pm": "午後",
+    "cl_temp_c": "%s°C",
+    "cl_temp_f": "%s°F",
+    "cl_wind_kph": "%s km/h",
+    "cl_wind_mph": "%s mph"
+}

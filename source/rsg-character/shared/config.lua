@@ -11,6 +11,14 @@ RSG.ProfanityWords = {
 -- Character select: how many character slots each player license gets
 RSG.MaxCharacterSlots = 4
 
+-- /logout: saves the current character and returns the player to character select
+RSG.Logout = {
+    Enabled = true,
+    Command = 'logout',
+    Cooldown = 30,        -- seconds between uses per player
+    BlockWhenDead = true, -- can't log out while dead / downed
+}
+
 -- Nationalities offered as a dropdown in the character creator (period-appropriate
 -- for RDR2's ~1899 setting, but feel free to trim/reorder/add your own).
 -- Each entry is a locale key: its display name lives in locales/*.json under "nationalities"
@@ -82,6 +90,13 @@ RSG.Webhooks = {
         name = 'Character Logs',
         avatar = '',
         color = 3447003, -- blurple
+    },
+    ['character_logout'] = {
+        enabled = false,
+        url = 'https://discord.com/api/webhooks/XXXXXXXX/XXXXXXXX',
+        name = 'Character Logs',
+        avatar = '',
+        color = 15105570, -- orange
     },
     ['appearance_saved'] = {
         enabled = true,

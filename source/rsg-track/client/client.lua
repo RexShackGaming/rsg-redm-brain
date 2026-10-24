@@ -258,6 +258,7 @@ Citizen.CreateThread(function()
                 PromptSetEnabled(racePrompt, false)
                 PromptSetVisible(racePrompt, false)
             end
+            Wait(500) -- idle: no track to show, nothing to poll every frame
         end
     end
 end)
@@ -277,7 +278,6 @@ end)
 
 function LoadTracksFromServer() TriggerServerEvent('rsg-track:requestTracks') end
 function OpenRaceMenu() OpenRaceMenuNUI() end
-RegisterCommand('racerace', function() OpenRaceMenuNUI() end, false)
 RegisterCommand('race', function() OpenRaceMenuNUI() end, false)
 
 -- NUI Callbacks
@@ -685,7 +685,11 @@ end)
 -- close/cancel NUI callbacks and leave focus stuck on the UI.
 Citizen.CreateThread(function()
     while true do
-        Wait(0)
-        if isNuiOpen then DisableControlAction(0, 0x1B0000, true) end
+        if isNuiOpen then
+            DisableControlAction(0, 0x1B0000, true)
+            Wait(0)
+        else
+            Wait(250)
+        end
     end
 end)

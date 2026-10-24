@@ -64,5 +64,8 @@
     "ui_have_need": "%s / %s",
     "amount_item": "%sx %s",
     "seconds": "%ss",
-    "minutes_seconds": "%sm %ss"
+    "minutes_seconds": "%sm %ss",
+    "ui_required_tools": "Required Tools",
+    "ui_missing_tools": "Missing Tools",
+    "tools_required_desc": "You need %s in your inventory to craft this."
 }

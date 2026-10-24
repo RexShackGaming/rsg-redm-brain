@@ -137,13 +137,26 @@ function renderDetail() {
         </div>`;
     }).join('');
 
+    const tools = r.tools || [];
+    const toolsOk = tools.every((t) => t.have >= t.amount);
+    $('tools-wrap').classList.toggle('hidden', tools.length === 0);
+    $('tools-label').textContent = state.L.ui_required_tools;
+    $('tools').innerHTML = tools.map((t) => {
+        const ok = t.have >= t.amount;
+        return `<div class="ing">
+            <div class="badge-icon"><img src="${esc(img(t.image))}" onerror="this.style.display='none'"></div>
+            <span class="ing-name">${esc(t.label)}</span>
+            <span class="ing-count ${ok ? 'ok' : 'bad'}">${esc(fmt(state.L.ui_have_need, Math.min(t.have, t.amount), t.amount))}</span>
+        </div>`;
+    }).join('');
+
     $('qty-label').textContent = state.L.ui_quantity;
     $('qty-val').textContent = q;
 
     const canCraft = !r.locked && r.maxCraftable >= q;
     const btn = $('craft-btn');
     btn.disabled = !canCraft || state.crafting;
-    btn.textContent = r.locked ? state.L.ui_locked : (r.maxCraftable < 1 ? state.L.ui_missing : fmt(state.L.ui_craft, q));
+    btn.textContent = r.locked ? state.L.ui_locked : (!toolsOk ? state.L.ui_missing_tools : (r.maxCraftable < 1 ? state.L.ui_missing : fmt(state.L.ui_craft, q)));
     btn.classList.toggle('hidden', state.crafting);
     $('stop-btn').textContent = state.L.ui_stop;
     $('stop-btn').classList.toggle('hidden', !state.crafting);

@@ -31,7 +31,11 @@ Config.Belt = {
     enabled      = true,
     debounceTime = 1000,  -- ms minimum between attach/detach changes per item
     categories = {
+        -- Lanterns and the metal detector are already shown on the belt by the game itself
+        -- (PH_Lantern holster). Attaching a prop as well gives a doubled lantern, so this
+        -- category is off by default. Set enabled = true only if your server hides the native one.
         lanterns = {
+            enabled = false,
             {
                 alwaysAttached = false, -- If true, the item is always attached while owned, even when in hand.
                 hashName = 'WEAPON_MELEE_LANTERN',

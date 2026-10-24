@@ -84,7 +84,7 @@ function SpawnPlayerTrain(trainDbId, directionReverse, station)
     EngineRunning = false
 
     -- Tell server we spawned
-    TriggerServerEvent('rsg-railroad:setTrainSpawned', true, trainData.id)
+    TriggerServerEvent('rsg-railroad:setTrainSpawned', true, trainData.id, trainData.train_model)
 
     Notify(locale('train_spawned'), 'success')
     DebugPrint('Train spawned: ' .. trainConfig.label)
@@ -152,7 +152,7 @@ function SpawnConfigTrain(trainConfig, directionReverse, station)
     TrainCondition = ActiveTrainData.condition
     EngineRunning = false
 
-    TriggerServerEvent('rsg-railroad:setTrainSpawned', true, 0)
+    TriggerServerEvent('rsg-railroad:setTrainSpawned', true, 0, trainConfig.model)
 
     Notify(locale('train_spawned'), 'success')
     DebugPrint('Config train spawned: ' .. trainConfig.label)
@@ -164,6 +164,37 @@ function SpawnConfigTrain(trainConfig, directionReverse, station)
     StartConditionDecrease()
     StartDistanceMonitor()
     StartMileageTracker()
+end
+
+---------------------------------------------------------------
+-- TRAIN STORAGE: CONFIRM BEFORE A MANUAL PUT-AWAY
+--
+-- Train storage is wiped whenever the train leaves the world. This asks
+-- for confirmation first on the DELIBERATE routes (park / despawn / send
+-- to yard) so a player cannot destroy a full hold with one misclick.
+-- Automatic routes (distance despawn, death, mission failure, disconnect)
+-- intentionally do NOT call this -- there is nobody to ask.
+--
+-- Returns true if the put-away should proceed.
+---------------------------------------------------------------
+function ConfirmStoragePutAway()
+    local cfg = Config.TrainStorage
+    if not cfg or not cfg.Enabled or not cfg.ConfirmOnPutAway then return true end
+
+    local state = lib.callback.await('rsg-railroad:getTrainStorageState', false)
+    if not state or not state.active or (state.stacks or 0) <= 0 then return true end
+
+    local answer = lib.alertDialog({
+        header   = locale('storage_confirm_title'),
+        content  = locale('storage_confirm_body', state.stacks),
+        centered = true,
+        cancel   = true,
+        labels   = {
+            confirm = locale('storage_confirm_yes'),
+            cancel  = locale('storage_confirm_no'),
+        },
+    })
+    return answer == 'confirm'
 end
 
 ---------------------------------------------------------------
@@ -226,6 +257,7 @@ function CleanupActiveTrain()
         exports.ox_target:removeLocalEntity(ActiveTrain, 'railroad_repair_item')
         exports.ox_target:removeLocalEntity(ActiveTrain, 'railroad_board')
         exports.ox_target:removeLocalEntity(ActiveTrain, 'railroad_unboard')
+        exports.ox_target:removeLocalEntity(ActiveTrain, 'railroad_storage')
     end
 
     if ActiveTrainBlip then
@@ -339,11 +371,32 @@ end
 ---------------------------------------------------------------
 function StartDistanceMonitor()
     CreateThread(function()
+        -- Storage is wiped if the train auto-despawns, which is the most common
+        -- cause of accidental loss. Warn while the player still has time to
+        -- turn back, but only when they are actually carrying something.
+        local storageCfg = Config.TrainStorage
+        local warnAt = (storageCfg and storageCfg.Enabled and storageCfg.DistanceWarnPercent)
+            and (Config.TrainDespawnDist * storageCfg.DistanceWarnPercent) or nil
+        local warnInterval = (storageCfg and storageCfg.DistanceWarnInterval) or 15000
+        local lastWarn = 0
+
         while ActiveTrain and DoesEntityExist(ActiveTrain) do
             Wait(5000)
             local pcoords = GetEntityCoords(PlayerPedId())
             local tcoords = GetEntityCoords(ActiveTrain)
             local dist = GetDistanceBetween(pcoords, tcoords)
+
+            if warnAt and dist > warnAt and dist <= Config.TrainDespawnDist then
+                local now = GetGameTimer()
+                if now - lastWarn > warnInterval then
+                    lastWarn = now
+                    local state = lib.callback.await('rsg-railroad:getTrainStorageState', false)
+                    if state and state.active and (state.stacks or 0) > 0 then
+                        Notify(locale('storage_distance_warning'), 'warning', 8000)
+                    end
+                end
+            end
+
             if dist > Config.TrainDespawnDist then
                 Notify(locale('train_too_far'), 'error')
                 DespawnPlayerTrain()
@@ -462,6 +515,22 @@ function SetupTrainTarget()
             icon = 'fas fa-clipboard-check',
             distance = 4.0,
             onSelect = function() OpenConditionMenu() end,
+        },
+        -- Train Storage (per-deployment cargo hold).
+        -- NOTE: the stash identifier is resolved server-side from the player's
+        -- active deployment -- the client deliberately sends nothing, so a stash
+        -- id cannot be forged.
+        {
+            name = 'railroad_storage',
+            label = locale('storage_target'),
+            icon = 'fas fa-box-open',
+            distance = 4.0,
+            canInteract = function()
+                return Config.TrainStorage ~= nil and Config.TrainStorage.Enabled
+            end,
+            onSelect = function()
+                TriggerServerEvent('rsg-railroad:openTrainStorage')
+            end,
         },
         -- 4. Toggle Track Switches
         {
@@ -634,7 +703,10 @@ function SetupTrainTarget()
                 TrainWater = savedWater
                 TrainCondition = savedCond
                 EngineRunning = false
-                TriggerServerEvent('rsg-railroad:setTrainSpawned', true, 0)
+                -- Reversing re-fires setTrainSpawned, but the server already has
+                -- this player registered as having a train out, so it returns
+                -- early and the existing stash (and its load) is preserved.
+                TriggerServerEvent('rsg-railroad:setTrainSpawned', true, 0, savedConfig.model)
                 SetupTrainTarget()
                 StartFuelDecrease()
                 StartWaterDecrease()
@@ -667,6 +739,8 @@ function SetupTrainTarget()
             icon = 'fas fa-warehouse',
             distance = 4.0,
             onSelect = function()
+                -- Deliberate put-away: confirm before destroying a loaded hold.
+                if not ConfirmStoragePutAway() then return end
                 SendTrainToYard()
             end,
         },

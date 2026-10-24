@@ -64,5 +64,8 @@
     "ui_have_need": "%s / %s",
     "amount_item": "%sx %s",
     "seconds": "%sδ",
-    "minutes_seconds": "%sλ %sδ"
+    "minutes_seconds": "%sλ %sδ",
+    "ui_required_tools": "Απαιτούμενα Εργαλεία",
+    "ui_missing_tools": "Λείπουν Εργαλεία",
+    "tools_required_desc": "Χρειάζεσαι %s στο inventory σου για να το φτιάξεις."
 }

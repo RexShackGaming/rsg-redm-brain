@@ -24,7 +24,9 @@ Config.Anim = {
 -- requiredxp   = crafting XP needed to unlock
 -- xpreward     = crafting XP earned per craft
 -- requiredjob  = (optional) job name or job type
--- ingredients  = { { item = 'name', amount = n }, ... }
+-- ingredients  = { { item = 'name', amount = n }, ... }   (removed when crafting)
+-- requireditems = (optional) { { item = 'name', amount = n }, ... }  tools that must be in the
+--                 inventory but are NOT removed, e.g. a hammer. amount defaults to 1
 ---------------------------------------------
 Config.Crafting = {
     -- Basics

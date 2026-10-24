@@ -30,6 +30,7 @@ for ammoType, data in pairs(Config.AmmoTypes) do
         hash = joaat(ammoType),
         dbColumn = ammoType:lower(),
         maxAmmo = data.maxAmmo,
+        refill = data.refill,
     }
 end
 

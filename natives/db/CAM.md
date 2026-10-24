@@ -774,12 +774,12 @@ Creates Cinematic Black Bars (at top and bottom)
 `0xE296208C273BD7F0` | `void _REQUEST_LETTER_BOX_OVERTIME(int startTransitionTime, int endTransitionTime, BOOL p2, int p3, BOOL p4, BOOL p5)` | build 1207
 Creates Cinematic Black Bars (at top and bottom) (this frame)
 ```lua
-CreateThread(function()
-    local inLetterBoxFrom = GetGameTimer()
-    while GetGameTimer() - inLetterBoxFrom >= 10000 do
-        Wait(0)
-        RequestLetterBoxOvertime(1000, 1000)
-    end
+CreateThread(function()
+    local inLetterBoxFrom = GetGameTimer()
+    while GetGameTimer() - inLetterBoxFrom >= 10000 do
+        Wait(0)
+        RequestLetterBoxOvertime(1000, 1000)
+    end
 end)
 ```
 

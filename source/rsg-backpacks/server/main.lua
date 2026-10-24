@@ -71,13 +71,13 @@ local function CountCarried(list)
     return n
 end
 
-local function HandleUse(src, Player, cfg, item)
-    if Config.OneBackpackOnly and CountCarried(GetCarriedBackpacks(Player)) > 1 then
+local function HandleUse(src, RSGPlayer, cfg, item)
+    if Config.OneBackpackOnly and CountCarried(GetCarriedBackpacks(RSGPlayer)) > 1 then
         BP.Notify(src, 'error', 'backpack_title', 'backpack_only_one')
         return
     end
 
-    local citizenId = Player.PlayerData.citizenid
+    local citizenId = RSGPlayer.PlayerData.citizenid
     local info = type(item.info) == 'table' and item.info or {}
     local serial = info.serie
 
@@ -122,12 +122,26 @@ local function HandleUse(src, Player, cfg, item)
 
     -- wear the prop (client visual) and open the stash straight from the server
     TriggerClientEvent('rsg-backpacks:client:wear', src, cfg.item, serial)
-    OpenStash[src] = serial
-    exports['rsg-inventory']:OpenInventory(src, STASH_PREFIX .. serial, {
-        label = locale('backpack_title'),
-        maxweight = cfg.maxweight,
-        slots = cfg.slots,
-    })
+
+    -- the item is used from inside the player inventory, which closes itself afterwards (shouldClose).
+    -- Opening the stash straight away gets refused / closed again by that, so wait until the
+    -- player inventory is really closed (inv_busy cleared), then open the stash.
+    CreateThread(function()
+        local limit = GetGameTimer() + 3000
+        Wait(300)
+        while Player(src).state.inv_busy and GetGameTimer() < limit do Wait(100) end
+        Wait(100)
+
+        local P = RSGCore.Functions.GetPlayer(src)
+        if not P or not BP.GetHeldBackpack(P, serial) then return end
+
+        OpenStash[src] = serial
+        exports['rsg-inventory']:OpenInventory(src, STASH_PREFIX .. serial, {
+            label = locale('backpack_title'),
+            maxweight = cfg.maxweight,
+            slots = cfg.slots,
+        })
+    end)
 end
 
 local function RegisterUseableBackpacks()
@@ -207,13 +221,13 @@ local function SweepNestedBackpacks(stashName, src)
     for _, it in ipairs(found) do
         if exports['rsg-inventory']:RemoveItem(stashName, it.name, it.amount, it.slot, 'rsg-backpacks-nested-block') then
             local returned = exports['rsg-inventory']:CanAddItem(src, it.name, it.amount)
-                and exports['rsg-inventory']:AddItem(src, it.name, it.amount, nil, it.info, 'rsg-backpacks-nested-block')
+                and exports['rsg-inventory']:AddItem(src, it.name, it.amount, it.info, nil, 'rsg-backpacks-nested-block')
 
             if returned then
                 changed = true
             else
                 -- could not hand it back: restore it so the item is never lost
-                exports['rsg-inventory']:AddItem(stashName, it.name, it.amount, it.slot, it.info, 'rsg-backpacks-nested-restore')
+                exports['rsg-inventory']:AddItem(stashName, it.name, it.amount, it.info, it.slot, 'rsg-backpacks-nested-restore')
             end
         end
     end
@@ -257,10 +271,17 @@ local function EnforceOneBackpack(src, fromInventory, toSlot)
     end
     if not extra or type(fromInventory) ~= 'string' or fromInventory == 'player' then return end
 
+    -- fromInventory comes from the client: only hand the item back to an inventory that is really loaded
+    local okInv, target = pcall(function() return exports['rsg-inventory']:GetInventory(fromInventory) end)
+    if not okInv or type(target) ~= 'table' then
+        BP.Notify(src, 'warning', 'backpack_title', 'backpack_drop_extra')
+        return
+    end
+
     if exports['rsg-inventory']:RemoveItem(src, extra.name, extra.amount, extra.slot, 'rsg-backpacks-one-limit') then
-        if not exports['rsg-inventory']:AddItem(fromInventory, extra.name, extra.amount, nil, extra.info, 'rsg-backpacks-one-limit') then
+        if not exports['rsg-inventory']:AddItem(fromInventory, extra.name, extra.amount, extra.info, nil, 'rsg-backpacks-one-limit') then
             -- source could not take it back: give it back to the player so nothing is lost
-            exports['rsg-inventory']:AddItem(src, extra.name, extra.amount, nil, extra.info, 'rsg-backpacks-one-limit-restore')
+            exports['rsg-inventory']:AddItem(src, extra.name, extra.amount, extra.info, extra.slot, 'rsg-backpacks-one-limit-restore')
         end
     end
     BP.Notify(src, 'error', 'backpack_title', 'backpack_only_one')
@@ -317,7 +338,7 @@ end)
 ---------------------------------------------
 local function GiveBack(src, it)
     return exports['rsg-inventory']:CanAddItem(src, it.name, it.amount or 1)
-        and exports['rsg-inventory']:AddItem(src, it.name, it.amount or 1, nil, it.info, 'rsg-backpacks-recover')
+        and exports['rsg-inventory']:AddItem(src, it.name, it.amount or 1, it.info, nil, 'rsg-backpacks-recover')
 end
 
 -- moves backpacks out of one stash into the player's inventory; anything that does not fit stays put
@@ -339,7 +360,7 @@ local function RecoverFromStash(src, stashName)
                 if GiveBack(src, it) then
                     recovered = recovered + it.amount
                 else
-                    exports['rsg-inventory']:AddItem(stashName, it.name, it.amount, it.slot, it.info, 'rsg-backpacks-recover-restore')
+                    exports['rsg-inventory']:AddItem(stashName, it.name, it.amount, it.info, it.slot, 'rsg-backpacks-recover-restore')
                 end
             end
         end
@@ -351,6 +372,10 @@ local function RecoverFromStash(src, stashName)
     local raw = MySQL.scalar.await('SELECT items FROM inventories WHERE identifier = ?', { stashName })
     local items = raw and json.decode(raw)
     if type(items) ~= 'table' then return 0 end
+
+    -- the stash may have been loaded while we awaited the read: editing the row now would dupe items
+    local okNow, loaded = pcall(function() return exports['rsg-inventory']:GetInventory(stashName) end)
+    if okNow and loaded then return 0 end
 
     local keep = {}
     for _, it in pairs(items) do
@@ -394,13 +419,18 @@ AddEventHandler('RSGCore:Server:PlayerLoaded', function(Player)
     local src = Player and Player.PlayerData and Player.PlayerData.source
     if not src or not Config.BlockNestedBackpacks then return end
     SetTimeout(5000, function()
-        if BP.DatabaseReady then pcall(RecoverTrapped, src) end
+        if not BP.DatabaseReady or Busy[src] then return end
+        Busy[src] = true
+        pcall(RecoverTrapped, src)
+        Busy[src] = nil
     end)
 end)
 
 lib.addCommand('backpackrecover', { help = locale('cmd_recover_help') }, function(source)
-    if not BP.DatabaseReady or BP.RateLimited(source, 'recover', 10000) then return end
+    if not BP.DatabaseReady or Busy[source] or BP.RateLimited(source, 'recover', 10000) then return end
+    Busy[source] = true
     local ok, count = pcall(RecoverTrapped, source)
+    Busy[source] = nil
     if ok and count == 0 then
         BP.Notify(source, 'inform', 'backpack_title', 'backpack_nothing_recovered')
     end

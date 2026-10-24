@@ -1,6 +1,6 @@
 # rsg-doorlock
 
-Version 3.0.0. rsg-doorlock
+Version 3.0.1. rsg-doorlock
 
 A database-driven door lock system for **RedM** using the **RSG Framework**. Doors are created, edited and deleted in game through an admin editor, synced to every player in real time, and logged to Discord. - 🔒 Lock and unlock doors with a hold prompt and a key animation - 🗄️ All doors are stored in the database (`rsg_doorlocks`), with no config editing needed
 

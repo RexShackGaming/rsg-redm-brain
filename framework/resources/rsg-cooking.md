@@ -1,8 +1,8 @@
 # rsg-cooking
 
-Version 3.0.0. rsg-cooking
+Version 3.1.0. rsg-cooking
 
-A cooking system for **RSG-Core (RedM)**. Players cook food through a full-screen NUI, cook several of the same recipe at once, and can set up their own campfires anywhere in the world. - **Cooking UI**: recipes grouped by category tabs, with item images, cook time, XP reward and a lock for recipes that need more XP. - **Ingredient images and amounts**: each ingredient shows its picture and `have 
+A cooking system for **RSG-Core (RedM)** that works the same way as [rsg-moonshine](https://github.com/Rexshack-RedM/rsg-moonshine): cooking stations keep their own pantry, firebox and serving tray, food cooks in real time on the server (even while you're away and across restarts), and everything is run from one NUI. 1. **Find a station**: target any stove on the map (**Use Stove**) or set up your
 
 Source: https://github.com/Rexshack-RedM/rsg-cooking
 
@@ -12,32 +12,28 @@ Has NUI (`ui_page`).
 
 ## Exports (call as exports['rsg-cooking']:Name)
 
-**server:** `AddCustomRecipe(recipe)`, `CanCookItem(itemName)`, `CheckPlayerIngredients(src, ingredients)`, `CheckPlayerJob(src, requiredJob)`, `GetCookingRecipes()`, `GetPlayerCookingXP(src, xpType)`, `GetPlayerJob(src)`, `GetRecipeJobRequirement(itemName)`, `GetRecipesByJob(jobName)`, `GivePlayerCookingXP(src, xpGain, xpType)`, `ProcessCooking(src, cookData)`, `ProcessCookingWithJobCheck(src, cookData)`
+**server:** `AddCustomRecipe(recipe)`, `CanCookItem(itemName)`, `GetCookingRecipes()`, `GetPlayerCookingLevel(src)`, `GetPlayerCookingXP(src)`, `GivePlayerCookingXP(src, amount)`
 
-**client:** `GetCookingCategories()`, `GetCookingRecipes(category)`, `GetRecipeByItem(itemName)`, `GetRecipeIngredients(itemName)`, `GetRecipesByCookingType(cookingType)`, `OpenCookingMenu(cookingType)`
+**client:** `GetCookingRecipes(category)`, `GetRecipesByCookingType(stype)`
 
 ## Net events registered
 
-**server:** `rsg-cooking:server:cancelCooking`, `rsg-cooking:server:placeCampfire`, `rsg-cooking:server:removeCampfire`
+**server:** `rsg-cooking:server:placeCampfire`, `rsg-cooking:server:requestCampfire`
 
-**client:** `RSGCore:Client:OnPlayerLoaded`, `rsg-cooking:client:campfireAdded`, `rsg-cooking:client:campfireRemoved`, `rsg-cooking:client:notify`, `rsg-cooking:client:useCampfireItem`
-
-## Event handlers
-
-**client:** `rsg-cooking:client:cookingmenu`
+**client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `rsg-cooking:client:placeCampfire`, `rsg-cooking:client:removeStation`, `rsg-cooking:client:syncStation`
 
 ## Callbacks (lib.callback)
 
-**server:** `rsg-cooking:server:finishCooking`, `rsg-cooking:server:getCampfires`, `rsg-cooking:server:getRecipes`, `rsg-cooking:server:startCooking`
+**server:** `rsg-cooking:server:action`, `rsg-cooking:server:getState`, `rsg-cooking:server:getStations`, `rsg-cooking:server:getWorldStation`
+
+## Commands (RegisterCommand)
+
+**client:** `/cooking_unfocus`
 
 ## Public (table) functions
 
-**server/campfire.lua:** `CampfireServer.IsNear(src, maxDist)`
-
-**server/webhooks.lua:** `Webhooks.CookingStarted(src, recipe)`, `Webhooks.CookingCompleted(src, recipe)`, `Webhooks.CookingCancelled(src, recipe)`, `Webhooks.CookingFailed(src, recipe, missingItems)`, `Webhooks.JobRestricted(src, recipe, requiredJob)`, `Webhooks.XPGained(src, xpGained, newTotal)`, `Webhooks.CheckMilestones(src, xpGained, newTotal)`, `Webhooks.CheckHighXP(src, xpGained)`, `Webhooks.Suspicious(src, title, detail)`
-
-**shared/utils.lua:** `CookingUtils.MatchesType(recipe, cookingType)`, `CookingUtils.IsValidType(cookingType)`, `CookingUtils.FindRecipeByItem(itemName)`
+**shared/config.lua:** `Config.RecipeAllowed(recipe, stationType)`
 
 ## Database tables
 
-`rsg_cooking_campfires`
+`rsg_cooking_stations`

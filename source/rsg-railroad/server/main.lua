@@ -243,10 +243,14 @@ end)
 ---------------------------------------------------------------
 -- SPAWN / DESPAWN TRACKING
 ---------------------------------------------------------------
-RegisterNetEvent('rsg-railroad:setTrainSpawned', function(spawned, trainId)
+-- `model` is sent by the client so train storage can size the stash per model.
+-- It is optional: older call sites just fall back to the default capacity.
+RegisterNetEvent('rsg-railroad:setTrainSpawned', function(spawned, trainId, model)
     local src = source
     if not spawned then
         ActiveTrains[src] = nil
+        -- STRICT: the train left the world, so its storage is destroyed.
+        if TrainStorage then TrainStorage.OnPutAway(src) end
         return
     end
 
@@ -263,6 +267,11 @@ RegisterNetEvent('rsg-railroad:setTrainSpawned', function(spawned, trainId)
         DB.UnparkTrain(trainId)
     end
     ActiveTrains[src] = trainId
+
+    -- Fresh deployment, so create a fresh (empty) stash. Note the guard above
+    -- means a 'Reverse Direction' re-spawn returns early and never reaches
+    -- here, which is exactly what preserves the train's load.
+    if TrainStorage then TrainStorage.OnSpawn(src, model) end
 end)
 
 ---------------------------------------------------------------
@@ -276,6 +285,8 @@ RegisterNetEvent('rsg-railroad:parkTrain', function(trainId, stationId, fuel, wa
     DB.ParkTrain(train.id, stationId,
         Clamp(fuel, tc and tc.maxFuel or 100), Clamp(water, tc and tc.maxWater or 100), Clamp(condition, tc and tc.maxCondition or 100))
     ActiveTrains[src] = nil
+    -- STRICT: parking destroys anything left in train storage.
+    if TrainStorage then TrainStorage.OnPutAway(src) end
 end)
 
 RegisterNetEvent('rsg-railroad:updateTrainState', function(trainId, fuel, water, condition)

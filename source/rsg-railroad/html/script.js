@@ -354,6 +354,11 @@ function renderTrains(content, details) {
                 details.appendChild(statLine(t('nui_required_rank', 'Required Rank'), rankLabel));
                 details.appendChild(statLine(t('nui_upgradeable', 'Upgradeable'), tc.upgradeable ? t('yes', 'Yes') : t('no', 'No')));
 
+                // Preview is available regardless of rank - it's only looking.
+                const pvActions = el('div', 'detail-actions');
+                pvActions.appendChild(woodBtn(t('nui_preview_train', '\u{1F50D} Preview Train'), () => nuiFetch('previewTrain', { trainIndex: tc.index })));
+                details.appendChild(pvActions);
+
                 if (!canUse) {
                     details.appendChild(el('p', 'hint warn', t('nui_need_rank_prefix', 'You need ') + rankLabel + t('nui_need_rank_suffix', ' rank to use this train.')));
                 } else if (stationData.canSpawn) {

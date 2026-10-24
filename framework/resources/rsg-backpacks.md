@@ -1,6 +1,6 @@
 # rsg-backpacks
 
-Version 3.0.0. RSG Backpacks: wearable backpacks with stashes and belt/back attachments (lanterns, lasso, machete, quiver)
+Version 3.0.3. RSG Backpacks: wearable backpacks with stashes and belt/back attachments (lanterns, lasso, machete, quiver)
 
 Wearable backpacks with persistent stashes and belt/back attachments for **RedM** on **RSG-Core**. This resource merges and replaces: - `hdrp-backpack` (backpacks, stashes)
 

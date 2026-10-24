@@ -131,10 +131,10 @@ function renderHud(h) {
     hud.classList.remove('hidden');
     $('hud-count').textContent = h.count;
     $('hud-max').textContent = h.max;
-    const t = $('hud-target');
+    const tgt = $('hud-target');
     const aimed = h.hash !== undefined && h.hash !== null;
-    t.classList.toggle('active', aimed);
-    t.classList.toggle('is-selected', !!h.selected);
+    tgt.classList.toggle('active', aimed);
+    tgt.classList.toggle('is-selected', !!h.selected);
     $('hud-model').textContent = aimed ? h.model : t('pick_none');
     $('hud-hash').textContent = aimed ? t('ui_hash', h.hash) : t('hud_aim_sub');
     $('hud-state').className = `pill sel${h.selected ? '' : ' hidden'}`;

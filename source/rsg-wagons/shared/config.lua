@@ -236,6 +236,13 @@ Config.Wagons = {
             price = 30,
             maxAnimals = 2, -- Could carry hunting dogs or some small game
         },
+        logwagon = {
+            name = "Log Hauling Wagon", 
+            maxWeight = 1700,                   
+            slots = 5,
+            price = 65,
+            maxAnimals = false,
+        },
     },
 
     special = {

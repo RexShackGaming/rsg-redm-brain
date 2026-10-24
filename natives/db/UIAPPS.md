@@ -24,8 +24,8 @@ Returns true if the Native UI Application is running.
 `0x4E511D093A86AD49` | `BOOL IS_UIAPP_RUNNING_BY_HASH(Hash appNameHash)` | build 1207
 Checks to see if the specified UI app is currently running by its hash.
 ```lua
-if IsUiappActiveByHash(`PAUSE_MENU`) then
-   CloseUiappByHashImmediate(`PAUSE_MENU`)
+if IsUiappActiveByHash(`PAUSE_MENU`) then
+   CloseUiappByHashImmediate(`PAUSE_MENU`)
 end
 ```
 
@@ -60,8 +60,8 @@ Immediately Closes all Native UI Apps
 `0x2FF10C9C3F92277E` | `void _CLOSE_UIAPP_BY_HASH(Hash appNameHash)` | build 1207
 Closes Ui App by hash
 ```lua
-if IsUiappActiveByHash(`abilities`) then
-   CloseUiappByHash(`abilities`)
+if IsUiappActiveByHash(`abilities`) then
+   CloseUiappByHash(`abilities`)
 end
 ```
 

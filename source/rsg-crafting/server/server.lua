@@ -48,6 +48,17 @@ local function isValidRecipe(recipe)
         seen[ing.item] = true
         if type(ing.amount) ~= 'number' or ing.amount < 1 then return false, 'invalid amount for ' .. ing.item end
     end
+    if recipe.requireditems ~= nil then
+        if type(recipe.requireditems) ~= 'table' then return false, 'requireditems must be a table' end
+        local seenTool = {}
+        for _, req in ipairs(recipe.requireditems) do
+            if type(req) ~= 'table' or not RSGCore.Shared.Items[req.item] then return false, 'unknown required item: ' .. tostring(req and req.item) end
+            if seenTool[req.item] then return false, 'duplicate required item: ' .. req.item end
+            if seen[req.item] then return false, 'required item is also an ingredient: ' .. req.item end
+            seenTool[req.item] = true
+            if req.amount ~= nil and (type(req.amount) ~= 'number' or req.amount < 1) then return false, 'invalid amount for required item ' .. req.item end
+        end
+    end
     return true
 end
 
@@ -88,6 +99,25 @@ local function getMissing(src, ingredients)
         end
     end
     return missing
+end
+
+-- tools that must be held but are never removed (not scaled by batch qty)
+local function getMissingTools(src, recipe)
+    local missing = {}
+    for _, req in ipairs(recipe.requireditems or {}) do
+        local need = req.amount or 1
+        local have = Inventory:GetItemCount(src, req.item) or 0
+        if have < need then
+            missing[#missing + 1] = { item = req.item, label = itemLabel(req.item), have = have, need = need }
+        end
+    end
+    return missing
+end
+
+local function toolLabels(missing)
+    local t = {}
+    for _, m in ipairs(missing) do t[#t + 1] = m.label end
+    return table.concat(t, ', ')
 end
 
 -- the only place items / XP are granted
@@ -168,6 +198,15 @@ lib.callback.register('rsg-crafting:server:getRecipes', function(src)
 
     local xp = getXP(Player)
     local list, nextUnlock = {}, nil
+    local counts = {}
+    local function count(item)
+        local c = counts[item]
+        if not c then
+            c = Inventory:GetItemCount(src, item) or 0
+            counts[item] = c
+        end
+        return c
+    end
 
     for index, recipe in ipairs(Config.Crafting) do
         if validRecipes[index] and hasRequiredJob(Player, recipe.requiredjob) then
@@ -178,13 +217,24 @@ lib.callback.register('rsg-crafting:server:getRecipes', function(src)
             if not locked or Config.ShowLocked then
                 local ingredients, maxCraftable = {}, Config.MaxBatch or 10
                 for _, ing in ipairs(recipe.ingredients) do
-                    local have = Inventory:GetItemCount(src, ing.item) or 0
+                    local have = count(ing.item)
                     local data = RSGCore.Shared.Items[ing.item]
                     ingredients[#ingredients + 1] = {
                         item = ing.item, label = itemLabel(ing.item), image = data and data.image,
                         amount = ing.amount, have = have,
                     }
                     maxCraftable = math.min(maxCraftable, math.floor(have / ing.amount))
+                end
+                local tools = {}
+                for _, req in ipairs(recipe.requireditems or {}) do
+                    local need = req.amount or 1
+                    local have = count(req.item)
+                    local data = RSGCore.Shared.Items[req.item]
+                    tools[#tools + 1] = {
+                        item = req.item, label = itemLabel(req.item), image = data and data.image,
+                        amount = need, have = have,
+                    }
+                    if have < need then maxCraftable = 0 end
                 end
                 local item = RSGCore.Shared.Items[recipe.receive]
                 list[#list + 1] = {
@@ -198,6 +248,7 @@ lib.callback.register('rsg-crafting:server:getRecipes', function(src)
                     requiredxp = reqxp,
                     xpreward = recipe.xpreward or 0,
                     ingredients = ingredients,
+                    tools = tools,
                     locked = locked,
                     maxCraftable = maxCraftable,
                 }
@@ -243,6 +294,9 @@ lib.callback.register('rsg-crafting:server:startCrafting', function(src, index, 
     if xp < (recipe.requiredxp or 0) then
         return { ok = false, reason = 'xp', requiredXP = recipe.requiredxp, currentXP = xp }
     end
+
+    local missingTools = getMissingTools(src, recipe)
+    if #missingTools > 0 then return { ok = false, reason = 'tools', tools = toolLabels(missingTools) } end
 
     local scaled = scaleRecipe(recipe, qty)
     if #getMissing(src, scaled.ingredients) > 0 then return { ok = false, reason = 'missing' } end
@@ -290,6 +344,14 @@ lib.callback.register('rsg-crafting:server:finishCrafting', function(src, index)
     local xp = getXP(Player)
     if xp < (recipe.requiredxp or 0) then
         return { ok = false, reason = 'xp', requiredXP = recipe.requiredxp, currentXP = xp }
+    end
+
+    local missingTools = getMissingTools(src, recipe)
+    if #missingTools > 0 then
+        CraftLog('failed', locale('log_failed_title'), locale('log_failed_desc', session.qty, itemLabel(recipe.receive)), src, {
+            { name = locale('wh_reason'), value = 'tools: ' .. toolLabels(missingTools) },
+        })
+        return { ok = false, reason = 'tools', tools = toolLabels(missingTools) }
     end
 
     local scaled = scaleRecipe(recipe, session.qty)

@@ -634,6 +634,119 @@ Config.CargoDelivery = {
 }
 
 ---------------------------------------------------------------
+-- TRAIN STORAGE (per-deployment cargo hold)
+--
+-- Each DEPLOYED train gets its own rsg-inventory stash, opened from an
+-- ox_target option on the train itself.
+--
+-- IMPORTANT -- STRICT WIPE POLICY:
+-- The stash is destroyed whenever the train leaves the world, by ANY
+-- route: parked, despawned, sent to yard, auto-despawned for being too
+-- far away, player death, mission failure, disconnect, or server restart.
+-- A new empty stash is created on every fresh deploy.
+--
+-- This is deliberate. rsg-inventory stashes are persistent rows in the
+-- `inventories` table, so without this a parked train would become
+-- unlimited free storage. The stash identifier is regenerated per
+-- deployment, which means any leftover data is permanently unreachable.
+--
+-- The one exception is 'Reverse Direction', which internally destroys and
+-- recreates the train entity. That is NOT treated as a put-away and the
+-- load is preserved.
+--
+-- Only the player who deployed the train can open its storage.
+---------------------------------------------------------------
+Config.TrainStorage = {
+    Enabled          = true,
+
+    -- Used for any train model not listed in Models below.
+    DefaultSlots     = 20,
+    DefaultMaxWeight = 150000,
+
+    -- Per-model capacity: bigger engines haul more.
+    Models = {
+        handcart_config        = { slots = 6,  maxweight = 40000  },
+        trolley_config         = { slots = 8,  maxweight = 50000  },
+        engine_config          = { slots = 20, maxweight = 150000 },
+        appleseed_config       = { slots = 24, maxweight = 180000 },
+        gunslinger3_config     = { slots = 22, maxweight = 165000 },
+        gunslinger4_config     = { slots = 26, maxweight = 195000 },
+        bountyhunter_config    = { slots = 24, maxweight = 180000 },
+        prisoner_escort_config = { slots = 28, maxweight = 210000 },
+        winter4_config         = { slots = 32, maxweight = 240000 },
+    },
+
+    -- Warn the player once per deployment, the first time they open storage.
+    WarnOnFirstOpen = true,
+
+    -- Ask for confirmation before a manual park / despawn / send-to-yard
+    -- that would destroy a non-empty stash. Never blocks the action.
+    ConfirmOnPutAway = true,
+
+    -- Warn once the player gets this far toward Config.TrainDespawnDist while
+    -- carrying cargo, since the auto-despawn is the most common cause of loss.
+    DistanceWarnPercent  = 0.7,
+    DistanceWarnInterval = 15000, -- ms between repeat warnings
+}
+
+---------------------------------------------------------------
+-- TRAIN PREVIEW (look at a train before deploying it)
+--
+-- Adds a "Preview Train" button to the train details panel in the station
+-- menu, showing the full consist on an orbiting camera.
+--
+-- How it avoids touching the world:
+--  * Trains snap to track, so the real train can't just be spawned in
+--    front of a camera. Instead each car's model is resolved out of the
+--    train config and spawned as a plain entity, lined up end to end.
+--  * It spawns high above the player (not at a fixed map location) so the
+--    area is guaranteed to already be streamed in.
+--  * Every entity is non-networked, frozen and collisionless, so no other
+--    player can see it and nothing can collide.
+---------------------------------------------------------------
+Config.TrainPreview = {
+    Enabled         = true,
+
+    -- true  = show the whole train (engine, tender and all carriages)
+    -- false = show a single car only, chosen by CarIndex below
+    ShowFullConsist = true,
+
+    -- Used only when ShowFullConsist = false. 0 is the locomotive.
+    CarIndex        = 0,
+
+    -- Hard cap on cars spawned for one preview, so a freak train config
+    -- can't spawn dozens of vehicles at once.
+    MaxCars         = 12,
+
+    -- Coupling gap between cars, in metres.
+    CarGap          = 0.4,
+
+    -- How far above the player the preview is staged.
+    HeightOffset    = 90.0,
+
+    -- Camera orbit radius is derived from the consist length, so long trains
+    -- are automatically framed from further away.
+    -- Lower OrbitRadiusMult = closer camera. At 0.60 a long rake will slightly
+    -- overrun the edges of the screen as it turns, which is the intent -- it
+    -- reads much more impressive than framing the whole thing small and distant.
+    OrbitRadiusMult = 0.60,  -- multiplied by total consist length
+    MinOrbitRadius  = 15.0,  -- never closer than this (short trains)
+    CameraHeightMult = 0.20, -- camera height as a fraction of consist length
+    MinCameraHeight = 4.5,
+
+    -- Degrees per frame the camera orbits. 0 gives a static side-on view.
+    RotateSpeed     = 0.25,
+
+    -- INPUT_CONTEXT (E). This hash is already used elsewhere in this resource
+    -- and is confirmed working, which is why the turntable is automatic rather
+    -- than bound to guessed A/D control hashes.
+    ExitControl     = 0xCEFD9220,
+
+    -- Safety cap on waiting for each model to stream in (ms).
+    LoadTimeout     = 5000,
+}
+
+---------------------------------------------------------------
 -- REWARDS
 ---------------------------------------------------------------
 Config.RailwaymanRewards = {

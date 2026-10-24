@@ -100,8 +100,10 @@ AddEventHandler('rsg-huntingpets:server:sellBird', function(birdId)
     local result = MySQL.query.await('SELECT * FROM player_birds WHERE id = ? AND identifier = ? AND charid = ?', {birdId, cid, charid})
     if result and result[1] then
         local sellPrice = math.floor(result[1].price * 0.5)
-        MySQL.execute('DELETE FROM player_birds WHERE id = ?', {birdId})
-        Player.Functions.AddMoney('cash', sellPrice)
+        -- atomic: only the request that actually deletes the row gets paid (stops spam double-sells)
+        local deleted = MySQL.update.await('DELETE FROM player_birds WHERE id = ? AND identifier = ? AND charid = ?', {birdId, cid, charid})
+        if not deleted or deleted < 1 then return end
+        Player.Functions.AddMoney('cash', sellPrice, 'rsg-huntingpets-sell')
         TriggerClientEvent('rsg-huntingpets:client:birdSold', src)
         TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_bird_sold', sellPrice), duration = 5000, type = 'success'})
     end
@@ -331,8 +333,9 @@ AddEventHandler("rsg-huntingpets:sell:buyoffer", function(_owner, _price, _id)
         return
     end
 
-    Player.Functions.RemoveMoney('cash', price)
-    OwnerPlayer.Functions.AddMoney('cash', price)
+    SellPoints[tonumber(_id)] = nil -- claim the listing before paying out
+    if not Player.Functions.RemoveMoney('cash', price, 'rsg-huntingpets-buy-bird') then return end
+    OwnerPlayer.Functions.AddMoney('cash', price, 'rsg-huntingpets-sold-bird')
 
     -- Transfer bird: delete from old owner, insert for new owner
     MySQL.execute('DELETE FROM player_birds WHERE id = ?', {tonumber(_id)})

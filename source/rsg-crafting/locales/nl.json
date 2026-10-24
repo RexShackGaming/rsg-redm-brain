@@ -64,5 +64,8 @@
     "ui_have_need": "%s / %s",
     "amount_item": "%sx %s",
     "seconds": "%ss",
-    "minutes_seconds": "%sm %ss"
+    "minutes_seconds": "%sm %ss",
+    "ui_required_tools": "Benodigd gereedschap",
+    "ui_missing_tools": "Gereedschap ontbreekt",
+    "tools_required_desc": "Je hebt %s in je inventaris nodig om dit te maken."
 }
