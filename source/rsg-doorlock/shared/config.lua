@@ -11,6 +11,8 @@ Config.AdminCommand      = 'doorlock'
 Config.AdminBypass       = true  -- admins can open every lock (incl. ones with no jobs)
 Config.MaxDoorsPerLock   = 8     -- e.g. 2 for double doors
 Config.PickRange         = 2.0   -- how close your aim must be to a door to select it in the editor
+Config.Debug            = false  -- print MLO door lookups to the F8 console
+Config.AllowCustomDoors  = true  -- allow picking MLO / custom door objects that aren't in shared/doorhashes.lua
 
 -- Doors are stored in the database (table: rsg_doorlocks) and managed in game with /doorlock.
 -- On first start (empty table) the doors in server/seed_doors.lua are imported once.

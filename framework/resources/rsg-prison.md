@@ -1,23 +1,19 @@
 # rsg-prison
 
-Version 3.0.0. rsg-prison
+Version 3.1.0. rsg-prison
 
-**Complete prison system for RedM servers using RSG Core.** > Fully integrated jail and sentence system for RedM built on RSG Core. > Handles jailing, job removal, sentence timers, and automatic release with ox_lib prompts and blips.
+**Prison system for RedM servers using RSG Core.** - [rsg-core](https://github.com/Rexshack-RedM/rsg-core) - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
 
 Source: https://github.com/Rexshack-RedM/rsg-prison
 
-**Dependencies:** `rsg-core`, `ox_lib`
+**Dependencies:** `rsg-core`, `rsg-inventory`, `ox_lib`, `ox_target`, `oxmysql`
 
 ## Net events registered
 
-**server:** `rsg-prison:server:CheckRecordStatus`, `rsg-prison:server:FreePlayer`, `rsg-prison:server:GiveJailItems`, `rsg-prison:server:RemovePlayerJob`, `rsg-prison:server:SaveJailItems`, `rsg-prison:server:resetoutlawstatus`, `rsg-prison:server:updateSentance`
+**server:** `rsg-prison:server:checkRelease`, `rsg-prison:server:requestRation`, `rsg-prison:server:startSentence`
 
-**client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `rsg-prison:client:Enter`, `rsg-prison:client:freedom`, `rsg-prison:client:menu`, `rsg-prison:client:prisonclothes`, `rsg-prison:client:shop`, `rsg-prison:client:telegrammenu`
+**client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `rsg-prison:client:Enter`, `rsg-prison:client:freedom`, `rsg-prison:client:menu`, `rsg-prison:client:updateTime`
 
-## Event handlers
+## Public (table) functions
 
-**client:** `rsg-prison:client:jailZoneInOut`, `rsg-prison:client:prisonclothes`, `rsg-prison:client:shop`
-
-## Server events it triggers in other resources
-
-**client:** `InteractSound_SV:PlayWithinDistance`, `rsg-shops:server:openstore`
+**client/npcs.lua:** `point:onEnter()`, `point:onExit()`

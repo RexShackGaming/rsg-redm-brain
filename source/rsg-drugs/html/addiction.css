@@ -1,0 +1,39 @@
+/* rsg-drugs addiction status panel (scoped, ad- prefix) */
+#addiction{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+.ad-panel{width:420px;max-height:80vh;display:flex;flex-direction:column;padding:18px;border:1px solid var(--rdr-gold-dim);border-radius:3px;outline:1px solid rgba(0,0,0,.6);outline-offset:-5px;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.015) 0 1px,transparent 1px 3px),linear-gradient(160deg,var(--rdr-panel-2),var(--rdr-panel) 60%,var(--rdr-black));
+  box-shadow:0 20px 60px var(--rdr-shadow),inset 0 0 40px rgba(0,0,0,.5)}
+.ad-header{display:flex;align-items:center;justify-content:space-between}
+.ad-divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--rdr-muted);font-size:12px}
+.ad-divider::before,.ad-divider::after{content:'';flex:1;height:1px}
+.ad-divider::before{background:linear-gradient(90deg,transparent,var(--rdr-gold-dim))}
+.ad-divider::after{background:linear-gradient(90deg,var(--rdr-gold-dim),transparent)}
+.ad-status{text-align:center;font-style:italic;color:var(--rdr-amber);margin:-4px 0 12px;font-size:13px}
+.ad-list{display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+.ad-row{display:flex;align-items:flex-start;gap:14px;padding:12px 14px;border-radius:2px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.15));border:1px solid rgba(255,255,255,.08)}
+.ad-icon{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--rdr-gold-dim);display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,#2a2a2a,#0a0a0a);font-size:12px}
+.ad-text{flex:1}
+.ad-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.ad-name{font-weight:600}
+.ad-pill{border:1px solid var(--rdr-gold-dim);border-radius:2px;padding:2px 8px;font-size:11px;letter-spacing:1px;text-transform:uppercase}
+.ad-pill.bad{border-color:var(--rdr-cost-over);color:var(--rdr-cost-over)}
+.ad-label{font-size:10.5px;text-transform:uppercase;letter-spacing:2px;color:var(--rdr-muted);margin:6px 0 4px}
+.ad-bar{height:8px;background:rgba(0,0,0,.45);border:1px solid var(--rdr-gold-dim);border-radius:4px;box-shadow:inset 0 1px 3px #000;overflow:hidden}
+.ad-fill{height:100%;border-radius:4px 0 0 4px;transition:width .35s ease}
+.ad-good{background:linear-gradient(90deg,#7fcf82,var(--rdr-cost-ok))}
+.ad-warn{background:linear-gradient(90deg,#eec06a,var(--rdr-amber))}
+.ad-bad{background:linear-gradient(90deg,#ec7a75,var(--rdr-cost-over))}
+
+/* rehab countdown HUD (top left, never takes focus) */
+#rehab-hud{position:fixed;top:24px;left:24px;width:250px;display:flex;align-items:center;gap:12px;padding:12px 14px;pointer-events:none;
+  border:1px solid var(--rdr-gold-dim);border-radius:3px;outline:1px solid rgba(0,0,0,.6);outline-offset:-5px;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.015) 0 1px,transparent 1px 3px),linear-gradient(160deg,var(--rdr-panel-2),var(--rdr-panel) 60%,var(--rdr-black));
+  box-shadow:0 10px 30px var(--rdr-shadow),inset 0 0 30px rgba(0,0,0,.5);animation:rh-in .25s ease}
+@keyframes rh-in{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:none}}
+.rh-icon{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--rdr-gold-dim);display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,#2a2a2a,#0a0a0a);font-size:15px}
+.rh-text{flex:1;min-width:0}
+.rh-title{font-size:10.5px;text-transform:uppercase;letter-spacing:2px;color:var(--rdr-muted)}
+.rh-time{font-size:22px;font-weight:600;letter-spacing:1px;text-shadow:0 2px 6px #000;font-variant-numeric:tabular-nums}
+.rh-bar{height:6px;margin-top:5px;background:rgba(0,0,0,.45);border:1px solid var(--rdr-gold-dim);border-radius:3px;box-shadow:inset 0 1px 3px #000;overflow:hidden}
+.rh-fill{height:100%;width:0;border-radius:3px 0 0 3px;background:linear-gradient(90deg,#7fcf82,var(--rdr-cost-ok));transition:width .35s ease}
+.rh-sub{font-size:11px;font-style:italic;color:var(--rdr-muted);margin-top:4px}

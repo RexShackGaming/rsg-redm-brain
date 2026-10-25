@@ -45,6 +45,7 @@
     "ui_pick_hint": "Apunta a una puerta y pulsa ENTER para añadirla o quitarla. RETROCESO para terminar. Añade ambos lados de las puertas dobles.",
     "ui_no_doors": "Aún no hay puertas seleccionadas.",
     "ui_door": "Puerta",
+    "ui_custom_door": "Custom door (MLO)",
     "ui_hash": "hash %s",
     "ui_remove": "Quitar",
     "ui_delete": "Eliminar",

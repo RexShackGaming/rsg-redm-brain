@@ -45,6 +45,7 @@
     "ui_pick_hint": "Visez une porte et appuyez sur ENTRÉE pour l'ajouter ou la retirer. RETOUR ARRIÈRE pour terminer. Ajoutez les deux côtés des doubles portes.",
     "ui_no_doors": "Aucune porte sélectionnée.",
     "ui_door": "Porte",
+    "ui_custom_door": "Custom door (MLO)",
     "ui_hash": "hash %s",
     "ui_remove": "Retirer",
     "ui_delete": "Supprimer",

@@ -22,7 +22,7 @@ local function doorList()
     for id, d in pairs(Doors) do
         local hashes = {}
         for i, h in ipairs(d.doors) do
-            hashes[i] = { hash = h.hash, model = modelOf(h.hash), coords = { x = h.coords.x, y = h.coords.y, z = h.coords.z } }
+            hashes[i] = { hash = h.hash, model = h.object and locale('ui_custom_door') or modelOf(h.hash), coords = { x = h.coords.x, y = h.coords.y, z = h.coords.z }, object = h.object, heading = h.heading }
         end
         list[#list + 1] = {
             id = id, name = d.name, jobs = d.jobs, distance = d.distance, locked = d.locked, doors = hashes,
@@ -31,6 +31,19 @@ local function doorList()
     end
     table.sort(list, function(a, b) return a.dist < b.dist end)
     return list
+end
+
+-- MLO / custom doors are not in DoorHashes or the game's door system,
+-- so we identify them by model + position and lock them by freezing the object
+local function customDoorFromEntity(ent)
+    if not ent or ent == 0 or not DoesEntityExist(ent) or GetEntityType(ent) ~= 3 then return nil end
+    local c = GetEntityCoords(ent)
+    local model = GetEntityModel(ent)
+    local key = ('rsgdl_%d_%d_%d_%d'):format(model, math.floor(c.x * 10), math.floor(c.y * 10), math.floor(c.z * 10))
+    return {
+        hash = GetHashKey(key), model = locale('ui_custom_door'), coords = c,
+        object = model, heading = GetEntityHeading(ent)
+    }
 end
 
 local function managedHashes()
@@ -115,13 +128,18 @@ local function startPicking()
             local camPos = GetGameplayCamCoord()
             local target = camPos + camDirection() * 20.0
             local ray = StartExpensiveSynchronousShapeTestLosProbe(camPos.x, camPos.y, camPos.z, target.x, target.y, target.z, -1, ped, 0)
-            local _, hit, hitPos = GetShapeTestResult(ray)
+            local _, hit, hitPos, _, hitEnt = GetShapeTestResult(ray)
             local aimPos = (hit == 1 or hit == true) and hitPos or target
 
             local best, bestDist
             for _, d in ipairs(nearby) do
                 local dist = #(aimPos - d.coords)
                 if dist < Config.PickRange and (not bestDist or dist < bestDist) then best, bestDist = d, dist end
+            end
+
+            -- nothing from the vanilla list: try the object we are aiming at (MLO doors)
+            if not best and Config.AllowCustomDoors and (hit == 1 or hit == true) then
+                best = customDoorFromEntity(hitEnt)
             end
 
             -- draw selected doors green, aimed door white
@@ -176,7 +194,7 @@ local function startPicking()
         SendNUIMessage({ action = 'pickHud', hud = false })
         local out = {}
         for i, s in ipairs(selected) do
-            out[i] = { hash = s.hash, model = s.model, coords = { x = s.coords.x, y = s.coords.y, z = s.coords.z } }
+            out[i] = { hash = s.hash, model = s.model, coords = { x = s.coords.x, y = s.coords.y, z = s.coords.z }, object = s.object, heading = s.heading }
         end
         openUI(out)
     end)
@@ -208,7 +226,11 @@ RegisterNUICallback('pick', function(data, cb)
     selected = {}
     for _, d in ipairs(data.doors or {}) do
         if type(d.hash) == 'number' and d.coords then
-            selected[#selected + 1] = { hash = d.hash, model = modelOf(d.hash), coords = vector3(d.coords.x, d.coords.y, d.coords.z) }
+            selected[#selected + 1] = {
+                hash = d.hash, model = d.object and locale('ui_custom_door') or modelOf(d.hash),
+                coords = vector3(d.coords.x, d.coords.y, d.coords.z),
+                object = tonumber(d.object), heading = tonumber(d.heading)
+            }
         end
     end
     cb('ok')

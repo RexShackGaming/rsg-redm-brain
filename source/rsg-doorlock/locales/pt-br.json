@@ -45,6 +45,7 @@
     "ui_pick_hint": "Mire em uma porta e pressione ENTER para adicionar ou remover. BACKSPACE para terminar. Adicione os dois lados de portas duplas.",
     "ui_no_doors": "Nenhuma porta selecionada ainda.",
     "ui_door": "Porta",
+    "ui_custom_door": "Custom door (MLO)",
     "ui_hash": "hash %s",
     "ui_remove": "Remover",
     "ui_delete": "Excluir",

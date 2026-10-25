@@ -25,6 +25,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-crafting](rsg-crafting.md) | An XP-based crafting book for RSG-Core (RedM). Players use a crafting book item to open a NUI menu. From t | 5 | 2 |
 | [rsg-deliveries](rsg-deliveries.md) | Wagon delivery system RSG Framework | 0 | 4 |
 | [rsg-doorlock](rsg-doorlock.md) | A database-driven door lock system for RedM using the RSG Framework. Doors are created, edited and del | 0 | 7 |
+| [rsg-drugs](rsg-drugs.md) | Drug production for RSG Framework (cannabis lab: drying, processing, packing bags & bricks with hired crew) pl | 9 | 18 |
 | [rsg-essentials](rsg-essentials.md) | Quality-of-life utilities and fixes for RedM using RSG Core. > A collection of small but essential feature | 0 | 11 |
 | [rsg-farming](rsg-farming.md) | Plant, water, fertilise and harvest crops anywhere in the world, with portable well pumps to fill your water b | 0 | 6 |
 | [rsg-fishing](rsg-fishing.md) | Fishing for RSG-Core (RedM). Players equip a fishing rod, bait it with an item from their inventory, cast, | 0 | 1 |
@@ -57,7 +58,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-npcs](rsg-npcs.md) | Lightweight, distance-based ambient NPC spawner with optional blips, scenarios and proximity audio for RedM. | 0 | 0 |
 | [rsg-playerinfo](rsg-playerinfo.md) | Player information / quick stats display for RedM (RSG Core). > Shows a small context menu with the player | 0 | 1 |
 | [rsg-poison](rsg-poison.md) | Poison script for RSG Framework | 1 | 3 |
-| [rsg-prison](rsg-prison.md) | Complete prison system for RedM servers using RSG Core. > Fully integrated jail and sentence system for Re | 0 | 15 |
+| [rsg-prison](rsg-prison.md) | Prison system for RedM servers using RSG Core. - [rsg-core](https://github.com/Rexshack-RedM/rsg-core) - [ | 0 | 9 |
 | [rsg-radialmenu](rsg-radialmenu.md) | Radial interaction menu for RedM using RSG Core. A fast, themed radial menu with nested submenus, job-spec | 2 | 7 |
 | [rsg-railroad](rsg-railroad.md) | Advanced train management system for RedM (rsg-core). Buy railroad companies, hire drivers, manage trains, run | 0 | 32 |
 | [rsg-ranch](rsg-ranch.md) | A complete livestock ranching system for RedM servers running the RSG Framework. Buy a ranch, hire sta | 31 | 100 |
@@ -76,7 +77,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-voice](rsg-voice.md) | rsg-voice - proximity voice for RSG Framework | 3 | 10 |
 | [rsg-wagons](rsg-wagons.md) | A wagon ownership, customisation and storage system for RedM servers running the RSG-Core framework. P | 0 | 27 |
 | [rsg-wardrobe](rsg-wardrobe.md) | Toggle individual clothing items on/off via chat commands for RSG Framework (RedM). - [rsg-core](https://githu | 6 | 4 |
-| [rsg-weaponcomp](rsg-weaponcomp.md) | Weapon customisation for RSG Framework (RedM). Players place a portable gunsmith workbench, then use it to | 0 | 16 |
+| [rsg-weaponcomp](rsg-weaponcomp.md) | Weapon customisation for RSG Framework (RedM). Players place a portable gunsmith workbench, then use it to | 0 | 13 |
 | [rsg-weapons](rsg-weapons.md) | Weapon handling for RSG Framework: dual wield, serial-based equipping, weapon wear, repairs, saved loadouts  | 6 | 14 |
 | [rsg-weather](rsg-weather.md) | rsg-weather - time, weather and wind sync for RSG Framework (weathersync compatible) | 16 | 15 |
 | [rsg-zonenotify](rsg-zonenotify.md) | rsg-zonenotify - location banner when entering states, districts and towns | 1 | 2 |

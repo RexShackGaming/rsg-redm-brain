@@ -45,6 +45,7 @@
     "ui_pick_hint": "Aim at a door and press ENTER to add or remove it. BACKSPACE to finish. Add both sides of double doors.",
     "ui_no_doors": "No doors selected yet.",
     "ui_door": "Door",
+    "ui_custom_door": "Custom door (MLO)",
     "ui_hash": "hash %s",
     "ui_remove": "Remove",
     "ui_delete": "Delete",

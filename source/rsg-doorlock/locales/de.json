@@ -45,6 +45,7 @@
     "ui_pick_hint": "Ziele auf eine Tür und drücke ENTER zum Hinzufügen oder Entfernen. BACKSPACE zum Beenden. Bei Doppeltüren beide Seiten hinzufügen.",
     "ui_no_doors": "Noch keine Türen ausgewählt.",
     "ui_door": "Tür",
+    "ui_custom_door": "Custom door (MLO)",
     "ui_hash": "Hash %s",
     "ui_remove": "Entfernen",
     "ui_delete": "Löschen",

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="addiction.css">
+<link rel="stylesheet" href="export.css">
+</head>
+<body>
+<div id="app" class="hidden">
+  <div class="panel">
+    <div class="header">
+      <span class="circle-btn invisible">‹</span>
+      <div class="titles">
+        <div class="title" data-l="ui_lab_title">Drying Shed</div>
+        <div class="subtitle" data-l="ui_lab_subtitle">Cannabis Operation</div>
+      </div>
+      <button class="circle-btn" id="close">✕</button>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="operation" data-l="ui_tab_operation">Operation</button>
+      <button class="tab" data-tab="hire" data-l="ui_tab_hire">Hire</button>
+    </div>
+    <div class="divider"><span>✦</span></div>
+    <div class="content" id="view-operation">
+      <div class="col"><div class="col-h" data-l="ui_col_overview">Overview</div><section id="tab-overview"></section></div>
+      <div class="col"><div class="col-h" data-l="ui_col_crew">Crew</div><section id="tab-crew"></section></div>
+      <div class="col"><div class="col-h" data-l="ui_col_supplies">Supplies</div><section id="tab-supplies"></section></div>
+    </div>
+    <div class="content hire-view hidden" id="view-hire">
+      <div class="col"><div class="col-h" data-l="ui_tab_hire">Hire</div><section id="tab-hire"></section></div>
+    </div>
+  </div>
+</div>
+<div id="rehab-hud" class="hidden">
+  <div class="rh-icon">✚</div>
+  <div class="rh-text">
+    <div class="rh-title" id="rh-title">Rehab</div>
+    <div class="rh-time" id="rh-time">--:--</div>
+    <div class="rh-bar"><div class="rh-fill" id="rh-fill"></div></div>
+    <div class="rh-sub" id="rh-sub"></div>
+  </div>
+</div>
+<div id="addiction" class="hidden">
+  <div class="ad-panel">
+    <div class="ad-header">
+      <span class="circle-btn invisible">‹</span>
+      <div class="titles">
+        <div class="title" id="ad-title">Addiction</div>
+        <div class="subtitle" id="ad-subtitle">Your habits</div>
+      </div>
+      <button class="circle-btn" id="ad-close">✕</button>
+    </div>
+    <div class="ad-divider">✦</div>
+    <div id="ad-status" class="ad-status hidden"></div>
+    <div class="ad-list" id="ad-list"></div>
+  </div>
+</div>
+<div id="export" class="hidden">
+  <div class="ex-panel">
+    <div class="header">
+      <span class="circle-btn invisible">‹</span>
+      <div class="titles">
+        <div class="title" id="ex-title">Brick Buyer</div>
+        <div class="subtitle" id="ex-subtitle">Wholesale Export</div>
+      </div>
+      <button class="circle-btn" id="ex-close">✕</button>
+    </div>
+    <div class="divider"><span>✦</span></div>
+    <div id="ex-body"></div>
+  </div>
+</div>
+<script src="script.js"></script>
+<script src="addiction.js"></script>
+<script src="export.js"></script>
+</body>
+</html>

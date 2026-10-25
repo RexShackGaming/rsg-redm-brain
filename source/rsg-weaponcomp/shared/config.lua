@@ -4,6 +4,7 @@ Config.PlayerProps = {}
 
 -- Placement settings
 Config.PlaceDistance = 5.0
+Config.SetupTime = 10000 -- ms to set up a workbench after placing it (cancellable)
 
 -- Items and limits
 Config.RepairItem = 'weapon_repair_kit'
@@ -14,20 +15,13 @@ Config.MaxGunsites = 6
 Config.PaymentType = 'cash'
 Config.animationSave = 10000
 
--- Logging (rsg-log). Set a webhook name to enable
-Config.WebhookName = nil
-Config.WebhookTitle = nil
-Config.WebhookColour = 'green'
-
 -- Zone settings
 Config.gunZoneActive = false
 Config.gunZoneSize = 3.0
 Config.showTextZone = false
 
 -- Camera settings
-Config.distBack = 0.7
-Config.distSide = 0.13
-Config.distUp = 0.05
+Config.distBack = 0.7 -- camera distance as a multiple of the weapon's length
 Config.distFov = 60.0
 
 Config.showStats = true
@@ -42,6 +36,33 @@ Config.prompts = {
     zoOut = 0x8BDE7443,
     ranPos = 0x7F8D09B8,
     re = 0x9959A6F0,
+    rotLeft = 0xA65EBAB4,  -- INPUT_FRONTEND_LEFT (left arrow)
+    rotRight = 0xDEB34313, -- INPUT_FRONTEND_RIGHT (right arrow)
+}
+Config.camRotateSpeed = 90.0 -- camera orbit speed in degrees per second
+
+-- Camera focus when a part is changed in the menu.
+-- at   = position along the weapon (0.0 = stock/grip end, 1.0 = muzzle)
+-- zoom = camera distance as a multiple of the weapon's length (smaller = closer)
+-- Keys match a category exactly, or as a prefix (e.g. 'BARREL' covers BARREL_TINT)
+Config.AutoFocusDefault = true -- players can toggle it in the menu; their choice is remembered
+Config.PartFocus = {
+    BARREL = { at = 0.80, zoom = 0.40 },
+    SIGHT = { at = 0.90, zoom = 0.30 },
+    SCOPE = { at = 0.50, zoom = 0.35 },
+    TUBE = { at = 0.75, zoom = 0.40 },
+    MAG = { at = 0.45, zoom = 0.35 },
+    CLIP = { at = 0.45, zoom = 0.35 },
+    CYLINDER = { at = 0.55, zoom = 0.30 },
+    FRAME = { at = 0.45, zoom = 0.40 },
+    HAMMER = { at = 0.40, zoom = 0.25 },
+    TRIGGER = { at = 0.40, zoom = 0.25 },
+    GRIP = { at = 0.15, zoom = 0.35 },      -- wood stock on long arms, grip on pistols
+    GRIPSTOCK = { at = 0.15, zoom = 0.35 },
+    STOCK = { at = 0.10, zoom = 0.35 },
+    WRAP = { at = 0.60, zoom = 0.40 },
+    STRAP = { at = 0.45, zoom = 0.50 },
+    MELEE_BLADE = { at = 0.70, zoom = 0.45 },
 }
 
 --------------------
@@ -128,6 +149,22 @@ Config.price = {
     
     -- Misc
     ["TORCH_MATCHSTICK"] = 0.50,
+}
+
+--------------------
+-- SHARED COMPONENT RULES
+-- Weapon-type (Config.Shared) categories are only offered when the weapon fits:
+--   part   = the weapon must define this category in Config.Specific (e.g. no wrap, no wrap tints)
+--   weapon = the weapon name must contain one of these strings
+-- Categories a weapon defines in Config.Specific always replace the shared version.
+--------------------
+Config.SharedRequires = {
+    WRAP_MATERIAL = { part = 'WRAP' },
+    WRAP_TINT = { part = 'WRAP' },
+    SCOPE = { part = 'SCOPE' },
+    CYLINDER_MATERIAL = { weapon = { 'REVOLVER' } },
+    CYLINDER_ENGRAVING = { weapon = { 'REVOLVER' } },
+    CYLINDER_ENGRAVING_MATERIAL = { weapon = { 'REVOLVER' } },
 }
 
 --------------------
@@ -826,7 +863,6 @@ Config.Shared = {
             'COMPONENT_LONGARM_GRIPSTOCK_ENGRAVING_6',
         },
         ['GRIPSTOCK_TINT'] = {
-            -- LONGARM versions
             'COMPONENT_LONGARM_GRIPSTOCK_TINT_A_1',
             'COMPONENT_LONGARM_GRIPSTOCK_TINT_A_2',
             'COMPONENT_LONGARM_GRIPSTOCK_TINT_A_3',
@@ -843,43 +879,10 @@ Config.Shared = {
             'COMPONENT_LONGARM_GRIPSTOCK_TINT_B_6',
             'COMPONENT_LONGARM_GRIPSTOCK_TINT_B_7',
             'COMPONENT_LONGARM_GRIPSTOCK_TINT_B_8',
-            'COMPONENT_LONGARM_GRIPSTOCK_TINT_WHITE',
-            'COMPONENT_LONGARM_GRIPSTOCK_TINT_BLACK',
-            'COMPONENT_LONGARM_GRIPSTOCK_TINT_RED',
-            'COMPONENT_LONGARM_GRIPSTOCK_TINT_BLUE',
-            'COMPONENT_LONGARM_GRIPSTOCK_TINT_GREEN',
-            'COMPONENT_LONGARM_GRIPSTOCK_TINT_ORANGE',
-            'COMPONENT_LONGARM_GRIPSTOCK_TINT_PINK',
-            'COMPONENT_LONGARM_GRIPSTOCK_TINT_PURPLE',
-            'COMPONENT_LONGARM_GRIPSTOCK_TINT_GREY',
-            'COMPONENT_LONGARM_GRIPSTOCK_TINT_BROWN',
             'COMPONENT_LONGARM_GRIPSTOCK_TINT_GUTTAPERCHA',
             'COMPONENT_LONGARM_GRIPSTOCK_TINT_PEARL',
             'COMPONENT_LONGARM_GRIPSTOCK_TINT_GRAY_BIRCH',
             'COMPONENT_LONGARM_GRIPSTOCK_TINT_BURLED',
-            -- SHORTARM cross-compatible
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_A_1',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_A_2',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_A_3',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_A_4',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_A_5',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_A_6',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_A_7',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_A_8',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_B_1',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_B_2',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_B_3',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_B_4',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_B_5',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_B_6',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_B_7',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_B_8',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_RED',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_BLUE',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_GUTTAPERCHA',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_PEARL',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_GRAY_BIRCH',
-            'COMPONENT_SHORTARM_GRIPSTOCK_TINT_BURLED',
         },
         ['WRAP_MATERIAL'] = {
             'COMPONENT_LONGARM_WRAP_MATERIAL_LEATHER',
@@ -2045,9 +2048,4 @@ Config.WeaponDamageModifiers = {
     [0x6E0F12B] = 5.0,      -- Improved Bow
 }
 
---------------------
--- WEBHOOKS
---------------------
-Config.WebhookName = 'weapon_custom'
-Config.WebhookTitle = 'Weapon Craft for RSG Framework'
-Config.WebhookColour = 'default'
+-- Discord logging is configured server-side only in server/config.lua (keeps webhook URLs private)

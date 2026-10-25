@@ -45,6 +45,7 @@
     "ui_pick_hint": "Richt op een deur en druk op ENTER om toe te voegen of te verwijderen. BACKSPACE om te stoppen. Voeg bij dubbele deuren beide kanten toe.",
     "ui_no_doors": "Nog geen deuren geselecteerd.",
     "ui_door": "Deur",
+    "ui_custom_door": "Custom door (MLO)",
     "ui_hash": "hash %s",
     "ui_remove": "Verwijderen",
     "ui_delete": "Verwijderen",

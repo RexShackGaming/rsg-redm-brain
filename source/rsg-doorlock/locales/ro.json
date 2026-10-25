@@ -45,6 +45,7 @@
     "ui_pick_hint": "Țintește o ușă și apasă ENTER pentru a o adăuga sau elimina. BACKSPACE pentru a termina. La ușile duble adaugă ambele părți.",
     "ui_no_doors": "Nicio ușă selectată încă.",
     "ui_door": "Ușă",
+    "ui_custom_door": "Custom door (MLO)",
     "ui_hash": "hash %s",
     "ui_remove": "Elimină",
     "ui_delete": "Șterge",

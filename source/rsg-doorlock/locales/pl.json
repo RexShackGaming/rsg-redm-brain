@@ -45,6 +45,7 @@
     "ui_pick_hint": "Wyceluj w drzwi i naciśnij ENTER, aby dodać lub usunąć. BACKSPACE, aby zakończyć. Przy podwójnych drzwiach dodaj obie strony.",
     "ui_no_doors": "Nie wybrano jeszcze drzwi.",
     "ui_door": "Drzwi",
+    "ui_custom_door": "Custom door (MLO)",
     "ui_hash": "hash %s",
     "ui_remove": "Usuń",
     "ui_delete": "Usuń",

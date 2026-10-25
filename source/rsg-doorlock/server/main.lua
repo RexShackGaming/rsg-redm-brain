@@ -28,7 +28,7 @@ end
 local function rowToDoor(row)
     local doors = {}
     for _, d in ipairs(json.decode(row.doors) or {}) do
-        doors[#doors + 1] = { hash = math.tointeger(d.hash) or d.hash, coords = vec(d.coords) }
+        doors[#doors + 1] = { hash = math.tointeger(d.hash) or d.hash, coords = vec(d.coords), object = math.tointeger(d.object), heading = tonumber(d.heading) }
     end
     return {
         id = row.id,
@@ -43,7 +43,7 @@ end
 
 local function encodeDoors(doors)
     local out = {}
-    for i, d in ipairs(doors) do out[i] = { hash = d.hash, coords = plain(d.coords) } end
+    for i, d in ipairs(doors) do out[i] = { hash = d.hash, coords = plain(d.coords), object = d.object, heading = d.heading } end
     return json.encode(out)
 end
 
@@ -126,6 +126,7 @@ end)
 ---------------------------------------------
 RegisterNetEvent('rsg-doorlock:server:requestToggle', function(doorID)
     local src = source
+    if not ready then return end
     local door = type(doorID) == 'number' and Doors[doorID]
     if not door then
         return Webhook.Security(source, locale('wh_sec_nodoor'), ('doorID = %s (%s)'):format(tostring(doorID), type(doorID)))
@@ -213,7 +214,11 @@ local function sanitise(data)
         if not seen[hash] then
             seen[hash] = true
             local v = vec(c)
-            doors[#doors + 1] = { hash = hash, coords = v }
+            local object = math.tointeger(d.object)
+            local heading = tonumber(d.heading)
+            if heading and (heading ~= heading or heading < -360.0 or heading > 360.0) then heading = nil end
+            if object and not Config.AllowCustomDoors then return nil, 'err_invalid' end
+            doors[#doors + 1] = { hash = hash, coords = v, object = object, heading = object and heading or nil }
             sum = sum + v
         end
     end

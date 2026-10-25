@@ -25,6 +25,7 @@ A database-driven door lock system for **RedM** using the **RSG Framework**. Doo
   - Live feedback when doors are added or removed, plus a warning if a door already belongs to another lock
   - Lines drawn to the selected and aimed doors
   - Built-in list of ~1,750 RedM door hashes
+  - **MLO door support**: add MLO door hashes to `shared/doorhashes_custom.lua`, or pick any door prop directly (it is frozen shut when locked)
 - 📍 Teleport to any lock
 - 🏷️ Job tag input, interaction range slider, default locked/unlocked state
 
@@ -48,7 +49,7 @@ A database-driven door lock system for **RedM** using the **RSG Framework**. Doo
 - The door list is sent to clients once; the seed list is server-only
 
 ### Languages
-`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro` (ox_lib locales: game text, editor UI **and** Discord logs)
+`en`, `cs`, `de`, `el`, `es`, `fr`, `it`, `ja`, `nl`, `pl`, `pt-br`, `ro` (ox_lib locales: game text, editor UI **and** Discord logs)
 
 ---
 
@@ -99,6 +100,8 @@ Your old `Config.DoorList` doors now live in `server/seed_doors.lua` and are imp
 | `Config.AdminBypass` | `true` | Admins can open every lock, including ones with no jobs |
 | `Config.MaxDoorsPerLock` | `8` | Maximum doors in a single lock |
 | `Config.PickRange` | `2.0` | How close your aim must be to a door to select it |
+| `Config.Debug` | `false` | Print MLO door lookups to the F8 console |
+| `Config.AllowCustomDoors` | `true` | Allow picking door props that are not in the door hash lists (frozen-object fallback) |
 | `Config.ImportConfigDoors` | `true` | Import `server/seed_doors.lua` when the table is empty |
 | `Config.JailDoors` | Sisika gates | Door hashes that are always locked |
 
@@ -133,6 +136,18 @@ SvConfig.Webhooks = {
 
 ### Locales
 All text lives in `locales/*.json`. To change any wording, edit the key in your language file. To add a language, copy `en.json` to e.g. `sv.json`, translate the values (keep each `%s`), and set `setr ox:locale sv`.
+
+### MLO doors
+MLO doors are not in the built-in door list, so the editor can't find them until you add them.
+
+1. **Preferred:** add the door's entry to `shared/doorhashes_custom.lua` in the usual door-hash format (most MLOs ship a door list like this):
+   ```lua
+   CustomDoorHashes = {
+       [1651863461] = { 1651863461, -667091646, "p_door58x", -5528.4658, -2953.7189, -1.6969 },
+   }
+   ```
+   Restart the resource. The door can now be picked in `/doorlock` and is locked by the game's door system, exactly like a vanilla door.
+2. **Fallback:** if you have no door hash, aim at the door prop in pick mode. It's saved as **Custom door (MLO)** and frozen in its closed position when locked. **Pick it while the door is closed**, because that angle is what it's locked at. This only works for separate door props, not doors built into the MLO's fixed geometry.
 
 ---
 

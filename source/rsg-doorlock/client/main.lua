@@ -23,9 +23,74 @@ local function setDoorHash(hash, locked)
     end
 end
 
+-- custom / MLO door: find the object and freeze it shut
+-- (tracks frozen state itself; IsEntityPositionFrozen is not a RedM native)
+local customState = {} -- [entity] = true when we froze it
+
+local function headingDiff(a, b)
+    local d = math.abs((a - b) % 360.0)
+    return d > 180.0 and 360.0 - d or d
+end
+
+local function dbg(...)
+    if Config.Debug then print(('[rsg-doorlock] ' .. string.format(...))) end
+end
+
+-- find the MLO door object: native lookup first, then scan the object pool
+local entCache = {} -- [doorHash] = entity
+local function findCustomDoor(d)
+    local cached = entCache[d.hash]
+    if cached and DoesEntityExist(cached) then return cached end
+    entCache[d.hash] = nil
+    local c = d.coords
+    local ent = GetClosestObjectOfType(c.x, c.y, c.z, 1.5, d.object, false, false, false)
+    if ent and ent ~= 0 then entCache[d.hash] = ent return ent end
+    local best, bestDist
+    for _, obj in ipairs(GetGamePool('CObject')) do
+        if GetEntityModel(obj) == d.object then
+            local dist = #(GetEntityCoords(obj) - c)
+            if dist < 3.0 and (not bestDist or dist < bestDist) then best, bestDist = obj, dist end
+        end
+    end
+    entCache[d.hash] = best
+    return best
+end
+
+local warned = {}
+local function setCustomDoor(d, locked)
+    local ent = findCustomDoor(d)
+    if not ent then
+        if not warned[d.hash] then dbg('MLO door %s (model %s) not found near %.2f %.2f %.2f', d.hash, d.object, d.coords.x, d.coords.y, d.coords.z) warned[d.hash] = true end
+        return
+    end
+    if locked then
+        local closed = d.heading and headingDiff(GetEntityHeading(ent), d.heading) <= 1.0
+        if not closed and d.heading then
+            dbg('closing MLO door %s: heading %.1f -> %.1f', d.hash, GetEntityHeading(ent), d.heading)
+            FreezeEntityPosition(ent, false)
+            local r = GetEntityRotation(ent, 2)
+            SetEntityRotation(ent, r.x, r.y, d.heading, 2, true)
+            SetEntityHeading(ent, d.heading)
+            customState[ent] = nil
+        end
+        if not customState[ent] then
+            FreezeEntityPosition(ent, true)
+            customState[ent] = true
+            dbg('locked MLO door %s (entity %s)', d.hash, ent)
+        end
+    elseif customState[ent] ~= false then
+        FreezeEntityPosition(ent, false)
+        ActivatePhysics(ent)
+        customState[ent] = false
+        dbg('unlocked MLO door %s (entity %s)', d.hash, ent)
+    end
+end
+
 local function applyDoor(door, forceUnlock)
     for i = 1, #door.doors do
-        setDoorHash(door.doors[i].hash, not forceUnlock and door.locked)
+        local d = door.doors[i]
+        local locked = not forceUnlock and door.locked
+        if d.object then setCustomDoor(d, locked) else setDoorHash(d.hash, locked) end
     end
 end
 
@@ -78,6 +143,9 @@ CreateThread(function()
             end
         end
         nearestDoor = closest
+        for ent in pairs(customState) do
+            if not DoesEntityExist(ent) then customState[ent] = nil end
+        end
         Wait(500)
     end
 end)
@@ -157,4 +225,7 @@ end)
 AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
     if lockPrompt then PromptDelete(lockPrompt) end
+    for ent in pairs(customState) do
+        if DoesEntityExist(ent) then FreezeEntityPosition(ent, false) end
+    end
 end)
