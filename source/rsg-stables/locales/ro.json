@@ -283,5 +283,13 @@
     "wild_too_far": "Adu calul mai aproape de grajd",
     "wild_not_claimable": "Acest cal nu poate fi înregistrat aici",
     "wild_claimed": "%s este acum înregistrat la acest grajd",
-    "wild_horse_broken": "Cal îmblânzit! Du-l la un grajd pentru a-l revendica"
+    "wild_horse_broken": "Cal îmblânzit! Du-l la un grajd pentru a-l revendica",
+    "no_saddlebags_title": "No Saddlebags",
+    "no_saddlebags_desc": "Your horse has no saddlebags fitted. Visit a stable to fit some.",
+    "release_saddlebags_not_empty": "Empty this horse's saddlebags before releasing it, or the items will be lost.",
+    "empty_saddlebags": "Empty Saddlebags",
+    "empty_saddlebags_desc": "Take out anything left in this horse's saddlebags.",
+    "lantern_fitted": "Felinar montat pe calul tău",
+    "lantern_removed": "Felinar scos de pe calul tău",
+    "lantern_too_far": "Trebuie să fii lângă cal sau să-l călărești"
 }

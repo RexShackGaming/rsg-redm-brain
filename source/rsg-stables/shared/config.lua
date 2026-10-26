@@ -98,6 +98,17 @@ Config.HorseNaturalGraze = {
     },
 }
 
+-- ===================== HORSE LANTERN =====================
+-- Using the item toggles a saddle lantern on your active horse (item is not consumed).
+-- Hashes as used by rsg-horses (github.com/RexShack/rsg-horses, client/client.lua)
+Config.HorseLantern = {
+    enabled  = true,
+    item     = 'horse_lantern',
+    hash     = 0x635E387C, -- lantern shop item
+    category = 0x1530BE1C, -- metaped category removed to take the lantern off
+    distance = 3.0, -- how close you must be to your horse (or be riding it) to fit/remove the lantern
+}
+
 -- ===================== BRUSHING =====================
 Config.HorseBrushItem = 'horse_brush' -- item required (not consumed) to Brush Horse; using it from the inventory brushes your horse
 Config.HorseBrushDistance = 3.0 -- how close you must be to your horse to use the brush or a feed item from the inventory
@@ -119,6 +130,7 @@ Config.HorseInventory = {
     slots     = 20,       -- stash slots
     distance  = 2.5,      -- ox_target interaction distance
     nativeCargoPrompt = true, -- the game's Horse Cargo prompt (B) beside the horse opens this stash
+    requireSaddlebags = true, -- true: the horse stash can only be opened when saddlebags are fitted (tack); false: always accessible
 }
 
 -- ===================== FLEE =====================

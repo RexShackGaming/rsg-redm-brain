@@ -87,7 +87,10 @@ local function resumeFromServer()
 end
 
 RegisterNetEvent('rsg-poison:client:useAntidote', function()
-    if not poisoned or drinking then return end
+    if drinking then return end
+    -- server only sends this after confirming we're poisoned and taking the item,
+    -- so resync a desynced client instead of silently wasting the antidote
+    if not poisoned then startPoison(true) end
     drinking = true
 
     local ped = cache.ped
@@ -125,6 +128,20 @@ RegisterNetEvent('rsg-poison:client:useAntidote', function()
     })
 end)
 
+-- Cured by the server (medic / other resource via exports.CurePlayer)
+RegisterNetEvent('rsg-poison:client:cured', function()
+    if not poisoned then return end
+    poisoned = false
+    antidoteUsed = false
+    setIndicator(false)
+    lib.notify({
+        title = locale('cl_cured_title'),
+        description = locale('cl_cured_desc'),
+        type = 'success',
+        duration = 5000
+    })
+end)
+
 -- Server rejected our cure or wants us back in sync
 RegisterNetEvent('rsg-poison:client:resumePoison', function()
     startPoison(true)
@@ -157,8 +174,10 @@ end)
 -- Watch damage events for poison ammo/weapons and snake bites
 CreateThread(function()
     while true do
-        Wait(0)
-        if not poisoned then
+        if poisoned then
+            Wait(500) -- already poisoned: nothing to detect, idle cheaply
+        else
+            Wait(0)
             for i = 0, GetNumberOfEvents(0) - 1 do
                 if GetEventAtIndex(0, i) == EVENT_ENTITY_DAMAGED then
                     local data = DataView.ArrayBuffer(128)

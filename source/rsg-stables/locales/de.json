@@ -283,5 +283,13 @@
     "wild_too_far": "Bring das Pferd näher an den Stall",
     "wild_not_claimable": "Dieses Pferd kann hier nicht registriert werden",
     "wild_claimed": "%s ist jetzt in diesem Stall registriert",
-    "wild_horse_broken": "Pferd zugeritten! Reite zu einem Stall, um es zu beanspruchen"
+    "wild_horse_broken": "Pferd zugeritten! Reite zu einem Stall, um es zu beanspruchen",
+    "no_saddlebags_title": "No Saddlebags",
+    "no_saddlebags_desc": "Your horse has no saddlebags fitted. Visit a stable to fit some.",
+    "release_saddlebags_not_empty": "Empty this horse's saddlebags before releasing it, or the items will be lost.",
+    "empty_saddlebags": "Empty Saddlebags",
+    "empty_saddlebags_desc": "Take out anything left in this horse's saddlebags.",
+    "lantern_fitted": "Laterne an deinem Pferd angebracht",
+    "lantern_removed": "Laterne von deinem Pferd entfernt",
+    "lantern_too_far": "Du musst neben deinem Pferd stehen oder es reiten"
 }

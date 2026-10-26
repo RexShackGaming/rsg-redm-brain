@@ -49,5 +49,9 @@
     "wh_test_title": "Webhook Test",
     "wh_test_desc": "Test from `%s` for event **%s**.",
     "wh_started_title": "Resource Started",
-    "wh_started_desc": "`%s` started."
+    "wh_started_desc": "`%s` started.",
+    "cl_cured_title": "Cured",
+    "cl_cured_desc": "Your poison has been treated, you feel the venom leave your body.",
+    "wh_cured_title": "Player Cured",
+    "wh_cured_desc": "Poison cleared by resource `%s`."
 }

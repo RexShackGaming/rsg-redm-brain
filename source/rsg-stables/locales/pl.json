@@ -283,5 +283,13 @@
     "wild_too_far": "Podprowadź konia bliżej stajni",
     "wild_not_claimable": "Tego konia nie można tu zarejestrować",
     "wild_claimed": "%s jest teraz zarejestrowany w tej stajni",
-    "wild_horse_broken": "Koń ujeżdżony! Jedź do stajni, aby go przygarnąć"
+    "wild_horse_broken": "Koń ujeżdżony! Jedź do stajni, aby go przygarnąć",
+    "no_saddlebags_title": "No Saddlebags",
+    "no_saddlebags_desc": "Your horse has no saddlebags fitted. Visit a stable to fit some.",
+    "release_saddlebags_not_empty": "Empty this horse's saddlebags before releasing it, or the items will be lost.",
+    "empty_saddlebags": "Empty Saddlebags",
+    "empty_saddlebags_desc": "Take out anything left in this horse's saddlebags.",
+    "lantern_fitted": "Latarnia zamocowana na koniu",
+    "lantern_removed": "Latarnia zdjęta z konia",
+    "lantern_too_far": "Musisz stać obok konia lub na nim jechać"
 }

@@ -57,11 +57,38 @@ local function resolveCureReason(src)
         end
     end
 
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if Player and Player.PlayerData.metadata.isdead then return 'death' end
+
     local ped = GetPlayerPed(src)
     if ped ~= 0 and GetEntityHealth(ped) <= 0 then
         return 'death'
     end
 end
+
+--- Cure a player from another resource (e.g. a medic job).
+--- exports['rsg-poison']:CurePlayer(src) -> true if they were poisoned
+local function curePlayer(src)
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player or not isPoisoned(Player) then return false end
+    local duration = durationField(src)
+    pendingAntidote[src] = nil
+    poisonedAt[src] = nil
+    Player.Functions.SetMetaData('poisoned', false)
+    TriggerClientEvent('rsg-poison:client:cured', src)
+    SendPoisonLog('cured', {
+        title = locale('wh_cured_title'),
+        description = locale('wh_cured_desc', GetInvokingResource() or 'unknown'),
+        src = src,
+        fields = { duration },
+    })
+    return true
+end
+exports('CurePlayer', curePlayer)
+exports('IsPoisoned', function(src)
+    local Player = RSGCore.Functions.GetPlayer(src)
+    return Player ~= nil and isPoisoned(Player)
+end)
 
 RSGCore.Functions.CreateUseableItem(ANTIDOTE_ITEM, function(source, item)
     local src = source
@@ -80,7 +107,6 @@ RSGCore.Functions.CreateUseableItem(ANTIDOTE_ITEM, function(source, item)
 
     if exports['rsg-inventory']:RemoveItem(src, item.name, 1, item.slot, 'rsg-poison:antidote') then
         pendingAntidote[src] = GetGameTimer()
-        TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items[item.name], 'remove', 1)
         TriggerClientEvent('rsg-poison:client:useAntidote', src)
     end
 end)

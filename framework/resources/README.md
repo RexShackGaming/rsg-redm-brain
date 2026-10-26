@@ -57,15 +57,15 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-noticeboard](rsg-noticeboard.md) | rsg-noticeboard - player notice boards with NUI, fees, expiry/renewal and admin management | 0 | 3 |
 | [rsg-npcs](rsg-npcs.md) | Lightweight, distance-based ambient NPC spawner with optional blips, scenarios and proximity audio for RedM. | 0 | 0 |
 | [rsg-playerinfo](rsg-playerinfo.md) | Player information / quick stats display for RedM (RSG Core). > Shows a small context menu with the player | 0 | 1 |
-| [rsg-poison](rsg-poison.md) | Poison script for RSG Framework | 1 | 3 |
-| [rsg-prison](rsg-prison.md) | Prison system for RedM servers using RSG Core. - [rsg-core](https://github.com/Rexshack-RedM/rsg-core) - [ | 0 | 9 |
+| [rsg-poison](rsg-poison.md) | Poison script for RSG Framework | 3 | 4 |
+| [rsg-prison](rsg-prison.md) | Prison system for RedM servers using RSG Core. - [rsg-core](https://github.com/Rexshack-RedM/rsg-core) - [ | 1 | 12 |
 | [rsg-radialmenu](rsg-radialmenu.md) | Radial interaction menu for RedM using RSG Core. A fast, themed radial menu with nested submenus, job-spec | 2 | 7 |
 | [rsg-railroad](rsg-railroad.md) | Advanced train management system for RedM (rsg-core). Buy railroad companies, hire drivers, manage trains, run | 0 | 32 |
 | [rsg-ranch](rsg-ranch.md) | A complete livestock ranching system for RedM servers running the RSG Framework. Buy a ranch, hire sta | 31 | 100 |
 | [rsg-roulette](rsg-roulette.md) | Multiplayer roulette tables for RSG Framework | 1 | 11 |
 | [rsg-samples](rsg-samples.md) | Animal sample collector for RedM (best version) with leaderboard, certificate, and milestone rewards. - Sedate | 0 | 3 |
 | [rsg-smelting](rsg-smelting.md) | Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for RSG-Core (RedM) with ox_lib, ox_t | 1 | 1 |
-| [rsg-stables](rsg-stables.md) | Horse and stables script for RSG Framework | 0 | 9 |
+| [rsg-stables](rsg-stables.md) | Horse and stables script for RSG Framework | 0 | 11 |
 | [rsg-stores](rsg-stores.md) | Create NPC shopkeepers, shops and map blips in-game for RSG-Core (RedM), all from an admin menu with no co | 1 | 17 |
 | [rsg-targetpractise](rsg-targetpractise.md) | Placeable archery and throwing-knife practice targets for RSG Framework | 0 | 18 |
 | [rsg-telegram](rsg-telegram.md) |  | 0 | 2 |

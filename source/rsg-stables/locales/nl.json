@@ -283,5 +283,13 @@
     "wild_too_far": "Breng het paard dichter bij de stal",
     "wild_not_claimable": "Dit paard kan hier niet geregistreerd worden",
     "wild_claimed": "%s is nu geregistreerd bij deze stal",
-    "wild_horse_broken": "Paard getemd! Rijd naar een stal om het te claimen"
+    "wild_horse_broken": "Paard getemd! Rijd naar een stal om het te claimen",
+    "no_saddlebags_title": "No Saddlebags",
+    "no_saddlebags_desc": "Your horse has no saddlebags fitted. Visit a stable to fit some.",
+    "release_saddlebags_not_empty": "Empty this horse's saddlebags before releasing it, or the items will be lost.",
+    "empty_saddlebags": "Empty Saddlebags",
+    "empty_saddlebags_desc": "Take out anything left in this horse's saddlebags.",
+    "lantern_fitted": "Lantaarn op je paard bevestigd",
+    "lantern_removed": "Lantaarn van je paard verwijderd",
+    "lantern_too_far": "Je moet naast je paard staan of erop rijden"
 }

@@ -24,6 +24,11 @@ end
 CreateThread(function()
     if not (Config.WildHorse and Config.WildHorse.enabled) then return end
     while true do
+        -- EVENT_HORSE_BROKEN only fires while riding, so idle when on foot
+        if not IsPedOnMount(cache.ped) then
+            Wait(500)
+            goto continue
+        end
         Wait(0)
         local size = GetNumberOfEvents(0)
         for i = 0, size - 1 do
@@ -38,5 +43,6 @@ CreateThread(function()
                 end
             end
         end
+        ::continue::
     end
 end)

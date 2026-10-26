@@ -1,6 +1,6 @@
 # rsg-character
 
-Version 3.0.6. rsg-character
+Version 3.0.7. rsg-character
 
 Character selection, creation, clothing store and spawn system for **RSG-Core** (RedM). - In-world character select screen: your characters' peds line up at a location you can configure. - Multiple character slots per player license (default **4**, configurable).
 

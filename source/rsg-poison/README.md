@@ -18,7 +18,7 @@ A poison / antidote system for **RSG-Core** RedM servers. Players can be poisone
 
 - [RSG-Core](https://github.com/Rexshack-RedM/rsg-core) framework
 - [ox_lib](https://github.com/Rexshack-RedM/ox_lib)
-- An inventory resource compatible with `rsg-inventory`'s `client:ItemBox` event (e.g. `rsg-inventory`)
+- [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
 - RedM / FiveM server with `lua54` and the standard `rdr3` game build
 
 ## Installation
@@ -77,7 +77,7 @@ Server-only (webhook URLs are never sent to clients).
 | `SendIntervalMs`, `MaxQueue`, `MaxRetries` | Queue tuning. Discord 429s are retried after `retry_after`. |
 | `TestCommandAce` | Who may run `/poisonwebhooktest`. |
 
-**Logged events:** `poisoned` (with cause: snake / poison ammo / poison weapon), `resumed`, `antidoteUsed` (with time spent poisoned), `antidoteWasted`, `antidoteDenied`, `death`, `exploitAttempt` (forged cures, invalid data, throttled to one per player per 30s), `system` (resource start, test command).
+**Logged events:** `cured` (via export), `poisoned` (with cause: snake / poison ammo / poison weapon), `resumed`, `antidoteUsed` (with time spent poisoned), `antidoteWasted`, `antidoteDenied`, `death`, `exploitAttempt` (forged cures, invalid data, throttled to one per player per 30s), `system` (resource start, test command).
 
 **Test:** run `/poisonwebhooktest` in-game or from the server console to send a test embed to every configured URL.
 
@@ -91,6 +91,18 @@ exports['rsg-poison']:SendPoisonLog('poisoned', {
 })
 ```
 
+## Exports (server)
+
+```lua
+-- Cure a player (e.g. from a medic job). Returns true if they were poisoned.
+exports['rsg-poison']:CurePlayer(src)
+
+-- Check whether a player is currently poisoned.
+exports['rsg-poison']:IsPoisoned(src)
+```
+
+Cures done through `CurePlayer` are logged under the `cured` webhook event.
+
 ## Usage
 
 - Getting hit by poison ammo or bitten by a configured snake automatically poisons the player, shows a warning notification, and starts the health drain.
@@ -100,3 +112,5 @@ exports['rsg-poison']:SendPoisonLog('poisoned', {
 ## Support / Updates
 
 This resource includes an automatic version checker (`server/versionchecker.lua`) that compares your installed version against the latest release on startup and prints a warning to the server console if you're out of date.
+
+Support: https://buymeacoffee.com/rexshack

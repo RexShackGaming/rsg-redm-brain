@@ -283,5 +283,13 @@
     "wild_too_far": "Acerca el caballo al establo",
     "wild_not_claimable": "Este caballo no se puede registrar aquí",
     "wild_claimed": "%s ya está registrado en este establo",
-    "wild_horse_broken": "¡Caballo domado! Llévalo a un establo para reclamarlo"
+    "wild_horse_broken": "¡Caballo domado! Llévalo a un establo para reclamarlo",
+    "no_saddlebags_title": "No Saddlebags",
+    "no_saddlebags_desc": "Your horse has no saddlebags fitted. Visit a stable to fit some.",
+    "release_saddlebags_not_empty": "Empty this horse's saddlebags before releasing it, or the items will be lost.",
+    "empty_saddlebags": "Empty Saddlebags",
+    "empty_saddlebags_desc": "Take out anything left in this horse's saddlebags.",
+    "lantern_fitted": "Farol colocado en tu caballo",
+    "lantern_removed": "Farol retirado de tu caballo",
+    "lantern_too_far": "Debes estar junto a tu caballo o montándolo"
 }

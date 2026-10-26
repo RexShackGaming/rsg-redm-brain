@@ -283,5 +283,13 @@
     "wild_too_far": "Rapproche le cheval de l'écurie",
     "wild_not_claimable": "Ce cheval ne peut pas être enregistré ici",
     "wild_claimed": "%s est maintenant enregistré dans cette écurie",
-    "wild_horse_broken": "Cheval dressé ! Monte-le jusqu'à une écurie pour le réclamer"
+    "wild_horse_broken": "Cheval dressé ! Monte-le jusqu'à une écurie pour le réclamer",
+    "no_saddlebags_title": "No Saddlebags",
+    "no_saddlebags_desc": "Your horse has no saddlebags fitted. Visit a stable to fit some.",
+    "release_saddlebags_not_empty": "Empty this horse's saddlebags before releasing it, or the items will be lost.",
+    "empty_saddlebags": "Empty Saddlebags",
+    "empty_saddlebags_desc": "Take out anything left in this horse's saddlebags.",
+    "lantern_fitted": "Lanterne fixée sur ton cheval",
+    "lantern_removed": "Lanterne retirée de ton cheval",
+    "lantern_too_far": "Tu dois être à côté de ton cheval ou le monter"
 }

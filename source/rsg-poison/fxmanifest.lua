@@ -4,7 +4,7 @@ game 'rdr3'
 
 name 'rsg-poison'
 description 'Poison script for RSG Framework'
-version '3.0.0'
+version '3.0.1'
 
 shared_scripts {
     '@ox_lib/init.lua',

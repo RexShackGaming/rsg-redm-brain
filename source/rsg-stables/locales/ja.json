@@ -283,5 +283,13 @@
     "wild_too_far": "馬を厩舎に近づけてください",
     "wild_not_claimable": "この馬はここでは登録できません",
     "wild_claimed": "%s はこの厩舎に登録されました",
-    "wild_horse_broken": "馬を調教しました！厩舎まで乗って行って登録しましょう"
+    "wild_horse_broken": "馬を調教しました！厩舎まで乗って行って登録しましょう",
+    "no_saddlebags_title": "No Saddlebags",
+    "no_saddlebags_desc": "Your horse has no saddlebags fitted. Visit a stable to fit some.",
+    "release_saddlebags_not_empty": "Empty this horse's saddlebags before releasing it, or the items will be lost.",
+    "empty_saddlebags": "Empty Saddlebags",
+    "empty_saddlebags_desc": "Take out anything left in this horse's saddlebags.",
+    "lantern_fitted": "馬にランタンを取り付けました",
+    "lantern_removed": "馬からランタンを外しました",
+    "lantern_too_far": "馬の近くにいるか、馬に乗っている必要があります"
 }

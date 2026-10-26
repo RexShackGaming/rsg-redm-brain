@@ -153,11 +153,21 @@ local function nearStableByName(src, stableName)
     return isNearStable(src, getStableConfig(stableName))
 end
 
-local function nearAnyStable(src, maxDist)
+-- closest stable to the player within maxDist (nil if none)
+local function nearestStable(src, maxDist)
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return nil end
+    local coords = GetEntityCoords(ped)
+    local best, bestDist = nil, maxDist
     for _, stable in ipairs(Config.Stables) do
-        if isNearStable(src, stable, maxDist) then return true end
+        for _, point in ipairs({ stable.pedCoords, stable.storeCoords, stable.previewCoords }) do
+            if point then
+                local d = #(coords - vector3(point.x, point.y, point.z))
+                if d <= bestDist then best, bestDist = stable, d end
+            end
+        end
     end
-    return false
+    return best
 end
 
 local function toId(v)
@@ -224,6 +234,13 @@ end
 
 local function isTrue(v)
     return v == true or v == 1
+end
+
+-- true if the entity's model is the stored horse model (hashes compared unsigned)
+local function isHorseModel(entity, model)
+    model = tonumber(model)
+    if not model or not entity or entity == 0 or not DoesEntityExist(entity) then return false end
+    return (GetEntityModel(entity) & 0xFFFFFFFF) == (math.floor(model) & 0xFFFFFFFF)
 end
 
 local tackItemIndex = {}
@@ -403,6 +420,40 @@ end
 -- ===================== HORSE BRUSH ITEM =====================
 RSGCore.Functions.CreateUseableItem(Config.HorseBrushItem or 'horse_brush', function(source)
     TriggerClientEvent('rsg-stables:client:useBrush', source)
+end)
+
+-- ===================== HORSE LANTERN =====================
+if Config.HorseLantern and Config.HorseLantern.enabled then
+    RSGCore.Functions.CreateUseableItem(Config.HorseLantern.item, function(source)
+        local Player = RSGCore.Functions.GetPlayer(source)
+        if not Player then return end
+        TriggerClientEvent('rsg-stables:client:useLantern', source)
+    end)
+end
+
+-- toggles the lantern on the player's active horse and saves it in the horse's tack
+lib.callback.register('rsg-stables:server:toggleLantern', function(source)
+    local cfg = Config.HorseLantern
+    if not (cfg and cfg.enabled) then return false end
+    local Player = RSGCore.Functions.GetPlayer(source)
+    if not Player then return false, locale('player_not_found') end
+    local citizenid = Player.PlayerData.citizenid
+
+    local session = activeSessions[citizenid]
+    if not session then return false, locale('no_active_horse') end
+
+    local lantern = Player.Functions.GetItemByName(cfg.item)
+    if not lantern or (lantern.amount or 0) < 1 then return false end
+
+    return withLock('citizen:' .. citizenid, function()
+        local row = MySQL.single.await('SELECT tack FROM rsg_stables_horses WHERE id = ? AND citizenid = ? AND active = 1 LIMIT 1', { session.horseId, citizenid })
+        if not row then return false, locale('no_active_horse') end
+        local tack = decodeTack(row.tack)
+        local on = not tack.lantern
+        tack.lantern = on or nil
+        MySQL.update.await('UPDATE rsg_stables_horses SET tack = ? WHERE id = ?', { json.encode(tack), session.horseId })
+        return true, on
+    end)
 end)
 
 -- ===================== HORSE STIMULANT =====================
@@ -794,16 +845,25 @@ local function storeActive(source, horseId, health, stamina, requireStable)
     if not Player then return false, locale('player_not_found') end
     horseId = toId(horseId)
     if not horseId then return false, locale('horse_not_out') end
-    if requireStable and not nearAnyStable(source, (Config.StoreDistance or 8.0) + 10.0) then
-        return false, locale('not_close_to_stable')
+    local storeAt
+    if requireStable then
+        storeAt = nearestStable(source, (Config.StoreDistance or 8.0) + 10.0)
+        if not storeAt then return false, locale('not_close_to_stable') end
     end
     local citizenid = Player.PlayerData.citizenid
 
     return withLock('citizen:' .. citizenid, function()
-        local horse = MySQL.single.await('SELECT id FROM rsg_stables_horses WHERE id = ? AND citizenid = ? AND active = 1', {
+        local horse = MySQL.single.await('SELECT id, stable FROM rsg_stables_horses WHERE id = ? AND citizenid = ? AND active = 1', {
             horseId, citizenid
         })
         if not horse then return false, locale('horse_not_out') end
+
+        -- the horse is kept at the stable it was put away at (falls back to its old stable if that one is full)
+        local stableName = horse.stable
+        if storeAt and storeAt.name ~= horse.stable then
+            local atStable = MySQL.prepare.await('SELECT COUNT(*) FROM rsg_stables_horses WHERE citizenid = ? AND stable = ?', { citizenid, storeAt.name })
+            if not atStable or atStable < Config.MaxHorsesPerStable then stableName = storeAt.name end
+        end
 
         health = math.max(0, math.min(100, tonumber(health) or 100))
         stamina = math.max(0, math.min(100, tonumber(stamina) or 100))
@@ -815,8 +875,8 @@ local function storeActive(source, horseId, health, stamina, requireStable)
             hunger, thirst, bonding = session.hunger, session.thirst, session.bonding
         end
 
-        MySQL.update.await('UPDATE rsg_stables_horses SET active = 0, pos_x = NULL, pos_y = NULL, pos_z = NULL, pos_h = NULL, health = ?, stamina = ?, hunger = ?, thirst = ?, bonding = ? WHERE id = ?', {
-            health, stamina, hunger, thirst, bonding, horseId
+        MySQL.update.await('UPDATE rsg_stables_horses SET active = 0, stable = ?, pos_x = NULL, pos_y = NULL, pos_z = NULL, pos_h = NULL, health = ?, stamina = ?, hunger = ?, thirst = ?, bonding = ? WHERE id = ?', {
+            stableName, health, stamina, hunger, thirst, bonding, horseId
         })
         endSession(citizenid)
         return true
@@ -839,9 +899,10 @@ lib.callback.register('rsg-stables:server:horseDied', function(source, horseId, 
     if not horseId then return false end
 
     -- a living horse can't be reported dead (stops a free insured heal + store-from-anywhere)
+    -- the report must point at an existing entity (a missing netId used to skip this check)
     netId = toId(netId)
     local entity = netId and NetworkGetEntityFromNetworkId(netId) or 0
-    if entity ~= 0 and DoesEntityExist(entity) and GetEntityHealth(entity) > 0 then
+    if entity == 0 or not DoesEntityExist(entity) or GetEntityHealth(entity) > 0 then
         return false
     end
 
@@ -851,6 +912,8 @@ lib.callback.register('rsg-stables:server:horseDied', function(source, horseId, 
             horseId, Player.PlayerData.citizenid
         })
         if not horse then return false end
+        -- the dead entity must be this horse's model (stops reporting any dead ped to get a free insured heal / remote store)
+        if not isHorseModel(entity, horse.model) then return false end
 
         endSession(Player.PlayerData.citizenid)
 
@@ -947,9 +1010,23 @@ lib.callback.register('rsg-stables:server:releaseHorse', function(source, horseI
         if not horse then return false, locale('horse_not_found') end
         if isTrue(horse.alive) then return false, locale('horse_not_dead') end
         if not nearStableByName(source, horse.stable) then return false, locale('not_close_to_stable') end
+        -- a parent of an uncollected foal can't be removed (the foal would be lost)
+        if MySQL.single.await('SELECT id FROM rsg_stables_breeding WHERE (parent_a = ? OR parent_b = ?) AND collected = 0', { horseId, horseId }) then
+            return false, locale('horse_is_breeding')
+        end
+        -- saddlebags must be emptied first, or the items would be lost with the horse
+        local stashId = 'horse_' .. horseId
+        local stash = exports['rsg-inventory']:GetInventory(stashId)
+        if stash and type(stash.items) == 'table' and next(stash.items) ~= nil then
+            return false, locale('release_saddlebags_not_empty')
+        end
 
         local deleted = MySQL.update.await('DELETE FROM rsg_stables_horses WHERE id = ? AND citizenid = ? AND alive = 0', { horseId, Player.PlayerData.citizenid })
         if not deleted or deleted == 0 then return false, locale('release_failed') end
+
+        -- tidy up the (empty) stash so it doesn't linger in memory or the inventories table
+        pcall(function() exports['rsg-inventory']:DeleteInventory(stashId) end)
+        MySQL.update('DELETE FROM inventories WHERE identifier = ?', { stashId })
         return true
     end)
 end)
@@ -1407,10 +1484,45 @@ RegisterNetEvent('rsg-stables:server:openHorseInventory', function(horseId, hors
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return end
 
-    local row = MySQL.single.await('SELECT id, name FROM rsg_stables_horses WHERE id = ? AND citizenid = ? AND active = 1 LIMIT 1', {
+    local row = MySQL.single.await('SELECT id, name, tack, model FROM rsg_stables_horses WHERE id = ? AND citizenid = ? AND active = 1 LIMIT 1', {
+        horseId, Player.PlayerData.citizenid
+    })
+    if not row or not isHorseModel(horseEntity, row.model) then return end
+
+    -- optional: no saddlebags fitted = nowhere to store items
+    if Config.HorseInventory.requireSaddlebags then
+        local tack = decodeTack(row.tack)
+        if not tack or not tack.saddlebags then
+            TriggerClientEvent('ox_lib:notify', src, { title = locale('no_saddlebags_title'), description = locale('no_saddlebags_desc'), type = 'error' })
+            return
+        end
+    end
+
+    exports['rsg-inventory']:OpenInventory(src, 'horse_' .. row.id, {
+        label = row.name or locale('your_horse'),
+        maxweight = Config.HorseInventory.maxweight,
+        slots = Config.HorseInventory.slots,
+    })
+end)
+
+
+-- Dead horses can't be taken out, so their saddlebags can be emptied at their stable instead
+RegisterNetEvent('rsg-stables:server:openDeadHorseInventory', function(horseId)
+    local src = source
+    if not Config.HorseInventory or not Config.HorseInventory.enabled then return end
+    horseId = toId(horseId)
+    if not horseId then return end
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player then return end
+
+    local row = MySQL.single.await('SELECT id, name, stable FROM rsg_stables_horses WHERE id = ? AND citizenid = ? AND alive = 0 LIMIT 1', {
         horseId, Player.PlayerData.citizenid
     })
     if not row then return end
+    if not nearStableByName(src, row.stable) then
+        TriggerClientEvent('ox_lib:notify', src, { description = locale('not_close_to_stable'), type = 'error' })
+        return
+    end
 
     exports['rsg-inventory']:OpenInventory(src, 'horse_' .. row.id, {
         label = row.name or locale('your_horse'),

@@ -49,5 +49,9 @@
     "wh_test_title": "Test webhooka",
     "wh_test_desc": "Test z `%s` dla zdarzenia **%s**.",
     "wh_started_title": "Zasób uruchomiony",
-    "wh_started_desc": "`%s` został uruchomiony."
+    "wh_started_desc": "`%s` został uruchomiony.",
+    "cl_cured_title": "Cured",
+    "cl_cured_desc": "Your poison has been treated, you feel the venom leave your body.",
+    "wh_cured_title": "Player Cured",
+    "wh_cured_desc": "Poison cleared by resource `%s`."
 }

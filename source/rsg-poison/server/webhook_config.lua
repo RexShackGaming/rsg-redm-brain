@@ -20,6 +20,7 @@ WebhookConfig = {
         antidoteWasted  = '', -- antidote consumed but drinking was interrupted (death)
         antidoteDenied  = '', -- antidote use refused (not poisoned / already drinking)
         death           = '', -- died while poisoned
+        cured           = '', -- cured by another resource (exports.CurePlayer, e.g. medic)
         exploitAttempt  = '', -- forged cure / invalid data from a client (use a private staff channel)
         system          = '', -- resource start and /poisonwebhooktest
     },
@@ -33,6 +34,7 @@ WebhookConfig = {
         antidoteWasted  = true,
         antidoteDenied  = false, -- noisy, off by default
         death           = true,
+        cured           = true,
         exploitAttempt  = true,
         system          = true,
     },
@@ -62,6 +64,7 @@ WebhookConfig = {
         antidoteWasted  = 16776960, -- yellow
         antidoteDenied  = 9807270,  -- grey
         death           = 2303786,  -- dark grey
+        cured           = 3066993,  -- green
         exploitAttempt  = 10038562, -- dark red
         system          = 3447003,  -- blue
     },

@@ -283,5 +283,13 @@
     "wild_too_far": "Φέρε το άλογο πιο κοντά στον στάβλο",
     "wild_not_claimable": "Αυτό το άλογο δεν μπορεί να καταχωρηθεί εδώ",
     "wild_claimed": "Το %s καταχωρήθηκε σε αυτόν τον στάβλο",
-    "wild_horse_broken": "Το άλογο δαμάστηκε! Πήγαινε σε έναν στάβλο για να το διεκδικήσεις"
+    "wild_horse_broken": "Το άλογο δαμάστηκε! Πήγαινε σε έναν στάβλο για να το διεκδικήσεις",
+    "no_saddlebags_title": "No Saddlebags",
+    "no_saddlebags_desc": "Your horse has no saddlebags fitted. Visit a stable to fit some.",
+    "release_saddlebags_not_empty": "Empty this horse's saddlebags before releasing it, or the items will be lost.",
+    "empty_saddlebags": "Empty Saddlebags",
+    "empty_saddlebags_desc": "Take out anything left in this horse's saddlebags.",
+    "lantern_fitted": "Το φανάρι τοποθετήθηκε στο άλογό σου",
+    "lantern_removed": "Το φανάρι αφαιρέθηκε από το άλογό σου",
+    "lantern_too_far": "Πρέπει να είσαι δίπλα στο άλογό σου ή να το ιππεύεις"
 }

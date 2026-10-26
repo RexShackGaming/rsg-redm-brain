@@ -184,7 +184,7 @@ CreateThread(function()
     ComponentsReady = true
 end)
 
-function ApplySkin()
+local function ApplySkinInner()
     local data = lib.callback.await('rsg-character:server:getAppearance', 10000)
     if not data or not data.skin then return end
 
@@ -227,6 +227,15 @@ function ApplySkin()
     SetAttributeBaseRank(ped, 16, dirtClothes)
     SetAttributeBaseRank(ped, 17, dirtHat)
     SetAttributeBaseRank(ped, 22, dirtSkin)
+end
+
+-- flag the skin reload so other resources (rsg-medic) ignore the ped swap
+function ApplySkin()
+    LocalPlayer.state:set('isLoadingSkin', true, false)
+    local ok, err = pcall(ApplySkinInner)
+    Wait(1000) -- let the new ped settle before death checks resume
+    LocalPlayer.state:set('isLoadingSkin', false, false)
+    if not ok then print(('[rsg-character] ApplySkin failed: %s'):format(tostring(err))) end
 end
 
 local function ApplySkinMultiChar(SkinData, Target, ClothesData)

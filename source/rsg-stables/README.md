@@ -11,13 +11,13 @@ Horse and stables system for the **RSG Framework** (RedM). Buy, stable, customis
 - **Ownership limits** – max horses per player, and max horses each player can keep at one stable.
 - **Stallions & mares** – choose the gender when buying; foals get a random one.
 - **Rename & insure** – rename horses for a fee; insure them so a dead horse can be revived/replaced.
-- **Release dead horses** – lay a deceased horse to rest from the stable menu to free up its slot (the only option for horses that died of old age).
+- **Release dead horses** – lay a deceased horse to rest from the stable menu to free up its slot; its saddlebags must be emptied first with **Empty Saddlebags** (the only option for horses that died of old age).
 - **Give or sell to a player** – hand a stabled horse to someone standing next to you, free or for an asking price they must accept (and be able to afford).
 - **Tack customisation** – blankets, saddles, saddlebags, horns, stirrups, bedrolls, manes, tails, masks, mustaches, holsters, bridles, each item individually priced. Styles swap on the preview horse instantly (no respawn) with a menu sound while cycling. Categories can be marked `required` (the holster is by default, as it's needed to carry weapons).
 - **Coat customisation** – custom tint system (main coat, markings, nose, mane, tail) with quick-pick presets and a flat colour-change fee.
 - **Horse needs** – hunger and thirst decay over time; starving/dehydrated horses lose health, well-fed horses slowly regenerate.
 - **Feeding, watering & brushing** – via ox_target on your active horse, or by using the feed items / brush straight from the inventory (with the hand-feed and brushing animations).
-- **Saddlebags** – each horse has its own rsg-inventory stash (weight and slots set in config), opened from the horse's target menu or the game's own **Horse Cargo (B)** prompt.
+- **Saddlebags** – each horse has its own rsg-inventory stash (weight and slots set in config), opened from the horse's target menu or the game's own **Horse Cargo (B)** prompt. Optionally (`requireSaddlebags`) the stash only opens when saddlebags are fitted as tack.
 - **Native prompts tidy-up** – the game's own Brush / Feed horse prompts can be hidden so only the ox_target options are used.
 - **Natural drinking** – horses drink on their own at rivers, lakes and water troughs when thirsty.
 - **Natural grazing** – a hungry horse wanders to hay near you (configurable hay props) and eats.
@@ -30,7 +30,7 @@ Horse and stables system for the **RSG Framework** (RedM). Buy, stable, customis
 - **Wild horses** – break a wild horse with the game's taming minigame, ride it to any stable and choose **Claim Wild Horse** at the stablehand to name it and register it. Validated server-side (breed must be in `Config.Breeds`, you must have broken it, claim window, distance and ownership limits).
 - **Breeding** – breed a stallion and a mare (adults only) to produce a foal after one real-life day. Foals inherit the parents' averaged stats with a chance to take the better parent's. Parents are locked while breeding and rest afterwards.
 - **Horse info card** – native animal info card showing horse stats.
-- **Store command** – `/storehorse` to put your active horse away near a stable.
+- **Store anywhere** – store your active horse at whichever stable you're at (or with `/storehorse`); it's kept there from then on (falls back to its previous stable if that stable is full for you).
 - **Localisation** – en, de, el, es, fr, ja, nl, pl, pt-br, ro.
 - **Auto database setup** – tables are created automatically on resource start.
 - **Version checker** – notifies you in the server console when an update is available.
@@ -103,7 +103,8 @@ All settings live in `shared/config.lua`.
 | `Config.HorseNaturalDrink` | Thirst threshold, timings, water/trough radius and trough models |
 | `Config.HorseNaturalGraze` | Hunger threshold, search radius around the player, eat time, cooldown, animation and hay prop models |
 | `Config.HorseBrushItem` | Item required to brush (also usable from the inventory) |
-| `Config.HorseInventory` | Saddlebag stash on/off, max weight, slots, target distance and `nativeCargoPrompt` (B opens the stash) |
+| `Config.HorseLantern` | Horse lantern on/off, item name, lantern shop-item hash and how close you must be to your horse |
+| `Config.HorseInventory` | Saddlebag stash on/off, max weight, slots, target distance, `nativeCargoPrompt` (B opens the stash) and `requireSaddlebags` (stash only opens with saddlebags fitted) |
 | `Config.HorseBonding` | Bonding gained per feed / water / brush |
 | `Config.HorseFlee` | Flee delay, whether fled horses are stored, respawn distance |
 | `Config.WildHorse` | Wild horse claiming on/off, registration fee, claim window after breaking, max horse distance |
@@ -161,7 +162,7 @@ setr ox:locale "en"
 Walk up to the stablehand and use **ox_target → Manage Stable** to open the menu, where you can:
 - **Buy** a horse (filter by class, breed and price).
 - **Take out / store** your horses.
-- **Rename**, **insure**, **revive** or **release** (dead) horses.
+- **Rename**, **insure**, **revive**, **empty the saddlebags of** or **release** (dead) horses.
 - **Customise tack** and **coat**.
 - **Breed** a stallion and a mare and collect the foal when ready.
 - **Give to Player** – give or sell a horse to someone standing next to you.
@@ -177,7 +178,7 @@ Target your horse (ox_target) for:
 - **Horse Stats** – health, stamina, hunger, thirst, bonding and cleanliness.
 - **Store Horse** – when near a stable.
 - **Flee Horse** – sends the horse away.
-- **Open Saddlebags** – opens the horse's own stash (you must be standing next to it).
+- **Open Saddlebags** – opens the horse's own stash (you must be standing next to it; with `requireSaddlebags` the horse must have saddlebags fitted).
 
 ### Controls & commands
 | Input | Action |
@@ -185,7 +186,7 @@ Target your horse (ox_target) for:
 | Whistle key (`INPUT_WHISTLE`, default **H**) | Call your active horse |
 | Focus horse + prompt | Show horse info card |
 | Horse Cargo (**B**) next to your horse | Open its saddlebags |
-| `/storehorse` | Store your active horse (must be near a stable) |
+| `/storehorse` | Store your active horse at the nearest stable |
 
 ### Items
 | Item | Use |
@@ -194,6 +195,25 @@ Target your horse (ox_target) for:
 | `horse_apple`, `horse_carrot` | Use from inventory next to your horse (dismounted), or via **Feed Horse** |
 | `horse_brush` | Use from inventory next to your horse (dismounted), or via **Brush Horse** |
 | `fullbucket` | Used through **Water Horse** |
+| `horse_lantern` | Use from inventory next to or riding your horse to fit / remove a saddle lantern (not consumed). It's saved with the horse's tack, so it stays on until removed |
+
+---
+
+## Changelog
+
+### 3.1.4
+- Added a horse lantern: using `horse_lantern` fits or removes a saddle lantern on your active horse and saves it with the tack (`Config.HorseLantern`).
+- Security: horse death reports must now point at a dead entity of the horse's own model (any dead ped could be used before).
+- Security: the saddlebag stash only opens when the targeted entity is the player's own horse model.
+- Clean-up: removed the unused placeholder tack-hash warning thread.
+
+### 3.1.3
+- Added `Config.HorseInventory.requireSaddlebags` – horse stash only opens when saddlebags are fitted (the target option is hidden otherwise).
+- Horses are now kept at the stable they're stored at, instead of silently returning to their old stable.
+- Fixed: a dead horse that is the parent of an uncollected foal can no longer be released (the foal was lost).
+- Security: horse death reports must reference a real, dead horse entity (stops faking a death to trigger a free insurance heal).
+- A dead horse can't be released while its saddlebags still hold items (prevents lost items). New **Empty Saddlebags** option on dead horses at the stable; the empty stash is removed on release.
+- Optimisation: the wild-horse listener only runs every frame while riding.
 
 ---
 
