@@ -1,0 +1,59 @@
+# eUIPromptAttribute
+
+Source: https://github.com/Halen84/RDR3-Native-Flags-And-Enums/tree/main/eUIPromptAttribute
+
+## Natives that use this enum
+| Name                                                  | Hash               |
+|-------------------------------------------------------|--------------------|
+| HUD::\_UI\_PROMPT\_SET\_ATTRIBUTE                     | 0x560E76D5E2E1803F |
+## Enum
+```cpp
+enum eUIPromptAttribute
+{
+	kPromptAttrib_Enabled = 0,
+	kPromptAttrib_Scripted = 1,
+	kPromptAttrib_Frontend = 2,
+	kPromptAttrib_InGame = 3,
+	kPromptAttrib_Menu = 4,
+	kPromptAttrib_CustomDraw = 5,
+	kPromptAttrib_StyleProgress = 6,
+	kPromptAttrib_StyleIsPressed = 7,
+	kPromptAttrib_StyleMash = 8,
+	kPromptAttrib_ExclusiveInput = 9,
+	kPromptAttrib_NoButtonReleaseCheck = 10,
+	kPromptAttrib_SuppressSourceRestart = 11,
+	kPromptAttrib_HighlightEntity = 12,
+	kPromptAttrib_0x7BFB7BE9 = 13,
+	kPromptAttrib_0x97C6A1A0 = 14,
+	kPromptAttrib_0x0BB03FA5 = 15,
+	kPromptAttrib_0x68A82DB8 = 16,
+	kPromptAttrib_NoGroupCheck = 17,
+	kPromptAttrib_0x7D927885 = 18,
+	kPromptAttrib_0x3A6500CB = 19,
+	kPromptAttrib_0x88EFB732 = 20,
+	kPromptAttrib_ShowPromptWhenHoldingPrompt = 21,
+	kPromptAttrib_0x8D0AF628 = 22,
+	kPromptAttrib_0x3BF68993 = 23,
+	kPromptAttrib_0xA9F5CB58 = 24,
+	kPromptAttrib_0xFB7281ED = 25,
+	kPromptAttrib_0xD0CCE685 = 26,
+	kPromptAttrib_0x269986DB = 27,
+	kPromptAttrib_0x1E78DA66 = 28,
+	kPromptAttrib_0x32835868 = 29,
+	kPromptAttrib_0x5FF595DB = 30,
+	kPromptAttrib_0x0CBEE7D6 = 31,
+	kPromptAttrib_0xD65F19AA = 32,
+	kPromptAttrib_0xDD97A5B7 = 33,
+	kPromptAttrib_ManualResolved = 34,
+	kPromptAttrib_0xAAE6EAFA = 35,
+	kPromptAttrib_0x37DA9DF0 = 36,
+	kPromptAttrib_0xF293E448 = 37,
+	kPromptAttrib_0x5B4F16C8 = 38,
+	kPromptAttrib_0x5C1F0B40 = 39,
+	kPromptAttrib_0x3505BC93 = 40,
+	kPromptAttrib_0x4C5D26A1 = 41,
+	kPromptAttrib_0xC25E80EA = 42,
+	kPromptAttrib_0x21B74C10 = 43,
+	kPromptAttrib_0xE9889A59 = 44,
+};
+```

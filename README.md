@@ -44,6 +44,7 @@ The result: scripts that use the right item names, call real exports, keep money
 | `data/rdr3_discoveries/` | Local copy of femga/rdr3_discoveries: peds, props, anims, scenarios, weapons, PTFX, controls, doors, interiors, AI flags, clothing | Any model, hash, anim or flag |
 | `data/rdr3_discoveries/MAP.md` | Index of the folder above with sample line formats | Start here for data lookups |
 | `data/rdr3-decompiled-scripts.md` | Guide to the decompiled RDR2 singleplayer scripts (optional local clone in `data/rdr3-decompiled/`) | Seeing how Rockstar calls natives; recreating RDR2 features |
+| `data/rdr3-native-enums.md` + `data/rdr3-native-enums/` | Halen84's RDR3 native flags & enums (63 enums with the natives that use them) | Any native that takes a flag/enum int |
 | `data/redm-info.md`, `data/redm-forge.md` | Online lookup sites and what they cover | Cross-checking / 3D previews / coords |
 | `data/README.md` | Fallback lookup index | Things rdr3_discoveries lacks |
 | `patterns/` | Tested snippets: secure reward event, NUI bridge, entity cleanup, ox_target | Building blocks |
@@ -132,7 +133,7 @@ cd rsg-redm-brain && claude
 # or, from your resource folder:
 claude --add-dir ../rsg-redm-brain
 ```
-`CLAUDE.md` loads automatically. Claude can grep `natives/db/INDEX.tsv`, `data/rdr3_discoveries/` and `source/` itself, so it looks values up instead of guessing.
+`CLAUDE.md` loads automatically. Claude can grep `natives/db/INDEX.tsv`, `data/rdr3_discoveries/`, `data/rdr3-native-enums/` and `source/` itself, so it looks values up instead of guessing.
 
 ### Cursor / Windsurf / VS Code Copilot
 - Add the brain folder to the workspace.
@@ -242,6 +243,10 @@ The data folders are big. **Search them, don't open them whole.** Examples (ripg
 rg -i "TASK_START_SCENARIO" natives/db/INDEX.tsv
 rg -i -A5 "0x524B54361229154F" natives/db/
 
+# Flag / enum values a native takes (config flags, combat attributes, prompt types...)
+rg -i "SET_PED_CONFIG_FLAG" data/rdr3-native-enums/INDEX.tsv
+rg -n "PCF_DisableMelee" data/rdr3-native-enums/
+
 # Ped / animal models
 rg -i "a_c_horse_arabian" data/rdr3_discoveries/peds
 
@@ -278,6 +283,7 @@ Where to look for what:
 | Prompts, blips, entity handling | `natives/prompts-blips-entities.md` |
 | Models, props, anims, sounds, clothes | `data/rdr3_discoveries/MAP.md` then the folder |
 | Blip sprites, textures, colours | `data/rdr3_discoveries/useful_info_from_rpfs/` |
+| Flag / enum value for a native (config flags, combat attributes, prompt types…) | `data/rdr3-native-enums/INDEX.tsv` → `<Enum>.md` |
 | How a native is really used / RDR2 feature logic | `data/rdr3-decompiled-scripts.md` → grep `data/rdr3-decompiled/1491.50/` |
 | Coords / 3D previews | `data/redm-forge.md`, `data/redm-info.md` |
 | RSG export / event / callback | `framework/resources/<resource>.md` |
@@ -331,11 +337,11 @@ The checklist covers security, notifications, locales, environment (removed reso
 
 ## Keeping the brain up to date
 
-- **RSG updates:** run `tools/refresh.sh` (or `refresh.ps1`). It re-pulls the Rexshack-RedM repos into `source/` (code only) and regenerates `framework/resources/` via `tools/extract.py`. `source/LAST_REFRESH.txt` shows when it last ran. Add repos missing from the txAdmin recipe to `tools/extra-repos.txt`.
+- **RSG updates:** run `tools/refresh.sh` (or `refresh.ps1`). It re-pulls the Rexshack-RedM repos into `source/` (code only) and regenerates `framework/resources/` via `tools/extract.py`. It also rebuilds `natives/db/` and `data/rdr3-native-enums/`, and the VORP reference in `vorp/`. `source/LAST_REFRESH.txt` shows when it last ran. Add repos missing from the txAdmin recipe to `tools/extra-repos.txt`.
 - **Server changes:** update `server/environment.md` whenever you add/remove a resource or rename an item.
 - **Lessons learned:** when a native needs a specific call order or a value turns out wrong, add it to the relevant `natives/` or `conventions/` file.
 - **Reusable code:** drop working snippets from finished scripts into `patterns/` and list them in `patterns/README.md`.
-- **Natives / data:** `tools/build_natives.py` rebuilds `natives/db/`; `tools/map_discoveries.py` regenerates `data/rdr3_discoveries/MAP.md`.
+- **Natives / data:** `tools/build_natives.py` rebuilds `natives/db/`; `tools/map_discoveries.py` regenerates `data/rdr3_discoveries/MAP.md`; `tools/build_enums.py` rebuilds `data/rdr3-native-enums/`.
 - Keep files small and focused. AI does best when it can load just the file it needs.
 
 ---
@@ -363,6 +369,7 @@ The brain is built on the work of these projects and sites. All credit for the u
 | Source | What it provides | Used in |
 |---|---|---|
 | [femga/rdr3_discoveries](https://github.com/femga/rdr3_discoveries) | RDR2/RedM game data: peds, props, anims, scenarios, weapons, PTFX, controls, doors, interiors, AI flags, events, clothing | `data/rdr3_discoveries/` |
+| [Halen84/RDR3-Native-Flags-And-Enums](https://github.com/Halen84/RDR3-Native-Flags-And-Enums) | Native flags and enums with the natives that use them | `data/rdr3-native-enums/` |
 | [VORPCORE/RDR3natives](https://github.com/VORPCORE/RDR3natives) | Native names, hashes, signatures and notes | `natives/db/` |
 | [CitizenFX / Cfx.re](https://github.com/citizenfx) | RedM itself and the CFX natives | `natives/db/CFX.md` |
 | [Rexshack-RedM (RSG Framework)](https://github.com/Rexshack-RedM) | rsg-core and the RSG resources, plus the [txAdmin recipe](https://github.com/Rexshack-RedM/txAdminRecipe) | `source/`, `framework/` |

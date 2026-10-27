@@ -19,6 +19,8 @@ mkdir -p "$BRAIN/source"
 python3 "$BRAIN/tools/extract.py" "$TMP/repos" "$BRAIN/framework/resources"
 # natives database (same source redm.info uses)
 git clone --depth 1 -q https://github.com/VORPCORE/RDR3natives.git "$TMP/natives" && python3 "$BRAIN/tools/build_natives.py" "$TMP/natives" "$BRAIN/natives/db" || echo "skip natives"
+# native flags & enums (Halen84)
+git clone --depth 1 -q https://github.com/Halen84/RDR3-Native-Flags-And-Enums.git "$TMP/enums" && python3 "$BRAIN/tools/build_enums.py" "$TMP/enums" "$BRAIN/data/rdr3-native-enums" || echo "skip enums"
 # VORP Core reference (vorp/): repos from the VORP txAdmin recipe
 git clone --depth 1 -q https://github.com/VORPCORE/VORP_txAdmin.git "$TMP/vrecipe" && {
   grep -ohE 'VORPCORE/vorp_[A-Za-z0-9_.-]+' -r "$TMP/vrecipe" | sed 's#.*/##; s/\.git$//; s/^vorp_core-lua$/vorp_core/; s/^vorp_character-lua$/vorp_character/; s/^vorp_fishing-lua$/vorp_fishing/; s/^vorp_metabolism-lua$/vorp_metabolism/; s/^vorp_stores-lua$/vorp_stores/' | sort -u > "$TMP/vlist.txt"
