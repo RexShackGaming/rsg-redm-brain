@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="author" content="">
+    <title>Inventory HUD</title>
+    <link rel="stylesheet" id="themonic-fonts-css" href="css/contextMenu.min.css" type="text/css" media="all" />
+    <link rel="stylesheet" id="themonic-fonts-css" href="css/jquery.dialog.min.css" type="text/css" media="all" />
+    <link rel="stylesheet" id="themonic-fonts-css" href="css/ui.min.css" type="text/css" media="all" />
+</head>
+
+<body>
+    <div id="mainInventoryDropZone" class="main-inventory-drop-zone" role="region">
+        <div class="main-inventory-drop-zone__inner">
+            <span class="main-inventory-drop-zone__label" id="mainInventoryDropZoneLabel"></span>
+        </div>
+    </div>
+    <div id="inventoryHud">
+        <div id="disabler"></div>
+        <div class="inv-title-block" id="invTitleBlock">
+            <div id="title">Satchel</div>
+            <div class="inv-title-divider" aria-hidden="true"></div>
+        </div>
+        <div class='tooltip'
+            style='display: none; position: absolute; padding: 10px; background-color: black; color: white; border-radius: 5px;'>
+            Tooltip content</div>
+        <div class="item-groups-rail" aria-label="Item categories">
+            <div class="carouselWrapper carouselWrapper--item-groups">
+                <div class="carouselContainer" id="carousel1Container">
+                    <div class="dropdownButtonContainer mainButton1" id="carousel1"></div>
+                    <div class="item-groups-nav" aria-label="Category navigation">
+                        <button type="button" class="carousel-control carousel-control--rail item-groups-nav-btn"
+                            aria-label="Previous category"
+                            onclick="INVENTORY.MAIN.STEP_MAIN_GROUP(-1)">&#10094;</button>
+                        <div class="item-groups-nav-title" id="itemGroupsNavTitle">All</div>
+                        <button type="button" class="carousel-control carousel-control--rail item-groups-nav-btn"
+                            aria-label="Next category " onclick="INVENTORY.MAIN.STEP_MAIN_GROUP(1)">&#10095;</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="inventoryFixedSlotsStrip" class="inventory-fixed-slots-strip" aria-label="Gunbelt, cash, gold"></div>
+        <div id="inventoryGridShell" class="inventory-grid-shell">
+            <div id="inventoryElement"></div>
+        </div>
+        <div id="cash">
+            <a id="money-value"></a>
+        </div>
+        <div id="gold">
+            <a id="gold-value"></a>
+        </div>
+        <div id="rol">
+            <a id="rol-value"></a>
+        </div>
+        <div id="id">
+            <a id="id-value"></a>
+        </div>
+        <div class="mainButtonContainer">
+            <div class="mainButton-toolbar-group">
+                <button class="mainButton mainButton-toolbar mainButton-saddle" type="button" id="inventorySaddleBtn"
+                    title="Saddle" aria-label="Saddle">
+                    <span class="mainButton-saddle__icon" aria-hidden="true"></span>
+                    <span class="mainButton-saddle__label">Saddle</span>
+                </button>
+                <button class="mainButton mainButton-toolbar mainButton-attachments" type="button" style="display:none;"
+                    id="weaponAttachmentsOpenBtn" title="Attachments" aria-label="Attachments" aria-expanded="false">
+                    <span class="mainButton-attachments__icon" aria-hidden="true"></span>
+                    <span class="mainButton-attachments__label">Mods</span>
+                </button>
+                <button class="mainButton mainButton-toolbar mainButton-craft" type="button" id="handCraftingOpenBtn"
+                    title="Hand craft" aria-label="Hand craft" aria-expanded="false">
+                    <span class="mainButton-craft__icon" aria-hidden="true"></span>
+                    <span class="mainButton-craft__label">Craft</span>
+                </button>
+                <button class="mainButton mainButton-toolbar mainButton-sort" type="button" id="inventorySortBtn"
+                    title="Sort" aria-label="Sort" aria-expanded="false">
+                    <span class="mainButton-sort__icon" aria-hidden="true"></span>
+                    <span class="mainButton-sort__label">Sort</span>
+                </button>
+                <div id="sortConfirmPopup" style="display:none; position:absolute; top:3vh; right:0; z-index:20000; padding:1.2vh 1vw; text-align:center; width:6vw;">
+                    <p style="font-family:'crock',serif; font-size:0.6vw; color:#f5f0e6; margin:0 0 0.8vh;">Sort inventory?</p>
+                    <div style="display:flex; gap:0.4vw; justify-content:center;">
+                        <button type="button" id="sortConfirmYes" style="font-family:'crock',serif; font-size:0.55vw; color:#f5f0e6; background:transparent; border:1px solid rgba(245,240,230,0.4); padding:0.3vh 0.5vw; float:none; border-radius:2px;">Yes</button>
+                        <button type="button" id="sortConfirmNo" style="font-family:'crock',serif; font-size:0.55vw; color:#f5f0e6; background:transparent; border:1px solid rgba(245,240,230,0.4); padding:0.3vh 0.5vw; float:none; border-radius:2px;">No</button>
+                    </div>
+                </div>
+            </div>
+            <button class="mainButton mainButton-close" type="button" id="close" title="Close" aria-label="Close">
+                <span class="mainButton-close__icon" aria-hidden="true"></span>
+                <span class="mainButton-close__label">Close</span>
+            </button>
+        </div>
+    </div>
+    <div id="secondInventoryHud">
+        <div id="satchelTitle"></div>
+        <div id="secondInventoryGridShell" class="inventory-grid-shell">
+            <div id="secondInventoryElement"></div>
+        </div>
+
+        <div class="capacity">
+            <span class="inv-weight-text"><a id="current-cap-value"></a>/<a id="capacity-value"></a></span>
+        </div>
+
+        <div class="imageButtonContainer1">
+            <div class="carouselWrapper1 carouselWrapper1--secondary-groups">
+                <div class="carouselContainer1 secondary-item-groups" id="staticCarouselContainer">
+                    <div class="dropdownButtonContainer1" id="staticCarousel"></div>
+                    <div class="item-groups-nav item-groups-nav--secondary" aria-label="Category navigation">
+                        <button type="button"
+                            class="carousel-control carousel-control--rail item-groups-nav-btn secondary-item-groups-nav-btn"
+                            aria-label="Previous category"
+                            onclick="INVENTORY.SECONDARY.ITEM_GROUPS_SELECTION(-1)">&#10094;</button>
+                        <div class="item-groups-nav-title" id="itemGroupsNavTitleSecond">All</div>
+                        <button type="button"
+                            class="carousel-control carousel-control--rail item-groups-nav-btn secondary-item-groups-nav-btn"
+                            aria-label="Next category"
+                            onclick="INVENTORY.SECONDARY.ITEM_GROUPS_SELECTION(1)">&#10095;</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="weaponAttachmentsPanel" class="weapon-attachments-panel weapon-attachments-panel--hidden"
+        aria-hidden="true">
+        <div class="weapon-attachments-panel-inner">
+            <div class="weapon-attachments-panel-head">
+                <span class="weapon-attachments-panel-title" id="weaponAttachmentsTitle">Attachments</span>
+                <button type="button" class="weapon-attachments-panel-close" id="weaponAttachmentsClose"
+                    aria-label="Close">&times;</button>
+            </div>
+            <div id="weaponAttachmentsWeaponImg" class="weapon-attachments-weapon-wrap"></div>
+            <div class="weapon-attachments-slots-heading" id="weaponAttachmentsSlotsLabel" hidden></div>
+            <div id="weaponAttachmentsSlots" class="weapon-attachments-slots"></div>
+            <div id="weaponAttachmentsRemoveZone" class="weapon-attachments-remove-zone"></div>
+            <p class="weapon-attachments-panel-footer" id="weaponAttachmentsFooter"></p>
+        </div>
+    </div>
+
+    <div id="hotbarHud" class="hotbar-hud hotbar-hud--hidden" aria-hidden="true">
+        <div class="hotbar-strip">
+            <div class="hotbar-slot" data-hotbar-index="0"><span class="hotbar-slot-num">1</span>
+                <div class="hotbar-slot-icon" data-occupied="0"></div>
+            </div>
+            <div class="hotbar-slot" data-hotbar-index="1"><span class="hotbar-slot-num">2</span>
+                <div class="hotbar-slot-icon" data-occupied="0"></div>
+            </div>
+            <div class="hotbar-slot" data-hotbar-index="2"><span class="hotbar-slot-num">3</span>
+                <div class="hotbar-slot-icon" data-occupied="0"></div>
+            </div>
+            <div class="hotbar-slot" data-hotbar-index="3"><span class="hotbar-slot-num">4</span>
+                <div class="hotbar-slot-icon" data-occupied="0"></div>
+            </div>
+            <div class="hotbar-slot" data-hotbar-index="4"><span class="hotbar-slot-num">5</span>
+                <div class="hotbar-slot-icon" data-occupied="0"></div>
+            </div>
+        </div>
+    </div>
+    <div id="inv-controls-hint" style="display:none;">
+        <div id="inv-hint-secondary" class="inv-hint-group" style="display:none;">
+            <div class="inv-hint-row">
+                <span class="kbd">Shift</span><span class="inv-hint-sep">+</span><span class="kbd">Click</span>
+                <span class="inv-hint-label">Move full stack to empty slot</span>
+            </div>
+            <div class="inv-hint-row">
+                <span class="kbd">Alt</span><span class="inv-hint-sep">+</span><span class="kbd">Drag</span>
+                <span class="inv-hint-label">Move half stack</span>
+            </div>
+            <div class="inv-hint-row">
+                <span class="kbd">Shift</span><span class="inv-hint-sep">+</span><span class="kbd">Drag</span>
+                <span class="inv-hint-label">Move full stack to chosen slot</span>
+            </div>
+        </div>
+        <div id="inv-hint-main-only" class="inv-hint-group" style="display:none;">
+            <div class="inv-hint-row">
+                <span class="kbd">Drag</span>
+                <span class="inv-hint-label">Drag items to any slot</span>
+            </div>
+        </div>
+        <div id="inv-hint-always" class="inv-hint-group">
+            <div class="inv-hint-row">
+                <span class="kbd">Esc</span>
+                <span class="inv-hint-label">Close</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="handCraftingPanel" class="hand-crafting-panel" style="display:none;" aria-hidden="true">
+        <div class="hand-crafting-panel-inner">
+            <div class="hand-crafting-panel-head">
+                <span class="hand-crafting-panel-title" id="handCraftingPanelTitle">Hand craft</span>
+                <button type="button" class="hand-crafting-panel-close" id="handCraftingCloseBtn"
+                    aria-label="Close">&times;</button>
+            </div>
+            <div class="hand-crafting-panel-body">
+                <aside class="hand-crafting-panel-sidebar" aria-label="Recipes">
+                    <div class="hand-crafting-panel-sidebar-title" id="handCraftingRecipeFieldLabel">Recipes<br>use scroll wheel to see more</div>
+                    <div class="hand-crafting-panel-recipe-scroll-wrap">
+                        <ul class="hand-crafting-panel-recipe-list" id="handCraftingRecipeList" role="listbox"></ul>
+                    </div>
+                </aside>
+                <div class="hand-crafting-panel-detail">
+                    <div id="handCraftingSelectPrompt" class="hand-crafting-panel-select-prompt">
+                        <span class="hand-crafting-panel-select-icon" aria-hidden="true"></span>
+                        <span>Select an item to craft</span>
+                    </div>
+                    <div class="hand-crafting-panel-preview">
+                        <div class="hand-crafting-panel-reward-slot">
+                            <img id="handCraftingRewardImg" class="hand-crafting-panel-reward-img"
+                                src="img/items/placeholder.png" alt="" />
+                        </div>
+                        <p id="handCraftingDesc" class="hand-crafting-panel-desc"></p>
+                    </div>
+                    <div class="hand-crafting-panel-needed-title">Required</div>
+                    <div id="handCraftingNeeded" class="hand-crafting-panel-needed"></div>
+                    <button type="button" id="handCraftingCraftBtn" class="hand-crafting-panel-craft" disabled>
+                        Craft
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="js/vendor/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" src="js/vendor/jquery-ui.js"></script>
+    <script type="text/javascript" src="js/config.js"></script>
+    <script type="text/javascript" src="js/contextMenu.min.js"></script>
+    <script type="text/javascript" src="js/jquery.dialog.min.js"></script>
+    <script type="text/javascript" src="js/nui.js"></script>
+    <script type="text/javascript" src="js/data.js"></script>
+    <script type="text/javascript" src="js/script.js"></script>
+    <script type="text/javascript" src="js/crafting.js"></script>
+    <script type="text/javascript" src="js/hotbar.js"></script>
+    <script type="text/javascript" src="js/mainInvScript.js"></script>
+    <script type="text/javascript" src="js/weaponAttachments.js"></script>
+    <script type="text/javascript" src="js/secondaryInvScript.js"></script>
+</body>
+
+</html>

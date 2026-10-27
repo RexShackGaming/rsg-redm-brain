@@ -7,10 +7,12 @@ When an export's parameters are not listed, open the source repo and read the fu
 | Resource | Description | Exports | Net events |
 |---|---|---|---|
 | [rsg-adminmenu](rsg-adminmenu.md) |  | 0 | 68 |
+| [rsg-ambush](rsg-ambush.md) | rsg-ambush - random gang ambushes on the trail | 0 | 4 |
 | [rsg-ammo](rsg-ammo.md) | Persistent ammunition system for RedM using the RSG Framework. Players refill their weapons by using ammo  | 1 | 7 |
 | [rsg-animations](rsg-animations.md) | Emote & animation menu for RedM (RSG Core). > A Vue.js animation menu that lets players play gestures, dan | 2 | 2 |
 | [rsg-auction](rsg-auction.md) | Real-time auction system for RSG Framework | 0 | 18 |
 | [rsg-backpacks](rsg-backpacks.md) | RSG Backpacks: wearable backpacks with stashes and belt/back attachments (lanterns, lasso, machete, quiver) | 1 | 4 |
+| [rsg-bandana](rsg-bandana.md) | rsg-bandana - raise / lower your bandana (male & female) | 1 | 1 |
 | [rsg-banking](rsg-banking.md) | rsg-banking - individual branch banks across the frontier | 11 | 1 |
 | [rsg-barbers](rsg-barbers.md) | Fully functional barbershop system for RedM (RSG Core). > Visit barbershops across the map to customize yo | 0 | 1 |
 | [rsg-bathing](rsg-bathing.md) | Interactive bathing system for RedM servers using RSG Core. - [rsg-core](https://github.com/Rexshack-RedM/rsg- | 1 | 4 |
@@ -26,7 +28,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-deliveries](rsg-deliveries.md) | Wagon delivery system RSG Framework | 0 | 4 |
 | [rsg-doorlock](rsg-doorlock.md) | A database-driven door lock system for RedM using the RSG Framework. Doors are created, edited and del | 0 | 7 |
 | [rsg-drugs](rsg-drugs.md) | Drug production for RSG Framework (cannabis lab: drying, processing, packing bags & bricks with hired crew) pl | 9 | 18 |
-| [rsg-essentials](rsg-essentials.md) | Quality-of-life utilities and fixes for RedM using RSG Core. > A collection of small but essential feature | 0 | 11 |
+| [rsg-essentials](rsg-essentials.md) | Quality-of-life utilities and fixes for RedM using RSG Core. > A collection of small but essential feature | 0 | 10 |
 | [rsg-farming](rsg-farming.md) | Plant, water, fertilise and harvest crops anywhere in the world, with portable well pumps to fill your water b | 0 | 6 |
 | [rsg-fishing](rsg-fishing.md) | Fishing for RSG-Core (RedM). Players equip a fishing rod, bait it with an item from their inventory, cast, | 0 | 1 |
 | [rsg-fishmonger](rsg-fishmonger.md) | A fishmonger system for RSG-Core (RedM). Players visit a fishmonger NPC in any major town to sell their  | 0 | 0 |

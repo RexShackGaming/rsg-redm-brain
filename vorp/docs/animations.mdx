@@ -1,0 +1,29 @@
+---
+title : animations
+description : 'this script allows you to set up premade animations to use in your scripts'
+icon : 'code'
+---
+
+<Note>Client side</Note>
+
+Initiate the animations export
+```lua
+local Animations = exports.vorp_animations.initiate()
+```
+
+Play Animation
+```lua
+Animations.playAnimation('campfire', 2000)
+```
+
+Stop Animation
+```lua
+Animations.endAnimation('campfire')
+```
+
+Start Animation indefinitely
+```lua
+Animations.startAnimation('campfire')
+```
+
+to activate in game , set in config to `devmode true` and use the command `/startanimation campfire` , the ui will allow you to adjust the animation so you can add them to config files

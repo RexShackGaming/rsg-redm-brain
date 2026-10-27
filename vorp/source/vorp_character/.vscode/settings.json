@@ -1,0 +1,23 @@
+{
+    "Lua.diagnostics.globals": [
+        "Citizen",
+        "PlayerPedId",
+        "GetCurrentResourceName",
+        "RegisterCommand",
+        "joaat",
+        "Wait",
+        "IsControlPressed",
+        "SetModelAsNoLongerNeeded",
+        "PlayerId",
+        "SetPlayerModel",
+        "RenderScriptCams",
+        "SetCamActive",
+        "CreateThread",
+        "DoScreenFadeOut",
+        "DoScreenFadeIn",
+        "RegisterNetEvent",
+        "AddEventHandler",
+        "TriggerEvent"
+    ],
+    "cfxlua.game": "rdr3"
+}

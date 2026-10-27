@@ -1,0 +1,43 @@
+---
+title : progressbar
+description : 'create a progressbar in your scripts'
+icon : 'spinner'
+---
+
+<Note>Client side</Note>
+
+
+Initiate the progress bar ,use it on the top of your script
+```lua
+progressbar = exports.vorp_progressbar:initiate()
+```
+
+
+
+<Accordion icon="code" iconType="duotone" title="start">
+
+     Start your progress UI
+
+    <ParamField  body="message"  type="string" required>
+       the message that will be displayed in the progressbar
+     </ParamField>
+
+     <ParamField  body="duration"  type="number" required >
+        the duration that the progressbar will be displayed in milliseconds
+     </ParamField>
+
+     <ParamField  body="callback"  type="function" required >
+        the function that will be called when the progressbar is done
+     </ParamField>
+
+     <ParamField  body="theme"  type="string" required >
+        the theme of the progressbar can be `linear`, `circle`, `innercircle`
+     </ParamField>
+
+   
+```lua
+progressbar.start("Loading Example", 20000, function ()
+    print('DONE!!!!')
+end, 'linear')
+```
+</Accordion>

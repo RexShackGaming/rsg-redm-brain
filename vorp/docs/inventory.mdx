@@ -1,0 +1,1788 @@
+---
+title: 'inventory'
+description: 'Documentation for vorp inventory system'
+icon : 'code'
+---
+
+<Warning>
+ This documentation is for developers who are making scripts for VORP Core Framework
+</Warning>
+
+## Exports
+
+---
+
+<Note> These exports are client side only!</Note>
+
+<Tabs>
+    <Tab title="Items">
+
+### Getters
+
+        <Accordion icon="keyboard" iconType= "duotone" title="getInventoryItems">
+ 
+            <Icon icon="code" iconType="solid"/> get all user inventory items 
+
+            <ParamField body="return" type="table">
+             `returns` a table containing all the items in the inventory
+            </ParamField>
+            ```lua
+            local result = exports.vorp_inventory:getInventoryItems()
+            ```
+        </Accordion>
+        <Accordion icon="keyboard" iconType= "duotone" title="getInventoryItem">
+            <Icon icon="code" iconType="solid"/> get user inventory item
+            <ParamField body="string" type="name">
+              the item name
+            </ParamField>
+
+            <ParamField body="return" type="table">
+              `returns` a table containing the item name,label,weight,desc metadata, percentage
+            </ParamField>
+
+            ```lua
+            local result = exports.vorp_inventory:getInventoryItem()
+            ```
+        </Accordion>
+        <Accordion icon="keyboard" iconType= "duotone" title="getServerItem">
+            <ParamField body="datae" type="string|table">
+                the item name to get or an table of items to get in one single call, returns the data from items database like label,weight,desc,metadata etc
+            </ParamField>
+
+            ```lua
+            local result = exports.vorp_inventory:getServerItem("water")
+            print(result.label)
+            ```
+        </Accordion>
+    </Tab>
+    <Tab title="Inventory">
+        <Accordion icon="keyboard" iconType= "duotone" title="closeInventory">
+            <Icon icon="code" iconType="solid"/> close inventory
+            ```lua
+            exports.vorp_inventory:closeInventory()
+            ```
+        </Accordion>
+    </Tab>
+</Tabs>
+
+
+<Note> These exports are server side only!</Note>
+
+<Tabs>
+  <Tab title="Weapons">
+
+### Getters
+
+<Accordion icon="keyboard" iconType= "duotone" title="getUserAmmo">
+ 
+   <Icon icon="code" iconType="solid"/> get all user ammo
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="table">
+     `returns` a table containing all the ammo
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:getUserAmmo(source, callback)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="canCarryWeapons">
+ 
+   <Icon icon="code" iconType="solid"/> check if player can carry weapons
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="amount" type="int" required>
+     amount of weapons
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="weaponName" type="string | number">
+     weapon name or hash its needed to check weight since 3.6
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the player can carry the weapons
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:canCarryWeapons(source, amount,callback, weaponName)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="getUserWeapon">
+ 
+   <Icon icon="code" iconType="solid"/> get user inventory weapon
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="weaponId" type="number">
+     weapon id
+    </ParamField>
+
+    <ParamField body="return" type="table">
+     `{id:number,name:string,propietary:string,used:boolean,desc:string,group:number,source:number,label:string,serial_number:string,custom_label:string,custom_desc:string}`
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:getUserWeapon(source, callback,weaponId)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="getUserInventoryWeapons">
+ 
+   <Icon icon="code" iconType="solid"/> get user inventory weapons
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="table">
+     `{id:number,name:string,propietary:string,used:boolean,desc:string,group:number,source:number,label:string,serial_number:string,custom_label:string,custom_desc:string}`
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:getUserInventoryWeapons(source, callback)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="getWeaponBullets">
+ 
+   <Icon icon="code" iconType="solid"/> get weapon bullets
+
+   <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+    <ParamField body="weaponID" type="number" required>
+     weapon id
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="number">
+     weapon ammo
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:getWeaponBullets(source,weaponID, callback)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="getWeaponComponents">
+ 
+   <Icon icon="code" iconType="solid"/> get weapon components
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="weaponId" type="number" required>
+     weapon id
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="table">
+     `returns` a table containing the weapon components
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:getWeaponComponents(source, weaponId, callback)
+    ```
+</Accordion>
+
+### Setters
+
+<Accordion icon="keyboard" iconType= "duotone" title="setWeaponCustomDesc">
+ 
+   <Icon icon="code" iconType="solid"/> set weapon custom description
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="weaponId" type="number" required>
+     weapon id
+    </ParamField>
+
+    <ParamField body="desc" type="string" required>
+     weapon description
+    </ParamField>
+
+    <ParamField body="cb" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the description was successfully set
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:setWeaponCustomDesc(weaponId, desc, cb)
+    ```
+</Accordion>
+
+
+<Accordion icon="keyboard" iconType= "duotone" title="setWeaponCustomLabel">
+ 
+   <Icon icon="code" iconType="solid"/> set weapon custom label
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="weaponId" type="number" required>
+     weapon id
+    </ParamField>
+
+    <ParamField body="label" type="string" required>
+     weapon label
+    </ParamField>
+
+    <ParamField body="cb" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns`true if the label was successfully set
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:setWeaponCustomLabel(weaponId, label, cb)
+    ```
+</Accordion>
+
+
+<Accordion icon="keyboard" iconType= "duotone" title="setWeaponSerialNumber">
+ 
+   <Icon icon="code" iconType="solid"/> set weapon serial number
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="weaponId" type="number" required>
+     weapon id
+    </ParamField>
+
+    <ParamField body="serial" type="string" required>
+     weapon serial number
+    </ParamField>
+
+    <ParamField body="cb" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the serial number was successfully set
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:setWeaponSerialNumber(weaponId, serial, cb)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="subWeapon">
+ 
+   <Icon icon="code" iconType="solid"/> remove weapon from user inventory
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="weaponId" type="number" required>
+     weapon id
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the weapon was successfully removed
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:subWeapon(source, weaponId, callback)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="giveWeapon">
+ 
+   <Icon icon="code" iconType="solid"/> give weapon to user
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="weaponId" type="number" required>
+     weapon id
+    </ParamField>
+
+    <ParamField body="target" type="int" required>
+     target id
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the weapon was successfully given
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:giveWeapon(source, weaponId, target,callback)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="createWeapon">
+ 
+   <Icon icon="code" iconType="solid"/> create weapon
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="weaponName" type="string" required>
+     weapon name
+    </ParamField>
+
+    <ParamField body="ammo" type="string" required>
+     amount of ammo
+    </ParamField>
+
+    <ParamField body="components" type="table" required>
+     weapon components
+    </ParamField>
+
+    <ParamField body="comps" type="table" required>
+     weapon components
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+    
+    <ParamField body="wepid" type="int">
+     leave this as nil, this is used internally only
+    </ParamField>
+
+    <ParamField body="serial" type="string">
+     custom serial number for weapon
+    </ParamField>
+
+    <ParamField body="label" type="string">
+     custom label for weapon
+    </ParamField>
+
+    <ParamField body="desc" type="string">
+     custom desc for weapons
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     if async
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:createWeapon(source, weaponName, ammo, components, comps, callback,serial,label,desc)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="deleteWeapon">
+ 
+   <Icon icon="code" iconType="solid"/> delete weapon
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="weaponId" type="number" required>
+     weapon id
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     if async
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:deleteWeapon(source, weaponId, callback)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="addBullets">
+ 
+   <Icon icon="code" iconType="solid"/> add bullets
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="bulletType" type="string" required>
+     bullet type
+    </ParamField>
+
+    <ParamField body="amount" type="number" required>
+     amount of bullets
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the bullets were successfully added
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:addBullets(source, bulletType, amount,callback)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="subBullets">
+ 
+   <Icon icon="code" iconType="solid"/> remove bullets from weapon
+
+    <ParamField body="weaponId" type="number" required>
+     weapon id
+    </ParamField>
+
+    <ParamField body="bulletType" type="string" required>
+     bullet type
+    </ParamField>
+
+    <ParamField body="amount" type="number" required>
+     amount of bullets
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the bullets were successfully removed
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:subBullets(weaponId, bulletType, amount,callback)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="removeAllUserAmmo">
+ 
+   <Icon icon="code" iconType="solid"/> remove all user ammo
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:removeAllUserAmmo(source)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="addWeaponComponent">
+ 
+   <Icon icon="code" iconType="solid"/> add a component to a weapon
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="weaponId" type="number" required>
+     weapon id
+    </ParamField>
+
+    <ParamField body="component" type="string | number" required>
+     component name or hash
+    </ParamField>
+
+    <ParamField body="category" type="string | number" required>
+     slot category
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the component was successfully added
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:addWeaponComponent(source, weaponId, component, category, callback)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="addWeaponComponents">
+ 
+   <Icon icon="code" iconType="solid"/> add multiple components to a weapon
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="weaponId" type="number" required>
+     weapon id
+    </ParamField>
+
+    <ParamField body="components" type="table" required>
+     a table where the key is the component name or hash and the value is the slot category `{ [component] = category }`
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the components were successfully added
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:addWeaponComponents(source, weaponId, components, callback)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="subWeaponComponent">
+ 
+   <Icon icon="code" iconType="solid"/> remove a component from a weapon
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="weaponId" type="number" required>
+     weapon id
+    </ParamField>
+
+    <ParamField body="component" type="string | number" required>
+     component name or hash
+    </ParamField>
+
+    <ParamField body="category" type="string | number" required>
+     slot category
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the component was successfully removed
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:subWeaponComponent(source, weaponId, component, category, callback)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="subWeaponComponents">
+ 
+   <Icon icon="code" iconType="solid"/> remove multiple components from a weapon
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="weaponId" type="number" required>
+     weapon id
+    </ParamField>
+
+    <ParamField body="components" type="table" required>
+     a table where the key is the component name or hash and the value is the slot category `{ [component] = category }`
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the components were successfully removed
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:subWeaponComponents(source, weaponId, components, callback)
+    ```
+</Accordion>
+
+</Tab>
+  <Tab title="Items">
+    ### Getters
+    <Accordion icon="keyboard" iconType= "duotone" title="canCarryItem">
+  
+<Icon icon="code" iconType="solid" /> check if player can carry the item before adding it to the inventory
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="item" type="string" required>
+     The item name
+    </ParamField>
+
+    <ParamField body="amount" type="int" required>
+     The amount of items
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     The callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the player can carry the item
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:canCarryItem(source, item, amount, callback)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="getUserInventoryItems">
+ 
+   <Icon icon="code" iconType="solid" /> gets all the items in the player inventory
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     The callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="table">
+     `returns` a table containing all the items in the inventory
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:getUserInventoryItems(source, callback)
+    ```
+</Accordion>
+
+
+<Accordion icon="keyboard" iconType= "duotone" title="getItemCount">
+ 
+   <Icon icon="code" iconType="solid"/> get item amount from player inventory
+
+    <ParamField body="source" type="int" required>
+    The player id
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+    callback function for syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="item" type="string" required>
+    item name
+    </ParamField>
+
+    <ParamField body="metadata" type="table">
+     item metadata
+    </ParamField>
+
+    <ParamField body="percentage" type="int">
+     allows to control what items to get, if 0 gets all items with no metadata if meta was not passed if 0 gets items expired, anything above 0 or equal will return those item count
+    </ParamField>
+
+    <ParamField body="return" type="int">
+     `returns` the amount of items in the inventory
+    </ParamField>
+
+    ```lua usage
+    exports.vorp_inventory:getItemCount(source, callback, item, metadata, percentage)
+    ```
+</Accordion>
+
+
+<Accordion icon="keyboard" iconType= "duotone" title="getItemDB">
+ 
+   <Icon icon="code" iconType="solid"/> get DB item
+
+    <ParamField body="item" type="string" required>
+     item name
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function asyncronous or syncronous
+    </ParamField>
+
+    <ParamField body="return" type="table">
+     `returns` a table containing item info
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:getItemDB(item, callback)
+    ```
+</Accordion>
+
+
+<Accordion icon="keyboard" iconType= "duotone" title="getItemById">
+ 
+   <Icon icon="code" iconType="solid"/> get item by main id
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="id" type="int" required>
+     item id
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="table">
+     `{id:number, label:string, name:string, metadata:table, group:number, type:string, count:number, limit:number,canUse:boolean,percenage:integer,description:string,weight:number}`
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:getItemById(source, id, callback)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="getItem">
+ 
+   <Icon icon="code" iconType="solid"/> get item data
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="item" type="string" required>
+     item name
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="metadata" type="table">
+     item metadata
+    </ParamField>
+
+    <ParamField body="percentage" type="int">
+     get an item only at a certain percentage, if 0 it gets tems expired if nil gets any item if more than 0 gets any item that equals or is above
+    </ParamField>
+
+    <ParamField body="return" type="table">
+     `{id:number, label:string, name:string, metadata:table, group:number, type:string, count:number, limit:number,canUse:boolean,weight:number,desc:string,percentage:integer}`
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:getItem(source, item,callback, metadata,percentage)
+    ```
+</Accordion>
+
+### Setters
+ 
+ <Accordion icon="keyboard" iconType= "duotone" title="addItem">
+ 
+   <Icon icon="code" iconType="solid"/> add item to user
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="item" type="string" required>
+     item name
+    </ParamField>
+
+    <ParamField body="amount" type="int" required>
+     amount of item
+    </ParamField>
+
+    <ParamField body="metadata" type="table">
+     item metadata
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="event" type="boolean">
+     if true will not trigger the event OnItemCreated
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the item was successfully added
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:addItem(source, item, amount, metadata, callback,event)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="subItem">
+ 
+   <Icon icon="code" iconType="solid"/> remove item from user inventory
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="item" type="string" required>
+     item name
+    </ParamField>
+
+    <ParamField body="amount" type="int" required>
+     amount of item
+    </ParamField>
+
+    <ParamField body="metadata" type="table">
+     item metadata
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="event" type="boolean">
+     event OnItemRemoved to be fired, if true it wont be sent, false or nil it will fire the event
+    </ParamField>
+
+    <ParamField body="percentage" type="int">
+     allows to control percentage of items to remove, if nil removes any, if 0 removes expired items only, if more than 0 it removes anything above or equal
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the item was successfully removed
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:subItem(source, item, amount, metadata, callback,event,percentage)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="subItemById">
+ 
+    <Icon icon="code" iconType="solid"/> remove item from user inventory by its id exort available on verion 3.9 and up lower versions uses subItemID
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="itemId" type="int" required>
+     item id
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="event" type="boolean">
+      event OnItemRemoved to be fired, if true it wont be sent, false or nil it will fire the event
+    </ParamField>
+
+    <ParamField body="amount" type="int">
+     amount to remove
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the item was successfully removed
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:subItemById(source, itemId,callback,event,amount)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="setItemMetadata">
+ 
+    <Icon icon="code" iconType="solid"/>
+    - Split a stack and modify only some items (amount must be less than the current stack)
+    - Merge with an existing stack that has matching metadata (amount must be more or equal than the current stack)
+    - Modify the entire stack's metadata (amount must be more or equal than the current stack) this only applies if metadata is the same as current stack
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="itemId" type="int" required>
+     item id
+    </ParamField>
+
+    <ParamField body="metadata" type="table">
+     reserved keys are:
+
+     - `description` the description of the item to replace
+     - `image` the image of the item to replace must exist in item folder.
+     - `label` the label of the item to replace
+     - `weight` the weight of the item to replace
+     - `tolltip` add extra text to the tooltip 
+     - `context` add context buttons to the item
+     - `useExpired` if true allows to use expired items overriding the useExpired setting in the item db
+
+    </ParamField>
+
+    <ParamField body="amount" type="int" required>
+     amount of item to remove from current stack if less, if more it will remove from here and add to another stack if metadata matches, if not then it updates the entire stack with new meta
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the metadata was successfully set
+    </ParamField>
+
+
+    ```lua
+    -- FOR CONTEXT BUTTONS USE THIS FORMAT
+    local metadata = {
+      context = { -- key word for context buttons
+        { -- array supporting multiple buttons
+              text = "BUTTON", -- label shown in menu
+              close = true, -- close inv on use
+              event = {
+                  client = "myscript:contextevent", -- client event to trigger
+                  server = "myscript:contextevent" -- server event to trigger
+              },
+              arguments = { -- arguments to pass to the event if needed
+                  "any",
+              }
+          }
+      }
+    }
+    
+    -- listen in your scripts client side
+    AddEventHandler("myscript:contextevent", function(args,itemId)
+        
+    end) 
+
+    -- NOTE: for server side events you must whitelist the event using the exports bellow
+    exports.vorp_inventory:addAllowedContextMenuEvent("myscript:contextevent",GetCurrentResourceName())
+    -- or as a table
+    exports.vorp_inventory:addAllowedContextMenuEvent({
+      "myscript:contextevent",
+      "myscript:contextevent2"
+    },GetCurrentResourceName())
+    -- if you dont whitelist the event it will not be triggered this is to ensure only trusted events are triggered
+
+    -- to remove a whitelisted event
+    exports.vorp_inventory:removeAllowedContextMenuEvent("myscript:contextevent",GetCurrentResourceName())
+    -- or as a table
+    exports.vorp_inventory:removeAllowedContextMenuEvents({
+      "myscript:contextevent",
+      "myscript:contextevent2"
+    },GetCurrentResourceName())
+
+    -- server side of your script
+    AddEventHandler("myscript:contextevent", function(source,args,itemId)
+
+    end)
+  ```
+
+  ```lua
+    -- SET ITEM METADATA
+    exports.vorp_inventory:setItemMetadata(source, itemId, metadata, amount, callback)
+  ```
+
+
+</Accordion>
+
+
+<Accordion icon="keyboard" iconType= "duotone" title="registerUsableItem">
+ 
+   <Icon icon="code" iconType="solid"/> register usable item
+   <Note>Items cant be registered twice they must be unique</Note>
+
+    <ParamField body="item" type="string" required>
+     item name
+    </ParamField>
+
+    <ParamField body="callback" type="function" required>
+     callback `{source:int, id:number, label:string, name:string, metadata:table, group:number, type:string, count:number, limit:number,canUse:boolean, mainid: integer, percentage:integer}`
+    </ParamField>
+
+    
+    <ParamField body="resourceName" type="string">
+     resource name for debug purposes so users can see in what resource this item is registered at
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:registerUsableItem(item, callback,resourceName)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="unRegisterUsableItem">
+ 
+   <Icon icon="code" iconType="solid"/> un register usable item when you stop a script for example
+   <Note>Items cant be registered twice they must be unique</Note>
+
+    <ParamField body="item" type="string" required>
+     item name
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:unRegisterUsableItem(item)
+    ```
+</Accordion>
+
+</Tab>
+  <Tab title="Inventory items">
+    ### Getters
+
+    <Accordion icon="keyboard" iconType= "duotone" title="getCustomInventoryItemCount">
+     
+      <Icon icon="code" iconType="solid"/> get custom inventory item count
+    
+      <ParamField body="invid" type="string" required>
+        inventory id
+      </ParamField>
+
+      <ParamField body="itemName" type="string" required>
+        item name
+      </ParamField>
+
+      <ParamField body="callback" type="function">
+        callback function syncronous or asyncronous
+      </ParamField>
+
+      <ParamField body="metadata" type="table">
+        if metadata is provided then it will return the amount of items with the same metadata
+      </ParamField>
+
+      <ParamField body="return" type="number">
+        `returns` the amount of items in the inventory
+      </ParamField>
+
+      ```lua
+      exports.vorp_inventory:getCustomInventoryItemCount(invid,itemName,callback,metadata)
+      ```
+    </Accordion>
+    
+    <Accordion icon="keyboard" iconType= "duotone" title="getCustomInventoryItems">
+     
+      <Icon icon="code" iconType="solid"/> get custom inventory items
+
+      <ParamField body="invid" type="string" required>
+        inventory id
+      </ParamField>
+
+      <ParamField body="callback" type="function">
+        callback function syncronous or asyncronous
+      </ParamField>
+
+      <ParamField body="return" type="table">
+        `returns` a table containing all the items in the inventory
+      </ParamField>
+
+      ```lua
+      exports.vorp_inventory:getCustomInventoryItems(invid, callback)
+      ```
+    </Accordion>
+
+   ### Setters 
+
+  <Accordion icon="keyboard" iconType= "duotone" title="removeItemFromCustomInventory">
+ 
+   <Icon icon="code" iconType="solid"/> remove item from custom inventory
+
+    <ParamField body="invid" type="string" required>
+      inventory id
+    </ParamField>
+
+    <ParamField body="itemName" type="string" required>
+      item name
+    </ParamField>
+
+    <ParamField body="amount" type="number" required>
+      amount of item
+    </ParamField>
+
+    <ParamField body="itemCraftedId" type="number" required>
+      item crafted id
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+      callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the item was successfully removed
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:removeItemFromCustomInventory(invid,itemName,callback)
+    ```
+  </Accordion>
+
+
+  <Accordion icon="keyboard" iconType= "duotone" title="updateCustomInventoryItem">
+ 
+   <Icon icon="code" iconType="solid"/> update item in custom inventory
+
+    <ParamField body="invId" type="string" required>
+        inventory id
+    </ParamField>
+
+    <ParamField body="item_id" type="number" required>
+        item id
+    </ParamField>
+
+    <ParamField body="metadata" type="table" required>
+        metadata to update
+    </ParamField>
+
+    <ParamField body="amount" type="number">
+        amount of item
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+        callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+        `returns` true if the item was successfully updated
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:updateCustomInventoryItem(invId, item_id, metadata, amount, callback)
+    ```
+  </Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="addItemsToCustomInventory">
+ 
+   <Icon icon="code" iconType="solid"/> add items to custom inventory
+
+    <ParamField body="invid" type="string" required>
+        inventory id
+    </ParamField>
+
+    <ParamField body="items" type="table" required>
+        items to add
+    </ParamField>
+
+    <ParamField body="charid" type="number">
+        charidentifier of the owner of the storage if custom inv is not shared , if its shared can be any characteridentifer
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+        callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+        `returns` true if the items were successfully added
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:addItemsToCustomInventory(invid, items, charid,callback)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="setCustomInventoryItemLimit">
+ 
+   <Icon icon="code" iconType="solid"/> if in registerCustomInventory you set whitelistItems true then use this export to set which items are whitelisted and their amount
+
+    <ParamField body="invId" type="string" required>
+        inventory id
+    </ParamField>
+
+    <ParamField body="item" type="string" required>
+        item name
+    </ParamField>
+
+    <ParamField body="limit" type="number" required>
+        item limit
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+        callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+        `returns` true if the limit was successfully set
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:setCustomInventoryItemLimit(invId, item, limit, callback)
+    ```
+</Accordion>
+
+</Tab>
+
+<Tab title="Inventory weapons">
+
+ ### Getters
+
+ <Accordion icon="keyboard" iconType= "duotone" title="getCustomInventoryWeapons">
+     
+    <Icon icon="code" iconType="solid"/> get custom inventory weapons
+    
+    <ParamField body="invid" type="string" required>
+     inventory id
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="table">
+     `returns` a table containing all the weapons in the inventory
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:getCustomInventoryWeapons(invid, callback)
+    ```
+ </Accordion>
+
+ <Accordion icon="keyboard" iconType= "duotone" title="getCustomInventoryWeaponCount">
+     
+    <Icon icon="code" iconType="solid"/> get custom inventory weapon count
+
+    <ParamField body="invid" type="string" required>
+     inventory id
+    </ParamField>
+
+    <ParamField body="weaponName" type="string" required>
+     weapon name
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="number">
+     `returns` the amount of weapons in the inventory
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:getCustomInventoryWeaponCount(invid,weaponName,callback)
+    ```
+ </Accordion>
+
+
+    ### Setter
+
+ <Accordion icon="keyboard" iconType= "duotone" title="removeCustomInventoryWeaponById">
+   
+    <Icon icon="code" iconType="solid"/> remove weapon from custom inventory by weapon id
+    
+    <ParamField body="invId" type="string" required>
+     inventory id
+    </ParamField>
+
+    <ParamField body="weapon_id" type="number" required>
+     weapon id
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the weapon was successfully removed
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:removeCustomInventoryWeaponById(invId, weapon_id, callback)
+    ```
+ </Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="removeWeaponFromCustomInventory">
+   
+  <Icon icon="code" iconType="solid"/> remove weapon from custom inventory
+
+  <ParamField body="invid" type="string" required>
+   inventory id
+  </ParamField>
+
+  <ParamField body="weaponName" type="string" required>
+   weapon name
+  </ParamField>
+
+  <ParamField body="callback" type="function">
+   callback function syncronous or asyncronous
+  </ParamField>
+
+  <ParamField body="return" type="boolean">
+   `returns` true if the weapon was successfully removed
+  </ParamField>
+
+  ```lua
+  exports.vorp_inventory:removeWeaponFromCustomInventory(invid,weaponName,callback)
+  ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="addWeaponsToCustomInventory">
+   
+    <Icon icon="code" iconType="solid"/> add weapons to custom inventory
+
+    <ParamField body="invid" type="string" required>
+     inventory id
+    </ParamField>
+
+    <ParamField body="weapons" type="table" required>
+     `{name: string, serial_number: string?, custom_label: string?, custom_desc: string?, components: table?}`
+    </ParamField>
+
+    <ParamField body="charid" type="number">
+     charidentifier of the owner of the storage if custom inv is not shared , if its shared can be any characteridentifer
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the weapons were successfully added
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:addWeaponsToCustomInventory(invid, weapons, charid,callback)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="setCustomInventoryWeaponLimit">
+   
+    <Icon icon="code" iconType="solid"/> set custom inventory whitelisted weapons, if in registerCustomInventory you set whitelistWeapons true then use this export to set which weapons are whitelisted and their amount
+    
+    <ParamField body="invId" type="string" required>
+     inventory id
+    </ParamField>
+
+    <ParamField body="weapon" type="string" required>
+     weapon name
+    </ParamField>
+
+    <ParamField body="limit" type="number" required>
+     weapon limit
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the limit was successfully set
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:setCustomInventoryWeaponLimit(invId, weapon, limit, callback)
+    ```
+</Accordion>
+
+</Tab>
+
+<Tab title="Inventory misc">
+     ### Getters
+  <Accordion icon="keyboard" iconType= "duotone" title="isCustomInventoryRegistered">
+     
+    <Icon icon="code" iconType="solid"/> check if inventory is registered
+
+    <ParamField body="id" type="string" required>
+     inventory id
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    <ParamField body="return" type="boolean">
+     `returns` true if the inventory is registered
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:isCustomInventoryRegistered(id, callback)
+    ```
+  </Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="AddCharIdPermissionTakeFromCustom">
+     
+    <Icon icon="code" iconType="solid"/> add permissions using charids
+
+    <ParamField body="id" type="string" required>
+      inventory id
+    </ParamField>
+
+    <ParamField body="charid" type="number" required>
+      charid
+    </ParamField>
+
+    <ParamField body="state" type="boolean">
+      state
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:AddCharIdPermissionTakeFromCustom(id,charid,state)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="AddCharIdPermissionMoveToCustom">
+     
+    <Icon icon="code" iconType="solid"/> add permissions using charids
+
+    <ParamField body="id" type="string" required>
+      inventory id
+    </ParamField>
+    
+    <ParamField body="charid" type="number" required>
+      charid
+    </ParamField>
+
+    <ParamField body="state" type="boolean">
+      state
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:AddCharIdPermissionMoveToCustom(id,charid,state)
+    ```
+</Accordion>
+
+ <Accordion icon="keyboard" iconType= "duotone" title="getCustomInventorySlots">
+ 
+   <Icon icon="code" iconType="solid"/> get cached inventory slots
+
+    <ParamField body="invId" type="string" required>
+     inventory id
+    </ParamField>
+
+    <ParamField body="callback" type="function">
+     callback function syncronous or asyncronous
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:getCustomInventorySlots(invId,callback)
+    ```
+</Accordion>
+
+### Setters
+
+<Accordion icon="keyboard" iconType= "duotone" title="deleteCustomInventory">
+ 
+   <Icon icon="code" iconType="solid"/> delete custom inventory from data base and cache
+
+   <ParamField body="invId" type="string" required>
+    inventory id
+   </ParamField>
+
+   ```lua
+   exports.vorp_inventory:deleteCustomInventory(invId)
+   ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="registerInventory">
+ 
+   <Icon icon="code" iconType="solid"/> register custom inventory
+
+  <ParamField body="data" type="table" required>
+    `{ id:string, name:string, limit:number, acceptWeapons:boolean, shared:boolean, ignoreItemStackLimit:boolean, whitelistItems:boolean, UsePermissions:boolean, UseBlackList:boolean, whitelistWeapons:boolean,webhook:string }`
+  </ParamField>
+
+    ```lua
+    exports.vorp_inventory:registerInventory(data)
+    ```
+</Accordion>
+
+<Accordion  icon="keyboard" iconType= "duotone" title="AddPermissionMoveToCustom">
+ 
+   <Icon icon="code" iconType="solid"/> add permissions to move item to inventory by job and grade
+
+    <ParamField body="invId" type="string" required>
+     inventory id
+    </ParamField>
+
+    <ParamField body="jobName" type="string" required>
+     job name
+    </ParamField>
+
+    <ParamField body="jobgrade" type="number" required>
+     job grade
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:AddPermissionMoveToCustom(invId, jobName, jobgrade)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="AddPermissionTakeFromCustom">
+ 
+   <Icon icon="code" iconType="solid"/> add permissions to take item from inventory by job and grade
+
+    <ParamField body="invId" type="string" required>
+     inventory id
+    </ParamField>
+
+    <ParamField body="jobName" type="string" required>
+     job name
+    </ParamField>
+
+    <ParamField body="jobgrade" type="number" required>
+     job grade
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:AddPermissionTakeFromCustom(invId, jobName, jobgrade)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="BlackListCustomAny">
+ 
+   <Icon icon="code" iconType="solid"/> black list items or weapons
+
+    <ParamField body="invId" type="string" required>
+     inventory id
+    </ParamField>
+
+    <ParamField body="item" type="string" required>
+     item name | weapon name
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:BlackListCustomAny(invId, item)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="removeInventory">
+ 
+   <Icon icon="code" iconType="solid"/> remove inventory from session
+
+  <ParamField body="invId" type="string" required>
+    inventory id
+  </ParamField>
+
+    ```lua
+    exports.vorp_inventory:removeInventory(invId)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="updateCustomInventorySlots">
+ 
+   <Icon icon="code" iconType="solid"/> update inventory slots
+
+    <ParamField body="invId" type="string" required>
+     inventory id
+    </ParamField>
+
+    <ParamField body="slots" type="number" required>
+    inventory slots
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:updateCustomInventorySlots(invId, slots)
+    ```
+</Accordion>
+
+
+<Accordion icon="keyboard" iconType= "duotone" title="openInventory">
+ 
+   <Icon icon="code" iconType="solid"/> open inventory main or secondary
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="invId" type="string">
+     inventory id
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:openInventory(source, invId)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="closeInventory">
+ 
+   <Icon icon="code" iconType="solid"/> close inventory main or secondary
+
+    <ParamField body="source" type="int" required>
+     The player id
+    </ParamField>
+
+    <ParamField body="invId" type="string">
+     inventory id
+    </ParamField>
+
+    ```lua
+    exports.vorp_inventory:closeInventory(source, invId)
+    ```
+</Accordion>
+
+<Accordion icon="keyboard" iconType= "duotone" title="openPlayerInventory">
+ 
+   <Icon icon="code" iconType="solid"/> open player inventory
+
+  <ParamField body="data" type="table" required>
+    `{ source:int, target:int, title:string, blacklist:table, itemsLimit:table, timeout:number }`
+  </ParamField>
+
+    ```lua
+    local data = {
+        source = source, 
+        target = target, 
+        title = "Search inventory",
+        blacklist = { -- OPTIONAL
+            water = true, -- item name or weapon name
+        },
+        itemsLimit = { -- OPTIONAL
+            weapons = { itemType = "item_weapon", limit = 1 }, -- how many weapons user is allowed to take
+            items =   { itemType = "item_standard", limit = 2 }, -- how many items user is allowed to take
+        },
+        timeout = 60, -- OPTIONAL in seconds , if enabled when user reaches limits then a timeout is applied so player cant steal for that amount of time if removed then   once limit reached only after restart they can steal again
+    }
+
+    exports.vorp_inventory:openPlayerInventory(data)
+    ```
+</Accordion>
+
+</Tab>
+
+</Tabs>
+
+--- 
+
+## Events
+
+<Note>Server Side only</Note>
+
+Listen to when an item is used
+```lua
+AddEventHandler("vorp_inventory:Server:OnItemUse",function(data)
+    local source = data.source
+    local itemName = data.item.name
+    local itemMetadata = data.item.metadata
+end)
+```
+
+Listen to when an item is created in player inventory
+```lua OnItemCreated
+AddEventHandler("vorp_inventory:Server:OnItemCreated",function(data,source)
+    -- data.count, data.name, data.metadata
+end)
+```
+
+Listen to when an item is removed from player inventory
+```lua OnItemRemoved
+AddEventHandler("vorp_inventory:Server:OnItemRemoved",function(data,source)
+    -- data.count , data.name , data.metadata
+end)
+```
+
+Listen to when an item is taken from custom inventory
+```lua OnItemTakenFromCustomInventory
+AddEventHandler("vorp_inventory:Server:OnItemTakenFromCustomInventory", function(item, invId, source)
+    -- item.amount , item.name, item.id, item.metadata
+end)
+```
+
+Listen to when an item is moved to custom inventory
+```lua OnItemMovedToCustomInventory
+AddEventHandler("vorp_inventory:Server:OnItemMovedToCustomInventory", function(item, invId, source)
+    -- item.amount , item.name, item.id, item.metadata
+end)
+```
+
+Listen for inventory state change `(opens or closes)` including custom inventories
+```lua OnInvStateChange
+AddEventHandler("vorp_inventory:Client:OnInvStateChange",function(boolean)
+    print(boolean)
+end)
+```
+
+Block player inventory from server or client side
+```lua OnInvBlock server
+TriggerClientEvent("vorp_inventory:blockInventory", player_id, true or false)
+```
+```lua OnInvBlock client
+  TriggerEvent("vorp_inventory:blockInventory", true or false)
+```
+
+<Note>Client Side only</Note>
+
+Listen to when a weapon is equipped
+```lua onWeaponEquipped
+AddEventHandler("vorp_inventory:onWeaponEquipped", function(components, weaponId, name, isDual, defaultAttachments)
+    -- components: table of the equipped components, weaponId: weapon id, name: weapon name, isDual: boolean, defaultAttachments: table
+end)
+```
+
+Listen to when a component is added to a weapon
+```lua componentAdded
+AddEventHandler("vorp_inventory:componentAdded", function(weaponId, component, category)
+    -- weaponId: weapon id, component: component name, category: slot category
+end)
+```
+
+Listen to when a component is removed from a weapon
+```lua componentRemoved
+AddEventHandler("vorp_inventory:componentRemoved", function(weaponId, component, category)
+    -- weaponId: weapon id, component: component name, category: slot category
+end)
+```
+
+## Statebags
+
+contains data from the current weapon used in the inventory or last weapon used.
+
+<Note>client side</Note>
+
+```lua GetEquippedWeaponData
+local key = string.format("GetEquippedWeaponData_%d",weaponHash)
+local data = LocalPlayer.state[key]
+local serial = data.serialNumber
+local id = data.weaponId
+```
+
+<Note>server side</Note>
+
+```lua GetEquippedWeaponData
+local key = string.format("GetEquippedWeaponData_%d",weaponHash)
+local data = Player(source).state[key]
+local serial = data.serialNumber
+local id = data.weaponId
+```
+ check if inventory is active (open or closed) including custom inventories
+
+<Note>client side</Note>
+```lua IsInvActive
+LocalPlayer.state.IsInvActive
+```
+
+<Note>server side</Note>
+```lua IsInvActive
+Player(source).state.IsInvActive
+```
+
+## Global Statebags
+
+returns timestamp from server to be used in client
+
+```lua
+local timestamp = GlobalState.TimeNow
+-- Get hours, minutes and seconds from timestamp
+local seconds = GlobalState.TimeNow % 60
+local minutes = math.floor(GlobalState.TimeNow / 60) % 60 
+local hours = math.floor(GlobalState.TimeNow / 3600) % 24
+```

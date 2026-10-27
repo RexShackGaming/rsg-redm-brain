@@ -1,0 +1,1018 @@
+---
+title: menu
+description: 'vorp menu is a library that allows you to create menus in game with a rdr2 style.'
+icon: 'code'
+---
+
+### GetMenuData
+
+<Accordion icon="code" iconType="duotone" title="GetMenuData">
+  on top of your client scripts add this to get the menu data setters and getters
+<ParamField body="return" type="table">
+    The menu data
+</ParamField>
+
+```lua
+local Menu = exports.vorp_menu:GetMenuData()
+```
+</Accordion>
+
+### CloseAll
+
+<Accordion icon="code" iconType="duotone" title="CloseAll">
+  Close all menus
+
+```lua
+-- these params are optional
+-- to not fire event close pass false if nil or true will fire the event close
+MenuData.CloseAll(showRadar, soundClose, fireEventClose)
+```
+</Accordion>
+
+### RegisterControls
+
+<Accordion icon="code" iconType="duotone" title="RegisterControls">
+  Register custom keyboard, mouse, or wheel controls handled by vorp_menu's NUI layer.
+
+  This is useful when you want menu-like input handling outside of an opened menu.
+
+  <ParamField body="controls" type="table" required>
+    Array of controls to listen for.
+
+    Supported values:
+
+    - Any browser keyboard key string from `KeyboardEvent.key`, for example `e`, `ArrowUp`, `Enter`, or `Backspace`
+    - `scrollup`
+    - `scrolldown`
+    - `mousepress`
+  </ParamField>
+
+  <ParamField body="onPress" type="function" required>
+    Callback fired with the triggered control name.
+  </ParamField>
+
+  Notes:
+
+  - Keyboard keys and `mousepress` repeat every frame while held until release.
+  - `scrollup` and `scrolldown` fire once per wheel event.
+  - `mousepress` ignores middle click and returns `mousepress_left` or `mousepress_right` in the callback.
+  - If a menu is open, these menu keys are reserved and will not trigger custom callbacks: `ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`, `Enter`, `Escape`, `Backspace`.
+  - Calling `RegisterControls` again replaces previously registered controls in the UI layer.
+  - Call `Menu.UnregisterControls()` when you no longer need the listeners.
+
+```lua
+local Menu = exports.vorp_menu:GetMenuData()
+
+Menu.RegisterControls({ "e", "scrollup", "scrolldown", "mousepress" }, function(control)
+    if control == "e" then
+        print("E is being held")
+    elseif control == "scrollup" then
+        print("Scrolled up once")
+    elseif control == "scrolldown" then
+        print("Scrolled down once")
+    elseif control == "mousepress_left" then
+        print("Left mouse button pressed")
+    elseif control == "mousepress_right" then
+        print("Right mouse button pressed")
+    end
+end)
+```
+</Accordion>
+
+### UnregisterControls
+
+<Accordion icon="code" iconType="duotone" title="UnregisterControls">
+  Remove all controls previously registered with `RegisterControls`.
+
+```lua
+local Menu = exports.vorp_menu:GetMenuData()
+
+Menu.UnregisterControls()
+```
+</Accordion>
+
+### Menu Elements
+
+Menu elements are the elements that will be displayed in the menu
+
+<Tabs>
+    <Tab title="Elements">
+
+        <Accordion icon="code" iconType="duotone" title="Menu Elements">
+        
+        for each element you can use the following params
+           
+        <ParamField body="value" type="string" required> 
+            The value of the tab element
+        </ParamField>
+        
+        <ParamField body="label" type="string" required>
+            The label of the tab element
+        </ParamField>
+        
+        <ParamField body="desc" type="string" required>
+            The description of the tab element
+        </ParamField>
+        
+        <ParamField body="itemHeight" type="string">
+            The height of the tab element example `4vh`
+        </ParamField>
+        
+        <ParamField body="labelPos" type="string">
+            The position of the label `left` or `center`
+        </ParamField>
+        
+        <ParamField body="footerText" type="string">
+            The text of the footer
+        </ParamField>
+        
+        <ParamField body="isNotSelectable" type="boolean">
+            If true the element will not be selectable, meaning the red square will not be shown
+        </ParamField>
+
+        <ParamField body="isDisabled" type="boolean">
+            If true the element will not be clickable and will be grayed out
+        </ParamField>
+        
+        <ParamField body="image" type="string">
+            The image name from vorp_inventory items folder, for grid menu only
+        </ParamField>
+        
+        ```lua
+         local menuElements = {
+            {
+                label = "name",
+                value = "value",
+                desc = "description",
+                itemHeight = "4vh", -- optional
+                labelPos = "left", -- optional
+                footerText = "any text here", -- optional
+                isNotSelectable = true, -- optional
+                image = "image", -- optional
+                skipeOpenEvent = false, -- if true will not fire open event -- optional
+            }
+         }
+        ```
+        </Accordion>
+    </Tab>
+
+    <Tab title="Sliders">
+
+        <Accordion icon="code" iconType="duotone" title="Slider Number">
+        
+            allows to use a slider type of element to select a number , can be floats or integers this is defined by the hop value
+               
+            <ParamField body="value" type="string" required> 
+                The value of the tab element
+            </ParamField>
+            
+            <ParamField body="label" type="string" required> 
+                The label of the tab element
+            </ParamField>   
+            
+            <ParamField body="desc" type="string" required>
+                The description of the tab element
+            </ParamField>
+            
+            <ParamField body="type" type="string" required> 
+                The type of the tab element must be `slider`
+            </ParamField>
+            
+            <ParamField body="min" type="number">
+                The minimum value , if not defined will default to 0
+            </ParamField>
+            
+            <ParamField body="max" type="number" required>  
+                The maximum value , if not defined will default to 100
+            </ParamField>
+            
+            <ParamField body="hop" type="number" required>
+                The hop value , can hop by 1 2 etc, to use floats set the hop to 0.1 etc.
+            </ParamField>
+            
+            ```lua
+            local menuElements = {
+                {
+                    label = "name",
+                    value = 0, 
+                    desc = "description",
+                    type = "slider", -- required
+                    min = 0,
+                    max = 10,
+                    hop = 1
+                }
+            }
+            ```
+        </Accordion>
+        
+        <Accordion icon="code" iconType="duotone" title="Slider Text">
+        
+            allows to use a slider type of element to select a string , from a list of strings
+            
+            <ParamField body="value" type="string" required>
+                The value of the tab element
+            </ParamField>
+            
+            <ParamField body="label" type="string" required>
+                The label of the tab element
+            </ParamField>
+            
+            <ParamField body="desc" type="string" required> 
+                The description of the tab element
+            </ParamField>
+            
+            <ParamField body="type" type="string" required>
+                The type of the tab element must be `text-slider`
+            </ParamField>
+            
+            <ParamField body="textList" type="table" required>
+                The list of strings to select from
+            </ParamField>
+            
+            ```lua
+            local menuElements = {
+                {
+                    label = "name",
+                    value = "value",
+                    desc = "description",
+                    type = "text-slider", -- required
+                    textList = {
+                        {
+                            label = "skinny",
+                            value = "anything you want",
+                        },
+                        {
+                            label = "fatter",
+                            value = "anything you want",
+                        }
+                    }
+                }
+            }
+            ```
+            
+            `data.current.textIndex` will return the index of the selected string
+            
+            ```lua
+            -- example
+            if data.current.value == "value" and data.current.textIndex then
+              local currentValue = data.current.textList[data.current.textIndex].value
+            end
+            ```
+        </Accordion>
+        
+        <Accordion icon="code" iconType="duotone" title="Linear Label Slider">
+        
+            allows to use a slider type in the label of the element to select a number , can be floats or integers this is defined by the hop value
+            works with press key or drag when `cursorEnabled` is true
+            
+            <ParamField body="value" type="number" required>
+                The value 
+            </ParamField>
+            
+            <ParamField body="label" type="string" required>
+                The label 
+            </ParamField>
+            
+            <ParamField body="desc" type="string" required>
+                The description 
+            </ParamField>
+            
+            <ParamField body="type" type="string" required>
+                The type  must be `label-slider`
+            </ParamField>
+            
+            <ParamField body="min" type="number">
+                The minimum value , if not defined will default to 0
+            </ParamField>
+            
+            <ParamField body="max" type="number" required>
+                The maximum value , if not defined will default to 100
+            </ParamField>
+            
+            <ParamField body="hop" type="number" required>
+                The hop value , can hop by 1 2 etc, to use floats set the hop to 0.1 etc.
+            </ParamField>
+            
+            <ParamField body="attributes" type="table">
+                The attributes of the slider , can be used to style the slider
+                `trackColor` is the color of the track accepts names or hex codes rgba
+                `fillColor` is the color of the fill, only accepts linear-gradient you can choose one color or multiple colors and the direction
+                `thumbColor` is the color of the thumb accepts names or hex codes rgba
+            </ParamField>
+            
+            ```lua
+            
+            local menuElements = {
+                {
+                    label = "name",
+                    value = 0,
+                    desc = "description",
+                    type = "label-slider", -- required
+                    min = 0,
+                    max = 10,
+                    hop = 1,
+                    attributes = { -- optional
+                        trackColor = "grey",
+                        fillColor = "linear-gradient(90deg, #000, #fff)",
+                        thumbColor = "white"
+                    }
+                }
+            }
+            ```
+        </Accordion>
+        
+        <Accordion icon="code" iconType="duotone" title="Linear Desc Slider">
+        
+            allows to create multiple sliders in the description of the element, can use integers or floats
+            
+            <ParamField body="value" type="string" required>
+                The value of the tab element
+            </ParamField>
+            
+            <ParamField body="label" type="string" required>
+                The label of the tab element
+            </ParamField>
+            
+            <ParamField body="desc" type="string" required>
+                The description of the tab element
+            </ParamField>
+            
+            <ParamField body="type" type="string" required>
+                The type of the tab element must be `desc-slider`
+            </ParamField>
+            
+            <ParamField body="min" type="number">
+                The minimum value , if not defined will default to 0
+            </ParamField>
+            
+            <ParamField body="max" type="number" required>
+                The maximum value , if not defined will default to 100
+            </ParamField>
+            
+            <ParamField body="hop" type="number" required>
+                The hop value , can hop by 1 2 etc, to use floats set the hop to 0.1 etc.
+            </ParamField>
+            
+            <ParamField body="sliders" type="table" required>
+                The list of sliders
+            </ParamField>
+            
+            
+            ```lua
+            
+            local menuElements = {
+                {
+                    label = "name",
+                    value = "any",
+                    desc = "description",
+                    type = "desc-slider", -- required
+                    sliders = {
+                        {
+                            label = "Slider one",
+                            value = 0,
+                            min = 0,
+                            max = 1,
+                            hop = 1,
+                            color = true, -- custom keys if needed
+                            attributes = {
+                                trackColor = "red",                                                             -- red or #ffff or a multicolor
+                                fillColor = "linear-gradient(90deg, red, orange, yellow, green, blue, purple)", -- green or #ffff or a multicolor
+                                thumbColor = "grey",                                                          -- yellow or #ffff or a multicolor
+                            }
+                        },
+                        {
+                            label = "Slider two",
+                            value = 0.0,
+                            min = -10.0,
+                            max = 10.0,
+                            hop = 0.1,
+                            comp = true, -- custom keys if needed
+                        },
+                    }
+                }
+            }
+            ```
+            
+            `data.current.sliderIndex` will return the index of the selected slider
+            
+            ```lua
+            
+            -- example
+            if data.current.value == "any" and data.current.sliders then
+                local currentValue = data.current.sliders[data.current.sliderIndex].value
+            end
+            ```
+        </Accordion>
+    </Tab>
+
+    <Tab title="Tick Box">
+
+        <Accordion icon="code" iconType="duotone" title="Label Tick Box">
+            
+            allows to create a tick box in the element
+            
+            <ParamField body="value" type="string" required>
+                only accept `unticked` or `ticked`
+            </ParamField>
+            
+            <ParamField body="label" type="string" required>
+                The label of the tab element
+            </ParamField>
+            
+            <ParamField body="desc" type="string" required>
+                The description of the tab element
+            </ParamField>
+            
+            <ParamField body="tickBox" type="boolean" required>
+                to enable it set to true
+            </ParamField>
+            
+            
+            ```lua
+            local menuElements = {
+                {
+                    label = "name",
+                    value = "unticked", -- start unticked or ticked
+                    desc = "description",
+                    tickBox = true
+                }
+            }
+            ```
+            
+            `data.current.value` will return the value of the tick box
+            
+            ```lua
+            
+            -- example
+            if data.current.tickBox then
+                print(data.current.value)
+            end
+            ```
+        </Accordion>
+            
+        <Accordion icon="code" iconType="duotone" title="Desc Tick Box">
+            
+            allows to create multiple tick boxes in the description of the element
+            
+            <ParamField body="value" type="string" required>
+                The value of the tab element
+            </ParamField>
+            
+            <ParamField body="label" type="string" required>
+                The label of the tab element
+            </ParamField>
+            
+            <ParamField body="desc" type="string" required>
+                The description of the tab element
+            </ParamField>
+            
+            <ParamField body="type" type="string" required>
+                The type of the element must be `tick-box`
+            </ParamField>
+            
+            <ParamField body="tickBoxes" type="table" required>
+                The list of tick boxes
+            </ParamField>
+            
+            ```lua
+            local menuElements = {
+                {
+                    label = "label",
+                    desc = "description",
+                    value = "value",
+                    type = "tick-box", -- required
+                    tickBoxes = {  
+                        {
+                            label = "box one",
+                            value = "ticked", -- value will change to ticket or unticked
+                        },
+                        {
+                            label = "box two",
+                            value = "unticked", -- value will change to ticket or unticked
+                        },
+                    }
+                }
+            }
+            ```
+            
+            `data.current.tickBoxIndex` will return the index of the tick box we ticked or unticked
+            
+            ```lua
+            -- example
+            if data.current.value == "value" and data.current.tickBoxes then
+                local currentValue = data.current.tickBoxes[data.current.tickBoxIndex].value
+            end
+            ```
+            </Accordion>
+            
+            </Tab>
+            
+            <Tab title="Desc Price">
+            
+            <Accordion icon="code" iconType="duotone" title="Desc Price">
+            
+            allows to create a price in the description of the element like RDO
+            
+            <ParamField body="value" type="string" required>
+                The value of the tab element
+            </ParamField>
+            
+            <ParamField body="label" type="string" required>
+                The label of the tab element
+            </ParamField>
+            
+            <ParamField body="desc" type="string" required>
+                The description of the tab element
+            </ParamField>
+            
+            <ParamField body="descPrice" type="table" required>
+                The price of the tab element  
+            
+                - `amount` is the amount of the price
+                - `icon` is `gold` or `money` only
+                - `text` the label
+            </ParamField>
+            
+            
+            ```lua
+            local menuElements = {
+                {
+                    label = "label",
+                    desc = "description",
+                    value = "value",
+                    descPrice = {
+                        amount = 100.00,
+                        icon = "money",
+                        text = "Price",
+                    }
+                }
+            }
+            ``` 
+            
+            ```lua
+               -- example
+               if data.current.value == "value" and data.current.descPrice then
+                  local currentValue = data.current.descPrice.amount
+               end
+            ```
+        </Accordion>   
+    </Tab>
+
+    <Tab title="Menu Params">
+        <Accordion icon="code" iconType="duotone" title="Menu Params">
+   
+            <ParamField body="title" type="string" required>
+                The title of the menu
+            </ParamField>
+
+            <ParamField body="subtext" type="string" required>
+                The subtext of the menu
+            </ParamField>
+
+            <ParamField body="align" type="string" required>
+                The align of the menu , top-right , top-center , top-left
+            </ParamField>
+
+            <ParamField body="elements" type="table" required>
+                The elements for the menu
+            </ParamField>
+
+            <ParamField body="lastmenu" type="string">
+                The last menu function name if you wish to go back to the previous menu this will enable the following code and call a global function
+
+                ```lua
+                if (data.current == "backup") then
+                    return _G[data.trigger](parameters,parameters)
+                end
+
+                ```
+            </ParamField>
+            
+            <ParamField body="itemHeight" type="string">
+                sets to all elements to this height `4vh` etc
+            </ParamField>
+
+            <ParamField body="labelPos" type="string">
+                sets the position of the label to all elements
+
+                - `left`
+                - `center`
+            </ParamField>
+
+            <ParamField body="divider" type="boolean">
+                adds a divider to the footer of the menu to all elements
+            </ParamField>
+
+            <ParamField body="fixedHeight" type="boolean">
+                sets the fixed height of the menu, so it doesnt resize depending on elements and description
+            </ParamField>
+
+            <ParamField body="enableCursor" type="boolean">
+                enables the cursor for the menu, key inputs will still work, including for sliders and tick boxes
+
+                - hover over the element and left click to select element then again left click to act as ENTER, or simply press ENTER
+                - right click to close the menu, or simply press Backspace
+                - scroll wheel to scroll up and down the menu
+            </ParamField>
+
+            <ParamField body="maxVisibleItems" type="number">
+                sets the max visible items in the menu
+            </ParamField>
+
+            <ParamField body="hideRadar" type="boolean">
+                hides the radar when the menu opens. to display it again simple pass these params again in these functions 
+
+                ```lua
+                 function(data, menu)
+                    -- to hide the radar and to play the final sound of the menu closing
+                    menu.close(hideRadar, soundClose, fireEventClose)
+                    -- also available here 
+                    Menu.CloseAll(hideRadar, soundClose, fireEventClose)
+                 end
+                ```
+            </ParamField>
+
+            <ParamField body="soundOpen" type="boolean">
+                plays the first opening sound of the menu
+            </ParamField>
+
+            <ParamField body="confirmButton" type="table">
+                creates a button in the description , useful when you dont have to create a new element for a button
+            </ParamField>
+
+            <ParamField body="cancelButton" type="table">
+                creates a button in the description , useful when you dont have to create a new element for a button
+            </ParamField>
+
+            <ParamField body="isGrid" type="boolean">
+                sets the menu to a grid layout, instead of a list layout
+
+                use in the menuelements the value `image` to display item images
+
+                useful for creating shops
+            </ParamField>
+
+            <ParamField body="skipOpenEvent" type="boolean">
+                if `true` will skip the open event by default it will fire the open event, usefull when you open one menu after the other without firing the open event
+            </ParamField>
+            
+            ```lua
+                local MenuInfo = {
+                    title = "menu title",
+                    subtext = "menu sub text",
+                    align = "top-right", 
+                    elements = menuElements, 
+                    lastmenu = "functionName",
+                    itemHeight = "4vh",
+                    labelPos = "left",
+                    divider = true,
+                    fixedHeight = true,
+                    enableCursor = true,
+                    maxVisibleItems = 6,
+                    hideRadar = true,                          
+                    soundOpen = true,                                      
+                    confirmButton = { label = "Confirm", value = "confirm" }, 
+                    cancelButton = { label = "Cancel", value = "cancel" },
+                    isGrid = false,     
+                    skipOpenEvent = false,
+                    
+                }
+            ```
+        </Accordion>
+    </Tab>
+</Tabs>
+
+## Functions 
+
+update elements ,add ,remove ,get elements runtime
+
+<Tabs>
+
+    <Tab title="Set">
+
+        <Accordion icon="code" iconType="duotone" title="addNewElement">
+             this function will add a new element to the current menu elements by order
+            
+            <ParamField body="label" type="string" required>
+                The label of the element
+            </ParamField>
+            
+            <ParamField body="value" type="string" required>
+                The value of the element
+            </ParamField>
+            
+            <ParamField body="desc" type="string" required>
+                The description of the element
+            </ParamField>
+            
+            ```lua
+            menu.addNewElement({
+                label = "label",
+                value = "open",
+                desc = "description"
+            })
+            ```
+            refresh menu to show new element
+            ```lua
+            menu.refresh()
+            ```
+        </Accordion>
+    </Tab>
+
+    <Tab title = "Get">
+            
+        <Accordion icon="code" iconType="duotone" title="getElementBy[Value/Index]">
+            find an element by value or index  
+
+            - `data.current.value` is available to use in the menu elements
+            - `data.current.index` is available to use in the menu elements
+            
+            ```lua
+            local element = menu.getElementByValue(value) 
+            local element = menu.getElementByIndex(index)
+            ```
+        </Accordion>
+    </Tab>
+
+    <Tab title="Update">
+        <Accordion icon="code" iconType="duotone" title="setElement">
+             this function will update a specific `element` variable 
+            
+            <ParamField body="index" type="number" required>
+                The `index` of the menu element to update
+            
+                `data.current.index` is available to use in the menu elements
+            </ParamField>
+            
+            <ParamField body="variable" type="string" required>
+                The variable of the menu element to update , `label`,`value`,`desc`, any
+            </ParamField>
+            
+            <ParamField body="newValue" type="any" required>
+                The new value of the menu element to update
+            </ParamField>
+            
+            ```lua
+            menu.setElement(index, variable, newValue)
+            ```              
+            refresh menu to show changes
+            ```lua  
+            menu.refresh() 
+            ```
+        </Accordion>
+    </Tab> 
+            
+    <Tab title="Remove">
+            
+        <Accordion icon="code" iconType="duotone" title="removeElementBy[Value/Index]">
+             this function will remove a specific element by value or index
+            
+            <ParamField body="value" type="string" required>
+                The value of the element to remove
+            
+                `data.current.value` is available to use in the menu elements
+            </ParamField>
+            
+            <ParamField body="index" type="number" required>
+                The index of the element to update
+            
+                `data.current.index` is available to use in the menu elements
+            </ParamField>
+            
+            <ParamField body="loop" type="boolean">
+               stop looking at the first element found  can be used  when you loop through several elements and remove all indexes 
+            </ParamField>
+            
+            ```lua
+            menu.removeElementByIndex(index,loop) 
+            menu.removeElementByValue(value,loop)
+            ```
+            refresh menu to show changes
+            ```lua
+            menu.refresh()
+            ```
+            </Accordion>
+            </Tab>
+            
+            <Tab title="Close">
+            <Accordion icon="code" iconType="duotone" title="CloseMenu">
+             this function will close the current menu
+            
+            <ParamField body="showRadar" type="boolean">
+                show the radar when the menu closes
+            </ParamField>
+            
+            <ParamField body="soundClose" type="boolean">
+                plays the final sound when the menu closes
+            </ParamField>
+
+            <ParamField body="fireEventClose" type="boolean">
+                if `true` will fire the close event, this is usefull when you want to final close a menu 
+                by default the events are only fire when using the `backspace` or if you dont pass the parameter `nil` , to not fire the event pass `false`
+            </ParamField>
+            
+            ```lua
+            menu.close(showRadar, soundClose, fireEventClose)
+            ```
+            </Accordion>
+            </Tab>
+            
+            <Tab title="setTitle">
+            <Accordion icon="code" iconType="duotone" title="setTitle">
+             this function will set the title of the current menu
+            
+            <ParamField body="title" type="string" required>
+                The title of the menu
+            </ParamField>
+            
+            ```lua
+            menu.setTitle("title")
+            ```
+            refresh menu to show changes
+            ```lua
+            menu.refresh()
+            ```
+            </Accordion>
+            </Tab>
+
+            <Tab title="setSubtext">
+            <Accordion icon="code" iconType="duotone" title="setSubtext">
+             this function will set the subtext of the current menu
+            
+            <ParamField body="title" type="string" required>
+                The subtext of the menu
+            </ParamField>
+            
+            ```lua
+            menu.setSubtext("subtext")
+            ```
+            refresh menu to show changes
+            ```lua
+            menu.refresh()
+            ```
+            </Accordion>
+            </Tab>
+            
+    <Tab title="Display Input">
+            
+        <Accordion icon="code" iconType="duotone" title="Inputs">
+             creates an input box to collect text or numbers etc.
+            
+            <ParamField body="inputType" type="string" required>
+                The type of input, `text`, `number`, `password`, `date`
+            
+                `yesno` is a special type of input  that will just create a yes or no button, no input needed
+            </ParamField>
+            
+            <ParamField body="header" type="string" required>
+                The header of the input
+            </ParamField>
+            
+            <ParamField body="placeholder" type="string" required>
+                The placeholder of the input
+            </ParamField>
+            
+            <ParamField body="buttons" type="table" required>
+                The buttons of the input
+            </ParamField>
+            
+            <ParamField body="maxLength" type="number">
+                The max length of the input
+            </ParamField>
+            
+            <ParamField body="pattern" type="string">
+                The pattern of the input
+            
+                -  `letters`    all Unicode letters and spaces
+                -  `numbers`     numbers only
+                -  `alphanumeric`   all Unicode letters and numbers
+                -  `no-symbols`  letters, numbers, spaces (all languages)
+                -  `username`    username with international letters
+                -  `phone`   phone numbers with + for country codes
+                -  `email`  email with international letters
+                -  `money`  money format (supports both . and , decimals)
+                -  `no-special` no special symbols but allow apostrophes and hyphens
+                
+            </ParamField>
+            
+
+            ```lua 
+            -- async function
+            menu.displayInput(
+                {
+                    inputType = 'text',
+                    header = 'Enter your name',
+                    placeholder = 'Type here...', -- not for input type yesno
+                    description = 'Are you sure you want to archive this bill?', -- for input type yesno only
+                    buttons = { confirm = "Confirm", cancel = "Cancel" },
+                    maxLength = 50,
+                    pattern = 'letters',
+                    patternMessage = "only letters alowed"
+                }, 
+                function(inputValue)
+                    -- On submit
+                    print("User entered: " .. inputValue)
+                end, 
+                function()
+                    -- On cancel
+                     print("User cancelled pressed ESC")
+                end
+            )
+            ```
+        </Accordion>    
+    </Tab>
+</Tabs>
+
+## Events 
+
+- close menu event
+```lua
+AddEventHandler("vorp:menu:closemenu", function(data)
+
+end)
+```
+
+- open menu event
+```lua
+AddEventHandler("vorp:menu:openmenu", function(data)
+
+end)
+```
+
+## Menu Example
+
+<Accordion icon="code" iconType="duotone" title="Menu Example">
+
+```lua
+function OpenMenu()
+    -- close any menu before opening
+    Menu.CloseAll()
+
+    local menuElements = {
+
+        { 
+            label = "name",
+            value = "value",
+            desc = "description"
+        },
+        {
+            label = "name",
+            value = 0, 
+            desc = "description",
+            type = "slider",
+            min = 0,
+            max = 10,
+            hop = 1
+        },
+        { 
+            label = "name",
+            value = "value",
+            desc = "description",
+            itemHeight = "4vh" 
+        }
+    }
+    
+
+    Menu.Open("default", GetCurrentResourceName() , "OpenMenu", -- unique namespace will allow the menu to open where you left off
+        {
+            title = "title",
+            subtext = "subtext",
+            align = "top-left", -- top-right , top-center , top-left
+            elements = menuElements, -- elements needed
+            lastmenu = "functionName", -- if you wish to go back to the previous menu , or remove (optional)
+            maxVisibleItems = 6,                                      -- max visible items in the menu
+            hideRadar = true,                                         -- hides the radar
+            soundOpen = true,                                         -- plays the open sound of the menu
+            skipOpenEvent = false,                                     
+
+        },
+        function(data, menu) -- submit callback
+          -- triggers when pressing/clicking enter 
+    
+          print("current key of MenuElements is " .. data.current.index)
+          print("current value of MenuElements is " .. data.current.value)
+            -- to go back to lastmenu if any
+    
+            if (data.current == "backup") then --(optional)  if lastmenu is defined
+                return  _G[data.trigger](any,any) -- or the function of the last menu
+            end
+            
+        end,
+
+        function(data,menu) -- cancel callback THIS IS OPTIONAL
+            -- when menu closes if lastmenu isn't defined
+            menu.close(true, true, true) 
+        end,
+        -- do not use the below unless you really need, it causes the menu to spike when you press up and down because the submit callback is doing the same thing.
+        function(data, menu) -- change callback THIS IS OPTIONAL 
+            -- if theres no previous menu close menu on backspace press
+           -- is called when scrolling through the elements, also when the type = "slider" is changed i dont know why.
+        end,
+
+        function(data,menu) -- close callback THIS IS OPTIONAL
+            -- when menu closes if lastmenu isnt defined
+           -- menu.close(showRadar, soundClose, fireEventClose) 
+        end)
+end
+```
+</Accordion>

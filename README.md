@@ -51,6 +51,7 @@ The result: scripts that use the right item names, call real exports, keep money
 | `ui/design-standard.md`, `ui/theme.css` | NUI house style and drop-in CSS | Any NUI |
 | `audit/` | Audit checklist and report procedure | Reviewing or converting scripts |
 | `tools/` | Refresh scripts and generators | Updating the brain |
+| `vorp/` | VORP Core reference (not installed): API guide, RSG ⇄ VORP conversion map, official docs, generated API for ~40 VORPCORE resources, code mirror | Porting VORP scripts to RSG, or framework-bridge scripts |
 
 **Precedence when sources disagree:** `server/environment.md` > `source/` (real code) > `framework/` > everything else.
 

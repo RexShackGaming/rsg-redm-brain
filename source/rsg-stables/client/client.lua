@@ -2461,6 +2461,24 @@ end)
 -- ===================== NATURAL DRINKING (rivers / lakes / troughs) =====================
 local naturalDrinking, lastNaturalDrinkAt = false, 0
 
+-- true when the player is off the horse and it's standing at a hitching post
+local hitchHashes
+local function isHorseHitched(horse)
+    local cfg = Config.HorseHitch
+    if not (cfg and cfg.blockNaturalNeeds) then return false end
+    if IsPedOnMount(cache.ped) and GetMount(cache.ped) == horse then return false end
+    if not hitchHashes then
+        hitchHashes = {}
+        for _, m in ipairs(cfg.postModels or {}) do hitchHashes[#hitchHashes + 1] = joaat(m) end
+    end
+    local hc = GetEntityCoords(horse)
+    for _, hash in ipairs(hitchHashes) do
+        local obj = GetClosestObjectOfType(hc.x, hc.y, hc.z, cfg.detectRadius or 3.0, hash, false, false, false)
+        if obj and obj ~= 0 then return true end
+    end
+    return false
+end
+
 local function isHorseNearNaturalWater(horse, cfg)
     local coords = GetEntityCoords(horse)
     local fwd = GetEntityForwardVector(horse)
@@ -2528,7 +2546,7 @@ CreateThread(function()
 
             local horse = activeHorse.entity
             local mounted = IsPedOnMount(cache.ped) and GetMount(cache.ped) == horse
-            local canDrink = (cfg.allowMounted or not mounted) and GetEntitySpeed(horse) < 0.3
+            local canDrink = (cfg.allowMounted or not mounted) and GetEntitySpeed(horse) < 0.3 and not isHorseHitched(horse)
             local waterKind, trough = nil, nil
             if canDrink then waterKind, trough = isHorseNearNaturalWater(horse, cfg) end
 
@@ -2591,7 +2609,7 @@ CreateThread(function()
 
             local horse = activeHorse.entity
             local nearPlayer = #(GetEntityCoords(horse) - GetEntityCoords(cache.ped)) <= (cfg.searchRadius or 15.0) * 2
-            local hay = nearPlayer and not IsPedRagdoll(horse) and findHayNearPlayer(cfg)
+            local hay = nearPlayer and not IsPedRagdoll(horse) and not isHorseHitched(horse) and findHayNearPlayer(cfg)
             if hay then
                 naturalGrazing = true
                 lastNaturalGrazeAt = GetGameTimer()

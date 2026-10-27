@@ -1,6 +1,6 @@
 # rsg-stables
 
-Version 3.1.4. Horse and stables script for RSG Framework
+Version 3.1.5. Horse and stables script for RSG Framework
 
 Horse and stables system for the **RSG Framework** (RedM). Buy, stable, customise, care for and breed horses across multiple stable locations, all through a custom NUI. - **Multiple stables** – Valentine, Blackwater, Rhodes, Saint Denis and Strawberry out of the box, each with a stablehand NPC, map blip and horse preview spot. Add your own in config. - **Buy menu** – 100+ horse breeds/coats with h
 

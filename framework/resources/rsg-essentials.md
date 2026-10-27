@@ -1,8 +1,8 @@
 # rsg-essentials
 
-Version 3.1.0. rsg-essentials
+Version 3.1.1. rsg-essentials
 
-**Quality-of-life utilities and fixes for RedM using RSG Core.** > A collection of small but essential features: AFK kick, Discord rich presence, eagle eye access, first-person shooting handling, bandana toggle, map zone labels, door unlocks, water interactions, and more. Modular client/server files make it easy to enable only what you need. - [**rsg-core**](https://github.com/Rexshack-RedM/rsg-co
+**Quality-of-life utilities and fixes for RedM using RSG Core.** > A collection of small but essential features: AFK kick, Discord rich presence, eagle eye access, first-person shooting handling, map zone labels, door unlocks, water interactions, and more. Modular client/server files make it easy to enable only what you need. - [**rsg-core**](https://github.com/Rexshack-RedM/rsg-core) 🤠
 
 Source: https://github.com/Rexshack-RedM/rsg-essentials
 
@@ -12,13 +12,13 @@ Source: https://github.com/Rexshack-RedM/rsg-essentials
 
 **server:** `KickForAFK`, `rsg-discord:getdata`, `rsg-log:server:CreateLog`
 
-**client:** `RSGCore:Client:OnJobUpdate`, `RSGCore:Client:OnPermissionUpdate`, `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `rsg-bandana:client:ToggleBandana`, `rsg-core:client:RemoveWeaponFromTab`, `rsg-discord:receivedata`, `rsg-essentials:client:pvpToggle`
+**client:** `RSGCore:Client:OnJobUpdate`, `RSGCore:Client:OnPermissionUpdate`, `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `rsg-core:client:RemoveWeaponFromTab`, `rsg-discord:receivedata`, `rsg-essentials:client:pvpToggle`
 
 ## Event handlers
 
 **server:** `txAdmin:events:scheduledRestart`
 
-**client:** `RSGCore:Client:OnJobUpdate`, `RSGCore:Client:OnPlayerLoaded`, `rsg-bandana:client:ToggleBandana`, `rsg-river:client:drink`, `rsg-river:client:lavati`
+**client:** `RSGCore:Client:OnJobUpdate`, `RSGCore:Client:OnPlayerLoaded`, `rsg-river:client:drink`, `rsg-river:client:lavati`
 
 ## Callbacks (RSGCore.Functions.CreateCallback)
 
@@ -26,7 +26,7 @@ Source: https://github.com/Rexshack-RedM/rsg-essentials
 
 ## Commands (RSGCore.Commands.Add)
 
-**server:** `/bandana`, `/testwebhook`
+**server:** `/testwebhook`
 
 ## Commands (RegisterCommand)
 

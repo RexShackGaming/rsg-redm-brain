@@ -5,6 +5,8 @@ import os, re, sys, subprocess
 from collections import defaultdict
 
 SRC, OUT = sys.argv[1], sys.argv[2]
+ORG = os.environ.get('BRAIN_ORG', 'Rexshack-RedM')
+TITLE = os.environ.get('BRAIN_TITLE', 'RSG resources')
 SKIP_DIRS = {'.git', 'node_modules', 'dist', 'build', 'stream'}
 THIRD_PARTY = {'ox_lib', 'ox_target', 'PolyZone', 'interact-sound', 'progressbar', 'rNotify', 'menu_base', 'redm-ymaps'}
 
@@ -19,6 +21,8 @@ pat = {
     'cmdsimple': re.compile(r'(?:RSGCore\.)?Commands\.Add\s*\(\s*[\'"]([^\'"]+)[\'"]'),
     'regcmd': re.compile(r'RegisterCommand\s*\(\s*[\'"]([^\'"]+)[\'"]'),
     'table': re.compile(r'CREATE TABLE(?: IF NOT EXISTS)?\s+`?(\w+)`?', re.I),
+    'vorpcb': re.compile(r'Callback\.Register\s*\(\s*[\'"]([^\'"]+)[\'"]'),
+    'vorpitem': re.compile(r'[Rr]egisterUsableItem\s*\(\s*[\'"]([^\'"]+)[\'"]'),
     'trig_s': re.compile(r'TriggerServerEvent\s*\(\s*[\'"]([^\'"]+)[\'"]'),
 }
 
@@ -87,7 +91,7 @@ for name in sorted(os.listdir(SRC)):
                 for d in re.finditer(r'(?:function\s+' + tbl + r'[.:](\w+)\s*\(([^)]*)\)|' + tbl + r'\.(\w+)\s*=\s*function\s*\(([^)]*)\))', all_lua):
                     nm = d.group(1) or d.group(3); pr = d.group(2) if d.group(1) else d.group(4)
                     data['export'][s].add(f'{nm}({pr.strip()})')
-            for k in ('netevent', 'rsgcb', 'libcb', 'item', 'regcmd'):
+            for k in ('netevent', 'rsgcb', 'libcb', 'item', 'regcmd', 'vorpcb', 'vorpitem'):
                 for m in pat[k].finditer(t): data[k][s].add(m.group(1))
             for m in pat['handler'].finditer(t):
                 ev = m.group(1)
@@ -104,7 +108,7 @@ for name in sorted(os.listdir(SRC)):
     out = [f'# {name}', '']
     if ver or desc: out.append(f'Version {ver or "?"}. {desc}'.strip())
     if intro: out += ['', intro]
-    out += ['', f'Source: https://github.com/Rexshack-RedM/{name}', '']
+    out += ['', f'Source: https://github.com/{ORG}/{name}', '']
     if deps: out += ['**Dependencies:** ' + ', '.join(f'`{d}`' for d in deps), '']
     if ui: out += ['Has NUI (`ui_page`).', '']
     def sect(title, k, fmt):
@@ -120,7 +124,9 @@ for name in sorted(os.listdir(SRC)):
     sect('Event handlers', 'handler', q)
     sect('Callbacks (RSGCore.Functions.CreateCallback)', 'rsgcb', q)
     sect('Callbacks (lib.callback)', 'libcb', q)
+    sect('Callbacks (VORP Core.Callback.Register)', 'vorpcb', q)
     sect('Usable items', 'item', q)
+    sect('Usable items (VORP registerUsableItem)', 'vorpitem', q)
     sect('Commands (RSGCore.Commands.Add)', 'cmd', lambda x: f'`/{x}`')
     sect('Commands (RegisterCommand)', 'regcmd', lambda x: f'`/{x}`')
     sect('Server events it triggers in other resources', 'ext_server', q)
@@ -140,8 +146,8 @@ for name in sorted(os.listdir(SRC)):
     index.append((name, (desc if desc and desc.strip().lower() != name.lower() else intro)[:110].replace('|', '/').replace('**', ''), len(flat('export')), len(flat('netevent'))))
 
 with open(os.path.join(OUT, 'README.md'), 'w', encoding='utf-8') as fh:
-    fh.write('# RSG resources: generated API index\n\n'
-             'Auto-generated from the Rexshack-RedM repos by `tools/extract.py`. **Do not hand-edit**; re-run `tools/refresh.sh` to update.\n'
+    fh.write(f'# {TITLE}: generated API index\n\n'
+             f'Auto-generated from the {ORG} repos by `tools/extract.py`. **Do not hand-edit**; re-run `tools/refresh.sh` to update.\n'
              'Each file lists exports, net events, callbacks, usable items, commands, dependencies and DB tables, pulled from the source code.\n'
              'When an export\'s parameters are not listed, open the source repo and read the function before using it.\n\n'
              '| Resource | Description | Exports | Net events |\n|---|---|---|---|\n')

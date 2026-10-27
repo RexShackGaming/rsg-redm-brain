@@ -1,0 +1,21 @@
+
+Locales["en"] = {
+    item_crawfish = "Crawfish",
+	item_harvest = "Raw Crustacean Meat",
+	hole = "Crawfish Hole",
+	search_hole = "Search Crawfish Hole",
+	inv_nospace = "Not enough space in your inventory!",
+	search_current = "This Crawfish Hole is currently being searched!",
+	search_recent = "This Crawfish Hole has been searched too recently...",
+	searching = "Searching Crawfish Hole...",
+	search_found = "You found {count} x {item}!",
+	search_found_nothing = "You did not find anything!",
+	search_found_other = "You found something else!",
+	not_searching = "You are not searching for anything...",
+	search_too_far = "You are too far away!",
+	harvesting = "Harvesting...",
+	harvested = "You harvested {count} x {item}!",
+	already_harvesting = "You are already harvesting!",
+	nothing_to_harvest = "You have nothing to harvest!",
+	not_harvesting = "You are not harvesting...",
+}

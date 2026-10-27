@@ -1,0 +1,10 @@
+{
+    "title": "Pañuelo",
+    "cmd_help": "Sube o baja tu pañuelo",
+    "no_bandana": "No llevas un pañuelo",
+    "cant_now": "No puedes hacer eso ahora",
+    "wait": "Más despacio",
+    "up": "Pañuelo subido",
+    "down": "Pañuelo bajado",
+    "item_missing": "Config.UseItem está activado pero el objeto \"%s\" no existe en los items de rsg-core"
+}

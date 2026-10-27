@@ -1,0 +1,10 @@
+{
+    "title": "Bandana",
+    "cmd_help": "Podnieś lub opuść bandanę",
+    "no_bandana": "Nie masz na sobie bandany",
+    "cant_now": "Nie możesz teraz tego zrobić",
+    "wait": "Zwolnij",
+    "up": "Bandana podniesiona",
+    "down": "Bandana opuszczona",
+    "item_missing": "Config.UseItem jest włączone, ale przedmiot \"%s\" nie istnieje w itemach rsg-core"
+}

@@ -61,6 +61,20 @@ Config.HorseNeeds = {
     healthRegenPerTick = 1,     -- health % gained per decay tick while well fed/watered (capped at 100)
 }
 
+-- ===================== HITCHED HORSES =====================
+-- RedM has no "is hitched" native, so a horse counts as hitched when you're off it and it is
+-- standing right next to one of these hitching-post props. Natural drinking/grazing is skipped
+-- while hitched so the horse doesn't pull itself off the post and wander.
+Config.HorseHitch = {
+    blockNaturalNeeds = true,
+    detectRadius      = 3.0,   -- how close the horse must be to a post to count as hitched
+    postModels = {
+        'p_hitchingpost01x', 'p_hitchingpost02x', 'p_hitchingpost03x', 'p_hitchingpost04x',
+        'p_hitchingpost05x', 'p_hitchingpost06x', 'p_hitchingpost07x', 'p_horsehitchnbd01x',
+        'p_hitchpost01x', 'p_hitchpost02x',
+    },
+}
+
 -- ===================== NATURAL DRINKING (rivers / lakes / troughs) =====================
 Config.HorseNaturalDrink = {
     enabled         = true,

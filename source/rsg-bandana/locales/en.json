@@ -1,0 +1,10 @@
+{
+    "title": "Bandana",
+    "cmd_help": "Raise or lower your bandana",
+    "no_bandana": "You are not wearing a bandana",
+    "cant_now": "You can't do that right now",
+    "wait": "Slow down",
+    "up": "Bandana raised",
+    "down": "Bandana lowered",
+    "item_missing": "Config.UseItem is on but item \"%s\" does not exist in rsg-core items"
+}

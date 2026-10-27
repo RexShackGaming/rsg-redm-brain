@@ -1,0 +1,42 @@
+---
+title : inputs
+description : 'build an advanced input menu for your scripts'
+icon : 'code'
+---
+
+<Note>Client side</Note>
+
+<Accordion icon="code" iconType="duotone" title="advancedInput">
+    This function is used to create advanced input menu.
+```lua
+local myInput = {
+    type = "enableinput", -- don't touch
+    inputType = "input", -- input type
+    button = "Confirm", -- button name
+    placeholder = "NAME QUANTITY", -- placeholder name
+    style = "block", -- don't touch
+    attributes = {
+        inputHeader = "GIVE ITEM", -- header
+        type = "text", -- inputype text, number,date,textarea ETC
+        pattern = "[0-9]", --  only numbers "[0-9]" | for letters only "[A-Za-z]+" 
+        title = "numbers only", -- if input doesnt match show this message
+        style = "border-radius: 10px; background-color: ; border:none;"-- style 
+    }
+}
+local result = exports.vorp_inputs:advancedInput(myInput)
+result = tonumber(result) -- convert result to a number
+result = tostring(result) -- convert result to a string
+```
+</Accordion>
+
+if you want to split the result into two variables or more you can use this code
+```lua  
+local result = "your result"
+local splitString = {}
+     for i in string.gmatch(result, "%S+") do
+        splitString[#splitString + 1] = i
+      end
+local data1, data2 = splitString[1],splitString[2]
+
+```
+

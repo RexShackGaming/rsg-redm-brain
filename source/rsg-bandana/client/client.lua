@@ -1,0 +1,100 @@
+lib.locale()
+
+local busy, lastToggle = false, 0
+
+local function notify(msg, kind)
+    lib.notify({ title = locale('title'), description = msg, type = kind or 'inform' })
+end
+
+-- Find the neckwear item the ped is wearing (works for mp_male and mp_female).
+-- Returns componentHash, currentWearableState or nil.
+local function getNeckwear(ped)
+    local count = Citizen.InvokeNative(0x90403E8107B60E81, ped, Citizen.ResultAsInteger()) -- _GET_NUM_COMPONENTS_IN_PED
+    if not count or count <= 0 then return nil end
+    local metaType = Citizen.InvokeNative(0xEC9A1261BF0CE510, ped, Citizen.ResultAsInteger()) -- _GET_META_PED_TYPE
+    local struct = string.rep('\0', 8 * 16) -- scratch buffer for the argStruct out-param
+
+    for i = 0, count - 1 do
+        local comp, state = Citizen.InvokeNative(0x77BA37622E22023B, ped, i, true, struct,
+            Citizen.PointerValueIntInitialized(0), Citizen.ResultAsInteger()) -- _GET_SHOP_ITEM_COMPONENT_AT_INDEX
+        if comp and comp ~= 0 then
+            local cat = Citizen.InvokeNative(0x5FF9A878C3D115B8, comp, metaType, true, Citizen.ResultAsInteger()) -- _GET_SHOP_ITEM_COMPONENT_CATEGORY
+            if cat and (cat & 0xFFFFFFFF) == Config.NeckwearCategory then
+                return comp, state
+            end
+        end
+    end
+    return nil
+end
+
+local function isUp(ped)
+    local comp, state = getNeckwear(ped)
+    return comp ~= nil and state == Config.StateUp, comp
+end
+
+-- Some RedM natives return 0/1 instead of false/true, and 0 is truthy in Lua
+local function yes(v) return v == true or v == 1 end
+
+local function canToggle(ped)
+    if yes(IsEntityDead(ped)) or yes(IsPedRagdoll(ped)) or yes(IsPedSwimming(ped))
+        or yes(IsPedHogtied(ped)) or yes(IsPedCuffed(ped)) or yes(IsPedInAnyVehicle(ped, false)) then
+        return false
+    end
+    return LocalPlayer.state.isLoggedIn == true
+end
+
+-- Swap the wearable state and keep the statebag in sync
+local function applyState(ped, comp, up)
+    Citizen.InvokeNative(0x66B957AAC2EAAEAB, ped, comp, up and Config.StateUp or Config.StateDown, 0, true, 1) -- _UPDATE_SHOP_ITEM_WEARABLE_STATE
+    Citizen.InvokeNative(0xCC8CA3E88256E58F, ped, false, true, true, true, false) -- _UPDATE_PED_VARIATION
+    LocalPlayer.state:set('bandana', up, true)
+end
+
+local function toggle()
+    if busy then return end
+    if GetGameTimer() - lastToggle < Config.Cooldown then return notify(locale('wait'), 'error') end
+
+    local ped = cache.ped
+    if not canToggle(ped) then return notify(locale('cant_now'), 'error') end
+
+    local up, comp = isUp(ped)
+    if not comp then return notify(locale('no_bandana'), 'error') end
+    up = not up
+
+    busy, lastToggle = true, GetGameTimer()
+    if Config.PlayAnim then
+        local set = up and Config.Anims.up or Config.Anims.down
+        Citizen.InvokeNative(0xAE72E7DF013AAA61, ped, 0, yes(IsPedOnMount(ped)) and set.mounted or set.foot, 1, 0, -1.0) -- START_TASK_ITEM_INTERACTION
+        Wait(Config.AnimTime)
+        -- player may have died / been cuffed / changed clothes during the animation
+        if ped ~= cache.ped or not canToggle(ped) or select(2, isUp(ped)) ~= comp then
+            ClearPedTasks(ped)
+            busy = false
+            return notify(locale('cant_now'), 'error')
+        end
+    end
+
+    applyState(ped, comp, up)
+    notify(up and locale('up') or locale('down'), 'success')
+    busy = false
+end
+
+RegisterNetEvent('rsg-bandana:client:toggle', toggle)
+
+-- Other resources: exports['rsg-bandana']:IsWearingBandana()
+-- Reads the real ped state, so it stays correct after wardrobe changes.
+exports('IsWearingBandana', function()
+    return (isUp(cache.ped))
+end)
+
+-- Clothing reloads (relog) reset the wearable state, keep the statebag honest
+AddEventHandler('RSGCore:Client:OnPlayerLoaded', function()
+    LocalPlayer.state:set('bandana', false, true)
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    local up, comp = isUp(cache.ped)
+    if up then applyState(cache.ped, comp, false) end
+    LocalPlayer.state:set('bandana', false, true)
+end)

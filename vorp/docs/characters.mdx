@@ -1,0 +1,106 @@
+---
+title: character
+description: 'API reference for characters'
+icon: 'code'
+---
+
+## Events
+
+This event is triggered when a player has successfully selected a character and joined the server. It provides an opportunity to execute custom logic or initialize player-specific data based on the chosen character. The event is fired on both the client and server side
+
+<Note>Client Side</Note>
+
+```lua SelectedCharacter
+RegisterNetEvent("vorp:SelectedCharacter", function(charid)
+   print(charid)
+end)
+```
+<Note>Server Side</Note>
+
+```lua SelectedCharacter
+AddEventHandler("vorp:SelectedCharacter",function(source,character)
+    print(character)
+end)
+```
+
+This event is triggered when a player has created a new character for the server. Example Usage Case: Someone might use this to create/select a first spawn location for a character.
+
+<Note>Client Side</Note>
+```lua initNewCharacter
+AddEventHandler("vorp:initNewCharacter", function()
+    print("New Character Created")
+end)
+```
+
+Ability to wait for the first character scene to start in case you need to show a loading screen or something else before the scene starts
+<Note>Client Side</Note>
+```lua stopLoadingScene
+-- this is just optional
+-- you can use it to tell character to not start the scene yet like  imagine if you have a loading screen with a button to join, this event will make it to wait
+-- set to true to wait, set to false to continue the scene
+TriggerEvent("vorpcharacter:stopLoadingScene", boolean)
+```
+
+## Exports
+
+Exports to be used in your scripts
+
+<Note>Client Side</Note>
+<Accordion icon="keyboard" iconType= "duotone" title="GetAllPlayerComponents">
+    This export retrieves all components in the player's cache, useful for updating or modifying the player's appearance based on the components stored in the cache
+    <ParamField body="return" type="table">
+        The components in the player's cache.
+    </ParamField>
+    
+    ```lua
+    local result = exports.vorp_character:GetAllPlayerComponents()
+    ```
+</Accordion>
+
+<Note>Client Side</Note>
+<Accordion icon="keyboard" iconType= "duotone" title="GetPlayerComponent">
+    This export retrieves a specific component
+
+    <ParamField body="category" type="string" required>
+        The category of the component to retrieve.
+    </ParamField>
+
+    <ParamField body="return" type="string">
+        The components in the player's cache.
+    </ParamField>
+    
+    ```lua
+    local component = exports.vorp_character:GetPlayerComponent(category)
+    ```
+</Accordion>
+
+<Note>Server Side</Note>
+<Accordion icon="keyboard" iconType= "duotone" title="OpenOutfitsMenu">
+    This export opens the outfits menu for the player
+
+    <ParamField body="source" type="int" required>
+        The source of the player.
+    </ParamField>
+    
+    <ParamField body="return" type="boolean">
+        True if the menu can be opened false otherwise.
+    </ParamField>
+    
+    ```lua
+    local result = exports.vorp_character:OpenOutfitsMenu(source)
+    ```
+</Accordion>
+
+
+## StateBags
+
+Bandana state you can use this in ohter script to check if player is wearing a bandana on his face using characters bandana commands
+
+```lua
+LocalPlayer.state.IsBandanaOn
+```
+ check if player is in character shops
+```lua
+LocalPlayer.state.PlayerIsInCharacterShops
+```
+

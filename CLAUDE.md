@@ -13,6 +13,7 @@ Read this file first, then open only the files you need for the task.
 7. If sources disagree, follow this precedence: `server/environment.md` > `source/` (real code) > `framework/` > everything else.
 8. **Before calling any RSG resource's export, event or callback, check `framework/resources/<resource>.md`** for the exact name and parameters. If you need behaviour details, read that resource's code in `source/<resource>/`.
 9. When building something similar to an existing RSG resource (shops, jobs, NUI menus, placeable props), study that resource in `source/` first and follow its patterns.
+10. When converting a VORP script, follow `vorp/README.md` (conversion map + porting checklist). Never use VORP APIs in RSG scripts unless asked.
 
 ## Map
 | Folder | Use it for |
@@ -34,6 +35,7 @@ Read this file first, then open only the files you need for the task.
 | `templates/rsg-template/` | Skeleton resource to copy for new scripts |
 | `ui/` | NUI design standard and drop-in theme CSS |
 | `audit/` | Checklist for auditing or converting existing scripts |
+| `vorp/` | **VORP Core reference only** (not installed): API guide + RSG ⇄ VORP conversion map (`vorp/README.md`), official docs, generated API per resource, code mirror. Use when porting VORP scripts or the user asks for VORP/bridge support |
 
 ## Workflow for a new script
 1. Read `server/environment.md` and `conventions/coding-rules.md`.
