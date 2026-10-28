@@ -1,0 +1,15 @@
+{
+    "machine": "Diseuse de bonne aventure",
+    "use": "Écouter votre avenir ($%.2f)",
+    "free": "Écouter votre avenir",
+    "busy": "Quelqu'un utilise déjà cette machine.",
+    "cooldown": "La machine n'est pas encore prête. Réessayez dans %d secondes.",
+    "noMoney": "Il vous faut $%.2f en liquide.",
+    "unavailable": "La diseuse de bonne aventure est indisponible.",
+    "tooFar": "Approchez-vous de la machine.",
+    "audioFailed": "La voix n'a pas pu être chargée. Vous n'avez pas été débité.",
+    "setupFailed": "La machine n'a pas pu démarrer. Vous n'avez pas été débité.",
+    "paymentFailed": "Le paiement n'a pas pu être effectué.",
+    "slowDown": "Veuillez patienter un instant avant de réessayer.",
+    "coordinates": "Coordonnées de la diseuse affichées dans F8."
+}

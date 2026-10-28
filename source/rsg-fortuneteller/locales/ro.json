@@ -1,0 +1,15 @@
+{
+    "machine": "Ghicitoare",
+    "use": "Ascultă-ți norocul ($%.2f)",
+    "free": "Ascultă-ți norocul",
+    "busy": "Altcineva folosește acest aparat.",
+    "cooldown": "Aparatul nu este încă pregătit. Încearcă din nou în %d secunde.",
+    "noMoney": "Ai nevoie de $%.2f în numerar.",
+    "unavailable": "Ghicitoarea nu este disponibilă.",
+    "tooFar": "Apropie-te de aparat.",
+    "audioFailed": "Vocea nu a putut fi încărcată. Nu ai fost taxat.",
+    "setupFailed": "Aparatul nu a putut porni. Nu ai fost taxat.",
+    "paymentFailed": "Plata nu a putut fi finalizată.",
+    "slowDown": "Te rog așteaptă puțin înainte să încerci din nou.",
+    "coordinates": "Coordonatele ghicitoarei au fost afișate în F8."
+}

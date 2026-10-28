@@ -32,6 +32,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-farming](rsg-farming.md) | Plant, water, fertilise and harvest crops anywhere in the world, with portable well pumps to fill your water b | 0 | 6 |
 | [rsg-fishing](rsg-fishing.md) | Fishing for RSG-Core (RedM). Players equip a fishing rod, bait it with an item from their inventory, cast, | 0 | 1 |
 | [rsg-fishmonger](rsg-fishmonger.md) | A fishmonger system for RSG-Core (RedM). Players visit a fishmonger NPC in any major town to sell their  | 0 | 0 |
+| [rsg-fortuneteller](rsg-fortuneteller.md) | Fortune teller machines for RSG-Core | 0 | 0 |
 | [rsg-gangmenu](rsg-gangmenu.md) | A gang boss management menu for RedM servers running the RSG Framework. Gang bosses can manage members | 0 | 14 |
 | [rsg-goldclaim](rsg-goldclaim.md) | A gold claim system for RedM (RSG-Core). Players place gold rockers, load them with paydirt and water, process | 0 | 31 |
 | [rsg-goldpanning](rsg-goldpanning.md) | Gold panning system for RSG Framework | 0 | 5 |
@@ -72,6 +73,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-targetpractise](rsg-targetpractise.md) | Placeable archery and throwing-knife practice targets for RSG Framework | 0 | 18 |
 | [rsg-telegram](rsg-telegram.md) |  | 0 | 2 |
 | [rsg-telephone](rsg-telephone.md) | rsg-telephone - persistent telephone props with private voice calls | 0 | 14 |
+| [rsg-theatre](rsg-theatre.md) | Theatre Raleur (Saint Denis) stage shows | 0 | 4 |
 | [rsg-track](rsg-track.md) | A custom horse race track builder and race manager for RSG-Core RedM servers. Players (or staff) lay out a | 0 | 16 |
 | [rsg-trader](rsg-trader.md) | Dynamic-price NPC traders for RSG-Core (RedM). Players buy and sell items at prices that move with stock l | 1 | 1 |
 | [rsg-trapdoors](rsg-trapdoors.md) | Synced, animated trapdoors for RSG-Core (RedM) with an optional 4-digit passcode lock, a themed keypad UI, | 1 | 1 |

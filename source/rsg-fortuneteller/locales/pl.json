@@ -1,0 +1,15 @@
+{
+    "machine": "Wróżka",
+    "use": "Poznaj swoją przyszłość ($%.2f)",
+    "free": "Poznaj swoją przyszłość",
+    "busy": "Ktoś już korzysta z tej maszyny.",
+    "cooldown": "Maszyna nie jest jeszcze gotowa. Spróbuj ponownie za %d s.",
+    "noMoney": "Potrzebujesz $%.2f w gotówce.",
+    "unavailable": "Wróżka jest niedostępna.",
+    "tooFar": "Podejdź bliżej maszyny.",
+    "audioFailed": "Nie udało się wczytać głosu. Nie pobrano opłaty.",
+    "setupFailed": "Nie udało się uruchomić maszyny. Nie pobrano opłaty.",
+    "paymentFailed": "Nie udało się zrealizować płatności.",
+    "slowDown": "Odczekaj chwilę przed ponowną próbą.",
+    "coordinates": "Współrzędne wróżki wypisano w F8."
+}
