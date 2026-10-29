@@ -6,11 +6,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="board.css">
 </head>
 <body>
 <div id="app" class="hidden">
-    <div id="vignette"></div>
-
     <div class="layout">
         <!-- items the trapper buys -->
         <section class="panel panel-items">
@@ -18,16 +17,16 @@
                 <div class="header-spacer"></div>
                 <div class="header-text">
                     <h1 id="vendor-title">Trapper</h1>
-                    <div class="subtitle">Goods Wanted</div>
+                    <div class="subtitle" data-l="subtitle">Goods Wanted</div>
                 </div>
                 <button class="round-btn" id="btn-close" title="Close">&#10005;</button>
             </header>
             <div class="divider"><span>&#10022;</span></div>
 
             <div class="toolbar">
-                <input type="text" id="search" placeholder="Search goods..." autocomplete="off">
-                <label class="toggle"><input type="checkbox" id="owned-only"> <span>Owned only</span></label>
-                <button class="wood-btn" id="btn-add-all">Add All Owned</button>
+                <input type="text" id="search" data-lp="search" placeholder="Search goods..." autocomplete="off">
+                <label class="toggle"><input type="checkbox" id="owned-only"> <span data-l="ownedOnly">Owned only</span></label>
+                <button class="wood-btn" id="btn-add-all" data-l="addAll">Add All Owned</button>
             </div>
 
             <div class="item-grid" id="item-grid"></div>
@@ -37,7 +36,7 @@
         <section class="panel panel-basket">
             <header class="panel-header">
                 <div class="header-text">
-                    <h1>Basket</h1>
+                    <h1 data-l="basket">Basket</h1>
                     <div class="subtitle" id="basket-count">0 items</div>
                 </div>
             </header>
@@ -46,10 +45,10 @@
             <div class="basket-list" id="basket-list"></div>
 
             <div class="basket-footer">
-                <div class="total-row"><span>Total</span><span id="basket-total">$0.00</span></div>
+                <div class="total-row"><span data-l="total">Total</span><span id="basket-total">$0.00</span></div>
                 <div class="actions">
-                    <button class="wood-btn muted" id="btn-clear">Clear</button>
-                    <button class="wood-btn" id="btn-sell" disabled>Sell to Trapper</button>
+                    <button class="wood-btn muted" id="btn-clear" data-l="clear">Clear</button>
+                    <button class="wood-btn" id="btn-sell" data-l="sell" disabled>Sell to Trapper</button>
                 </div>
             </div>
         </section>
@@ -58,16 +57,46 @@
     <!-- confirm modal -->
     <div id="modal" class="modal-backdrop hidden">
         <div class="modal">
-            <h2>Confirm Sale</h2>
+            <h2 data-l="confirmTitle">Confirm Sale</h2>
             <div class="ink-divider"></div>
             <p id="modal-text"></p>
             <div class="actions">
-                <button class="wood-btn muted" id="modal-cancel">Cancel</button>
-                <button class="wood-btn" id="modal-confirm">Sell</button>
+                <button class="wood-btn muted" id="modal-cancel" data-l="cancel">Cancel</button>
+                <button class="wood-btn" id="modal-confirm" data-l="confirm">Sell</button>
             </div>
         </div>
     </div>
 </div>
+<!-- hunting leaderboard (movable) -->
+<section id="board" class="hidden">
+    <header class="board-header" id="board-header">
+        <div class="board-grip" id="board-grip" title="Drag to move">&#8942;&#8942;</div>
+        <div class="header-text">
+            <h1 id="board-title">Hunting Leaderboard</h1>
+            <div class="subtitle" id="board-sub"></div>
+        </div>
+        <div class="board-btns">
+            <button class="round-btn" id="board-pin" title="Pin to screen">&#9875;</button>
+            <button class="round-btn" id="board-close" title="Close">&#10005;</button>
+        </div>
+    </header>
+    <div class="divider"><span>&#10022;</span></div>
+
+    <div class="board-me">
+        <div class="board-me-top">
+            <span class="board-me-rank" id="board-me-rank">#-</span>
+            <span class="board-me-level" id="board-me-level"></span>
+        </div>
+        <div class="board-me-xp" id="board-me-xp"></div>
+        <div class="stat-track"><div class="stat-fill" id="board-me-fill" style="width:0%"></div></div>
+        <div class="board-perks" id="board-perks"></div>
+    </div>
+
+    <div class="board-list" id="board-list"></div>
+    <div class="board-hint" id="board-hint"></div>
+</section>
+
 <script src="script.js"></script>
+<script src="board.js"></script>
 </body>
 </html>

@@ -17,7 +17,7 @@ Character selection, creation, clothing store and spawn system for **RSG-Core** 
 - Detailed face options: eyes, eyelids, eyebrows, nose, mouth, lips, teeth, cheekbones, jaw, ears and chin.
 - Hair and beard styles and colours.
 - Overlays: scars, freckles, moles, spots, ageing, eye shadow, blush, lipstick and eyeliner, each with colour and opacity.
-- Identity form: first name, last name, a nationality dropdown and a birth date (1750–1900).
+- Identity form: first name, last name, a nationality dropdown and a Day / Month / Year birth date picker (range set in config, checked on the server).
 - A profanity filter for character names.
 - Starter items given to each new character.
 
@@ -25,7 +25,8 @@ Character selection, creation, clothing store and spawn system for **RSG-Core** 
 - Clothing stores in Valentine, Rhodes, Saint Denis, Blackwater, Strawberry, Armadillo and Tumbleweed, with map blips.
 - Clothing is split into categories (Head, Shirts & Vests, Belts & Holsters, Coats, Legs, Feet, Hands, Accessories, Misc Gear).
 - Each category has its own price, paid in cash.
-- Save named outfits, then wear or delete them from the wardrobe (cloakroom).
+- Every purchase is saved as a named outfit (up to 30). Wear or delete them at a cloakroom or any wardrobe/dresser prop (ox_target).
+- New characters get a protected **Default** outfit that can't be deleted.
 - The server checks every clothing purchase and outfit change.
 - Configurable store door states (open or locked).
 
@@ -36,6 +37,7 @@ Character selection, creation, clothing store and spawn system for **RSG-Core** 
 ### Other
 - Discord webhook logging for character created, deleted and selected, appearance saved and outfit purchased.
 - A `/loadskin` command to reload your appearance.
+- A `/logout` command that saves and returns you to character select (with cooldown, blocked while dead).
 - Locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro.
 - Exports for other resources (see below).
 
@@ -46,6 +48,8 @@ Character selection, creation, clothing store and spawn system for **RSG-Core** 
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
 - [ox_lib](https://github.com/Rexshack-RedM/ox_lib)
 - [oxmysql](https://github.com/Rexshack-RedM/oxmysql)
+- [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory) (starter items)
+- Optional: [ox_target](https://github.com/Rexshack-RedM/ox_target) (wardrobe props), [rsg-weather](https://github.com/Rexshack-RedM/rsg-weather) (paused during character select)
 
 ---
 
@@ -69,10 +73,13 @@ CREATE TABLE IF NOT EXISTS `playeroutfit` (
   `citizenid` VARCHAR(255) NOT NULL,
   `name` VARCHAR(255) NOT NULL,
   `clothes` LONGTEXT NOT NULL,
+  `is_default` TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `citizenid` (`citizenid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
+
+The `is_default` column is added automatically on start if it's missing, and existing characters get a Default outfit copied from what they're wearing.
 
 3. Ensure the resource in `server.cfg` **after** its dependencies:
 
@@ -95,6 +102,8 @@ All settings are in `shared/config.lua`.
 | Option | Description |
 |---|---|
 | `RSG.MaxCharacterSlots` | Number of character slots per player license (default `4`). |
+| `RSG.Birthdate` | `Min`, `Max` and `Default` birth dates (`YYYY-MM-DD`) for the creator. |
+| `RSG.Logout` | `/logout` settings: `Enabled`, `Command`, `Cooldown` (seconds), `BlockWhenDead`. |
 | `RSG.ProfanityWords` | Words blocked in character names (`['word'] = true`). |
 | `RSG.Nationalities` | Locale keys shown in the nationality dropdown. Their display names are under `nationalities` in `locales/*.json`. |
 | `RSG.StarterItems` | Items given once to a new character: `{ item = 'bread', amount = 2 }`. |
@@ -107,6 +116,7 @@ All settings are in `shared/config.lua`.
 | `RSG.SetDoorState` | Store door hashes and state (`0` = open, `1` = locked). |
 | `RSG.Zones1` | Clothing store locations: `blipcoords`, `fittingcoords`, `quitcoords`, `promtcoords` and `showblip`. |
 | `RSG.Cloakroom` | Wardrobe locations (vector3). |
+| `RSG.WardrobeTarget` | ox_target wardrobe props: `enabled`, `distance`, `icon`, `label`, `models`. When enabled, saved outfits can be worn at any of these props. |
 | `RSG.MenuElements` | Which clothing categories appear under each store menu section. |
 | `RSG.Price` | Cash price for each clothing category. |
 
@@ -167,6 +177,7 @@ end
 ### Commands
 | Command | Description |
 |---|---|
+| `/logout` | Saves your character and returns you to character select. |
 | `/loadskin` | Reloads your saved skin and clothing. It doesn't work while you're dead, cuffed, hogtied, lassoed, being dragged, ragdolled, falling or jailed. |
 
 ### Exports (client)
@@ -181,7 +192,6 @@ exports['rsg-character']:GetBodyComponents()
 exports['rsg-character']:GetBodyCurrentComponentHash(name)
 exports['rsg-character']:GetComponentsMax(name)
 exports['rsg-character']:GetMaxTexturesForModel(category, model, isClothing)
-exports['rsg-character']:GetClothesComponents()
 exports['rsg-character']:GetClothesCache(name)
 exports['rsg-character']:GetClothesComponentId(name)
 exports['rsg-character']:GetClothesCurrentComponentHash(name)
@@ -192,7 +202,7 @@ exports['rsg-character']:IsCothingActive()
 | Event | Side | Description |
 |---|---|---|
 | `rsg-character:client:OpenCharSelect` | client | Opens the character select screen. |
-| `rsg-character:client:OpenCreator` | client | Opens the character creator. |
+| `rsg-character:client:OpenCreator` | client | Opens the character creator. Only saves when the server opened it (use the server flow, not a client trigger). |
 | `rsg-character:client:OpenSpawnSelect` | client | Opens the spawn select screen. |
 | `rsg-character:client:ApplySkin` | client | Applies a skin and clothes to the player. |
 | `rsg-character:client:outfits` | client | Opens the outfit wardrobe. |
@@ -201,3 +211,5 @@ exports['rsg-character']:IsCothingActive()
 
 ## Credits
 - RexShack / RSG Framework
+
+Support: https://buymeacoffee.com/rexshack

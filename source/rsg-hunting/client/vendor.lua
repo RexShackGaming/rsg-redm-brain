@@ -1,4 +1,3 @@
-local RSGCore = exports['rsg-core']:GetCoreObject()
 local vendorPeds = {}
 lib.locale()
 
@@ -18,6 +17,8 @@ CreateThread(function()
         end
 
         local ped = CreatePed(model, vendor.coords.x, vendor.coords.y, vendor.coords.z - 1.0, vendor.coords.w, false, false)
+        SetModelAsNoLongerNeeded(model)
+        SetEntityInvincible(ped, true)
         SetRandomOutfitVariation(ped, true)
         SetEntityAsMissionEntity(ped, true, true)
         SetBlockingOfNonTemporaryEvents(ped, true)
@@ -34,6 +35,18 @@ CreateThread(function()
                 distance = 2.0,
                 onSelect = function()
                     OpenSellMenu(vendorIndex)
+                end
+            },
+            {
+                name = 'vendor_hunting_board',
+                label = locale('hunting_board_option'),
+                icon = 'fa-solid fa-trophy',
+                distance = 2.0,
+                canInteract = function()
+                    return Config.HuntingXP and Config.HuntingXP.Enabled and Config.HuntingXP.Leaderboard.AtTrapper
+                end,
+                onSelect = function()
+                    OpenHuntingLeaderboard()
                 end
             }
         })
@@ -69,6 +82,16 @@ function OpenSellMenu(vendorIndex)
         title = data.title,
         imagePath = 'nui://' .. Config.Image,
         items = data.items,
+        labels = {
+            subtitle = locale('ui_goods_wanted'), search = locale('ui_search'), ownedOnly = locale('ui_owned_only'),
+            addAll = locale('ui_add_all'), basket = locale('ui_basket'), total = locale('ui_total'),
+            clear = locale('ui_clear'), sell = locale('ui_sell_to_trapper'), confirmTitle = locale('ui_confirm_title'),
+            cancel = locale('ui_cancel'), confirm = locale('ui_confirm_sell'), confirmText = locale('ui_confirm_text'),
+            have = locale('ui_have'), inBasket = locale('ui_in_basket'), addToBasket = locale('ui_add_to_basket'),
+            emptyBasket = locale('basket_empty'), nothingOwned = locale('ui_nothing_owned'), noMatch = locale('ui_no_match'),
+            items = locale('ui_items'), max = locale('ui_max'), remove = locale('ui_remove'), close = locale('ui_close'),
+            trapper = locale('ui_trapper'),
+        },
     })
 end
 
@@ -91,7 +114,7 @@ CreateThread(function()
     while true do
         if sellUiOpen and currentVendor then
             local vendor = Config.Vendors[currentVendor]
-            local ped = PlayerPedId()
+            local ped = cache.ped
             if IsEntityDead(ped) or #(GetEntityCoords(ped) - vector3(vendor.coords.x, vendor.coords.y, vendor.coords.z)) > 5.0 then
                 closeSellUi()
             end
@@ -105,6 +128,7 @@ end)
 AddEventHandler('onResourceStop', function(resourceName)
     if GetCurrentResourceName() == resourceName then
         for _, ped in ipairs(vendorPeds) do
+            exports.ox_target:removeLocalEntity(ped)
             DeleteEntity(ped)
         end
         if sellUiOpen then SetNuiFocus(false, false) end

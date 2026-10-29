@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+  <div class="panel">
+    <div class="panel-header">
+      <span class="circle-btn">&#8249;</span>
+      <div>
+        <div class="title" id="ui-title"></div>
+        <div class="subtitle" id="ui-subtitle"></div>
+      </div>
+      <button class="circle-btn" id="close">&#10005;</button>
+    </div>
+    <div class="divider">&#10022;</div>
+    <div class="tabs">
+      <button class="tab active" data-tab="maps" id="tab-maps"></button>
+      <button class="tab" data-tab="sell" id="tab-sell"></button>
+    </div>
+    <div class="cash"><span id="ui-cash"></span>: $<span id="cash">0</span></div>
+    <div class="list" id="list"></div>
+  </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

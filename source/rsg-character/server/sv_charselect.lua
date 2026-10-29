@@ -45,6 +45,9 @@ local function GetCharacterSlots(license)
     return slots
 end
 
+local deleteCooldown = {}
+AddEventHandler('playerDropped', function() deleteCooldown[source] = nil end)
+
 local function OwnsCharacter(license, citizenid)
     if type(citizenid) ~= 'string' then return false end
     local owner = MySQL.scalar.await('SELECT license FROM players WHERE citizenid = ?', { citizenid })
@@ -128,6 +131,9 @@ end)
 RegisterNetEvent('rsg-character:server:DeleteCharacterSlot', function(citizenid)
     local src = source
     if RSGCore.Functions.GetPlayer(src) then return end
+    local now = GetGameTimer()
+    if deleteCooldown[src] and now - deleteCooldown[src] < 3000 then return end
+    deleteCooldown[src] = now
 
     local license = RSGCore.Functions.GetIdentifier(src, 'license')
     if not license or not OwnsCharacter(license, citizenid) then return end

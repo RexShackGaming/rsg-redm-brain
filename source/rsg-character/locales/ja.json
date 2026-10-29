@@ -249,7 +249,8 @@
             "input": {
                 "header": "登録",
                 "label": "生年月日"
-            }
+            },
+            "invalid": "生年月日は %s から %s の間で入力してください"
         },
         "male": "男性",
         "female": "女性",
@@ -440,5 +441,18 @@
     "outfit_limit_reached": "You can only store %s outfits - this one was not saved to your wardrobe",
     "outfit_delete_confirm": "Delete this outfit?",
     "default_outfit_name": "Default",
-    "auto_outfit_name": "Outfit %s"
+    "auto_outfit_name": "Outfit %s",
+    "wardrobe_target": {
+        "label": "ワードローブを開く"
+    },
+    "versioncheck": {
+        "no_local_version": "fxmanifest.lua から現在のリソースバージョンを読み取れません！",
+        "http_failed": "バージョン確認に失敗しました (HTTP %s)。接続または GitHub の URL を確認してください。",
+        "empty_data": "GitHub から空のバージョンデータを受信しました。",
+        "latest": "最新バージョンを使用しています！",
+        "outdated": "古いバージョンです！バージョン %s に更新してください",
+        "download": "ダウンロード: %s",
+        "newer": "新しいバージョン (%s) を使用しています（リモート: %s）。開発版ですか？"
+    },
+    "outfit_wear_failed": "Couldn't wear that outfit here - use a wardrobe or cloakroom"
 }

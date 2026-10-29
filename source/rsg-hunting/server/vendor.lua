@@ -3,18 +3,6 @@ local stockFile = 'vendor_stock.json'
 local stockData = {}
 lib.locale()
 
--- itemName -> item config, built once instead of scanning every vendor's
--- item list on every single sell call
-local ItemConfigLookup = {}
-
-CreateThread(function()
-    for _, vendor in ipairs(Config.Vendors) do
-        for _, item in ipairs(vendor.items) do
-            ItemConfigLookup[item.name] = item
-        end
-    end
-end)
-
 local function LoadStock()
     local file = LoadResourceFile(GetCurrentResourceName(), stockFile)
     if file then
@@ -60,63 +48,17 @@ local function isValidAmount(amount)
         and amount % 1 == 0
 end
 
-RegisterNetEvent('rsg-hunting:server:sellItem', function(itemName, amount)
-    local src = source
-    if type(itemName) ~= 'string' or not isValidAmount(amount) then return end
-    if isOnCooldown(src) then return end
-
-    local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player then return end
-
-    local itemConfig = ItemConfigLookup[itemName]
-    if not itemConfig or not itemConfig.canSell then return end
-
-    local playerItem = Player.Functions.GetItemByName(itemName)
-    if not playerItem or playerItem.amount < amount then
-        TriggerClientEvent('ox_lib:notify', src, { title = locale('vendor'), description = locale('not_enough_items'), type = 'error' })
-        return
-    end
-
-    local currentStock = stockData[itemName] or 0
-    local dynamicPrice = itemConfig.sellPrice
-
-    -- Increase sell price when stock is low (vendor pays more for items they need)
-    if itemConfig.stockBasedPrice then
-        local stockRatio = currentStock / (itemConfig.maxStock or 50)
-        if stockRatio < 0.25 then
-            dynamicPrice = dynamicPrice * 1.5
-        elseif stockRatio < 0.5 then
-            dynamicPrice = dynamicPrice * 1.25
-        end
-    end
-
-    -- Round to the nearest whole dollar with a $1 floor. Server-side money
-    -- functions store cash as integers, so a fractional totalPrice (most
-    -- sell prices are well under $1) was being truncated to $0 - letting
-    -- players hand in items and get paid nothing. This guarantees every
-    -- sale pays out at least $1.
-    local totalPrice = math.max(1, math.floor((dynamicPrice * amount) + 0.5))
-
-    if not Player.Functions.RemoveItem(itemName, amount) then
-        return
-    end
-
-    Player.Functions.AddMoney('cash', totalPrice, 'vendor-sale')
-    stockData[itemName] = currentStock + amount
-    SaveStock()
-
-    TriggerClientEvent('ox_lib:notify', src, { title = locale('vendor'), description = locale('sold_item', amount, itemConfig.label, totalPrice), type = 'success' })
-    TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items[itemName], 'remove', amount)
-end)
-
 --------------------------------------
 -- trapper sell UI: data + basket checkout
 --------------------------------------
 local SELL_DISTANCE = 6.0
 
 -- vendor pays more for items it's short on (same rules as single sells)
-local function getSellUnitPrice(itemConfig)
+local function getSellUnitPrice(itemConfig, src)
     local price = itemConfig.sellPrice
+    if src then
+        price = price * (1 + (HuntingXP.GetPerks(src).trapperBonus or 0) / 100)
+    end
     if itemConfig.stockBasedPrice then
         local stockRatio = (stockData[itemConfig.name] or 0) / (itemConfig.maxStock or 50)
         if stockRatio < 0.25 then
@@ -145,7 +87,7 @@ local function buildSellData(Player, vendor)
                 name  = item.name,
                 label = item.label or (shared and shared.label) or item.name,
                 image = (shared and shared.image) or (item.name .. '.png'),
-                price = getSellUnitPrice(item),
+                price = getSellUnitPrice(item, Player.PlayerData.source),
                 owned = owned and owned.amount or 0,
             }
         end
@@ -203,17 +145,17 @@ lib.callback.register('rsg-hunting:server:sellBasket', function(src, vendorIndex
     -- price with the stock level as it was before this sale
     local rawTotal, totalItems = 0, 0
     for _, name in ipairs(order) do
-        rawTotal = rawTotal + getSellUnitPrice(accepted[name]) * lines[name]
+        rawTotal = rawTotal + getSellUnitPrice(accepted[name], src) * lines[name]
         totalItems = totalItems + lines[name]
     end
 
     -- remove everything; roll back if any removal fails
     local removed = {}
     for _, name in ipairs(order) do
-        if Player.Functions.RemoveItem(name, lines[name]) then
+        if exports['rsg-inventory']:RemoveItem(src, name, lines[name], nil, 'rsg-hunting-trapper-sale') then
             removed[#removed + 1] = name
         else
-            for _, r in ipairs(removed) do Player.Functions.AddItem(r, lines[r]) end
+            for _, r in ipairs(removed) do exports['rsg-inventory']:AddItem(src, r, lines[r], nil, nil, 'rsg-hunting-sale-rollback') end
             return { ok = false, message = locale('not_enough_items'), items = buildSellData(Player, vendor) }
         end
     end
@@ -224,11 +166,22 @@ lib.callback.register('rsg-hunting:server:sellBasket', function(src, vendorIndex
 
     for _, name in ipairs(order) do
         stockData[name] = (stockData[name] or 0) + lines[name]
-        TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items[name], 'remove', lines[name])
     end
     SaveStock()
 
     TriggerClientEvent('ox_lib:notify', src, { title = locale('vendor'), description = locale('basket_sold', totalItems, payout), type = 'success' })
+
+    local soldText = {}
+    for _, name in ipairs(order) do
+        local shared = RSGCore.Shared.Items[name]
+        soldText[#soldText + 1] = ('%sx %s'):format(lines[name], (shared and shared.label) or name)
+    end
+    HuntingWebhook.Sale('trapper', src, locale('wh_trapper_title', totalItems, vendor.blipname or locale('vendor')), {
+        { name = locale('wh_trapper'), value = vendor.blipname or ('#' .. vendorIndex) },
+        { name = locale('wh_payout'), value = ('$%.2f'):format(payout) },
+        { name = locale('wh_trapper_perk'), value = ('+%s%%'):format(HuntingXP.GetPerks(src).trapperBonus or 0) },
+        { name = locale('wh_items'), value = table.concat(soldText, '\n'), inline = false },
+    }, payout)
     return { ok = true, payout = payout, items = buildSellData(Player, vendor) }
 end)
 
@@ -238,6 +191,7 @@ RegisterCommand('resetvendorstock', function(src)
     stockData = {}
     SaveStock()
     print('[rsg-hunting] Vendor stock reset')
+    HuntingWebhook.Send('admin', { title = locale('wh_stock_reset_title'), description = locale('wh_stock_reset_desc'), src = 0 })
 end, false)
 
 --------------------------------------

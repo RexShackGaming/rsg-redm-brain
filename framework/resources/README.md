@@ -6,7 +6,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 
 | Resource | Description | Exports | Net events |
 |---|---|---|---|
-| [rsg-adminmenu](rsg-adminmenu.md) |  | 0 | 68 |
+| [rsg-adminmenu](rsg-adminmenu.md) | A full staff admin panel for RSG Framework (RedM). It has a React NUI with tiered staff roles, player mana | 0 | 69 |
 | [rsg-ambush](rsg-ambush.md) | rsg-ambush - random gang ambushes on the trail | 0 | 4 |
 | [rsg-ammo](rsg-ammo.md) | Persistent ammunition system for RedM using the RSG Framework. Players refill their weapons by using ammo  | 1 | 7 |
 | [rsg-animations](rsg-animations.md) | Emote & animation menu for RedM (RSG Core). > A Vue.js animation menu that lets players play gestures, dan | 2 | 2 |
@@ -18,9 +18,11 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-bathing](rsg-bathing.md) | Interactive bathing system for RedM servers using RSG Core. - [rsg-core](https://github.com/Rexshack-RedM/rsg- | 1 | 4 |
 | [rsg-beekeeper](rsg-beekeeper.md) | Beekeeper script for RSG Framework | 0 | 22 |
 | [rsg-bossmenu](rsg-bossmenu.md) | Boss management menu for RedM servers using RSG Core. > ox_lib–based menu system allowing job bosses t | 0 | 13 |
+| [rsg-bountyhunter](rsg-bountyhunter.md) | rsg-bountyhunter - hunt wanted outlaws and bring them in dead or alive | 0 | 4 |
 | [rsg-canteen](rsg-canteen.md) | Fill a canteen at water pumps with ox_target and drink from it to restore thirst. - Target `p_waterpump01x | 0 | 4 |
 | [rsg-character](rsg-character.md) | Character selection, creation, clothing store and spawn system for RSG-Core (RedM). - In-world character s | 14 | 20 |
 | [rsg-chat](rsg-chat.md) | A chat resource for RedM servers running RSG-Core. It replaces the default chat. Every message shows t | 0 | 11 |
+| [rsg-cinema](rsg-cinema.md) | rsg-cinema - moving picture shows rebuilt from RDR2 show_movie_magic_lantern | 0 | 9 |
 | [rsg-consume](rsg-consume.md) | Universal consumption system for RedM using RSG Core. > Immersive eating and drinking system for RedM serv | 0 | 2 |
 | [rsg-cooking](rsg-cooking.md) | A cooking system for RSG-Core (RedM) that works the same way as [rsg-moonshine](https://github.com/Rexshac | 8 | 7 |
 | [rsg-core](rsg-core.md) | The core framework for RSG RedM servers: players, characters, money, jobs, gangs, permissions, commands, callb | 17 | 33 |
@@ -36,14 +38,16 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-gangmenu](rsg-gangmenu.md) | A gang boss management menu for RedM servers running the RSG Framework. Gang bosses can manage members | 0 | 14 |
 | [rsg-goldclaim](rsg-goldclaim.md) | A gold claim system for RedM (RSG-Core). Players place gold rockers, load them with paydirt and water, process | 0 | 31 |
 | [rsg-goldpanning](rsg-goldpanning.md) | Gold panning system for RSG Framework | 0 | 5 |
+| [rsg-guarma](rsg-guarma.md) | Boat travel between Saint Denis and Guarma for the RSG Framework (RedM). Players buy boat tickets from | 0 | 2 |
 | [rsg-herbalist](rsg-herbalist.md) | Herbalist script for RSG Framework | 0 | 15 |
 | [rsg-hotair](rsg-hotair.md) | Hireable hot air balloons for RedM servers running the RSG-Core framework. Players hire a balloon at a doc | 0 | 7 |
 | [rsg-housing](rsg-housing.md) | Monthly house rentals for the RSG Framework (RedM). Players rent a house directly at the property, pay rent ev | 0 | 6 |
 | [rsg-hud](rsg-hud.md) | Player and horse HUD for RSG-Core (RedM): health, stamina, hunger, thirst, cleanliness, stress, temperature, v | 17 | 13 |
-| [rsg-hunting](rsg-hunting.md) | Hunting, trapper and butcher script for RSG Framework | 0 | 4 |
+| [rsg-hunting](rsg-hunting.md) | Hunting, trapper and butcher script for RSG Framework | 4 | 1 |
 | [rsg-huntingpets](rsg-huntingpets.md) | A combined RedM / RSG-Core resource that adds hunting dogs and hunting birds to your server in one package | 0 | 16 |
 | [rsg-inventory](rsg-inventory.md) | Slot/weight inventory for RSG-Core with hotbar, persistent stashes, ground drops, shops and a legacy-compatibl | 43 | 16 |
 | [rsg-lawman](rsg-lawman.md) | Law enforcement and sheriff management system for RedM using RSG Core. > Full-featured law enforcement fra | 0 | 19 |
+| [rsg-legendary](rsg-legendary.md) | rsg-legendary - legendary animal hunting | 0 | 4 |
 | [rsg-loading](rsg-loading.md) | RSG RedM Loading Screen | 0 | 0 |
 | [rsg-lockpick](rsg-lockpick.md) | Simple lockpicking minigame for RedM (RSG Core). > A lightweight NUI lockpicking game (pin + cylinder) you | 0 | 0 |
 | [rsg-looting](rsg-looting.md) | Secure NPC looting and player robbery for RSG Framework (RedM), with ox_lib notifications, multi-language  | 1 | 2 |
@@ -64,7 +68,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-prison](rsg-prison.md) | Prison system for RedM servers using RSG Core. - [rsg-core](https://github.com/Rexshack-RedM/rsg-core) - [ | 1 | 12 |
 | [rsg-radialmenu](rsg-radialmenu.md) | Radial interaction menu for RedM using RSG Core. A fast, themed radial menu with nested submenus, job-spec | 2 | 7 |
 | [rsg-railroad](rsg-railroad.md) | Advanced train management system for RedM (rsg-core). Buy railroad companies, hire drivers, manage trains, run | 0 | 32 |
-| [rsg-ranch](rsg-ranch.md) | A complete livestock ranching system for RedM servers running the RSG Framework. Buy a ranch, hire sta | 31 | 100 |
+| [rsg-ranch](rsg-ranch.md) | A complete livestock ranching system for RedM servers running the RSG Framework. Buy a ranch, hire sta | 31 | 102 |
 | [rsg-roulette](rsg-roulette.md) | Multiplayer roulette tables for RSG Framework | 1 | 11 |
 | [rsg-samples](rsg-samples.md) | Animal sample collector for RedM (best version) with leaderboard, certificate, and milestone rewards. - Sedate | 0 | 3 |
 | [rsg-smelting](rsg-smelting.md) | Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for RSG-Core (RedM) with ox_lib, ox_t | 1 | 1 |

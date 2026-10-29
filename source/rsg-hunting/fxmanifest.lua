@@ -5,7 +5,7 @@ game 'rdr3'
 name 'rsg-hunting'
 author 'RexShack'
 description 'Hunting, trapper and butcher script for RSG Framework'
-version '3.0.0'
+version '3.1.0'
 
 shared_scripts {
     '@ox_lib/init.lua',
@@ -15,12 +15,17 @@ shared_scripts {
 client_scripts {
     'client/client.lua',
     'client/vendor.lua',
+    'client/leaderboard.lua',
     'client/main.js',
     'client/butcher.lua',
     'client/npcs.lua',
 }
 
 server_scripts {
+    '@oxmysql/lib/MySQL.lua',
+    'server/sv_config.lua',
+    'server/webhooks.lua',
+    'server/xp.lua',
     'server/server.lua',
     'server/vendor.lua',
     'server/butcher.lua',
@@ -28,6 +33,7 @@ server_scripts {
 }
 
 dependencies {
+    'oxmysql',
     'rsg-core',
     'ox_lib',
     'ox_target',
@@ -40,6 +46,8 @@ files {
     'html/index.html',
     'html/style.css',
     'html/script.js',
+    'html/board.css',
+    'html/board.js',
     'locales/*.json',
     'stream/*.ymap'
 }

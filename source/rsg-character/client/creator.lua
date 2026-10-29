@@ -542,12 +542,16 @@ function FirstMenu()
                         label = locale('creator.birthdate.input.label'),
                         format = 'YYYY-MM-DD',
                         returnString = true,
-                        min = '1750-01-01',
-                        max = '1900-01-01',
-                        default = '1870-01-01'
+                        min = RSG.Birthdate.Min,
+                        max = RSG.Birthdate.Max,
+                        default = Birthdate or RSG.Birthdate.Default
                     }
                 })
                 if not dialog then return false end
+                if not RSG.IsValidBirthdate(dialog[1]) then
+                    lib.notify({ title = locale('creator.birthdate.input.header'), description = locale('creator.birthdate.invalid', RSG.Birthdate.Min, RSG.Birthdate.Max), type = 'error', duration = 7000 })
+                    return false
+                end
                 Birthdate = dialog[1]
                 menu.setElement(IndexOf("birthdate"), "label", Birthdate)
                 menu.setElement(IndexOf("birthdate"), "itemHeight", "4vh")
@@ -866,8 +870,8 @@ function OpenMouthMenu()
     UI.CloseAll()
 
     RequestAnimDict("FACE_HUMAN@GEN_MALE@BASE")
-
-    while not HasAnimDictLoaded("FACE_HUMAN@GEN_MALE@BASE") do
+    local animDeadline = GetGameTimer() + 5000
+    while not HasAnimDictLoaded("FACE_HUMAN@GEN_MALE@BASE") and GetGameTimer() < animDeadline do
         Wait(100)
     end
 

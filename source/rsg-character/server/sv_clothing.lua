@@ -19,7 +19,16 @@ AddEventHandler('playerDropped', function()
     cooldowns[source] = nil
 end)
 
-local function IsNearCloakroom(src)
+local function SafeDecode(value, fallback)
+    if type(value) ~= 'string' or value == '' then return fallback end
+    local ok, decoded = pcall(json.decode, value)
+    return (ok and type(decoded) == 'table') and decoded or fallback
+end
+
+-- Wardrobe props (ox_target) are map objects the server can't see, so when they are
+-- enabled outfits can be worn anywhere. Saved outfits are already paid for, so this is safe.
+local function CanUseWardrobe(src)
+    if RSG.WardrobeTarget and RSG.WardrobeTarget.enabled then return true end
     local coords = GetEntityCoords(GetPlayerPed(src))
     for _, v in ipairs(RSG.Cloakroom) do
         if #(coords - v) <= 5.0 then return true end
@@ -50,7 +59,7 @@ RegisterNetEvent('rsg-character:server:saveOutfit', function(newClothes, _, outf
 
     local citizenid = Player.PlayerData.citizenid
     local current = MySQL.scalar.await('SELECT clothes FROM playerskins WHERE citizenid = ? ORDER BY id DESC LIMIT 1', { citizenid })
-    local price = CalculatePrice(newClothes, current and json.decode(current) or {}, isMale)
+    local price = CalculatePrice(newClothes, SafeDecode(current, {}), isMale)
 
     if price > 0 and not Player.Functions.RemoveMoney('cash', price, 'rsg-character:buy-clothes') then
         Notify(src, locale('insufficient_funds.title'), locale('insufficient_funds.description'))
@@ -93,21 +102,24 @@ lib.callback.register('rsg-character:server:wearOutfit', function(src, id)
     id = tonumber(id)
     if not id or OnCooldown(src, 1000) then return nil end
     local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player or not IsNearCloakroom(src) then return nil end
+    if not Player or not CanUseWardrobe(src) then return nil end
 
     local citizenid = Player.PlayerData.citizenid
     local clothes = MySQL.scalar.await('SELECT clothes FROM playeroutfit WHERE id = ? AND citizenid = ?', { id, citizenid })
     if not clothes then return nil end
 
+    local decoded = SafeDecode(clothes)
+    if not decoded then return nil end
     MySQL.update('UPDATE playerskins SET clothes = ? WHERE citizenid = ?', { clothes, citizenid })
-    return json.decode(clothes)
+    return decoded
 end)
 
 RegisterNetEvent('rsg-character:server:DeleteOutfit', function(id)
     local src = source
     id = tonumber(id)
+    if not id or OnCooldown(src, 1000) then return end
     local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player or not id then return end
+    if not Player then return end
     -- the Default outfit from character creation can never be deleted
     MySQL.update('DELETE FROM playeroutfit WHERE id = ? AND citizenid = ? AND is_default = 0', { id, Player.PlayerData.citizenid })
 end)
@@ -116,7 +128,7 @@ lib.callback.register('rsg-character:server:LoadClothes', function(src)
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return {} end
     local clothes = MySQL.scalar.await('SELECT clothes FROM playerskins WHERE citizenid = ? ORDER BY id DESC LIMIT 1', { Player.PlayerData.citizenid })
-    return clothes and json.decode(clothes) or {}
+    return SafeDecode(clothes, {})
 end)
 
 lib.callback.register('rsg-character:server:getOutfits', function(src)
@@ -124,7 +136,7 @@ lib.callback.register('rsg-character:server:getOutfits', function(src)
     if not Player then return {} end
     local rows = MySQL.query.await('SELECT id, name, clothes, is_default FROM playeroutfit WHERE citizenid = ? ORDER BY is_default DESC, id', { Player.PlayerData.citizenid }) or {}
     for i = 1, #rows do
-        rows[i].clothes = json.decode(rows[i].clothes)
+        rows[i].clothes = SafeDecode(rows[i].clothes, {})
         rows[i].is_default = rows[i].is_default == 1 or rows[i].is_default == true
     end
     return rows

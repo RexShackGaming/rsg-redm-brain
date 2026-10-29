@@ -715,14 +715,54 @@ html, body {
     background: #1a1712;
     color: var(--rdr-text);
 }
-.modal-field input[type="date"] {
-    color-scheme: dark;
+.modal-field .date-stepper-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.2fr;
+    gap: 8px;
 }
-.modal-field input[type="date"]::-webkit-calendar-picker-indicator {
+.modal-field .date-stepper-label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--rdr-gold-dim);
+    margin-bottom: 4px;
+}
+.modal-field .date-stepper-ctl {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--rdr-gold-dim);
+    border-radius: 2px;
+    background: rgba(0,0,0,0.35);
+}
+.modal-field .date-stepper-ctl button {
+    width: 28px;
+    flex: 0 0 28px;
+    background: transparent;
+    border: none;
+    color: var(--rdr-gold);
+    font-size: 16px;
     cursor: pointer;
-    padding: 4px;
-    margin-right: -4px;
-    filter: invert(72%) sepia(28%) saturate(482%) hue-rotate(358deg) brightness(96%) contrast(90%);
+    user-select: none;
+}
+.modal-field .date-stepper-ctl button:hover {
+    background: rgba(201,162,75,0.12);
+}
+.modal-field .date-stepper-value,
+.modal-field .date-stepper-ctl input {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    padding: 9px 0;
+    color: var(--rdr-text);
+    font-family: 'Roboto', sans-serif;
+    font-size: 13px;
+    user-select: none;
+}
+.modal-field .date-stepper-ctl input {
+    border: none;
+    background: transparent;
+    width: auto;
 }
 .modal-field input:focus,
 .modal-field select:focus {

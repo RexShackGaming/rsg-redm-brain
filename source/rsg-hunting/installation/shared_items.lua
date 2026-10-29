@@ -40,11 +40,6 @@
     resource_snake_generic_skin = { name = 'resource_snake_generic_skin', label = 'Snake Skin',           weight = 100, type = 'item', image = 'resource_snake_generic_skin.png', unique = false, useable = false, shouldClose = true, description = '',  category = 'resource'},
     resource_pelt_wolf          = { name = 'resource_pelt_wolf',          label = 'Wolf Pelt',            weight = 100, type = 'item', image = 'resource_pelt_wolf.png',          unique = false, useable = false, shouldClose = true, description = '',  category = 'resource'},
 
-    -- legendary
-    resource_skin_alligator_legendary = { name = 'resource_skin_alligator_legendary', label = 'Legenary Alligator Skin', weight = 100, type = 'item', image = 'resource_skin_alligator_legendary.png', unique = false, useable = false, shouldClose = true, description = '',  category = 'resource'},
-    resource_skin_boar_legendary      = { name = 'resource_skin_boar_legendary',      label = 'Legenary Boar Skin',      weight = 100, type = 'item', image = 'resource_skin_boar_legendary.png',      unique = false, useable = false, shouldClose = true, description = '',  category = 'resource'},
-    resource_skin_buffalo_legendary   = { name = 'resource_skin_buffalo_legendary',   label = 'Legenary Buffalo Skin',   weight = 100, type = 'item', image = 'resource_skin_buffalo_legendary.png',   unique = false, useable = false, shouldClose = true, description = '',  category = 'resource'},
-
     -- meat
     consumable_meat_alligator = { name = 'consumable_meat_alligator', label = 'Alligator Meat', weight = 100, type = 'item', image = 'consumable_meat_alligator.png', unique = false, useable = false, shouldClose = true, description = '',  category = 'resource'},
 

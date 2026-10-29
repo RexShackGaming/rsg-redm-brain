@@ -1,254 +1,144 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
+lib.locale()
 
--- Performance optimization variables
-local AnimalValidationCache = {}
-local QualityMultipliers = {
-    poor = Config.PoorMultiplier or 1,
-    good = Config.GoodMultiplier or 2,
-    perfect = Config.PerfectMultiplier or 3
-}
-local ItemQuantities = {
-    poor = 1,
-    good = 2,
-    perfect = 3
-}
-local LocaleCache = {}
-local PlayerCooldowns = {} -- Anti-spam protection
-local PROCESS_COOLDOWN = Config.Performance and Config.Performance.ServerProcessCooldown or 2000
+------------------------------------------
+-- butcher: the client only sends the carried carcass's network id;
+-- the server checks the carcass, works out the reward and deletes it
+------------------------------------------
+local AnimalByModel = {}
+for _, animal in ipairs(Config.Animal) do
+    AnimalByModel[animal.model] = animal
+end
 
--- Initialize caches
+local QualityMultiplier = {
+    poor    = Config.PoorMultiplier or 1,
+    good    = Config.GoodMultiplier or 2,
+    perfect = Config.PerfectMultiplier or 3,
+}
+local ItemQuantity = { poor = 1, good = 2, perfect = 3 }
+
+local BUTCHER_RANGE = 8.0  -- player must be this close to a butcher
+local CARCASS_RANGE = 4.0  -- carcass must be this close to the player
+local COOLDOWN = Config.ServerCooldown or 2000
+
+local Cooldowns = {}
+local SoldCarcasses = {} -- [netId] = os.time()
+
 CreateThread(function()
-    Wait(1000) -- Ensure config is loaded
-
-    -- Build animal validation cache for O(1) lookup
-    for i = 1, #Config.Animal do
-        local animal = Config.Animal[i]
-        AnimalValidationCache[animal.model] = {
-            name = animal.name,
-            rewardmoney = animal.rewardmoney,
-            rewarditem1 = animal.rewarditem1,
-            rewarditem2 = animal.rewarditem2,
-            rewarditem3 = animal.rewarditem3
-        }
-    end
-
-    -- Load locale strings from JSON file
-    local localeData = nil
-    local success, result = pcall(json.decode, LoadResourceFile(GetCurrentResourceName(), 'locales/en.json'))
-
-    if success and result then
-        localeData = result
-        LocaleCache.lang_1 = localeData['sv_lang_1'] or ' Sold a poor '
-        LocaleCache.lang_2 = localeData['sv_lang_2'] or ' Sold a good '
-        LocaleCache.lang_3 = localeData['sv_lang_3'] or ' Sold a perfect '
-        LocaleCache.lang_4 = localeData['sv_lang_4'] or ' for $'
-
-        print('[rsg-hunting] Butcher locale strings loaded successfully from en.json')
-    else
-        -- Fallback locale strings
-        LocaleCache.lang_1 = ' Sold a poor '
-        LocaleCache.lang_2 = ' Sold a good '
-        LocaleCache.lang_3 = ' Sold a perfect '
-        LocaleCache.lang_4 = ' for $'
-        print('[rsg-hunting] Warning: Could not load butcher locale file, using fallback strings')
-    end
-
-    print('[rsg-hunting] Butcher server cache initialized with ' .. #Config.Animal .. ' animals')
-
-    -- Start performance monitoring if debug is enabled
-    if Config.Debug then
-        StartButcherPerformanceMonitoring()
+    while true do
+        Wait(300000)
+        local now = os.time()
+        for id, t in pairs(SoldCarcasses) do
+            if now - t > 1800 then SoldCarcasses[id] = nil end
+        end
     end
 end)
 
--- Performance monitoring system
-local PerformanceStats = {
-    totalRewards = 0,
-    totalPlayers = 0,
-    cacheHits = 0,
-    cacheMisses = 0,
-    startTime = GetGameTimer()
-}
-
-function StartButcherPerformanceMonitoring()
-    CreateThread(function()
-        while true do
-            Wait(60000) -- Report every minute
-            local uptime = (GetGameTimer() - PerformanceStats.startTime) / 1000
-            local rewardsPerMinute = (PerformanceStats.totalRewards / uptime) * 60
-            local totalLookups = PerformanceStats.cacheHits + PerformanceStats.cacheMisses
-            local cacheHitRate = totalLookups > 0 and (PerformanceStats.cacheHits / totalLookups * 100) or 0
-
-            print(string.format('[rsg-hunting] Butcher performance stats - Uptime: %.1fs, Rewards/min: %.1f, Cache Hit Rate: %.1f%%, Active Players: %d',
-                uptime, rewardsPerMinute, cacheHitRate, #GetPlayers()))
-
-            -- Clean up old cooldown entries
-            CleanupButcherPlayerCooldowns()
-        end
-    end)
+local function notify(src, desc, ntype)
+    TriggerClientEvent('ox_lib:notify', src, { title = locale('butcher_title'), description = desc, type = ntype, duration = 6000 })
 end
 
--- Memory management
-function CleanupButcherPlayerCooldowns()
-    local currentTime = GetGameTimer()
-    local cleaned = 0
-    local maxEntries = Config.Performance and Config.Performance.MaxPlayerCooldowns or 100
-
-    -- Remove old entries
-    for playerId, lastTime in pairs(PlayerCooldowns) do
-        if (currentTime - lastTime) > (PROCESS_COOLDOWN * 10) then -- 10x cooldown time
-            PlayerCooldowns[playerId] = nil
-            cleaned = cleaned + 1
+local function nearButcher(coords)
+    for _, b in ipairs(Config.ButcherLocations) do
+        if #(coords - b.coords) <= BUTCHER_RANGE or #(coords - b.npccoords.xyz) <= BUTCHER_RANGE then
+            return true
         end
     end
-
-    -- If still too many entries, remove oldest ones
-    local count = 0
-    for _ in pairs(PlayerCooldowns) do count = count + 1 end
-
-    if count > maxEntries then
-        local entries = {}
-        for playerId, lastTime in pairs(PlayerCooldowns) do
-            table.insert(entries, {id = playerId, time = lastTime})
-        end
-
-        table.sort(entries, function(a, b) return a.time < b.time end)
-
-        for i = 1, count - maxEntries do
-            PlayerCooldowns[entries[i].id] = nil
-            cleaned = cleaned + 1
-        end
-    end
-
-    if Config.Debug and cleaned > 0 then
-        print('[rsg-hunting] Butcher cleaned up ' .. cleaned .. ' old cooldown entries')
-    end
-end
-
--- Optimized validation functions with performance tracking
-local function IsValidButcherAnimal(model)
-    local result = AnimalValidationCache[model]
-    if Config.Debug then
-        if result then
-            PerformanceStats.cacheHits = PerformanceStats.cacheHits + 1
-        else
-            PerformanceStats.cacheMisses = PerformanceStats.cacheMisses + 1
-        end
-    end
-    return result
-end
-
-local function IsValidButcherQuality(quality)
-    return QualityMultipliers[quality] ~= nil
-end
-
--- Player cooldown management
-local function IsButcherPlayerOnCooldown(src)
-    local currentTime = GetGameTimer()
-    local lastProcess = PlayerCooldowns[src]
-
-    if lastProcess and (currentTime - lastProcess) < PROCESS_COOLDOWN then
-        return true
-    end
-
-    PlayerCooldowns[src] = currentTime
     return false
 end
 
--- Optimized reward processing function
-local function ProcessButcherReward(src, animalData, quality)
+local function suspicious(src, why)
+    print(('[rsg-hunting] butcher sale rejected for %s (%s): %s'):format(GetPlayerName(src) or '?', src, why))
+    HuntingWebhook.Security(src, locale('wh_where_butcher'), why)
+end
+
+lib.callback.register('rsg-hunting:server:sellCarcass', function(src, netId, quality)
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return false end
 
-    local multiplier = QualityMultipliers[quality]
-    local quantity = ItemQuantities[quality]
-    local finalMoney = animalData.rewardmoney * multiplier
+    local now = GetGameTimer()
+    if Cooldowns[src] and now - Cooldowns[src] < COOLDOWN then return false end
+    Cooldowns[src] = now
 
-    -- Add money
-    Player.Functions.AddMoney('cash', finalMoney)
+    netId = math.tointeger(tonumber(netId))
+    if not netId or netId <= 0 then return false end
+    if SoldCarcasses[netId] then suspicious(src, locale('reason_already_sold')) return false end
+    if not QualityMultiplier[quality] then quality = 'poor' end
 
-    -- Add items efficiently
-    local itemsToAdd = {}
-    if animalData.rewarditem1 then
-        itemsToAdd[#itemsToAdd + 1] = { item = animalData.rewarditem1, count = quantity }
+    local carcass = NetworkGetEntityFromNetworkId(netId)
+    if not carcass or carcass == 0 or not DoesEntityExist(carcass) or GetEntityType(carcass) ~= 1 then
+        notify(src, locale('butcher_failed'), 'error')
+        return false
     end
-    if animalData.rewarditem2 then
-        itemsToAdd[#itemsToAdd + 1] = { item = animalData.rewarditem2, count = quantity }
-    end
-    if animalData.rewarditem3 then
-        itemsToAdd[#itemsToAdd + 1] = { item = animalData.rewarditem3, count = quantity }
-    end
-
-    -- Batch add items and trigger client events
-    for _, itemData in ipairs(itemsToAdd) do
-        Player.Functions.AddItem(itemData.item, itemData.count)
-        TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items[itemData.item], 'add', itemData.count)
+    if IsPedAPlayer(carcass) then suspicious(src, locale('reason_sell_player')) return false end
+    if GetEntityHealth(carcass) > 0 then
+        notify(src, locale('butcher_not_dead'), 'error')
+        return false
     end
 
-    -- Log the transaction if enabled
-    if not Config.Performance or Config.Performance.LoggingEnabled then
-        local qualityLabels = { poor = '1', good = '2', perfect = '3' }
-        local logMessage = GetPlayerName(src) .. (LocaleCache['lang_' .. (qualityLabels[quality] or '1')] or ' sold a ' .. quality .. ' ') .. animalData.name .. (LocaleCache.lang_4 or ' for $') .. finalMoney
-        TriggerEvent('rsg-log:server:CreateLog', Config.WebhookName, Config.WebhookTitle, Config.WebhookColour, logMessage, false)
+    local animal = AnimalByModel[GetEntityModel(carcass)]
+    if not animal then
+        notify(src, locale('butcher_unknown_animal'), 'error')
+        return false
     end
 
-    -- Update performance stats
-    if Config.Debug then
-        PerformanceStats.totalRewards = PerformanceStats.totalRewards + 1
+    local playerCoords = GetEntityCoords(GetPlayerPed(src))
+    if #(playerCoords - GetEntityCoords(carcass)) > CARCASS_RANGE then suspicious(src, locale('reason_carcass_far')) return false end
+    if not nearButcher(playerCoords) then suspicious(src, locale('reason_not_at_butcher')) return false end
+
+    -- items first: if there's no room, keep the carcass and stop
+    local qty = ItemQuantity[quality]
+    local items = {}
+    for i = 1, 3 do
+        local name = animal['rewarditem' .. i]
+        if name and RSGCore.Shared.Items[name] then
+            if not exports['rsg-inventory']:CanAddItem(src, name, qty) then
+                notify(src, locale('inventory_full'), 'error')
+                return false
+            end
+            items[#items + 1] = name
+        end
+    end
+
+    -- claim + remove the carcass before paying
+    SoldCarcasses[netId] = os.time()
+    DeleteEntity(carcass)
+
+    local bonus = (HuntingXP.GetPerks(src).butcherBonus or 0) / 100
+    local cash = math.floor(animal.rewardmoney * QualityMultiplier[quality] * (1 + bonus) * 100 + 0.5) / 100
+    if cash > 0 then
+        Player.Functions.AddMoney('cash', cash, 'rsg-hunting-butcher')
+    end
+    for _, name in ipairs(items) do
+        exports['rsg-inventory']:AddItem(src, name, qty, nil, nil, 'rsg-hunting-butcher')
+    end
+
+    notify(src, locale('butcher_sold', animal.name, locale('quality_' .. quality), ('%.2f'):format(cash)), 'success')
+
+    local itemText = {}
+    for _, name in ipairs(items) do itemText[#itemText + 1] = ('%sx %s'):format(qty, RSGCore.Shared.Items[name].label or name) end
+    HuntingWebhook.Sale('butcher', src, locale('wh_butcher_title', animal.name, locale('quality_' .. quality)), {
+        { name = locale('wh_animal'), value = animal.name },
+        { name = locale('wh_quality'), value = locale('quality_' .. quality) },
+        { name = locale('wh_cash'), value = ('$%.2f'):format(cash) },
+        { name = locale('wh_items'), value = #itemText > 0 and table.concat(itemText, ', ') or '-', inline = false },
+        { name = locale('wh_butcher_perk'), value = ('+%s%%'):format(math.floor(bonus * 100 + 0.5)) },
+    }, cash)
+
+    if Config.EnableLogging then
+        TriggerEvent('rsg-log:server:CreateLog', Config.WebhookName, Config.WebhookTitle, Config.WebhookColour,
+            ('%s (%s) sold a %s %s for $%.2f'):format(GetPlayerName(src), Player.PlayerData.citizenid, quality, animal.name, cash), false)
+    end
+
+    local xpCfg = Config.HuntingXP
+    if xpCfg and xpCfg.Enabled and xpCfg.ButcherXP then
+        local mult = xpCfg.ButcherQualityMultiplier and xpCfg.ButcherQualityMultiplier[quality] or 1
+        HuntingXP.Award(src, HuntingXP.GetAnimalXP(animal.model) * mult)
     end
 
     return true
-end
-
-RegisterServerEvent('rsg-hunting:server:butcher:reward')
-AddEventHandler('rsg-hunting:server:butcher:reward', function(model, quality, name)
-    local src = source
-
-    -- Anti-spam protection
-    if IsButcherPlayerOnCooldown(src) then
-        if Config.Debug then
-            print('[rsg-hunting] Butcher: player ' .. GetPlayerName(src) .. ' is on cooldown')
-        end
-        return
-    end
-
-    local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player then return end
-
-    -- Quick parameter validation
-    if not model or not quality or not name or type(model) ~= 'number' or type(quality) ~= 'string' or type(name) ~= 'string' then
-        print('[rsg-hunting] Butcher: invalid parameters from player: ' .. GetPlayerName(src))
-        return
-    end
-
-    -- Fast cache lookup for animal validation
-    local animalData = IsValidButcherAnimal(model)
-    if not animalData then
-        print('[rsg-hunting] Butcher: invalid animal model from player: ' .. GetPlayerName(src) .. ' Model: ' .. tostring(model))
-        return
-    end
-
-    -- Validate quality
-    if not IsValidButcherQuality(quality) then
-        print('[rsg-hunting] Butcher: invalid quality from player: ' .. GetPlayerName(src) .. ' Quality: ' .. tostring(quality))
-        return
-    end
-
-    -- Process the reward
-    local success = ProcessButcherReward(src, animalData, quality)
-
-    if Config.Debug and success then
-        print('[rsg-hunting] Butcher: processed ' .. quality .. ' ' .. animalData.name .. ' for ' .. GetPlayerName(src))
-    end
 end)
 
---------------------------------------
--- cleanup on player disconnect
---------------------------------------
 AddEventHandler('playerDropped', function()
-    local src = source
-    -- Clean up player cooldown data
-    if PlayerCooldowns[src] then
-        PlayerCooldowns[src] = nil
-    end
+    Cooldowns[source] = nil
 end)

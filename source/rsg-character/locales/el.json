@@ -249,7 +249,8 @@
             "input": {
                 "header": "Εγγραφή",
                 "label": "Ημερομηνία γέννησης"
-            }
+            },
+            "invalid": "Η ημερομηνία γέννησης πρέπει να είναι μεταξύ %s και %s"
         },
         "male": "Άνδρας",
         "female": "Γυναίκα",
@@ -440,5 +441,18 @@
     "outfit_limit_reached": "You can only store %s outfits - this one was not saved to your wardrobe",
     "outfit_delete_confirm": "Delete this outfit?",
     "default_outfit_name": "Default",
-    "auto_outfit_name": "Outfit %s"
+    "auto_outfit_name": "Outfit %s",
+    "wardrobe_target": {
+        "label": "Άνοιγμα ντουλάπας"
+    },
+    "versioncheck": {
+        "no_local_version": "Δεν ήταν δυνατή η ανάγνωση της τρέχουσας έκδοσης από το fxmanifest.lua!",
+        "http_failed": "Ο έλεγχος έκδοσης απέτυχε (HTTP %s). Ελέγξτε τη σύνδεση ή το URL του GitHub.",
+        "empty_data": "Λήφθηκαν κενά δεδομένα έκδοσης από το GitHub.",
+        "latest": "Χρησιμοποιείτε την τελευταία έκδοση!",
+        "outdated": "ΠΑΡΩΧΗΜΕΝΗ! Ενημερώστε στην έκδοση %s",
+        "download": "Λήψη από: %s",
+        "newer": "Χρησιμοποιείτε νεότερη έκδοση (%s) από την απομακρυσμένη (%s). Ίσως dev build;"
+    },
+    "outfit_wear_failed": "Couldn't wear that outfit here - use a wardrobe or cloakroom"
 }

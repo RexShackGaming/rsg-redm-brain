@@ -397,15 +397,108 @@
                     select.appendChild(optionEl);
                 });
                 wrap.appendChild(select);
+            } else if (f.type === "date") {
+                // Native date pickers and <select> popups crash RedM's CEF - use -/+ steppers instead
+                const hidden = document.createElement("input");
+                hidden.type = "hidden";
+                hidden.dataset.index = i;
+                const minDate = f.min || "1750-01-01";
+                const maxDate = f.max || "1900-12-31";
+                const minY = parseInt(minDate.slice(0, 4), 10);
+                const maxY = parseInt(maxDate.slice(0, 4), 10);
+                const def = /^\d{4}-\d{2}-\d{2}$/.test(f.default || "") ? f.default : minDate;
+                const date = { y: +def.slice(0, 4), m: +def.slice(5, 7), d: +def.slice(8, 10) };
+                const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                const pad = (n) => String(n).padStart(2, "0");
+                const daysIn = (y, m) => new Date(y, m, 0).getDate();
+                const row = document.createElement("div");
+                row.className = "date-stepper-row";
+                const parts = {};
+
+                const render = () => {
+                    date.y = Math.min(maxY, Math.max(minY, date.y));
+                    date.d = Math.min(date.d, daysIn(date.y, date.m));
+                    parts.d.textContent = String(date.d);
+                    parts.m.textContent = months[date.m - 1];
+                    parts.y.value = String(date.y);
+                    hidden.value = `${date.y}-${pad(date.m)}-${pad(date.d)}`;
+                    const err = wrap.querySelector(".field-error");
+                    if (err) err.remove();
+                };
+
+                const step = (key, dir) => {
+                    if (key === "d") {
+                        const max = daysIn(date.y, date.m);
+                        date.d = ((date.d - 1 + dir + max) % max) + 1;
+                    } else if (key === "m") {
+                        date.m = ((date.m - 1 + dir + 12) % 12) + 1;
+                    } else {
+                        date.y += dir;
+                    }
+                    render();
+                };
+
+                const makePart = (key, label, editable) => {
+                    const box = document.createElement("div");
+                    box.className = "date-stepper";
+                    const cap = document.createElement("span");
+                    cap.className = "date-stepper-label";
+                    cap.textContent = label;
+                    const ctl = document.createElement("div");
+                    ctl.className = "date-stepper-ctl";
+                    const minus = document.createElement("button");
+                    minus.type = "button"; minus.textContent = "\u2212";
+                    const plus = document.createElement("button");
+                    plus.type = "button"; plus.textContent = "+";
+                    let val;
+                    if (editable) {
+                        val = document.createElement("input");
+                        val.type = "text";
+                        val.maxLength = 4;
+                        val.inputMode = "numeric";
+                        val.addEventListener("input", () => {
+                            val.value = val.value.replace(/\D/g, "").slice(0, 4);
+                            if (val.value.length === 4) {
+                                date.y = +val.value;
+                                const typed = val.value;
+                                render();
+                                if (+typed >= minY && +typed <= maxY) val.value = typed;
+                            }
+                        });
+                        val.addEventListener("blur", () => { val.value = String(date.y); render(); });
+                    } else {
+                        val = document.createElement("span");
+                        val.className = "date-stepper-value";
+                    }
+                    // hold to repeat
+                    [[minus, -1], [plus, 1]].forEach(([btn, dir]) => {
+                        let t1 = null, t2 = null;
+                        const stop = () => { clearTimeout(t1); clearInterval(t2); t1 = t2 = null; };
+                        btn.addEventListener("mousedown", (e) => {
+                            e.preventDefault();
+                            step(key, dir);
+                            t1 = setTimeout(() => { t2 = setInterval(() => step(key, dir), 70); }, 350);
+                        });
+                        btn.addEventListener("mouseup", stop);
+                        btn.addEventListener("mouseleave", stop);
+                    });
+                    ctl.append(minus, val, plus);
+                    box.append(cap, ctl);
+                    row.appendChild(box);
+                    parts[key] = val;
+                };
+
+                makePart("d", "Day", false);
+                makePart("m", "Month", false);
+                makePart("y", "Year", true);
+                render();
+                wrap.appendChild(row);
+                wrap.appendChild(hidden);
             } else {
                 const input = document.createElement("input");
-                input.type = f.type === "date" ? "date" : "text";
+                input.type = "text";
                 input.placeholder = f.placeholder || "";
                 if (f.default) input.value = f.default;
-                if (f.type === "date") {
-                    if (f.min) input.min = f.min;
-                    if (f.max) input.max = f.max;
-                }
                 input.dataset.index = i;
                 wrap.appendChild(input);
             }
@@ -415,7 +508,7 @@
 
         show(app);
         show(dialogModal);
-        const firstInput = dialogFields.querySelector("input, select");
+        const firstInput = dialogFields.querySelector("input:not([type=hidden]), select");
         if (firstInput) firstInput.focus();
     }
 
@@ -427,11 +520,28 @@
     }
 
     dialogSubmit.addEventListener("click", () => {
-        const inputs = Array.from(dialogFields.querySelectorAll("input, select"))
+        const inputs = Array.from(dialogFields.querySelectorAll("[data-index]"))
             .sort((a, b) => Number(a.dataset.index) - Number(b.dataset.index));
         const values = inputs.map((inp) => inp.value);
         const missing = dialogFieldDefs.some((f, i) => f.required && !values[i]);
         if (missing) return;
+        const outOfRange = dialogFieldDefs.some((f, i) => f.type === "date" && values[i] &&
+            ((f.min && values[i] < f.min) || (f.max && values[i] > f.max)));
+        if (outOfRange) {
+            dialogFieldDefs.forEach((f, i) => {
+                if (f.type !== "date" || !values[i]) return;
+                if ((f.min && values[i] < f.min) || (f.max && values[i] > f.max)) {
+                    const wrap = inputs[i].parentElement;
+                    if (!wrap.querySelector(".field-error")) {
+                        const err = document.createElement("div");
+                        err.className = "field-error";
+                        err.textContent = `Date must be between ${f.min || "..."} and ${f.max || "..."}`;
+                        wrap.appendChild(err);
+                    }
+                }
+            });
+            return;
+        }
         hideOverlayOrApp(dialogModal);
         post("dialogSubmit", { values });
     });

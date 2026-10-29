@@ -1,6 +1,6 @@
 # rsg-character
 
-Version 3.0.7. rsg-character
+Version 3.0.9. rsg-character
 
 Character selection, creation, clothing store and spawn system for **RSG-Core** (RedM). - In-world character select screen: your characters' peds line up at a location you can configure. - Multiple character slots per player license (default **4**, configurable).
 
@@ -47,3 +47,5 @@ Has NUI (`ui_page`).
 **server/sv_appearance.lua:** `RSG.SetPrivateBucket(src)`, `RSG.ResetBucket(src)`, `RSG.OpenCreatorFor(src, data)`, `RSG.LoadSkinForSource(src)`
 
 **server/webhook.lua:** `RSG.SendWebhook(category, embed)`, `RSG.WebhookIdentityFields(_source)`
+
+**shared/functions.lua:** `RSG.IsValidBirthdate(date)`

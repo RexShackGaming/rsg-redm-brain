@@ -1,86 +1,80 @@
-local RSGCore = exports['rsg-core']:GetCoreObject()
 lib.locale()
 
 ---------------------------------------------
--- blips
+-- trapper blips
 ---------------------------------------------
+local trapperBlips = {}
+
 CreateThread(function()
-    for _, v in pairs(Config.Vendors) do
+    local sprite = joaat(Config.BlipSprite)
+    for _, v in ipairs(Config.Vendors) do
         if v.showblip then
-            local TrapperBlip = BlipAddForCoords(1664425300, v.blipcoords)
-            SetBlipSprite(TrapperBlip, joaat(Config.BlipSprite), true)
-            SetBlipScale(TrapperBlip, Config.BlipScale)
-            SetBlipName(TrapperBlip, v.blipname)
+            local blip = BlipAddForCoords(1664425300, v.blipcoords)
+            SetBlipSprite(blip, sprite, true)
+            SetBlipScale(blip, Config.BlipScale)
+            SetBlipName(blip, v.blipname)
+            trapperBlips[#trapperBlips + 1] = blip
         end
     end
 end)
 
 ------------------------------------
--- skinning animal lookup cache (O(1) instead of scanning Config.Animals
--- for every skinning event)
+-- skinning (native skinning event)
 ------------------------------------
+local SKIN_EVENT = 1376140891 -- EVENT_LOOT_COMPLETE
+local SKIN_EVENT_COOLDOWN = 1000 -- client throttle; the server enforces the real cooldown
+
 local AnimalSkinLookup = {}
+for _, animal in ipairs(Config.Animals) do
+    AnimalSkinLookup[animal.modelhash] = animal
+end
 
-CreateThread(function()
-    for i = 1, #Config.Animals do
-        local animal = Config.Animals[i]
-        AnimalSkinLookup[animal.modelhash] = animal
-    end
-end)
-
-------------------------------------
--- skinning workings and reward
-------------------------------------
 local lastSkinTime = 0
-local SKIN_EVENT_COOLDOWN = 1000 -- client-side throttle; server enforces the real cooldown
+
+local function onSkinned(carcass, animal)
+    Wait(1000) -- let the game finish spawning the carried skin
+    local holding = Citizen.InvokeNative(0xD806CD2A4F2C2996, cache.ped) -- GetFirstEntityPedIsCarrying
+    if holding and holding ~= 0 then
+        DeleteEntity(holding)
+    end
+
+    -- only the carcass is sent; the server works out the rewards itself
+    local netId = NetworkGetEntityIsNetworked(carcass) and NetworkGetNetworkIdFromEntity(carcass) or 0
+    TriggerServerEvent('rsg-hunting:server:giverewards', netId)
+
+    if Config.DeleteCarcass then
+        Wait(1000)
+        if DoesEntityExist(carcass) then DeletePed(carcass) end
+    end
+end
 
 CreateThread(function()
     while true do
-        Wait(2)
+        Wait(0)
         local size = GetNumberOfEvents(0)
-        if size > 0 then
-            for index = 0, size - 1 do
-                local event = GetEventAtIndex(0, index)
-                if event == 1376140891 then
-                    local view = exports['rsg-hunting']:DataViewNativeGetEventData(0, index, 3)
-                    local pedGathered = view['2']
-                    local ped = view['0']
-                    -- bool letting us know if the skinning animation/longpress actually completed
-                    local completed = view['4'] == 1
+        for index = 0, size - 1 do
+            if GetEventAtIndex(0, index) == SKIN_EVENT then
+                local view = exports[GetCurrentResourceName()]:DataViewNativeGetEventData(0, index, 3)
+                local looter, carcass, completed = view['0'], view['2'], view['4'] == 1
 
-                    -- only react to our own skinning action, and only once it actually finished
-                    if completed and ped == cache.ped then
-                        local currentTime = GetGameTimer()
-                        if currentTime - lastSkinTime >= SKIN_EVENT_COOLDOWN then
-                            lastSkinTime = currentTime
-
-                            local model = GetEntityModel(pedGathered)
-                            local animal = AnimalSkinLookup[model]
-
-                            if animal then
-                                -- run the reward/cleanup steps on their own thread so the short
-                                -- waits below don't stall detection of the next skinning event
-                                CreateThread(function()
-                                    Wait(1000) -- let the game finish spawning the carried skin item
-                                    local holding = Citizen.InvokeNative(0xD806CD2A4F2C2996, cache.ped)
-                                    if holding then
-                                        DeleteEntity(holding)
-                                    end
-
-                                    -- send only the carcass; the server works out the rewards itself
-                                    local netId = NetworkGetEntityIsNetworked(pedGathered) and NetworkGetNetworkIdFromEntity(pedGathered) or 0
-                                    TriggerServerEvent('rsg-hunting:server:giverewards', netId)
-
-                                    if animal.skinable and Config.DeleteCarcass then
-                                        Wait(1000)
-                                        DeletePed(pedGathered)
-                                    end
-                                end)
-                            end
+                if completed and looter == cache.ped then
+                    local now = GetGameTimer()
+                    if now - lastSkinTime >= SKIN_EVENT_COOLDOWN then
+                        local animal = AnimalSkinLookup[GetEntityModel(carcass)]
+                        if animal and animal.skinable then
+                            lastSkinTime = now
+                            CreateThread(function() onSkinned(carcass, animal) end)
                         end
                     end
                 end
             end
         end
+    end
+end)
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName ~= GetCurrentResourceName() then return end
+    for _, blip in ipairs(trapperBlips) do
+        RemoveBlip(blip)
     end
 end)

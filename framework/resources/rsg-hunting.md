@@ -1,29 +1,41 @@
 # rsg-hunting
 
-Version 3.0.0. Hunting, trapper and butcher script for RSG Framework
+Version 3.1.0. Hunting, trapper and butcher script for RSG Framework
 
-A hunting, trapper-vending, and butcher system for the RSG Framework (RedM). Players can hunt and skin animals for crafting materials, sell those materials to trapper vendors scattered across the map, or sell whole carcasses directly to butchers for cash and meat. 1. [Features](#features) 2. [Installation](#installation)
+Hunting, trapper and butcher script for the RSG Framework (RedM). Players skin animals for materials, sell those materials to trappers, sell whole carcasses to butchers, and earn **hunting XP** that unlocks level perks and ranks them on a server **leaderboard**. - Hooks into the game's native skinning event (no minigame) - Up to 5 reward items per animal, 90+ animals preconfigured (`Config.Animals
 
 Source: https://github.com/Rexshack-RedM/rsg-hunting
 
-**Dependencies:** `rsg-core`, `ox_lib`, `ox_target`, `rsg-inventory`
+**Dependencies:** `oxmysql`, `rsg-core`, `ox_lib`, `ox_target`, `rsg-inventory`
 
 Has NUI (`ui_page`).
 
+## Exports (call as exports['rsg-hunting']:Name)
+
+**server:** `AwardHuntingXP(src, amount)`, `GetHuntingLevel(src)`, `GetHuntingXP(src)`, `SendWebhook(channel, data)`
+
 ## Net events registered
 
-**server:** `rsg-hunting:server:giverewards`, `rsg-hunting:server:sellItem`
-
-**client:** `rsg-hunting:client:butcher:mainmenu`, `rsg-hunting:client:butcher:sellanimal`
+**server:** `rsg-hunting:server:giverewards`
 
 ## Event handlers
 
-**server:** `rsg-hunting:server:butcher:reward`
+**client:** `rsg-hunting:client:butcher:mainmenu`
 
 ## Callbacks (lib.callback)
 
-**server:** `rsg-hunting:server:getSellData`, `rsg-hunting:server:sellBasket`
+**server:** `rsg-hunting:server:getLeaderboard`, `rsg-hunting:server:getSellData`, `rsg-hunting:server:sellBasket`, `rsg-hunting:server:sellCarcass`
+
+## Commands (RSGCore.Commands.Add)
+
+**server:** `/huntingwebhooktest`
 
 ## Commands (RegisterCommand)
 
 **server:** `/resetvendorstock`
+
+## Public (table) functions
+
+**server/webhooks.lua:** `HuntingWebhook.PlayerFields(src)`, `HuntingWebhook.Send(channel, data)`, `HuntingWebhook.Skin(src, animalName, items, xp)`, `HuntingWebhook.FlushSkins(src)`, `HuntingWebhook.Sale(channel, src, title, fields, cash)`, `HuntingWebhook.Security(src, source_, reason)`
+
+**server/xp.lua:** `HuntingXP.GetLevelData(xp)`, `HuntingXP.GetXP(src)`, `HuntingXP.GetPerks(src)`, `HuntingXP.GetAnimalXP(model)`, `HuntingXP.Award(src, amount)`

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+  <div class="panel">
+    <div class="panel-header">
+      <span class="circle-btn" aria-hidden="true"></span>
+      <div><div class="title" id="title"></div><div class="subtitle" id="subtitle"></div></div>
+      <button class="circle-btn" id="close">✕</button>
+    </div>
+    <div class="divider"><span>✦</span></div>
+    <div class="film"><div class="film-label" id="nowShowing"></div><div class="film-title" id="film"></div></div>
+    <div class="info-row"><span id="statusLabel"></span><span id="status"></span></div>
+    <div class="info-row"><span id="priceLabel"></span><span id="price"></span></div>
+    <div class="ink-divider"></div>
+    <div class="actions"><button class="wood-btn" id="buy"></button><button class="wood-btn muted" id="closeBtn"></button></div>
+  </div>
+</div>
+<div id="admin" class="hidden">
+  <div class="panel admin-panel">
+    <div class="panel-header">
+      <button class="circle-btn" id="admRefresh">⟳</button>
+      <div><div class="title" id="admTitle"></div><div class="subtitle" id="admSubtitle"></div></div>
+      <button class="circle-btn" id="admClose">✕</button>
+    </div>
+    <div class="divider"><span>✦</span></div>
+    <div class="list" id="admList"></div>
+  </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

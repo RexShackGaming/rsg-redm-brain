@@ -7,18 +7,16 @@ lib.locale()
 ------------------------------------------
 local AnimalByModel = {}
 
-CreateThread(function()
-    for _, animal in ipairs(Config.Animals) do
-        AnimalByModel[animal.modelhash] = animal
-    end
-end)
+for _, animal in ipairs(Config.Animals) do
+    AnimalByModel[animal.modelhash] = animal
+end
 
 ------------------------------------------
 -- anti-spam + one payout per carcass
 ------------------------------------------
 local PlayerCooldowns = {}
 local SkinnedCarcasses = {} -- [netId] = os.time() it was paid out
-local REWARD_COOLDOWN = Config.Performance and Config.Performance.ServerProcessCooldown or 2000
+local REWARD_COOLDOWN = Config.ServerCooldown or 2000
 local MAX_SKIN_DISTANCE = 6.0
 
 local function isOnCooldown(src)
@@ -42,8 +40,9 @@ CreateThread(function()
     end
 end)
 
-local function suspicious(src, why)
+local function suspicious(src, why, alert)
     print(('[rsg-hunting] giverewards rejected for %s (%s): %s'):format(GetPlayerName(src) or src, src, why))
+    if alert ~= false then HuntingWebhook.Security(src, locale('wh_where_skinning'), why) end
 end
 
 ------------------------------------------
@@ -55,22 +54,22 @@ RegisterNetEvent('rsg-hunting:server:giverewards', function(netId)
     if not Player then return end
 
     netId = math.tointeger(tonumber(netId))
-    if not netId or netId <= 0 then return suspicious(src, 'no network id for carcass') end
+    if not netId or netId <= 0 then return suspicious(src, locale('reason_no_netid'), false) end
     if isOnCooldown(src) then return end
-    if SkinnedCarcasses[netId] then return suspicious(src, 'carcass already skinned') end
+    if SkinnedCarcasses[netId] then return suspicious(src, locale('reason_already_skinned')) end
 
     local carcass = NetworkGetEntityFromNetworkId(netId)
     if not carcass or carcass == 0 or not DoesEntityExist(carcass) or GetEntityType(carcass) ~= 1 then
-        return suspicious(src, 'carcass does not exist')
+        return suspicious(src, locale('reason_no_carcass'), false)
     end
-    if IsPedAPlayer(carcass) then return suspicious(src, 'tried to skin a player') end
-    if GetEntityHealth(carcass) > 0 then return suspicious(src, 'animal is still alive') end
+    if IsPedAPlayer(carcass) then return suspicious(src, locale('reason_skin_player')) end
+    if GetEntityHealth(carcass) > 0 then return suspicious(src, locale('reason_alive')) end
 
     local dist = #(GetEntityCoords(GetPlayerPed(src)) - GetEntityCoords(carcass))
-    if dist > MAX_SKIN_DISTANCE then return suspicious(src, ('too far from carcass (%.1fm)'):format(dist)) end
+    if dist > MAX_SKIN_DISTANCE then return suspicious(src, locale('reason_too_far', ('%.1f'):format(dist))) end
 
     local animal = AnimalByModel[GetEntityModel(carcass)]
-    if not animal then return end
+    if not animal or not animal.skinable then return end
 
     -- claim the carcass before giving anything
     SkinnedCarcasses[netId] = os.time()
@@ -98,8 +97,23 @@ RegisterNetEvent('rsg-hunting:server:giverewards', function(netId)
 
     for _, itemName in ipairs(toGive) do
         exports['rsg-inventory']:AddItem(src, itemName, 1, nil, nil, 'rsg-hunting-skinning')
-        TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items[itemName], 'add', 1)
     end
+
+    -- perk: chance of a second main reward
+    local chance = HuntingXP.GetPerks(src).extraSkinChance or 0
+    local bonusItem = toGive[1]
+    if chance > 0 and math.random(100) <= chance and exports['rsg-inventory']:CanAddItem(src, bonusItem, 1) then
+        exports['rsg-inventory']:AddItem(src, bonusItem, 1, nil, nil, 'rsg-hunting-skinning-perk')
+        TriggerClientEvent('ox_lib:notify', src, { title = locale('hunting_xp_title'), description = locale('hunting_perk_extraskin'), type = 'inform' })
+    end
+
+    local model = GetEntityModel(carcass)
+    local xp = HuntingXP.GetAnimalXP(model)
+    HuntingXP.Award(src, xp)
+
+    local labels = {}
+    for _, itemName in ipairs(toGive) do labels[#labels + 1] = RSGCore.Shared.Items[itemName].label or itemName end
+    HuntingWebhook.Skin(src, RSGCore.Shared.Items[toGive[1]].label or ('model ' .. model), labels, xp)
 end)
 
 --------------------------------------

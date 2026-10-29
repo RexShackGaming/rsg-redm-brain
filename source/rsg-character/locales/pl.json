@@ -249,7 +249,8 @@
             "input": {
                 "header": "Rejestracja",
                 "label": "Data urodzenia"
-            }
+            },
+            "invalid": "Data urodzenia musi mieścić się między %s a %s"
         },
         "male": "Mężczyzna",
         "female": "Kobieta",
@@ -440,5 +441,18 @@
     "outfit_limit_reached": "You can only store %s outfits - this one was not saved to your wardrobe",
     "outfit_delete_confirm": "Delete this outfit?",
     "default_outfit_name": "Default",
-    "auto_outfit_name": "Outfit %s"
+    "auto_outfit_name": "Outfit %s",
+    "wardrobe_target": {
+        "label": "Otwórz szafę"
+    },
+    "versioncheck": {
+        "no_local_version": "Nie można odczytać bieżącej wersji zasobu z fxmanifest.lua!",
+        "http_failed": "Sprawdzanie wersji nie powiodło się (HTTP %s). Sprawdź połączenie lub adres URL GitHub.",
+        "empty_data": "Otrzymano puste dane wersji z GitHub.",
+        "latest": "Używasz najnowszej wersji!",
+        "outdated": "NIEAKTUALNE! Zaktualizuj do wersji %s",
+        "download": "Pobierz z: %s",
+        "newer": "Używasz nowszej wersji (%s) niż zdalna (%s). Możliwa wersja deweloperska?"
+    },
+    "outfit_wear_failed": "Couldn't wear that outfit here - use a wardrobe or cloakroom"
 }

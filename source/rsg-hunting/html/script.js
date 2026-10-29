@@ -8,6 +8,22 @@ const state = {
     busy: false,
 };
 
+// ui text (sent from locales/en.json on open; English fallbacks)
+let L = {
+    have: 'Have:', inBasket: 'in basket', addToBasket: 'Add to Basket', emptyBasket: 'Your basket is empty',
+    nothingOwned: 'You have nothing the trapper wants', noMatch: 'No goods match your search', items: 'items',
+    max: 'Max', remove: 'Remove', close: 'Close', confirmText: 'Sell %s item(s) to the trapper for %s?',
+};
+const fmt = (s, ...a) => { let i = 0; return String(s).replace(/%s/g, () => a[i++] ?? ''); };
+
+function applyLabels(labels) {
+    if (!labels) return;
+    L = { ...L, ...labels };
+    document.querySelectorAll('[data-l]').forEach((el) => { if (L[el.dataset.l]) el.textContent = L[el.dataset.l]; });
+    document.querySelectorAll('[data-lp]').forEach((el) => { if (L[el.dataset.lp]) el.placeholder = L[el.dataset.lp]; });
+    $('btn-close').title = L.close;
+}
+
 const $ = (id) => document.getElementById(id);
 const app = $('app');
 const grid = $('item-grid');
@@ -50,7 +66,7 @@ function renderGrid() {
         .sort((a, b) => (b.owned > 0) - (a.owned > 0) || a.label.localeCompare(b.label));
 
     if (!list.length) {
-        grid.innerHTML = `<div class="empty">${ownedOnly ? 'You have nothing the trapper wants' : 'No goods match your search'}</div>`;
+        grid.innerHTML = `<div class="empty">${esc(ownedOnly ? L.nothingOwned : L.noMatch)}</div>`;
         return;
     }
 
@@ -65,16 +81,16 @@ function renderGrid() {
             <div class="card-name">${esc(item.label)}</div>
             <div class="card-meta">
                 <span class="price">${money(item.price)}</span>
-                <span class="owned">Have: ${item.owned}</span>
+                <span class="owned">${esc(L.have)} ${item.owned}</span>
             </div>
-            ${inBasket ? `<span class="badge in">${inBasket} in basket</span>` : ''}
+            ${inBasket ? `<span class="badge in">${inBasket} ${esc(L.inBasket)}</span>` : ''}
             <div class="qty-row">
                 <button class="qty-btn" data-act="dec" ${disabled}>&minus;</button>
                 <input class="qty-input" type="number" min="1" max="${avail}" value="${avail ? pick : 0}" ${disabled}>
                 <button class="qty-btn" data-act="inc" ${disabled}>+</button>
-                <button class="qty-btn" data-act="max" title="Max" ${disabled}>&#8679;</button>
+                <button class="qty-btn" data-act="max" title="${esc(L.max)}" ${disabled}>&#8679;</button>
             </div>
-            <button class="wood-btn small" data-act="add" ${disabled}>Add to Basket</button>
+            <button class="wood-btn small" data-act="add" ${disabled}>${esc(L.addToBasket)}</button>
         </div>`;
     }).join('');
 }
@@ -82,7 +98,7 @@ function renderGrid() {
 function renderBasket() {
     const entries = Object.entries(state.basket);
     if (!entries.length) {
-        basketList.innerHTML = '<div class="empty">Your basket is empty</div>';
+        basketList.innerHTML = `<div class="empty">${esc(L.emptyBasket)}</div>`;
     } else {
         basketList.innerHTML = entries.map(([name, amount]) => {
             const item = findItem(name);
@@ -97,13 +113,13 @@ function renderBasket() {
                 <button class="qty-btn" data-act="bdec">&minus;</button>
                 <button class="qty-btn" data-act="binc" ${available(item) <= 0 ? 'disabled' : ''}>+</button>
                 <div class="row-total">${money(item.price * amount)}</div>
-                <button class="round-btn row-remove" data-act="remove" title="Remove">&#10005;</button>
+                <button class="round-btn row-remove" data-act="remove" title="${esc(L.remove)}">&#10005;</button>
             </div>`;
         }).join('');
     }
 
     const { count, payout } = basketTotals();
-    $('basket-count').textContent = `${count} item${count === 1 ? '' : 's'}`;
+    $('basket-count').textContent = `${count} ${L.items}`;
     $('basket-total').textContent = money(payout);
     $('btn-sell').disabled = count === 0 || state.busy;
     $('btn-clear').disabled = count === 0 || state.busy;
@@ -150,7 +166,7 @@ function setItems(items) {
 function openConfirm() {
     const { count, payout } = basketTotals();
     if (!count) return;
-    $('modal-text').innerHTML = `Sell <b>${count}</b> item${count === 1 ? '' : 's'} to the trapper for <b>${money(payout)}</b>?`;
+    $('modal-text').innerHTML = fmt(esc(L.confirmText), `<b>${count}</b>`, `<b>${money(payout)}</b>`);
     $('modal').classList.remove('hidden');
 }
 
@@ -172,11 +188,12 @@ async function commitSale() {
 
 /* ---------------- open / close ---------------- */
 function openUi(data) {
+    applyLabels(data.labels);
     state.imagePath = data.imagePath || '';
     state.basket = {};
     state.picks = {};
     setItems(data.items);
-    $('vendor-title').textContent = data.title || 'Trapper';
+    $('vendor-title').textContent = data.title || L.trapper || 'Trapper';
     $('search').value = '';
     $('owned-only').checked = state.items.some((i) => i.owned > 0);
     $('modal').classList.add('hidden');

@@ -215,13 +215,6 @@ local function IsValidName(name)
         and name:match('^%u%l+$') ~= nil and not RSG.ProfanityWords[name:lower()]
 end
 
-local function IsValidBirthdate(date)
-    if type(date) ~= 'string' then return false end
-    local y, m, d = date:match('^(%d%d%d%d)%-(%d%d)%-(%d%d)$')
-    y, m, d = tonumber(y), tonumber(m), tonumber(d)
-    return y and y >= 1750 and y <= 1900 and m >= 1 and m <= 12 and d >= 1 and d <= 31
-end
-
 RegisterNetEvent('rsg-multicharacter:server:createCharacter', function(newData)
     local src = source
     local session = CreatorSessions[src]
@@ -233,7 +226,11 @@ RegisterNetEvent('rsg-multicharacter:server:createCharacter', function(newData)
     if not cid or cid ~= session.cid then return end
 
     if not IsValidName(newData.firstname) or not IsValidName(newData.lastname)
-        or not IsValidNationality(newData.nationality) or not IsValidBirthdate(newData.birthdate) then
+        or not IsValidNationality(newData.nationality) or not RSG.IsValidBirthdate(newData.birthdate) then
+        -- never fail silently: the client has already closed the creator
+        CreatorSessions[src] = nil
+        TriggerClientEvent('ox_lib:notify', src, { title = locale('missing_character_info.title'), description = locale('missing_character_info.description'), type = 'error', duration = 7000 })
+        TriggerClientEvent('rsg-character:client:OpenCharSelect', src)
         return
     end
 

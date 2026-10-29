@@ -2,6 +2,19 @@ local clothing = require 'data.clothing'
 local hairs_list = require 'data.hairs_list'
 
 local validHashes = nil
+
+-- YYYY-MM-DD inside RSG.Birthdate.Min/Max and a real calendar day (no 31 Feb)
+function RSG.IsValidBirthdate(date)
+    if type(date) ~= 'string' then return false end
+    local y, m, d = date:match('^(%d%d%d%d)%-(%d%d)%-(%d%d)$')
+    y, m, d = tonumber(y), tonumber(m), tonumber(d)
+    if not (y and m and d) or m < 1 or m > 12 or d < 1 then return false end
+    local daysInMonth = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
+    local leap = (y % 4 == 0 and y % 100 ~= 0) or y % 400 == 0
+    if d > ((m == 2 and leap) and 29 or daysInMonth[m]) then return false end
+    local range = RSG.Birthdate or {}
+    return date >= (range.Min or '0000-00-00') and date <= (range.Max or '9999-12-31')
+end
 local function BuildValidHashSet()
     if validHashes then return end
     validHashes = {}

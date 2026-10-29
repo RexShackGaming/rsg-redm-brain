@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-character'
-version '3.0.7'
+version '3.0.9'
 
 shared_scripts {
     '@ox_lib/init.lua',

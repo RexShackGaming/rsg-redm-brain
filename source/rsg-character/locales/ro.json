@@ -249,7 +249,8 @@
             "input": {
                 "header": "Înregistrare",
                 "label": "Data nașterii"
-            }
+            },
+            "invalid": "Data nașterii trebuie să fie între %s și %s"
         },
         "male": "Bărbat",
         "female": "Femeie",
@@ -440,5 +441,18 @@
     "outfit_limit_reached": "You can only store %s outfits - this one was not saved to your wardrobe",
     "outfit_delete_confirm": "Delete this outfit?",
     "default_outfit_name": "Default",
-    "auto_outfit_name": "Outfit %s"
+    "auto_outfit_name": "Outfit %s",
+    "wardrobe_target": {
+        "label": "Deschide garderoba"
+    },
+    "versioncheck": {
+        "no_local_version": "Nu s-a putut citi versiunea curentă a resursei din fxmanifest.lua!",
+        "http_failed": "Verificarea versiunii a eșuat (HTTP %s). Verifică internetul sau URL-ul GitHub.",
+        "empty_data": "S-au primit date de versiune goale de la GitHub.",
+        "latest": "Rulezi cea mai recentă versiune!",
+        "outdated": "ÎNVECHIT! Actualizează la versiunea %s",
+        "download": "Descarcă de la: %s",
+        "newer": "Rulezi o versiune mai nouă (%s) decât cea de la distanță (%s). Posibil build de dezvoltare?"
+    },
+    "outfit_wear_failed": "Couldn't wear that outfit here - use a wardrobe or cloakroom"
 }

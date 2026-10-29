@@ -3,7 +3,7 @@ Config = {}
 ----------------------------------
 -- general settings
 Config.DeleteCarcass = false -- this will ensure the carcass is removed if true
-Config.Image = 'rsg-inventory/html/images/' -- locaion where your images are stored
+Config.Image = 'rsg-inventory/html/images/' -- location where your item images are stored
 Config.BlipSprite = 'blip_shop_animal_trapper'
 Config.BlipScale = 0.2
 
@@ -78,9 +78,6 @@ Config.Vendors = {
             { name = 'resource_horn_ox',                            label = 'Horn Ox',                      sellPrice = 0.18,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'resource_horn_pronghorn',                     label = 'Horn Pronghorn',               sellPrice = 0.18,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'resource_horn_ram',                           label = 'Horn Ram',                     sellPrice = 0.18,  maxStock = 100, canSell = true, stockBasedPrice = true },
-            { name = 'resource_skin_alligator_legendary',           label = 'Legendary Alligator Skin',     sellPrice = 15,    maxStock = 100, canSell = true, stockBasedPrice = true },
-            { name = 'resource_skin_boar_legendary',                label = 'Legendary Boar Skin',          sellPrice = 9,     maxStock = 100, canSell = true, stockBasedPrice = true },
-            { name = 'resource_skin_buffalo_legendary',             label = 'Legendary Buffalo Skin',       sellPrice = 12.50, maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'provision_feather_loon',                      label = 'Loon Feather',                 sellPrice = 0.10,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'a_c_oriole_01',                               label = 'Oriole',                       sellPrice = 0.08,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'provision_feather_owl',                       label = 'Owl Feather',                  sellPrice = 0.10,  maxStock = 100, canSell = true, stockBasedPrice = true },
@@ -230,9 +227,6 @@ Config.Vendors = {
             { name = 'resource_horn_ox',                            label = 'Horn Ox',                      sellPrice = 0.18,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'resource_horn_pronghorn',                     label = 'Horn Pronghorn',               sellPrice = 0.18,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'resource_horn_ram',                           label = 'Horn Ram',                     sellPrice = 0.18,  maxStock = 100, canSell = true, stockBasedPrice = true },
-            { name = 'resource_skin_alligator_legendary',           label = 'Legendary Alligator Skin',     sellPrice = 15,    maxStock = 100, canSell = true, stockBasedPrice = true },
-            { name = 'resource_skin_boar_legendary',                label = 'Legendary Boar Skin',          sellPrice = 9,     maxStock = 100, canSell = true, stockBasedPrice = true },
-            { name = 'resource_skin_buffalo_legendary',             label = 'Legendary Buffalo Skin',       sellPrice = 12.50, maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'provision_feather_loon',                      label = 'Loon Feather',                 sellPrice = 0.10,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'a_c_oriole_01',                               label = 'Oriole',                       sellPrice = 0.08,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'provision_feather_owl',                       label = 'Owl Feather',                  sellPrice = 0.10,  maxStock = 100, canSell = true, stockBasedPrice = true },
@@ -382,9 +376,6 @@ Config.Vendors = {
             { name = 'resource_horn_ox',                            label = 'Horn Ox',                      sellPrice = 0.18,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'resource_horn_pronghorn',                     label = 'Horn Pronghorn',               sellPrice = 0.18,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'resource_horn_ram',                           label = 'Horn Ram',                     sellPrice = 0.18,  maxStock = 100, canSell = true, stockBasedPrice = true },
-            { name = 'resource_skin_alligator_legendary',           label = 'Legendary Alligator Skin',     sellPrice = 15,    maxStock = 100, canSell = true, stockBasedPrice = true },
-            { name = 'resource_skin_boar_legendary',                label = 'Legendary Boar Skin',          sellPrice = 9,     maxStock = 100, canSell = true, stockBasedPrice = true },
-            { name = 'resource_skin_buffalo_legendary',             label = 'Legendary Buffalo Skin',       sellPrice = 12.50, maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'provision_feather_loon',                      label = 'Loon Feather',                 sellPrice = 0.10,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'a_c_oriole_01',                               label = 'Oriole',                       sellPrice = 0.08,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'provision_feather_owl',                       label = 'Owl Feather',                  sellPrice = 0.10,  maxStock = 100, canSell = true, stockBasedPrice = true },
@@ -534,9 +525,6 @@ Config.Vendors = {
             { name = 'resource_horn_ox',                            label = 'Horn Ox',                      sellPrice = 0.18,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'resource_horn_pronghorn',                     label = 'Horn Pronghorn',               sellPrice = 0.18,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'resource_horn_ram',                           label = 'Horn Ram',                     sellPrice = 0.18,  maxStock = 100, canSell = true, stockBasedPrice = true },
-            { name = 'resource_skin_alligator_legendary',           label = 'Legendary Alligator Skin',     sellPrice = 15,    maxStock = 100, canSell = true, stockBasedPrice = true },
-            { name = 'resource_skin_boar_legendary',                label = 'Legendary Boar Skin',          sellPrice = 9,     maxStock = 100, canSell = true, stockBasedPrice = true },
-            { name = 'resource_skin_buffalo_legendary',             label = 'Legendary Buffalo Skin',       sellPrice = 12.50, maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'provision_feather_loon',                      label = 'Loon Feather',                 sellPrice = 0.10,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'a_c_oriole_01',                               label = 'Oriole',                       sellPrice = 0.08,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'provision_feather_owl',                       label = 'Owl Feather',                  sellPrice = 0.10,  maxStock = 100, canSell = true, stockBasedPrice = true },
@@ -686,9 +674,6 @@ Config.Vendors = {
             { name = 'resource_horn_ox',                            label = 'Horn Ox',                      sellPrice = 0.18,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'resource_horn_pronghorn',                     label = 'Horn Pronghorn',               sellPrice = 0.18,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'resource_horn_ram',                           label = 'Horn Ram',                     sellPrice = 0.18,  maxStock = 100, canSell = true, stockBasedPrice = true },
-            { name = 'resource_skin_alligator_legendary',           label = 'Legendary Alligator Skin',     sellPrice = 15,    maxStock = 100, canSell = true, stockBasedPrice = true },
-            { name = 'resource_skin_boar_legendary',                label = 'Legendary Boar Skin',          sellPrice = 9,     maxStock = 100, canSell = true, stockBasedPrice = true },
-            { name = 'resource_skin_buffalo_legendary',             label = 'Legendary Buffalo Skin',       sellPrice = 12.50, maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'provision_feather_loon',                      label = 'Loon Feather',                 sellPrice = 0.10,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'a_c_oriole_01',                               label = 'Oriole',                       sellPrice = 0.08,  maxStock = 100, canSell = true, stockBasedPrice = true },
             { name = 'provision_feather_owl',                       label = 'Owl Feather',                  sellPrice = 0.10,  maxStock = 100, canSell = true, stockBasedPrice = true },
@@ -774,6 +759,58 @@ Config.Vendors = {
         }
     },
 
+}
+
+----------------------------------
+-- hunting xp settings
+-- xp is stored as player rep (Player.Functions.AddRep) under RepName
+----------------------------------
+Config.HuntingXP = {
+    Enabled       = true,
+    RepName       = 'hunting', -- rep key in player metadata
+    DefaultXP     = 1,         -- xp for any skinnable animal not listed below
+    Notify        = true,      -- show "+X hunting xp" notification
+    -- butcher sales also give xp (base xp x quality multiplier below)
+    ButcherXP     = true,
+    ButcherQualityMultiplier = { poor = 1, good = 2, perfect = 3 },
+    -- levels (keep sorted by xp). perks are NOT cumulative: each level lists its full perk set
+    --   trapperBonus    = % extra on trapper sell prices
+    --   butcherBonus    = % extra cash when selling carcasses to the butcher
+    --   extraSkinChance = % chance to get a 2nd copy of the main skinning reward
+    Levels = {
+        { level = 1,  xp = 0,     label = 'Greenhorn',     perks = { trapperBonus = 0,  butcherBonus = 0,  extraSkinChance = 0  } },
+        { level = 2,  xp = 100,   label = 'Tracker',       perks = { trapperBonus = 5,  butcherBonus = 0,  extraSkinChance = 0  } },
+        { level = 3,  xp = 300,   label = 'Hunter',        perks = { trapperBonus = 5,  butcherBonus = 5,  extraSkinChance = 5  } },
+        { level = 4,  xp = 750,   label = 'Skilled Hunter',perks = { trapperBonus = 10, butcherBonus = 10, extraSkinChance = 10 } },
+        { level = 5,  xp = 1500,  label = 'Woodsman',      perks = { trapperBonus = 15, butcherBonus = 15, extraSkinChance = 15 } },
+        { level = 6,  xp = 3000,  label = 'Frontiersman',  perks = { trapperBonus = 20, butcherBonus = 20, extraSkinChance = 20 } },
+        { level = 7,  xp = 6000,  label = 'Master Hunter', perks = { trapperBonus = 25, butcherBonus = 25, extraSkinChance = 30 } },
+    },
+    Leaderboard = {
+        Command      = 'huntingboard', -- chat command to open the leaderboard ('' to disable)
+        AtTrapper    = true,           -- adds a "Hunting Leaderboard" option on trapper NPCs
+        ShowTop      = 10,             -- rows shown
+        MaxEntries   = 500,            -- rows loaded for ranking
+        CacheSeconds = 60,             -- how often the board is rebuilt from the database
+    },
+    -- per-animal xp (model hash = xp)
+    Animals = {
+        [`a_c_bear_01`]       = 15,
+        [`a_c_bearblack_01`]  = 12,
+        [`a_c_cougar_01`]     = 12,
+        [`a_c_panther_01`]    = 12,
+        [`a_c_alligator_01`]  = 10,
+        [`a_c_alligator_03`]  = 10,
+        [`a_c_wolf`]          = 8,
+        [`a_c_wolf_medium`]   = 7,
+        [`a_c_wolf_small`]    = 6,
+        [`a_c_moose_01`]      = 8,
+        [`a_c_buffalo_01`]    = 8,
+        [`a_c_elk_01`]        = 6,
+        [`a_c_buck_01`]       = 5,
+        [`a_c_boar_01`]       = 5,
+        [`a_c_deer_01`]       = 3,
+    },
 }
 
 ----------------------------------
@@ -1585,34 +1622,6 @@ Config.Animals = {
         rewarditem4 = nil,
         rewarditem5 = nil,
     },
-    -- legendary
-    {
-        modelhash = `a_c_alligator_02`,
-        skinable = true,
-        rewarditem1 = 'resource_skin_alligator_legendary',
-        rewarditem2 = 'consumable_meat_alligator',
-        rewarditem3 = 'resource_tooth_alligator',
-        rewarditem4 = 'resource_bullgatoreye',
-        rewarditem5 = nil,
-    },
-    {
-        modelhash = `a_c_boarlegendary_01`,
-        skinable = false,
-        rewarditem1 = 'resource_skin_boar_legendary',
-        rewarditem2 = 'heart_pig_boar',
-        rewarditem3 = 'resource_tusk_boar',
-        rewarditem4 = nil,
-        rewarditem5 = nil,
-    },
-    {
-        modelhash = `a_c_buffalo_tatanka_01`,
-        skinable = true,
-        rewarditem1 = 'resource_skin_buffalo_legendary',
-        rewarditem2 = 'resource_horn_buffalo',
-        rewarditem3 = nil,
-        rewarditem4 = nil,
-        rewarditem5 = nil,
-    },
 
 }
 
@@ -1624,36 +1633,14 @@ Config.Animals = {
 -- butcher settings
 ---------------------------------
 Config.Debug = false
-Config.SellTime = 10000
-Config.PoorMultiplier = 1
+Config.SellTime = 10000          -- butcher sell progress bar (ms)
+Config.PoorMultiplier = 1        -- butcher cash/item multipliers by carcass quality
 Config.GoodMultiplier = 2
 Config.PerfectMultiplier = 3
-Config.KeyBind = 'J'
-Config.EnableTarget = true
-
----------------------------------
--- butcher performance settings
----------------------------------
-Config.Performance = {
-    -- NPC Management
-    NpcDistanceCheck = 3000,        -- How often to check NPC distances (ms)
-    NpcCoordsUpdate = 2000,         -- How often to update player coords for NPCs (ms)
-    NpcSpawnDistance = 20.0,        -- Distance to spawn/despawn NPCs
-    NpcFadeSpeed = 40,              -- Fade animation speed (ms between steps)
-
-    -- Client Performance
-    ProcessCooldown = 1000,         -- Cooldown between animal processing (ms)
-    BlipUpdateInterval = 5000,      -- How often to check blip states (ms)
-    CacheSize = 500,                -- Maximum cached animals in lookup
-
-    -- Server Performance
-    ServerProcessCooldown = 2000,   -- Server-side processing cooldown per player (ms)
-    LoggingEnabled = true,          -- Enable transaction logging
-
-    -- Memory Management
-    CleanupInterval = 300000,       -- Cleanup unused data every 5 minutes
-    MaxPlayerCooldowns = 100,       -- Maximum player cooldown entries to keep
-}
+Config.KeyBind = 'J'             -- prompt key when Config.EnableTarget = false
+Config.EnableTarget = true       -- ox_target on butcher NPCs instead of prompts
+Config.ServerCooldown = 2000     -- per-player cooldown on skinning/butcher rewards (ms)
+Config.EnableLogging = true      -- send butcher sales to rsg-log
 
 ---------------------------------
 -- butcher webhook settings
@@ -1665,8 +1652,8 @@ Config.WebhookColour = 'default'
 ---------------------------------
 -- butcher npc settings
 ---------------------------------
-Config.DistanceSpawn = 20.0 -- Distance before spawning/despawning the ped. (GTA Units.)
-Config.FadeIn = true
+Config.DistanceSpawn = 20.0 -- distance before spawning/despawning the butcher ped
+Config.FadeIn = true        -- fade butcher peds in/out
 
 ---------------------------------
 -- butcher blip settings

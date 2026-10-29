@@ -338,7 +338,8 @@ function SpawnPeds()
     SetAnimSceneEntity(animscene, "Deputy", Deputy, 0)
 
     LoadAnimScene(animscene)
-    while not Citizen.InvokeNative(0x477122B8D05E7968, animscene) do
+    local sceneDeadline = GetGameTimer() + 10000
+    while not Citizen.InvokeNative(0x477122B8D05E7968, animscene) and GetGameTimer() < sceneDeadline do -- IsAnimSceneLoaded
         Wait(0)
     end
     StartAnimScene(animscene)
@@ -760,7 +761,8 @@ function SetupScenes(string)
     local animzcene = CreateAnimScene("script@mp@character_creator@transitions", 0.25, string, false, true)
     SetAnimSceneEntity(animzcene, GetGender() .. "_MP", PlayerPedId(), 0)
     LoadAnimScene(animzcene)
-    while not Citizen.InvokeNative(0x477122B8D05E7968, animzcene) do
+    local sceneDeadline = GetGameTimer() + 10000
+    while not Citizen.InvokeNative(0x477122B8D05E7968, animzcene) and GetGameTimer() < sceneDeadline do -- IsAnimSceneLoaded
         Wait(0)
     end
     return animzcene

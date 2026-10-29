@@ -249,7 +249,8 @@
             "input": {
                 "header": "Registratie",
                 "label": "Geboortedatum"
-            }
+            },
+            "invalid": "Geboortedatum moet tussen %s en %s liggen"
         },
         "male": "Man",
         "female": "Vrouw",
@@ -440,5 +441,18 @@
     "outfit_limit_reached": "You can only store %s outfits - this one was not saved to your wardrobe",
     "outfit_delete_confirm": "Delete this outfit?",
     "default_outfit_name": "Default",
-    "auto_outfit_name": "Outfit %s"
+    "auto_outfit_name": "Outfit %s",
+    "wardrobe_target": {
+        "label": "Kledingkast openen"
+    },
+    "versioncheck": {
+        "no_local_version": "Kan de huidige resourceversie niet lezen uit fxmanifest.lua!",
+        "http_failed": "Versiecontrole mislukt (HTTP %s). Controleer je internet of de GitHub-URL.",
+        "empty_data": "Lege versiegegevens ontvangen van GitHub.",
+        "latest": "Je gebruikt de nieuwste versie!",
+        "outdated": "VEROUDERD! Update naar versie %s",
+        "download": "Download via: %s",
+        "newer": "Je gebruikt een nieuwere versie (%s) dan de remote (%s). Mogelijk een dev-build?"
+    },
+    "outfit_wear_failed": "Couldn't wear that outfit here - use a wardrobe or cloakroom"
 }
