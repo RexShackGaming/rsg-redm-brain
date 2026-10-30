@@ -1,6 +1,6 @@
 # rsg-railroad
 
-Version 3.1.1. rsg-railroad
+Version 3.1.3. rsg-railroad
 
 Advanced train management system for RedM (rsg-core). Buy railroad companies, hire drivers, manage trains, run missions, and build a railroad empire. - **Buy a Railroad Company** — 4 companies available across the map ($50,000 each, configurable) - **Rename Your Company** — Custom company names shown on UI
 

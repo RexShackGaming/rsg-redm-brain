@@ -1,0 +1,8 @@
+{
+    "tram_blip": "Trolley",
+    "cmd_help": "Show or set how many trolleys run at once",
+    "cmd_param": "Number of trolleys (0 = none)",
+    "cmd_status": "%s trolleys running, limit %s of %s lines",
+    "cmd_set": "Trolley limit set to %s of %s lines",
+    "tram_title": "Saint Denis Trolleys"
+}

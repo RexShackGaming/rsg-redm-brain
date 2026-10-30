@@ -21,7 +21,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-bountyhunter](rsg-bountyhunter.md) | rsg-bountyhunter - hunt wanted outlaws and bring them in dead or alive | 0 | 4 |
 | [rsg-canteen](rsg-canteen.md) | Fill a canteen at water pumps with ox_target and drink from it to restore thirst. - Target `p_waterpump01x | 0 | 4 |
 | [rsg-character](rsg-character.md) | Character selection, creation, clothing store and spawn system for RSG-Core (RedM). - In-world character s | 14 | 20 |
-| [rsg-chat](rsg-chat.md) | A chat resource for RedM servers running RSG-Core. It replaces the default chat. Every message shows t | 0 | 11 |
+| [rsg-chat](rsg-chat.md) | A chat resource for RedM servers running RSG-Core. It replaces the default chat with channels that adm | 2 | 19 |
 | [rsg-cinema](rsg-cinema.md) | rsg-cinema - moving picture shows rebuilt from RDR2 show_movie_magic_lantern | 0 | 9 |
 | [rsg-consume](rsg-consume.md) | Universal consumption system for RedM using RSG Core. > Immersive eating and drinking system for RedM serv | 0 | 2 |
 | [rsg-cooking](rsg-cooking.md) | A cooking system for RSG-Core (RedM) that works the same way as [rsg-moonshine](https://github.com/Rexshac | 8 | 7 |
@@ -72,7 +72,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-roulette](rsg-roulette.md) | Multiplayer roulette tables for RSG Framework | 1 | 11 |
 | [rsg-samples](rsg-samples.md) | Animal sample collector for RedM (best version) with leaderboard, certificate, and milestone rewards. - Sedate | 0 | 3 |
 | [rsg-smelting](rsg-smelting.md) | Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for RSG-Core (RedM) with ox_lib, ox_t | 1 | 1 |
-| [rsg-stables](rsg-stables.md) | Horse and stables script for RSG Framework | 0 | 11 |
+| [rsg-stables](rsg-stables.md) | Horse and stables script for RSG Framework | 1 | 15 |
 | [rsg-stores](rsg-stores.md) | Create NPC shopkeepers, shops and map blips in-game for RSG-Core (RedM), all from an admin menu with no co | 1 | 17 |
 | [rsg-targetpractise](rsg-targetpractise.md) | Placeable archery and throwing-knife practice targets for RSG Framework | 0 | 18 |
 | [rsg-telegram](rsg-telegram.md) |  | 0 | 2 |
@@ -80,6 +80,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-theatre](rsg-theatre.md) | Theatre Raleur (Saint Denis) stage shows | 0 | 4 |
 | [rsg-track](rsg-track.md) | A custom horse race track builder and race manager for RSG-Core RedM servers. Players (or staff) lay out a | 0 | 16 |
 | [rsg-trader](rsg-trader.md) | Dynamic-price NPC traders for RSG-Core (RedM). Players buy and sell items at prices that move with stock l | 1 | 1 |
+| [rsg-trams](rsg-trams.md) | rsg-trams - Saint Denis trolley network | 0 | 3 |
 | [rsg-trapdoors](rsg-trapdoors.md) | Synced, animated trapdoors for RSG-Core (RedM) with an optional 4-digit passcode lock, a themed keypad UI, | 1 | 1 |
 | [rsg-treasure](rsg-treasure.md) | Treasure map hunting for RSG Framework | 1 | 3 |
 | [rsg-voice](rsg-voice.md) | rsg-voice - proximity voice for RSG Framework | 3 | 10 |

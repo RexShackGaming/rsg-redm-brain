@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-chat'
-version '3.0.1'
+version '3.1.0'
 
 ui_page 'html/index.html'
 
@@ -16,6 +16,7 @@ files {
   'html/js/App.js',
   'html/js/Message.js',
   'html/js/Suggestions.js',
+  'html/js/Dropdown.js',
   'html/vendor/vue.2.3.3.min.js',
   'html/vendor/animate.3.5.2.min.css',
 }
@@ -30,6 +31,7 @@ client_scripts {
 }
 
 server_scripts {
+  '@oxmysql/lib/MySQL.lua',
   'server/main.lua',
   'server/versionchecker.lua',
 }
@@ -43,4 +45,5 @@ chat_theme 'gtao' {
 dependencies {
   'rsg-core',
   'ox_lib',
+  'oxmysql',
 }

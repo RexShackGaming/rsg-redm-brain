@@ -15,9 +15,8 @@ local Keys = {
 }
 
 ---------------------------------------------------------------
--- DRIVER SEAT / PROXIMITY DETECTION + HUD TOGGLE
--- Regular trains: player must be in driver seat (-1)
--- Trams: player just needs to be near the tram (NPC conductor drives)
+-- DRIVER SEAT DETECTION + HUD TOGGLE
+-- Player must be in driver seat (-1)
 ---------------------------------------------------------------
 CreateThread(function()
     while true do
@@ -58,7 +57,6 @@ end)
 -- ENGINE STATE + MAX SPEED ENFORCEMENT
 -- Runs regardless of whether player is in seat
 -- Train keeps moving on cruise even when driver leaves seat
--- Trams: skip this loop entirely (tram movement loop handles it)
 ---------------------------------------------------------------
 CreateThread(function()
     while true do

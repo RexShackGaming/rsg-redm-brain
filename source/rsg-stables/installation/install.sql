@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS `rsg_stables_horses` (
   `hunger` FLOAT NOT NULL DEFAULT 100,
   `thirst` FLOAT NOT NULL DEFAULT 100,
   `bonding` FLOAT NOT NULL DEFAULT 0,
+  `training` TEXT DEFAULT NULL,
   `speed` INT(11) NOT NULL DEFAULT 50,
   `accel` INT(11) NOT NULL DEFAULT 50,
   `handling` INT(11) NOT NULL DEFAULT 50,

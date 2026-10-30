@@ -6,8 +6,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
-  <link href="vendor/animate.3.5.2.min.css" rel="stylesheet"></link>
-  <link href="./css/style.css" rel="stylesheet"></link>
+  <link href="vendor/animate.3.5.2.min.css" rel="stylesheet">
+  <link href="./css/style.css" rel="stylesheet">
   <script src="vendor/vue.2.3.3.min.js" type="text/javascript"></script>
   <script src="./js/config.js" type="text/javascript"></script>
 </head>
@@ -17,42 +17,282 @@
   <!-- App Template -->
   <script type="text/x-template" id="app_template">
     <div id="app">
-      <div class="chat-window" :style="this.style" :class="{ 'fadeOutUp animated': !showWindow, 'hidden': shouldHide }">
-        <div class="chat-messages" ref="messages">
-          <message v-for="msg in messages"
-                   :templates="templates"
-                   :multiline="msg.multiline"
-                   :args="msg.args"
-                   :color="msg.color"
-                   :template="msg.template"
-                   :template-id="msg.templateId"
-                   :key="msg">
-          </message>
+      <!-- ============ CHAT WINDOW ============ -->
+      <div class="chat-window"
+           :style="windowStyle"
+           :class="{ 'is-faded': !windowVisible && settings.autoHide === 'fade',
+                     'hidden': shouldHide || (!windowVisible && settings.autoHide === 'hide'),
+                     'is-editing': showInput }">
+
+        <div class="chat-header" v-show="showInput" @mousedown.prevent="startDrag">
+          <span class="drag-hint">{{ t('ui_drag_hint') }}</span>
+          <button class="icon-btn" @mousedown.stop @click="toggleSettings" :title="t('ui_settings')">&#9881;</button>
+        </div>
+
+        <div class="chat-off-hint" v-if="settings.chatOff">{{ t('ui_chat_off_hint') }}</div>
+        <div class="chat-messages" v-show="!settings.chatOff" ref="messages" :style="{ fontSize: settings.fontSize + 'px' }" @scroll="onScroll">
+          <div class="msg-row" v-for="msg in messages" :key="msg.id">
+            <span class="ts" v-if="settings.timestamps">{{ msg.time }}</span>
+            <div v-if="msg.channel" class="msg channel-msg" :style="{ color: msg.color }">
+              <b v-if="msg.prefix" class="ch-prefix">[{{ msg.prefix }}]</b>
+              <b class="ch-author">{{ msg.author }}:</b>
+              <span class="ch-text">{{ msg.text }}</span>
+            </div>
+            <message v-else
+                     :templates="templates"
+                     :multiline="msg.multiline"
+                     :args="msg.args"
+                     :color="msg.color"
+                     :template="msg.template"
+                     :template-id="msg.templateId">
+            </message>
+          </div>
+        </div>
+
+        <div class="chat-input" v-show="showInput">
+          <div class="channel-tabs" v-if="channels.length">
+            <button v-for="ch in channels" :key="ch.id"
+                    class="channel-tab" :class="{ active: ch.id === activeChannel }"
+                    @mousedown.prevent="setChannel(ch.id)">
+              <span class="dot" :style="{ background: ch.color }"></span>{{ ch.label }}
+            </button>
+            <span class="tab-hint">{{ t('ui_tab_hint') }}</span>
+          </div>
+          <div class="input-row" :style="{ borderLeftColor: activeColor }">
+            <textarea v-model="message"
+                      ref="input"
+                      spellcheck="false"
+                      :maxlength="activeMaxLength"
+                      :style="{ fontSize: settings.fontSize + 'px' }"
+                      @keyup.esc="hideInput(true)"
+                      @keyup="keyUp"
+                      @keydown="keyDown"
+                      @keypress.enter.prevent="send"></textarea>
+            <span class="char-count">{{ message.length }}/{{ activeMaxLength }}</span>
+          </div>
+          <suggestions :message="message" :suggestions="suggestions" @pick="fillSuggestion"></suggestions>
+        </div>
+
+        <div class="resize-grip" v-show="showInput" @mousedown.prevent.stop="startResize"></div>
+      </div>
+
+      <!-- ============ PLAYER SETTINGS ============ -->
+      <div class="panel settings-panel" v-if="showSettings && showInput">
+        <div class="panel-header">
+          <div class="panel-title">{{ t('ui_settings') }}</div>
+          <div class="panel-sub">{{ t('ui_layout') }}</div>
+          <button class="icon-btn close" @click="toggleSettings">&#10005;</button>
+        </div>
+        <div class="divider"><span>&#10022;</span></div>
+
+        <div class="field">
+          <label>{{ t('ui_font_size') }} <em>{{ settings.fontSize }}px</em></label>
+          <input type="range" min="10" max="26" step="1" v-model.number="settings.fontSize" @change="saveSettings">
+        </div>
+        <div class="field">
+          <label>{{ t('ui_opacity') }} <em>{{ settings.opacity }}%</em></label>
+          <input type="range" min="0" max="100" step="5" v-model.number="settings.opacity" @change="saveSettings">
+        </div>
+        <div class="field">
+          <label>{{ t('ui_history') }} <em>{{ settings.history }} {{ t('ui_messages') }}</em></label>
+          <input type="range" min="5" :max="maxHistory" step="5" v-model.number="settings.history" @change="saveSettings(); trimHistory()">
+        </div>
+        <div class="field row">
+          <label>{{ t('ui_chat_enabled') }}</label>
+          <div class="toggle" :class="{ on: !settings.chatOff }" @click="setChatOff(!settings.chatOff)"><span></span></div>
+        </div>
+        <div class="field row">
+          <label>{{ t('ui_timestamps') }}</label>
+          <div class="toggle" :class="{ on: settings.timestamps }" @click="settings.timestamps = !settings.timestamps; saveSettings()"><span></span></div>
+        </div>
+        <div class="field">
+          <label>{{ t('ui_autohide') }}</label>
+          <div class="segmented">
+            <button v-for="m in ['fade','hide','never']" :key="m" :class="{ active: settings.autoHide === m }"
+                    @click="settings.autoHide = m; saveSettings()">{{ t('ui_' + m) }}</button>
+          </div>
+        </div>
+        <div class="field" v-if="settings.autoHide !== 'never'">
+          <label>{{ t('ui_hide_delay') }} <em>{{ settings.hideDelay }}{{ t('ui_seconds') }}</em></label>
+          <input type="range" min="3" max="60" step="1" v-model.number="settings.hideDelay" @change="saveSettings">
+        </div>
+
+        <div class="actions">
+          <button class="wood-btn muted" @click="resetLayout">{{ t('ui_reset_layout') }}</button>
+          <button class="wood-btn" @click="toggleSettings">{{ t('ui_close') }}</button>
         </div>
       </div>
-      <div class="chat-input" v-show="showInput">
-        <div class="input-row">
-          <textarea v-model="message"
-                    ref="input"
-                    type="text"
-                    autofocus
-                    spellcheck="false"
-                    @keyup.esc="hideInput(true)"
-                    @keyup="keyUp"
-                    @keydown="keyDown"
-                    @keypress.enter.prevent="send">
-          </textarea>
+
+      <!-- ============ ADMIN PANEL ============ -->
+      <div class="admin-wrap" v-if="admin.open">
+        <div class="panel admin-panel">
+          <div class="panel-header">
+            <div class="panel-title">{{ t('ui_admin_title') }}</div>
+            <div class="panel-sub">{{ t('ui_admin_sub') }}</div>
+            <button class="icon-btn close" @click="closeAdmin">&#10005;</button>
+          </div>
+          <div class="divider"><span>&#10022;</span></div>
+
+          <div class="admin-body">
+            <!-- list -->
+            <div class="admin-list">
+              <button class="wood-btn full" @click="newChannel">+ {{ t('ui_new_channel') }}</button>
+              <div class="ch-row" v-for="(ch, i) in admin.channels" :key="ch.id"
+                   :class="{ selected: admin.originalId === ch.id, off: !ch.enabled }"
+                   @click="editChannel(ch)">
+                <span class="badge-dot" :style="{ background: ch.color }"></span>
+                <div class="ch-info">
+                  <div class="ch-name">{{ ch.label }}</div>
+                  <div class="ch-meta">{{ ch.command ? '/' + ch.command : ch.id }}</div>
+                </div>
+                <span class="pill">{{ t('ui_range_' + ch.range) }}</span>
+                <div class="row-btns">
+                  <button class="mini-btn" @click.stop="move(ch.id, -1)" :disabled="i === 0">&#9650;</button>
+                  <button class="mini-btn" @click.stop="move(ch.id, 1)" :disabled="i === admin.channels.length - 1">&#9660;</button>
+                  <div class="toggle small" :class="{ on: ch.enabled }" @click.stop="toggleChannel(ch.id)"><span></span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- editor -->
+            <div class="admin-form" v-if="admin.form">
+              <div class="grid2">
+                <div class="field">
+                  <label>{{ t('ui_label') }}</label>
+                  <input type="text" maxlength="24" v-model="admin.form.label">
+                </div>
+                <div class="field">
+                  <label>{{ t('ui_channel_id') }}</label>
+                  <input type="text" maxlength="24" v-model="admin.form.id">
+                </div>
+                <div class="field">
+                  <label>{{ t('ui_command') }}</label>
+                  <input type="text" maxlength="20" v-model="admin.form.command">
+                </div>
+                <div class="field">
+                  <label>{{ t('ui_prefix') }}</label>
+                  <input type="text" maxlength="16" v-model="admin.form.prefix">
+                </div>
+              </div>
+
+              <div class="field">
+                <label>{{ t('ui_color') }}</label>
+                <div class="color-row">
+                  <span class="swatch big" :style="{ background: validColor(admin.form.color) ? admin.form.color : 'transparent' }"></span>
+                  <input type="text" maxlength="7" v-model="admin.form.color" class="hex">
+                  <span v-for="c in swatches" :key="c" class="swatch" :style="{ background: c }" @click="admin.form.color = c"></span>
+                </div>
+              </div>
+
+              <div class="grid2">
+                <div class="field">
+                  <label>{{ t('ui_range') }}</label>
+                  <dropdown :options="rangeOptions" v-model="admin.form.range"></dropdown>
+                </div>
+                <div class="field" v-if="admin.form.range === 'local' || admin.form.range === 'regional'">
+                  <label>{{ t('ui_distance') }}</label>
+                  <input type="number" :min="admin.limits.minDistance" :max="admin.limits.maxDistance" v-model.number="admin.form.distance">
+                </div>
+                <div class="field">
+                  <label>{{ t('ui_permission') }}</label>
+                  <dropdown :options="permOptions" v-model="admin.form.permission"></dropdown>
+                </div>
+                <div class="field">
+                  <label>{{ t('ui_max_length') }}</label>
+                  <input type="number" min="1" :max="admin.limits.maxLength" v-model.number="admin.form.maxLength">
+                </div>
+              </div>
+
+              <template v-if="admin.form.range === 'group'">
+                <div class="grid2">
+                  <div class="field">
+                    <label>{{ t('ui_jobs') }}</label>
+                    <input type="text" v-model="admin.form.jobsText" placeholder="vallaw, rholaw">
+                  </div>
+                  <div class="field">
+                    <label>{{ t('ui_gangs') }}</label>
+                    <input type="text" v-model="admin.form.gangsText">
+                  </div>
+                </div>
+              </template>
+
+              <div class="toggles">
+                <div class="field row">
+                  <label>{{ t('ui_show_prefix') }}</label>
+                  <div class="toggle" :class="{ on: admin.form.showPrefix }" @click="admin.form.showPrefix = !admin.form.showPrefix"><span></span></div>
+                </div>
+                <div class="field row">
+                  <label>{{ t('ui_enabled') }}</label>
+                  <div class="toggle" :class="{ on: admin.form.enabled }" @click="admin.form.enabled = !admin.form.enabled"><span></span></div>
+                </div>
+                <div class="field row" v-if="admin.form.range === 'group'">
+                  <label>{{ t('ui_require_duty') }}</label>
+                  <div class="toggle" :class="{ on: admin.form.requireDuty }" @click="admin.form.requireDuty = !admin.form.requireDuty"><span></span></div>
+                </div>
+              </div>
+
+              <div class="preview">
+                <span class="preview-label">{{ t('ui_preview') }}</span>
+                <div :style="{ color: validColor(admin.form.color) ? admin.form.color : '#fff' }">
+                  <b v-if="admin.form.showPrefix && admin.form.prefix">[{{ admin.form.prefix }}]</b>
+                  <b>Turchiron:</b> Hello
+                </div>
+              </div>
+
+              <div class="actions">
+                <button class="wood-btn muted" v-if="admin.originalId" @click="admin.confirmDelete = true">{{ t('ui_delete') }}</button>
+                <button class="wood-btn muted" @click="admin.form = null; admin.originalId = null">{{ t('ui_cancel') }}</button>
+                <button class="wood-btn" :disabled="admin.busy" @click="saveChannel">{{ t('ui_save') }}</button>
+              </div>
+            </div>
+            <div class="admin-form empty" v-else>
+              <div class="empty-title">{{ t('ui_select_channel') }}</div>
+              <em>{{ t('ui_list_hint') }}</em>
+            </div>
+          </div>
         </div>
-        <suggestions :message="message" :suggestions="suggestions" @pick="fillSuggestion">
-        </suggestions>
+
+        <!-- delete confirm modal -->
+        <div class="modal-back" v-if="admin.confirmDelete">
+          <div class="panel modal">
+            <div class="panel-title">{{ t('ui_delete') }}</div>
+            <div class="ink-divider"></div>
+            <p>{{ t('ui_confirm_delete') }}</p>
+            <div class="actions">
+              <button class="wood-btn muted" @click="admin.confirmDelete = false">{{ t('ui_cancel') }}</button>
+              <button class="wood-btn danger" @click="deleteChannel">{{ t('ui_delete') }}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- toasts -->
+      <div class="toasts">
+        <div class="toast" v-for="tst in toasts" :key="tst.id" :class="tst.type">
+          <div class="toast-label">{{ tst.label }}</div>
+          <div>{{ tst.text }}</div>
+        </div>
       </div>
     </div>
   </script>
 
-  <!-- Message Template -->
+  <!-- Message Template (legacy / chat:addMessage) -->
   <script type="text/x-template" id="message_template">
     <div class="msg" :class="{ multiline }">
       <span v-html="textEscaped"></span>
+    </div>
+  </script>
+
+  <!-- Custom dropdown (never native <select> in RedM CEF) -->
+  <script type="text/x-template" id="dropdown_template">
+    <div class="dd" :class="{ open }" @mousedown.prevent="open = !open">
+      <span class="dd-value">{{ currentLabel }}</span>
+      <span class="dd-arrow">&#9662;</span>
+      <div class="dd-menu" v-if="open">
+        <div class="dd-opt" v-for="o in options" :key="o.value"
+             :class="{ selected: o.value === value }"
+             @mousedown.prevent.stop="pick(o.value)">{{ o.label }}</div>
+      </div>
     </div>
   </script>
 
@@ -62,41 +302,29 @@
       <ul class="suggestions">
         <li class="suggestion" v-for="s in currentSuggestions" @mousedown.prevent="pick(s)" style="cursor:pointer">
           <p>
-            <span :class="{ 'disabled': s.disabled }">
-              {{s.name}}
-            </span>
-            <span class="param"
-                  v-for="(p, index) in s.params"
-                  :class="{ 'disabled': p.disabled }">
-              [{{p.name}}]
-            </span>
+            <span :class="{ 'disabled': s.disabled }">{{s.name}}</span>
+            <span class="param" v-for="(p, index) in s.params" :class="{ 'disabled': p.disabled }">[{{p.name}}]</span>
           </p>
           <small class="help">
-            <template v-if="!s.disabled">
-              {{s.help}}
-            </template>
-            <template v-for="p in s.params" v-if="!p.disabled">
-              {{p.help}}
-            </template>
+            <template v-if="!s.disabled">{{s.help}}</template>
+            <template v-for="p in s.params" v-if="!p.disabled">{{p.help}}</template>
           </small>
         </li>
       </ul>
     </div>
   </script>
 
-  <!-- Scripts -->
   <script type="text/javascript" src="./js/Suggestions.js"></script>
   <script type="text/javascript" src="./js/Message.js"></script>
+  <script type="text/javascript" src="./js/Dropdown.js"></script>
   <script type="text/javascript" src="./js/App.js"></script>
 
-  <!-- Main Entry -->
   <script type="text/javascript">
-  window.post = (url, data) => {
-    var request = new XMLHttpRequest();
-    request.open('POST', url, true);
-    request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-    request.send(data);
-  }
+  window.post = (url, data) => fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+    body: data,
+  }).then(r => r.json()).catch(() => null);
 
   const instance = new Vue({
     el: '#app',
@@ -105,11 +333,8 @@
 
   window.emulate = (type, detail = {}) => {
     detail.type = type;
-    window.dispatchEvent(new CustomEvent('message', {
-      detail,
-    }));
+    window.dispatchEvent(new CustomEvent('message', { detail }));
   };
   </script>
-
 </body>
 </html>

@@ -1,6 +1,6 @@
 # rsg-medic
 
-Version 3.0.2. Death system and medic job for RSG Framework
+Version 3.0.3. Death system and medic job for RSG Framework
 
 Death system and doctor job for the RSG Framework (RedM), with a custom NUI in the RDR2 leather & gold theme. **Death** - Downed players see a death screen with a bleed-out timer, the number of doctors on duty and the respawn fee
 

@@ -23,6 +23,13 @@ Horse and stables system for the **RSG Framework** (RedM). Buy, stable, customis
 - **Natural grazing** – a hungry horse wanders to hay near you (configurable hay props) and eats.
 - **Aging & lifespan** – horses are Young, Adult or Old by real-life days owned. Old horses hold less stamina each day and eventually die of natural causes (no revive).
 - **Bonding** – grows when you feed, water and brush your horse.
+- **Horse medicine** – usable item that restores health and refills the health core.
+- **Field revive** – when your horse goes down you have a short window to use a horse reviver before it dies (logging out counts as letting it die).
+- **Tack stat bonuses** – saddles, stirrups, horseshoes and blankets add bonus ranks to health, stamina, speed or acceleration (per category or per item).
+- **Sell horses** – sell a stabled horse back to the stablehand (price based on breed and training).
+- **Horse fence** – sell wild or stolen (unowned) horses to a fence NPC for blood money; add fence locations in `Config.HorseFence`.
+- **Courage** – trainable, and raised by bonding, so your horse spooks less.
+- **Horse training** – ride your horse or pay for training sessions at a stable to level up health, stamina, speed and acceleration.
 - **Horse stimulant** – usable item giving a timed stamina fortify and optional speed boost.
 - **Whistle recall** – whistle (H) to call your horse; it walks up and stops just in front of you, facing you. Teleports closer first if it's too far away, and respawns it if the game has removed it.
 - **Persistent active horse** – position is saved to the database while out, so it survives logouts and resource restarts.
@@ -58,6 +65,8 @@ Horse and stables system for the **RSG Framework** (RedM). Buy, stable, customis
    - `fullbucket` – water item
    - `horse_brush` – brushing tool, not consumed (**set `useable = true`**)
    - `horse_stimulant` – stimulant (**set `useable = true`**)
+   - `horse_medicine` – restores horse health (**set `useable = true`**)
+   - `horse_reviver` – revives a downed horse in the field (**set `useable = true`**)
 4. Ensure the resource in your `server.cfg` **after** its dependencies:
    ```cfg
    ensure ox_lib

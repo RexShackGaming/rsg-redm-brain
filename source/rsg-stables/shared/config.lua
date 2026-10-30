@@ -1679,7 +1679,7 @@ Config.TackItems = {
         { label = 'Saddle Style 2', hash = 0x8FFCF06B, price = 25, verified = true }, -- hashid 2
         { label = 'Saddle Style 3', hash = 0x5546EB7A, price = 30, verified = true }, -- hashid 3
         { label = 'Saddle Style 4', hash = 0x8E64DDB5, price = 30, verified = true }, -- hashid 4
-        { label = 'Saddle Style 5', hash = 0x7092A211, price = 40, verified = true }, -- hashid 5
+        { label = 'Saddle Style 5', hash = 0x7092A211, price = 40, verified = true, bonus = { stamina = 2, speed = 1 } }, -- hashid 5
         { label = 'Saddle Style 6', hash = 0xC0C04297, price = 20, verified = true }, -- hashid 6
         { label = 'Saddle Style 7', hash = 0xBE703DF7, price = 20, verified = true }, -- hashid 7
         { label = 'Saddle Style 8', hash = 0xE5510BB8, price = 20, verified = true }, -- hashid 8
@@ -2285,5 +2285,121 @@ Config.TackItems = {
     },
     horseshoe = { -- category_hash 0xFACFC3C0
         { label = 'Horseshoes Style 1', hash = 0x0865A270, price = 10, verified = true }, -- hashid 1
+    },
+}
+
+-- ===================== HORSE CARD =====================
+-- Live horse information panel (target "Horse Stats" on your horse, or the command below)
+Config.HorseCard = {
+    command     = 'horseinfo', -- false to disable the command
+    maxDistance = 15.0,        -- how close you must be to your horse to open it (mounted always works)
+}
+
+-- ===================== HORSE MEDICINE =====================
+-- Health counterpart to the stimulant (SP: CONSUMABLE_HORSE_CARE_PACKAGE / horse medicine)
+Config.HorseMedicine = {
+    enabled     = true,
+    item        = 'horse_medicine',
+    label       = 'Horse Medicine',
+    healPercent = 50,   -- % of max health restored
+    fillCore    = true, -- also refill the health core
+    useDistance = 3.0,
+    cooldown    = 60,   -- seconds between doses
+}
+
+-- ===================== HORSE REVIVER =====================
+-- SP: CONSUMABLE_HORSE_REVIVER. When your horse goes down you have `window` seconds to revive it
+-- in the field with the item before it counts as dead (insurance / death rules then apply as normal).
+Config.HorseReviver = {
+    enabled       = true,
+    item          = 'horse_reviver',
+    label         = 'Horse Reviver',
+    window        = 90,   -- seconds to reach the horse and revive it
+    useDistance   = 3.0,
+    revivedHealth = 30,   -- % health after reviving
+    bondingLoss   = 5,    -- bonding lost when the horse goes down (0 = none)
+}
+
+-- ===================== TACK STAT BONUSES =====================
+-- Tack gives bonus ranks like it does in SP (player_horse.c reads each item's effects into
+-- SET_ATTRIBUTE_BONUS_RANK). Stats: health, stamina, speed, accel. Bonuses stack with training.
+-- A per-item `bonus = { speed = 1 }` on any Config.TackItems entry overrides its category default.
+Config.TackBonuses = {
+    enabled = true,
+    categoryDefaults = {
+        saddle    = { stamina = 1 },
+        stirrups  = { accel = 1 },
+        horseshoe = { speed = 1 },
+        blanket   = { health = 1 },
+    },
+}
+
+-- ===================== SELLING HORSES =====================
+-- Sell a stabled horse back to the stablehand (Sell Horse in the horse menu)
+Config.HorseSell = {
+    enabled      = true,
+    percent      = 0.5,  -- of the breed's buy price
+    perTrainedLevel = 5, -- extra $ per trained level (all stats)
+    minPrice     = 5,
+}
+
+-- Horse fence: sell wild or stolen (unowned) horses for blood money, no questions asked.
+-- SP/MP have horse fences (SHOP_*_HORSE_FENCE in the decompile) but their coords aren't in the
+-- brain data, so add your own locations below (vector4 x, y, z, heading for the fence NPC).
+Config.HorseFence = {
+    enabled   = true,
+    account   = 'bloodmoney',
+    percent   = 0.35,  -- of the breed's buy price
+    cooldown  = 300,   -- seconds between sales per player
+    sellDistance = 10.0, -- horse and player must be this close to the fence NPC
+    pedModel  = `u_m_m_bwmstablehand_01`, -- same model the stables use
+    blip      = false, -- fences are usually secret
+    locations = {
+        -- { label = 'Horse Fence', coords = vector4(0.0, 0.0, 0.0, 0.0) },
+    },
+}
+
+-- ===================== HORSE TRAINING =====================
+-- Trained levels are applied as attribute BONUS ranks (SET_ATTRIBUTE_BONUS_RANK), the same layer
+-- Rockstar uses for tack bonuses in player_horse.c, so a breed's own base stats are never overwritten.
+-- Attribute IDs: rsg-redm-brain data/rdr3-native-enums/PedAttribute__AttributeType.md
+Config.Training = {
+    enabled = true,
+    debug   = false,
+
+    stats = {
+        health  = { attribute = 0 }, -- PA_Health
+        stamina = { attribute = 1 }, -- PA_Stamina
+        speed   = { attribute = 5 }, -- PA_Speed
+        accel   = { attribute = 6 }, -- PA_Acceleration
+        courage = { attribute = 3 }, -- PA_Courage: less spooking at gunfire / predators
+    },
+    statOrder = { 'health', 'stamina', 'speed', 'accel', 'courage' },
+    courageFromBonding = 25, -- +1 courage bonus rank per this much bonding (0-100); 0 = off
+
+    levelXp       = { 100, 250, 450, 700, 1000 }, -- total XP needed for level 1..n (n = max level)
+    bonusPerLevel = 1,                             -- bonus ranks added per trained level
+
+    -- passive XP from riding your own horse (distance measured on the server)
+    riding = {
+        enabled     = true,
+        interval    = 60,     -- seconds between ride ticks
+        metersPerXp = 100.0,  -- metres ridden per 1 XP
+        maxXpPerTick = 12,
+        maxSpeed    = 22.0,   -- m/s; anything faster is treated as a teleport and ignored
+        split       = { stamina = 0.6, speed = 0.4 }, -- how ride XP is shared between stats
+    },
+
+    -- paid training sessions at a stable (ox_target on your horse)
+    session = {
+        enabled        = true,
+        price          = { health = 10, stamina = 10, speed = 15, accel = 15, courage = 10 }, -- taken from Config.PaymentAccount
+        rounds         = 5,     -- timing rounds per session
+        roundMs        = 2000,  -- how long the marker takes to sweep once (NUI)
+        baseXp         = 20,    -- XP for finishing a session
+        xpPerHit       = 12,    -- extra XP per successful round
+        cooldown       = 900,   -- seconds between sessions for the same horse
+        stableDistance = 25.0,  -- how close to a stable (ped/store/preview point) you must be
+        horseDistance  = 6.0,   -- how close to your horse you must be
     },
 }

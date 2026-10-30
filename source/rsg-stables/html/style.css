@@ -729,3 +729,154 @@ html, body {
   cursor: default;
   filter: none;
 }
+
+/* ===================== HORSE TRAINING ===================== */
+.training-card { width: 420px; }
+.training-sub {
+  margin-top: 4px;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--rdr-muted);
+}
+.training-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.15));
+  border: 1px solid rgba(201,162,75,0.18);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+  text-align: left;
+}
+.training-row:hover { border-color: var(--rdr-gold-dim); transform: translateX(2px); }
+.training-row .training-info { flex: 1; min-width: 0; }
+.training-row .stat-bar-track { margin-top: 6px; }
+.training-row .training-xp { font-size: 11px; font-style: italic; color: var(--rdr-muted); margin-top: 4px; }
+.training-row .wood-btn { white-space: nowrap; }
+.training-note {
+  margin-top: 12px;
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--rdr-amber);
+}
+.training-game { margin-top: 4px; }
+.training-round {
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--rdr-muted);
+  margin-bottom: 10px;
+}
+.training-track {
+  position: relative;
+  height: 18px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid var(--rdr-gold-dim);
+  border-radius: 2px;
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.6);
+  overflow: hidden;
+}
+.training-zone {
+  position: absolute;
+  top: 0; bottom: 0;
+  background: linear-gradient(180deg, rgba(127,207,130,0.55), rgba(111,191,115,0.35));
+  border-left: 1px solid var(--rdr-cost-ok);
+  border-right: 1px solid var(--rdr-cost-ok);
+}
+.training-marker {
+  position: absolute;
+  top: -2px; bottom: -2px;
+  width: 3px;
+  margin-left: -1px;
+  background: var(--rdr-gold);
+  box-shadow: 0 0 6px rgba(255,255,255,0.8);
+}
+.training-feedback {
+  height: 20px;
+  margin-top: 10px;
+  font-size: 14px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.training-feedback.hit { color: var(--rdr-cost-ok); }
+.training-feedback.miss { color: var(--rdr-cost-over); }
+.training-hint { font-size: 11.5px; font-style: italic; color: var(--rdr-muted); }
+
+/* ===================== HORSE CARD ===================== */
+.hcard { position: fixed; inset: 0; pointer-events: none; }
+.hcard.hidden { display: none; }
+.hcard-panel {
+  pointer-events: auto;
+  position: absolute;
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 420px;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px 16px 20px;
+  border-radius: 3px;
+  border: 1px solid var(--rdr-gold-dim);
+  outline: 1px solid rgba(0,0,0,0.6);
+  outline-offset: -5px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 3px),
+    linear-gradient(160deg, var(--rdr-panel-2), var(--rdr-panel) 60%, var(--rdr-black));
+  box-shadow: 0 20px 60px var(--rdr-shadow), inset 0 0 40px rgba(0,0,0,0.5);
+  font-family: 'Roboto', sans-serif;
+  color: var(--rdr-text);
+  animation: hcIn 0.25s ease;
+}
+@keyframes hcIn { from { opacity: 0; transform: translate(30px, -50%); } to { opacity: 1; transform: translate(0, -50%); } }
+.hc-badges { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 2px 0 10px 0; }
+.hc-badge {
+  font-size: 10.5px; letter-spacing: 1.2px; text-transform: uppercase;
+  padding: 3px 8px; border: 1px solid var(--rdr-gold-dim); border-radius: 2px; color: var(--rdr-muted);
+}
+.hc-badge.good { border-color: var(--rdr-cost-ok); color: var(--rdr-cost-ok); }
+.hc-badge.warn { border-color: var(--rdr-amber); color: var(--rdr-amber); }
+.hc-badge.bad  { border-color: var(--rdr-cost-over); color: var(--rdr-cost-over); }
+.hc-section-label { font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--rdr-muted); }
+.hc-bond { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.hc-pips { display: flex; gap: 5px; }
+.hc-pip {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 1px solid var(--rdr-gold-dim);
+  background: radial-gradient(circle at 35% 35%, #2a2a2a, #0a0a0a);
+}
+.hc-pip.on { background: radial-gradient(circle at 35% 35%, #ffffff, #9a9a9a); border-color: var(--rdr-gold); }
+.hc-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.hc-tab {
+  flex: 1; padding: 7px 0; cursor: pointer;
+  font: 500 11.5px 'Roboto', sans-serif; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--rdr-muted); background: linear-gradient(180deg, #1c1c1c, #0a0a0a);
+  border: 1px solid rgba(201,162,75,0.18); border-radius: 2px; transition: all 0.15s ease;
+}
+.hc-tab:hover { color: var(--rdr-text); border-color: var(--rdr-gold-dim); }
+.hc-tab.active { color: var(--rdr-text); border-color: var(--rdr-gold); background: linear-gradient(180deg, #2e2e2e, #141414); }
+.hc-body { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }
+.hc-body::-webkit-scrollbar { width: 4px; }
+.hc-body::-webkit-scrollbar-thumb { background: var(--rdr-gold-dim); }
+.hc-row {
+  padding: 9px 12px; border-radius: 2px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.15));
+  border: 1px solid rgba(201,162,75,0.18);
+}
+.hc-row .stat-bar-track { margin-top: 6px; }
+.hc-hint { margin-top: 5px; font-size: 11.5px; font-style: italic; }
+.hc-hint.warn { color: var(--rdr-amber); }
+.hc-hint.bad { color: var(--rdr-cost-over); }
+.hc-segs { display: flex; gap: 3px; margin-top: 7px; }
+.hc-seg { flex: 1; height: 8px; border-radius: 1px; background: rgba(0,0,0,0.45); border: 1px solid rgba(90,90,90,0.6); }
+.hc-seg.base { background: linear-gradient(180deg, #e6e6e6, #9a9a9a); border-color: var(--rdr-gold-dim); }
+.hc-seg.tack { background: linear-gradient(180deg, #eec06a, var(--rdr-amber)); border-color: var(--rdr-amber); }
+.hc-seg.trained { background: linear-gradient(180deg, #7fcf82, var(--rdr-cost-ok)); border-color: var(--rdr-cost-ok); }
+.hc-legend { display: flex; gap: 14px; justify-content: center; font-size: 10.5px; color: var(--rdr-muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+.hc-legend i { display: inline-block; width: 9px; height: 9px; margin-right: 5px; vertical-align: -1px; border-radius: 1px; }
+.hc-xp { font-size: 11px; font-style: italic; color: var(--rdr-muted); margin-top: 4px; }
+.hc-actions { display: flex; gap: 6px; margin-top: 12px; }
+.hc-actions .wood-btn { flex: 1; padding-left: 0; padding-right: 0; }
+.hc-note { text-align: center; font-size: 11.5px; font-style: italic; color: var(--rdr-muted); margin-top: 8px; }

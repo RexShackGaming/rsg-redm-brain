@@ -322,6 +322,8 @@ end
 AddEventHandler('playerDropped', function()
     local Player = RSGCore.Functions.GetPlayer(source)
     if Player then
+        local s = activeSessions[Player.PlayerData.citizenid]
+        if s and s.downAt then return end -- downed horse: handled by the field-revive drop handler
         persistSession(Player.PlayerData.citizenid)
         endSession(Player.PlayerData.citizenid)
     end
@@ -892,6 +894,8 @@ lib.callback.register('rsg-stables:server:fleeStoreHorse', function(source, hors
     return storeActive(source, horseId, health, stamina, false)
 end)
 
+local killHorseRecord -- defined below
+
 lib.callback.register('rsg-stables:server:horseDied', function(source, horseId, netId)
     local Player = RSGCore.Functions.GetPlayer(source)
     if not Player then return false end
@@ -916,17 +920,116 @@ lib.callback.register('rsg-stables:server:horseDied', function(source, horseId, 
         if not isHorseModel(entity, horse.model) then return false end
 
         endSession(Player.PlayerData.citizenid)
+        return killHorseRecord(horse, source)
+    end)
+end)
 
+-- marks an active horse dead (or returns it via insurance); src may be nil (player dropped)
+killHorseRecord = function(horse, source)
+    local horseId = horse.id
+    do
         if isTrue(horse.insured) then
             MySQL.update.await('UPDATE rsg_stables_horses SET active = 0, pos_x = NULL, pos_y = NULL, pos_z = NULL, pos_h = NULL, alive = 1, insured = 0, health = 100, stamina = 100, hunger = 100, thirst = 100 WHERE id = ?', { horseId })
-            lib.notify(source, { description = locale('horse_insured_returned'), type = 'inform' })
+            if source then lib.notify(source, { description = locale('horse_insured_returned'), type = 'inform' }) end
             return true, 'insured'
         else
             MySQL.update.await('UPDATE rsg_stables_horses SET active = 0, pos_x = NULL, pos_y = NULL, pos_z = NULL, pos_h = NULL, alive = 0 WHERE id = ?', { horseId })
-            lib.notify(source, { description = locale('horse_dead'), type = 'error' })
+            if source then lib.notify(source, { description = locale('horse_dead'), type = 'error' }) end
             return true, 'dead'
         end
+    end
+end
+
+-- ===================== HORSE DOWN / FIELD REVIVE =====================
+-- validates that netId is this player's active horse and that it is really dead
+local function validateDownedHorse(src, citizenid, netId)
+    local session = activeSessions[citizenid]
+    if not session then return nil end
+    netId = toId(netId)
+    local entity = netId and NetworkGetEntityFromNetworkId(netId) or 0
+    if entity == 0 or not DoesEntityExist(entity) or GetEntityHealth(entity) > 0 then return nil end
+    local horse = MySQL.single.await('SELECT * FROM rsg_stables_horses WHERE id = ? AND citizenid = ? AND active = 1', { session.horseId, citizenid })
+    if not horse or not isHorseModel(entity, horse.model) then return nil end
+    if #(GetEntityCoords(entity) - GetEntityCoords(GetPlayerPed(src))) > 300.0 then return nil end
+    return session, horse
+end
+
+lib.callback.register('rsg-stables:server:horseDown', function(source, netId)
+    local cfg = Config.HorseReviver
+    if not (cfg and cfg.enabled) then return false end
+    local Player = RSGCore.Functions.GetPlayer(source)
+    if not Player then return false end
+    local session = validateDownedHorse(source, Player.PlayerData.citizenid, netId)
+    if not session then return false end
+    if not session.downAt then
+        session.downAt = os.time()
+        if (cfg.bondingLoss or 0) > 0 then
+            session.bonding = math.max(0, (session.bonding or 0) - cfg.bondingLoss)
+        end
+    end
+    return true, math.max(0, session.downAt + cfg.window - os.time())
+end)
+
+RSGCore.Functions.CreateUseableItem(Config.HorseReviver.item, function(source)
+    TriggerClientEvent('rsg-stables:client:useReviver', source)
+end)
+
+lib.callback.register('rsg-stables:server:reviveHorse', function(source, netId)
+    local cfg = Config.HorseReviver
+    if not (cfg and cfg.enabled) then return false, locale('reviver_disabled') end
+    local Player = RSGCore.Functions.GetPlayer(source)
+    if not Player then return false, locale('player_not_found') end
+    local citizenid = Player.PlayerData.citizenid
+    return withLock('citizen:' .. citizenid, function()
+        local session, horse = validateDownedHorse(source, citizenid, netId)
+        if not session or not session.downAt then return false, locale('reviver_not_down') end
+        if os.time() > session.downAt + cfg.window + 5 then return false, locale('reviver_too_late') end
+        local entity = NetworkGetEntityFromNetworkId(toId(netId))
+        if #(GetEntityCoords(entity) - GetEntityCoords(GetPlayerPed(source))) > cfg.useDistance + 2.0 then
+            return false, locale('must_be_near_horse')
+        end
+        if not Player.Functions.GetItemByName(cfg.item) then return false, locale('missing_item', cfg.label) end
+        if not Player.Functions.RemoveItem(cfg.item, 1, nil, 'rsg-stables-reviver') then return false, locale('item_use_failed') end
+        TriggerClientEvent('rsg-inventory:client:ItemBox', source, RSGCore.Shared.Items[cfg.item], 'remove', 1)
+        session.downAt = nil
+        MySQL.update.await('UPDATE rsg_stables_horses SET health = ?, bonding = ? WHERE id = ?', { cfg.revivedHealth, session.bonding, horse.id })
+        horse.health, horse.bonding, horse.hunger, horse.thirst = cfg.revivedHealth, session.bonding, session.hunger, session.thirst
+        return true, horse
     end)
+end)
+
+-- logging out while the horse is down must not keep it alive
+AddEventHandler('playerDropped', function()
+    local Player = RSGCore.Functions.GetPlayer(source)
+    if not Player then return end
+    local session = activeSessions[Player.PlayerData.citizenid]
+    if session and session.downAt then
+        local horse = MySQL.single.await('SELECT * FROM rsg_stables_horses WHERE id = ? AND active = 1', { session.horseId })
+        if horse then killHorseRecord(horse, nil) end
+        endSession(Player.PlayerData.citizenid)
+    end
+end)
+
+-- ===================== HORSE MEDICINE =====================
+RSGCore.Functions.CreateUseableItem(Config.HorseMedicine.item, function(source)
+    TriggerClientEvent('rsg-stables:client:useMedicine', source)
+end)
+
+lib.callback.register('rsg-stables:server:useMedicine', function(source)
+    local cfg = Config.HorseMedicine
+    if not (cfg and cfg.enabled) then return false, locale('medicine_disabled') end
+    local Player = RSGCore.Functions.GetPlayer(source)
+    if not Player then return false, locale('player_not_found') end
+    local session = activeSessions[Player.PlayerData.citizenid]
+    if not session then return false, locale('no_active_horse') end
+    if session.downAt then return false, locale('medicine_horse_down') end
+    local now = os.time()
+    if now < (session.medicineAt or 0) + cfg.cooldown then return false, locale('medicine_cooldown') end
+    if not Player.Functions.GetItemByName(cfg.item) then return false, locale('missing_item', cfg.label) end
+    if not Player.Functions.RemoveItem(cfg.item, 1, nil, 'rsg-stables-medicine') then return false, locale('item_use_failed') end
+    TriggerClientEvent('rsg-inventory:client:ItemBox', source, RSGCore.Shared.Items[cfg.item], 'remove', 1)
+    session.medicineAt = now
+    return true, { healPercent = cfg.healPercent, fillCore = cfg.fillCore }
 end)
 
 lib.callback.register('rsg-stables:server:renameHorse', function(source, horseId, newName)
@@ -1553,4 +1656,120 @@ CreateThread(function()
             end
         end
     end
+end)
+
+-- ===================== SELLING HORSES =====================
+local function trainedLevels(rawTraining)
+    local T = Config.Training
+    if not (T and T.enabled and rawTraining and rawTraining ~= '') then return 0 end
+    local ok, data = pcall(json.decode, rawTraining)
+    if not ok or type(data) ~= 'table' or type(data.stats) ~= 'table' then return 0 end
+    local total = 0
+    for _, xp in pairs(data.stats) do
+        xp = tonumber(xp) or 0
+        for _, need in ipairs(T.levelXp) do if xp >= need then total = total + 1 end end
+    end
+    return total
+end
+
+local function sellPrice(horse)
+    local cfg = Config.HorseSell
+    local breed = getBreedConfig(horse.model)
+    local base = breed and tonumber(breed.price) or 0
+    local price = math.floor(base * cfg.percent + trainedLevels(horse.training) * (cfg.perTrainedLevel or 0))
+    return math.max(cfg.minPrice or 0, price)
+end
+
+lib.callback.register('rsg-stables:server:getSellPrice', function(source, horseId)
+    if not (Config.HorseSell and Config.HorseSell.enabled) then return nil end
+    local Player = RSGCore.Functions.GetPlayer(source)
+    horseId = toId(horseId)
+    if not Player or not horseId then return nil end
+    local horse = MySQL.single.await('SELECT * FROM rsg_stables_horses WHERE id = ? AND citizenid = ?', { horseId, Player.PlayerData.citizenid })
+    if not horse then return nil end
+    return sellPrice(horse)
+end)
+
+lib.callback.register('rsg-stables:server:sellHorse', function(source, horseId)
+    if not (Config.HorseSell and Config.HorseSell.enabled) then return false, locale('generic_error') end
+    local Player = RSGCore.Functions.GetPlayer(source)
+    if not Player then return false, locale('player_not_found') end
+    horseId = toId(horseId)
+    if not horseId then return false, locale('horse_not_found') end
+    local citizenid = Player.PlayerData.citizenid
+
+    return withLock('citizen:' .. citizenid, function()
+        local horse = MySQL.single.await('SELECT * FROM rsg_stables_horses WHERE id = ? AND citizenid = ?', { horseId, citizenid })
+        if not horse then return false, locale('horse_not_found') end
+        if not isTrue(horse.alive) then return false, locale('horse_dead_revive_first') end
+        if isTrue(horse.active) then return false, locale('horse_already_out') end
+        if not nearStableByName(source, horse.stable) then return false, locale('not_close_to_stable') end
+        if isHorseBreeding(horseId) or MySQL.single.await('SELECT id FROM rsg_stables_breeding WHERE (parent_a = ? OR parent_b = ?) AND collected = 0', { horseId, horseId }) then
+            return false, locale('horse_is_breeding')
+        end
+        local stashId = 'horse_' .. horseId
+        local stash = exports['rsg-inventory']:GetInventory(stashId)
+        if stash and type(stash.items) == 'table' and next(stash.items) ~= nil then
+            return false, locale('release_saddlebags_not_empty')
+        end
+
+        local price = sellPrice(horse)
+        local deleted = MySQL.update.await('DELETE FROM rsg_stables_horses WHERE id = ? AND citizenid = ? AND active = 0', { horseId, citizenid })
+        if not deleted or deleted == 0 then return false, locale('generic_error') end
+        pcall(function() exports['rsg-inventory']:DeleteInventory(stashId) end)
+        MySQL.update('DELETE FROM inventories WHERE identifier = ?', { stashId })
+
+        Player.Functions.AddMoney(Config.PaymentAccount, price, 'rsg-stables-sell-horse')
+        return true, price
+    end)
+end)
+
+-- ===================== HORSE FENCE =====================
+local fenceCooldown = {}
+
+lib.callback.register('rsg-stables:server:fenceHorse', function(source, fenceIndex, netId)
+    local cfg = Config.HorseFence
+    if not (cfg and cfg.enabled) then return false, locale('generic_error') end
+    local Player = RSGCore.Functions.GetPlayer(source)
+    if not Player then return false, locale('player_not_found') end
+    local fence = cfg.locations[tonumber(fenceIndex) or 0]
+    if not fence then return false, locale('generic_error') end
+    local citizenid = Player.PlayerData.citizenid
+
+    local now = os.time()
+    if now < (fenceCooldown[citizenid] or 0) then
+        return false, locale('fence_cooldown', math.ceil((fenceCooldown[citizenid] - now) / 60))
+    end
+
+    netId = toId(netId)
+    local entity = netId and NetworkGetEntityFromNetworkId(netId) or 0
+    if entity == 0 or not DoesEntityExist(entity) or GetEntityType(entity) ~= 1 or IsPedAPlayer(entity) then
+        return false, locale('fence_no_horse')
+    end
+    if GetEntityHealth(entity) <= 0 then return false, locale('fence_no_horse') end
+    if Entity(entity).state.rsgStablesOwned then return false, locale('fence_owned') end
+
+    local breed = getBreedConfig(GetEntityModel(entity) & 0xFFFFFFFF) or getBreedConfig(GetEntityModel(entity))
+    if not breed then
+        -- Config.Breeds stores signed backtick hashes; compare both ways
+        local m = GetEntityModel(entity) & 0xFFFFFFFF
+        for _, b in ipairs(Config.Breeds) do
+            if (tonumber(b.model) & 0xFFFFFFFF) == m then breed = b break end
+        end
+    end
+    if not breed then return false, locale('fence_not_wanted') end
+
+    local fc = vector3(fence.coords.x, fence.coords.y, fence.coords.z)
+    local pc = GetEntityCoords(GetPlayerPed(source))
+    if #(pc - fc) > cfg.sellDistance or #(GetEntityCoords(entity) - fc) > cfg.sellDistance then
+        return false, locale('fence_too_far')
+    end
+
+    local price = math.max(1, math.floor((tonumber(breed.price) or 0) * cfg.percent))
+    DeleteEntity(entity)
+    fenceCooldown[citizenid] = now + cfg.cooldown
+    Player.Functions.AddMoney(cfg.account, price, 'rsg-stables-horse-fence')
+    TriggerEvent('rsg-log:server:CreateLog', 'rsgstables', 'Horse Fenced', 'red',
+        ('%s (%s) fenced a %s for $%s'):format(GetPlayerName(source), citizenid, breed.label, price))
+    return true, { price = price, label = breed.label }
 end)

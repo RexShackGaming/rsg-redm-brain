@@ -99,6 +99,57 @@
     </div>
   </div>
 
+  <!-- Horse training (outside #app so it works on its own) -->
+  <div id="trainingModal" class="modal hidden">
+    <div class="modal-card training-card">
+      <h2 id="trainingTitle">Horse Training</h2>
+      <p id="trainingHorse" class="training-sub"></p>
+      <div class="ink-divider"></div>
+      <div id="trainingList" class="stats-list"></div>
+      <div id="trainingNote" class="training-note hidden"></div>
+      <div id="trainingGame" class="training-game hidden">
+        <div id="trainingRound" class="training-round"></div>
+        <div class="training-track">
+          <div id="trainingZone" class="training-zone"></div>
+          <div id="trainingMarker" class="training-marker"></div>
+        </div>
+        <div id="trainingFeedback" class="training-feedback"></div>
+        <div id="trainingHint" class="training-hint"></div>
+      </div>
+      <div class="modal-actions modal-actions-center">
+        <button id="trainingCloseBtn" class="wood-btn wood-btn-muted">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Horse card: live horse information panel -->
+  <div id="horseCard" class="hcard hidden">
+    <div class="hcard-panel">
+      <div class="panel-header">
+        <div class="header-text">
+          <h1 id="hcName">Horse</h1>
+          <p id="hcSub" class="subtitle"></p>
+        </div>
+        <button id="hcClose" class="seal-btn">&#10005;</button>
+      </div>
+      <div class="panel-divider"><span>&#10022;</span></div>
+      <div id="hcBadges" class="hc-badges"></div>
+      <div class="hc-bond">
+        <span id="hcBondLabel" class="hc-section-label"></span>
+        <div id="hcBondPips" class="hc-pips"></div>
+      </div>
+      <div class="hc-tabs">
+        <button class="hc-tab active" data-tab="condition"></button>
+        <button class="hc-tab" data-tab="performance"></button>
+        <button class="hc-tab" data-tab="training"></button>
+      </div>
+      <div id="hcBody" class="hc-body"></div>
+      <div id="hcActions" class="hc-actions"></div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
+  <script src="horsecard.js"></script>
+  <script src="training.js"></script>
 </body>
 </html>

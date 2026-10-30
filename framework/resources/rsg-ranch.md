@@ -1,6 +1,6 @@
 # rsg-ranch
 
-Version 3.1.2. rsg-ranch
+Version 3.1.3. rsg-ranch
 
 A complete livestock ranching system for **RedM** servers running the **RSG Framework**. Buy a ranch, hire staff, raise cattle, pigs, sheep and chickens, keep them fed and watered, breed them, collect their produce, and sell or slaughter them for profit, all managed from an in-game ranch menu. - Six purchasable ranches out of the box (Macfarlane, Emerald, Pronghorn, Downes, Hill Haven, Hanging Dog
 

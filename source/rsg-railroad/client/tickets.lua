@@ -56,6 +56,37 @@ local function CheckTicket(train)
     end
 end
 
+-- Trolleys run their own fare system (rsg-trams). Skip them by the state bag that
+-- rsg-trams sets on every car, and fall back to the trolley model in case the bag
+-- hasn't synced yet when the player boards.
+local FREE_MODELS = {
+    [`trolley01x`] = true,
+}
+
+local function IsOwnFareVehicle(veh)
+    if veh == 0 or not DoesEntityExist(veh) then return false end
+    if Entity(veh).state.ownFare or Entity(veh).state.rsgTram then return true end
+    return FREE_MODELS[GetEntityModel(veh)] == true
+end
+
+-- While boarding, IsPedInAnyTrain is already true but GetVehiclePedIsIn(ped, false)
+-- can still be 0, so try every way of finding the car the ped is getting into.
+local function GetBoardedTrain(ped)
+    local veh = GetVehiclePedIsIn(ped, false)
+    if veh == 0 then veh = GetVehiclePedIsUsing(ped) end
+    if veh == 0 then veh = GetVehiclePedIsIn(ped, true) end
+    return veh
+end
+
+-- Backup: any rsg-trams trolley (or one of its cars) right next to the player
+local function NearTrolley(ped)
+    local pcoords = GetEntityCoords(ped)
+    for _, veh in ipairs(GetGamePool('CVehicle')) do
+        if IsOwnFareVehicle(veh) and #(GetEntityCoords(veh) - pcoords) < 12.0 then return true end
+    end
+    return false
+end
+
 CreateThread(function()
     while true do
         local ped = cache.ped
@@ -63,9 +94,9 @@ CreateThread(function()
 
         if inTrain and not onTrain then
             onTrain = true
-            local train = GetVehiclePedIsIn(ped, false)
-            -- Driving your own train (or riding it as its spawner) is free
-            if not (ActiveTrain and train == ActiveTrain) then
+            local train = GetBoardedTrain(ped)
+            -- Driving your own train is free, and trolleys (rsg-trams) charge their own fare
+            if not (ActiveTrain and train == ActiveTrain) and not IsOwnFareVehicle(train) and not NearTrolley(ped) then
                 CheckTicket(train)
             end
         elseif not inTrain and onTrain then

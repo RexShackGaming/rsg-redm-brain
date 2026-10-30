@@ -11,7 +11,6 @@ CreateThread(function()
     CreateStationPrompt()
     CreateStationBlips()
     CreateFacilityBlips()
-    SpawnAmbientTram()
     -- Spawn ambient route trains (server ensures only one client does it)
     local shouldSpawn = lib.callback.await('rsg-railroad:shouldSpawnAmbient', false)
     if shouldSpawn then
@@ -21,59 +20,6 @@ CreateThread(function()
         end
     end
 end)
-
----------------------------------------------------------------
--- AMBIENT TRAM (NPC-driven, no player interaction)
--- Spawns once on script start, runs around Saint Denis
----------------------------------------------------------------
-local ambientTram = nil
-local ambientTramConductor = nil
-local ambientTramBlip = nil
-
-function SpawnAmbientTram()
-    if not Config.AmbientTram or not Config.AmbientTram.enabled then return end
-
-    local cfg = Config.AmbientTram
-    local coords = cfg.spawnCoords
-    local trainHash = joaat(cfg.model)
-
-    -- Load wagon models
-    local wagons = N_0x635423d55ca84fc8(trainHash)
-    for i = 0, wagons - 1 do
-        local wagonModel = N_0x8df5f6a19f99f0d5(trainHash, i)
-        RequestModel(wagonModel)
-        while not HasModelLoaded(wagonModel) do Wait(0) end
-    end
-
-    -- Spawn tram with NPC conductor + passengers
-    ambientTram = Citizen.InvokeNative(0xC239DBD9A57D2A71, trainHash, coords.x, coords.y, coords.z, cfg.direction, cfg.passengers, true, true)
-    SetTrainSpeed(ambientTram, cfg.speed)
-    SetTrainCruiseSpeed(ambientTram, cfg.speed)
-
-    -- Wait for conductor to appear, then protect them
-    local conductor = GetPedInVehicleSeat(ambientTram, -1)
-    local attempts = 0
-    while not DoesEntityExist(conductor) and attempts < 100 do
-        conductor = GetPedInVehicleSeat(ambientTram, -1)
-        attempts = attempts + 1
-        Wait(10)
-    end
-    if DoesEntityExist(conductor) then
-        SetEntityAsMissionEntity(conductor, true, true)
-        SetPedCanBeKnockedOffVehicle(conductor, 1)
-        SetEntityInvincible(conductor, true)
-        SetBlockingOfNonTemporaryEvents(conductor, true)
-        SetEntityCanBeDamaged(conductor, false)
-        ambientTramConductor = conductor
-    end
-
-    -- Create blip for the tram
-    ambientTramBlip = Citizen.InvokeNative(0x23F74C2FDA6E7C61, Config.Blips.train.hash, ambientTram)
-    SetBlipScale(ambientTramBlip, Config.Blips.train.scale)
-    Citizen.InvokeNative(0x9CB1A1623062F402, ambientTramBlip, cfg.label or locale('menu_saint_denis_trolley'))
-
-    DebugPrint('Ambient tram spawned in Saint Denis')
-end
 
 ---------------------------------------------------------------
 -- STATION PROMPT
@@ -473,10 +419,6 @@ AddEventHandler('onResourceStop', function(resource)
         SetNuiFocus(false, false)
         DespawnPlayerTrain()
         DespawnAmbientRouteTrains()
-        if ambientTramBlip then
-            RemoveBlip(ambientTramBlip)
-            ambientTramBlip = nil
-        end
         for _, blip in ipairs(stationBlips) do
             RemoveBlip(blip)
         end

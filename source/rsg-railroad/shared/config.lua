@@ -157,13 +157,6 @@ Config.Companies = {
         blipColor = 'BLIP_MODIFIER_MP_COLOR_11',
         description = 'Desert rail connecting the frontier towns of New Austin.',
     },
-    {
-        trainname = 'City Tram',
-        trainid = 'train3',
-        trainhash = -1083616881,
-        startcoords = vector3(2608.539, -1171.967, 53.77959),
-        route = 'tramRouteOne',
-    },
 }
 
 ---------------------------------------------------------------
@@ -205,7 +198,6 @@ Config.Trains = {
     { model = 'bountyhunter_config',     label = 'Lemoyne Bounty Express', company = 'lemoyne_central', cost = 1100, sellPrice = 660, maxFuel = 160, maxWater = 150, maxCondition = 140, maxSpeed = 28, requiredRank = 4, upgradeable = true,  hasPassengerCars = false },
     { model = 'winter4_config',          label = 'Lemoyne Winter Special', company = 'lemoyne_central', cost = 1500, sellPrice = 900, maxFuel = 180, maxWater = 170, maxCondition = 150, maxSpeed = 30, requiredRank = 5, upgradeable = true,  hasPassengerCars = true  },
  --{ model = 'handcart_config',          label = 'Lemoyne Handcart',       company = 'lemoyne_central', cost = 100,  sellPrice = 60,  maxFuel = 50,  maxWater = 50,  maxCondition = 80,  maxSpeed = 10, requiredRank = 1, upgradeable = false, hasPassengerCars = false },
- --{ model = 'trolley_config',           label = 'Lemoyne Trolley',        company = 'lemoyne_central', cost = 150,  sellPrice = 90,  maxFuel = 60,  maxWater = 60,  maxCondition = 80,  maxSpeed = 8,  requiredRank = 1, upgradeable = false, hasPassengerCars = false },
 
     -- HEARTLANDS EXPRESS
     { model = 'appleseed_config',        label = 'Heartland Hauler',       company = 'heartlands_express', cost = 200,  sellPrice = 120, maxFuel = 100, maxWater = 100, maxCondition = 100, maxSpeed = 20, requiredRank = 1, upgradeable = true,  hasPassengerCars = false },
@@ -216,7 +208,6 @@ Config.Trains = {
     { model = 'winter4_config',          label = 'Heartland Blizzard',     company = 'heartlands_express', cost = 1500, sellPrice = 900, maxFuel = 180, maxWater = 170, maxCondition = 150, maxSpeed = 30, requiredRank = 5, upgradeable = true,  hasPassengerCars = true  },
     { model = 'prisoner_escort_config',  label = 'Heartland Transport',    company = 'heartlands_express', cost = 800,  sellPrice = 480, maxFuel = 140, maxWater = 130, maxCondition = 120, maxSpeed = 18, requiredRank = 3, upgradeable = true,  hasPassengerCars = true  },
  --{ model = 'handcart_config',          label = 'Heartland Handcart',     company = 'heartlands_express', cost = 100,  sellPrice = 60,  maxFuel = 50,  maxWater = 50,  maxCondition = 80,  maxSpeed = 10, requiredRank = 1, upgradeable = false, hasPassengerCars = false },
- --{ model = 'trolley_config',           label = 'Heartland Trolley',      company = 'heartlands_express', cost = 150,  sellPrice = 90,  maxFuel = 60,  maxWater = 60,  maxCondition = 80,  maxSpeed = 8,  requiredRank = 1, upgradeable = false, hasPassengerCars = false },
 
     -- CUMBERLAND & WESTERN
     { model = 'engine_config',           label = 'Mountain Engine',        company = 'cumberland_western', cost = 250,  sellPrice = 150, maxFuel = 110, maxWater = 110, maxCondition = 110, maxSpeed = 18, requiredRank = 1, upgradeable = true,  hasPassengerCars = false },
@@ -227,7 +218,6 @@ Config.Trains = {
     { model = 'prisoner_escort_config',  label = 'Mountain Prison Car',    company = 'cumberland_western', cost = 1000, sellPrice = 600, maxFuel = 160, maxWater = 150, maxCondition = 150, maxSpeed = 16, requiredRank = 4, upgradeable = true,  hasPassengerCars = false },
     { model = 'winter4_config',          label = 'Cumberland Ice Runner',  company = 'cumberland_western', cost = 1400, sellPrice = 840, maxFuel = 170, maxWater = 160, maxCondition = 160, maxSpeed = 28, requiredRank = 5, upgradeable = true,  hasPassengerCars = true  },
     { model = 'gunslinger4_config',      label = 'Cumberland Premium',     company = 'cumberland_western', cost = 900,  sellPrice = 540, maxFuel = 150, maxWater = 140, maxCondition = 130, maxSpeed = 28, requiredRank = 4, upgradeable = true,  hasPassengerCars = false },
- --{ model = 'trolley_config',           label = 'Cumberland Trolley',     company = 'cumberland_western', cost = 150,  sellPrice = 90,  maxFuel = 60,  maxWater = 60,  maxCondition = 80,  maxSpeed = 8,  requiredRank = 1, upgradeable = false, hasPassengerCars = false },
 
     -- NEW AUSTIN RAIL CO.
     { model = 'engine_config',           label = 'Desert Engine',          company = 'new_austin_rail', cost = 250,  sellPrice = 150, maxFuel = 110, maxWater = 120, maxCondition = 100, maxSpeed = 20, requiredRank = 1, upgradeable = true,  hasPassengerCars = false },
@@ -238,7 +228,6 @@ Config.Trains = {
     { model = 'bountyhunter_config',     label = 'Austin Bounty Runner',   company = 'new_austin_rail', cost = 1000, sellPrice = 600, maxFuel = 160, maxWater = 170, maxCondition = 140, maxSpeed = 28, requiredRank = 4, upgradeable = true,  hasPassengerCars = true  },
     { model = 'prisoner_escort_config',  label = 'Austin Chain Gang',      company = 'new_austin_rail', cost = 900,  sellPrice = 540, maxFuel = 150, maxWater = 160, maxCondition = 130, maxSpeed = 16, requiredRank = 3, upgradeable = true,  hasPassengerCars = false },
     { model = 'winter4_config',          label = 'Austin Sandstorm',       company = 'new_austin_rail', cost = 1400, sellPrice = 840, maxFuel = 180, maxWater = 180, maxCondition = 150, maxSpeed = 30, requiredRank = 5, upgradeable = true,  hasPassengerCars = false },
- --{ model = 'trolley_config',           label = 'Austin Trolley',         company = 'new_austin_rail', cost = 150,  sellPrice = 90,  maxFuel = 60,  maxWater = 60,  maxCondition = 80,  maxSpeed = 8,  requiredRank = 1, upgradeable = false, hasPassengerCars = false },
 }
 
 ---------------------------------------------------------------
@@ -412,13 +401,6 @@ Config.TrainSetup = {
         route = 'trainRouteOne',
     },
     {
-        trainname = 'City Tram',
-        trainid = 'train3',
-        trainhash = -1083616881,
-        startcoords = vector3(2608.539, -1171.967, 53.77959),
-        route = 'tramRouteOne',
-    },
-    {
         trainname = 'New Austin Express',
         trainid = 'train4',
         trainhash = -2006657222,
@@ -448,21 +430,6 @@ Config.RouteOneTrainStops = {
     { dst = 100.0, dst2 = 10.0, coords = vector3(572.00677, 1713.8681, 187.75619), waittime = 15000, name = "Bacchus Station" },
     { dst = 100.0, dst2 = 10.0, coords = vector3(-1319.959, 388.2633, 95.492622),  waittime = 15000, name = "Wallace Station" },
     { dst = 100.0, dst2 = 10.0, coords = vector3(-1090.563, -588.4188, 81.372642), waittime = 15000, name = "Riggs Station" },
-}
-
-Config.RouteOneTramSwitches = {
-    { coords = vector3(2615.05, -1281.2, 52.34358),  trainTrack = -1739625337, junctionIndex = 6,  enabled = 0 },
-    { coords = vector3(2608.49, -1254.66, 52.66566), trainTrack = -1739625337, junctionIndex = 7,  enabled = 0 },
-    { coords = vector3(2686.55, -1385.46, 46.36679), trainTrack = -1739625337, junctionIndex = 3,  enabled = 1 },
-    { coords = vector3(2624.4, -1139.85, 51.51707),  trainTrack = -1739625337, junctionIndex = 11, enabled = 0 },
-}
-
-Config.RouteOneTramStops = {
-    { dst = 5.0, dst2 = 2.0, coords = vector3(2612.97, -1276.06, 52.53), waittime = 15000, name = "Tram Stop One" },
-    { dst = 5.0, dst2 = 2.0, coords = vector3(2751.14, -1408.82, 47.06), waittime = 15000, name = "Tram Stop Two" },
-    { dst = 5.0, dst2 = 2.0, coords = vector3(2809.01, -1220.39, 48.76), waittime = 15000, name = "Tram Stop Three" },
-    { dst = 5.0, dst2 = 2.0, coords = vector3(2608.69, -1161.45, 53.29), waittime = 15000, name = "Tram Stop Four" },
-    { dst = 5.0, dst2 = 2.0, coords = vector3(2610.54, -1269.42, 53.78), waittime = 15000, name = "Tram Stop Five" },
 }
 
 Config.RouteThreeTrainSwitches = {
@@ -666,7 +633,6 @@ Config.TrainStorage = {
     -- Per-model capacity: bigger engines haul more.
     Models = {
         handcart_config        = { slots = 6,  maxweight = 40000  },
-        trolley_config         = { slots = 8,  maxweight = 50000  },
         engine_config          = { slots = 20, maxweight = 150000 },
         appleseed_config       = { slots = 24, maxweight = 180000 },
         gunslinger3_config     = { slots = 22, maxweight = 165000 },
@@ -776,19 +742,6 @@ Config.Blips = {
     water   = { hash = 1321928545,  scale = 0.5 },
     depot   = { hash = 1321928545,  scale = 0.5 },
     switch  = { hash = 1173759417,  scale = 0.4 },
-}
-
----------------------------------------------------------------
--- AMBIENT TRAM (Saint Denis) -- was referenced by client/main.lua
--- (SpawnAmbientTram) but never defined; feature silently no-op'd.
----------------------------------------------------------------
-Config.AmbientTram = {
-    enabled    = true,
-    model      = 'appleseed_config',                    -- reuse a known-good train model
-    spawnCoords = vector3(2732.33, -1445.62, 45.77),     -- Saint Denis Yard
-    direction  = 1,
-    passengers = 6,
-    speed      = 8.0,
 }
 
 ---------------------------------------------------------------

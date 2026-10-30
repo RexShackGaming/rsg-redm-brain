@@ -405,9 +405,21 @@ local function bumpHorseNeed(key, amount, defaultValue)
     activeHorse[key] = math.max(0, math.min(100, current + amount))
 end
 
+-- Bonding is stored 0-100 (% of the horse's max bonding points) and applied the way Rockstar does
+-- in player_horse.c: SET_ATTRIBUTE_POINTS -> GET_ATTRIBUTE_RANK -> _SET_MOUNT_BONDING_LEVEL.
+-- (The old code passed 0-100 into SET_ATTRIBUTE_BASE_RANK, but bonding ranks only go to ~4.)
+-- Hashes: rsg-redm-brain natives/db/ATTRIBUTE.md + PED.md; attribute 7 = PA_Bonding.
 local function pushBondingToNative(horse)
     if not (horse and DoesEntityExist(horse) and activeHorse) then return end
-    Citizen.InvokeNative(0x5DA12E025D47D4E5, horse, 7, math.floor(activeHorse.bonding or 0))
+    local pct = math.max(0, math.min(100, activeHorse.bonding or 0)) / 100
+    local maxPoints = Citizen.InvokeNative(0x223BF310F854871C, horse, 7, Citizen.ResultAsInteger()) or 0 -- GET_MAX_ATTRIBUTE_POINTS
+    if maxPoints <= 0 then
+        local maxRank = Citizen.InvokeNative(0x704674A0535A471D, horse, 7, Citizen.ResultAsInteger()) or 0 -- GET_MAX_ATTRIBUTE_RANK
+        maxPoints = Citizen.InvokeNative(0x94A7F191DB49A44D, GetEntityModel(horse), 7, maxRank, Citizen.ResultAsInteger()) or 0 -- GET_DEFAULT_ATTRIBUTE_POINTS_NEEDED_FOR_RANK
+    end
+    Citizen.InvokeNative(0x09A59688C26D88DF, horse, 7, math.floor(pct * maxPoints)) -- SET_ATTRIBUTE_POINTS
+    local rank = Citizen.InvokeNative(0xA4C8E23E29040DE0, horse, 7, Citizen.ResultAsInteger()) or 0 -- GET_ATTRIBUTE_RANK
+    Citizen.InvokeNative(0xA69899995997A63B, horse, rank) -- _SET_MOUNT_BONDING_LEVEL
 end
 
 local function feedActiveHorse(preferredItem)
@@ -704,30 +716,185 @@ RegisterNetEvent('rsg-stables:client:useLantern', function()
     end
 end)
 
+-- ===================== HORSE CARD (live horse information panel) =====================
+local horseCardOpen = false
+
+local function breedOf(entity)
+    local m = GetEntityModel(entity) & 0xFFFFFFFF
+    for _, b in ipairs(Config.Breeds) do
+        if (tonumber(b.model) or 0) & 0xFFFFFFFF == m then return b end
+    end
+end
+
+local function pctHint(value, lowKey)
+    if value <= 15 then return { level = 'bad', text = locale(lowKey .. '_bad') } end
+    if value <= 35 then return { level = 'warn', text = locale(lowKey .. '_warn') } end
+end
+
+local function buildHorseCard()
+    if not (activeHorse and DoesEntityExist(activeHorse.entity)) then return nil end
+    local horse = activeHorse.entity
+    local snap = activeHorse.snapshot or {}
+    local breed = breedOf(horse)
+    local statMax = Config.BreedStatMax or 10
+    local okExtra, extra = pcall(function() return exports[GetCurrentResourceName()]:GetHorseBonusInfo() end)
+    extra = okExtra and extra or {}
+
+    -- identity
+    local ageDays = math.floor(activeHorse.ageDays or 0)
+    local stageKey, lifeLeft = 'stage_adult', nil
+    if Config.HorseAging and Config.HorseAging.enabled then
+        if ageDays < Config.HorseAging.youngUntilDays then stageKey = 'stage_young'
+        elseif ageDays >= Config.HorseAging.oldFromDays then stageKey = 'stage_old' end
+        local left = Config.HorseAging.lifespanDays - ageDays
+        if left <= (Config.HorseAging.warnDays or 0) then lifeLeft = math.max(0, left) end
+    end
+    local bondRank = Citizen.InvokeNative(0xA4C8E23E29040DE0, horse, 7, Citizen.ResultAsInteger()) or 0 -- GET_ATTRIBUTE_RANK (PA_Bonding)
+    local bondMax = Citizen.InvokeNative(0x704674A0535A471D, horse, 7, Citizen.ResultAsInteger()) or 4 -- GET_MAX_ATTRIBUTE_RANK
+    if bondMax <= 0 then bondMax = 4 end
+
+    -- condition
+    local health = healthPctOf(horse)
+    local stamina = staminaPctOf(horse, 0)
+    local hunger = math.floor(activeHorse.hunger or 100)
+    local thirst = math.floor(activeHorse.thirst or 100)
+    local dirt = math.floor(math.max(0, math.min(100, tonumber(Citizen.InvokeNative(0xA4C8E23E29040DE0, horse, 16)) or 0)))
+    local clean = 100 - dirt
+    local condition = {
+        { key = 'health',  label = locale('stat_health'),      value = health,  hint = pctHint(health, 'hint_health') },
+        { key = 'stamina', label = locale('stat_stamina'),     value = stamina, hint = pctHint(stamina, 'hint_stamina') },
+        { key = 'hunger',  label = locale('stat_hunger'),      value = hunger,  hint = pctHint(hunger, 'hint_hunger') },
+        { key = 'thirst',  label = locale('stat_thirst'),      value = thirst,  hint = pctHint(thirst, 'hint_thirst') },
+        { key = 'clean',   label = locale('stat_cleanliness'), value = clean,   hint = pctHint(clean, 'hint_clean') },
+    }
+
+    -- performance: breed base (out of BreedStatMax) + tack + training bonus ranks
+    local perf = {}
+    local baseOf = { health = breed and breed.health, stamina = breed and breed.stamina, speed = breed and breed.speed, accel = breed and breed.acceleration }
+    for _, key in ipairs({ 'health', 'stamina', 'speed', 'accel', 'courage' }) do
+        local tack = extra.tack and extra.tack[key] or 0
+        local trained = extra.training and extra.training.stats and extra.training.stats[key] and extra.training.stats[key].level or 0
+        local base = tonumber(baseOf[key])
+        if base or tack > 0 or trained > 0 then
+            perf[#perf + 1] = {
+                label = locale('card_perf_' .. key), base = base, max = statMax,
+                tack = tack, trained = trained * ((Config.Training and Config.Training.bonusPerLevel) or 1),
+            }
+        end
+    end
+
+    -- training progress
+    local training = nil
+    if extra.training and extra.training.stats then
+        training = {}
+        for _, key in ipairs((Config.Training and Config.Training.statOrder) or {}) do
+            local s = extra.training.stats[key]
+            if s then
+                training[#training + 1] = { label = locale('training_' .. key), level = s.level, max = extra.training.maxLevel, xp = s.xp, prevXp = s.prevXp, nextXp = s.nextXp }
+            end
+        end
+    end
+
+    -- status badges
+    local badges = {}
+    if snap.insured == true or snap.insured == 1 then badges[#badges + 1] = { text = locale('card_insured'), level = 'good' } else badges[#badges + 1] = { text = locale('card_uninsured'), level = 'warn' } end
+    if stimulant.entity == horse and stimulant.endsAt > GetGameTimer() then
+        badges[#badges + 1] = { text = locale('card_stimulant', math.ceil((stimulant.endsAt - GetGameTimer()) / 60000)), level = 'good' }
+    end
+    if lifeLeft then badges[#badges + 1] = { text = locale('card_life_left', lifeLeft), level = 'bad' } end
+
+    local now = GetGameTimer()
+    return {
+        name = snap.name or locale('your_horse'),
+        breed = breed and breed.label or '',
+        class = breed and (breed.class or '') or '',
+        gender = snap.gender and locale(snap.gender == 'male' and 'gender_stallion' or 'gender_mare') or nil,
+        stage = locale(stageKey), ageDays = ageDays,
+        bond = { rank = bondRank, max = bondMax, pct = math.floor(activeHorse.bonding or 0) },
+        condition = condition, perf = perf, training = training, badges = badges,
+        actions = {
+            feed  = now - lastFeedAt >= CARE_COOLDOWN,
+            water = Config.HorseNeeds.enabled and now - lastWaterAt >= CARE_COOLDOWN,
+            brush = now - lastBrushAt >= CARE_COOLDOWN,
+            train = Config.Training and Config.Training.enabled and Config.Training.session.enabled or false,
+        },
+        mounted = GetMount(cache.ped) == horse,
+    }
+end
+
+local CARD_STRINGS = { 'card_title', 'card_condition', 'card_performance', 'card_training', 'card_bond', 'card_days',
+    'card_base', 'card_tack', 'card_trained', 'card_feed', 'card_water', 'card_brush', 'card_train', 'card_close',
+    'card_dismount_hint', 'training_level', 'training_maxed' }
+
+local function closeHorseCard()
+    if not horseCardOpen then return end
+    horseCardOpen = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'horseCardClose' })
+end
+
 local function showActiveHorseStats()
-    if not (activeHorse and DoesEntityExist(activeHorse.entity)) then
+    local data = buildHorseCard()
+    if not data then
         lib.notify({ description = locale('no_active_horse'), type = 'error' })
         return
     end
+    local strings = {}
+    for _, k in ipairs(CARD_STRINGS) do strings[k] = locale(k) end
+    horseCardOpen = true
+    SetNuiFocus(true, true)
+    SendNUIMessage({ action = 'horseCardOpen', data = data, strings = strings })
+    CreateThread(function()
+        while horseCardOpen do
+            Wait(1000)
+            local d = horseCardOpen and buildHorseCard()
+            if not d then closeHorseCard() break end
+            SendNUIMessage({ action = 'horseCardUpdate', data = d })
+        end
+    end)
+end
 
-    local horse = activeHorse.entity
-    local healthPct = healthPctOf(horse)
-    local stamina = staminaPctOf(horse, 0)
+RegisterNUICallback('horseCardClose', function(_, cb)
+    closeHorseCard()
+    cb('ok')
+end)
 
-    local hunger = math.floor(activeHorse.hunger or 100)
-    local thirst = math.floor(activeHorse.thirst or 100)
-    local bonding = math.floor(activeHorse.bonding or 0)
-    local dirtiness = math.floor(math.max(0, math.min(100, tonumber(Citizen.InvokeNative(0xA4C8E23E29040DE0, horse, 16)) or 0)))
-    local cleanliness = 100 - dirtiness
+RegisterNUICallback('horseCardAction', function(data, cb)
+    cb('ok')
+    local action = data and data.action
+    if action == 'train' then
+        closeHorseCard()
+        TriggerEvent('rsg-stables:client:openTraining')
+        return
+    end
+    if not (activeHorse and DoesEntityExist(activeHorse.entity)) then return end
+    if GetMount(cache.ped) == activeHorse.entity then
+        lib.notify({ description = locale('card_dismount_hint'), type = 'error' })
+        return
+    end
+    if #(GetEntityCoords(cache.ped) - GetEntityCoords(activeHorse.entity)) > (Config.HorseBrushDistance or 3.0) then
+        lib.notify({ description = locale('must_be_near_horse'), type = 'error' })
+        return
+    end
+    closeHorseCard() -- care animations need the player's control back
+    if action == 'feed' then feedActiveHorse()
+    elseif action == 'water' then waterActiveHorse()
+    elseif action == 'brush' then brushActiveHorse() end
+end)
 
-    NuiStatsDialog(locale('horse_stats'), {
-        { label = locale('stat_health'),      value = healthPct },
-        { label = locale('stat_stamina'),     value = stamina },
-        { label = locale('stat_hunger'),      value = hunger },
-        { label = locale('stat_thirst'),      value = thirst },
-        { label = locale('stat_bonding'),     value = bonding },
-        { label = locale('stat_cleanliness'), value = cleanliness },
-    })
+if Config.HorseCard and Config.HorseCard.command then
+    RegisterCommand(Config.HorseCard.command, function()
+        if not (activeHorse and DoesEntityExist(activeHorse.entity)) then
+            lib.notify({ description = locale('no_active_horse'), type = 'error' })
+            return
+        end
+        local maxDist = Config.HorseCard.maxDistance or 15.0
+        if GetMount(cache.ped) ~= activeHorse.entity and #(GetEntityCoords(cache.ped) - GetEntityCoords(activeHorse.entity)) > maxDist then
+            lib.notify({ description = locale('must_be_near_horse'), type = 'error' })
+            return
+        end
+        showActiveHorseStats()
+    end, false)
 end
 
 local function findNearestStoreableStable(coords)
@@ -1039,6 +1206,11 @@ local function spawnHorse(horse, coords)
         ageDays = tonumber(horse.age_days) or 0,
     }
     pushBondingToNative(horsePed)
+    -- marks player-owned horses so the horse fence refuses them (server reads this state bag)
+    if NetworkGetEntityIsNetworked(horsePed) then
+        Entity(horsePed).state:set('rsgStablesOwned', true, true)
+    end
+    TriggerEvent('rsg-stables:client:horseSpawned', horsePed, horse) -- client/training.lua
     pendingHorse = nil
 end
 
@@ -2237,6 +2409,33 @@ function OpenHorseMenu(stable, horse)
             })
         end
 
+        if Config.HorseSell and Config.HorseSell.enabled and horse.alive and horse.active ~= true and horse.active ~= 1 then
+            table.insert(options, {
+                title = locale('sell_horse'),
+                description = locale('sell_horse_desc'),
+                icon = 'dollar',
+                onSelect = function()
+                    local price = lib.callback.await('rsg-stables:server:getSellPrice', false, horse.id)
+                    if not price then OpenStableMenu(stable) return end
+                    CloseNUI()
+                    local answer = lib.alertDialog({
+                        header = locale('sell_horse'),
+                        content = locale('sell_horse_confirm', horse.name, price),
+                        centered = true, cancel = true,
+                    })
+                    if answer == 'confirm' then
+                        local ok, res = lib.callback.await('rsg-stables:server:sellHorse', false, horse.id)
+                        if ok then
+                            lib.notify({ description = locale('sell_horse_success', horse.name, res), type = 'success' })
+                        else
+                            lib.notify({ description = res or locale('generic_error'), type = 'error' })
+                        end
+                    end
+                    OpenStableMenu(stable)
+                end,
+            })
+        end
+
         table.insert(options, {
             title = locale('rename'),
             description = locale('rename_desc', Config.RenameCost),
@@ -2719,11 +2918,88 @@ end)
 
 -- ===================== DEATH DETECTION =====================
 
+-- Field revive (Config.HorseReviver): when the horse goes down it isn't reported dead straight
+-- away; the owner gets `window` seconds to use a horse reviver on it.
+local horseDown = nil -- { entity, deadline }
+
+local function horseNetId(entity)
+    return NetworkGetEntityIsNetworked(entity) and NetworkGetNetworkIdFromEntity(entity) or nil
+end
+
+RegisterNetEvent('rsg-stables:client:useReviver', function()
+    local cfg = Config.HorseReviver
+    if not (cfg and cfg.enabled) then return end
+    if not (horseDown and activeHorse and DoesEntityExist(horseDown.entity)) then
+        lib.notify({ description = locale('reviver_not_down'), type = 'error' })
+        return
+    end
+    local horse = horseDown.entity
+    if #(GetEntityCoords(cache.ped) - GetEntityCoords(horse)) > cfg.useDistance then
+        lib.notify({ description = locale('must_be_near_horse'), type = 'error' })
+        return
+    end
+    local ok, row = lib.callback.await('rsg-stables:server:reviveHorse', false, horseNetId(horse))
+    if not ok then
+        lib.notify({ description = row or locale('item_use_failed'), type = 'error' })
+        return
+    end
+    horseDown = nil
+    TaskAnimalInteraction(cache.ped, horse, -1355254781, GetHashKey('p_cs_syringe01x'), 0) -- same interaction as the stimulant
+    Wait(3000)
+    local c = GetEntityCoords(horse)
+    local h = GetEntityHeading(horse)
+    spawnHorse(row, vector4(c.x, c.y, c.z, h)) -- spawnHorse despawns the old entity first
+    lib.notify({ description = locale('reviver_success'), type = 'success' })
+end)
+
+RegisterNetEvent('rsg-stables:client:useMedicine', function()
+    local cfg = Config.HorseMedicine
+    if not (cfg and cfg.enabled) then return end
+    if not (activeHorse and DoesEntityExist(activeHorse.entity)) then
+        lib.notify({ description = locale('no_active_horse'), type = 'error' })
+        return
+    end
+    local horse = activeHorse.entity
+    if IsEntityDead(horse) then
+        lib.notify({ description = locale('medicine_horse_down'), type = 'error' })
+        return
+    end
+    if GetMount(cache.ped) ~= horse and #(GetEntityCoords(cache.ped) - GetEntityCoords(horse)) > cfg.useDistance then
+        lib.notify({ description = locale('must_be_near_horse'), type = 'error' })
+        return
+    end
+    local ok, result = lib.callback.await('rsg-stables:server:useMedicine', false)
+    if not ok then
+        lib.notify({ description = result or locale('item_use_failed'), type = 'error' })
+        return
+    end
+    TaskAnimalInteraction(cache.ped, horse, -1355254781, GetHashKey('p_cs_syringe01x'), 0)
+    Wait(3000)
+    if not DoesEntityExist(horse) or IsEntityDead(horse) then return end
+    local max = GetEntityMaxHealth(horse)
+    SetEntityHealth(horse, math.min(max, GetEntityHealth(horse) + math.floor(max * result.healPercent / 100)))
+    if result.fillCore then
+        Citizen.InvokeNative(0xC6258F41D86676E0, horse, 0, 100) -- _SET_ATTRIBUTE_CORE_VALUE (health core)
+    end
+    lib.notify({ description = locale('medicine_used'), type = 'success' })
+end)
+
 CreateThread(function()
     while true do
         Wait(1000)
         if activeHorse and DoesEntityExist(activeHorse.entity) then
-            if IsEntityDead(activeHorse.entity) then
+            local reviveCfg = Config.HorseReviver
+            if IsEntityDead(activeHorse.entity) and reviveCfg and reviveCfg.enabled
+                and (not horseDown or horseDown.entity ~= activeHorse.entity) then
+                local ok, left = lib.callback.await('rsg-stables:server:horseDown', false, horseNetId(activeHorse.entity))
+                if ok and activeHorse then
+                    horseDown = { entity = activeHorse.entity, deadline = GetGameTimer() + left * 1000 }
+                    lib.notify({ title = locale('reviver_down_title'), description = locale('reviver_down', left), type = 'warning', duration = 10000 })
+                end
+            end
+            local waiting = horseDown and horseDown.entity == activeHorse.entity and GetGameTimer() < horseDown.deadline
+            if IsEntityDead(activeHorse.entity) and not waiting then
+                horseDown = nil
                 local dbId = activeHorse.dbId
                 local netId = NetworkGetEntityIsNetworked(activeHorse.entity) and NetworkGetNetworkIdFromEntity(activeHorse.entity) or nil
                 -- report before despawning so the server can confirm the entity is really dead
@@ -2792,6 +3068,7 @@ AddEventHandler('onResourceStop', function(resource)
         if DoesBlipExist(blip) then RemoveBlip(blip) end
     end
     CloseNUI()
+    if horseCardOpen then SetNuiFocus(false, false) end
     saveActiveHorsePosition(true)
     despawnActiveHorseEntity()
     despawnPreviewHorse()

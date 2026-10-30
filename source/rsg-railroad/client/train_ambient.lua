@@ -62,12 +62,10 @@ end)
 -- per-route config lookups (resolved once instead of every frame)
 local RouteSwitches = {
     trainRouteOne   = function() return Config.RouteOneTrainSwitches end,
-    tramRouteOne    = function() return Config.RouteOneTramSwitches end,
     trainRouteThree = function() return Config.RouteThreeTrainSwitches end,
 }
 local RouteStops = {
     trainRouteOne   = { stops = function() return Config.RouteOneTrainStops end,   cruise = 5.0, full = 15.0, whistle = true },
-    tramRouteOne    = { stops = function() return Config.RouteOneTramStops end,    cruise = 1.0, full = 2.0 },
     trainRouteThree = { stops = function() return Config.RouteThreeTrainStops end, cruise = 8.0, full = 12.0 },
 }
 
@@ -181,13 +179,6 @@ function FindNearestName(coords)
             nearestName = stop.name
         end
     end
-    for _, stop in ipairs(Config.RouteOneTramStops) do
-        local dist = #(stop.coords - coords)
-        if dist < nearestDist then
-            nearestDist = dist
-            nearestName = stop.name
-        end
-    end
     for _, stop in ipairs(Config.RouteThreeTrainStops) do
         local dist = #(stop.coords - coords)
         if dist < nearestDist then
@@ -215,11 +206,6 @@ RegisterNetEvent('rsg-railroad:client:trainpos', function()
             local coords = GetEntityCoords(train)
             table.insert(options, { title = locale('menu_route_train'), description = FindNearestName(coords), icon = 'train' })
         end
-    end
-
-    if ambientTram and DoesEntityExist(ambientTram) then
-        local coords = GetEntityCoords(ambientTram)
-        table.insert(options, { title = locale('menu_saint_denis_trolley'), description = FindNearestName(coords), icon = 'tram' })
     end
 
     if #options == 0 then

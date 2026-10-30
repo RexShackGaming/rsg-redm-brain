@@ -1,18 +1,17 @@
-// NUI chat settings
+// NUI chat settings (player layout defaults come from shared/config.lua -> Config.DefaultSettings)
 window.CONFIG = {
-  defaultTemplateId: 'default', //This is the default template for 2 args1
-  defaultAltTemplateId: 'defaultAlt', //This one for 1 arg
-  templates: { //You can add static templates here
-    'default': '<div class="chat-message">OOC {0}: {1}</div>',
+  defaultTemplateId: 'default',   // template for 2 args
+  defaultAltTemplateId: 'defaultAlt', // template for 1 arg
+  templates: {
+    'default': '<div class="chat-message"><b>{0}:</b> {1}</div>',
     'defaultAlt': '{0}',
     'print': '<pre>{0}</pre>',
     'example:important': '<h1>^2{0}</h1>'
   },
-  fadeTimeout: 10000,
   suggestionLimit: 5,
-  style: {
-    background: 'transparent',
-    width: '38%',
-    height: '22%',
+  // fallback until the client sends Config.DefaultSettings
+  defaultSettings: {
+    x: 1.5, y: 2.5, w: 30, h: 32, fontSize: 15, opacity: 55,
+    timestamps: false, history: 100, autoHide: 'fade', hideDelay: 10, chatOff: false
   }
 };
