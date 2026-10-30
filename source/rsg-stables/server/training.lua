@@ -59,7 +59,7 @@ local function summary(data)
 end
 
 local function getActiveHorse(citizenid)
-    return MySQL.single.await('SELECT id, name, training FROM rsg_stables_horses WHERE citizenid = ? AND active = 1 AND alive = 1 LIMIT 1', { citizenid })
+    return MySQL.single.await('SELECT id, name, model, training FROM rsg_stables_horses WHERE citizenid = ? AND active = 1 AND alive = 1 LIMIT 1', { citizenid })
 end
 
 -- adds xp per stat, saves, returns the level-ups
@@ -182,15 +182,29 @@ end)
 -- ===================== RIDE XP =====================
 local rideState = {} -- [src] = { coords, at }
 
-RegisterNetEvent('rsg-stables:server:trainingRideTick', function()
+local RIDER_DISTANCE = 4.0 -- the player must be on (right next to) the horse for a tick to count
+
+RegisterNetEvent('rsg-stables:server:trainingRideTick', function(horseNetId)
     local src = source
     local R = T.riding
     if not R.enabled then return end
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return end
 
+    local horse = getActiveHorse(Player.PlayerData.citizenid)
+    if not horse then return end
+
+    -- distance is measured on the horse entity itself, so walking, trains or wagons earn nothing
+    local ent = NetworkGetEntityFromNetworkId(math.floor(tonumber(horseNetId) or 0))
+    if not ent or ent == 0 or not DoesEntityExist(ent) then return end -- (server GetEntityHealth is always 0 on RedM)
+    if (GetEntityModel(ent) & 0xFFFFFFFF) ~= (math.floor(tonumber(horse.model) or 0) & 0xFFFFFFFF) then return end
+    local coords = GetEntityCoords(ent)
+    if #(GetEntityCoords(GetPlayerPed(src)) - coords) > RIDER_DISTANCE then
+        rideState[src] = nil
+        return
+    end
+
     local now = os.time()
-    local coords = GetEntityCoords(GetPlayerPed(src))
     local st = rideState[src]
     if not st then rideState[src] = { coords = coords, at = now } return end
 
@@ -202,9 +216,6 @@ RegisterNetEvent('rsg-stables:server:trainingRideTick', function()
 
     local xp = math.min(R.maxXpPerTick, dist / R.metersPerXp)
     if xp < 0.1 then return end
-
-    local horse = getActiveHorse(Player.PlayerData.citizenid)
-    if not horse then return end
     local gains = {}
     for key, share in pairs(R.split) do gains[key] = math.floor(xp * share * 10) / 10 end
     local data = decode(horse.training)

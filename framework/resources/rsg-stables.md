@@ -1,6 +1,6 @@
 # rsg-stables
 
-Version 3.2.0. Horse and stables script for RSG Framework
+Version 3.3.1. Horse and stables script for RSG Framework
 
 Horse and stables system for the **RSG Framework** (RedM). Buy, stable, customise, care for and breed horses across multiple stable locations, all through a custom NUI. - **Multiple stables** – Valentine, Blackwater, Rhodes, Saint Denis and Strawberry out of the box, each with a stablehand NPC, map blip and horse preview spot. Add your own in config. - **Buy menu** – 100+ horse breeds/coats with h
 
@@ -24,13 +24,13 @@ Has NUI (`ui_page`).
 
 **server:** `RSGCore:Server:OnPlayerUnload`
 
-**client:** `rsg-stables:client:horseSpawned`, `rsg-stables:client:openTraining`
+**client:** `rsg-stables:client:horseSpawned`, `rsg-stables:client:openTraining`, `rsg-stables:client:tackChanged`
 
 ## Callbacks (lib.callback)
 
-**server:** `rsg-stables:server:applyHorseCoat`, `rsg-stables:server:applyHorseTack`, `rsg-stables:server:brushHorse`, `rsg-stables:server:buyHorse`, `rsg-stables:server:claimWildHorse`, `rsg-stables:server:collectFoal`, `rsg-stables:server:feedHorse`, `rsg-stables:server:fenceHorse`, `rsg-stables:server:finishTraining`, `rsg-stables:server:fleeStoreHorse`, `rsg-stables:server:getBreedingJobs`, `rsg-stables:server:getNearbyPlayers`, `rsg-stables:server:getSellPrice`, `rsg-stables:server:getStableHorses`, `rsg-stables:server:getTraining`, `rsg-stables:server:giveHorse`, `rsg-stables:server:horseDied`, `rsg-stables:server:horseDown`, `rsg-stables:server:insureHorse`, `rsg-stables:server:naturalDrink`, `rsg-stables:server:naturalGraze`, `rsg-stables:server:releaseHorse`, `rsg-stables:server:renameHorse`, `rsg-stables:server:restoreActiveHorse`, `rsg-stables:server:retrieveHorse`, `rsg-stables:server:reviveHorse`, `rsg-stables:server:sellHorse`, `rsg-stables:server:startBreeding`, `rsg-stables:server:startTraining`, `rsg-stables:server:storeHorse`, `rsg-stables:server:toggleLantern`, `rsg-stables:server:transferHorse`, `rsg-stables:server:useMedicine`, `rsg-stables:server:useStimulant`, `rsg-stables:server:waterHorse`
+**server:** `rsg-stables:server:applyHorseCoat`, `rsg-stables:server:applyHorseTack`, `rsg-stables:server:brushHorse`, `rsg-stables:server:buyHorse`, `rsg-stables:server:claimWildHorse`, `rsg-stables:server:collectFoal`, `rsg-stables:server:feedHorse`, `rsg-stables:server:fenceHorse`, `rsg-stables:server:finishTraining`, `rsg-stables:server:fleeStoreHorse`, `rsg-stables:server:getBreedingJobs`, `rsg-stables:server:getNearbyPlayers`, `rsg-stables:server:getSellPrice`, `rsg-stables:server:getStableHorses`, `rsg-stables:server:getTraining`, `rsg-stables:server:giveHorse`, `rsg-stables:server:horseDied`, `rsg-stables:server:horseDown`, `rsg-stables:server:insureHorse`, `rsg-stables:server:naturalDrink`, `rsg-stables:server:naturalGraze`, `rsg-stables:server:releaseHorse`, `rsg-stables:server:renameHorse`, `rsg-stables:server:restoreActiveHorse`, `rsg-stables:server:retrieveHorse`, `rsg-stables:server:reviveDownedHorse`, `rsg-stables:server:reviveHorse`, `rsg-stables:server:sellHorse`, `rsg-stables:server:startBreeding`, `rsg-stables:server:startTraining`, `rsg-stables:server:storeHorse`, `rsg-stables:server:throwHorseshoe`, `rsg-stables:server:toggleLantern`, `rsg-stables:server:transferHorse`, `rsg-stables:server:useMedicine`, `rsg-stables:server:useStimulant`, `rsg-stables:server:waterHorse`
 
-**client:** `rsg-stables:client:confirmHorseGift`
+**client:** `rsg-stables:client:confirmHorseGift`, `rsg-stables:client:isHorseDead`
 
 ## Commands (RegisterCommand)
 

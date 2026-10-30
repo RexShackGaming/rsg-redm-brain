@@ -24,8 +24,9 @@ end
 CreateThread(function()
     if not (Config.WildHorse and Config.WildHorse.enabled) then return end
     while true do
-        -- EVENT_HORSE_BROKEN only fires while riding, so idle when on foot
-        if not IsPedOnMount(cache.ped) then
+        -- EVENT_HORSE_BROKEN only fires on a wild horse, so idle on foot or on an owned (stable) horse
+        local riding = GetMount(cache.ped)
+        if not IsPedOnMount(cache.ped) or riding == 0 or Entity(riding).state.rsgStablesOwned then
             Wait(500)
             goto continue
         end

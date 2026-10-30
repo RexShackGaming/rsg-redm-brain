@@ -41,11 +41,12 @@ local function buildForecast()
 
     local entries = {}
     for i, f in ipairs(forecast) do
+        local w = TranslateWeatherForRegion(f.weather, coords)
         entries[i] = {
             day = GetDayOfWeek(f.day),
             time = fmtTime(f.hour, f.minute),
-            weather = TranslateWeatherForRegion(f.weather, coords),
-            label = WeatherLabel(TranslateWeatherForRegion(f.weather, coords)),
+            weather = w,
+            label = WeatherLabel(w),
             wind = GetCardinalDirection(f.wind),
         }
     end

@@ -78,6 +78,7 @@ Config.HorseHitch = {
 -- ===================== NATURAL DRINKING (rivers / lakes / troughs) =====================
 Config.HorseNaturalDrink = {
     enabled         = true,
+    maxPlayerDistance = 50.0, -- server check: the horse must be within this distance of its owner to drink
     thirstThreshold = 40,    -- horse only drinks when thirst is at/below this
     thirstRestore   = 100,   -- thirst is restored to this value (0-100)
     checkInterval   = 2000,  -- ms between proximity checks
@@ -95,6 +96,7 @@ Config.HorseNaturalDrink = {
 -- ===================== NATURAL GRAZING (hay near the player) =====================
 Config.HorseNaturalGraze = {
     enabled         = true,
+    maxPlayerDistance = 50.0, -- server check: the horse must be within this distance of its owner to graze
     hungerThreshold = 40,     -- horse only goes looking for hay when hunger is at/below this
     hungerRestore   = 100,    -- hunger is restored to this value (0-100)
     checkInterval   = 3000,   -- ms between checks for nearby hay
@@ -115,6 +117,24 @@ Config.HorseNaturalGraze = {
 -- ===================== HORSE LANTERN =====================
 -- Using the item toggles a saddle lantern on your active horse (item is not consumed).
 -- Hashes as used by rsg-horses (github.com/RexShack/rsg-horses, client/client.lua)
+-- When true, long guns are only stored on the horse if a holster is fitted (mirrors RDR2 player_horse.c).
+-- When false, the game default applies (any owned horse stores long guns).
+Config.HolsterStoresLongarms = true
+
+-- ===================== HORSESHOES =====================
+-- Horses without horseshoes ride much worse. While riding at speed a shoe can be thrown, and the
+-- horse stays degraded until new shoes are fitted at a stable (tack menu -> Horseshoes).
+Config.Horseshoes = {
+    enabled        = true,
+    unshodMoveRate = 0.80,  -- move-rate multiplier while riding without shoes (1.0 = no slow-down)
+    unshodStaminaDrain = 1.5, -- extra stamina drained per second while moving fast without shoes (0 = off)
+    throwChance    = 3,     -- % chance a shoe is thrown on each check
+    checkInterval  = 60,    -- seconds between throw checks while riding
+    minSpeed       = 5.0,   -- horse speed (m/s) needed for a check to count (about a canter)
+    newHorsesShod  = true,  -- bought horses and foals come with shoes fitted (wild horses never do)
+    remindOnMount  = true,  -- tell the player when they mount a horse that has no shoes
+}
+
 Config.HorseLantern = {
     enabled  = true,
     item     = 'horse_lantern',
@@ -125,7 +145,9 @@ Config.HorseLantern = {
 
 -- ===================== BRUSHING =====================
 Config.HorseBrushItem = 'horse_brush' -- item required (not consumed) to Brush Horse; using it from the inventory brushes your horse
-Config.HorseBrushDistance = 3.0 -- how close you must be to your horse to use the brush or a feed item from the inventory
+Config.HorseBrushDistance = 4.0 -- how close you must be to your horse to use the brush or a feed item from the inventory (measured to the horse's centre)
+Config.DebugHorseChecks = false -- prints why a feed/water/brush server check failed to the server console
+Config.HorseBrushMounted = true -- allow brushing from the saddle (Interaction_Brush, rdr3_discoveries tasks/TASK_ANIMAL_INTERACTION)
 
 -- ===================== BONDING =====================
 Config.HorseBonding = {
@@ -154,6 +176,75 @@ Config.HorseFlee = {
     storeOnFlee      = false, -- true: horse is stored back at its nearest stable, player must go retrieve it
                               -- false: horse stays "checked out"; whistling brings it running back to the player
     respawnDistance  = 15.0,  -- distance behind the player a fled horse is respawned at before it runs over (whistle recall)
+}
+
+-- ===================== HORSE ACTIONS =====================
+-- "Horse Actions" NUI panel from a target option on your active horse (and a command) to make it rest, sleep, graze, roll etc.
+-- Scenario names from RDR3 decompiled scripts (1436) + rdr3_discoveries scenario_types_with_conditional_anims.lua
+-- Horse action ids from rdr3_discoveries tasks/TASK_HORSE_ACTION
+Config.HorseActions = {
+    enabled     = true,
+    command     = 'horseaction', -- opens the actions menu near your horse; false to disable
+    actionCommands = true,       -- one command per action: /horse<id> e.g. /horserest /horsesleep /horsegraze /horsewallow /horserear /horsestay /horsefollow
+    stopCommand = 'horsestop',   -- ends the current action; false to disable
+    maxDistance = 6.0,           -- how close you must be to use the command
+    restRegen = {                -- while resting/sleeping the horse slowly refills its stamina and health cores
+        enabled  = true,
+        interval = 5000,         -- ms between ticks
+        stamina  = 2,            -- core points per tick (0-100)
+        health   = 1,
+    },
+    -- keybind to make your horse rear up while riding.
+    -- Control from rdr3_discoveries Controls/README.md: INPUT_SPECIAL_ABILITY_ACTION = Q / RB, active OnMount.
+    -- Optional modifier = hold this control too (e.g. `INPUT_HORSE_STOP` = Ctrl); false for a single key.
+    -- On foot use /horserear or the Horse Actions panel.
+    rearKey = {
+        enabled  = true,
+        modifier = false,
+        control  = `INPUT_SPECIAL_ABILITY_ACTION`,
+        cooldown = 3000,   -- ms between rears
+        -- TASK_HORSE_ACTION rear-ups throw the rider, so while riding the rearing anims are played directly
+        -- (rdr3_discoveries animations/ingameanims). rider = false to only animate the horse.
+        mountedAnim = {
+            -- flag: rdr3-native-enums eScriptedAnimFlags. 8208 = AF_SECONDARY (16) + AF_FORCE_START (8192):
+            -- plays over the ridden horse's movement task, which otherwise overrides a normal anim
+            horse = { dict = 'creatures_mammal@horse@normal@rearing', clip = 'rear_fwd', flag = 8208 },
+            rider = { dict = 'veh_horseback@seat_saddle@male@normal@rearing', clip = 'rear_fwd' },
+        },
+    },
+    actions = {
+        { id = 'rest', glyph = '\u{2726}', regen = true, anim = {
+            dict  = 'amb_creature_mammal@world_horse_resting@base', base  = 'base',
+            enterDict = 'amb_creature_mammal@world_horse_resting@stand_enter', enter = 'enter',
+            exitDict  = 'amb_creature_mammal@world_horse_resting@stand_exit',  exit  = 'exit',
+        } },
+        -- sleep scenario has ScenarioExitNearPlayer (horse gets up when you're close), so play its anims directly
+        -- dicts/clips from rdr3_discoveries animations/ingameanims
+        { id = 'sleep', glyph = '\u{263E}',  regen = true, anim = {
+            dict  = 'amb_creature_mammal@world_horse_sleeping@base', base  = 'base',
+            enterDict = 'amb_creature_mammal@world_horse_sleeping@stand_enter', enter = 'enter',
+            exitDict  = 'amb_creature_mammal@world_horse_sleeping@stand_exit',  exit  = 'exit',
+        } },
+        { id = 'graze', glyph = '\u{2618}', anim = {
+            dict  = 'amb_creature_mammal@world_horse_grazing@base', base  = 'base',
+            enterDict = 'amb_creature_mammal@world_horse_grazing@stand_enter', enter = 'enter',
+            exitDict  = 'amb_creature_mammal@world_horse_grazing@stand_exit',  exit  = 'exit',
+        } },
+        { id = 'wallow', glyph = '\u{21BB}', anim = {
+            dict  = 'amb_creature_mammal@world_horse_wallow_shake@base', base  = 'base',
+            enterDict = 'amb_creature_mammal@world_horse_wallow_shake@stand_enter', enter = 'enter',
+            exitDict  = 'amb_creature_mammal@world_horse_wallow_shake@stand_exit',  exit  = 'exit',
+        } },
+        { id = 'rear', glyph = '\u{2191}',   horseAction = 5 },  -- rear up
+        { id = 'stay', glyph = '\u{270B}',   stay = true },      -- stand still until told otherwise
+        -- TASK_FOLLOW_TO_OFFSET_OF_ENTITY (rsg-redm-brain natives/db/TASK.md): walks behind you until stopped, mounted or whistled
+        { id = 'follow', glyph = '\u{27A4}', follow = {
+            offset = vector3(0.8, -2.5, 0.0), -- metres to your right / behind you
+            speed = 3.0,                      -- 1.0 walk, 2.0 trot, 3.0 run; it slows down as it reaches you
+            stoppingRange = 1.0,
+            teleportDistance = 60.0,          -- if left this far behind it is moved close to you
+        } },
+    },
 }
 
 -- ===================== WILD HORSES =====================
@@ -1669,7 +1760,7 @@ Config.TackCategories = {
     { key = 'mane',       label = 'Mane' },
     { key = 'mask',       label = 'Mask' },
     { key = 'mustache',   label = 'Mustache' },
-    { key = 'holster',    label = 'Holster', required = true }, -- required = a style must be fitted (no 'None'); the holster is needed to carry weapons on the horse
+    { key = 'holster',    label = 'Holster' }, -- optional: without a holster, long guns stay on the player instead of being stored on the horse (see Config.HolsterStoresLongarms)
     { key = 'bridle',     label = 'Bridle' },
     { key = 'horseshoe',  label = 'Horseshoes' },
 }

@@ -113,14 +113,6 @@ AddEventHandler('rsg-weather:server:patternsReset', function()
 end)
 
 CreateThread(function()
-    for name, ev in pairs(cfg.Events) do
-        local sum
-        for from, choices in pairs(ev.pattern or {}) do
-            sum = 0
-            for _, c in pairs(choices) do sum = sum + c end
-            if sum ~= 100 then print(('^1[rsg-weather] seasonal "%s" block "%s" adds up to %d^7'):format(name, from, sum)) end
-        end
-    end
     Wait(1500) -- let patterns.lua load first
     while not modeLoaded do Wait(100) end -- wait for the saved season mode from MySQL
     publish()

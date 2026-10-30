@@ -36,9 +36,8 @@ h1{margin:0;font-size:25px;letter-spacing:1px;text-transform:uppercase;text-shad
 
 label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--rdr-muted);margin:10px 0 5px}
 .muted{color:var(--rdr-text)}
-input[type=text],input[type=number],select{width:100%;padding:8px 10px;background:rgba(0,0,0,0.35);border:1px solid var(--rdr-gold-dim);border-radius:2px;color:var(--rdr-text);font-family:inherit;font-size:13.5px;outline:none;transition:.15s ease}
-select option{background:#111}
-input:focus,select:focus{border-color:var(--rdr-gold);box-shadow:0 0 0 2px rgba(201,162,75,0.15)}
+input[type=text],input[type=number]{width:100%;padding:8px 10px;background:rgba(0,0,0,0.35);border:1px solid var(--rdr-gold-dim);border-radius:2px;color:var(--rdr-text);font-family:inherit;font-size:13.5px;outline:none;transition:.15s ease}
+input:focus{border-color:var(--rdr-gold);box-shadow:0 0 0 2px rgba(201,162,75,0.15)}
 input[type=range]{width:100%;accent-color:#ddd}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
@@ -79,7 +78,7 @@ input[type=range]{width:100%;accent-color:#ddd}
 .stat-warn{background:linear-gradient(90deg,#eec06a,var(--rdr-amber))}
 .stat-bad{background:linear-gradient(90deg,#ec7a75,var(--rdr-cost-over))}
 .next-row{display:grid;grid-template-columns:1fr 78px 30px;gap:6px;margin-bottom:6px;align-items:center}
-.next-row input,.next-row select{padding:6px 8px;font-size:12.5px}
+.next-row input{padding:6px 8px;font-size:12.5px}
 .x-btn{width:28px;height:28px;font-size:11px}
 .missing{font-style:italic;color:var(--rdr-amber);font-size:11.5px;margin-top:4px}
 .add-block{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:6px}
@@ -130,3 +129,16 @@ input[type=range]{width:100%;accent-color:#ddd}
 .fc-panel.halloween .subtitle{color:#c96a5a}
 .fc-panel.christmas{border-color:#6a7a8a;box-shadow:0 20px 60px var(--rdr-shadow),inset 0 0 40px rgba(120,150,180,0.12)}
 .fc-panel.christmas .subtitle{color:#b8cde0}
+
+/* custom dropdown (replaces native <select>, which crashes RedM CEF) */
+.csel{position:relative;display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;padding:8px 10px;background:rgba(0,0,0,0.35);border:1px solid var(--rdr-gold-dim);border-radius:2px;color:var(--rdr-text);font-size:13.5px;cursor:pointer;outline:none;transition:.15s ease}
+.csel:hover,.csel.open{border-color:var(--rdr-gold);box-shadow:0 0 0 2px rgba(201,162,75,0.15)}
+.csel-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.csel-arrow{color:var(--rdr-muted);font-size:11px;transition:transform .15s}
+.csel.open .csel-arrow{transform:rotate(180deg)}
+.next-row .csel{padding:6px 8px;font-size:12.5px}
+.csel-menu{position:fixed;z-index:9999;overflow-y:auto;background:linear-gradient(160deg,var(--rdr-panel-2),var(--rdr-panel) 60%,var(--rdr-black));border:1px solid var(--rdr-gold-dim);border-radius:2px;box-shadow:0 10px 30px var(--rdr-shadow)}
+.csel-menu::-webkit-scrollbar{width:4px}.csel-menu::-webkit-scrollbar-thumb{background:var(--rdr-gold-dim);border-radius:2px}
+.csel-item{padding:7px 10px;font-size:13px;color:var(--rdr-muted);border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.15s ease}
+.csel-item:hover{color:var(--rdr-text);background:rgba(255,255,255,0.05);padding-left:14px}
+.csel-item.active{color:var(--rdr-text);font-weight:500}

@@ -171,7 +171,7 @@ function renderEditor() {
         <div class="badge-ico">${ICONS[from] || '☁'}</div>
         <div class="t">${esc(WL(from))} <span class="pill">${esc(L('ui_then', 'then…'))}</span></div>
         <div class="sum ${cls === 'good' ? 'ok' : cls}">${sum}%</div>
-        <button class="circle-btn x-btn" data-rmblock="${from}" title="Remove">✕</button>
+        <button class="circle-btn x-btn" data-rmblock="${from}" title="${esc(L('ui_remove', 'Remove'))}">✕</button>
       </div>
       <div class="track"><div class="fill stat-${cls}" style="width:${Math.min(sum, 100)}%"></div></div>
       ${rows.map((r, i) => `<div class="next-row">
@@ -248,7 +248,7 @@ $('pSave').onclick = () => savePattern(false);
 $('pSaveApply').onclick = () => savePattern(true);
 
 /* ---------- open / close ---------- */
-function closeAdmin() { $('app').classList.add('hidden'); $('modal').classList.add('hidden'); post('close'); }
+function closeAdmin() { window.closeDropdowns && window.closeDropdowns(); $('app').classList.add('hidden'); $('modal').classList.add('hidden'); post('close'); }
 $('closeBtn').onclick = closeAdmin;
 // ESC closes an open confirm dialog first, then the panel
 document.addEventListener('keydown', e => {

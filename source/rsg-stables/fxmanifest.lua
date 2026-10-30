@@ -4,7 +4,7 @@ game 'rdr3'
 
 name 'rsg-stables'
 description 'Horse and stables script for RSG Framework'
-version '3.2.0'
+version '3.3.1'
 
 shared_scripts {
     '@ox_lib/init.lua',
@@ -26,6 +26,7 @@ client_scripts {
     'client/wildhorse.lua',
     'client/training.lua',
     'client/fence.lua',
+    'client/actions.lua',
 }
 
 dependencies {
@@ -44,6 +45,7 @@ files {
   'html/style.css',
   'html/app.js',
   'html/training.js',
+  'html/actions.js',
   'html/horsecard.js'
 }
 

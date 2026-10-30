@@ -172,7 +172,8 @@ end
 
 local function setMyTime(h, m, s, transition)
     if syncEnabled then toggleSync() end
-    applyTime(tonumber(h) or 0, tonumber(m) or 0, tonumber(s) or 0, tonumber(transition) or 0)
+    local function int(v, max) return lib.math.clamp(math.floor(ToNum(v, 0)), 0, max) end
+    applyTime(int(h, 23), int(m, 59), int(s, 59), int(transition, 600000))
 end
 
 local function getWeather()

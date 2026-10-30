@@ -155,6 +155,15 @@ AddEventHandler('rsg-stables:client:horseSpawned', function(entity, horseRow)
     end
 end)
 
+-- tack changed while the horse is out (e.g. a thrown horseshoe): recompute tack stat bonuses
+AddEventHandler('rsg-stables:client:tackChanged', function(tack)
+    if not horse then return end
+    local courage = horse.tackBonus and horse.tackBonus.courage
+    horse.tackBonus = tackBonuses(tack)
+    if courage then horse.tackBonus.courage = courage end -- keep the bonding-based courage
+    applyTraining()
+end)
+
 RegisterNetEvent('rsg-stables:client:trainingUpdate', function(horseId, data)
     if horse and horse.id == horseId then
         data.horseId = horseId
@@ -169,7 +178,7 @@ if TRAINING and T.riding.enabled then
         while true do
             Wait(T.riding.interval * 1000)
             if horse and DoesEntityExist(horse.entity) and GetMount(cache.ped) == horse.entity then
-                TriggerServerEvent('rsg-stables:server:trainingRideTick')
+                TriggerServerEvent('rsg-stables:server:trainingRideTick', NetworkGetEntityIsNetworked(horse.entity) and NetworkGetNetworkIdFromEntity(horse.entity) or 0)
             end
         end
     end)

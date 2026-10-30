@@ -16,6 +16,7 @@ A drop-in replacement for `weathersync` — every old export and event keeps wor
 ## Requirements
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
 - [ox_lib](https://github.com/Rexshack-RedM/ox_lib)
+- [oxmysql](https://github.com/overextended/oxmysql) (stores the season mode in a small `rsg_weather_state` table, created automatically, no SQL to import)
 
 ## Installation
 1. **Stop and remove the old `weathersync` resource** (this resource `provide`s that name).
@@ -23,6 +24,7 @@ A drop-in replacement for `weathersync` — every old export and event keeps wor
 3. Add to `server.cfg` (after ox_lib and rsg-core):
    ```
    ensure ox_lib
+   ensure oxmysql
    ensure rsg-core
    ensure rsg-weather
    ```
@@ -148,6 +150,8 @@ Legacy `weathersync:*` events (`setWeather`, `setTime`, `setWind`, `setSyncEnabl
 - All changes happen on the server; client→server admin requests are permission-checked and logged.
 - Inputs are validated and clamped (weather types, patterns, time, timescale 0–1000, wind 0–50, sync 0.5–60 s, transitions).
 - Forecast requests are rate-limited per player.
+- Unauthorised attempts are logged at most once per 30 s per player, so spamming admin requests can't flood Discord.
+- Non-finite numbers (NaN / infinity) are rejected before they reach the weather state.
 - Webhook URLs never leave the server.
 
 ## File overview
@@ -156,6 +160,9 @@ fxmanifest.lua
 shared/  utils.lua (helpers, translations)  config.lua
 server/  sv_webhooks_config.lua  webhooks.lua  server.lua  patterns.lua  seasonal.lua  legacy.lua  commands.lua  versionchecker.lua
 client/  client.lua  legacy.lua  menu.lua  seasonal.lua
-html/    index.html  style.css  script.js
+html/    index.html  style.css  script.js  dropdown.js (custom dropdowns: native <select> crashes RedM)
 locales/ en de el es fr ja nl pl pt-br ro (.json)
 ```
+
+---
+Support: https://buymeacoffee.com/rexshack

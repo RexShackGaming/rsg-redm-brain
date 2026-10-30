@@ -251,5 +251,6 @@
     "wh_wind": "風",
     "wh_wind_changed": "🌬️ 風を変更",
     "wind_set": "風を %s°、風速 %s に設定しました",
-    "yes": "はい"
+    "yes": "はい",
+    "ui_remove": "削除"
 }

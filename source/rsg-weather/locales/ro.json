@@ -251,5 +251,6 @@
     "wh_wind": "Vânt",
     "wh_wind_changed": "🌬️ Vânt schimbat",
     "wind_set": "Vânt setat la %s° cu %s",
-    "yes": "Da"
+    "yes": "Da",
+    "ui_remove": "Elimină"
 }

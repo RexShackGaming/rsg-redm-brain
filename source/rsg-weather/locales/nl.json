@@ -251,5 +251,6 @@
     "wh_wind": "Wind",
     "wh_wind_changed": "🌬️ Wind gewijzigd",
     "wind_set": "Wind ingesteld op %s° met %s",
-    "yes": "Ja"
+    "yes": "Ja",
+    "ui_remove": "Verwijderen"
 }

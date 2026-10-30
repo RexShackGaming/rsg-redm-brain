@@ -32,7 +32,7 @@ for event, fn in pairs(handlers) do
             RSGWeatherDeny(id, L('wh_what_legacy', 'legacy event %s', event))
             return
         end
-        fn(...)
+        if fn(...) == false then return end -- invalid weather / pattern: nothing changed
         local args = { ... }
         for i, v in ipairs(args) do args[i] = type(v) == 'table' and '{table}' or tostring(v) end
         RSGWeatherLog('admin', L('wh_legacy_event', '📜 Legacy event: %s', event), nil, {

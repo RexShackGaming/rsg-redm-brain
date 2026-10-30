@@ -251,5 +251,6 @@
     "wh_wind": "Wind",
     "wh_wind_changed": "🌬️ Wind changed",
     "wind_set": "Wind set to %s° at %s",
-    "yes": "Yes"
+    "yes": "Yes",
+    "ui_remove": "Remove"
 }

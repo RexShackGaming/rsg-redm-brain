@@ -56,6 +56,13 @@ function SeasonLabel(name)
     return L('season_' .. name, ev and ev.label or name)
 end
 
+-- tonumber that rejects NaN / inf (msgpack from clients can carry them and they would poison the state)
+function ToNum(v, default)
+    v = tonumber(v)
+    if v and v == v and v ~= math.huge and v ~= -math.huge then return v end
+    return default
+end
+
 function IsValidWeather(weather)
     if type(weather) ~= 'string' then return false end
     weather = weather:lower()

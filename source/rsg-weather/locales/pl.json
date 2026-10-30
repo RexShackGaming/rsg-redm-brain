@@ -251,5 +251,6 @@
     "wh_wind": "Wiatr",
     "wh_wind_changed": "🌬️ Zmieniono wiatr",
     "wind_set": "Wiatr ustawiony na %s° z siłą %s",
-    "yes": "Tak"
+    "yes": "Tak",
+    "ui_remove": "Usuń"
 }

@@ -130,7 +130,7 @@ function API.setWeather(weather, transition, freeze, permanentSnow)
     State.permanentSnow = permanentSnow and true or false
     weatherTicks = 0
     generateForecast()
-    pushWeather(lib.math.clamp(tonumber(transition) or 10.0, 0.1, 300.0))
+    pushWeather(lib.math.clamp(ToNum(transition, 10.0), 0.1, 300.0))
     TriggerEvent('rsg-weather:server:weatherChanged', State.weather)
     return true
 end
@@ -161,10 +161,10 @@ function API.getTime()
 end
 
 function API.setTime(d, h, m, s, transition, freeze)
-    State.time       = DHMSToTime(math.floor(tonumber(d) or 0) % 7, lib.math.clamp(math.floor(tonumber(h) or 0), 0, 23),
-                                  lib.math.clamp(math.floor(tonumber(m) or 0), 0, 59), lib.math.clamp(math.floor(tonumber(s) or 0), 0, 59))
+    local function int(v, max) return lib.math.clamp(math.floor(ToNum(v, 0)), 0, max) end
+    State.time       = DHMSToTime(int(d, 1e6) % 7, int(h, 23), int(m, 59), int(s, 59))
     State.timeFrozen = freeze and true or false
-    pushTime(lib.math.clamp(math.floor(tonumber(transition) or 0), 0, 600000))
+    pushTime(int(transition, 600000))
 end
 
 function API.resetTime()
@@ -176,7 +176,7 @@ end
 function API.getTimescale() return State.timescale end
 
 function API.setTimescale(scale)
-    State.timescale = lib.math.clamp(tonumber(scale) or Config.Timescale, 0, 1000) + 0.0
+    State.timescale = lib.math.clamp(ToNum(scale, Config.Timescale), 0, 1000) + 0.0
     pushTime(0)
 end
 
@@ -185,8 +185,8 @@ function API.resetTimescale() API.setTimescale(Config.Timescale) end
 function API.getWind() return { direction = State.windDirection, speed = State.windSpeed } end
 
 function API.setWind(direction, speed, frozen)
-    State.windDirection = ((tonumber(direction) or 0.0) % 360) + 0.0
-    State.windSpeed     = lib.math.clamp(tonumber(speed) or 0.0, 0, 50) + 0.0
+    State.windDirection = (ToNum(direction, 0.0) % 360) + 0.0
+    State.windSpeed     = lib.math.clamp(ToNum(speed, 0.0), 0, 50) + 0.0
     State.windFrozen    = frozen and true or false
     generateForecast()
     pushWind()
@@ -203,7 +203,7 @@ end
 function API.getSyncDelay() return State.syncDelay end
 
 function API.setSyncDelay(delay)
-    State.syncDelay = lib.math.clamp(math.floor(tonumber(delay) or Config.SyncDelay), 500, 60000)
+    State.syncDelay = lib.math.clamp(math.floor(ToNum(delay, Config.SyncDelay)), 500, 60000)
 end
 
 function API.resetSyncDelay() State.syncDelay = Config.SyncDelay end
@@ -282,7 +282,10 @@ function RSGWeatherForecastAllowed(src)
     lastForecast[src] = now
     return true
 end
-AddEventHandler('playerDropped', function() lastForecast[source] = nil end)
+-- unauthorised attempts are logged at most once per 30s per player, so a cheater
+-- spamming admin callbacks can't flood the Discord queue / server memory
+local lastDeny = {}
+AddEventHandler('playerDropped', function() lastForecast[source] = nil; lastDeny[source] = nil end)
 
 lib.callback.register('rsg-weather:server:getForecast', function(src)
     if not RSGWeatherForecastAllowed(src) then return nil end
@@ -290,6 +293,9 @@ lib.callback.register('rsg-weather:server:getForecast', function(src)
 end)
 
 local function deny(src, what)
+    local now = GetGameTimer()
+    if lastDeny[src] and now - lastDeny[src] < 30000 then return end
+    lastDeny[src] = now
     RSGWeatherLog('security', L('wh_unauthorised', '🚫 Unauthorised attempt'), L('wh_unauthorised_desc', 'Player tried to use **%s** without permission.', what), nil, src)
 end
 RSGWeatherDeny = deny
