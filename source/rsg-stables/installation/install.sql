@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS `rsg_stables_horses` (
   `name` VARCHAR(50) NOT NULL DEFAULT 'Unnamed Horse',
   `outfit` INT(11) NOT NULL DEFAULT 0,
   `tack` TEXT DEFAULT NULL,
+  `shoe_wear` FLOAT NOT NULL DEFAULT 0,
   `coat` TEXT DEFAULT NULL,
   `health` FLOAT NOT NULL DEFAULT 100,
   `stamina` FLOAT NOT NULL DEFAULT 100,

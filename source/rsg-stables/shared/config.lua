@@ -122,15 +122,18 @@ Config.HorseNaturalGraze = {
 Config.HolsterStoresLongarms = true
 
 -- ===================== HORSESHOES =====================
--- Horses without horseshoes ride much worse. While riding at speed a shoe can be thrown, and the
--- horse stays degraded until new shoes are fitted at a stable (tack menu -> Horseshoes).
+-- Horses without horseshoes ride much worse. Shoes wear down the longer the horse is ridden; once fully
+-- worn they come off and the horse stays degraded until new shoes are fitted at a stable (tack menu -> Horseshoes).
 Config.Horseshoes = {
     enabled        = true,
     unshodMoveRate = 0.80,  -- move-rate multiplier while riding without shoes (1.0 = no slow-down)
     unshodStaminaDrain = 1.5, -- extra stamina drained per second while moving fast without shoes (0 = off)
-    throwChance    = 3,     -- % chance a shoe is thrown on each check
-    checkInterval  = 60,    -- seconds between throw checks while riding
-    minSpeed       = 5.0,   -- horse speed (m/s) needed for a check to count (about a canter)
+    wearSeconds    = 14400, -- seconds of riding a set of shoes lasts (14400 = 4 hours in the saddle)
+    gallopWearMultiplier = 1.5, -- shoes wear this much faster while moving at minSpeed or above (1.0 = same)
+    minMoveSpeed   = 1.0,   -- horse speed (m/s) needed for riding time to count (standing still doesn't wear shoes)
+    reportInterval = 60,    -- seconds between wear saves to the server
+    warnAt         = { 25, 10 }, -- warn the rider when shoe condition drops to these percentages
+    minSpeed       = 5.0,   -- horse speed (m/s) treated as fast riding (about a canter) for wear + unshod stamina drain
     newHorsesShod  = true,  -- bought horses and foals come with shoes fitted (wild horses never do)
     remindOnMount  = true,  -- tell the player when they mount a horse that has no shoes
 }

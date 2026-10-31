@@ -540,6 +540,7 @@ end
 -- ===================== HORSESHOES =====================
 local SHOES = Config.Horseshoes or {}
 local HORSESHOE_CATEGORY = 0xFACFC3C0 -- metaped category hash of the horseshoe slot (see TackCategoryHashes)
+local shoeCondition = nil -- % condition of the active horse's shoes (kept up to date by the wear loop)
 
 local function activeHorseShod()
     if not (SHOES.enabled and activeHorse and activeHorse.snapshot) then return true end
@@ -740,7 +741,7 @@ local function canCareFromInventory(dismountKey, tooFarKey, allowMounted)
     return true
 end
 
--- Unshod penalty (per frame while riding) and the chance to throw a shoe
+-- Unshod penalty (per frame while riding) and horseshoe wear from riding time
 if SHOES.enabled then
     -- slow-down + stamina drain; the stimulant loop applies its own (combined) move rate
     CreateThread(function()
@@ -757,15 +758,56 @@ if SHOES.enabled then
 
     CreateThread(function()
         local reminded = nil -- horse entity the "no shoes" reminder was shown for
-        local lastCheck = GetGameTimer()
+        local wearHorse = nil -- horse entity the wear counter belongs to
+        local wearAcc, lastReport, lastCondition = 0.0, GetGameTimer(), 100
         local drainAt = GetGameTimer()
+        local warnAt = SHOES.warnAt or {}
+
+        local function sendWear(horse)
+            local secs = wearAcc
+            wearAcc = 0.0
+            lastReport = GetGameTimer()
+            if secs <= 0 then return end
+            local netId = NetworkGetEntityIsNetworked(horse) and NetworkGetNetworkIdFromEntity(horse) or nil
+            local ok, res = lib.callback.await('rsg-stables:server:wearHorseshoe', false, netId, secs)
+            if not (ok and type(res) == 'table' and activeHorse and activeHorse.entity == horse) then return end
+            if res.worn then
+                activeHorse.snapshot.tack = json.encode(res.tack)
+                Citizen.InvokeNative(0xD710A5007C2AC539, horse, HORSESHOE_CATEGORY, 0) -- _REMOVE_TAG_FROM_META_PED
+                Citizen.InvokeNative(0xCC8CA3E88256E58F, horse, false, true, true, true, false) -- _UPDATE_PED_VARIATION
+                TriggerEvent('rsg-stables:client:tackChanged', res.tack) -- client/training.lua (tack stat bonuses)
+                reminded = horse
+                lib.notify({ title = locale('horseshoe_title'), description = locale('horseshoe_worn_out'), type = 'error', duration = 8000 })
+            else
+                for _, pct in ipairs(warnAt) do
+                    if lastCondition > pct and res.condition <= pct then
+                        lib.notify({ title = locale('horseshoe_title'), description = locale('horseshoe_wearing', res.condition), type = 'warning', duration = 7000 })
+                        break
+                    end
+                end
+            end
+            lastCondition = res.condition or lastCondition
+            shoeCondition = lastCondition
+        end
+
         while true do
             Wait(1000)
             local horse = activeHorse and activeHorse.entity
             local riding = horse and DoesEntityExist(horse) and GetMount(cache.ped) == horse
+            if horse ~= wearHorse then
+                -- different horse out: drop the old counter and fetch this one's condition
+                wearHorse, wearAcc, lastReport = horse, 0.0, GetGameTimer()
+                lastCondition = 100
+                if horse then
+                    local info = lib.callback.await('rsg-stables:server:getHorseshoeCondition', false)
+                    if info and info.shod then lastCondition = info.condition end
+                end
+                shoeCondition = lastCondition
+            end
             if not riding then
-                lastCheck = GetGameTimer()
+                if horse and wearAcc > 0 and DoesEntityExist(horse) then sendWear(horse) end -- save on dismount
             elseif not activeHorseShod() then
+                wearAcc = 0.0
                 if SHOES.remindOnMount and reminded ~= horse then
                     reminded = horse
                     lib.notify({ title = locale('horseshoe_title'), description = locale('horseshoe_none'), type = 'warning', duration = 7000 })
@@ -774,20 +816,13 @@ if SHOES.enabled then
                     local secs = (GetGameTimer() - drainAt) / 1000
                     Citizen.InvokeNative(0xC3D4B754C0E86B9E, horse, -(SHOES.unshodStaminaDrain * secs) + 0.0) -- _CHANGE_PED_STAMINA
                 end
-            elseif GetGameTimer() - lastCheck >= (SHOES.checkInterval or 60) * 1000 then
-                lastCheck = GetGameTimer()
-                if GetEntitySpeed(horse) >= (SHOES.minSpeed or 5.0) and math.random() * 100 < (SHOES.throwChance or 0) then
-                    local netId = NetworkGetEntityIsNetworked(horse) and NetworkGetNetworkIdFromEntity(horse) or nil
-                    local ok, tack = lib.callback.await('rsg-stables:server:throwHorseshoe', false, netId)
-                    if ok and type(tack) == 'table' and activeHorse and activeHorse.entity == horse then
-                        activeHorse.snapshot.tack = json.encode(tack)
-                        Citizen.InvokeNative(0xD710A5007C2AC539, horse, HORSESHOE_CATEGORY, 0) -- _REMOVE_TAG_FROM_META_PED
-                        Citizen.InvokeNative(0xCC8CA3E88256E58F, horse, false, true, true, true, false) -- _UPDATE_PED_VARIATION
-                        TriggerEvent('rsg-stables:client:tackChanged', tack) -- client/training.lua (tack stat bonuses)
-                        reminded = horse
-                        lib.notify({ title = locale('horseshoe_title'), description = locale('horseshoe_thrown'), type = 'error', duration = 8000 })
-                    end
+            else
+                local speed = GetEntitySpeed(horse)
+                if speed >= (SHOES.minMoveSpeed or 1.0) then
+                    local mult = speed >= (SHOES.minSpeed or 5.0) and (SHOES.gallopWearMultiplier or 1.0) or 1.0
+                    wearAcc = wearAcc + (GetGameTimer() - drainAt) / 1000 * mult
                 end
+                if GetGameTimer() - lastReport >= (SHOES.reportInterval or 60) * 1000 then sendWear(horse) end
             end
             drainAt = GetGameTimer()
         end
@@ -925,6 +960,13 @@ local function buildHorseCard()
     if snap.insured == true or snap.insured == 1 then badges[#badges + 1] = { text = locale('card_insured'), level = 'good' } else badges[#badges + 1] = { text = locale('card_uninsured'), level = 'warn' } end
     if stimulant.entity == horse and stimulant.endsAt > GetGameTimer() then
         badges[#badges + 1] = { text = locale('card_stimulant', math.ceil((stimulant.endsAt - GetGameTimer()) / 60000)), level = 'good' }
+    end
+    if SHOES.enabled then
+        if not activeHorseShod() then
+            badges[#badges + 1] = { text = locale('card_no_shoes'), level = 'bad' }
+        elseif shoeCondition then
+            badges[#badges + 1] = { text = locale('card_shoes', shoeCondition), level = shoeCondition > 25 and 'good' or (shoeCondition > 10 and 'warn' or 'bad') }
+        end
     end
     if lifeLeft then badges[#badges + 1] = { text = locale('card_life_left', lifeLeft), level = 'bad' } end
 

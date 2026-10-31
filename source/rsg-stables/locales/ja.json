@@ -28,7 +28,6 @@
     "stat_stamina": "スタミナ",
     "stat_hunger": "空腹",
     "stat_thirst": "渇き",
-    "stat_bonding": "絆",
     "stat_cleanliness": "清潔度",
     "stat_speed": "速度",
     "stat_accel": "加速",
@@ -378,7 +377,6 @@
     "hint_clean_bad": "泥だらけ — ブラッシングで絆を深めましょう",
     "horseshoe_title": "Horseshoes",
     "horseshoe_none": "Your horse has no shoes and will be slow and tire quickly. Get shoes fitted at a stable.",
-    "horseshoe_thrown": "Your horse threw a shoe! It will ride poorly until new shoes are fitted at a stable.",
     "target_actions": "Horse Actions",
     "action_stop": "Stand Up / Stop",
     "action_stop_desc": "End the current action",
@@ -405,5 +403,10 @@
     "action_active": "Active",
     "action_follow": "Follow",
     "action_follow_desc": "Your horse follows behind you on foot",
-    "action_follow_started": "Your horse falls in behind you."
+    "action_follow_started": "Your horse falls in behind you.",
+    "horseshoe_worn_out": "馬の蹄鉄がすり減ってしまった！厩舎で新しい蹄鉄を付けるまで走りが悪くなる。",
+    "horseshoe_wearing": "馬の蹄鉄がすり減ってきている（残り%s%%）。早めに厩舎で新しい蹄鉄を付けよう。",
+    "give_saddlebags_not_empty": "馬を譲る前にサドルバッグを空にしてください。",
+    "card_shoes": "蹄鉄 %s%%",
+    "card_no_shoes": "蹄鉄なし"
 }

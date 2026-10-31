@@ -28,7 +28,6 @@
     "stat_stamina": "Wytrzymałość",
     "stat_hunger": "Głód",
     "stat_thirst": "Pragnienie",
-    "stat_bonding": "Więź",
     "stat_cleanliness": "Czystość",
     "stat_speed": "Szybkość",
     "stat_accel": "Przysp.",
@@ -378,7 +377,6 @@
     "hint_clean_bad": "Bardzo brudny — wyczesz go, by wzmocnić więź",
     "horseshoe_title": "Horseshoes",
     "horseshoe_none": "Your horse has no shoes and will be slow and tire quickly. Get shoes fitted at a stable.",
-    "horseshoe_thrown": "Your horse threw a shoe! It will ride poorly until new shoes are fitted at a stable.",
     "target_actions": "Horse Actions",
     "action_stop": "Stand Up / Stop",
     "action_stop_desc": "End the current action",
@@ -405,5 +403,10 @@
     "action_active": "Active",
     "action_follow": "Follow",
     "action_follow_desc": "Your horse follows behind you on foot",
-    "action_follow_started": "Your horse falls in behind you."
+    "action_follow_started": "Your horse falls in behind you.",
+    "horseshoe_worn_out": "Podkowy twojego konia się zużyły! Będzie jechał źle, dopóki w stajni nie założą nowych podków.",
+    "horseshoe_wearing": "Podkowy twojego konia się ścierają (zostało %s%%). Wkrótce załóż nowe w stajni.",
+    "give_saddlebags_not_empty": "Opróżnij juki konia przed jego przekazaniem.",
+    "card_shoes": "Podkowy %s%%",
+    "card_no_shoes": "Brak podków"
 }

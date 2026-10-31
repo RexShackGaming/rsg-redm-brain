@@ -12,9 +12,9 @@ Horse and stables system for the **RSG Framework** (RedM). Buy, stable, customis
 - **Stallions & mares** – choose the gender when buying; foals get a random one.
 - **Rename & insure** – rename horses for a fee; insure them so a dead horse can be revived/replaced.
 - **Release dead horses** – lay a deceased horse to rest from the stable menu to free up its slot; its saddlebags must be emptied first with **Empty Saddlebags** (the only option for horses that died of old age).
-- **Give or sell to a player** – hand a stabled horse to someone standing next to you, free or for an asking price they must accept (and be able to afford).
+- **Give or sell to a player** – hand a stabled horse to someone standing next to you, free or for an asking price they must accept (and be able to afford). Saddlebags must be emptied first so nothing is handed over by accident.
 - **Tack customisation** – blankets, saddles, saddlebags, horns, stirrups, bedrolls, manes, tails, masks, mustaches, holsters, bridles, each item individually priced. Styles swap on the preview horse instantly (no respawn) with a menu sound while cycling. The holster is optional: without one, long guns stay on the player's back instead of going onto the horse (`Config.HolsterStoresLongarms`). Categories can be marked `required`.
-- **Horseshoes** – a horse without shoes is noticeably slower and tires faster. While riding at speed a shoe can be thrown, and the horse stays degraded until new shoes are fitted at a stable (`Config.Horseshoes`). Bought horses and foals come shod; claimed wild horses don't.
+- **Horseshoes** – a horse without shoes is noticeably slower and tires faster. Shoes wear down with riding time (faster at a canter or gallop), with warnings as they wear thin. Once fully worn they come off and the horse stays degraded until new shoes are fitted at a stable, which resets the wear (`Config.Horseshoes`). Bought horses and foals come shod; claimed wild horses don't. The horse card shows the current shoe condition.
 - **Coat customisation** – custom tint system (main coat, markings, nose, mane, tail) with quick-pick presets and a flat colour-change fee.
 - **Horse needs** – hunger and thirst decay over time; starving/dehydrated horses lose health, well-fed horses slowly regenerate.
 - **Feeding, watering & brushing** – via ox_target on your active horse, or by using the feed items / brush straight from the inventory (with the hand-feed and brushing animations). The brush also works from the saddle (`Config.HorseBrushMounted`).
@@ -134,7 +134,7 @@ All settings live in `shared/config.lua`.
 | `Config.HorseAging` | Young/Old thresholds, lifespan, "days left" warning, minimum stamina for the oldest horses |
 | `Config.HorseGive` | Give/sell to player on/off, distance, giver fee, accept timeout, max asking price |
 | `Config.TackSounds` | Frontend sound played while cycling tack styles (`enabled`, `soundset`, `left`, `right`) |
-| `Config.Horseshoes` | Unshod slow-down and stamina drain, chance and interval for a shoe to be thrown while riding, whether new horses come shod, mount reminder |
+| `Config.Horseshoes` | Unshod slow-down and stamina drain, how long shoes last in riding time, faster wear at speed, wear warnings, whether new horses come shod, mount reminder |
 | `Config.Tack` / `Config.TackCategories` / `Config.TackItems` | Enable tack, categories (add `required = true` to force one) and individual tack items with prices |
 | `Config.Coat` | Enable coat editor, colour-change fee and presets |
 | `Config.HorseCard` | `/horseinfo` command name (`false` to disable) and max distance to your horse |
@@ -193,10 +193,10 @@ Walk up to the stablehand and use **ox_target → Manage Stable** to open the me
 - **Buy** a horse (filter by class, breed and price).
 - **Take out / store** your horses.
 - **Rename**, **insure**, **revive**, **empty the saddlebags of** or **release** (dead) horses.
-- **Customise tack** and **coat** (including fitting new **horseshoes** after one is thrown).
+- **Customise tack** and **coat** (including fitting new **horseshoes** after the old ones wear out).
 - **Sell Horse** – sell a stabled horse back to the stablehand.
 - **Breed** a stallion and a mare and collect the foal when ready.
-- **Give to Player** – give or sell a horse to someone standing next to you.
+- **Give to Player** – give or sell a horse to someone standing next to you (empty its saddlebags first).
 - **Claim Wild Horse** – shown when you've just broken a wild horse and it's with you; name it and it's added to that stable.
 
 Each horse in the list shows its gender, stage (Young / Adult / Old, with days left near the end of its life) and health/stamina.

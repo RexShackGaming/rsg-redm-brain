@@ -5,17 +5,7 @@ lib.locale()
 local T = Config.Training
 if not (T and T.enabled) then return end
 
--- ===================== DATABASE =====================
-MySQL.ready(function()
-    local has = MySQL.scalar.await([[
-        SELECT COUNT(*) FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'rsg_stables_horses' AND COLUMN_NAME = 'training'
-    ]])
-    if (tonumber(has) or 0) == 0 then
-        local ok, err = pcall(MySQL.query.await, 'ALTER TABLE `rsg_stables_horses` ADD COLUMN `training` TEXT DEFAULT NULL AFTER `bonding`')
-        if not ok then print(('^1[rsg-stables] Failed to add column training: %s^7'):format(tostring(err))) end
-    end
-end)
+-- (the `training` column is created/migrated by server/server.lua)
 
 -- ===================== HELPERS =====================
 local MAX_LEVEL = #T.levelXp

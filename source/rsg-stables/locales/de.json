@@ -28,7 +28,6 @@
     "stat_stamina": "Ausdauer",
     "stat_hunger": "Hunger",
     "stat_thirst": "Durst",
-    "stat_bonding": "Bindung",
     "stat_cleanliness": "Sauberkeit",
     "stat_speed": "Tempo",
     "stat_accel": "Beschl.",
@@ -378,7 +377,6 @@
     "hint_clean_bad": "Verdreckt — bürste es, um eure Bindung zu stärken",
     "horseshoe_title": "Horseshoes",
     "horseshoe_none": "Your horse has no shoes and will be slow and tire quickly. Get shoes fitted at a stable.",
-    "horseshoe_thrown": "Your horse threw a shoe! It will ride poorly until new shoes are fitted at a stable.",
     "target_actions": "Horse Actions",
     "action_stop": "Stand Up / Stop",
     "action_stop_desc": "End the current action",
@@ -405,5 +403,10 @@
     "action_active": "Active",
     "action_follow": "Follow",
     "action_follow_desc": "Your horse follows behind you on foot",
-    "action_follow_started": "Your horse falls in behind you."
+    "action_follow_started": "Your horse falls in behind you.",
+    "horseshoe_worn_out": "Die Hufeisen deines Pferdes sind abgenutzt! Es läuft schlecht, bis in einem Stall neue Hufeisen angebracht werden.",
+    "horseshoe_wearing": "Die Hufeisen deines Pferdes werden dünn (%s%% übrig). Lass bald in einem Stall neue anbringen.",
+    "give_saddlebags_not_empty": "Leere die Satteltaschen des Pferdes, bevor du es übergibst.",
+    "card_shoes": "Hufeisen %s%%",
+    "card_no_shoes": "Keine Hufeisen"
 }

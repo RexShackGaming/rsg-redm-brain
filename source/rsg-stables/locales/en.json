@@ -28,7 +28,6 @@
     "stat_stamina": "Stamina",
     "stat_hunger": "Hunger",
     "stat_thirst": "Thirst",
-    "stat_bonding": "Bonding",
     "stat_cleanliness": "Cleanliness",
     "stat_speed": "Speed",
     "stat_accel": "Accel",
@@ -378,7 +377,6 @@
     "hint_clean_bad": "Filthy — brush it to build your bond",
     "horseshoe_title": "Horseshoes",
     "horseshoe_none": "Your horse has no shoes and will be slow and tire quickly. Get shoes fitted at a stable.",
-    "horseshoe_thrown": "Your horse threw a shoe! It will ride poorly until new shoes are fitted at a stable.",
     "target_actions": "Horse Actions",
     "action_stop": "Stand Up / Stop",
     "action_stop_desc": "End the current action",
@@ -405,5 +403,10 @@
     "action_active": "Active",
     "action_follow": "Follow",
     "action_follow_desc": "Your horse follows behind you on foot",
-    "action_follow_started": "Your horse falls in behind you."
+    "action_follow_started": "Your horse falls in behind you.",
+    "horseshoe_worn_out": "Your horse's shoes have worn out! It will ride poorly until new shoes are fitted at a stable.",
+    "horseshoe_wearing": "Your horse's shoes are wearing thin (%s%% left). Get new shoes fitted at a stable soon.",
+    "give_saddlebags_not_empty": "Empty the horse's saddlebags before handing it over.",
+    "card_shoes": "Shoes %s%%",
+    "card_no_shoes": "No shoes"
 }

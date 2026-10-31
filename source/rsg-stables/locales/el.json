@@ -28,7 +28,6 @@
     "stat_stamina": "Αντοχή",
     "stat_hunger": "Πείνα",
     "stat_thirst": "Δίψα",
-    "stat_bonding": "Δεσμός",
     "stat_cleanliness": "Καθαριότητα",
     "stat_speed": "Ταχύτητα",
     "stat_accel": "Επιτάχ.",
@@ -378,7 +377,6 @@
     "hint_clean_bad": "Πολύ βρώμικο — βούρτσισέ το για να δυναμώσει ο δεσμός",
     "horseshoe_title": "Horseshoes",
     "horseshoe_none": "Your horse has no shoes and will be slow and tire quickly. Get shoes fitted at a stable.",
-    "horseshoe_thrown": "Your horse threw a shoe! It will ride poorly until new shoes are fitted at a stable.",
     "target_actions": "Horse Actions",
     "action_stop": "Stand Up / Stop",
     "action_stop_desc": "End the current action",
@@ -405,5 +403,10 @@
     "action_active": "Active",
     "action_follow": "Follow",
     "action_follow_desc": "Your horse follows behind you on foot",
-    "action_follow_started": "Your horse falls in behind you."
+    "action_follow_started": "Your horse falls in behind you.",
+    "horseshoe_worn_out": "Τα πέταλα του αλόγου σου φθάρθηκαν! Θα κινείται άσχημα μέχρι να του βάλεις καινούργια σε στάβλο.",
+    "horseshoe_wearing": "Τα πέταλα του αλόγου σου φθείρονται (απομένει %s%%). Βάλε σύντομα καινούργια σε στάβλο.",
+    "give_saddlebags_not_empty": "Άδειασε τα σακίδια της σέλας πριν παραδώσεις το άλογο.",
+    "card_shoes": "Πέταλα %s%%",
+    "card_no_shoes": "Χωρίς πέταλα"
 }
