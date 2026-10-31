@@ -1,7 +1,7 @@
--- Reference: ox_target zone with server validation
-lib.locale()
+-- Reference: rsg-target zone with server validation
+-- rsg-target replaces ox_target (it provides ox_target). Always call exports['rsg-target'] and add 'rsg-target' to dependencies.
 
-local zoneId = exports.ox_target:addSphereZone({
+local zoneId = exports['rsg-target']:addSphereZone({
     coords = Config.ShopCoords,
     radius = 1.5,
     debug = Config.Debug,
@@ -18,9 +18,9 @@ local zoneId = exports.ox_target:addSphereZone({
     },
 })
 
--- Entity models: exports.ox_target:addModel({ `p_bountyboard01x` }, { options... })
+-- Entity models: exports['rsg-target']:addModel({ `p_bountyboard01x` }, { options... })
 -- Verify prop names in data/ before using them.
 
 AddEventHandler('onResourceStop', function(r)
-    if r == GetCurrentResourceName() then exports.ox_target:removeZone(zoneId) end
+    if r == GetCurrentResourceName() then exports['rsg-target']:removeZone(zoneId) end
 end)

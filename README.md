@@ -34,10 +34,10 @@ The result: scripts that use the right item names, call real exports, keep money
 | `server/environment.md` | **Source of truth**: installed resources, removed ones, server item names | Every script |
 | `conventions/coding-rules.md` | Lua style, structure, config/locale layout | Every script |
 | `conventions/security.md` | Server-authoritative rules: validation, distance, cooldowns, permissions | Anything touching money, items or jobs |
-| `conventions/notify-locales.md` | ox_lib notifications and `lib.locale()` usage | Any player-facing text |
+| `conventions/notify-locales.md` | rsg-core notifications and the shared `@rsg-core/shared/locale.lua` loader | Any player-facing text |
 | `framework/rsg-core.md`, `rsg-inventory.md`, `rsg-banking.md` | Hand-written guides to the core APIs | Player data, items, money |
 | `framework/resources/` | **Generated** API reference for ~70 RSG resources: exports, net events, callbacks, usable items, commands, DB tables | Before calling another RSG resource |
-| `framework/other-exports.md` | ox_lib / ox_target / other third-party exports | Menus, targets, zones |
+| `framework/other-exports.md` | ox_lib and other third-party exports (targeting: rsg-target, see `framework/rsg-core.md`) | Menus, targets, zones |
 | `source/` | Code-only mirror of the Rexshack-RedM repos | Real examples to copy patterns from |
 | `natives/` | Guides: ped AI & combat, game events, prompts / blips / entities | Native-heavy client code |
 | `natives/db/` | Full natives database (~8k natives, hash + signature + notes) by namespace, with `INDEX.tsv` | Checking a native's exact name/params |
@@ -47,7 +47,7 @@ The result: scripts that use the right item names, call real exports, keep money
 | `data/rdr3-native-enums.md` + `data/rdr3-native-enums/` | Halen84's RDR3 native flags & enums (63 enums with the natives that use them) | Any native that takes a flag/enum int |
 | `data/redm-info.md`, `data/redm-forge.md` | Online lookup sites and what they cover | Cross-checking / 3D previews / coords |
 | `data/README.md` | Fallback lookup index | Things rdr3_discoveries lacks |
-| `patterns/` | Tested snippets: secure reward event, NUI bridge, entity cleanup, ox_target | Building blocks |
+| `patterns/` | Tested snippets: secure reward event, NUI bridge, entity cleanup, rsg-target | Building blocks |
 | `templates/rsg-template/` | Skeleton resource (client/server/shared/html/locales/sql) | Every new script |
 | `ui/design-standard.md`, `ui/theme.css` | NUI house style and drop-in CSS | Any NUI |
 | `audit/` | Audit checklist and report procedure | Reviewing or converting scripts |
@@ -221,7 +221,7 @@ A good prompt names the feature, the players involved, the economy, the interact
 **Weak:** *"make a fishing shop script"*
 
 **Strong:**
-> Using the RedM brain, create `rsg-baitshop`. An NPC shopkeeper at a config location, interacted with via ox_target, opens an NUI shop in the house style. Players buy bait items for cash; prices come from server config. Follow `patterns/server-reward-event.lua` for the purchase event (distance check, cooldown, CanAddItem, RemoveMoney result checked). Look up the NPC model in `data/rdr3_discoveries/peds` and tell me which file it came from. Add a blip. All text in `locales/en.json`. Give complete files by path.
+> Using the RedM brain, create `rsg-baitshop`. An NPC shopkeeper at a config location, interacted with via rsg-target, opens an NUI shop in the house style. Players buy bait items for cash; prices come from server config. Follow `patterns/server-reward-event.lua` for the purchase event (distance check, cooldown, CanAddItem, RemoveMoney result checked). Look up the NPC model in `data/rdr3_discoveries/peds` and tell me which file it came from. Add a blip. All text in `locales/en.json`. Give complete files by path.
 
 Useful phrases:
 - *"Check `framework/resources/rsg-X.md` before calling any rsg-X export."*
@@ -299,11 +299,11 @@ If something isn't in the brain, the AI should say so rather than invent it. Ver
 
 | File | Purpose |
 |---|---|
-| `fxmanifest.lua` | `cerulean`, `rdr3`, `lua54`, ox_lib init, oxmysql, NUI files, dependencies (`rsg-core`, `rsg-inventory`, `ox_lib`, `oxmysql`, `ox_target`) |
+| `fxmanifest.lua` | `cerulean`, `rdr3`, `lua54`, ox_lib init, oxmysql, NUI files, dependencies (`rsg-core`, `rsg-inventory`, `ox_lib`, `oxmysql`, `rsg-target`) |
 | `shared/config.lua` | All tunables: coords, prices, timers |
 | `client/client.lua` | Client logic, NUI bridge |
 | `server/server.lua` | Validated server events and callbacks |
-| `locales/en.json` | Strings for `lib.locale()` |
+| `locales/en.json` | Strings for `locale()` (loaded by `@rsg-core/shared/locale.lua`) |
 | `html/` | NUI using the house style |
 | `install.sql` | Database tables |
 | `README.md` | Resource docs (install steps, config, support link) |
@@ -317,7 +317,7 @@ Remove the `html/` folder and `ui_page`/`files` entries if the script has no NUI
 1. **Never guess** hashes, models, anims, scenarios, flags, items or natives. Look them up and cite the file.
 2. **Server is authoritative.** Money, items, jobs and DB writes happen only in server files, after validation: nil-check the player, validate every client argument, take prices from server config, check distance, job/grade and cooldowns, `CanAddItem` before `AddItem`, check the `RemoveMoney` result, use `?` SQL params.
 3. **Notifications** via ox_lib (`lib.notify` / `ox_lib:notify`).
-4. **Locales** for all player-facing text (`locales/en.json` + `lib.locale()`).
+4. **Locales** for all player-facing text (`locales/en.json` + `@rsg-core/shared/locale.lua`).
 5. **NUI** follows `ui/design-standard.md` and `ui/theme.css`, no vignette, focus released on close and stop.
 6. **Clean up** entities, blips, prompts and zones in `onResourceStop`; no needless `Wait(0)` loops, distance-gate everything.
 7. **Respect the environment:** use the installed systems in `server/environment.md` and never depend on removed ones.
@@ -377,7 +377,7 @@ The brain is built on the work of these projects and sites. All credit for the u
 | [Halen84/RDR3-Decompiled-Scripts](https://github.com/Halen84/RDR3-Decompiled-Scripts) (mirrored at [RexShack/RDR3-Decompiled-Scripts](https://github.com/RexShack/RDR3-Decompiled-Scripts)) | Decompiled RDR2 singleplayer scripts, build 1491.50 | `data/rdr3-decompiled-scripts.md` |
 | [redm.info (RedM Index)](https://redm.info/) | Searchable natives, hashes, clothes, blips and props | `data/redm-info.md` |
 | [RedM Forge](https://redm-forge.vercel.app/) by DatMayo | Model previews with 3D view, world map coords, animation builder | `data/redm-forge.md` |
-| [Overextended](https://github.com/overextended) | ox_lib, ox_target, oxmysql | `framework/other-exports.md`, `patterns/` |
+| [Overextended](https://github.com/overextended) | ox_lib, oxmysql (rsg-target is based on ox_target) | `framework/other-exports.md`, `patterns/` |
 
 redm.info credits its own sources as rdr3natives.com, VORPCORE/RDR3natives, CitizenFX shared natives and femga/rdr3_discoveries.
 

@@ -1,12 +1,12 @@
 # RedM Brain — entry point for AI assistants
 
-You are helping build RedM resources for a server running the **RSG Framework (rsg-core 3.0.3)**, Lua 5.4, ox_lib, oxmysql and ox_target.
+You are helping build RedM resources for a server running the **RSG Framework (rsg-core 3.0.3)**, Lua 5.4, oxmysql and rsg-target (replaces ox_target). ox_lib is being phased out: rsg-core now provides notify, callbacks and multi-job.
 Read this file first, then open only the files you need for the task.
 
 ## Golden rules
 1. **Never guess** hashes, model names, anim dicts, scenarios, flag IDs, item names or native hashes. Look them up in `data/rdr3_discoveries/` (open `MAP.md`, then search the file; never read big files whole), `natives/db/`, `data/rdr3-native-enums/` (flag/enum values for natives), `natives/` or `server/environment.md` (cross-check online via `data/redm-info.md` or `data/redm-forge.md`). Tell the user which file each value came from.
 2. **Never trust the client.** All money and item changes happen on the server, after validation (`conventions/security.md`).
-3. Notifications go through **ox_lib** (`lib.notify` / `ox_lib:notify`). Player-facing text goes in **locales** (`conventions/notify-locales.md`).
+3. Notifications go through **rsg-core** (`RSGCore.Functions.Notify` / `RSGCore:Client:Notify`), never ox_lib. Player-facing text goes in **locales** (`conventions/notify-locales.md`).
 4. NUI follows the house style (`ui/design-standard.md`, `ui/theme.css`). No vignette.
 5. New resources start from `templates/rsg-template/`.
 6. Give complete, runnable code split by file path. Put coords, timers, prices and text in config or locales.

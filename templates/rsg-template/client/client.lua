@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 local isOpen = false
 
@@ -12,7 +11,7 @@ end
 
 RegisterNetEvent('rsg-template:client:open', function()
     if isOpen then return end
-    local items = lib.callback.await('rsg-template:server:getData', false)
+    local items = RSGCore.Functions.AwaitCallback('rsg-template:server:getData')
     isOpen = true
     SetNuiFocus(true, true)
     SendNUIMessage({ action = 'open', data = { title = locale('ui_title'), items = items } })
@@ -25,7 +24,7 @@ RegisterNUICallback('select', function(body, cb)
     cb('ok')
 end)
 
-local zone = exports.ox_target:addSphereZone({
+local zone = exports['rsg-target']:addSphereZone({
     coords = Config.ShopCoords, radius = 1.5, debug = Config.Debug,
     options = {{ name = 'rsg-template:open', icon = 'fa-solid fa-hand', label = locale('target_label'), distance = 2.0,
         onSelect = function() TriggerEvent('rsg-template:client:open') end }},
@@ -33,6 +32,6 @@ local zone = exports.ox_target:addSphereZone({
 
 AddEventHandler('onResourceStop', function(r)
     if r ~= GetCurrentResourceName() then return end
-    exports.ox_target:removeZone(zone)
+    exports['rsg-target']:removeZone(zone)
     if isOpen then SetNuiFocus(false, false) end
 end)

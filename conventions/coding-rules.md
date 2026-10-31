@@ -7,7 +7,7 @@
 
 ## Naming
 - Events: `<resource>:client:<action>` and `<resource>:server:<action>`
-- Callbacks: `<resource>:server:<name>`
+- Callbacks: `<resource>:server:<name>`. Use the rsg-core callback system (`RSGCore.Functions.CreateCallback` / `TriggerCallback` / `AwaitCallback`), never `lib.callback` (see `framework/rsg-core.md`)
 - Locale keys: snake_case
 
 ## Performance

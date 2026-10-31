@@ -9,14 +9,14 @@ When given a script + this rules file, the AI must:
 
 ### Step 2 – Notification Conversion
 - List every old notification call found
-- Show the exact replacement using `lib.notify` / `ox_lib:notify`
+- Show the exact replacement using `RSGCore.Functions.Notify` / `RSGCore:Client:Notify`
 - Ensure the text is moved to a locale key
 
 ### Step 3 – Locale Conversion
 - Extract all player-facing strings
 - Generate a clean, valid `locales/en.json` (and optionally other languages)
 - Convert any existing Lua locale files to JSON
-- Update fxmanifest (`files { 'locales/*.json' }`) and add `lib.locale()`
+- Update fxmanifest (`files { 'locales/*.json' }`) and load `'@rsg-core/shared/locale.lua'` in shared_scripts (no `lib.locale()`)
 - Show the updated code using `locale('key')`
 
 ### Step 4 – Final Summary
@@ -29,10 +29,10 @@ Provide:
 
 ---
 
-# Quick Reference – Preferred Modern Style (Secure + ox_lib + Locales)
+# Quick Reference – Preferred Modern Style (Secure + rsg-core notify + Locales)
 
 ```lua
--- Server event (secure + ox_lib + locales)
+-- Server event (secure + rsg-core notify + locales)
 RegisterNetEvent('myresource:server:buyItem', function(itemName, amount)
     local src = source
     local Player = RSGCore.Functions.GetPlayer(src)

@@ -30,18 +30,49 @@ Lookups: `GetPlayerByCitizenId(cid)`, `GetOfflinePlayerByCitizenId(cid)`, `GetPl
 
 ## Client core
 - `RSGCore.Functions.GetPlayerData()` (or `(cb)`); refresh on `RSGCore:Client:OnPlayerLoaded` and `RSGCore:Player:SetPlayerData`.
-- `RSGCore.Functions.Notify(title, text, type, duration, icon)` wraps `lib.notify`; also accepts a table, or legacy `(text, type, duration)`. Types: `success`, `error`, `inform`/`primary`. Prefer `lib.notify({...})` directly in new code.
-- Server notify: `RSGCore.Functions.Notify(src, text, type, duration)` or `TriggerClientEvent('ox_lib:notify', src, {...})`.
+- Notify (rsg-core's own NUI, no ox_lib): `RSGCore.Functions.Notify({ title, description, type, duration, icon, position, id })` or `(title, text, type, duration, icon)` or legacy `(text, type, duration)`. Types: `success`, `error`, `warning`, `inform`/`primary`. Icon = Font Awesome class. Never use `lib.notify` in new code.
+- Server notify: `RSGCore.Functions.Notify(src, data|text, type, duration)` or `TriggerClientEvent('RSGCore:Client:Notify', src, {...})`. Never `ox_lib:notify` in new code.
 - Helpers: `HasItem`, `GetCoords`, `GetClosestPlayer/Ped/Vehicle/Object(coords)`, `GetPlayersFromCoords`, `SpawnVehicle(model, cb, coords, networked, teleportInto)`, `DeleteVehicle`, `PlayAnim(dict, name, upperOnly, dur)`, `LookAtEntity`, `AttachProp`, `DrawText3D(x,y,z,text)`, `StartParticleAtCoord/OnEntity`, `GetGroundZCoord`, `GetGroundHash`, `GetCardinalDirection`, `GetCurrentTime`, `SpawnClear`.
 
 ## Callbacks
+**Always use the rsg-core callback system. Do not use `lib.callback` (ox_lib is being phased out).**
 ```lua
--- server
-RSGCore.Functions.CreateCallback('res:server:getThing', function(source, cb, arg) cb(result) end)
--- client
+-- server: register
+RSGCore.Functions.CreateCallback('res:server:getThing', function(source, cb, arg)
+    cb(result)                                   -- answer with cb(...), not return
+end)
+
+-- client: async
 RSGCore.Functions.TriggerCallback('res:server:getThing', function(result) end, arg)
+
+-- client: await (replaces lib.callback.await). Inside a thread/event handler.
+-- AwaitCallback(name, timeout?, ...)  timeout ms, default 10000, false/0 = wait forever; nil on timeout
+local result = RSGCore.Functions.AwaitCallback('res:server:getThing', 5000, arg)
 ```
-Also client callbacks: `CreateClientCallback` / server `TriggerClientCallback(name, src, cb, ...)`. `lib.callback` from ox_lib is equally fine.
+Server asking a client:
+```lua
+-- client: register
+RSGCore.Functions.CreateClientCallback('res:client:getThing', function(cb, arg) cb(value) end)
+-- server: async
+RSGCore.Functions.TriggerClientCallback('res:client:getThing', src, function(value) end, arg)
+-- server: await. AwaitClientCallback(name, source, timeout?, ...)
+local value = RSGCore.Functions.AwaitClientCallback('res:client:getThing', src, 5000, arg)
+```
+Converting from ox_lib:
+| ox_lib | rsg-core |
+|---|---|
+| `lib.callback.register(name, function(source, ...) return x end)` | `RSGCore.Functions.CreateCallback(name, function(source, cb, ...) cb(x) end)` |
+| `lib.callback.await(name, false, ...)` (client) | `RSGCore.Functions.AwaitCallback(name, nil, ...)` |
+| `lib.callback(name, false, cb, ...)` (client) | `RSGCore.Functions.TriggerCallback(name, cb, ...)` |
+| `lib.callback.await(name, src, ...)` (server) | `RSGCore.Functions.AwaitClientCallback(name, src, nil, ...)` |
+| client `lib.callback.register` | `RSGCore.Functions.CreateClientCallback(name, function(cb, ...) end)` |
+
+## Multi-job (built into rsg-core; rsg-multijob is removed)
+Job definitions live in the `multijob_jobs` table (manage in-game with `/jobadmin`); players hold several jobs in `player_jobs` (`/myjobs`). Settings: `RSGConfig.MultiJob`.
+Server (`RSGCore.Functions.*` or `exports['rsg-core']:*`, `id` = server id or citizenid):
+`AddPlayerJob(id, job, grade, bypassMax)` → ok, reason; `RemovePlayerJob(id, job)`; `GetPlayerJobs(id)` → `{ job, salary, jobLabel, gradeLabel, grade, icon }[]`; `HasPlayerJob(id, job)` → held, grade; `CanTakePlayerJob(id, job, bypassMax)`; `GetPlayerJobCount(id)` → count, max; `GetJobDefinition(name)`; `GetJobDefinitions()`.
+Note: `AddJob/RemoveJob/UpdateJob` on rsg-core are job *definition* functions, not player jobs. Old `exports['rsg-multijob']:*` calls still work via `provide`, but use the rsg-core names in new code.
+Events kept: `rsg-multijob:client:openmenu`, `rsg-multijob:server:jobsLoaded`.
 
 ## Usable items, commands, permissions
 ```lua
@@ -61,7 +92,7 @@ Job shape: `{ name, label, type='leo', defaultDuty, offDutyPay, grades = { ['0']
 ## Prompts & draw text (client exports on rsg-core)
 - `createPrompt(name, coords, key, text, { type='client'|'server', event='...', args={} })`, `deletePrompt(name)`, `createPromptGroup(group, label, coords, prompts)`, `deletePromptGroup`. Trigger distance `RSGConfig.PromptDistance` (1.5). Clean up on `onResourceStop`.
 - `DrawText(text, pos)`, `ChangeText`, `HideText`, `KeyPressed`.
-- Targeting: `ox_target` is installed; some older scripts reference `rsg-target`.
+- Targeting: `rsg-target` (github.com/Rexshack-RedM/rsg-target) replaces ox_target and `provide`s it, so ox_target must not be installed. New code uses `exports['rsg-target']` and lists `rsg-target` in dependencies; old `exports.ox_target` calls still work.
 
 ## Core events
 Client: `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `RSGCore:Client:OnJobUpdate(job)`, `RSGCore:Client:OnGangUpdate`, `RSGCore:Client:OnMoneyChange`, `RSGCore:Client:SetDuty`, `RSGCore:Player:SetPlayerData(data)`.

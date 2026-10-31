@@ -1,6 +1,5 @@
--- Reference: secure server-side purchase/reward event (RSG + ox_lib + locales)
+-- Reference: secure server-side purchase/reward event (RSG + rsg-core locales)
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 local cooldowns = {}
 local COOLDOWN = 2 -- seconds
@@ -28,16 +27,16 @@ RegisterNetEvent('rsg-example:server:buyItem', function(itemName, amount)
 
     local total = cfg.price * amount
     if not exports['rsg-inventory']:CanAddItem(src, itemName, amount) then
-        TriggerClientEvent('ox_lib:notify', src, { title = locale('shop_title'), description = locale('inventory_full'), type = 'error' })
+        TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('shop_title'), description = locale('inventory_full'), type = 'error' })
         return
     end
     if not Player.Functions.RemoveMoney('cash', total, 'rsg-example-purchase') then
-        TriggerClientEvent('ox_lib:notify', src, { title = locale('shop_title'), description = locale('not_enough_money'), type = 'error' })
+        TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('shop_title'), description = locale('not_enough_money'), type = 'error' })
         return
     end
 
     exports['rsg-inventory']:AddItem(src, itemName, amount, nil, nil, 'rsg-example-purchase')
-    TriggerClientEvent('ox_lib:notify', src, {
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
         title = locale('shop_title'),
         description = locale('bought_success', amount, shared.label, total),
         type = 'success',

@@ -4,7 +4,7 @@ This file is the source of truth. It overrides anything else in the brain.
 
 ## Core stack
 - rsg-core 3.0.3, rsg-inventory, rsg-banking v3
-- `[standalone]`: ox_lib, oxmysql, ox_target, PolyZone, interact-sound, xsound, progressbar, rNotify
+- `[standalone]`: ox_lib, oxmysql, PolyZone, interact-sound, xsound, progressbar, rNotify
 - `[framework]` holds the `rsg-*` resources. `[community]` holds third-party resources (Nt_Blackjack, Nt_Holdem).
 
 ## Installed systems (use these)
@@ -12,17 +12,17 @@ This file is the source of truth. It overrides anything else in the brain.
 |---|---|
 | Weather / time | rsg-weather (github.com/Rexshack-RedM/rsg-weather) |
 | Horses | rsg-stables (github.com/Rexshack-RedM/rsg-stables) |
-| Jobs | rsg-multijob (github.com/Rexshack-RedM/rsg-multijob) |
+| Jobs | built into rsg-core (multi-job merged from rsg-multijob, which is removed) |
 | Telegrams | rsg-telegram (github.com/Rexshack-RedM/rsg-telegram) |
 | Clothing | rsg-wardrobe (github.com/Rexshack-RedM/rsg-wardrobe) |
 | Voice | rsg-voice (github.com/Rexshack-RedM/rsg-voice) |
-| Targeting | ox_target (some older scripts reference rsg-target) |
+| Targeting | rsg-target (github.com/Rexshack-RedM/rsg-target, in `[framework]`). Replaces ox_target and `provide`s it, so ox_target is removed. New code: `exports['rsg-target']` + `rsg-target` dependency |
 
 ## Removed or not installed (never depend on these)
 - **weathersync** has been removed. Use rsg-weather.
 - **rsg-horses** is not installed. Use rsg-stables.
 - **pma-voice** has been replaced. Use rsg-voice.
-- **RSGCore.Shared.Jobs** is no longer where jobs are defined. Jobs live in the database via rsg-multijob.
+- **RSGCore.Shared.Jobs** is no longer where jobs are defined. Jobs live in the database (`multijob_jobs`), managed by rsg-core. Use `exports['rsg-core']:AddPlayerJob/RemovePlayerJob/GetPlayerJobs` etc. (see `framework/rsg-core.md` → Multi-job).
 
 ## Item names on this server
 | Thing | Item name |
