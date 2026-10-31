@@ -74,6 +74,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-smelting](rsg-smelting.md) | Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for RSG-Core (RedM) with ox_lib, ox_t | 1 | 1 |
 | [rsg-stables](rsg-stables.md) | Horse and stables script for RSG Framework | 1 | 15 |
 | [rsg-stores](rsg-stores.md) | Create NPC shopkeepers, shops and map blips in-game for RSG-Core (RedM), all from an admin menu with no co | 1 | 17 |
+| [rsg-target](rsg-target.md) | targeting system for RSG RedM Framework | 0 | 4 |
 | [rsg-targetpractise](rsg-targetpractise.md) | Placeable archery and throwing-knife practice targets for RSG Framework | 0 | 18 |
 | [rsg-telegram](rsg-telegram.md) |  | 0 | 2 |
 | [rsg-telephone](rsg-telephone.md) | rsg-telephone - persistent telephone props with private voice calls | 0 | 14 |
