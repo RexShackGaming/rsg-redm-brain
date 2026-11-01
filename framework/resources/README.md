@@ -87,7 +87,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-voice](rsg-voice.md) | rsg-voice - proximity voice for RSG Framework | 11 | 13 |
 | [rsg-wagons](rsg-wagons.md) | A wagon ownership, customisation and storage system for RedM servers running the RSG-Core framework. P | 0 | 27 |
 | [rsg-wardrobe](rsg-wardrobe.md) | Toggle individual clothing items on/off via chat commands for RSG Framework (RedM). - [rsg-core](https://githu | 6 | 4 |
-| [rsg-weaponcomp](rsg-weaponcomp.md) | Weapon customisation for RSG Framework (RedM). Players place a portable gunsmith workbench, then use it to | 0 | 13 |
+| [rsg-weaponcomp](rsg-weaponcomp.md) | Weapon customisation for RSG Framework (RedM). Players place a portable gunsmith workbench, then use it to | 0 | 14 |
 | [rsg-weapons](rsg-weapons.md) | Weapon handling for RSG Framework: dual wield, serial-based equipping, weapon wear, repairs, saved loadouts  | 6 | 14 |
 | [rsg-weather](rsg-weather.md) | rsg-weather - time, weather and wind sync for RSG Framework (weathersync compatible) | 16 | 15 |
 | [rsg-zonenotify](rsg-zonenotify.md) | rsg-zonenotify - location banner when entering states, districts and towns | 1 | 2 |
