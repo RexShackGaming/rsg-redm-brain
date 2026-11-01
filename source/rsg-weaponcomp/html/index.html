@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="ui_page_title"></title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <!-- App starts with display:none via inline style AND hidden class -->
+    <div id="app" class="hidden" style="display: none;">
+        <!-- Background overlay -->
+        <div class="bg-overlay"></div>
+        
+        <!-- Main Container -->
+        <div class="gunsmith-container">
+            <!-- Header -->
+            <div class="header">
+                <div class="title-container">
+                    <h1 class="title" data-i18n="ui_title"></h1>
+                </div>
+            </div>
+
+            <!-- Weapon Display Area -->
+            <div class="weapon-display">
+                <div class="weapon-badge">
+                    <i class="fas fa-crosshairs"></i>
+                </div>
+                <div class="weapon-info">
+                    <div class="weapon-name" id="weaponName"></div>
+                    <div class="weapon-serial" id="weaponSerial"></div>
+                </div>
+            </div>
+
+            <!-- Main Menu -->
+            <div id="mainMenu" class="menu-panel">
+                <div class="menu-header">
+                    <div class="menu-corner tl"></div>
+                    <div class="menu-corner tr"></div>
+                    <div class="menu-title">
+                        <i class="fas fa-tools"></i>
+                        <span data-i18n="ui_modifications"></span>
+                        <i class="fas fa-tools"></i>
+                    </div>
+                </div>
+                <div class="menu-items" id="mainMenuItems">
+                </div>
+            </div>
+
+            <!-- Component Selection Menu -->
+            <div id="componentMenu" class="menu-panel hidden">
+                <div class="menu-header">
+                    <div class="menu-corner tl"></div>
+                    <div class="menu-corner tr"></div>
+                    <div class="menu-title">
+                        <i class="fas fa-cogs"></i>
+                        <span id="componentMenuTitle" data-i18n="ui_components"></span>
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                </div>
+                <div class="component-list" id="componentList">
+                </div>
+                <div class="menu-footer">
+                    <button class="btn-western btn-back" id="btnBack">
+                        <i class="fas fa-arrow-left"></i>
+                        <span data-i18n="ui_back"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Price Summary -->
+            <div class="price-panel">
+                <div class="price-frame">
+                    <div class="price-label">
+                        <i class="fas fa-coins"></i>
+                        <span data-i18n="ui_total_cost"></span>
+                    </div>
+                    <div class="price-value" id="totalPrice"></div>
+                </div>
+            </div>
+
+            <!-- Bottom Actions -->
+            <div class="action-bar">
+                <button class="btn-western btn-purchase" id="btnPurchase">
+                    <i class="fas fa-check-circle"></i>
+                    <span data-i18n="ui_purchase"></span>
+                </button>
+                <button class="btn-western btn-reset" id="btnReset">
+                    <i class="fas fa-undo"></i>
+                    <span data-i18n="ui_reset"></span>
+                </button>
+                <button class="btn-western btn-exit" id="btnExit">
+                    <i class="fas fa-door-open"></i>
+                    <span data-i18n="ui_exit"></span>
+                </button>
+            </div>
+
+            <!-- Controls Help -->
+            <div class="controls-help">
+                <div class="control-item">
+                    <span class="key"><i class="fas fa-search"></i> <span data-i18n="ui_scroll"></span></span>
+                    <span class="action" data-i18n="ui_zoom"></span>
+                </div>
+                <div class="control-item">
+                    <span class="key" data-i18n="ui_key_random"></span>
+                    <span class="action" data-i18n="ui_random_view"></span>
+                </div>
+                <div class="control-item">
+                    <span class="key" data-i18n="ui_key_reset"></span>
+                    <span class="action" data-i18n="ui_reset_camera"></span>
+                </div>
+                <div class="control-item">
+                    <span class="key"><i class="fas fa-arrow-left"></i><i class="fas fa-arrow-right"></i></span>
+                    <span class="action" data-i18n="ui_rotate"></span>
+                </div>
+                <button class="control-item focus-toggle" id="btnFocus" type="button">
+                    <span class="key"><i class="fas fa-bullseye"></i> <span id="focusState"></span></span>
+                    <span class="action" data-i18n="ui_auto_focus"></span>
+                </button>
+            </div>
+            
+            <!-- Bottom decorative line -->
+            <div class="decor-bottom">
+                <i class="fas fa-certificate"></i>
+            </div>
+        </div>
+
+        <!-- Notification Toast -->
+        <div id="notification" class="notification hidden">
+            <div class="notification-inner">
+                <div class="notification-icon-box">
+                    <i class="fas"></i>
+                </div>
+                <div class="notification-text-box">
+                    <span class="notification-text"></span>
+                </div>
+            </div>
+            <div class="notification-shine"></div>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

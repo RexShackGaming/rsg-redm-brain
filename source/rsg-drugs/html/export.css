@@ -1,0 +1,17 @@
+/* brick export panel (scoped, ex- prefix) */
+#export{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+.ex-panel{width:440px;display:flex;flex-direction:column;padding:18px 20px;border:1px solid var(--rdr-gold-dim);border-radius:3px;outline:1px solid rgba(0,0,0,.6);outline-offset:-5px;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.015) 0 1px,transparent 1px 3px),linear-gradient(160deg,var(--rdr-panel-2),var(--rdr-panel) 60%,var(--rdr-black));
+  box-shadow:0 20px 60px var(--rdr-shadow),inset 0 0 40px rgba(0,0,0,.5)}
+.ex-price{text-align:center;margin:4px 0 2px}
+.ex-price .v{font-size:34px;font-weight:700;letter-spacing:1px;text-shadow:0 2px 6px #000}
+.ex-price .k{font-size:10.5px;text-transform:uppercase;letter-spacing:2px;color:var(--rdr-muted)}
+.ex-trend{font-size:13px;margin-left:6px}
+.ex-trend.up{color:var(--rdr-cost-ok)}.ex-trend.down{color:var(--rdr-cost-over)}.ex-trend.flat{color:var(--rdr-muted)}
+.ex-chart{height:70px;margin:10px 0 4px;border:1px solid rgba(255,255,255,.08);border-radius:2px;background:rgba(0,0,0,.3)}
+.ex-chart svg{width:100%;height:100%;display:block}
+.ex-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--rdr-muted);font-style:italic}
+.ex-sell{display:flex;align-items:center;gap:10px;margin-top:8px}
+.ex-total{flex:1;font-size:13px}
+.ex-total b{font-size:16px}
+.ex-note{font-size:11px;color:var(--rdr-muted);font-style:italic;margin-top:8px;text-align:center}

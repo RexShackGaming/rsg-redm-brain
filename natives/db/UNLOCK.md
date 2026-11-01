@@ -1,0 +1,29 @@
+# UNLOCK natives (9)
+Source: VORPCORE/RDR3natives `rdr3natives.json`. Grep by NAME or hash.
+
+## UNLOCK_IS_UNLOCKED
+`0xC4B660C7B6040E75` | `BOOL UNLOCK_IS_UNLOCKED(Hash unlockHash)` | build 1207
+
+## UNLOCK_IS_VISIBLE
+`0x8588A14B75AF096B` | `BOOL UNLOCK_IS_VISIBLE(Hash unlockHash)` | build 1207
+
+## UNLOCK_SET_UNLOCKED
+`0x1B7C5ADA8A6910A0` | `void UNLOCK_SET_UNLOCKED(Hash unlockHash, BOOL toggle)` | build 1207
+
+## UNLOCK_SET_VISIBLE
+`0x46B901A8ECDB5A61` | `void UNLOCK_SET_VISIBLE(Hash unlockHash, BOOL toggle)` | build 1207
+
+## _UNLOCK_GET_ITEM_ROLE_UNLOCK_INFO
+`0x7C1C2062CFAD06FE` | `void _UNLOCK_GET_ITEM_ROLE_UNLOCK_INFO(Hash unlockHash, Any* outData)` | build 1207
+
+## _UNLOCK_IS_LOOTABLE
+`0x66BF197E066050DE` | `BOOL _UNLOCK_IS_LOOTABLE(Hash unlockHash)` | build 1207
+
+## _UNLOCK_IS_NEW
+`0x644166BA7AA49DEA` | `BOOL _UNLOCK_IS_NEW(Hash unlockHash)` | build 1207
+
+## _UNLOCK_IS_UNLOCK_FLAG_SET
+`0x6B6369647F26F09F` | `BOOL _UNLOCK_IS_UNLOCK_FLAG_SET(Hash unlockHash, int flag)` | build 1207
+
+## _UNLOCK_SET_NEW
+`0xA6D79C7AEF870A99` | `void _UNLOCK_SET_NEW(Hash unlockHash, BOOL toggle)` | build 1207

@@ -1,0 +1,15 @@
+{
+    "cl_title": "Location",
+    "cl_indoors": "You can't check your location while indoors",
+    "cl_unknown": "You're out in the wilderness",
+    "cl_enabled": "Location banners enabled",
+    "cl_disabled": "Location banners disabled",
+    "cl_cmd_location": "Show where you are",
+    "cl_cmd_toggle": "Turn location banners on or off",
+    "cl_time_am": "AM",
+    "cl_time_pm": "PM",
+    "cl_temp_c": "%s°C",
+    "cl_temp_f": "%s°F",
+    "cl_wind_kph": "%s kph",
+    "cl_wind_mph": "%s mph"
+}

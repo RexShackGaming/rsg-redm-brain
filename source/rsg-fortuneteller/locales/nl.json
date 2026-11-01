@@ -1,0 +1,15 @@
+{
+    "machine": "Waarzegster",
+    "use": "Hoor je toekomst ($%.2f)",
+    "free": "Hoor je toekomst",
+    "busy": "Iemand gebruikt deze machine al.",
+    "cooldown": "De machine is nog niet klaar. Probeer het over %d seconden opnieuw.",
+    "noMoney": "Je hebt $%.2f contant nodig.",
+    "unavailable": "De waarzegster is niet beschikbaar.",
+    "tooFar": "Ga dichter bij de machine staan.",
+    "audioFailed": "De stem kon niet worden geladen. Er is niets afgeschreven.",
+    "setupFailed": "De machine kon niet worden gestart. Er is niets afgeschreven.",
+    "paymentFailed": "De betaling kon niet worden voltooid.",
+    "slowDown": "Wacht even voordat je het opnieuw probeert.",
+    "coordinates": "Coördinaten van de waarzegster weergegeven in F8."
+}

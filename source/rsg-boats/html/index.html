@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>rsg-boats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="root" class="hidden">
+
+  <!-- SHOP -->
+  <div id="shop" class="panel hidden">
+    <div class="header">
+      <span class="circle-btn invisible"></span>
+      <div class="titles">
+        <div class="title" id="shop-title" data-i18n="ui_shop_title">Boat Yard</div>
+        <div class="subtitle" id="shop-subtitle"></div>
+      </div>
+      <button class="circle-btn" data-close>✕</button>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="buy" data-i18n="ui_tab_buy">For Sale</button>
+      <button class="tab" data-tab="owned" data-i18n="ui_tab_owned">My Boats</button>
+    </div>
+    <div class="divider"><span>✦</span></div>
+    <div class="cash"><span data-i18n="ui_cash">Cash:</span> <b id="cash">$0</b></div>
+    <div id="tab-buy" class="list"></div>
+    <div id="tab-owned" class="list hidden"></div>
+    <div class="footer hidden" id="store-row">
+      <button class="wood-btn" id="store-btn" data-i18n="ui_store_btn">Store Boat Out On Water</button>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="admin" class="panel wide hidden">
+    <div class="header">
+      <span class="circle-btn invisible"></span>
+      <div class="titles">
+        <div class="title" data-i18n="ui_admin_title">Boat Yard Admin</div>
+        <div class="subtitle" data-i18n="ui_admin_subtitle">Yards &amp; Boat Models</div>
+      </div>
+      <button class="circle-btn" data-close>✕</button>
+    </div>
+    <div class="tabs">
+      <button class="tab atab active" data-atab="yards" data-i18n="ui_tab_yards">Yards</button>
+      <button class="tab atab" data-atab="models" data-i18n="ui_tab_models">Boat Models</button>
+    </div>
+    <div class="divider"><span>✦</span></div>
+
+    <div class="panel-body">
+      <!-- YARDS TAB -->
+      <div id="atab-yards">
+        <div class="section-label" data-i18n="ui_select_yard">Select Yard</div>
+        <div class="field-row">
+          <div class="dd" id="yard-dd"><div class="dd-value"></div><span class="dd-arrow">▾</span><div class="dd-menu"></div></div>
+        </div>
+
+        <div id="yard-detail">
+          <div class="card">
+            <div class="card-label" data-i18n="ui_name">Name</div>
+            <div class="field-row">
+              <input id="yard-name" maxlength="64" placeholder="Yard name" data-i18n-ph="ui_ph_yard_name">
+              <button class="wood-btn small" id="yard-rename-btn" data-i18n="ui_rename">Rename</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-label" data-i18n="ui_location">Location &amp; NPC</div>
+            <div class="coords" id="yard-text">—</div>
+            <div class="btn-row">
+              <button class="wood-btn small" id="yard-move-btn" data-i18n="ui_move_here">Move To My Position</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-label" data-i18n="ui_launch_point">Launch Point</div>
+            <div class="coords" id="spawn-text"></div>
+            <div class="field-row">
+              <div class="dd" id="placer-dd"><div class="dd-value"></div><span class="dd-arrow">▾</span><div class="dd-menu"></div></div>
+              <button class="wood-btn small" id="place-btn" data-i18n="ui_spawn_assistant">Spawn Assistant</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-label" data-i18n="ui_dock_zone">Dock &amp; Store Zone</div>
+            <div class="coords" id="dock-text"></div>
+            <div class="field-row">
+              <label class="inline-label" for="dock-radius" data-i18n="ui_radius">Radius (m)</label>
+              <input id="dock-radius" class="num" type="number" min="1" step="0.5">
+              <button class="wood-btn small muted" id="dock-radius-btn" data-i18n="ui_save_radius">Save Radius</button>
+            </div>
+            <div class="btn-row">
+              <button class="wood-btn small" id="dock-here-btn" data-i18n="ui_dock_here">Set Dock At My Position</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-label" data-i18n="ui_yard_boats">Boats Sold &amp; Stored Here</div>
+            <label class="toggle" id="ym-all-wrap"><span class="box" id="ym-all" data-on="1"></span> <span data-i18n="ui_all_boats">All boats</span></label>
+            <div class="check-list" id="ym-list"></div>
+            <div class="btn-row end">
+              <button class="wood-btn small" id="ym-save" data-i18n="ui_save_boats">Save Boats</button>
+            </div>
+          </div>
+
+          <div class="btn-row end">
+            <button class="wood-btn small danger" id="yard-delete-btn" data-i18n="ui_delete_yard">Delete Yard</button>
+          </div>
+        </div>
+        <div class="empty hidden" id="yard-empty" data-i18n="ui_no_yards">No boat yards yet. Create one below.</div>
+
+        <div class="divider"><span>✦</span></div>
+        <div class="section-label" data-i18n="ui_new_yard">New Yard At My Position</div>
+        <div class="field-row">
+          <input id="new-yard-name" maxlength="64" placeholder="Name (e.g. Lagras Boat Yard)" data-i18n-ph="ui_ph_new_yard">
+          <button class="wood-btn small" id="yard-create-btn" data-i18n="ui_create">Create</button>
+        </div>
+      </div>
+
+      <!-- MODELS TAB -->
+      <div id="atab-models" class="hidden">
+        <div id="admin-list" class="list short"></div>
+        <div class="divider"><span>✦</span></div>
+        <div class="section-label" id="form-label" data-i18n="ui_add_model">Add Model</div>
+        <div class="form">
+          <input id="f-model" placeholder="Model name (e.g. rowboat)" data-i18n-ph="ui_ph_model" maxlength="64">
+          <input id="f-label" placeholder="Label" data-i18n-ph="ui_ph_label" maxlength="64">
+          <input id="f-price" placeholder="Price" data-i18n-ph="ui_ph_price" type="number" min="0">
+          <label class="toggle"><span class="box" id="f-enabled" data-on="1"></span> <span data-i18n="ui_for_sale">For sale</span></label>
+          <div class="labeled"><span class="inline-label" data-i18n="ui_storage_slots">Storage slots</span><input id="f-slots" type="number" min="1" placeholder="10"></div>
+          <div class="labeled"><span class="inline-label" data-i18n="ui_max_weight">Max weight (kg)</span><input id="f-weight" type="number" min="1" step="0.5" placeholder="50"></div>
+          <input id="f-desc" placeholder="Description" data-i18n-ph="ui_ph_desc" maxlength="255">
+          <div class="form-actions">
+            <button class="wood-btn muted" id="f-clear" data-i18n="ui_clear">Clear</button>
+            <button class="wood-btn" id="f-save" data-i18n="ui_save_model">Save Model</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRM MODAL -->
+  <div id="modal" class="modal-wrap hidden">
+    <div class="modal">
+      <div class="modal-title" id="modal-title" data-i18n="ui_confirm">Confirm</div>
+      <div class="ink-divider"></div>
+      <div class="modal-text" id="modal-text"></div>
+      <input id="modal-input" class="modal-input hidden" type="number" min="1" placeholder="Player ID" data-i18n-ph="ui_ph_player_id">
+      <div class="actions">
+        <button class="wood-btn muted" id="modal-no" data-i18n="ui_cancel">Cancel</button>
+        <button class="wood-btn" id="modal-yes" data-i18n="ui_confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TRANSFER OFFER (shown on its own, above everything) -->
+<div id="offer" class="modal-wrap hidden">
+  <div class="modal">
+    <div class="modal-title" id="offer-title"></div>
+    <div class="ink-divider"></div>
+    <div class="modal-text" id="offer-text"></div>
+    <div class="offer-timer"><div class="offer-fill" id="offer-fill"></div></div>
+    <div class="actions">
+      <button class="wood-btn muted" id="offer-no"></button>
+      <button class="wood-btn" id="offer-yes"></button>
+    </div>
+  </div>
+</div>
+
+<!-- PLACER HUD (no focus) -->
+<div id="placer" class="placer hidden">
+  <div class="placer-title"><span data-i18n="ui_spawn_assistant">Spawn Assistant</span> — <span id="placer-model"></span></div>
+  <div class="placer-keys">
+    <span><b>↑ ↓ ← →</b> <i data-i18n="ui_key_move">Move</i></span><span><b>Q / E</b> <i data-i18n="ui_key_rotate">Rotate</i></span><span><b>PgUp / PgDn</b> <i data-i18n="ui_key_height">Height</i></span>
+    <span><b>Shift</b> <i data-i18n="ui_key_fast">Fast</i></span><span><b>Enter</b> <i data-i18n="ui_key_save">Save</i></span><span><b>Backspace</b> <i data-i18n="ui_cancel">Cancel</i></span>
+  </div>
+  <div class="placer-pos" id="placer-pos"></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

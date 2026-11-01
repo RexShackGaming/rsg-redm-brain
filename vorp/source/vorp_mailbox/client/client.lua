@@ -1,0 +1,280 @@
+local json = require "json"
+local mailboxOpened = false
+local messageCache = {}
+local canRefreshMessage = true
+local ready = false
+local usersLoaded = false
+local usersLoading = false
+local postmen = {}
+local blips = {}
+
+AddEventHandler('onClientResourceStart', function(resourceName)
+    if (GetCurrentResourceName() ~= resourceName) then return end
+
+    Locales[Config.locale]["TextNearMailboxLocation"] =
+        Locales[Config.locale]["TextNearMailboxLocation"]
+        :gsub("%$1", Config.keyToOpen)
+        :gsub("%$2", Config.keyToOpenBroadcast)
+
+    SendNUIMessage({ action = "set_language", language = json.encode(Locales[Config.locale]) })
+    TriggerServerEvent("mailbox:getMessages")
+
+    ready = true
+end)
+
+RegisterNetEvent('mailbox:receiveMessage')
+AddEventHandler('mailbox:receiveMessage', function(payload)
+    local author = payload.author
+
+    DisplayTip(_U("TipOnMessageReceived"):gsub("%$1", author), 5000)
+    canRefreshMessage = true
+end)
+
+RegisterNetEvent('mailbox:receiveBroadcast')
+AddEventHandler('mailbox:receiveBroadcast', function(payload)
+    local author = payload.author
+    local message = payload.message
+
+    print(_U("TipOnBroadcastReceived"):gsub("%$1", message):gsub("%$2", author))
+    DisplayTip(_U("TipOnBroadcastReceived"):gsub("%$1", message):gsub("%$2", author), 20000)
+end)
+
+RegisterNetEvent('mailbox:setMessages')
+AddEventHandler('mailbox:setMessages', function(payload)
+    if canRefreshMessage then
+        messageCache = payload
+
+        SendNUIMessage({ action = "set_messages", messages = json.encode(payload) })
+    end
+end)
+
+RegisterNetEvent('mailbox:setUsers')
+AddEventHandler('mailbox:setUsers', function(payload)
+    usersLoaded = true
+    usersLoading = false
+    SendNUIMessage({ action = "set_users", users = json.encode(payload) })
+end)
+
+
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(1)
+
+        if not ready then
+            return
+        end
+
+        if not mailboxOpened and IsNearbyMailbox() then
+            DrawText(_U("TextNearMailboxLocation"), 23, 0.5, 0.85, 0.50, 0.40, 255, 255, 255, 255)
+
+            if not mailboxOpened and IsControlJustReleased(0, Keys[Config.keyToOpen]) then
+                OpenUI(false)
+                Citizen.Wait(300)
+            elseif not mailboxOpened and IsControlJustReleased(0, Keys[Config.keyToOpenBroadcast]) then
+                OpenUI(true)
+                Citizen.Wait(300)
+            end
+        end
+    end
+end)
+
+function IsNearbyMailbox()
+    for _, mailbox in pairs(Config.locations) do
+        if IsPlayerNearCoords(mailbox.coords.x, mailbox.coords.y, mailbox.coords.z, 2.0) then
+            return true
+        end
+    end
+    return false
+end
+
+function OpenUI(broadcastMode)
+    SetNuiFocus(true, true)
+    SendNUIMessage({ action = (broadcastMode and "open_broadcast" or "open") })
+    mailboxOpened = true
+
+    if not broadcastMode then
+        if not usersLoaded and not usersLoading then
+            usersLoading = true
+            TriggerServerEvent("mailbox:getUsers")
+        end
+
+        if canRefreshMessage then
+            TriggerServerEvent("mailbox:getMessages")
+        end
+    end
+end
+
+-- UI Events
+
+RegisterNUICallback("close", function(payload)
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = "close" })
+    mailboxOpened = false
+
+    local messages = nil
+    if payload and payload.messages then
+        messages = json.decode(payload.messages)
+    end
+
+    local toDelete = {}
+    local toMarkAsOpened = {}
+
+    if messages == nil then
+        return
+    end
+
+    for _, message in pairs(messageCache) do
+        local msg = nil
+        for _, m in pairs(messages) do
+            if m.id == message.id then
+                msg = m
+                break
+            end
+        end
+
+        if msg == nil then
+            toDelete[#toDelete + 1] = message.id
+        elseif not message.opened and msg.opened then
+            toMarkAsOpened[#toMarkAsOpened + 1] = message.id
+        end
+    end
+
+    TriggerServerEvent("mailbox:updateMessages", {
+        toDelete = toDelete,
+        toMarkAsOpened = toMarkAsOpened
+    })
+
+    messageCache = messages
+end)
+
+
+RegisterNUICallback("send", function(payload)
+    local receiver = payload.receiver
+    local message = payload.message
+
+    TriggerServerEvent("mailbox:sendMessage", { receiver = receiver, message = message });
+end)
+
+RegisterNUICallback("broadcast", function(payload)
+    local message = payload.message
+
+    TriggerServerEvent("mailbox:broadcastMessage", { message = message });
+end)
+
+-- utils
+
+function IsPlayerNearCoords(x, y, z, dst)
+    local playerPos = GetOffsetFromEntityInWorldCoords(PlayerPedId(), 0.0, 0.0, 0.0)
+
+    local distance = GetDistanceBetweenCoords(playerPos.x, playerPos.y, playerPos.z, x, y, z, true)
+
+    if distance < dst then
+        return true
+    end
+    return false
+end
+
+function DrawText(text, fontId, x, y, scaleX, scaleY, r, g, b, a)
+    -- Draw Text
+    SetTextScale(scaleX, scaleY);
+    SetTextColor(r, g, b, a);
+    SetTextCentre(true);
+    Citizen.InvokeNative(0xADA9255D, fontId); -- Loads the font requested
+    DisplayText(CreateVarString(10, "LITERAL_STRING", text), x, y);
+
+    -- Draw Backdrop
+    local lineLength = string.len(text) / 100 * 0.66;
+    DrawTexture("boot_flow", "selection_box_bg_1d", x, y, lineLength, 0.035, 0, 0, 0, 0, 200);
+end
+
+function DrawTexture(textureDict, textureName, x, y, width, height, rotation, r, g, b, a)
+
+    if not HasStreamedTextureDictLoaded(textureDict) then
+
+        RequestStreamedTextureDict(textureDict, false);
+        while not HasStreamedTextureDictLoaded(textureDict) do
+            Citizen.Wait(100)
+        end
+    end
+    DrawSprite(textureDict, textureName, x, y + 0.015, width, height, rotation, r, g, b, a, true);
+end
+
+local function CreateMailboxBlip(x, y, z)
+    local bliphash = 1475382911
+    local blip = Citizen.InvokeNative(0x554D9D53F696D002, 1664425300, x, y, z)
+    Citizen.InvokeNative(0x74F74D3207ED525C, blip, bliphash, 1) -- See blips here: https://cloudy-docs.bubbleapps.io/rdr2_blips
+    Citizen.InvokeNative(0x9CB1A1623062F402, blip, Config.BlipName)
+    return blip
+end
+
+function DisplayTip(message, time)
+    if (#message == 0) then
+        return
+    end
+    TriggerEvent("vorp:Tip", message, time);
+end
+
+function table.find(f, l) -- find element v of l satisfying f(v)
+    for _, v in ipairs(l) do
+        if f(v) then
+            return v
+        end
+    end
+    return nil
+end
+
+CreateThread(function()
+    repeat Wait(100) until ready
+    Wait(300)
+
+    --print(("Spawning mailbox NPCs... total:\t%s"):format(#Config.locations))
+
+    local model = GetHashKey(Config.NpcModel)
+    if not IsModelValid(model) then
+        print(("[config.lua] ^1Model %s invalid, fallback to player model^7"):format(Config.NpcModel))
+        model = GetEntityModel(PlayerPedId())
+    end
+
+    RequestModel(model, false)
+    repeat Wait(50) until HasModelLoaded(model)
+
+    for _, data in ipairs(Config.locations) do
+        local ped = CreatePed(model, data.coords.x, data.coords.y, data.coords.z - 1.0, data.coords.w, false, false, false, false)
+        repeat Wait(100) until DoesEntityExist(ped)
+
+        Citizen.InvokeNative(0x283978A15512B2FE, ped, true) -- random outfit
+        PlaceEntityOnGroundProperly(ped)
+        SetEntityCanBeDamaged(ped, false)
+        SetBlockingOfNonTemporaryEvents(ped, true)
+        FreezeEntityPosition(ped, true)
+        SetPedCanRagdoll(ped, false)
+
+        table.insert(postmen, ped)
+
+        local blip = CreateMailboxBlip(data.coords.x, data.coords.y, data.coords.z)
+        table.insert(blips, blip)
+    end
+
+    SetModelAsNoLongerNeeded(model)
+end)
+
+AddEventHandler("onResourceStop", function(res)
+    if res ~= GetCurrentResourceName() then return end
+
+    for _, ped in ipairs(postmen) do
+        if ped and DoesEntityExist(ped) then
+            DeleteEntity(ped)
+        end
+    end
+    postmen = {}
+
+    for _, blip in ipairs(blips) do
+        if blip and DoesBlipExist(blip) then
+            RemoveBlip(blip)
+        end
+    end
+    blips = {}
+
+    --print("^2[Mailbox]^7 Cleaned up NPCs and blips")
+
+end)

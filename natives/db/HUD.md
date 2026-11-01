@@ -1,0 +1,646 @@
+# HUD natives (188)
+Source: VORPCORE/RDR3natives `rdr3natives.json`. Grep by NAME or hash.
+
+## ALLOW_PAUSE_WHEN_NOT_IN_STATE_OF_PLAY_THIS_FRAME
+`0x30996422DF1EE561` | `void ALLOW_PAUSE_WHEN_NOT_IN_STATE_OF_PLAY_THIS_FRAME()` | build 1207
+Old name: _ALLOW_PAUSE_MENU_WHEN_DEAD_THIS_FRAME
+
+## BUSYSPINNER_IS_ON
+`0x823BF7B1DF613A21` | `BOOL BUSYSPINNER_IS_ON()` | build 1207
+
+## BUSYSPINNER_OFF
+`0x58F441B90EA84D06` | `void BUSYSPINNER_OFF()` | build 1207
+Removes the loading prompt at the bottom right of the screen.
+
+## CLEAR_ALL_HELP_MESSAGES
+`0x916ED8321F087059` | `void CLEAR_ALL_HELP_MESSAGES()` | build 1207
+
+## CREATE_FAKE_MP_GAMER_TAG
+`0x53CB4B502E1C57EA` | `int CREATE_FAKE_MP_GAMER_TAG(Ped ped, const char* username, BOOL pointedClanTag, BOOL isRockstarClan, const char* clanTag, int clanFlag)` | build 1207
+
+## DISABLE_FRONTEND_THIS_FRAME
+`0x56CE42A528156A67` | `void DISABLE_FRONTEND_THIS_FRAME()` | build 1207
+
+## DISPLAY_HUD
+`0xD63FE3AF9FB3D53F` | `void DISPLAY_HUD(BOOL toggle)` | build 1207
+If Hud should be displayed
+
+## DOES_TEXT_LABEL_EXIST
+`0x73C258C68D6F55B6` | `BOOL DOES_TEXT_LABEL_EXIST(const char* label)` | build 1207
+Checks if the passed gxt name exists in the game files.
+
+## GET_CHARACTER_FROM_AUDIO_CONVERSATION_FILENAME
+`0x9D7E12EC6A1EE4E5` | `const char* GET_CHARACTER_FROM_AUDIO_CONVERSATION_FILENAME(const char* text, int position, int length)` | build 1207
+Note: you must use VAR_STRING. Byte code very similar to TEXT_COMMAND_DISPLAY_TEXT in V
+Old name: _GET_TEXT_SUBSTRING
+
+## GET_FILENAME_FOR_AUDIO_CONVERSATION
+`0xCFEDCCAD3C5BA90D` | `const char* GET_FILENAME_FOR_AUDIO_CONVERSATION(const char* labelName)` | build 1207
+Gets a string literal from a label name.
+
+Old name: _GET_LABEL_TEXT
+
+## GET_HUD_SCREEN_POSITION_FROM_WORLD_POSITION
+`0xB39C81628EF10B42` | `int GET_HUD_SCREEN_POSITION_FROM_WORLD_POSITION(float worldX, float worldY, float worldZ, float* screenX, float* screenY)` | build 1207
+
+## GET_LENGTH_OF_LITERAL_STRING
+`0x481FBF588B0B76DB` | `int GET_LENGTH_OF_LITERAL_STRING(const char* string)` | build 1207
+Returns the length of the string passed (much like strlen).
+
+## GET_LENGTH_OF_LITERAL_STRING_IN_BYTES
+`0xDC5AD6B7AB8184F5` | `int GET_LENGTH_OF_LITERAL_STRING_IN_BYTES(const char* string)` | build 1207
+
+## GET_NAMED_RENDERTARGET_RENDER_ID
+`0xB6762A85EE29AA60` | `int GET_NAMED_RENDERTARGET_RENDER_ID(const char* name)` | build 1207
+
+## GET_STRING_FROM_HASH_KEY
+`0xBD5DD5EAE2B6CE14` | `const char* GET_STRING_FROM_HASH_KEY(Hash labelHash)` | build 1207
+Returns the label text given the hash.
+
+Old name: _GET_LABEL_TEXT_BY_HASH
+
+## HIDE_HUD_AND_RADAR_THIS_FRAME
+`0x36CDD81627A6FCD2` | `void HIDE_HUD_AND_RADAR_THIS_FRAME()` | build 1207
+
+## HIDE_LOADING_ON_FADE_THIS_FRAME
+`0xEA600AABAF4B9084` | `void HIDE_LOADING_ON_FADE_THIS_FRAME()` | build 1207
+
+## IS_HUD_HIDDEN
+`0x71B72B478F8189DC` | `BOOL IS_HUD_HIDDEN()` | build 1207
+
+## IS_MP_GAMER_TAG_ACTIVE
+`0x6E1C31E14C7A5F97` | `BOOL IS_MP_GAMER_TAG_ACTIVE(int gamerTagId)` | build 1207
+
+## IS_NAMED_RENDERTARGET_LINKED
+`0x707032835FF09AE7` | `BOOL IS_NAMED_RENDERTARGET_LINKED(Hash modelHash)` | build 1207
+
+## IS_NAMED_RENDERTARGET_REGISTERED
+`0x3EE32F7964C40FE6` | `BOOL IS_NAMED_RENDERTARGET_REGISTERED(const char* name)` | build 1207
+
+## IS_PAUSE_MENU_ACTIVE
+`0x535384D6067BA42E` | `BOOL IS_PAUSE_MENU_ACTIVE()` | build 1207
+Returns true when either Pause Menu, a Frontend Menu, Online Policies menu or Social Club menu is active.
+
+## IS_RADAR_HIDDEN
+`0x1B82FD5FFA4D666E` | `BOOL IS_RADAR_HIDDEN()` | build 1207
+
+## IS_RADAR_HIDDEN_BY_SCRIPT
+`0x66F35DD9D2B58579` | `BOOL IS_RADAR_HIDDEN_BY_SCRIPT()` | build 1207
+
+## IS_RADAR_PREFERENCE_SWITCHED_ON
+`0x81E47F0EE1F2B21E` | `BOOL IS_RADAR_PREFERENCE_SWITCHED_ON()` | build 1207
+
+## IS_SUBTITLE_PREFERENCE_SWITCHED_ON
+`0x7C4AC9573587F2DF` | `BOOL IS_SUBTITLE_PREFERENCE_SWITCHED_ON()` | build 1355
+
+## LINK_NAMED_RENDERTARGET
+`0x2F506B8556242DDB` | `void LINK_NAMED_RENDERTARGET(Hash modelHash)` | build 1207
+
+## REGISTER_NAMED_RENDERTARGET
+`0x98AF2BB6F62BD588` | `BOOL REGISTER_NAMED_RENDERTARGET(const char* name, BOOL p1)` | build 1207
+
+## RELEASE_NAMED_RENDERTARGET
+`0x0E692EE61761361F` | `BOOL RELEASE_NAMED_RENDERTARGET(const char* name)` | build 1207
+
+## REMOVE_MP_GAMER_TAG
+`0x839BFD7D7E49FE09` | `void REMOVE_MP_GAMER_TAG(int gamerTagId)` | build 1207
+only works by invoking and passing as pointer value Citizen.InvokeNative(0x839BFD7D7E49FE09, Citizen.PointerValueIntInitialized(gamerTagId))
+
+## SET_FRONTEND_ACTIVE
+`0xCE47C21C0687EBC2` | `void SET_FRONTEND_ACTIVE(BOOL active)` | build 1207
+
+## SET_MISSION_NAME
+`0x402669A4BDAA72DA` | `void SET_MISSION_NAME(BOOL p0, const char* name)` | build 1207
+
+## SET_MISSION_NAME_FOR_UGC_MISSION
+`0xD98630CE73C61E98` | `void SET_MISSION_NAME_FOR_UGC_MISSION(BOOL p0, const char* name)` | build 1207
+
+## SET_MP_GAMER_TAG_BIG_TEXT
+`0xA0D7CE5F83259663` | `void SET_MP_GAMER_TAG_BIG_TEXT(int gamerTagId, const char* string)` | build 1207
+
+## SET_MP_GAMER_TAG_NAME
+`0xEA6F4B8D4B4B5B3E` | `void SET_MP_GAMER_TAG_NAME(int gamerTagId, const char* string)` | build 1207
+
+## SET_TEXT_RENDER_ID
+`0xE550CDE128D56757` | `void SET_TEXT_RENDER_ID(int renderId)` | build 1207
+
+## TEXT_BLOCK_IS_LOADED
+`0xD0976CC34002DB57` | `BOOL TEXT_BLOCK_IS_LOADED(const char* textBlock)` | build 1207
+
+## TEXT_BLOCK_REQUEST
+`0xF66090013DE648D5` | `void TEXT_BLOCK_REQUEST(const char* textBlock)` | build 1207
+
+## UI_GET_SCENE_UIOBJECT
+`0xBE1067CD1C9570F6` | `Any UI_GET_SCENE_UIOBJECT(Any p0)` | build 1207
+
+## UI_MOVIEVIEW_SET_RENDER_TARGET
+`0x51DE09A2196BD951` | `void UI_MOVIEVIEW_SET_RENDER_TARGET(Any p0, Any p1)` | build 1207
+
+## UI_PROMPT_IS_CONTROL_ACTION_ACTIVE
+`0x1BE19185B8AFE299` | `BOOL UI_PROMPT_IS_CONTROL_ACTION_ACTIVE(Hash controlAction)` | build 1207
+
+## UI_REQUEST_SCENE
+`0xB6857100F8FD433C` | `Any UI_REQUEST_SCENE(Any p0, Any p1)` | build 1207
+
+## _0x052D4AC0922AF91A
+`0x052D4AC0922AF91A` | `void _0x052D4AC0922AF91A(Any p0, Any p1)` | build 1207
+
+## _0x066725A9D52B3641
+`0x066725A9D52B3641` | `Any _0x066725A9D52B3641()` | build 1232
+
+## _0x100157D6D7FE32CA
+`0x100157D6D7FE32CA` | `Any _0x100157D6D7FE32CA(Any p0, Any p1)` | build 1207
+
+## _0x160825DADF1B04B3
+`0x160825DADF1B04B3` | `void _0x160825DADF1B04B3()` | build 1207
+
+## _0x28AE29D909C8FDCE
+`0x28AE29D909C8FDCE` | `Any _0x28AE29D909C8FDCE(Any p0)` | build 1207
+
+## _0x2F7BB105144ACF30
+`0x2F7BB105144ACF30` | `void _0x2F7BB105144ACF30()` | build 1207
+nullsub, doesn't do anything
+
+## _0x3FE4FB41EF7D2196
+`0x3FE4FB41EF7D2196` | `void _0x3FE4FB41EF7D2196(Any p0)` | build 1207
+
+## _0x53CE46C01A089DA1
+`0x53CE46C01A089DA1` | `void _0x53CE46C01A089DA1(Prompt prompt, BOOL p1)` | build 1207
+
+## _0x5651516D947ABC53
+`0x5651516D947ABC53` | `void _0x5651516D947ABC53()` | build 1207
+
+## _0x8A59D44189AF2BC5
+`0x8A59D44189AF2BC5` | `void _0x8A59D44189AF2BC5(Any p0, Any p1)` | build 1207
+
+## _0x8B55B324A9123F6B
+`0x8B55B324A9123F6B` | `Any _0x8B55B324A9123F6B(int groupId, Volume volume, const char* p2, Any p3, Any p4, Any p5)` | build 1232
+
+## _0x958278B97C4AFFD8
+`0x958278B97C4AFFD8` | `void _0x958278B97C4AFFD8(Any p0, Any p1)` | build 1232
+
+## _0x9D37EB5003E0F2CF
+`0x9D37EB5003E0F2CF` | `void _0x9D37EB5003E0F2CF(Any p0, Any p1)` | build 1207
+
+## _0xBFFF81E12A745A5F
+`0xBFFF81E12A745A5F` | `void _0xBFFF81E12A745A5F()` | build 1207
+nullsub, doesn't do anything
+
+## _0xD6BD313CFA41E57A
+`0xD6BD313CFA41E57A` | `Any _0xD6BD313CFA41E57A(Any p0)` | build 1207
+
+## _0xF1E6979C0B779985
+`0xF1E6979C0B779985` | `void _0xF1E6979C0B779985(int uiscene)` | build 1207
+
+## _BUSYSPINNER_SET_TEXT
+`0x7F78CD75CC4539E4` | `void _BUSYSPINNER_SET_TEXT(const char* text)` | build 1207
+
+## _CREATE_MP_GAMER_TAG
+`0xD877AF112AD2B41B` | `int _CREATE_MP_GAMER_TAG(Player player, const char* username, BOOL pointedClanTag, BOOL isRockstarClan, const char* clanTag, int clanFlag)` | build 1207
+
+## _CREATE_MP_GAMER_TAG_ON_ENTITY
+`0xE961BF23EAB76B12` | `int _CREATE_MP_GAMER_TAG_ON_ENTITY(Entity entity, const char* text)` | build 1207
+
+## _DISABLE_HUD_CONTEXT
+`0x8BC7C1F929D07BF3` | `void _DISABLE_HUD_CONTEXT(Hash component)` | build 1207
+https://gist.github.com/outsider31000/c640961d17b2e4fb0435a413710e1930 list of presets
+Old name: _DISPLAY_HUD_COMPONENT
+
+## _DISABLE_REDUCED_MENU_TIME_SCALE
+`0xC5C7A2F6567FCCBC` | `void _DISABLE_REDUCED_MENU_TIME_SCALE()` | build 1207
+Disables reduced time scale while menus such as weapon wheel and satchel are open.
+
+## _DISPLAY_TEXT
+`0xD79334A4BB99BAD1` | `void _DISPLAY_TEXT(const char* text, float xPos, float yPos)` | build 1207
+nullsub, this native does nothing since build 1436, use _BG_DISPLAY_TEXT (0x16794E044C9EFB58) instead.
+
+## _DOES_TEXT_BLOCK_EXIST
+`0x2C729F2B94CEA911` | `BOOL _DOES_TEXT_BLOCK_EXIST(const char* textDatabase)` | build 1207
+
+## _ENABLE_HUD_CONTEXT
+`0x4CC5F2FC1332577F` | `void _ENABLE_HUD_CONTEXT(Hash component)` | build 1207
+https://gist.github.com/outsider31000/c640961d17b2e4fb0435a413710e1930 list of presets
+Old name: _HIDE_HUD_COMPONENT
+
+## _ENABLE_HUD_CONTEXT_THIS_FRAME
+`0xC9CAEAEEC1256E54` | `void _ENABLE_HUD_CONTEXT_THIS_FRAME(Hash component)` | build 1207
+https://gist.github.com/outsider31000/c640961d17b2e4fb0435a413710e1930 list of presets
+
+## _ENABLE_REDUCED_MENU_TIME_SCALE
+`0x26F6BBEA2CE3E3DC` | `void _ENABLE_REDUCED_MENU_TIME_SCALE()` | build 1207
+Enables reduced time scale while menus such as weapon wheel and satchel are open.
+
+## _GET_COLOR_FROM_NAME
+`0xB981DD2DFAF9B1C9` | `void _GET_COLOR_FROM_NAME(Hash colorNameHash, int* red, int* green, int* blue, int* alpha)` | build 1207
+colorNameHash: https://alloc8or.re/rdr3/doc/enums/eColor.txt
+
+## _GET_HUD_STATE
+`0x7EC0D68233E391AC` | `int _GET_HUD_STATE(int hudComponent)` | build 1207
+Returns the state of a specific HUD Component
+eHudVisibilitySlotType: https://github.com/Halen84/RDR3-Native-Flags-And-Enums/tree/main/eHudVisibilitySlotType
+
+## _GET_LABEL_TEXT_2
+`0x3429670F9B9EF2D3` | `const char* _GET_LABEL_TEXT_2(const char* label)` | build 1207
+
+## _GET_NEAR_HORSE
+`0x0501D52D24EA8934` | `int _GET_NEAR_HORSE(int p0)` | build 1207
+This native accepts 1 as parameter in the decompiles
+returns the nearest horse handle if within 2 3 meters of the player, if not close enough returns false
+
+NOTE: if type is 0 returns PlayerPedId always?
+
+## _GET_TEXT_SUBSTRING_2
+`0xD8402B858F4DDD88` | `const char* _GET_TEXT_SUBSTRING_2(const char* text, int length)` | build 1207
+Similar to 0x9D7E12EC6A1EE4E5(GET_TEXT_SUBSTRING) but starts at the beginning of the string
+
+## _GET_TEXT_SUBSTRING_3
+`0x806862E5D266CF38` | `Any _GET_TEXT_SUBSTRING_3(char* text, int begin, int length)` | build 1207
+Example: HUD::_0x806862E5D266CF38(&string1, 0, HUD::GET_LENGTH_OF_LITERAL_STRING(&string1) - HUD::GET_LENGTH_OF_LITERAL_STRING("_DUALWIELD"))
+
+## _HIDE_HUD_THIS_FRAME
+`0xBF4F34A85CA2970D` | `void _HIDE_HUD_THIS_FRAME()` | build 1207
+
+## _HUD_WEAPON_WHEEL_GET_SELECTED_ITEM_HASH
+`0x9C409BBC492CB5B1` | `Hash _HUD_WEAPON_WHEEL_GET_SELECTED_ITEM_HASH()` | build 1207
+Returns the hash of the currently highlighted item in the weapon wheel.
+Only works while the wheel is open otherwise will return false
+
+Use in conjunction with IS_CONTROL_JUST_RELEASED(0, 'INPUT_OPEN_WHEEL_MENU') to detect item selection/usage.
+
+## _IS_MP_GAMER_TAG_ACTIVE_ON_ENTITY
+`0x502E1591A504F843` | `BOOL _IS_MP_GAMER_TAG_ACTIVE_ON_ENTITY(int gamerTagId, Entity entity)` | build 1207
+
+## _JOURNAL_CAN_WRITE_ENTRY
+`0xCF782691D91F270E` | `Any _JOURNAL_CAN_WRITE_ENTRY(Any p0)` | build 1207
+
+## _JOURNAL_CLEAR_ALL_PROGRESS
+`0xF402978DE6F88D6E` | `void _JOURNAL_CLEAR_ALL_PROGRESS()` | build 1207
+
+## _JOURNAL_GET_ENTRY_AT_INDEX
+`0x3D16ABD7A1FD8C96` | `Any _JOURNAL_GET_ENTRY_AT_INDEX(Any p0)` | build 1207
+
+## _JOURNAL_GET_ENTRY_COUNT
+`0xE65B5DE53351BE22` | `Any _JOURNAL_GET_ENTRY_COUNT()` | build 1207
+
+## _JOURNAL_GET_ENTRY_INFO
+`0x5514C3E60673530F` | `Any _JOURNAL_GET_ENTRY_INFO(Any p0, Any p1)` | build 1207
+
+## _JOURNAL_GET_GRIME_AT_INDEX
+`0xCB5945E1B855852F` | `Any _JOURNAL_GET_GRIME_AT_INDEX(Any p0)` | build 1207
+
+## _JOURNAL_GET_TEXTURE_WITH_LAYOUT
+`0x62CC549B3B8EA2AA` | `Any _JOURNAL_GET_TEXTURE_WITH_LAYOUT(Any p0, Any p1, Any p2)` | build 1207
+
+## _JOURNAL_MARK_READ
+`0xE4509BABE59BD24E` | `void _JOURNAL_MARK_READ(Any p0)` | build 1207
+
+## _JOURNAL_WRITE_ENTRY
+`0x6DFDD665E416B093` | `void _JOURNAL_WRITE_ENTRY(Any p0)` | build 1207
+
+## _MP_GAMER_TAG_DISABLE_REVIVE_TOP_ICON
+`0x1F9A64C2804B3471` | `void _MP_GAMER_TAG_DISABLE_REVIVE_TOP_ICON(int gamerTagId)` | build 1207
+
+## _MP_GAMER_TAG_ENABLE_REVIVE_TOP_ICON
+`0xFFF6579CF0139FCE` | `void _MP_GAMER_TAG_ENABLE_REVIVE_TOP_ICON(int gamerTagId)` | build 1207
+
+## _SET_CURRENT_UGC_MISSION_DESCRIPTION
+`0xCE0D2F5586627CCE` | `void _SET_CURRENT_UGC_MISSION_DESCRIPTION(BOOL active, const char* string1, const char* string2, const char* string3, const char* string4)` | build 1207
+string1 is the only string used in the scripts, the others are null (0)
+
+## _SET_MP_GAMER_TAG_COLOUR
+`0x84BD27DDF9575816` | `void _SET_MP_GAMER_TAG_COLOUR(int gamerTagId, Hash colour)` | build 1207
+
+## _SET_MP_GAMER_TAG_NAME_POSSE
+`0x1EA716E0628A6F44` | `void _SET_MP_GAMER_TAG_NAME_POSSE(int gamerTagId, const char* text)` | build 1207
+
+## _SET_MP_GAMER_TAG_SECONDARY_ICON
+`0x95384C6CE1526EFF` | `void _SET_MP_GAMER_TAG_SECONDARY_ICON(int gamerTagId, Hash icon)` | build 1207
+Found icons: SPEAKER, THROPY
+
+## _SET_MP_GAMER_TAG_TOP_ICON
+`0x5F57522BC1EB9D9D` | `void _SET_MP_GAMER_TAG_TOP_ICON(int gamerTagId, Hash icon)` | build 1207
+Found icons: https://pastebin.com/xx6rEgiG
+
+## _SET_MP_GAMER_TAG_TYPE
+`0x25B9C78A25105C35` | `void _SET_MP_GAMER_TAG_TYPE(int gamerTagId, Hash type)` | build 1207
+Found types: GENERIC_PLAYER, DEADDROP, HOTPROPERTY, MINIGAMES
+
+## _SET_MP_GAMER_TAG_UNK_ALLOW_LOCALIZED
+`0xEF7AB1A0E8C86170` | `void _SET_MP_GAMER_TAG_UNK_ALLOW_LOCALIZED(int gamerTagId, BOOL allow)` | build 1207
+nullsub, doesn't do anything
+
+## _SET_MP_GAMER_TAG_VISIBILITY
+`0x93171DDDAB274EB8` | `void _SET_MP_GAMER_TAG_VISIBILITY(int gamerTagId, int visibility)` | build 1207
+visibility:
+enum eUIGamertagVisibility
+{
+	UIGAMERTAGVISIBILITY_NONE,
+	UIGAMERTAGVISIBILITY_ICON,
+	UIGAMERTAGVISIBILITY_SIMPLE,
+	UIGAMERTAGVISIBILITY_COMPLEX
+};
+
+## _SET_TEXT_COLOR
+`0x50A41AD966910F03` | `void _SET_TEXT_COLOR(int r, int g, int b, int a)` | build 1207
+This native does nothing since build 1436, use _BG_SET_TEXT_COLOR (0x16FA5CE47F184F1E) instead.
+
+## _SHOW_HORSE_CORES
+`0xD4EE21B7CC7FD350` | `void _SHOW_HORSE_CORES(BOOL state)` | build 1207
+
+## _SHOW_PLAYER_CORES
+`0x50C803A4CD5932C5` | `void _SHOW_PLAYER_CORES(BOOL state)` | build 1207
+
+## _TEXT_BLOCK_DELETE
+`0xAA03F130A637D923` | `void _TEXT_BLOCK_DELETE(const char* textBlock)` | build 1207
+
+## _TEXT_BLOCK_IS_STREAMED
+`0x3CF96E16265B7DC8` | `BOOL _TEXT_BLOCK_IS_STREAMED(const char* textBlock)` | build 1207
+
+## _UI_PROMPT_ADD_GROUP_LINK
+`0x684C96CC7C66E8EF` | `void _UI_PROMPT_ADD_GROUP_LINK(Any p0, Prompt prompt, Any p2)` | build 1207
+
+## _UI_PROMPT_ADD_GROUP_RETURN_LINK
+`0x837972ED28159536` | `void _UI_PROMPT_ADD_GROUP_RETURN_LINK(Any p0, Prompt prompt)` | build 1207
+
+## _UI_PROMPT_CLEAR_HORIZONTAL_ORIENTATION
+`0x6095358C4142932A` | `void _UI_PROMPT_CLEAR_HORIZONTAL_ORIENTATION(int id)` | build 1207
+id is the return value from 0xD9459157EB22C895.
+
+## _UI_PROMPT_CLEAR_PROMPT_PRIORITY_PREFERENCE
+`0x51259AE5C72D4A1B` | `void _UI_PROMPT_CLEAR_PROMPT_PRIORITY_PREFERENCE()` | build 1207
+
+## _UI_PROMPT_CONTEXT_SET_POINT
+`0xAE84C5EE2C384FB3` | `void _UI_PROMPT_CONTEXT_SET_POINT(Prompt prompt, float x, float y, float z)` | build 1207
+
+## _UI_PROMPT_CONTEXT_SET_RADIUS
+`0x0C718001B77CA468` | `void _UI_PROMPT_CONTEXT_SET_RADIUS(Prompt prompt, float radius)` | build 1207
+
+## _UI_PROMPT_CONTEXT_SET_VOLUME
+`0x4D107406667423BE` | `void _UI_PROMPT_CONTEXT_SET_VOLUME(Prompt prompt, Volume volume)` | build 1207
+Attaches a Volume
+
+## _UI_PROMPT_CREATE
+`0x29FA7910726C3889` | `Prompt _UI_PROMPT_CREATE(Hash inputHash, const char* labelName, Any p2, Any p3, Any p4, int p5)` | build 1207
+
+## _UI_PROMPT_DELETE
+`0x00EDE88D4D13CF59` | `void _UI_PROMPT_DELETE(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_DISABLE_PROMPTS_THIS_FRAME
+`0xF1622CE88A1946FB` | `void _UI_PROMPT_DISABLE_PROMPTS_THIS_FRAME()` | build 1207
+
+## _UI_PROMPT_DISABLE_PROMPT_TYPE_THIS_FRAME
+`0xFC094EF26DD153FA` | `void _UI_PROMPT_DISABLE_PROMPT_TYPE_THIS_FRAME(int p0)` | build 1207
+
+## _UI_PROMPT_DOES_AMBIENT_GROUP_EXIST
+`0xEB550B927B34A1BB` | `BOOL _UI_PROMPT_DOES_AMBIENT_GROUP_EXIST(Hash hash)` | build 1207
+
+## _UI_PROMPT_ENABLE_PROMPT_TYPE_THIS_FRAME
+`0x06565032897BA861` | `void _UI_PROMPT_ENABLE_PROMPT_TYPE_THIS_FRAME(int p0)` | build 1207
+https://github.com/femga/rdr3_discoveries/tree/master/graphics/HUD/prompts/prompt_types
+
+## _UI_PROMPT_FILTER_CLEAR
+`0x6A2F820452017EA2` | `void _UI_PROMPT_FILTER_CLEAR()` | build 1207
+
+## _UI_PROMPT_GET_GROUP_ACTIVE_PAGE
+`0xC1FCC36C3F7286C8` | `int _UI_PROMPT_GET_GROUP_ACTIVE_PAGE(Hash hash)` | build 1207
+
+## _UI_PROMPT_GET_GROUP_ID_FOR_SCENARIO_POINT
+`0xCB73D7521E7103F0` | `int _UI_PROMPT_GET_GROUP_ID_FOR_SCENARIO_POINT(Any p0, int p1)` | build 1207
+
+## _UI_PROMPT_GET_GROUP_ID_FOR_TARGET_ENTITY
+`0xB796970BD125FCE8` | `int _UI_PROMPT_GET_GROUP_ID_FOR_TARGET_ENTITY(Entity entity)` | build 1207
+
+## _UI_PROMPT_GET_MASH_MODE_PROGRESS
+`0x8A9585293863B8A5` | `float _UI_PROMPT_GET_MASH_MODE_PROGRESS(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_GET_PROGRESS
+`0x81801291806DBC50` | `float _UI_PROMPT_GET_PROGRESS(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_GET_URGENT_PULSING_ENABLED
+`0x1FBA0DABECDDB52B` | `BOOL _UI_PROMPT_GET_URGENT_PULSING_ENABLED(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_HAS_HOLD_AUTO_FILL_MODE
+`0x8010BEBD0D5ED5BC` | `BOOL _UI_PROMPT_HAS_HOLD_AUTO_FILL_MODE(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_HAS_HOLD_MODE
+`0xB60C9F9ED47ABB76` | `BOOL _UI_PROMPT_HAS_HOLD_MODE(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_HAS_HOLD_MODE_COMPLETED
+`0xE0F65F0640EF0617` | `BOOL _UI_PROMPT_HAS_HOLD_MODE_COMPLETED(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_HAS_MANUAL_MASH_MODE
+`0xA6C6A4ADB3BAC409` | `BOOL _UI_PROMPT_HAS_MANUAL_MASH_MODE(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_HAS_MASH_MODE
+`0xCD072523791DDC1B` | `BOOL _UI_PROMPT_HAS_MASH_MODE(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_HAS_MASH_MODE_COMPLETED
+`0x845CE958416DC473` | `BOOL _UI_PROMPT_HAS_MASH_MODE_COMPLETED(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_HAS_MASH_MODE_FAILED
+`0x25B18E530CF39D6F` | `BOOL _UI_PROMPT_HAS_MASH_MODE_FAILED(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_HAS_MASH_MODE_JUST_PRESSED
+`0xB0E8599243B3F568` | `BOOL _UI_PROMPT_HAS_MASH_MODE_JUST_PRESSED(Prompt prompt)` | build 1207
+returns true if the mash mode have just been pressed
+
+## _UI_PROMPT_HAS_PRESSED_TIMED_MODE_COMPLETED
+`0x3CE854D250A88DAF` | `BOOL _UI_PROMPT_HAS_PRESSED_TIMED_MODE_COMPLETED(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_HAS_PRESSED_TIMED_MODE_FAILED
+`0x1A17B9ECFF617562` | `BOOL _UI_PROMPT_HAS_PRESSED_TIMED_MODE_FAILED(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_HAS_STANDARD_MODE_COMPLETED
+`0xC92AC953F0A982AE` | `BOOL _UI_PROMPT_HAS_STANDARD_MODE_COMPLETED(Prompt prompt, int p1)` | build 1207
+Params: p1 is 0
+
+## _UI_PROMPT_IS_ACTIVE
+`0x546E342E01DE71CF` | `BOOL _UI_PROMPT_IS_ACTIVE(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_IS_ENABLED
+`0x0D00EDDFB58B7F28` | `BOOL _UI_PROMPT_IS_ENABLED(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_IS_HOLD_MODE_RUNNING
+`0xC7D70EAEF92EFF48` | `BOOL _UI_PROMPT_IS_HOLD_MODE_RUNNING(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_IS_JUST_PRESSED
+`0x2787CC611D3FACC5` | `BOOL _UI_PROMPT_IS_JUST_PRESSED(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_IS_JUST_RELEASED
+`0x635CC82FA297A827` | `BOOL _UI_PROMPT_IS_JUST_RELEASED(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_IS_PRESSED
+`0x21E60E230086697F` | `BOOL _UI_PROMPT_IS_PRESSED(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_IS_RELEASED
+`0xAFC887BA7A7756D6` | `BOOL _UI_PROMPT_IS_RELEASED(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_IS_VALID
+`0x347469FBDD1589A9` | `BOOL _UI_PROMPT_IS_VALID(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_REGISTER_BEGIN
+`0x04F97DE45A519419` | `Prompt _UI_PROMPT_REGISTER_BEGIN()` | build 1207
+
+## _UI_PROMPT_REGISTER_END
+`0xF7AA2696A22AD8B9` | `void _UI_PROMPT_REGISTER_END(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_REMOVE_GROUP
+`0x4E52C800A28F7BE8` | `void _UI_PROMPT_REMOVE_GROUP(Prompt prompt, Any p1)` | build 1207
+
+## _UI_PROMPT_RESTART_MODES
+`0xDC6C55DFA2C24EE5` | `void _UI_PROMPT_RESTART_MODES(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_SET_ACTIVE_GROUP_THIS_FRAME
+`0xC65A45D4453C2627` | `Any _UI_PROMPT_SET_ACTIVE_GROUP_THIS_FRAME(Hash hash, const char* name, int tabAmount, int tabDefaultIndex, int p4, Prompt prompt)` | build 1207
+Note: you must use VAR_STRING for p1 if string is not part of text database
+tabAmount: specifies number of tabs in prompt group
+tabDefaultIndex: specifies starting index
+p3 if is set > 3 you can no longer press Q to change tab if there are more than one tab set in tabAmount
+
+## _UI_PROMPT_SET_ALLOWED_ACTION
+`0x565C1CE183CB0EAF` | `void _UI_PROMPT_SET_ALLOWED_ACTION(Prompt prompt, Hash action)` | build 1207
+
+## _UI_PROMPT_SET_AMBIENT_GROUP_THIS_FRAME
+`0x315C81D760609108` | `Any _UI_PROMPT_SET_AMBIENT_GROUP_THIS_FRAME(Entity entity, float p1, int p2, int p3, Hash p4, const char* name, int p6)` | build 1207
+
+## _UI_PROMPT_SET_ATTRIBUTE
+`0x560E76D5E2E1803F` | `void _UI_PROMPT_SET_ATTRIBUTE(Prompt prompt, int attribute, BOOL enabled)` | build 1207
+attribute: https://github.com/Halen84/RDR3-Native-Flags-And-Enums/tree/main/eUIPromptAttribute
+
+## _UI_PROMPT_SET_BEAT_MODE
+`0xF957A1654C6322FE` | `void _UI_PROMPT_SET_BEAT_MODE(Prompt prompt, BOOL toggle)` | build 1207
+
+## _UI_PROMPT_SET_BEAT_MODE_GRAYED_OUT
+`0xB487A4936FBF40AC` | `void _UI_PROMPT_SET_BEAT_MODE_GRAYED_OUT(Prompt prompt, Any p1)` | build 1207
+
+## _UI_PROMPT_SET_CONTROL_ACTION
+`0xB5352B7494A08258` | `Any _UI_PROMPT_SET_CONTROL_ACTION(Prompt prompt, Hash action)` | build 1207
+
+## _UI_PROMPT_SET_ENABLED
+`0x8A0FB4D03A630D21` | `void _UI_PROMPT_SET_ENABLED(Prompt prompt, BOOL toggle)` | build 1207
+
+## _UI_PROMPT_SET_GROUP
+`0x2F11D3A254169EA4` | `void _UI_PROMPT_SET_GROUP(Prompt prompt, int groupId, int tabIndex)` | build 1207
+tabIndex: specifies tab of prompt
+
+## _UI_PROMPT_SET_HOLD_AUTO_FILL_MODE
+`0x3CE932E737C145D6` | `void _UI_PROMPT_SET_HOLD_AUTO_FILL_MODE(Prompt prompt, int autoFillTimeMs, int holdTimeMs)` | build 1207
+
+## _UI_PROMPT_SET_HOLD_AUTO_FILL_WITH_DECAY_MODE
+`0xA3F2149AA24F3D8E` | `void _UI_PROMPT_SET_HOLD_AUTO_FILL_WITH_DECAY_MODE(Prompt prompt, int autoFillTimeMs, int holdTimeMs)` | build 1207
+
+## _UI_PROMPT_SET_HOLD_INDEFINITELY_MODE
+`0xEA5CCF4EEB2F82D1` | `void _UI_PROMPT_SET_HOLD_INDEFINITELY_MODE(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_SET_HOLD_MODE
+`0x94073D5CA3F16B7B` | `void _UI_PROMPT_SET_HOLD_MODE(Prompt prompt, int holdTimeMs)` | build 1207
+Params: p2 is 304000 in R* SP Script coachrobberies
+
+## _UI_PROMPT_SET_MANUAL_RESOLVED
+`0xA520C7B05FA4EB2A` | `void _UI_PROMPT_SET_MANUAL_RESOLVED(Prompt prompt, Any p1)` | build 1207
+
+## _UI_PROMPT_SET_MASH_AUTO_FILL_MODE
+`0x6C39587D7CC66801` | `void _UI_PROMPT_SET_MASH_AUTO_FILL_MODE(Prompt prompt, int autoFillTimeMs, int mashes)` | build 1207
+
+## _UI_PROMPT_SET_MASH_INDEFINITELY_MODE
+`0x7B66E89312727274` | `void _UI_PROMPT_SET_MASH_INDEFINITELY_MODE(Prompt prompt)` | build 1207
+
+## _UI_PROMPT_SET_MASH_MANUAL_CAN_FAIL_MODE
+`0x179DCF71F705DA20` | `void _UI_PROMPT_SET_MASH_MANUAL_CAN_FAIL_MODE(Prompt prompt, float p1, float p2, float p3, Any p4)` | build 1207
+
+## _UI_PROMPT_SET_MASH_MANUAL_MODE
+`0x32DF729D8BD3C1C6` | `void _UI_PROMPT_SET_MASH_MANUAL_MODE(Prompt prompt, float p1, float p2, float p3, Any p4)` | build 1207
+
+## _UI_PROMPT_SET_MASH_MANUAL_MODE_DECAY_SPEED
+`0x7D393C247FB9B431` | `void _UI_PROMPT_SET_MASH_MANUAL_MODE_DECAY_SPEED(Prompt prompt, float speed)` | build 1207
+standard (prompt not held) rate: 0.035f
+fast (prompt held) rate: 0.015f
+punitive (been hit) rate: 0.14f
+
+## _UI_PROMPT_SET_MASH_MANUAL_MODE_INCREASE_PER_PRESS
+`0xA0D1D79C6036A855` | `void _UI_PROMPT_SET_MASH_MANUAL_MODE_INCREASE_PER_PRESS(Prompt prompt, float rate)` | build 1207
+standard (prompt not held) rate: (1f / 128f)
+fast (prompt held) rate: (1f / 64f)
+punitive (been hit) rate: (1f / 128f)
+
+## _UI_PROMPT_SET_MASH_MANUAL_MODE_PRESSED_GROWTH_SPEED
+`0x56DBB26F98582C29` | `void _UI_PROMPT_SET_MASH_MANUAL_MODE_PRESSED_GROWTH_SPEED(Prompt prompt, float speed)` | build 1207
+
+## _UI_PROMPT_SET_MASH_MODE
+`0xDF6423BF071C7F71` | `void _UI_PROMPT_SET_MASH_MODE(Prompt prompt, int mashes)` | build 1207
+
+## _UI_PROMPT_SET_MASH_WITH_RESISTANCE_CAN_FAIL_MODE
+`0xDC0CB602DEADBA53` | `void _UI_PROMPT_SET_MASH_WITH_RESISTANCE_CAN_FAIL_MODE(Prompt prompt, int mashes, float decreaseSpeed, float startProgress)` | build 1207
+For startProgress, 0.0f - 1.0f is a percentage value, so 0.5f = 50% progress. Range: 0.0f - 1.0f
+For decreaseSpeed, 0.0f will result in the prompt not showing the mash progress at all. 0.01f - ?.0f. At speeds around 7.0f to 8.0f the prompt basically fails immediately if you don't start mashing right away.
+
+## _UI_PROMPT_SET_MASH_WITH_RESISTANCE_MODE
+`0xCD1BDFF15EFA79F5` | `void _UI_PROMPT_SET_MASH_WITH_RESISTANCE_MODE(Prompt prompt, int mashes, float p2, float p3)` | build 1207
+
+## _UI_PROMPT_SET_ORDERING_AS_INPUT_TYPE
+`0x2F385ECC5200938D` | `void _UI_PROMPT_SET_ORDERING_AS_INPUT_TYPE(Prompt prompt, Any p1)` | build 1207
+
+## _UI_PROMPT_SET_PRESSED_TIMED_MODE
+`0x1473D3AF51D54276` | `void _UI_PROMPT_SET_PRESSED_TIMED_MODE(Prompt prompt, int depletionTimeMs)` | build 1207
+
+## _UI_PROMPT_SET_PRIORITY
+`0xCA24F528D0D16289` | `void _UI_PROMPT_SET_PRIORITY(Prompt prompt, int priority)` | build 1207
+priority: https://github.com/Halen84/RDR3-Native-Flags-And-Enums/tree/main/ePromptPriority
+
+## _UI_PROMPT_SET_PROMPT_PRIORITY_PREFERENCE
+`0x530A428705BE5DEF` | `void _UI_PROMPT_SET_PROMPT_PRIORITY_PREFERENCE(Ped ped)` | build 1207
+
+## _UI_PROMPT_SET_REGISTER_HORIZONTAL_ORIENTATION
+`0xD9459157EB22C895` | `int _UI_PROMPT_SET_REGISTER_HORIZONTAL_ORIENTATION()` | build 1207
+This returns an id that can be used with 0x6095358C4142932A.
+
+## _UI_PROMPT_SET_ROTATE_MODE
+`0x7ABE7095FB3D2581` | `void _UI_PROMPT_SET_ROTATE_MODE(Prompt prompt, float p1, BOOL counterclockwise)` | build 1207
+Used for controllers
+
+## _UI_PROMPT_SET_SPINNER_POSITION
+`0x832CB510DE546282` | `void _UI_PROMPT_SET_SPINNER_POSITION(Prompt prompt, Any p1)` | build 1207
+
+## _UI_PROMPT_SET_SPINNER_SPEED
+`0xAC6586A7FDCD4B68` | `void _UI_PROMPT_SET_SPINNER_SPEED(Prompt prompt, Any p1)` | build 1207
+
+## _UI_PROMPT_SET_STANDARDIZED_HOLD_MODE
+`0x74C7D7B72ED0D3CF` | `void _UI_PROMPT_SET_STANDARDIZED_HOLD_MODE(Prompt prompt, Hash holdType)` | build 1207
+HoldType Hashes: SHORT_TIMED_EVENT_MP, SHORT_TIMED_EVENT, MEDIUM_TIMED_EVENT, LONG_TIMED_EVENT, RUSTLING_CALM_TIMING, PLAYER_FOCUS_TIMING, PLAYER_REACTION_TIMING
+
+## _UI_PROMPT_SET_STANDARD_MODE
+`0xCC6656799977741B` | `void _UI_PROMPT_SET_STANDARD_MODE(Prompt prompt, BOOL releaseMode)` | build 1207
+
+## _UI_PROMPT_SET_TAG
+`0xDEC85C174751292B` | `void _UI_PROMPT_SET_TAG(Prompt prompt, Any p1)` | build 1207
+
+## _UI_PROMPT_SET_TARGET_MODE
+`0x5F6503D9CD2754EB` | `void _UI_PROMPT_SET_TARGET_MODE(Prompt prompt, float p1, float p2, Any p3)` | build 1207
+
+## _UI_PROMPT_SET_TARGET_MODE_PROGRESS
+`0x00123054BEC8A30F` | `void _UI_PROMPT_SET_TARGET_MODE_PROGRESS(Prompt prompt, float progress)` | build 1207
+
+## _UI_PROMPT_SET_TARGET_MODE_TARGET
+`0x5E019C45DD3B6A14` | `void _UI_PROMPT_SET_TARGET_MODE_TARGET(Prompt prompt, float p1, float p2)` | build 1207
+
+## _UI_PROMPT_SET_TEXT
+`0x5DD02A8318420DD7` | `void _UI_PROMPT_SET_TEXT(Prompt prompt, const char* text)` | build 1207
+
+## _UI_PROMPT_SET_TRANSPORT_MODE
+`0x876E4A35C73A6655` | `void _UI_PROMPT_SET_TRANSPORT_MODE(Prompt prompt, int mode)` | build 1207
+TM_ANY = 0,
+TM_ON_FOOT,
+TM_IN_VEHICLE
+
+## _UI_PROMPT_SET_TYPE
+`0xF4A5C4509BF923B1` | `void _UI_PROMPT_SET_TYPE(Prompt prompt, int type)` | build 1207
+Params: type = mostly 0, 6 (net_mission_intro_story_gvo), 7 (fm_mission_controller), 14 (net_ugc_end_flow_transition_online), 15 (net_main_[tlg_]offline)
+
+## _UI_PROMPT_SET_URGENT_PULSING_ENABLED
+`0xC5F428EE08FA7F2C` | `void _UI_PROMPT_SET_URGENT_PULSING_ENABLED(Prompt prompt, BOOL toggle)` | build 1207
+
+## _UI_PROMPT_SET_VISIBLE
+`0x71215ACCFDE075EE` | `void _UI_PROMPT_SET_VISIBLE(Prompt prompt, BOOL toggle)` | build 1207
+
+## _UI_PROMPT_WAS_BEAT_MODE_PRESSED_IN_TIME_WINDOW
+`0x1FE4788AB1430C55` | `BOOL _UI_PROMPT_WAS_BEAT_MODE_PRESSED_IN_TIME_WINDOW(Prompt prompt)` | build 1207

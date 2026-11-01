@@ -1,0 +1,15 @@
+{
+    "cl_title": "Localização",
+    "cl_indoors": "Você não pode verificar sua localização em ambientes fechados",
+    "cl_unknown": "Você está no meio do nada",
+    "cl_enabled": "Avisos de localização ativados",
+    "cl_disabled": "Avisos de localização desativados",
+    "cl_cmd_location": "Mostra onde você está",
+    "cl_cmd_toggle": "Ativa ou desativa os avisos de localização",
+    "cl_time_am": "AM",
+    "cl_time_pm": "PM",
+    "cl_temp_c": "%s°C",
+    "cl_temp_f": "%s°F",
+    "cl_wind_kph": "%s km/h",
+    "cl_wind_mph": "%s mph"
+}

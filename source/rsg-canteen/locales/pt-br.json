@@ -1,0 +1,14 @@
+{
+    "notify_title": "Cantil",
+    "target_fill": "Encher cantil",
+    "progress_fill": "Enchendo o cantil...",
+    "progress_drink": "Bebendo...",
+    "no_canteen": "Você precisa de um cantil",
+    "canteen_empty": "Seu cantil está vazio, encha-o em uma bomba d'água",
+    "canteens_full": "Seu cantil já está cheio",
+    "canteen_filled": "Cantil cheio (%s usos)",
+    "drank": "Você bebeu (restam %s/%s usos)",
+    "too_far": "Você está muito longe da bomba",
+    "busy": "Você está ocupado",
+    "target_fill_water": "Encher cantil"
+}

@@ -1,0 +1,10 @@
+{
+    "title": "Bandana",
+    "cmd_help": "Doe je bandana omhoog of omlaag",
+    "no_bandana": "Je draagt geen bandana",
+    "cant_now": "Dat kun je nu niet doen",
+    "wait": "Rustig aan",
+    "up": "Bandana omhoog",
+    "down": "Bandana omlaag",
+    "item_missing": "Config.UseItem staat aan maar item \"%s\" bestaat niet in de rsg-core items"
+}

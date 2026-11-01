@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS `rsg_doorlocks` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(64) NOT NULL,
+    `doors` LONGTEXT NOT NULL,
+    `text_coords` LONGTEXT NOT NULL,
+    `jobs` LONGTEXT NOT NULL,
+    `distance` FLOAT NOT NULL DEFAULT 1.25,
+    `locked` TINYINT(1) NOT NULL DEFAULT 1,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

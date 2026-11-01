@@ -1,0 +1,6 @@
+{
+    "ammo_unknown": "Tip de muniție necunoscut",
+    "ammo_max_reached": "Ai atins muniția maximă",
+    "opening_box": "Se deschide %s",
+    "ammo_replenished": "Muniție reîncărcată x%s"
+}

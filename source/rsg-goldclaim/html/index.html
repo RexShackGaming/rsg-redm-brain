@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rsg-goldclaim</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app" class="hidden">
+
+        <!-- ============ context menu panel ============ -->
+        <div id="context-panel" class="panel context-panel hidden">
+            <div class="panel-header">
+                <button id="context-back" class="icon-btn hidden">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <div class="panel-titles">
+                    <h1 id="context-title" class="panel-title"></h1>
+                    <p id="context-subtitle" class="panel-subtitle"></p>
+                </div>
+                <button id="context-close" class="icon-btn">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="divider"><span>&#9670;</span></div>
+            <div id="context-options" class="option-list"></div>
+        </div>
+
+        <!-- ============ modal (input dialog / confirm / alert) ============ -->
+        <div id="modal-overlay" class="modal-overlay hidden">
+            <div class="modal">
+                <h2 id="modal-title" class="modal-title"></h2>
+                <div class="ink-divider"></div>
+                <div id="modal-fields" class="modal-fields"></div>
+                <div id="modal-actions" class="modal-actions"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

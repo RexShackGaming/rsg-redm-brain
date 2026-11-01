@@ -1,0 +1,17 @@
+{
+    "error_title": "Błąd",
+    "backpack_title": "Plecak",
+    "backpack_config_missing": "Nie znaleziono konfiguracji plecaka.",
+    "backpack_not_found": "Nie znaleziono plecaka.",
+    "backpack_taken_off": "Zdjęto plecak",
+    "backpack_lost": "Twojego plecaka nie ma już w ekwipunku.",
+    "backpack_serial_failed": "Nie udało się przygotować plecaka. Spróbuj ponownie.",
+    "backpack_nested_blocked": "Plecaków nie można przechowywać w innym plecaku.",
+    "backpack_recovered": "Odzyskano %s plecak(ów) schowanych w plecaku.",
+    "backpack_nothing_recovered": "Nie znaleziono uwięzionych plecaków.",
+    "cmd_recover_help": "Odzyskaj plecaki uwięzione w twoich plecakach",
+    "backpack_not_worn": "Nie masz na sobie plecaka.",
+    "cmd_remove_help": "Zdejmij noszony plecak",
+    "backpack_only_one": "Możesz nosić tylko jeden plecak naraz.",
+    "backpack_drop_extra": "Masz więcej niż jeden plecak. Upuść lub schowaj dodatkowy, aby użyć swojego plecaka."
+}

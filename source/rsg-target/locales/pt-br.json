@@ -1,0 +1,8 @@
+{
+    "debug_box": "(Debug) Caixa",
+    "debug_sphere": "(Debug) Esfera",
+    "debug_ped": "(Debug) Ped",
+    "debug_vehicle": "(Debug) Veículo",
+    "debug_object": "(Debug) Objeto",
+    "go_back": "Voltar"
+}

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>rsg-character</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+    <div id="vignette"></div>
+
+    <div id="menu-panel" class="panel hidden">
+        <div class="panel-header">
+            <button id="btn-back" class="icon-btn" title="">&#10094;</button>
+            <div class="header-titles">
+                <div id="menu-title" class="panel-title"></div>
+                <div id="menu-subtitle" class="panel-subtitle"></div>
+            </div>
+        </div>
+        <div id="camera-move-bar" class="camera-move-bar">
+            <div class="camera-move-group">
+                <span id="cam-rotate-label" class="camera-move-label"></span>
+                <div class="camera-move-group-btns">
+                    <button id="cam-rotate-left" class="cam-move-btn" data-direction="rotateleft" title="">&#9664;</button>
+                    <button id="cam-rotate-right" class="cam-move-btn" data-direction="rotateright" title="">&#9654;</button>
+                </div>
+            </div>
+            <div class="camera-move-group">
+                <span id="cam-height-label" class="camera-move-label"></span>
+                <div class="camera-move-group-btns">
+                    <button id="cam-up" class="cam-move-btn" data-direction="up" title="">&#9650;</button>
+                    <button id="cam-down" class="cam-move-btn" data-direction="down" title="">&#9660;</button>
+                </div>
+            </div>
+            <div class="camera-move-group">
+                <span id="cam-zoom-label" class="camera-move-label"></span>
+                <div class="camera-move-group-btns">
+                    <button id="cam-zoom-in" class="cam-move-btn" data-direction="zoomin" title="">+</button>
+                    <button id="cam-zoom-out" class="cam-move-btn" data-direction="zoomout" title="">&#8722;</button>
+                </div>
+            </div>
+            <div class="camera-move-group">
+                <span id="cam-reset-label" class="camera-move-label"></span>
+                <div class="camera-move-group-btns">
+                    <button id="cam-reset" class="cam-move-btn" title="">&#8634;</button>
+                </div>
+            </div>
+        </div>
+        <div class="divider"><span>&#10022;</span></div>
+        <div id="menu-list" class="menu-list"></div>
+    </div>
+
+    <div id="char-info-panel" class="panel char-info-panel hidden">
+        <div id="char-info-name" class="char-info-name"></div>
+        <div class="ink-divider"></div>
+        <div id="char-info-rows" class="char-info-rows">
+            <div class="char-info-row">
+                <span id="char-info-job-label" class="char-info-label"></span>
+                <span id="char-info-job" class="char-info-value"></span>
+            </div>
+            <div class="char-info-row">
+                <span id="char-info-birthdate-label" class="char-info-label"></span>
+                <span id="char-info-birthdate" class="char-info-value"></span>
+            </div>
+            <div class="char-info-row">
+                <span id="char-info-nationality-label" class="char-info-label"></span>
+                <span id="char-info-nationality" class="char-info-value"></span>
+            </div>
+            <div class="char-info-row">
+                <span id="char-info-cash-label" class="char-info-label"></span>
+                <span id="char-info-cash" class="char-info-value cash"></span>
+            </div>
+        </div>
+        <div id="char-info-desc" class="char-info-desc hidden"></div>
+        <div id="char-info-gender" class="char-info-gender hidden">
+            <button id="char-info-gender-male" class="gender-btn" data-gender="male"></button>
+            <button id="char-info-gender-female" class="gender-btn" data-gender="female"></button>
+        </div>
+        <div class="char-info-actions">
+            <button id="char-info-play" class="wood-btn"></button>
+            <button id="char-info-delete" class="wood-btn muted-btn"></button>
+        </div>
+    </div>
+
+    <div id="desc-panel" class="panel desc-panel hidden">
+        <img id="desc-img" src="" alt="">
+        <div id="desc-text" class="desc-text"></div>
+        <div class="divider"><span>&#10022;</span></div>
+        <div class="desc-price-row">
+            <span id="desc-total-label" class="desc-price-label"></span>
+            <span id="desc-price-value" class="desc-price-value">$0</span>
+        </div>
+    </div>
+
+    <div id="dialog-modal" class="modal-overlay hidden">
+        <div class="modal panel">
+            <div id="dialog-title" class="modal-title"></div>
+            <div class="ink-divider"></div>
+            <div id="dialog-fields" class="modal-fields"></div>
+            <div class="modal-actions">
+                <button id="dialog-cancel" class="wood-btn muted-btn"></button>
+                <button id="dialog-submit" class="wood-btn"></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="alert-modal" class="modal-overlay hidden">
+        <div class="modal panel">
+            <div id="alert-title" class="modal-title"></div>
+            <div class="ink-divider"></div>
+            <div class="modal-actions" id="alert-actions">
+                <button id="alert-cancel" class="wood-btn muted-btn"></button>
+                <button id="alert-confirm" class="wood-btn"></button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div id="loading-screen" class="hidden">
+    <div class="loading-spinner"></div>
+    <div id="loading-text" class="loading-text"></div>
+</div>
+
+<div id="spawn-select-panel" class="spawn-select-overlay hidden">
+    <div class="spawn-select-header">
+        <div id="spawn-select-title" class="spawn-select-title"></div>
+        <div id="spawn-select-subtitle" class="spawn-select-subtitle"></div>
+    </div>
+    <div id="spawn-select-cards" class="spawn-select-cards"></div>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

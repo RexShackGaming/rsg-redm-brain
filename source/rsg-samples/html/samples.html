@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sample Collector</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="samples.css">
+</head>
+<body>
+
+    <!-- ===================== MAIN SAMPLES MENU ===================== -->
+    <div id="samplesMenuUI" class="panel-root hidden">
+        <div class="panel">
+
+            <div class="panel-header">
+                <button class="panel-head-icon" id="certOpenButton" title="View Certificate">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><polyline points="8.5 14 7 22 12 19 17 22 15.5 14"/></svg>
+                </button>
+                <div class="panel-title-wrap">
+                    <h1 class="panel-title" id="menuTitle">Sample Collector</h1>
+                    <span class="panel-subtitle" id="menuSubtitle">Naturalist Research Log</span>
+                </div>
+                <button class="panel-head-icon icon-close" id="closeButton" title="Close">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+
+            <div class="ink-divider"></div>
+
+            <div class="tab-nav">
+                <button class="tab-btn active" id="tabBtnSamples">My Samples</button>
+                <button class="tab-btn" id="tabBtnLeaderboard">Leaderboard</button>
+                <button class="tab-btn" id="tabBtnStats">Global Stats</button>
+            </div>
+
+            <div class="panel-body">
+
+                <!-- MY SAMPLES TAB -->
+                <section id="tabSamples" class="tab-pane active">
+                    <div class="stat-block">
+                        <div class="progress-label-row">
+                            <span class="field-label" id="progressText">Progress: 0%</span>
+                            <span class="field-label" id="totalRewards">Total Rewards: $0</span>
+                        </div>
+                        <div class="stat-track">
+                            <div class="stat-fill stat-good" id="progressFill"></div>
+                        </div>
+                        <div class="progress-caption"><span id="progressInner">0 / 0</span></div>
+                    </div>
+
+                    <div>
+                        <div class="field-label" id="fieldGuideLabel">Field Guide</div>
+                        <div id="categoryTabs" class="category-tabs"></div>
+                    </div>
+
+                    <div>
+                        <div class="field-label" id="searchGuideLabel">Search Guide</div>
+                        <input type="text" id="searchSamplesInput" class="text-input" placeholder="Search animals...">
+                    </div>
+
+                    <div id="samplesList" class="list-container"></div>
+
+                    <button id="loadMoreButton" class="wood-btn full">Load More</button>
+                </section>
+
+                <!-- LEADERBOARD TAB -->
+                <section id="tabLeaderboard" class="tab-pane">
+                    <h2 class="section-title" id="leaderboardTitle">Top Sample Collectors</h2>
+                    <div>
+                        <div class="field-label" id="findCollectorLabel">Find Collector</div>
+                        <input type="text" id="searchCollectorsInput" class="text-input" placeholder="Search collectors...">
+                    </div>
+                    <div id="rankedList" class="list-container"></div>
+                </section>
+
+                <!-- GLOBAL STATS TAB -->
+                <section id="tabStats" class="tab-pane">
+                    <h2 class="section-title" id="statsHeading">Server Statistics</h2>
+                    <div id="globalStatsList" class="stats-grid"></div>
+                </section>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== CERTIFICATE OVERLAY ===================== -->
+    <div id="certOverlay" class="panel-root hidden">
+        <div class="panel modal-panel">
+
+            <div class="panel-header">
+                <button class="panel-head-icon" id="certBackButton" title="Back to Field Guide">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <div class="panel-title-wrap">
+                    <h1 class="panel-title" id="certTitleHeader">Field Research Certificate</h1>
+                    <span class="panel-subtitle" id="certSubtitle">Official Field Research Record</span>
+                </div>
+                <button class="panel-head-icon icon-close" id="certCloseButton" title="Close">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+
+            <div class="ink-divider"></div>
+
+            <div class="panel-body">
+                <div id="certContent" class="cert-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="samples.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+# eSetPlayerControlFlags
+
+Source: https://github.com/Halen84/RDR3-Native-Flags-And-Enums/tree/main/eSetPlayerControlFlags
+
+## Natives that use this enum
+| Name                             | Hash               |
+|----------------------------------|--------------------|
+| PLAYER::SET\_PLAYER\_CONTROL     | 0x4D51E59243281D80 |
+## Enum
+```cpp
+enum eSetPlayerControlFlags
+{
+	SPC_NONE = 0,
+	SPC_AMBIENT_SCRIPT = 2,
+	SPC_CLEAR_TASKS = 4,
+	SPC_REMOVE_FIRES = 8,
+	SPC_REMOVE_EXPLOSIONS = 16,
+	SPC_REMOVE_PROJECTILES = 32,
+	SPC_DEACTIVATE_GADGETS = 64,
+	SPC_REENABLE_CONTROL_ON_DEATH = 128,
+	SPC_LEAVE_CAMERA_CONTROL_ON = 256,
+	SPC_ALLOW_PLAYER_DAMAGE = 512,
+	SPC_DONT_STOP_OTHER_CARS_AROUND_PLAYER = 1024,
+	SPC_PREVENT_EVERYBODY_BACKOFF = 2048,
+	SPC_ALLOW_PAD_SHAKE = 4096,
+};
+```

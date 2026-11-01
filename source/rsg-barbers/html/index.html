@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+    <div class="panel" id="panel">
+        <div class="panel-header">
+            <span class="circle-btn">&#8249;</span>
+            <div>
+                <div class="title" id="title">Barber Shop</div>
+                <div class="subtitle" id="subtitle"></div>
+            </div>
+            <button class="circle-btn" id="closeBtn" title="Close">&#10005;</button>
+        </div>
+
+        <div class="divider">&#10022;</div>
+
+        <div class="tabs" id="tabs"></div>
+        <div class="list" id="list"></div>
+
+        <div class="divider">&#10022;</div>
+
+        <div class="footer">
+            <div class="price">
+                <div class="price-label" id="priceLabel">Price</div>
+                <div class="price-value" id="priceValue">$0</div>
+            </div>
+            <div class="actions">
+                <button class="wood-btn muted" id="cancelBtn">Cancel</button>
+                <button class="wood-btn" id="payBtn">Pay</button>
+            </div>
+        </div>
+        <div class="hint" id="hint"></div>
+    </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+    "error_title": "Eroare",
+    "backpack_title": "Rucsac",
+    "backpack_config_missing": "Configurația rucsacului nu a fost găsită.",
+    "backpack_not_found": "Rucsacul nu a fost găsit.",
+    "backpack_taken_off": "Ai dat jos rucsacul",
+    "backpack_lost": "Rucsacul tău nu mai este în inventar.",
+    "backpack_serial_failed": "Rucsacul nu a putut fi pregătit. Încearcă din nou.",
+    "backpack_nested_blocked": "Rucsacurile nu pot fi depozitate în alt rucsac.",
+    "backpack_recovered": "Au fost recuperate %s rucsac(uri) aflate într-un rucsac.",
+    "backpack_nothing_recovered": "Nu au fost găsite rucsacuri blocate.",
+    "cmd_recover_help": "Recuperează rucsacurile blocate în propriile rucsacuri",
+    "backpack_not_worn": "Nu porți niciun rucsac.",
+    "cmd_remove_help": "Dă jos rucsacul pe care îl porți",
+    "backpack_only_one": "Poți căra un singur rucsac o dată.",
+    "backpack_drop_extra": "Cari mai mult de un rucsac. Lasă jos sau depozitează rucsacul în plus ca să-l poți folosi pe al tău."
+}

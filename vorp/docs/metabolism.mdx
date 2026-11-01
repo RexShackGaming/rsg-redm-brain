@@ -1,0 +1,48 @@
+---
+title : metabolism
+description : 'metabolism api for vorp'
+icon : 'droplet'
+---
+
+<Note>Client side</Note>
+
+The available status types are `Metabolism`, `Thirst` and `Hunger`. The key is case insensitive, the first letter is capitalized internally.
+
+Value ranges:
+
+- `Thirst` and `Hunger` go from `0` to `1000`
+- `Metabolism` goes from `-10000` to `10000`
+
+## Change metabolism value
+
+Adds the given amount to the current value, the result is clamped to the valid range of the status.
+
+```lua
+TriggerEvent('vorpmetabolism:changeValue', 'Metabolism', 9000)
+```
+
+## Set metabolism value
+
+Sets the value directly, clamped to the valid range of the status.
+
+```lua
+TriggerEvent('vorpmetabolism:setValue', 'Metabolism', 10000)
+```
+
+## Get metabolism value
+
+Returns the current value through the callback, or `nil` if the key is not a valid status.
+
+```lua
+TriggerEvent('vorpmetabolism:getValue', 'Metabolism', function(value)
+    print('metabolism value', value)
+end)
+```
+
+## Toggle the HUD
+
+Shows or hides the metabolism HUD.
+
+```lua
+TriggerEvent('vorpmetabolism:setHud', true) -- false to hide
+```

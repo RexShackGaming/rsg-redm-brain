@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>rsg-deliveries</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+    <div class="board">
+        <!-- destination list -->
+        <div class="panel list-panel">
+            <div class="header">
+                <div class="circle-btn ghost"></div>
+                <div class="titles">
+                    <div class="title" id="hub-title" data-i18n="ui_deliveries">Deliveries</div>
+                    <div class="subtitle" data-i18n="ui_choose_destination">Choose a Destination</div>
+                </div>
+                <div class="circle-btn" id="close-btn" title="Close">&#10005;</div>
+            </div>
+            <div class="divider"><span>&#10022;</span></div>
+            <div id="dest-list" class="list"></div>
+        </div>
+
+        <!-- detail -->
+        <div class="panel detail-panel" id="detail">
+            <div class="header">
+                <div class="circle-btn ghost"></div>
+                <div class="titles">
+                    <div class="title" id="d-title">-</div>
+                    <div class="subtitle" id="d-sub" data-i18n="ui_delivery_contract">Delivery Contract</div>
+                </div>
+                <div class="circle-btn ghost"></div>
+            </div>
+            <div class="divider"><span>&#10022;</span></div>
+            <div class="desc" id="d-desc"></div>
+
+            <div class="stats">
+                <div class="stat"><div class="stat-label" data-i18n="ui_distance">Distance</div><div class="stat-val" id="d-dist">-</div></div>
+                <div class="stat"><div class="stat-label" data-i18n="ui_time_limit">Time Limit</div><div class="stat-val" id="d-time">-</div></div>
+                <div class="stat"><div class="stat-label" data-i18n="ui_wagon">Wagon</div><div class="stat-val" id="d-wagon">-</div></div>
+                <div class="stat"><div class="stat-label" data-i18n="ui_difficulty">Difficulty</div><div class="stat-val" id="d-diff">-</div></div>
+            </div>
+            <div class="bar-wrap">
+                <div class="bar-label"><span data-i18n="ui_route_length">Route Length</span><span id="d-bar-txt"></span></div>
+                <div class="track"><div class="fill" id="d-bar"></div></div>
+            </div>
+
+            <div class="section-label" data-i18n="ui_rewards">Rewards</div>
+            <div id="d-rewards" class="rewards"></div>
+
+            <div class="note" data-i18n="ui_note">Keep the wagon in one piece &mdash; a wrecked wagon fails the contract.</div>
+
+            <div class="actions">
+                <button class="wood-btn muted" id="cancel-btn" data-i18n="ui_close">Close</button>
+                <button class="wood-btn" id="start-btn" data-i18n="ui_start">Start Delivery</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

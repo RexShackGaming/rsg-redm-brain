@@ -1,0 +1,18 @@
+{
+    "cl_afk_title": "Aviso de AFK",
+    "cl_afk_minutes": "Você será expulso em %d minuto(s) por estar AFK",
+    "cl_afk_seconds": "Você será expulso em %d segundo(s) por estar AFK",
+    "cl_hideui": "Ativar/desativar todas as UIs (ex.: para capturas de tela)",
+    "cl_wash": "Lavar",
+    "cl_drink": "Beber",
+    "cl_pvp_toggle_on": "PvP LIGADO",
+    "cl_pvp_toggle_off": "PvP DESLIGADO",
+    "sv_kick": "Você foi expulso por estar AFK",
+    "sv_test_your_webhook": "Teste seu webhook do Discord para logs (apenas God)",
+    "sv_test_webhook": "Testar webhook",
+    "sv_webhook_successfully": "Webhook configurado com sucesso",
+    "sv_print_drizzle": "30 min até a tempestade : garoa",
+    "sv_print_shower": "15 min até a tempestade : pancada de chuva",
+    "sv_print_rain": "10 min até a tempestade : chuva",
+    "sv_print_thunderstorm": "5 min até a tempestade : trovoada"
+}

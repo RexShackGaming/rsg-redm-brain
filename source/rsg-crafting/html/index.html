@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>rsg-crafting</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+    <div class="panel">
+        <header class="panel-header">
+            <button class="circle-btn" id="reset-pos-btn">&#8634;</button>
+            <div class="titles">
+                <h1 id="title"></h1>
+                <div id="xp-text" class="subtitle"></div>
+            </div>
+            <button class="circle-btn" id="close-btn">&#10005;</button>
+        </header>
+
+        <div class="xp-wrap">
+            <div class="bar-track"><div id="xp-bar" class="bar-fill stat-good"></div></div>
+            <div id="xp-next" class="xp-next"></div>
+        </div>
+
+        <div class="divider"><span>&#10022;</span></div>
+
+        <div class="body">
+            <div class="list-col">
+                <div id="tabs" class="tabs"></div>
+                <div id="recipe-list" class="recipe-list"></div>
+            </div>
+
+            <div class="detail-col" id="detail">
+                <div id="detail-empty" class="detail-empty"></div>
+                <div id="detail-content" class="hidden">
+                    <div class="detail-head">
+                        <div class="detail-img"><img id="d-img" alt=""></div>
+                        <div>
+                            <div id="d-label" class="detail-title"></div>
+                            <div id="d-desc" class="muted-italic"></div>
+                        </div>
+                    </div>
+                    <div class="meta-row">
+                        <div class="meta"><span id="m-makes-l"></span><b id="m-makes"></b></div>
+                        <div class="meta"><span id="m-time-l"></span><b id="m-time"></b></div>
+                        <div class="meta"><span id="m-xp-l"></span><b id="m-xp"></b></div>
+                    </div>
+
+                    <div class="section-label" id="ing-label"></div>
+                    <div id="ingredients" class="ingredients"></div>
+
+                    <div id="tools-wrap" class="hidden">
+                        <div class="section-label tools-label" id="tools-label"></div>
+                        <div id="tools" class="ingredients"></div>
+                    </div>
+
+                    <div class="qty-row">
+                        <span class="section-label" id="qty-label"></span>
+                        <div class="qty">
+                            <button class="circle-btn small" id="qty-minus">&minus;</button>
+                            <span id="qty-val">1</span>
+                            <button class="circle-btn small" id="qty-plus">+</button>
+                        </div>
+                    </div>
+
+                    <div id="progress-wrap" class="hidden">
+                        <div class="progress-label" id="progress-label"></div>
+                        <div class="bar-track tall"><div id="progress-bar" class="bar-fill stat-warn"></div></div>
+                    </div>
+
+                    <div class="actions">
+                        <button class="wood-btn" id="craft-btn"></button>
+                        <button class="wood-btn muted hidden" id="stop-btn"></button>
+                    </div>
+                    <div id="status" class="status"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

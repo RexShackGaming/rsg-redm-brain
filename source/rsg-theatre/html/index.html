@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app" class="hidden">
+        <div class="panel">
+            <div class="header">
+                <span class="icon-btn" style="visibility:hidden">‹</span>
+                <div class="titles">
+                    <div class="title" id="title"></div>
+                    <div class="subtitle" id="subtitle"></div>
+                </div>
+                <span class="icon-btn" id="closeBtn">✕</span>
+            </div>
+            <div class="divider"><span>✦</span></div>
+
+            <div class="label" id="nextLabel"></div>
+            <div class="row">
+                <div class="badge">🎭</div>
+                <div class="info">
+                    <div class="show-name" id="showName"></div>
+                    <div class="show-desc" id="showDesc"></div>
+                    <div class="show-time" id="showTime"></div>
+                </div>
+            </div>
+
+            <div class="price-line">
+                <span id="priceLabel"></span>
+                <span class="price" id="price"></span>
+            </div>
+
+            <div class="actions">
+                <button class="wood-btn muted" id="cancelBtn"></button>
+                <button class="wood-btn" id="buyBtn"></button>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

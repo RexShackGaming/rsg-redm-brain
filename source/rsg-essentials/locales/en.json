@@ -1,0 +1,18 @@
+{
+    "cl_afk_title": "AFK Warning",
+    "cl_afk_minutes": "You will be kicked in %d minute(s) for being AFK",
+    "cl_afk_seconds": "You will be kicked in %d second(s) for being AFK",
+    "cl_hideui": "Toggle all UIs ON/OFF (i.e. for taking screenshots)",
+    "cl_wash": "Wash",
+    "cl_drink": "Drink",
+    "cl_pvp_toggle_on": "PvP is ON",
+    "cl_pvp_toggle_off": "PvP is OFF",
+    "sv_kick": "You have been kicked for being AFK",
+    "sv_test_your_webhook": "Test your Discord webhook for logs (God only)",
+    "sv_test_webhook": "Test Webhook",
+    "sv_webhook_successfully": "Webhook set up successfully",
+    "sv_print_drizzle": "30 mins until the storm : drizzle",
+    "sv_print_shower": "15 mins until the storm : shower",
+    "sv_print_rain": "10 mins until the storm : rain",
+    "sv_print_thunderstorm": "5 mins until the storm : thunderstorm"
+}

@@ -1,0 +1,17 @@
+{
+    "error_title": "Erreur",
+    "backpack_title": "Sac à dos",
+    "backpack_config_missing": "Configuration du sac introuvable.",
+    "backpack_not_found": "Sac à dos introuvable.",
+    "backpack_taken_off": "Sac à dos retiré",
+    "backpack_lost": "Votre sac à dos n'est plus dans votre inventaire.",
+    "backpack_serial_failed": "Impossible de préparer votre sac. Réessayez.",
+    "backpack_nested_blocked": "Un sac à dos ne peut pas être rangé dans un autre sac à dos.",
+    "backpack_recovered": "%s sac(s) à dos récupéré(s) depuis l'intérieur d'un sac.",
+    "backpack_nothing_recovered": "Aucun sac à dos coincé trouvé.",
+    "cmd_recover_help": "Récupérer les sacs à dos coincés dans vos propres sacs",
+    "backpack_not_worn": "Vous ne portez pas de sac à dos.",
+    "cmd_remove_help": "Retirer le sac à dos que vous portez",
+    "backpack_only_one": "Vous ne pouvez porter qu'un seul sac à dos à la fois.",
+    "backpack_drop_extra": "Vous portez plus d'un sac à dos. Posez ou rangez le sac en trop pour utiliser le vôtre."
+}

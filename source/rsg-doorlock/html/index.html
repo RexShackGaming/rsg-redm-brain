@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Door Locks</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+    <div class="panel">
+        <header class="panel-header">
+            <button class="circle-btn" style="visibility:hidden" id="btn-back" data-i18n-title="ui_back">&#8249;</button>
+            <div class="titles">
+                <h1 id="title" data-i18n="ui_title"></h1>
+                <div class="subtitle" id="subtitle"></div>
+            </div>
+            <button class="circle-btn" id="btn-close" data-i18n-title="ui_close">&#10005;</button>
+        </header>
+        <div class="divider"><span>&#10022;</span></div>
+
+        <!-- LIST VIEW -->
+        <section id="view-list">
+            <div class="toolbar">
+                <input type="text" id="search" data-i18n-ph="ui_search">
+                <button class="wood-btn" id="btn-new" data-i18n="ui_new_lock"></button>
+            </div>
+            <div class="count" id="count"></div>
+            <div class="list" id="list"></div>
+        </section>
+
+        <!-- FORM VIEW -->
+        <section id="view-form" class="hidden">
+            <label class="field">
+                <span data-i18n="ui_name"></span>
+                <input type="text" id="f-name" maxlength="64" data-i18n-ph="ui_name_ph">
+            </label>
+
+            <div class="field">
+                <span data-i18n="ui_jobs"></span>
+                <div class="chips" id="f-jobs">
+                    <input type="text" id="f-job-input" data-i18n-ph="ui_jobs_ph">
+                </div>
+                <em class="hint" data-i18n="ui_jobs_hint"></em>
+            </div>
+
+            <div class="row-2">
+                <label class="field">
+                    <span><i data-i18n="ui_range"></i> <b id="f-dist-val"></b></span>
+                    <input type="range" id="f-distance" min="0.5" max="10" step="0.25">
+                </label>
+                <div class="field">
+                    <span data-i18n="ui_state"></span>
+                    <div class="toggle" id="f-locked">
+                        <button data-v="1" data-i18n="ui_locked"></button>
+                        <button data-v="0" data-i18n="ui_unlocked"></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <span><i data-i18n="ui_doors"></i> <b id="f-door-count"></b></span>
+                <div id="f-doors" class="door-list"></div>
+                <button class="wood-btn wide" id="btn-pick">&#9678; <i data-i18n="ui_pick_btn"></i></button>
+                <em class="hint" data-i18n="ui_pick_hint"></em>
+            </div>
+
+            <div class="actions">
+                <button class="wood-btn muted" id="btn-delete" data-i18n="ui_delete"></button>
+                <button class="wood-btn muted" id="btn-cancel" data-i18n="ui_cancel"></button>
+                <button class="wood-btn" id="btn-save" data-i18n="ui_save"></button>
+            </div>
+        </section>
+    </div>
+
+    <div id="modal" class="modal-wrap hidden">
+        <div class="modal">
+            <h2 data-i18n="ui_delete_title"></h2>
+            <div class="ink-divider"></div>
+            <p id="modal-text"></p>
+            <div class="actions">
+                <button class="wood-btn muted" id="modal-no" data-i18n="ui_cancel"></button>
+                <button class="wood-btn danger" id="modal-yes" data-i18n="ui_delete"></button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="pick-hud" class="hidden">
+    <div class="hud-head">
+        <div class="hud-title" data-i18n="hud_title"></div>
+        <div class="hud-count"><b id="hud-count">0</b> / <span id="hud-max">8</span></div>
+    </div>
+    <div class="ink-divider"></div>
+    <div class="hud-target" id="hud-target">
+        <div class="badge-icon">&#9678;</div>
+        <div class="row-main">
+            <div class="row-title" id="hud-model"></div>
+            <div class="row-sub" id="hud-hash"></div>
+        </div>
+        <span class="pill hidden" id="hud-state"></span>
+    </div>
+    <div class="hud-warn hidden" id="hud-warn"></div>
+    <div class="hud-keys">
+        <div><kbd>ENTER</kbd><span id="hud-enter"></span></div>
+        <div><kbd>BACKSPACE</kbd><span data-i18n="hud_finish"></span></div>
+    </div>
+    <div class="hud-feedback" id="hud-feedback"></div>
+</div>
+<div id="toasts"></div>
+<script src="app.js"></script>
+</body>
+</html>

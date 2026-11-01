@@ -1,0 +1,99 @@
+---
+title: Best Practices
+description: 'Learn the best practices for writing code in LUA'
+mode: 'wide'
+---
+
+<Frame>
+  <img src="images/64416274.png"/>
+</Frame>
+
+## Tables and Arrays
+When working with `structured data`, use tables with `named keys` for better `performance`, `readability`, and `maintainability`
+Arrays `are good` for lists of simple values, but tables `are better` for complex structured data
+
+---
+
+<Warning> These are  just `examples` to demonstrate faster data retrieval using tables versus arrays <br/>
+Arrays have their own purpose and aren't inherently bad; they just have different use cases </Warning>
+
+---
+
+#### Choosing Between Tables and Arrays
+Tables are `faster` than arrays for data lookups because they use a hash map internally, providing constant time lookups, making them `much more efficient`, especially for `larger datasets` <br/>
+Arrays are `slower in lookups` due to linear time complexity , as they require looping through `each element` until the value is found
+
+<Tip>`for i` loops are generally faster than `ipairs` or `pairs` *only arrays work with ipairs or for i loops*</Tip>
+
+<CodeGroup>
+
+```lua Good 
+local job = "police"
+local table = {police = true, doctor = true}
+local hasJob = table[job]
+```
+
+```lua Bad
+-- the larger the array the slower it gets
+local array = {"police", "doctor"}
+local job = "police"
+local hasJob = false
+
+for i = 1, #array do
+  if array[i] == job then
+    hasJob = true
+    break
+  end
+end
+
+```
+</CodeGroup>
+
+---
+
+#### Efficient Data Structuring
+When working with structured data, use `named keys` in tables to improve `readability`, `clarity`, and `performance` <br/>
+Named keys allow for `easier understanding` of what each field represents, and they also enable `faster lookups` <br/>
+
+Arrays with indexed values are `harder to read and maintain`, and lookups `are slower`, especially as the size of the data grows. 
+
+<CodeGroup>
+
+```lua Good  
+local table = {
+  {grade = 0, job = "police"}, 
+  {grade = 0, job = "doctor"}  
+}
+
+local job = "police"
+local hasJob = false
+for i = 1, #table do
+  if table[i].job == job then
+    hasJob = true
+    break
+  end
+end
+
+```
+
+```lua Bad
+
+local array = {
+  { 0, "police"},
+  { 0,  "doctor"} 
+}
+local job = "police"
+local hasJob = false
+
+for i = 1, #array do
+  for j = 1, #array[i] do
+    if array[i][j] == job then
+      hasJob = true
+      break
+    end
+  end
+   if hasJob then break end
+end
+
+```
+</CodeGroup>

@@ -1,0 +1,6 @@
+{
+    "ammo_unknown": "不明な弾薬タイプ",
+    "ammo_max_reached": "弾薬が上限に達しました",
+    "opening_box": "%s を開封中",
+    "ammo_replenished": "弾薬を補充しました x%s"
+}

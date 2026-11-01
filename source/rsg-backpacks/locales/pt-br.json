@@ -1,0 +1,17 @@
+{
+    "error_title": "Erro",
+    "backpack_title": "Mochila",
+    "backpack_config_missing": "Configuração da mochila não encontrada.",
+    "backpack_not_found": "Mochila não encontrada.",
+    "backpack_taken_off": "Mochila retirada",
+    "backpack_lost": "Sua mochila não está mais no seu inventário.",
+    "backpack_serial_failed": "Não foi possível preparar sua mochila. Tente novamente.",
+    "backpack_nested_blocked": "Mochilas não podem ser guardadas dentro de outra mochila.",
+    "backpack_recovered": "%s mochila(s) recuperada(s) de dentro de uma mochila.",
+    "backpack_nothing_recovered": "Nenhuma mochila presa encontrada.",
+    "cmd_recover_help": "Recuperar mochilas presas dentro das suas próprias mochilas",
+    "backpack_not_worn": "Você não está usando uma mochila.",
+    "cmd_remove_help": "Tirar a mochila que você está usando",
+    "backpack_only_one": "Você só pode carregar uma mochila por vez.",
+    "backpack_drop_extra": "Você está carregando mais de uma mochila. Largue ou guarde a extra para usar sua mochila."
+}

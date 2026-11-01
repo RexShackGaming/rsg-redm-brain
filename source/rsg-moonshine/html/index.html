@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>rsg-moonshine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+    <div class="panel">
+        <header class="panel-header">
+            <button class="circle-btn" id="btn-back" data-t-title="ui_change_recipe" title="Change recipe">&#8249;</button>
+            <div class="titles">
+                <h1 data-t="ui_title">Moonshine Still</h1>
+                <div class="subtitle" data-t="ui_subtitle">Copper Pot Distillery</div>
+            </div>
+            <button class="circle-btn" id="btn-close" data-t-title="ui_close" title="Close">&#10005;</button>
+        </header>
+
+        <div class="xp-bar">
+            <span class="xp-label"><span data-t="ui_level">Moonshiner Level</span> <b id="xp-level">1</b></span>
+            <div class="track"><div class="fill stat-warn" id="xp-fill" style="width:0%"></div></div>
+            <span class="xp-text" id="xp-text">0 / 100</span>
+        </div>
+
+        <div class="locked hidden" id="locked" data-t="ui_locked">Only the owner can work this still</div>
+
+        <div class="columns">
+            <!-- LEFT: recipe + hopper -->
+            <section class="col col-left">
+                <div class="divider"><span data-t="ui_recipe">Recipe</span></div>
+
+                <div id="recipe-picker">
+                    <div class="hint" data-t="ui_choose_recipe">Choose a mash recipe</div>
+                    <div id="recipe-list" class="list"></div>
+                </div>
+
+                <div id="recipe-active" class="hidden">
+                    <div class="row recipe-summary">
+                        <div class="badge-icon"><img id="ra-img" alt=""></div>
+                        <div class="row-main">
+                            <div class="row-title" id="ra-label"></div>
+                            <div class="row-desc" id="ra-desc"></div>
+                        </div>
+                        <button class="wood-btn muted small" id="btn-change" data-t="ui_change_recipe">Change Recipe</button>
+                    </div>
+
+                    <div class="divider"><span data-t="ui_hopper">Ingredient Hopper</span></div>
+                    <div id="hopper" class="list"></div>
+                </div>
+            </section>
+
+            <!-- RIGHT: status + output -->
+            <section class="col col-right">
+                <div class="divider"><span data-t="ui_status">Still Status</span></div>
+
+                <div class="status-card">
+                    <div class="still-art" id="still-art">
+                        <div class="flame"></div><div class="flame f2"></div><div class="flame f3"></div>
+                    </div>
+                    <div class="pill" id="status-pill">—</div>
+
+                    <div class="stat">
+                        <div class="stat-head"><span data-t="ui_current_batch">Current batch</span><span id="batch-time">--:--</span></div>
+                        <div class="track"><div class="fill stat-warn" id="batch-fill" style="width:0%"></div></div>
+                    </div>
+                    <div class="kv"><span data-t="ui_queued">Batches queued</span><b id="queued">0</b></div>
+                </div>
+
+                <div class="divider"><span data-t="ui_firebox">Firebox</span></div>
+
+                <div class="status-card fire-card">
+                    <div class="stat">
+                        <div class="stat-head"><span data-t="ui_fuel_left">Fuel remaining</span><span id="fuel-time">00:00</span></div>
+                        <div class="track big"><div class="fill stat-good" id="fuel-fill" style="width:0%"></div></div>
+                    </div>
+                    <div id="fuel-list" class="list fuel-list"></div>
+                </div>
+
+                <div class="divider"><span data-t="ui_tank">Output Tank</span></div>
+
+                <div class="row tank-row">
+                    <div class="badge-icon"><img id="out-img" alt=""></div>
+                    <div class="row-main">
+                        <div class="row-title" id="out-label">—</div>
+                        <div class="track big"><div class="fill stat-good" id="tank-fill" style="width:0%"></div></div>
+                        <div class="meta tank-meta">
+                            <span id="tank-text">0 / 0</span>
+                            <span><span data-t="ui_jugs">Empty jugs</span> <b id="jug-count">0</b></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button class="wood-btn" id="btn-collect" data-t="ui_collect">Bottle &amp; Collect</button>
+                    <button class="wood-btn muted" id="btn-pickup" data-t="ui_pickup">Pack Up Still</button>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

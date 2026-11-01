@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>rsg-housing</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app" class="hidden">
+        <div class="panel" id="panel">
+            <header class="panel-header">
+                <button class="circle-btn hidden" id="btn-back" data-title="ui_back">&#10094;</button>
+                <div class="titles">
+                    <h1 id="house-name"></h1>
+                    <div class="subtitle" id="house-sub"></div>
+                </div>
+                <button class="circle-btn" id="btn-close" data-title="ui_close">&#10005;</button>
+            </header>
+            <div class="divider"><span>&#10022;</span></div>
+
+            <!-- vacant: rent this house -->
+            <section class="view hidden" id="view-rent">
+                <div class="price-block">
+                    <div class="price" id="rent-price">$0</div>
+                    <div class="price-label" data-str="ui_per_month"></div>
+                </div>
+                <p class="terms" id="rent-terms"></p>
+                <button class="wood-btn wide" id="btn-rent" data-str="ui_rent_button"></button>
+            </section>
+
+            <!-- tenant / guest -->
+            <section class="view hidden" id="view-main">
+                <div class="status-card hidden" id="rent-card">
+                    <div class="status-top">
+                        <div>
+                            <div class="label" data-str="ui_rent_status"></div>
+                            <div class="status-line" id="rent-line"></div>
+                        </div>
+                        <span class="pill" id="rent-pill"></span>
+                    </div>
+                    <div class="bar"><div class="bar-fill" id="rent-bar"></div></div>
+                    <div class="status-bottom">
+                        <span class="muted" id="rent-amount"></span>
+                        <button class="wood-btn" id="btn-pay"></button>
+                    </div>
+                </div>
+
+                <div class="label section-label" data-str="ui_manage"></div>
+                <div class="rows" id="main-rows"></div>
+            </section>
+
+            <!-- guests -->
+            <section class="view hidden" id="view-guests">
+                <div class="search-box">
+                    <span class="search-icon">&#9906;</span>
+                    <input type="text" id="guest-input" maxlength="40" autocomplete="off">
+                </div>
+                <div class="rows search-results" id="search-rows"></div>
+                <div class="label section-label" data-str="ui_current_guests"></div>
+                <div class="rows" id="guest-rows"></div>
+            </section>
+
+            <!-- storage -->
+            <section class="view hidden" id="view-storage">
+                <div class="warning-box">
+                    <span class="warning-icon">!</span>
+                    <span data-str="ui_storage_warning"></span>
+                </div>
+                <div class="status-card storage-card">
+                    <div class="status-top">
+                        <div>
+                            <div class="label" data-str="ui_storage_current"></div>
+                            <div class="status-line" id="storage-current"></div>
+                        </div>
+                        <span class="pill" id="storage-specs"></span>
+                    </div>
+                    <button class="wood-btn wide" id="btn-open-storage" data-str="ui_storage_open"></button>
+                </div>
+                <div class="label section-label" id="storage-tiers-label" data-str="ui_storage_title"></div>
+                <div class="rows" id="storage-tiers"></div>
+            </section>
+
+            <!-- mailbox (rsg-telegram) -->
+            <section class="view hidden" id="view-mailbox">
+                <div id="mail-list">
+                    <div class="rows" id="mail-rows"></div>
+                    <div class="muted mail-hint" data-str="ui_mailbox_send_hint"></div>
+                </div>
+                <div class="letter hidden" id="mail-letter">
+                    <div class="letter-head">
+                        <div class="letter-subject" id="letter-subject"></div>
+                        <div class="letter-meta" id="letter-meta"></div>
+                    </div>
+                    <div class="ink-divider"></div>
+                    <div class="letter-body" id="letter-body"></div>
+                    <div class="modal-actions">
+                        <button class="wood-btn muted" id="btn-letter-back" data-str="ui_back"></button>
+                        <button class="wood-btn" id="btn-letter-delete" data-str="ui_delete"></button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- wardrobe (saved outfits) -->
+            <section class="view hidden" id="view-wardrobe">
+                <div class="rows" id="outfit-rows"></div>
+                <div class="muted mail-hint" data-str="ui_outfits_hint"></div>
+            </section>
+        </div>
+
+
+    </div>
+
+    <!-- admin panel (/houseadmin) -->
+    <div id="admin" class="hidden">
+        <div class="panel admin-panel">
+            <header class="panel-header">
+                <button class="circle-btn hidden" id="adm-back" data-title="ui_back">&#10094;</button>
+                <div class="titles">
+                    <h1 data-str="adm_title"></h1>
+                    <div class="subtitle" id="adm-sub" data-str="adm_subtitle"></div>
+                </div>
+                <div class="header-actions">
+                    <button class="circle-btn" id="adm-refresh" data-title="adm_refresh">&#8635;</button>
+                    <button class="circle-btn" id="adm-close" data-title="ui_close">&#10005;</button>
+                </div>
+            </header>
+            <div class="divider"><span>&#10022;</span></div>
+
+            <!-- list -->
+            <section class="view" id="adm-list-view">
+                <div class="adm-stats" id="adm-stats"></div>
+                <div class="search-box">
+                    <span class="search-icon">&#9906;</span>
+                    <input type="text" id="adm-search" maxlength="40" autocomplete="off">
+                </div>
+                <div class="adm-table-head">
+                    <span data-str="adm_details"></span>
+                    <span data-str="adm_tenant"></span>
+                    <span data-str="adm_rent"></span>
+                    <span data-str="adm_due"></span>
+                </div>
+                <div class="adm-list" id="adm-list"></div>
+            </section>
+
+            <!-- detail -->
+            <section class="view hidden" id="adm-detail-view">
+                <div class="status-card adm-summary" id="adm-summary"></div>
+                <div class="adm-grid">
+                    <div class="adm-section">
+                        <div class="label section-label" data-str="adm_rent_section"></div>
+                        <div class="adm-inline">
+                            <input type="number" id="adm-rent" min="0" step="1">
+                            <button class="wood-btn" id="adm-rent-save" data-str="adm_save"></button>
+                        </div>
+
+                        <div class="adm-tenancy" id="adm-tenancy">
+                            <div class="label section-label" data-str="adm_tenancy_section"></div>
+                            <div class="adm-inline">
+                                <button class="wood-btn muted" id="adm-due-minus" data-str="adm_due_minus"></button>
+                                <button class="wood-btn muted" id="adm-due-plus" data-str="adm_due_plus"></button>
+                            </div>
+                            <div class="adm-inline">
+                                <input type="date" id="adm-due-date">
+                                <button class="wood-btn" id="adm-due-set" data-str="adm_set_date"></button>
+                            </div>
+                            <div class="adm-inline">
+                                <button class="wood-btn danger-btn" id="adm-evict-keep" data-str="adm_evict_keep"></button>
+                                <button class="wood-btn danger-btn" id="adm-evict-purge" data-str="adm_evict_purge"></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="adm-section">
+                        <div class="label section-label" data-str="adm_storage"></div>
+                        <div class="adm-tiers" id="adm-tiers"></div>
+
+                        <div class="label section-label" data-str="adm_property_section"></div>
+                        <div class="adm-inline">
+                            <button class="wood-btn muted" id="adm-lock" data-str="adm_lock"></button>
+                            <button class="wood-btn muted" id="adm-unlock" data-str="adm_unlock"></button>
+                        </div>
+                        <div class="adm-inline">
+                            <button class="wood-btn muted" id="adm-teleport" data-str="adm_teleport"></button>
+                            <button class="wood-btn muted" id="adm-storage" data-str="adm_open_storage"></button>
+                        </div>
+                        <div class="adm-inline">
+                            <button class="wood-btn muted" id="adm-reset-name" data-str="adm_reset_name"></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="adm-guests" id="adm-guests-wrap">
+                    <div class="label section-label" data-str="adm_guest_list"></div>
+                    <div class="rows" id="adm-guests"></div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- confirm modal (shared by both panels) -->
+    <div class="modal-backdrop hidden" id="modal">
+        <div class="modal">
+            <h2 id="modal-title"></h2>
+            <div class="ink-divider"></div>
+            <p id="modal-text"></p>
+            <input type="text" id="modal-input" class="modal-input hidden" maxlength="30" autocomplete="off">
+            <div class="modal-actions">
+                <button class="wood-btn muted" id="modal-cancel" data-str="ui_cancel"></button>
+                <button class="wood-btn" id="modal-confirm" data-str="ui_confirm"></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toasts"></div>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+# CScenarioPointFlags__Flags
+
+Source: https://github.com/Halen84/RDR3-Native-Flags-And-Enums/tree/main/CScenarioPointFlags__Flags
+
+## Natives that use this enum
+| Name                                   | Hash               |
+|----------------------------------------|--------------------|
+| TASK::\_SET\_SCENARIO\_POINT\_FLAG     | 0x5AF19B6CC2115D34 |
+| TASK::\_IS\_SCENARIO\_POINT\_FLAG\_SET | 0x8569C38D2FB80650 |
+## Enum
+```cpp
+enum CScenarioPointFlags__Flags
+{
+	_0x27B31061 = 0,
+	PreventPedFromGettingOffTrains = 1,
+	AggressiveVehicleDriving = 2,
+	_0x06BC63F2 = 3,
+	_0x5AA3BE00 = 4,
+	ClusterLeader = 5,
+	ConversePoint = 6,
+	_0xE83E339C = 7,
+	DisablePlayerUse = 8,
+	DisableWitnessBehaviour = 9,
+	EndScenarioIfPlayerWithinRadius = 10,
+	EventsInRadiusTriggerDisputes = 11,
+	EventsInRadiusTriggerThreatResponse = 12,
+	ExtendedRange = 13,
+	HighPriority = 14,
+	HubNode = 15,
+	IgnoreLoitering = 16,
+	IgnoreMaxInRange = 17,
+	IgnoreThreatsIfLosNotClear = 18,
+	IgnoreWeatherRestrictions = 19,
+	InWater = 20,
+	LandVehicleOnArrival = 21,
+	MissionCritical = 22,
+	NoAttraction = 23,
+	NoRespawnUntilStreamedOut = 24,
+	NoSpawn = 25,
+	NoVehicleSpawnMaxDistance = 26,
+	OnlySpawnInSameInterior = 27,
+	OpenDoor = 28,
+	PavementNode = 29,
+	PreciseUseTime = 30,
+	ResetNoCollisionOnCleanUp = 31,
+	SetPedDrunk = 32,
+	ShortRange = 33,
+	SpawnedPedIsArrestable = 34,
+	StationaryReactions = 35,
+	CanBeUsedByAmbientPedsToGetOnTrain = 36,
+	TerritorialScenario = 37,
+	UseHeadOrientationForPerception = 38,
+	UseLoSChecks = 39,
+	UseSearchlight = 40,
+	UseVehicleFrontForArrival = 41,
+	_0xDBCF4713 = 42,
+	_0xAE9CDEC4 = 43,
+	CampfireScenario = 44,
+	_0x6F1EF279 = 45,
+	CanConverseThenLeave = 46,
+	VegVolume = 47,
+	_0xED924097 = 48,
+	_0xB1D91209 = 49,
+	Isolated = 50,
+	ExcludeFromDynamicSearch = 51,
+	_0x51040B88 = 52,
+	_0xB3EB0FA6 = 53,
+	_0x30A8DCC6 = 54,
+	_0xDEE6B943 = 55,
+	_0xC5CC870F = 56,
+	_0xFBEEC8B2 = 57,
+	SeatedChair = 58,
+	SeatedBench = 59,
+	SeatedAtTable = 60,
+	SeatedNoBack = 61,
+	_0x9030FA20 = 62,
+	_0x7C44D036 = 63,
+};
+```

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>rsg-noticeboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+
+    <!-- PLAYER BOARD -->
+    <div id="board" class="panel wide hidden">
+        <div class="header">
+            <button class="circle-btn" id="btnMine" data-i18n-title="ui_my_notices">&#9998;</button>
+            <div class="header-text">
+                <div class="title" data-i18n="ui_board_title"></div>
+                <div class="subtitle" id="boardTown"></div>
+            </div>
+            <button class="circle-btn close-btn" data-i18n-title="ui_close">&#10005;</button>
+        </div>
+        <div class="divider"><span>&#10022;</span></div>
+        <div class="toolbar">
+            <div class="tabs" id="categoryTabs"></div>
+            <button class="wood-btn" id="btnNew" data-i18n="ui_post_notice"></button>
+        </div>
+        <div class="grid" id="noticeGrid"></div>
+        <div class="empty hidden" id="noticeEmpty" data-i18n="ui_empty_board"></div>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="admin" class="panel wide hidden">
+        <div class="header">
+            <span class="circle-spacer"></span>
+            <div class="header-text">
+                <div class="title" data-i18n="ui_admin_title"></div>
+                <div class="subtitle" data-i18n="ui_admin_sub"></div>
+            </div>
+            <button class="circle-btn close-btn" data-i18n-title="ui_close">&#10005;</button>
+        </div>
+        <div class="divider"><span>&#10022;</span></div>
+        <div class="toolbar">
+            <div class="tabs">
+                <button class="tab active" data-admintab="boards" data-i18n="ui_tab_boards"></button>
+                <button class="tab" data-admintab="notices" data-i18n="ui_tab_notices"></button>
+            </div>
+            <select id="adminTown" class="town-filter"></select>
+            <button class="wood-btn" id="btnPlace" data-i18n="ui_place_board"></button>
+        </div>
+        <div class="list" id="adminBoards"></div>
+        <div class="list hidden" id="adminNotices"></div>
+    </div>
+
+    <!-- MODALS -->
+    <div id="modalBackdrop" class="backdrop hidden">
+
+        <div class="modal poster-modal hidden" id="viewModal">
+            <div class="poster">
+                <div class="poster-cat" id="viewCat"></div>
+                <div class="poster-title" id="viewTitle"></div>
+                <div class="ink-divider"></div>
+                <img id="viewImage" class="poster-img hidden" alt="">
+                <div class="poster-body" id="viewBody"></div>
+                <div class="poster-foot"><span id="viewAuthor"></span><span id="viewExpires"></span></div>
+            </div>
+            <div class="actions"><button class="wood-btn" data-close-modal data-i18n="ui_close"></button></div>
+        </div>
+
+        <div class="modal create-modal hidden" id="createModal">
+            <div class="modal-title" data-i18n="ui_create_title"></div>
+            <div class="ink-divider"></div>
+            <label><span data-i18n="ui_label_title"></span> <span class="count" id="titleCount"></span></label>
+            <input type="text" id="inTitle" maxlength="60" data-i18n-placeholder="ui_ph_title">
+            <label data-i18n="ui_label_category"></label>
+            <select id="inCategory"></select>
+            <label><span data-i18n="ui_label_image"></span> <span class="hint">(https)</span></label>
+            <input type="text" id="inImage" placeholder="https://i.imgur.com/....png">
+            <div class="preview hidden" id="imgPreviewWrap"><img id="imgPreview" alt=""></div>
+            <label><span data-i18n="ui_label_body"></span> <span class="count" id="bodyCount"></span></label>
+            <textarea id="inBody" rows="7" data-i18n-placeholder="ui_ph_body"></textarea>
+            <label data-i18n="ui_label_period"></label>
+            <div class="durations" id="durationPick"></div>
+            <div class="cost-line"><span data-i18n="ui_fee"></span>: <span id="feeValue">$0.00</span> &middot; <span data-i18n="ui_cash"></span>: <span id="cashValue">$0.00</span></div>
+            <div class="actions">
+                <button class="wood-btn muted" data-close-modal data-i18n="ui_cancel"></button>
+                <button class="wood-btn" id="btnSubmit" data-i18n="ui_pin"></button>
+            </div>
+        </div>
+
+        <div class="modal hidden" id="mineModal">
+            <div class="modal-title" data-i18n="ui_my_notices"></div>
+            <div class="ink-divider"></div>
+            <div class="list compact" id="mineList"></div>
+            <div class="actions"><button class="wood-btn" data-close-modal data-i18n="ui_close"></button></div>
+        </div>
+
+        <div class="modal hidden" id="durationModal">
+            <div class="modal-title" id="durationTitle"></div>
+            <div class="ink-divider"></div>
+            <div class="durations vertical" id="durationList"></div>
+            <div class="actions">
+                <button class="wood-btn muted" data-close-modal data-i18n="ui_cancel"></button>
+                <button class="wood-btn" id="btnDurationOk" data-i18n="ui_confirm"></button>
+            </div>
+        </div>
+
+        <div class="modal hidden" id="inputModal">
+            <div class="modal-title" id="inputTitle"></div>
+            <div class="ink-divider"></div>
+            <input type="text" id="inputValue" maxlength="64">
+            <div class="actions">
+                <button class="wood-btn muted" data-close-modal data-i18n="ui_cancel"></button>
+                <button class="wood-btn" id="btnInputOk" data-i18n="ui_confirm"></button>
+            </div>
+        </div>
+
+        <div class="modal hidden" id="confirmModal">
+            <div class="modal-title" data-i18n="ui_are_you_sure"></div>
+            <div class="ink-divider"></div>
+            <p class="confirm-text" id="confirmText"></p>
+            <div class="actions">
+                <button class="wood-btn muted" data-close-modal data-i18n="ui_cancel"></button>
+                <button class="wood-btn" id="btnConfirmOk" data-i18n="ui_confirm"></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toasts"></div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

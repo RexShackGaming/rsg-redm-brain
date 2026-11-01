@@ -1,0 +1,10 @@
+{
+    "title": "Bandană",
+    "cmd_help": "Ridică sau coboară bandana",
+    "no_bandana": "Nu porți o bandană",
+    "cant_now": "Nu poți face asta acum",
+    "wait": "Mai încet",
+    "up": "Bandană ridicată",
+    "down": "Bandană coborâtă",
+    "item_missing": "Config.UseItem este activ, dar obiectul \"%s\" nu există în itemele rsg-core"
+}

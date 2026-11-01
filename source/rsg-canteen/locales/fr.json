@@ -1,0 +1,14 @@
+{
+    "notify_title": "Gourde",
+    "target_fill": "Remplir la gourde",
+    "progress_fill": "Remplissage de la gourde...",
+    "progress_drink": "Vous buvez...",
+    "no_canteen": "Vous avez besoin d'une gourde",
+    "canteen_empty": "Votre gourde est vide, remplissez-la à une pompe à eau",
+    "canteens_full": "Votre gourde est déjà pleine",
+    "canteen_filled": "Gourde remplie (%s utilisations)",
+    "drank": "Vous avez bu (%s/%s utilisations restantes)",
+    "too_far": "Vous êtes trop loin de la pompe",
+    "busy": "Vous êtes occupé",
+    "target_fill_water": "Remplir la gourde"
+}

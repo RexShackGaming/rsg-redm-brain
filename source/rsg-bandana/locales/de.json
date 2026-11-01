@@ -1,0 +1,10 @@
+{
+    "title": "Halstuch",
+    "cmd_help": "Halstuch hoch- oder runterziehen",
+    "no_bandana": "Du trägst kein Halstuch",
+    "cant_now": "Das kannst du gerade nicht tun",
+    "wait": "Nicht so schnell",
+    "up": "Halstuch hochgezogen",
+    "down": "Halstuch heruntergezogen",
+    "item_missing": "Config.UseItem ist aktiv, aber das Item \"%s\" existiert nicht in den rsg-core Items"
+}

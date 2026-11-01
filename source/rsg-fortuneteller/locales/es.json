@@ -1,0 +1,15 @@
+{
+    "machine": "Adivina",
+    "use": "Escucha tu fortuna ($%.2f)",
+    "free": "Escucha tu fortuna",
+    "busy": "Alguien está usando esta máquina.",
+    "cooldown": "La máquina aún no está lista. Inténtalo de nuevo en %d segundos.",
+    "noMoney": "Necesitas $%.2f en efectivo.",
+    "unavailable": "La adivina no está disponible.",
+    "tooFar": "Acércate más a la máquina.",
+    "audioFailed": "No se pudo cargar la voz. No se te ha cobrado.",
+    "setupFailed": "No se pudo iniciar la máquina. No se te ha cobrado.",
+    "paymentFailed": "No se pudo completar el pago.",
+    "slowDown": "Espera un momento antes de volver a intentarlo.",
+    "coordinates": "Coordenadas de la adivina mostradas en F8."
+}

@@ -1,0 +1,1 @@
+# Extra Rexshack-RedM repos to include (one name per line), beyond the txAdmin recipe list.

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+  <div class="panel">
+    <div class="panel-header">
+      <span class="circle-btn" aria-hidden="true"></span>
+      <div><div class="title" data-t="ui_wanted"></div><div class="subtitle" id="office"></div></div>
+      <button class="circle-btn" id="close" data-t-title="ui_close">✕</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span id="st-completed">0</span><label data-t="ui_brought_in"></label></div>
+      <div class="stat"><span id="st-alive">0</span><label data-t="ui_alive"></label></div>
+      <div class="stat"><span id="st-dead">0</span><label data-t="ui_dead"></label></div>
+      <div class="stat"><span id="st-earned">$0</span><label data-t="ui_earned"></label></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="board" data-t="ui_posters"></button>
+      <button class="tab" data-tab="leaders" data-t="ui_top_hunters"></button>
+    </div>
+    <div class="divider"><span>✦</span></div>
+
+    <div id="active" class="active-card hidden">
+      <div class="active-label" data-t="ui_active_contract"></div>
+      <div class="active-name" id="ac-name"></div>
+      <div class="row-desc" id="ac-crime"></div>
+      <div class="active-meta">
+        <span class="pill" id="ac-reward"></span>
+        <span class="timer" id="ac-timer"></span>
+      </div>
+      <div class="modal-actions"><button class="wood-btn muted" id="abandon" data-t="ui_abandon"></button></div>
+    </div>
+
+    <div id="locked" class="locked hidden" data-t="ui_locked"></div>
+    <div id="board" class="posters"></div>
+    <div id="leaders" class="list hidden"></div>
+  </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

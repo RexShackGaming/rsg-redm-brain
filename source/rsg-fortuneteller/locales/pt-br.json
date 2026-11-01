@@ -1,0 +1,15 @@
+{
+    "machine": "Cartomante",
+    "use": "Ouça sua sorte ($%.2f)",
+    "free": "Ouça sua sorte",
+    "busy": "Alguém está usando esta máquina.",
+    "cooldown": "A máquina ainda não está pronta. Tente novamente em %d segundos.",
+    "noMoney": "Você precisa de $%.2f em dinheiro.",
+    "unavailable": "A cartomante não está disponível.",
+    "tooFar": "Chegue mais perto da máquina.",
+    "audioFailed": "Não foi possível carregar a voz. Você não foi cobrado.",
+    "setupFailed": "Não foi possível iniciar a máquina. Você não foi cobrado.",
+    "paymentFailed": "Não foi possível concluir o pagamento.",
+    "slowDown": "Aguarde um momento antes de tentar novamente.",
+    "coordinates": "Coordenadas da cartomante exibidas no F8."
+}

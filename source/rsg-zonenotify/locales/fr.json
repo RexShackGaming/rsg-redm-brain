@@ -1,0 +1,15 @@
+{
+    "cl_title": "Position",
+    "cl_indoors": "Tu ne peux pas vérifier ta position à l'intérieur",
+    "cl_unknown": "Tu es en pleine nature",
+    "cl_enabled": "Bannières de lieu activées",
+    "cl_disabled": "Bannières de lieu désactivées",
+    "cl_cmd_location": "Affiche où tu te trouves",
+    "cl_cmd_toggle": "Active ou désactive les bannières de lieu",
+    "cl_time_am": "AM",
+    "cl_time_pm": "PM",
+    "cl_temp_c": "%s°C",
+    "cl_temp_f": "%s°F",
+    "cl_wind_kph": "%s km/h",
+    "cl_wind_mph": "%s mph"
+}

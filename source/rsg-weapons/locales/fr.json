@@ -1,0 +1,23 @@
+{
+    "cl_weapon_degraded": "L'arme est dégradée!",
+    "cl_repairing_weapon": "Réparation de l'arme",
+    "cl_no_weapon_found": "Aucune arme trouvée",
+    "cl_no_weapon_found_desc": "vous devez avoir l'arme en main",
+    "cl_weapon_repair": "Réparer l'arme",
+    "cl_weapon_repair_p": "Réparer l'arme",
+    "cl_reapir_yes": "Oui",
+    "cl_reapir_no": "Non",
+    "cl_item_need": "Objet requis",
+    "cl_item_need_desc": "un kit de réparation d'armes est nécessaire!",
+    "cl_ammo_max": "Max ammo reached!",
+    "cl_lang_1": "Infinite ammo enabled.",
+    "cl_lang_2": "Infinite ammo disabled.",
+    "cl_lang_3": "Infinity Ammo",
+    "cl_lang_4": "You are not holding a weapon.",
+    "sv_weapon_repair": "Réparer l'arme",
+    "sv_weapon_repaired": "Arme réparée",
+    "cl_dual_wield_full": "You already have a weapon in both hands",
+    "cl_dual_wield_failed": "Unable to equip weapon",
+    "sv_weapon_not_damaged": "This weapon does not need repairing",
+    "sv_no_permission": "You do not have permission to use this command."
+}

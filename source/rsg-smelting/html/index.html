@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smelter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+    <div class="panel">
+        <div class="header">
+            <div class="circle-btn invisible"></div>
+            <div class="titles">
+                <div class="title" id="title">Smelter</div>
+                <div class="subtitle" data-l="ui_subtitle">Ores into Bars</div>
+            </div>
+            <button class="circle-btn" id="closeBtn" title="Close">✕</button>
+        </div>
+        <div class="divider"><span>♦</span></div>
+        <div class="list" id="list"></div>
+    </div>
+
+    <div id="modal" class="modal-wrap hidden">
+        <div class="modal">
+            <div class="modal-title" id="modalTitle">Smelt</div>
+            <div class="ink-divider"></div>
+            <div class="modal-reqs" id="modalReqs"></div>
+            <label class="modal-label" for="qtyInput"><span data-l="ui_quantity">Quantity</span> <span id="modalMax"></span></label>
+            <div class="qty-row">
+                <button class="wood-btn muted" id="qtyMinus">−</button>
+                <input type="number" id="qtyInput" min="1" value="1">
+                <button class="wood-btn muted" id="qtyPlus">+</button>
+                <button class="wood-btn muted" id="qtyMax" data-l="ui_max">Max</button>
+            </div>
+            <div class="modal-time" id="modalTime"></div>
+            <div class="actions">
+                <button class="wood-btn muted" id="cancelBtn" data-l="ui_cancel">Cancel</button>
+                <button class="wood-btn" id="confirmBtn" data-l="ui_smelt">Smelt</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="progress" class="progress-wrap hidden">
+    <div class="progress-box">
+        <div class="progress-head">
+            <span class="progress-label" id="progressLabel"></span>
+            <span class="progress-pct" id="progressPct">0%</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-foot"><span id="progressTime"></span><span data-l="ui_cancel_hint">Backspace to cancel</span></div>
+    </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

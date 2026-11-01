@@ -1,0 +1,15 @@
+{
+    "machine": "Fortune Teller",
+    "use": "Hear your fortune ($%.2f)",
+    "free": "Hear your fortune",
+    "busy": "Someone is using this machine.",
+    "cooldown": "The machine is not ready yet. Try again in %d seconds.",
+    "noMoney": "You need $%.2f in cash.",
+    "unavailable": "The fortune teller is unavailable.",
+    "tooFar": "Get closer to the machine.",
+    "audioFailed": "The voice could not be loaded. You have not been charged.",
+    "setupFailed": "The machine could not be started. You have not been charged.",
+    "paymentFailed": "The payment could not be completed.",
+    "slowDown": "Please wait a moment before trying again.",
+    "coordinates": "Fortune teller coordinates printed in F8."
+}

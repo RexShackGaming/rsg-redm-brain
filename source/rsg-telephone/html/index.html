@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+  <div class="panel">
+    <div class="header">
+      <button class="circle" id="tabBtn">&#9776;</button>
+      <div class="titles">
+        <div class="title"></div>
+        <div class="subtitle" id="ownLine">—</div>
+      </div>
+      <button class="circle" id="closeBtn">&#10005;</button>
+    </div>
+    <div class="divider"><span>&#9670;</span></div>
+
+    <div class="display">
+      <div class="status" id="status"></div>
+      <div class="number" id="number">&nbsp;</div>
+      <div class="timer" id="timer">&nbsp;</div>
+    </div>
+
+    <div id="payRow" class="pay hidden">
+      <div class="pay-top"><span id="payCredit"></span><span id="payRate" class="pay-rate"></span></div>
+      <div class="coins" id="coins"></div>
+    </div>
+
+    <div id="padView">
+      <div class="pad">
+        <button class="key" data-k="1">1</button><button class="key" data-k="2">2</button><button class="key" data-k="3">3</button>
+        <button class="key" data-k="4">4</button><button class="key" data-k="5">5</button><button class="key" data-k="6">6</button>
+        <button class="key" data-k="7">7</button><button class="key" data-k="8">8</button><button class="key" data-k="9">9</button>
+        <button class="key muted" data-k="clear"></button><button class="key" data-k="0">0</button><button class="key muted" data-k="del">&#9003;</button>
+      </div>
+    </div>
+
+    <div id="dirView" class="hidden">
+      <input id="search" class="input" />
+      <div id="dirList" class="list"></div>
+    </div>
+
+    <div class="actions">
+      <button class="wood-btn call" id="callBtn"></button>
+      <button class="wood-btn end" id="endBtn"></button>
+    </div>
+  </div>
+</div>
+<div id="form" class="hidden">
+  <div class="modal">
+    <div class="modal-title" id="fTitle"></div>
+    <div class="ink-divider"></div>
+    <label class="f-label" id="fLabelL" for="fLabel"></label>
+    <input id="fLabel" class="input" maxlength="64" />
+    <label class="f-label" id="fModelL"></label>
+    <div id="fModels" class="models"></div>
+    <label class="f-label" id="fNumberL" for="fNumber"></label>
+    <input id="fNumber" class="input" maxlength="16" inputmode="numeric" />
+    <label class="f-label" id="fJobL" for="fJob"></label>
+    <input id="fJob" class="input" maxlength="64" />
+    <div class="check" id="fListed"><span class="box">&#10003;</span><span id="fListedL"></span></div>
+    <div class="f-error" id="fError">&nbsp;</div>
+    <div class="actions">
+      <button class="wood-btn end" id="fCancel"></button>
+      <button class="wood-btn" id="fConfirm"></button>
+    </div>
+  </div>
+</div>
+<div id="placer" class="hidden">
+  <div class="placer-title" id="plTitle"></div>
+  <div class="ink-divider"></div>
+  <div class="pl-row"><span class="kc" data-pk="left">&#9664;</span><span class="kc" data-pk="right">&#9654;</span><span class="pl-label" id="plRotate"></span></div>
+  <div class="pl-row"><span class="kc" data-pk="up">&#9650;</span><span class="kc" data-pk="down">&#9660;</span><span class="pl-label" id="plHeight"></span></div>
+  <div class="pl-row"><span class="kc" data-pk="fwd">E</span><span class="kc" data-pk="bwd">Q</span><span class="pl-label" id="plMove"></span></div>
+  <div class="pl-row"><span class="kc wide" data-pk="enter"></span><span class="pl-label" id="plPlace"></span></div>
+  <div class="pl-row"><span class="kc wide" data-pk="back"></span><span class="pl-label" id="plCancel"></span></div>
+  <div class="ink-divider"></div>
+  <div class="pl-stats">
+    <div><span id="plHeadingL"></span><b id="plHeading">0°</b></div>
+    <div><span id="plOffsetL"></span><b id="plOffset">0.00</b></div>
+    <div><span id="plFwdL"></span><b id="plFwd">0.00</b></div>
+  </div>
+</div>
+<div id="admin" class="hidden">
+  <div class="panel admin-panel">
+    <div class="header">
+      <button class="circle" id="aAdd">&#43;</button>
+      <div class="titles">
+        <div class="title" id="aTitle"></div>
+        <div class="subtitle" id="aStats">—</div>
+      </div>
+      <button class="circle" id="aClose">&#10005;</button>
+    </div>
+    <div class="divider"><span>&#9670;</span></div>
+    <div class="admin-body">
+      <div class="admin-left">
+        <input id="aSearch" class="input" />
+        <div id="aList" class="list admin-list"></div>
+      </div>
+      <div class="admin-right">
+        <div id="aEmpty" class="empty"></div>
+        <div id="aEditor" class="hidden">
+          <div class="a-head"><span id="aHeadLabel"></span><span id="aStatus" class="a-status"></span></div>
+          <div class="ink-divider"></div>
+          <label class="f-label" id="aLabelL"></label>
+          <input id="aLabel" class="input" maxlength="64" />
+          <div class="a-two">
+            <div><label class="f-label" id="aNumberL"></label><input id="aNumber" class="input" maxlength="16" /></div>
+            <div><label class="f-label" id="aJobL"></label><input id="aJob" class="input" maxlength="64" /></div>
+          </div>
+          <label class="f-label" id="aModelL"></label>
+          <div id="aModels" class="a-models"></div>
+          <div class="check" id="aListed"><span class="box">&#10003;</span><span id="aListedL"></span></div>
+          <div class="a-coords" id="aCoords"></div>
+          <div class="f-error" id="aError">&nbsp;</div>
+          <div class="actions a-actions">
+            <button class="wood-btn" id="aTeleport"></button>
+            <button class="wood-btn" id="aWaypoint"></button>
+            <button class="wood-btn end" id="aEndCall"></button>
+          </div>
+          <div class="actions">
+            <button class="wood-btn end" id="aDelete"></button>
+            <button class="wood-btn" id="aSave"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="aConfirm" class="confirm hidden">
+    <div class="modal">
+      <div class="modal-title" id="aConfirmText"></div>
+      <div class="ink-divider"></div>
+      <div class="actions">
+        <button class="wood-btn end" id="aConfirmNo"></button>
+        <button class="wood-btn" id="aConfirmYes"></button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

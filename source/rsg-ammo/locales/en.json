@@ -1,0 +1,6 @@
+{
+    "ammo_unknown": "Unknown Ammo Type",
+    "ammo_max_reached": "Max Ammo Reached",
+    "opening_box": "Opening %s",
+    "ammo_replenished": "Ammo replenished x%s"
+}

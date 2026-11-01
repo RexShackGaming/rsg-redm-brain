@@ -1,0 +1,15 @@
+{
+    "cl_title": "Ubicación",
+    "cl_indoors": "No puedes comprobar tu ubicación en interiores",
+    "cl_unknown": "Estás en plena naturaleza",
+    "cl_enabled": "Avisos de ubicación activados",
+    "cl_disabled": "Avisos de ubicación desactivados",
+    "cl_cmd_location": "Muestra dónde estás",
+    "cl_cmd_toggle": "Activa o desactiva los avisos de ubicación",
+    "cl_time_am": "a. m.",
+    "cl_time_pm": "p. m.",
+    "cl_temp_c": "%s°C",
+    "cl_temp_f": "%s°F",
+    "cl_wind_kph": "%s km/h",
+    "cl_wind_mph": "%s mph"
+}

@@ -1,0 +1,17 @@
+{
+    "error_title": "Error",
+    "backpack_title": "Backpack",
+    "backpack_config_missing": "Backpack configuration not found.",
+    "backpack_not_found": "Backpack not found.",
+    "backpack_taken_off": "Backpack taken off",
+    "backpack_lost": "Your backpack is no longer in your inventory.",
+    "backpack_serial_failed": "Could not prepare your backpack. Try again.",
+    "backpack_nested_blocked": "Backpacks cannot be stored inside another backpack.",
+    "backpack_recovered": "Recovered %s backpack(s) that were stored inside a backpack.",
+    "backpack_nothing_recovered": "No trapped backpacks found.",
+    "cmd_recover_help": "Recover backpacks stuck inside your own backpacks",
+    "backpack_not_worn": "You are not wearing a backpack.",
+    "cmd_remove_help": "Take off the backpack you are wearing",
+    "backpack_only_one": "You can only carry one backpack at a time.",
+    "backpack_drop_extra": "You are carrying more than one backpack. Drop or store the extra one to use your backpack."
+}

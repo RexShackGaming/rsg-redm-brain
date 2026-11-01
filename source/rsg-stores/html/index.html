@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wild West Shop</title>
+
+    <!-- Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <!-- Main Shop Root : fullscreen, toggles via .hidden -->
+    <div id="shop-container" class="hidden">
+        <div class="shop-panel">
+
+            <!-- Header -->
+            <div class="shop-header">
+                <button class="circle-btn" data-close-shop title="Back" data-i18n-title="ui_btn_back">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <div class="header-content">
+                    <h1 class="shop-name" id="shop-name" data-i18n="ui_shop_default">Shop</h1>
+                    <p class="shop-subtitle" id="shop-subtitle" data-i18n="ui_sub_default">Frontier Trading Post</p>
+                </div>
+                <button class="circle-btn" data-close-shop title="Close" data-i18n-title="ui_btn_close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="section-divider"><span>&#9670;</span></div>
+
+            <!-- Player Money Display (cash only) -->
+            <div class="money-bar">
+                <div class="money-item cash">
+                    <span class="icon-badge"><i class="fa-solid fa-dollar-sign"></i></span>
+                    <span class="money-label" data-i18n="ui_cash">Cash</span>
+                    <span class="money-value" id="player-cash">$0.00</span>
+                </div>
+                <div class="money-divider"></div>
+                <div class="money-item mode">
+                    <span class="icon-badge"><i class="fa-solid fa-scroll"></i></span>
+                    <span class="money-label" data-i18n="ui_mode">Mode</span>
+                    <span class="money-value small" id="mode-display" data-i18n="ui_mode_both">Buy &amp; Sell</span>
+                </div>
+            </div>
+
+            <!-- Buy / Sell Tabs -->
+            <div class="mode-tabs" id="mode-tabs">
+                <button class="sort-btn mode-tab active" data-mode="buy" id="buy-tab">
+                    <i class="fa-solid fa-cart-shopping"></i> <span data-i18n="ui_purchase_tab">Purchase</span>
+                </button>
+                <button class="sort-btn mode-tab" data-mode="sell" id="sell-tab">
+                    <i class="fa-solid fa-hand-holding-dollar"></i> <span data-i18n="ui_sell_tab">Sell</span>
+                </button>
+            </div>
+
+            <!-- Search and Filter Bar -->
+            <div class="filter-bar">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="search-input" placeholder="Search items..." data-i18n-ph="ui_search_ph" autocomplete="off">
+                </div>
+                <div class="sort-options">
+                    <button class="sort-btn active" data-sort="name">
+                        <i class="fa-solid fa-font"></i> <span data-i18n="ui_sort_name">Name</span>
+                    </button>
+                    <button class="sort-btn" data-sort="price-low">
+                        <i class="fa-solid fa-arrow-down-short-wide"></i> <span data-i18n="ui_sort_low">Price &#8593;</span>
+                    </button>
+                    <button class="sort-btn" data-sort="price-high">
+                        <i class="fa-solid fa-arrow-up-wide-short"></i> <span data-i18n="ui_sort_high">Price &#8595;</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Category filter (built from each item's category) -->
+            <div class="category-bar hidden" id="category-bar"></div>
+
+            <!-- Main Content Area -->
+            <div class="shop-content">
+
+                <!-- Items Grid (buy mode) -->
+                <div class="items-section" id="buy-section">
+                    <div class="items-grid" id="items-grid">
+                        <!-- Items will be populated here -->
+                    </div>
+
+                    <div class="no-items hidden" id="no-items">
+                        <i class="fa-solid fa-box-open"></i>
+                        <p data-i18n="ui_no_items">No items available</p>
+                    </div>
+                </div>
+
+                <!-- Sell List (sell mode) -->
+                <div class="items-section hidden" id="sell-section">
+                    <div class="sell-list" id="sell-list">
+                        <!-- Sellable player items will be populated here -->
+                    </div>
+
+                    <div class="no-items hidden" id="no-sell-items">
+                        <i class="fa-solid fa-basket-shopping"></i>
+                        <p data-i18n="ui_no_sell">Nothing to sell, partner</p>
+                    </div>
+                </div>
+
+                <!-- Cart Section (buy mode only) -->
+                <div class="cart-section" id="cart-section">
+                    <div class="cart-header">
+                        <span class="icon-badge"><i class="fa-solid fa-shopping-basket"></i></span>
+                        <h3 data-i18n="ui_your_cart">YOUR CART</h3>
+                        <span class="cart-count" id="cart-count">0</span>
+                    </div>
+
+                    <div class="cart-items" id="cart-items">
+                        <!-- Cart items will be listed here -->
+                    </div>
+
+                    <div class="cart-empty" id="cart-empty">
+                        <i class="fa-solid fa-basket-shopping"></i>
+                        <p data-i18n="ui_cart_empty">Your cart is empty</p>
+                    </div>
+
+                    <div class="cart-summary">
+                        <div class="summary-row">
+                            <span data-i18n="ui_subtotal">Subtotal</span>
+                            <span id="cart-subtotal">$0.00</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span data-i18n="ui_total">TOTAL</span>
+                            <span id="cart-total">$0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="cart-actions">
+                        <button class="wood-btn muted" id="btn-clear">
+                            <i class="fa-solid fa-trash"></i>
+                            <span data-i18n="ui_clear">CLEAR</span>
+                        </button>
+                        <button class="wood-btn" id="btn-purchase">
+                            <i class="fa-solid fa-coins"></i>
+                            <span data-i18n="ui_purchase">PURCHASE</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="shop-footer">
+                <div class="footer-info">
+                    <i class="fa-solid fa-info-circle"></i>
+                    <span id="footer-hint" data-i18n="ui_hint_buy">Click items to add to cart &bull; Right-click to remove</span>
+                </div>
+                <button class="wood-btn muted" id="close-btn">
+                    <span data-i18n="ui_close_shop">CLOSE SHOP</span>
+                    <i class="fa-solid fa-door-open"></i>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Item Detail Modal (buy: add to cart / sell: confirm sale) -->
+    <div id="item-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="item-icon-large" id="modal-icon">
+                    <i class="fa-solid fa-box"></i>
+                </div>
+                <div class="modal-title-section">
+                    <h2 id="modal-item-name" data-i18n="ui_item_name_ph">Item Name</h2>
+                    <span class="modal-item-type" id="modal-item-type" data-i18n="ui_for_sale">General Item</span>
+                </div>
+                <button class="circle-btn" id="modal-close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="ink-divider"></div>
+
+            <div class="modal-body">
+                <div class="item-details">
+                    <div class="detail-row">
+                        <div class="detail-item">
+                            <i class="fa-solid fa-tag"></i>
+                            <span class="detail-label" id="modal-price-label" data-i18n="ui_price_each">Price</span>
+                            <span class="detail-value price" id="modal-price">$0.00</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fa-solid fa-boxes-stacked"></i>
+                            <span class="detail-label" id="modal-stock-label" data-i18n="ui_in_stock">In Stock</span>
+                            <span class="detail-value" id="modal-stock">50</span>
+                        </div>
+                    </div>
+                    <div class="stat-track stock-track">
+                        <div class="stat-fill" id="modal-stock-fill"></div>
+                    </div>
+                    <p class="modal-note hidden" id="modal-fee-note"></p>
+                </div>
+
+                <div class="quantity-section">
+                    <h4 data-i18n="ui_select_qty">Select Quantity</h4>
+                    <div class="quantity-controls">
+                        <button class="circle-btn qty-btn minus" id="qty-minus">
+                            <i class="fa-solid fa-minus"></i>
+                        </button>
+                        <input type="number" class="qty-input" id="qty-input" value="1" min="1">
+                        <button class="circle-btn qty-btn plus" id="qty-plus">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
+                    <div class="quick-qty">
+                        <button class="quick-btn" data-qty="1">1</button>
+                        <button class="quick-btn" data-qty="5">5</button>
+                        <button class="quick-btn" data-qty="10">10</button>
+                        <button class="quick-btn" data-qty="25">25</button>
+                        <button class="quick-btn" data-qty="max" data-i18n="ui_max">MAX</button>
+                    </div>
+                </div>
+
+                <div class="total-section">
+                    <span class="total-label" id="modal-total-label" data-i18n="ui_total_cost">Total Cost</span>
+                    <span class="total-value" id="modal-total">$0.00</span>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="wood-btn muted" id="modal-cancel">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span data-i18n="ui_back">BACK</span>
+                </button>
+                <button class="wood-btn" id="modal-add">
+                    <i class="fa-solid fa-cart-plus"></i>
+                    <span id="modal-add-label" data-i18n="ui_add_to_cart">ADD TO CART</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purchase Success Overlay -->
+    <div id="success-overlay" class="success-overlay hidden">
+        <div class="success-content">
+            <h2 id="success-title" data-i18n="ui_purchase_done">PURCHASE COMPLETE</h2>
+            <div class="ink-divider"></div>
+            <div class="success-icon">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <p id="success-message" data-i18n="ui_purchase_thanks">Thank you for your purchase</p>
+            <div class="success-decoration">&#9670; &mdash;&mdash;&mdash; &#9670; &mdash;&mdash;&mdash; &#9670;</div>
+        </div>
+    </div>
+
+    <!-- ============ ADMIN PANEL (/npcshops) ============ -->
+    <div id="admin-container" class="hidden">
+        <div class="adm-panel">
+            <div class="shop-header adm-header">
+                <button class="circle-btn" id="adm-back" data-i18n-title="ui_btn_back" title="Back"><i class="fa-solid fa-chevron-left"></i></button>
+                <div class="header-content">
+                    <h1 class="shop-name adm-title" id="adm-title" data-i18n="ui_adm_title">Shop Manager</h1>
+                    <p class="shop-subtitle" id="adm-subtitle" data-i18n="ui_adm_subtitle">NPCs • Shops • Blips</p>
+                </div>
+                <button class="circle-btn" id="adm-close" data-i18n-title="ui_btn_close" title="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="section-divider"><span>&#9670;</span></div>
+
+            <!-- LIST VIEW -->
+            <div class="adm-view" id="adm-list-view">
+                <div class="mode-tabs adm-tabs">
+                    <button class="sort-btn mode-tab active" id="adm-tab-npcs"><i class="fa-solid fa-users"></i> <span data-i18n="ui_adm_tab_npcs">NPCs</span> <span class="qty-pill" id="adm-npc-count">0</span></button>
+                    <button class="sort-btn mode-tab" id="adm-tab-blips"><i class="fa-solid fa-map-location-dot"></i> <span data-i18n="ui_adm_tab_blips">Blips</span> <span class="qty-pill" id="adm-blip-count">0</span></button>
+                    <button class="sort-btn mode-tab" id="adm-tab-presets"><i class="fa-solid fa-list-check"></i> <span data-i18n="ui_adm_tab_presets">Presets</span> <span class="qty-pill" id="adm-preset-count">0</span></button>
+                </div>
+                <div class="adm-toolbar">
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="adm-search" data-i18n-ph="ui_adm_search" placeholder="Search..." autocomplete="off">
+                    </div>
+                    <div class="adm-type-filter" id="adm-type-filter-wrap">
+                        <select id="adm-type-filter"></select>
+                    </div>
+                </div>
+                <div class="adm-scroll" id="adm-list"></div>
+                <div class="no-items hidden" id="adm-list-empty">
+                    <i class="fa-solid fa-box-open"></i>
+                    <p id="adm-list-empty-text"></p>
+                </div>
+                <div class="adm-footer">
+                    <button class="wood-btn" id="adm-new"><i class="fa-solid fa-plus"></i> <span id="adm-new-label" data-i18n="ui_adm_new_npc">New NPC</span></button>
+                </div>
+            </div>
+
+            <!-- NPC EDITOR -->
+            <div class="adm-view hidden" id="adm-npc-view">
+                <div class="adm-scroll adm-form">
+                    <div class="adm-section-title"><i class="fa-solid fa-user"></i> <span data-i18n="ui_adm_sec_npc">NPC</span></div>
+                    <label class="adm-field"><span data-i18n="cl_npc_name" class="req">NPC Name</span>
+                        <input type="text" id="npc-name" maxlength="100"></label>
+                    <label class="adm-field"><span data-i18n="cl_npc_model" class="req">NPC Model</span>
+                        <select id="npc-model"></select></label>
+
+                    <div class="adm-section-title"><i class="fa-solid fa-location-crosshairs"></i> <span data-i18n="ui_adm_sec_position">Position</span></div>
+                    <div class="adm-grid4">
+                        <label class="adm-field"><span data-i18n="cl_field_x">X</span><input type="number" step="0.01" id="npc-x"></label>
+                        <label class="adm-field"><span data-i18n="cl_field_y">Y</span><input type="number" step="0.01" id="npc-y"></label>
+                        <label class="adm-field"><span data-i18n="cl_field_z">Z</span><input type="number" step="0.01" id="npc-z"></label>
+                        <label class="adm-field"><span data-i18n="cl_field_heading">H</span><input type="number" step="0.1" id="npc-h"></label>
+                    </div>
+                    <button class="wood-btn muted adm-wide" id="npc-use-pos"><i class="fa-solid fa-person-walking"></i> <span data-i18n="ui_adm_use_pos">Use My Position</span></button>
+
+                    <div class="adm-section-title"><i class="fa-solid fa-store"></i> <span data-i18n="ui_adm_sec_shop">Shop</span></div>
+                    <label class="adm-check"><input type="checkbox" id="npc-is-shop"> <span data-i18n="ui_adm_is_shop">This NPC is a shopkeeper</span></label>
+                    <div id="npc-shop-fields">
+                        <div class="adm-grid2">
+                            <label class="adm-field"><span data-i18n="cl_shop_identifier" class="req">Shop ID</span><input type="text" id="adm-shop-name" maxlength="100"></label>
+                            <label class="adm-field"><span data-i18n="cl_shop_display" class="req">Shop Label</span><input type="text" id="adm-shop-label" maxlength="100"></label>
+                        </div>
+                        <label class="adm-field"><span data-i18n="cl_shop_type">Shop Type</span>
+                            <select id="adm-shop-type">
+                                <option value="both" data-i18n="cl_shop_both">Buy &amp; Sell</option>
+                                <option value="buy" data-i18n="cl_shop_buy">Buy only</option>
+                                <option value="sell" data-i18n="cl_shop_sell">Sell only</option>
+                            </select></label>
+
+                        <div class="adm-section-title"><i class="fa-solid fa-boxes-stacked"></i> <span data-i18n="ui_adm_sec_items">Shop Items</span> <span class="qty-pill" id="adm-item-count">0</span></div>
+                        <div class="adm-items-head">
+                            <span data-i18n="cl_field_item">Item</span><span data-i18n="cl_field_price">Price</span><span data-i18n="ui_adm_stock">Stock</span><span></span>
+                        </div>
+                        <div id="adm-items"></div>
+                        <p class="adm-hint hidden" id="adm-items-empty" data-i18n="ui_adm_no_items">No items yet</p>
+                        <p class="adm-hint" data-i18n="ui_adm_stock_hint">Leave stock empty for unlimited.</p>
+                        <button class="wood-btn muted adm-wide" id="adm-add-item"><i class="fa-solid fa-plus"></i> <span data-i18n="ui_adm_add_item">Add Item</span></button>
+
+                        <div id="npc-blip-block">
+                            <div class="adm-section-title"><i class="fa-solid fa-map-pin"></i> <span data-i18n="ui_adm_sec_blip">Map Blip</span></div>
+                            <label class="adm-check"><input type="checkbox" id="npc-make-blip"> <span data-i18n="cl_create_blip_chk">Create a blip for this shop?</span></label>
+                            <div id="npc-blip-fields" class="hidden">
+                                <label class="adm-field"><span data-i18n="cl_blip_name">Blip Name</span><input type="text" id="npc-blip-name" maxlength="100"></label>
+                                <div class="adm-grid2">
+                                    <label class="adm-field"><span data-i18n="cl_blip_type">Blip Type</span><select id="npc-blip-sprite"></select></label>
+                                    <label class="adm-field"><span data-i18n="cl_blip_color">Blip Color</span><select id="npc-blip-color"></select></label>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="adm-hint hidden" id="npc-linked-blip"></p>
+                    </div>
+                </div>
+                <div class="adm-footer">
+                    <div class="adm-footer-tools" id="npc-tools">
+                        <button class="circle-btn" id="npc-teleport" data-i18n-title="ui_adm_teleport" title="Teleport"><i class="fa-solid fa-location-arrow"></i></button>
+                        <button class="circle-btn" id="npc-duplicate" data-i18n-title="ui_adm_duplicate" title="Duplicate"><i class="fa-solid fa-copy"></i></button>
+                        <button class="circle-btn adm-danger" id="npc-delete" data-i18n-title="ui_adm_delete" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                    <button class="wood-btn" id="npc-save"><i class="fa-solid fa-floppy-disk"></i> <span id="npc-save-label" data-i18n="ui_adm_save">Save</span></button>
+                </div>
+            </div>
+
+            <!-- BLIP EDITOR -->
+            <div class="adm-view hidden" id="adm-blip-view">
+                <div class="adm-scroll adm-form">
+                    <div class="adm-section-title"><i class="fa-solid fa-map-pin"></i> <span data-i18n="ui_adm_sec_blip">Map Blip</span></div>
+                    <label class="adm-field"><span data-i18n="cl_blip_name" class="req">Blip Name</span><input type="text" id="blip-name" maxlength="100"></label>
+                    <div class="adm-grid2">
+                        <label class="adm-field"><span data-i18n="cl_blip_type">Blip Type</span><select id="blip-sprite"></select></label>
+                        <label class="adm-field"><span data-i18n="cl_blip_color">Blip Color</span><select id="blip-color"></select></label>
+                    </div>
+                    <div class="adm-section-title"><i class="fa-solid fa-location-crosshairs"></i> <span data-i18n="ui_adm_sec_position">Position</span></div>
+                    <div class="adm-grid3">
+                        <label class="adm-field"><span data-i18n="cl_field_x">X</span><input type="number" step="0.01" id="blip-x"></label>
+                        <label class="adm-field"><span data-i18n="cl_field_y">Y</span><input type="number" step="0.01" id="blip-y"></label>
+                        <label class="adm-field"><span data-i18n="cl_field_z">Z</span><input type="number" step="0.01" id="blip-z"></label>
+                    </div>
+                    <button class="wood-btn muted adm-wide" id="blip-use-pos"><i class="fa-solid fa-person-walking"></i> <span data-i18n="ui_adm_use_pos">Use My Position</span></button>
+                    <p class="adm-hint hidden" id="blip-linked"></p>
+                </div>
+                <div class="adm-footer">
+                    <div class="adm-footer-tools" id="blip-tools">
+                        <button class="circle-btn" id="blip-teleport" data-i18n-title="ui_adm_teleport" title="Teleport"><i class="fa-solid fa-location-arrow"></i></button>
+                        <button class="circle-btn" id="blip-visibility" data-i18n-title="cl_toggle_visibility" title="Visibility"><i class="fa-solid fa-eye"></i></button>
+                        <button class="circle-btn" id="blip-duplicate" data-i18n-title="ui_adm_duplicate" title="Duplicate"><i class="fa-solid fa-copy"></i></button>
+                        <button class="circle-btn adm-danger" id="blip-delete" data-i18n-title="ui_adm_delete" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                    <button class="wood-btn" id="blip-save"><i class="fa-solid fa-floppy-disk"></i> <span data-i18n="ui_adm_save">Save</span></button>
+                </div>
+            </div>
+
+            <!-- PRESET EDITOR (dropdown options for NPC models / blip types) -->
+            <div class="adm-view hidden" id="adm-preset-view">
+                <div class="adm-scroll adm-form">
+                    <div class="adm-section-title"><i class="fa-solid fa-list-check"></i> <span data-i18n="ui_adm_sec_preset">Dropdown Option</span></div>
+                    <label class="adm-field"><span data-i18n="ui_adm_preset_kind">Type</span>
+                        <select id="preset-kind">
+                            <option value="model" data-i18n="ui_adm_kind_model">NPC Model</option>
+                            <option value="blip" data-i18n="ui_adm_kind_blip">Blip Type</option>
+                        </select></label>
+                    <label class="adm-field"><span data-i18n="ui_adm_preset_label">Label</span>
+                        <input type="text" id="preset-label" maxlength="100"></label>
+                    <label class="adm-field"><span data-i18n="ui_adm_preset_value" class="req">Value</span>
+                        <input type="text" id="preset-value" maxlength="100" autocomplete="off"></label>
+                    <p class="adm-hint" id="preset-hint"></p>
+                </div>
+                <div class="adm-footer">
+                    <div class="adm-footer-tools" id="preset-tools">
+                        <button class="circle-btn adm-danger" id="preset-delete" data-i18n-title="ui_adm_delete" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                    <button class="wood-btn" id="preset-save"><i class="fa-solid fa-floppy-disk"></i> <span id="preset-save-label" data-i18n="ui_adm_save">Save</span></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Item picker -->
+        <div class="modal hidden" id="adm-picker">
+            <div class="modal-backdrop" data-adm-dismiss></div>
+            <div class="modal-container adm-picker-box">
+                <div class="modal-header">
+                    <div class="modal-title-section"><h2 data-i18n="ui_adm_pick_item">Choose Item</h2></div>
+                    <button class="circle-btn" data-adm-dismiss><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="ink-divider"></div>
+                <div class="modal-body">
+                    <div class="search-box"><i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="adm-picker-search" data-i18n-ph="cl_search_ph" placeholder="Search..." autocomplete="off"></div>
+                    <div class="adm-picker-list" id="adm-picker-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirm -->
+        <div class="modal hidden" id="adm-confirm">
+            <div class="modal-backdrop" data-adm-dismiss></div>
+            <div class="modal-container">
+                <div class="modal-header"><div class="modal-title-section"><h2 id="adm-confirm-title"></h2></div></div>
+                <div class="ink-divider"></div>
+                <div class="modal-body"><p class="adm-confirm-text" id="adm-confirm-text"></p></div>
+                <div class="modal-footer">
+                    <button class="wood-btn muted" data-adm-dismiss><span data-i18n="ui_adm_cancel">Cancel</span></button>
+                    <button class="wood-btn adm-danger-btn" id="adm-confirm-ok"><i class="fa-solid fa-trash"></i> <span data-i18n="ui_adm_delete">Delete</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

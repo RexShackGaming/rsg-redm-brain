@@ -1,0 +1,18 @@
+{
+    "cl_afk_title": "Varování AFK",
+    "cl_afk_minutes": "Za %d min. budeš vyhozen kvůli AFK",
+    "cl_afk_seconds": "Za %d s budeš vyhozen kvůli AFK",
+    "cl_hideui": "Zapnout/vypnout všechna UI (např. pro snímky obrazovky)",
+    "cl_wash": "Umýt se",
+    "cl_drink": "Napít se",
+    "cl_pvp_toggle_on": "PvP ZAPNUTO",
+    "cl_pvp_toggle_off": "PvP VYPNUTO",
+    "sv_kick": "Byl jsi vyhozen kvůli AFK",
+    "sv_test_your_webhook": "Otestuj Discord webhook pro logy (jen God)",
+    "sv_test_webhook": "Test webhooku",
+    "sv_webhook_successfully": "Webhook úspěšně nastaven",
+    "sv_print_drizzle": "30 min do bouře : mrholení",
+    "sv_print_shower": "15 min do bouře : přeháňka",
+    "sv_print_rain": "10 min do bouře : déšť",
+    "sv_print_thunderstorm": "5 min do bouře : bouřka"
+}

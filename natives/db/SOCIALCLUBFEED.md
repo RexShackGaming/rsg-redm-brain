@@ -1,0 +1,8 @@
+# SOCIALCLUBFEED natives (2)
+Source: VORPCORE/RDR3natives `rdr3natives.json`. Grep by NAME or hash.
+
+## SC_FEED_HUB_HAS_NEW_DATA
+`0x068332D20CB6F897` | `BOOL SC_FEED_HUB_HAS_NEW_DATA()` | build 1232
+
+## _SC_FEED_SUBMIT_PRESET_MESSAGE
+`0xEFB64240F6B17817` | `int _SC_FEED_SUBMIT_PRESET_MESSAGE(int type, int subType)` | build 1207

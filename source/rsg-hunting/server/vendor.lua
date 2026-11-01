@@ -1,0 +1,241 @@
+local RSGCore = exports['rsg-core']:GetCoreObject()
+local stockFile = 'vendor_stock.json'
+local stockData = {}
+-- stockData[vendorIndex as string][itemName] = amount (each trapper has its own stock)
+local function LoadStock()
+    local file = LoadResourceFile(GetCurrentResourceName(), stockFile)
+    stockData = file and json.decode(file) or {}
+    -- migrate the old shared format { item = amount } to per trapper
+    local migrated = false
+    for k, v in pairs(stockData) do
+        if type(v) == 'number' then
+            stockData[k] = nil
+            for i, vendor in ipairs(Config.Vendors) do
+                for _, item in ipairs(vendor.items) do
+                    if item.name == k then
+                        local key = tostring(i)
+                        stockData[key] = stockData[key] or {}
+                        stockData[key][k] = v
+                    end
+                end
+            end
+            migrated = true
+        end
+    end
+    if migrated or not file then
+        SaveResourceFile(GetCurrentResourceName(), stockFile, json.encode(stockData), -1)
+    end
+end
+
+local function vendorStock(vendorIndex)
+    local key = tostring(vendorIndex)
+    stockData[key] = stockData[key] or {}
+    return stockData[key]
+end
+
+local function SaveStock()
+    SaveResourceFile(GetCurrentResourceName(), stockFile, json.encode(stockData), -1)
+end
+
+LoadStock()
+
+-- stock slowly sells on, so stock-based prices recover over time
+CreateThread(function()
+    local minutes = tonumber(Config.StockDecayMinutes) or 0
+    local percent = tonumber(Config.StockDecayPercent) or 0
+    if minutes <= 0 or percent <= 0 then return end
+    while true do
+        Wait(minutes * 60000)
+        local changed = false
+        for _, stock in pairs(stockData) do
+            for name, amount in pairs(stock) do
+                local new = math.floor(amount * (1 - percent / 100))
+                if new ~= amount then stock[name] = new > 0 and new or nil; changed = true end
+            end
+        end
+        if changed then SaveStock() end
+    end
+end)
+
+--------------------------------------
+-- anti-spam: throttle selling so a macro can't fire the events faster
+-- than the UI could ever produce them
+--------------------------------------
+local PlayerCooldowns = {}
+local TRADE_COOLDOWN = 500 -- ms
+local MAX_TRADE_AMOUNT = 500
+
+local function isOnCooldown(src)
+    local now = GetGameTimer()
+    local last = PlayerCooldowns[src]
+    if last and (now - last) < TRADE_COOLDOWN then
+        return true
+    end
+    PlayerCooldowns[src] = now
+    return false
+end
+
+-- amount must be a whole, positive number within sane bounds
+local function isValidAmount(amount)
+    return type(amount) == 'number'
+        and amount > 0
+        and amount <= MAX_TRADE_AMOUNT
+        and amount % 1 == 0
+end
+
+--------------------------------------
+-- trapper sell UI: data + basket checkout
+--------------------------------------
+local SELL_DISTANCE = 6.0
+
+-- vendor pays more for items it's short on (same rules as single sells)
+local function getSellUnitPrice(itemConfig, src, vendorIndex)
+    local price = itemConfig.sellPrice
+    if src then
+        price = price * (1 + (HuntingXP.GetPerks(src).trapperBonus or 0) / 100)
+    end
+    if itemConfig.stockBasedPrice then
+        local stockRatio = (vendorStock(vendorIndex)[itemConfig.name] or 0) / (itemConfig.maxStock or 50)
+        if stockRatio < 0.25 then
+            price = price * 1.5
+        elseif stockRatio < 0.5 then
+            price = price * 1.25
+        end
+    end
+    return price
+end
+
+local function isNearVendor(src, vendor)
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false end
+    local c = vendor.coords
+    return #(GetEntityCoords(ped) - vector3(c.x, c.y, c.z)) <= SELL_DISTANCE
+end
+
+local function buildSellData(Player, vendorIndex)
+    local vendor = Config.Vendors[vendorIndex]
+    local items = {}
+    for _, item in ipairs(vendor.items) do
+        if item.canSell then
+            local shared = RSGCore.Shared.Items[item.name]
+            local owned = Player.Functions.GetItemByName(item.name)
+            items[#items + 1] = {
+                name  = item.name,
+                label = item.label or (shared and shared.label) or item.name,
+                image = (shared and shared.image) or (item.name .. '.png'),
+                price = getSellUnitPrice(item, Player.PlayerData.source, vendorIndex),
+                owned = owned and owned.amount or 0,
+            }
+        end
+    end
+    return items
+end
+
+local function handler_getSellData(src, vendorIndex)
+    local vendor = type(vendorIndex) == 'number' and Config.Vendors[vendorIndex]
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not vendor or not Player then return nil end
+    if not isNearVendor(src, vendor) then
+        TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('vendor'), description = locale('too_far'), type = 'error' })
+        return nil
+    end
+    return { title = vendor.blipname or locale('vendor'), items = buildSellData(Player, vendorIndex) }
+end
+RSGCore.Functions.CreateCallback('rsg-hunting:server:getSellData', function(src, cb, vendorIndex) cb(handler_getSellData(src, vendorIndex)) end)
+
+local function handler_sellBasket(src, vendorIndex, basket)
+    local vendor = type(vendorIndex) == 'number' and Config.Vendors[vendorIndex]
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not vendor or not Player or type(basket) ~= 'table' then return { ok = false } end
+    if isOnCooldown(src) then return { ok = false } end
+    if not isNearVendor(src, vendor) then
+        return { ok = false, message = locale('too_far') }
+    end
+
+    -- only items this specific vendor accepts
+    local accepted = {}
+    for _, item in ipairs(vendor.items) do
+        if item.canSell then accepted[item.name] = item end
+    end
+
+    -- merge + validate every line before touching the inventory
+    local lines, order, count = {}, {}, 0
+    for _, entry in pairs(basket) do
+        count = count + 1
+        if count > 200 or type(entry) ~= 'table' then return { ok = false } end
+        local name, amount = entry.name, tonumber(entry.amount)
+        if type(name) ~= 'string' or not accepted[name] or not isValidAmount(amount) then
+            return { ok = false }
+        end
+        if not lines[name] then order[#order + 1] = name end
+        lines[name] = (lines[name] or 0) + amount
+    end
+    if #order == 0 then return { ok = false, message = locale('basket_empty') } end
+
+    for _, name in ipairs(order) do
+        local owned = Player.Functions.GetItemByName(name)
+        if not owned or owned.amount < lines[name] then
+            return { ok = false, message = locale('not_enough_items'), items = buildSellData(Player, vendorIndex) }
+        end
+    end
+
+    -- price with the stock level as it was before this sale
+    local rawTotal, totalItems = 0, 0
+    for _, name in ipairs(order) do
+        rawTotal = rawTotal + getSellUnitPrice(accepted[name], src, vendorIndex) * lines[name]
+        totalItems = totalItems + lines[name]
+    end
+
+    -- remove everything; roll back if any removal fails
+    local removed = {}
+    for _, name in ipairs(order) do
+        if exports['rsg-inventory']:RemoveItem(src, name, lines[name], nil, 'rsg-hunting-trapper-sale') then
+            removed[#removed + 1] = name
+        else
+            for _, r in ipairs(removed) do exports['rsg-inventory']:AddItem(src, r, lines[r], nil, nil, 'rsg-hunting-sale-rollback') end
+            return { ok = false, message = locale('not_enough_items'), items = buildSellData(Player, vendorIndex) }
+        end
+    end
+
+    -- pay the exact amount, rounded to the cent
+    local payout = math.floor(rawTotal * 100 + 0.5) / 100
+    Player.Functions.AddMoney('cash', payout, 'vendor-sale')
+
+    local stock = vendorStock(vendorIndex)
+    for _, name in ipairs(order) do
+        stock[name] = (stock[name] or 0) + lines[name]
+    end
+    SaveStock()
+
+    TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('vendor'), description = locale('basket_sold', totalItems, payout), type = 'success' })
+
+    local soldText = {}
+    for _, name in ipairs(order) do
+        local shared = RSGCore.Shared.Items[name]
+        soldText[#soldText + 1] = ('%sx %s'):format(lines[name], (shared and shared.label) or name)
+    end
+    HuntingWebhook.Sale('trapper', src, locale('wh_trapper_title', totalItems, vendor.blipname or locale('vendor')), {
+        { name = locale('wh_trapper'), value = vendor.blipname or ('#' .. vendorIndex) },
+        { name = locale('wh_payout'), value = ('$%.2f'):format(payout) },
+        { name = locale('wh_trapper_perk'), value = ('+%s%%'):format(HuntingXP.GetPerks(src).trapperBonus or 0) },
+        { name = locale('wh_items'), value = table.concat(soldText, '\n'), inline = false },
+    }, payout)
+    return { ok = true, payout = payout, items = buildSellData(Player, vendorIndex) }
+end
+RSGCore.Functions.CreateCallback('rsg-hunting:server:sellBasket', function(src, cb, vendorIndex, basket) cb(handler_sellBasket(src, vendorIndex, basket)) end)
+
+RegisterCommand('resetvendorstock', function(src)
+    if src ~= 0 then return end
+
+    stockData = {}
+    SaveStock()
+    print('[rsg-hunting] Vendor stock reset')
+    HuntingWebhook.Send('admin', { title = locale('wh_stock_reset_title'), description = locale('wh_stock_reset_desc'), src = 0 })
+end, false)
+
+--------------------------------------
+-- cleanup on player disconnect
+--------------------------------------
+AddEventHandler('playerDropped', function()
+    PlayerCooldowns[source] = nil
+end)

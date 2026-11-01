@@ -1,0 +1,15 @@
+{
+    "machine": "Wahrsager",
+    "use": "Hör dir deine Zukunft an ($%.2f)",
+    "free": "Hör dir deine Zukunft an",
+    "busy": "Jemand benutzt diesen Automaten gerade.",
+    "cooldown": "Der Automat ist noch nicht bereit. Versuche es in %d Sekunden erneut.",
+    "noMoney": "Du brauchst $%.2f in bar.",
+    "unavailable": "Der Wahrsager ist nicht verfügbar.",
+    "tooFar": "Geh näher an den Automaten heran.",
+    "audioFailed": "Die Stimme konnte nicht geladen werden. Dir wurde nichts berechnet.",
+    "setupFailed": "Der Automat konnte nicht gestartet werden. Dir wurde nichts berechnet.",
+    "paymentFailed": "Die Zahlung konnte nicht abgeschlossen werden.",
+    "slowDown": "Bitte warte einen Moment, bevor du es erneut versuchst.",
+    "coordinates": "Wahrsager-Koordinaten wurden in F8 ausgegeben."
+}

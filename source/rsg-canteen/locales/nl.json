@@ -1,0 +1,14 @@
+{
+    "notify_title": "Veldfles",
+    "target_fill": "Veldfles vullen",
+    "progress_fill": "Veldfles wordt gevuld...",
+    "progress_drink": "Aan het drinken...",
+    "no_canteen": "Je hebt een veldfles nodig",
+    "canteen_empty": "Je veldfles is leeg, vul hem bij een waterpomp",
+    "canteens_full": "Je veldfles is al vol",
+    "canteen_filled": "Veldfles gevuld (%s keer te gebruiken)",
+    "drank": "Je hebt gedronken (nog %s/%s keer over)",
+    "too_far": "Je bent te ver van de pomp",
+    "busy": "Je bent bezig",
+    "target_fill_water": "Veldfles vullen"
+}

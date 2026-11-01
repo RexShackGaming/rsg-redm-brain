@@ -1,0 +1,23 @@
+{
+    "cl_weapon_degraded": "Το όπλο έχει φθαρεί!",
+    "cl_repairing_weapon": "Επισκευή Όπλου",
+    "cl_no_weapon_found": "Δεν βρέθηκε όπλο",
+    "cl_no_weapon_found_desc": "Πρέπει να κρατάς το όπλο",
+    "cl_weapon_repair": "Επισκευή Όπλου",
+    "cl_weapon_repair_p": "Επισκευή Όπλου",
+    "cl_reapir_yes": "Ναι",
+    "cl_reapir_no": "Όχι",
+    "cl_item_need": "Απαιτείται Αντικείμενο",
+    "cl_item_need_desc": "Απαιτείται κιτ επισκευής όπλου!",
+    "cl_ammo_max": "Max ammo reached!",
+    "cl_lang_1": "Infinite ammo enabled.",
+    "cl_lang_2": "Infinite ammo disabled.",
+    "cl_lang_3": "Infinity Ammo",
+    "cl_lang_4": "You are not holding a weapon.",
+    "sv_weapon_repair": "Επισκευή Όπλου",
+    "sv_weapon_repaired": "Το όπλο επισκευάστηκε",
+    "cl_dual_wield_full": "You already have a weapon in both hands",
+    "cl_dual_wield_failed": "Unable to equip weapon",
+    "sv_weapon_not_damaged": "This weapon does not need repairing",
+    "sv_no_permission": "You do not have permission to use this command."
+}

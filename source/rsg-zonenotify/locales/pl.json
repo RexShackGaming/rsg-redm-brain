@@ -1,0 +1,15 @@
+{
+    "cl_title": "Lokalizacja",
+    "cl_indoors": "Nie możesz sprawdzić lokalizacji w budynku",
+    "cl_unknown": "Jesteś na odludziu",
+    "cl_enabled": "Powiadomienia o lokalizacji włączone",
+    "cl_disabled": "Powiadomienia o lokalizacji wyłączone",
+    "cl_cmd_location": "Pokaż, gdzie jesteś",
+    "cl_cmd_toggle": "Włącz lub wyłącz powiadomienia o lokalizacji",
+    "cl_time_am": "AM",
+    "cl_time_pm": "PM",
+    "cl_temp_c": "%s°C",
+    "cl_temp_f": "%s°F",
+    "cl_wind_kph": "%s km/h",
+    "cl_wind_mph": "%s mph"
+}

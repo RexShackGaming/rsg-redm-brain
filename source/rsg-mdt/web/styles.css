@@ -1,0 +1,88 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Dark Mode MDT theme - modern dark aesthetic */
+:root {
+  /* Surfaces — deep dark tones */
+  --rdr-bg: #0a0a0b;
+  --rdr-bg-elev: #111113;
+  --rdr-surface: #161618;
+  --rdr-surface-2: #1c1c1f;
+  --rdr-panel: rgba(17, 17, 19, 0.98);
+
+  /* Text — clean white/gray hierarchy */
+  --rdr-heading: #ffffff;
+  --rdr-text: #e4e4e7;
+  --rdr-muted: #a1a1aa;
+  --rdr-faint: #52525b;
+
+  /* Accent — amber for warm western feel */
+  --rdr-red: #ef4444;
+  --rdr-red-bright: #f87171;
+  --rdr-red-deep: #991b1b;
+  --rdr-accent: #d97706;
+  --rdr-accent-bright: #f59e0b;
+  --rdr-accent-deep: #b45309;
+
+  /* Lines + frame */
+  --rdr-line: rgba(255, 255, 255, 0.06);
+  --rdr-border: #27272a;
+  --rdr-frame-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='100'%20height='100'%20fill='none'%3E%3Cpath%20d='M16,2.5L84,2.5L97.5,16L97.5,84L84,97.5L16,97.5L2.5,84L2.5,16Z'%20stroke='%23ffffff'%20stroke-opacity='0.1'%20stroke-width='1'/%3E%3Cpath%20d='M19,7L81,7L93,19L93,81L81,93L19,93L7,81L7,19Z'%20stroke='%23ffffff'%20stroke-opacity='0.05'%20stroke-width='1'/%3E%3C/svg%3E");
+
+  /* Type — clean modern fonts */
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--rdr-text);
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+input, textarea, select {
+  font-family: inherit;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--rdr-faint);
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--rdr-accent) !important;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--rdr-accent);
+}
+
+/* Utility for line clamping */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
