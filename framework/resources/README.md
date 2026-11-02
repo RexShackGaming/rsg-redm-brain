@@ -85,7 +85,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-trapdoors](rsg-trapdoors.md) | Synced, animated trapdoors for RSG-Core (RedM) with an optional 4-digit passcode lock, a themed keypad UI, | 1 | 1 |
 | [rsg-treasure](rsg-treasure.md) | Treasure map hunting for RSG Framework | 1 | 3 |
 | [rsg-voice](rsg-voice.md) | rsg-voice - proximity voice for RSG Framework | 11 | 13 |
-| [rsg-wagons](rsg-wagons.md) | A wagon ownership, customisation and storage system for RedM servers running the RSG-Core framework. P | 0 | 27 |
+| [rsg-wagons](rsg-wagons.md) | rsg-wagons - wagon store with full NUI catalogue, 3D preview and wagon ownership | 2 | 8 |
 | [rsg-wardrobe](rsg-wardrobe.md) | Version 3.2.0 · RSG Framework (RedM) Take individual clothing items off and put them back on from a wardro | 9 | 9 |
 | [rsg-weaponcomp](rsg-weaponcomp.md) | Weapon customisation for RSG Framework (RedM). Players place a portable gunsmith workbench, then use it to | 0 | 14 |
 | [rsg-weapons](rsg-weapons.md) | Weapon handling for RSG Framework: dual wield, serial-based equipping, weapon wear, repairs, saved loadouts  | 6 | 14 |

@@ -1,29 +1,33 @@
 # rsg-wagons
 
-Version 2.0.3. rsg-wagons
+Version 3.0.0. rsg-wagons - wagon store with full NUI catalogue, 3D preview and wagon ownership
 
-A wagon ownership, customisation and storage system for **RedM** servers running the **RSG-Core** framework. Players buy wagons from NPC-staffed wagon shops, customise them with liveries, tints, extras, props and lanterns, call them out anywhere with road-aware spawning, store items and animal carcasses in them, sell them back, or scrap them at a chop shop for materials and cash. - **Wagon shops.*
+**Version 3.0.0** · Wagon yards for RSG Framework (RedM). Walk up to a yard keeper, open a full-screen catalogue, preview any wagon in 3D with an orbit camera (the same controls as rsg-stables), buy it, name it, take it out, use its storage and trade it back in. Dependencies: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`. No ox_lib.
 
 Source: https://github.com/Rexshack-RedM/rsg-wagons
 
-**Dependencies:** `ox_lib`
+**Dependencies:** `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
 
 Has NUI (`ui_page`).
 
+## Exports (call as exports['rsg-wagons']:Name)
+
+**server:** `GetActiveWagon(src)`, `GetPlayerWagons(citizenid)`
+
 ## Net events registered
 
-**server:** `rsg-wagons:getOwnerPermission`, `rsg-wagons:getWagonDataByCitizenID`, `rsg-wagons:giveOwnerPermission`, `rsg-wagons:openWagonStash`, `rsg-wagons:registerWagon`, `rsg-wagons:removeAnimalFromWagon`, `rsg-wagons:removeWagon`, `rsg-wagons:saveCustomization`, `rsg-wagons:saveWagonToDatabase`, `rsg-wagons:sellWagon`, `rsg-wagons:server:chopDeleteFallback`, `rsg-wagons:server:processChop`, `rsg-wagons:storeAnimalInWagon`, `rsg-wagons:toggleWagonActive`, `rsg-wagons:updateWagonAuth`
+**server:** `rsg-wagons:server:condition`, `rsg-wagons:server:openStorage`, `rsg-wagons:server:registerSpawned`, `rsg-wagons:server:restore`, `rsg-wagons:server:spawnFailed`
 
-**client:** `btc-wagon:askOwnerPermission`, `rsg-wagons:client:callwagon`, `rsg-wagons:client:chopDeleteOwnedWagon`, `rsg-wagons:client:chopForceDelete`, `rsg-wagons:client:chopNotify`, `rsg-wagons:client:dellwagon`, `rsg-wagons:client:notify`, `rsg-wagons:client:openStore`, `rsg-wagons:client:success`, `rsg-wagons:receiveWagonData`, `rsg-wagons:saveWagonToDatabase`, `rsg-wagons:spawnAnimal`, `rsg-wagons:stashPermission`
+**client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `rsg-wagons:client:restore`
 
-## Callbacks (lib.callback)
+## Event handlers
 
-**server:** `rsg-wagons:checkMyWagons`, `rsg-wagons:getAnimalStorage`, `rsg-wagons:isWagonRegistered`, `rsg-wagons:server:getChopInfo`
+**server:** `RSGCore:Server:OnPlayerUnload`
 
-## Commands (RegisterCommand)
+## Callbacks (RSGCore.Functions.CreateCallback)
 
-**client:** `/callwagon`, `/chopdebug`
+**server:** `rsg-wagons:server:buy`, `rsg-wagons:server:callWagon`, `rsg-wagons:server:fieldRepair`, `rsg-wagons:server:fleeWagon`, `rsg-wagons:server:getOwned`, `rsg-wagons:server:rename`, `rsg-wagons:server:sell`, `rsg-wagons:server:sellCargo`, `rsg-wagons:server:setLook`, `rsg-wagons:server:store`, `rsg-wagons:server:storeNearest`, `rsg-wagons:server:stowCarcass`, `rsg-wagons:server:takeOut`, `rsg-wagons:server:yardRepair`
 
 ## Database tables
 
-`rsg_wagons`
+`player_wagons`

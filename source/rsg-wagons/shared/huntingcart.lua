@@ -1,0 +1,108 @@
+-- Hunting cart (huntercart01): Online-style carcass storage.
+-- Animal prices / items and butcher locations copied from rsg-hunting (github.com/Rexshack-RedM/rsg-hunting config.lua)
+-- so cart loads sell for the same as carcasses sold by hand. Keep in step if you change rsg-hunting's prices.
+Config.HuntingCart = {
+    enabled   = true,
+    models    = { huntercart01 = true },        -- wagon models that work as hunting carts
+    capacity  = 20,                             -- carcasses one cart can hold
+    tarp      = 'pg_mp005_huntingWagonTarp01',  -- femga vehicle_propsets: Huntercart01
+    tarpMin   = 0.0, tarpMax = 1.0,             -- _SET_BATCH_TARP_HEIGHT range (empty -> full)
+    fromHorse = true,                           -- also stow a carcass strapped to your horse
+    horseRange = 6.0,
+    sellRange = 25.0,                           -- cart must be this close to a butcher to sell the load
+    sellTime  = 8000,                           -- ms
+    qualityMultiplier = { poor = 1, good = 2, perfect = 3 }, -- rsg-hunting Poor/Good/PerfectMultiplier
+    itemQuantity      = { poor = 1, good = 2, perfect = 3 }, -- rsg-hunting butcher item amounts
+    moneyType = 'cash',
+    xpPerCarcass = 1,                           -- hunting xp per carcass x quality (via rsg-hunting AwardHuntingXP); 0 = off
+
+    butchers = {
+        { name = 'Valentine Butcher', coords = vector3(-341.05, 767.33, 116.70) },
+        { name = 'St Denis Butcher', coords = vector3(2816.37, -1322.24, 46.61) },
+        { name = 'Rhodes Butcher', coords = vector3(1296.36, -1279.26, 75.84) },
+        { name = 'Annesburg Butcher', coords = vector3(2937.32, 1310.64, 44.48) },
+        { name = 'Tumbleweed Butcher', coords = vector3(-5508.10, -2947.73, -1.87) },
+        { name = 'Blackwater Butcher', coords = vector3(-751.102, -1284.896, 43.276576) },
+        { name = 'Strawberry Butcher', coords = vector3(-1752.91, -394.74, 156.19) },
+        { name = 'Van-Horn Butcher', coords = vector3(2994.23, 571.79, 44.35) },
+        { name = 'Spider Gorge Butcher', coords = vector3(-1355.103, 2420.8293, 307.48272) },
+        { name = 'Riggs Station Butcher', coords = vector3(-1005.966, -540.9986, 98.964859) },
+        { name = 'Elysian Butcher', coords = vector3(2540.72, 802.35, 76.38) },
+        { name = 'Guarma Butcher', coords = vector3(1248.80, -7043.52, 41.84) },
+    },
+
+    -- [model hash] = { name, money, items }
+    animals = {
+        [-1124266369] = { name = 'Bear', money = 14, items = { 'raw_meat' } },
+        [-1568716381] = { name = 'Big Horn Ram', money = 3, items = { 'raw_meat' } },
+        [2028722809] = { name = 'Boar', money = 3, items = { 'raw_meat' } },
+        [-1963605336] = { name = 'Buck', money = 7, items = { 'raw_meat' } },
+        [1556473961] = { name = 'Bison', money = 10, items = { 'raw_meat' } },
+        [195700131] = { name = 'Bull', money = 8, items = { 'raw_meat' } },
+        [1110710183] = { name = 'Deer', money = 3, items = { 'raw_meat' } },
+        [-1003616053] = { name = 'Duck', money = 1, items = { 'raw_meat' } },
+        [1459778951] = { name = 'Eagle', money = 6, items = { 'raw_meat' } },
+        [831859211] = { name = 'Egret', money = 3, items = { 'raw_meat' } },
+        [-2021043433] = { name = 'Elk', money = 5, items = { 'raw_meat' } },
+        [252669332] = { name = 'American Red Fox', money = 5, items = { 'raw_meat' } },
+        [-1143398950] = { name = 'Big Grey Wolf', money = 6, items = { 'raw_meat' } },
+        [-885451903] = { name = 'Medium Grey Wolf', money = 5, items = { 'raw_meat' } },
+        [-829273561] = { name = 'Small Grey Wolf', money = 4, items = { 'raw_meat' } },
+        [1104697660] = { name = 'Vulture', money = 1, items = { 'raw_meat' } },
+        [-407730502] = { name = 'Snapping Turtle', money = 3, items = { 'raw_meat' } },
+        [-466054788] = { name = 'Wild Turkey', money = 1, items = { 'raw_meat' } },
+        [-2011226991] = { name = 'Wild Turkey', money = 1, items = { 'raw_meat' } },
+        [-166054593] = { name = 'Wild Turkey', money = 1, items = { 'raw_meat' } },
+        [-229688157] = { name = 'Water Snake', money = 3, items = { 'raw_meat' } },
+        [-1790499186] = { name = 'Snake Red Boa', money = 3, items = { 'raw_meat' } },
+        [1464167925] = { name = 'Snake Fer-De-Lance', money = 3, items = { 'raw_meat' } },
+        [846659001] = { name = 'Black-Tailed Rattlesnake', money = 3, items = { 'raw_meat' } },
+        [545068538] = { name = 'Western Rattlesnake', money = 3, items = { 'raw_meat' } },
+        [-1211566332] = { name = 'Striped Skunk', money = 8, items = { 'raw_meat' } },
+        [40345436] = { name = 'Merino Sheep', money = 1, items = { 'raw_meat' } },
+        [-164963696] = { name = 'Herring Seagull', money = 1, items = { 'raw_meat' } },
+        [-1076508705] = { name = 'Roseate Spoonbill', money = 2, items = { 'raw_meat' } },
+        [2023522846] = { name = 'Dominique Rooster', money = 1, items = { 'raw_meat' } },
+        [-466687768] = { name = 'Red-Footed Booby', money = 3, items = { 'raw_meat' } },
+        [-575340245] = { name = 'Wester Raven', money = 1, items = { 'raw_meat' } },
+        [1458540991] = { name = 'North American Racoon', money = 1, items = { 'raw_meat' } },
+        [-541762431] = { name = 'Black-Tailed Jackrabbit', money = 1, items = { 'raw_meat' } },
+        [1755643085] = { name = 'American Pronghorn Doe', money = 1, items = { 'raw_meat' } },
+        [2079703102] = { name = 'Greater Prairie Chicken', money = 1, items = { 'raw_meat' } },
+        [-1414989025] = { name = 'Wirginia Possum', money = 2, items = { 'raw_meat' } },
+        [1007418994] = { name = 'Berkshire Pig', money = 1, items = { 'raw_meat' } },
+        [1416324601] = { name = 'Ring-Necked Pheasant', money = 1, items = { 'raw_meat' } },
+        [1265966684] = { name = 'American White Pelican', money = 1, items = { 'raw_meat' } },
+        [-1797450568] = { name = 'Blue And Yellow Macaw', money = 6, items = { 'raw_meat' } },
+        [1654513481] = { name = 'Panther', money = 30, items = { 'raw_meat' } },
+        [1205982615] = { name = 'Californian Condor', money = 1, items = { 'raw_meat' } },
+        [-2063183075] = { name = 'Dominique Chicken', money = 1, items = { 'raw_meat' } },
+        [-2073130256] = { name = 'Double-Crested Cormorant', money = 1, items = { 'raw_meat' } },
+        [90264823] = { name = 'Cougar', money = 25, items = { 'raw_meat' } },
+        [-50684386] = { name = 'Florida Cracker Cow', money = 1, items = { 'raw_meat' } },
+        [480688259] = { name = 'Coyote', money = 2, items = { 'raw_meat' } },
+        [-564099192] = { name = 'Whooping Crane', money = 1, items = { 'raw_meat' } },
+        [457416415] = { name = 'Gila Monster', money = 3, items = { 'raw_meat' } },
+        [-753902995] = { name = 'Alpine Goat', money = 2, items = { 'raw_meat' } },
+        [723190474] = { name = 'Canada Goose', money = 1, items = { 'raw_meat' } },
+        [-2145890973] = { name = 'Ferruinous Hawk', money = 3, items = { 'raw_meat' } },
+        [1095117488] = { name = 'Great Blue Heron', money = 4, items = { 'raw_meat' } },
+        [-1854059305] = { name = 'Green Iguana', money = 2, items = { 'raw_meat' } },
+        [-593056309] = { name = 'Desert Iguana', money = 2, items = { 'raw_meat' } },
+        [1751700893] = { name = 'Peccary Pig', money = 1, items = { 'raw_meat' } },
+        [386506078] = { name = 'Common Loon', money = 13, items = { 'raw_meat' } },
+        [-1098441944] = { name = 'Moose', money = 3, items = { 'raw_meat' } },
+        [-1134449699] = { name = 'American Muskrat', money = 2, items = { 'raw_meat' } },
+        [-861544272] = { name = 'Great Horned Owl', money = 3, items = { 'raw_meat' } },
+        [556355544] = { name = 'Angus Ox', money = 1, items = { 'raw_meat' } },
+        [-1892280447] = { name = 'Alligator', money = 4, items = { 'raw_meat' } },
+        [759906147] = { name = 'North American Beaver', money = 2, items = { 'raw_meat' } },
+        [730092646] = { name = 'American Black Bear', money = 4, items = { 'raw_meat' } },
+        [-1295720802] = { name = 'Alligator', money = 4, items = { 'raw_meat' } },
+        [-1149999295] = { name = 'Legendary Beaver', money = 50, items = { 'raw_meat' } },
+        [-1433814131] = { name = 'Legendary Cougar', money = 50, items = { 'raw_meat' } },
+        [-1307757043] = { name = 'Legendary Coyote', money = 50, items = { 'raw_meat' } },
+        [-1189368951] = { name = 'Legendary Panther', money = 50, items = { 'raw_meat' } },
+        [-1392359921] = { name = 'Legendary Wolf', money = 50, items = { 'raw_meat' } },
+    },
+}

@@ -1,224 +1,92 @@
 # rsg-wagons
 
-A wagon ownership, customisation and storage system for **RedM** servers running the **RSG-Core** framework.
+**Version 3.0.0** · Wagon yards for RSG Framework (RedM).
 
-Players buy wagons from NPC-staffed wagon shops, customise them with liveries, tints, extras, props and lanterns, call them out anywhere with road-aware spawning, store items and animal carcasses in them, sell them back, or scrap them at a chop shop for materials and cash.
+Walk up to a yard keeper, open a full-screen catalogue, preview any wagon in 3D with an orbit camera (the same controls as rsg-stables), buy it, name it, take it out, use its storage and trade it back in.
 
----
+Dependencies: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`. No ox_lib.
+
+Full developer and server-owner reference: [DOCS.md](DOCS.md)
 
 ## Features
-
-- **Wagon shops.** Six locations out of the box (Valentine, Saint Denis, Strawberry, Blackwater, Tumbleweed and Caliga), each with an NPC, a map blip, and a live wagon preview with its own camera.
-- **Large wagon catalogue.** Over 50 wagons in three categories:
-  - **Work:** camp wagons, carts, a chuckwagon, a coal wagon, oil tankers, a hunter's cart, supply wagons and more.
-  - **Special:** police, prison, armoured, circus, milkman, apothecary and war wagons.
-  - **Coach:** buggies, carriages and stagecoaches.
-- **Per-wagon stats.** Every wagon has its own price, max weight, stash slots and animal capacity.
-- **Cash or gold pricing.** Set `priceGold` on a wagon to let players pay in gold as well.
-- **Full customisation.** Liveries, paint tints, extras, propsets and lantern tiers, each with its own price. Includes the extended `mack-wagonextras` data (labels, liveries, categorised propsets).
-- **Wagon storage.** Every wagon gets a personal stash (through `rsg-inventory`) sized by its weight and slot limits.
-- **Carcass and pelt storage.** Wagons with `maxAnimals` can hold hunted animals and pelts, which you can view and take back out later. More than 250 animal and pelt models are supported.
-- **Owner permissions.** Another player trying to open your wagon's stash has to get your approval first.
-- **Smart spawning.** Your wagon spawns on the nearest road within a set radius. If there's no road nearby, it spawns a set distance from you instead.
-- **Several ways to call your wagon.** Use the menu, an optional hotkey, or an optional `/callwagon` command.
-- **Selling.** Sell wagons back for a percentage of what you paid.
-- **Chop shop.** Scrap wagons (your own, or unlisted ones if you allow it) for random item rewards and cash. Payouts are scaled by a multiplier, and there's a per-player cooldown.
-- **ox_target or prompts.** Works with `ox_target` or with native RSG prompts.
-- **Themed NUI menu** with a configurable position and theme.
-- **Localisation.** Ships with English, Dutch and Brazilian Portuguese (ox_lib locales).
-- **Wagon limit.** Set a maximum number of wagons each player can own.
-
----
-
-## Dependencies
-
-| Resource | Required |
-|---|---|
-| [rsg-core](https://github.com/Rexshack-RedM/rsg-core) | Yes |
-| [ox_lib](https://github.com/overextended/ox_lib) | Yes |
-| [oxmysql](https://github.com/overextended/oxmysql) | Yes |
-| [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory) | Yes (wagon stashes) |
-| [ox_target](https://github.com/overextended/ox_target) | Only when `Config.Target = true` |
-
----
+- Shop keeper NPCs at Valentine, Saint Denis, Strawberry, Blackwater and Tumbleweed, opened through **rsg-target**
+- Full NUI catalogue in the RSG leather & gold style: category tabs, search, capacity/slots/seats stat bars, price and class badges
+- Live 3D preview of the selected wagon (with its draft horses) and orbit camera: hold the arrows or **A / D** to rotate, scroll or **+ / −** to zoom, slow idle spin
+- **My Wagons** tab: take out, return, rename and sell owned wagons
+- Wagon condition saved when stored; condition below 90% counts as *damaged* and lowers the trade-in value (taken from the RDR2 wagon fence script)
+- Each owned wagon has its own rsg-inventory stash (`wagon_<id>`) sized by the wagon's capacity and slots
+- One wagon out per player; it despawns and returns to the yard when the player leaves
+- Database table created automatically
+- 10 languages
 
 ## Installation
+1. Put `rsg-wagons` in your resources folder (e.g. `resources/[framework]/rsg-wagons`).
+2. Add `ensure rsg-wagons` to your `server.cfg` after `rsg-core`, `rsg-inventory` and `rsg-target`.
+3. Database: the `player_wagons` table is created automatically on first start. To install it manually instead, set `Config.AutoDatabase = false` and import `install.sql`.
+4. Restart the server.
 
-1. **Download** the resource and put it in your server's `resources` folder (for example `resources/[rsg]/rsg-wagons`). Keep the folder name as `rsg-wagons`.
-2. **Import the database.** Run `installation/rsg-wagons.sql` against your database. It creates the `rsg_wagons` table:
+> If you are replacing the older rsg-wagons, its `rsg_wagons` table is left untouched. This version uses a new `player_wagons` table, so wagons owned under the old script are not moved over.
 
-   | Column | Purpose |
-   |---|---|
-   | `id` | Unique wagon ID |
-   | `citizenid` | Owner |
-   | `wagon` | Wagon model |
-   | `custom` | Customisation data (JSON) |
-   | `animals` | Stored carcasses and pelts (JSON) |
-   | `active` | Whether this is the player's active wagon |
+## Configuration (`shared/config.lua`)
 
-3. **Add the images (optional).** Copy the images in `installation/images/` into your inventory's image folder if you want menu or item icons there. The NUI already uses the copies in `images/`.
-4. **Add it to `server.cfg`** so it starts after its dependencies:
-
-   ```cfg
-   ensure ox_lib
-   ensure oxmysql
-   ensure rsg-core
-   ensure rsg-inventory
-   ensure ox_target   # only if Config.Target = true
-   ensure rsg-wagons
-   ```
-
-5. **Make sure your reward items exist.** The default chop shop reward is `wood`. Any item you add under `Config.Chop.RewardItems` must exist in your `rsg-core` shared items.
-6. **Restart the server.**
-
----
-
-## Configuration
-
-All settings are in `config.lua`.
-
-### General
+Liveries (`Config.Liveries`) and colour counts (`Config.Tints`) per model live in `shared/liveries.lua`; cargo (`Config.Propsets`) and lantern (`Config.Lanterns`) sets live in `shared/propsets.lua` — remove entries to hide them.
 
 | Option | Default | Description |
 |---|---|---|
-| `Config.Target` | `true` | `true` uses ox_target. `false` uses native prompts. |
-| `Config.PositionMenu` | `'top-right'` | Where the menu appears on screen. |
-| `Config.UITheme` | `'bw'` | NUI theme (`'bw'` or `'color'`). |
-| `Config.usecommand` | `false` | Turns on the `/callwagon` command. |
-| `Config.SpawnKey` | `false` | Hotkey for calling your wagon, for example `"INPUT_..."`. `false` turns it off. |
-| `Config.SpawnRadius` | `100` | How far to search for a road to spawn the wagon on. |
-| `Config.FallbackSpawnDistance` | `10` | How far from the player the wagon spawns when there's no road nearby (metres). |
-| `Config.MoneyType.money` | `"cash"` | Money type charged for cash purchases. |
-| `Config.maxWagonsPerPlayer` | `5` | Most wagons a player can own. |
-| `Config.Sell` | `0.1` | Share of the purchase price paid back on sale (0.1 = 10%). |
+| `Config.AutoDatabase` | `true` | Build the table on start. `false` = import `install.sql` yourself |
+| `Config.MoneyType` | `'cash'` | Money type taken for purchases and paid for trade-ins |
+| `Config.MaxWagons` | `5` | Max wagons a player can own |
+| `Config.SellPercent` | `0.50` | Trade-in = price × this |
+| `Config.DamagedThreshold` | `90` | Condition % below this counts as damaged |
+| `Config.DamagedSellModifier` | `0.5` | Damaged wagons get this fraction of the trade-in |
+| `Config.StoreDistance` | `15.0` | How close the player must be to the yard's preview spot to use the keeper menu / sell |
+| `Config.CallKey` | `0xF3830D8E` (J) | Key to call your wagon to you (`false` = off) |
+| `Config.CallCommand` / `Config.FleeCommand` | `'callwagon'` / `'fleewagon'` | Chat commands to call / send away your wagon (`false` = off) |
+| `Config.CallNearDistance` | `25.0` | If the wagon is closer than this, calling just says it's nearby |
+| `Config.CallRoadDistance` | `60.0` | A called wagon appears on a road within this distance, otherwise beside you |
+| `Config.WagonBlip` | `enabled = true`, `style = 'BLIP_STYLE_PLAYER_COACH'`, `sprite = 'blip_player_coach'` | Map/radar blip on the wagon you have out |
+| `Config.FieldRepair` | 35%, 3 x `resource_wood`, 8 s, `/repairwagon` | Temporary patch on the road (item or money) |
+| `Config.YardRepair` | `$0.5` per missing % | Full repair to 100% at a yard (My Wagons → Repair) |
+| `Config.HuntingCart` (`shared/huntingcart.lua`) | 20 carcasses, tarp, 12 butchers, rsg-hunting prices | Hunting cart (huntercart01): stow carcasses, sell the load at a butcher |
+| `Config.StoreRadius` | `35.0` | Wagon and player must both be within this distance of a yard (keeper or preview spot) to store |
+| `Config.StorePrompt` | `true` | Show a hold-to-store prompt when near a yard with your wagon out |
+| `Config.StoreKey` | `0x760A9C6F` (G) | Key for the store prompt |
+| `Config.StoreHoldTime` | `1000` | How long (ms) to hold the store key |
+| `Config.UseDistance` | `4.0` | Distance to the wagon to open its storage |
+| `Config.InteractDistance` | `3.0` | Target distance to the yard keeper |
+| `Config.ActionCooldown` | `1500` | ms between shop actions per player |
+| `Config.NameMaxLength` | `24` | Max wagon name length |
+| `Config.Preview` | table | Camera radius/min/max, height, rotate speed, idle spin, show draft animals |
+| `Config.Blip` | table | Enable, sprite (`blip_shop_coach_fencing`), scale |
+| `Config.Stores` | 5 yards | `label`, `npcModel`, `npc` (vec4), `preview` (vec4: preview + spawn point), `showBlip` |
+| `Config.Categories` | 5 | Category ids and Font Awesome icons for the tabs |
+| `Config.Wagons` | 33 models | `label`, `category`, `price`, `weight` (kg), `slots`, `seats`, `tier` (1–4), `description`, optional `stores` |
 
-> **Gold purchases:** the server reads `Config.MoneyType.gold` when a player pays in gold. Add it if you use `priceGold`:
-> ```lua
-> Config.MoneyType = { money = "cash", gold = "bloodmoney" } -- or your gold money type
-> ```
+## How to use
+1. Go to a wagon yard (wagon blip) and target the yard keeper → **Browse Wagons**.
+2. Pick a category or search, click a wagon to preview it. The list swaps to the wagon's details; press **Back** (or **ESC**) to return to the list.
+3. Rotate with **A / D**, arrow keys or the on-screen buttons (camera row in the details panel), zoom with the scroll wheel or **+ / −**.
+4. Use the **Livery** and **Colour** arrows to pick a paint scheme and base colour (only at purchase; it's permanent and applied every time the wagon is taken out) (the preview updates live), then **Purchase** → name the wagon → it's added to **My Wagons**.
+5. In **My Wagons** choose a wagon → **Take Out**. It appears at the yard's preview spot.
+6. Target your wagon → **Open Wagon Storage**.
+6b. Target your wagon → **Customise Wagon** to pick its **Cargo** and **Lanterns** (live preview, then **Save**). Saved per wagon and seen by everyone.
+6e. **Hunting Cart**: carry a carcass (or have one on your horse) to your cart → target → **Stow Carcass** (up to 20; the tarp rises as it fills). Drive to any butcher → target the cart → **Sell Cart Load** for rsg-hunting's prices, items and hunting XP.
+6d. Damaged or wrecked on the road? Target the wagon → **Patch Up Wagon**, or `/repairwagon` for a wreck. Costs 3 wood (configurable) and brings it to 35% only; get it fully repaired at a yard (My Wagons → **Repair**).
+6c. Target your wagon → **Send Wagon Away** (or `/fleewagon`) to send it off; press **J** (or `/callwagon`) to call it back to the nearest road. It stays out until stored, even across server restarts and relogs: after logging in, just press **J**.
+7. Bring it back to any yard and store it: hold **G** on the yard prompt, target the wagon → **Store Wagon**, or use **Return Wagon** at the keeper. **Sell** a stored wagon for its trade-in value.
+8. **ESC** closes the shop (from the details panel it goes back to the list first).
+9. Drag any window by its title bar to move it; positions are remembered. Double-click a title bar to reset it.
 
-> **Note:** `Config.usecommand` is set twice in `config.lua`. The second line is the one that takes effect.
-
-### Keys
-
+## Developer examples
 ```lua
-Config.Keys = {
-    OpenWagonStash = "INPUT_JUMP",               -- Spacebar
-    OpenStore      = "INPUT_SPRINT",             -- Left Shift (shop prompt)
-    FleeWagon      = "INPUT_FRONTEND_CANCEL",    -- Escape
-    CarcassMenu    = "INPUT_DOCUMENT_PAGE_PREV", -- Q
-    SeeCarcass     = "INPUT_DOCUMENT_PAGE_NEXT", -- E
-}
+-- server: what wagon does this player have out?
+local active = exports['rsg-wagons']:GetActiveWagon(source) -- { id, netId, model } or nil
+
+-- server: list a character's wagons
+local wagons = exports['rsg-wagons']:GetPlayerWagons(Player.PlayerData.citizenid)
 ```
 
-### Shop blip
+## Locales
+`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale de`.
 
-```lua
-Config.Blip = { showBlip = true, blipModel = "caravan", blipName = "Wagon Shop" }
-```
-
-### Stores
-
-Every store needs the menu coordinates, an NPC, and a spot to preview wagons with a camera:
-
-```lua
-Config.Stores = {
-    Valentine = {
-        coords             = vector3(-355.11, 775.18, 116.22),
-        npcmodel           = `s_m_m_cghworker_01`,
-        npccoords          = vector4(-355.11, 775.18, 116.22, 321.41),
-        previewWagon       = vec4(-353.43, 788.54, 116.15, 274.7),
-        cameraPreviewWagon = vec4(-345.43, 788.54, 118.15, 274.7),
-    },
-    -- ...
-}
-```
-
-### Wagons
-
-Wagons are grouped under `work`, `special` and `coach`. The table key is the wagon model name.
-
-```lua
-huntercart01 = {
-    name       = "Hunter's Cart",
-    maxWeight  = 250,   -- stash weight limit (kg)
-    slots      = 20,    -- stash slots
-    price      = 75,    -- cash price
-    priceGold  = 3,     -- optional gold price
-    maxAnimals = 20,    -- carcass capacity, or false to disable
-},
-```
-
-### Customisation prices
-
-```lua
-Config.CustomPrice = { livery = 15, extra = 25, tint = 38, props = 15, lantern = 15 }
-```
-
-The available liveries, extras, props and lanterns for each model are defined in `client/list.lua`. `client/mackmerge.lua` then extends them. To go back to the stock options, delete `mackmerge.lua`.
-
-### Animal storage
-
-`Config.AnimalsStorage` lists every animal and pelt model (by hash) that can be stored in a wagon, along with its display label. Add entries to support more models.
-
-### Chop shop
-
-| Option | Default | Description |
-|---|---|---|
-| `Locations` | 1 location | A list of `{ name, coords, blip }` entries. |
-| `InteractDistance` | `10.0` | How close you need to be to see the prompt. |
-| `WagonSearchDistance` | `30.0` | How far to search for a wagon to scrap. |
-| `AllowUnknownWagons` | `true` | Allows scrapping vehicles that aren't in `Config.Wagons`. |
-| `PromptKey` | `0x760A9C6F` (G) | Control hash for the prompt. |
-| `PromptText` | `'Scrap Wagon'` | Prompt label. |
-| `ChopCooldown` | `300` | Seconds each player has to wait between scraps. |
-| `RewardItems` | `wood = 5–15` | Items given, with a min and max for each. |
-| `CashPayout` | `5–20` | Cash range paid out. |
-| `DefaultMultiplier` / `MinMultiplier` / `MaxMultiplier` | `1.0 / 0.5 / 2.5` | Payout multiplier and its limits. |
-| `ChopBlip` | shown | Blip sprite, name and scale. |
-| `Debug` | `false` | Turns on debug prints and the `/chopdebug` command. |
-
-### Locales
-
-Text strings live in `locales/*.json` (`en`, `nl`, `pt-br`). Set your language with ox_lib's convar, for example `setr ox:locale en`.
-
----
-
-## Usage
-
-### Buying a wagon
-1. Go to a **Wagon Shop** (look for the blip on your map).
-2. Talk to the NPC using ox_target, or press **Left Shift** at the prompt.
-3. Pick a category, preview the wagons, and buy one with cash (or gold, if it has a gold price).
-
-### Customising
-Open the shop menu and choose one of your wagons. Pick liveries, tints, extras, props or lanterns. Changes show on the preview straight away, and each one is charged at the `Config.CustomPrice` rate.
-
-### Calling and putting away your wagon
-- Call it from the shop menu, with the hotkey (`Config.SpawnKey`), or with `/callwagon` (`Config.usecommand = true`).
-- The wagon spawns on a nearby road and gets a blip. Use the target or prompt option to send it away again.
-
-### Stash
-Target the wagon (or press **Space** at the prompt) to open its storage. If someone else tries to open it, you'll get a request to approve or deny.
-
-### Carcasses and pelts
-While carrying an animal or pelt, target the wagon and choose **Stock carcass**, or press **Q**. Choose **See carcasses** (or press **E**) to view what's stored and take items back out. How many you can store depends on the wagon's `maxAnimals`.
-
-### Selling
-In the shop menu, select a wagon you own and sell it. You get back `price × Config.Sell`.
-
-### Chop shop
-Drive a wagon to a **Wagon Chop** location and press **G** at the **Scrap Wagon** prompt. The wagon is removed and you get the reward items and cash. After that, you have to wait out the cooldown before scrapping another.
-
-### Commands
-
-| Command | Requirement |
-|---|---|
-| `/callwagon` | `Config.usecommand = true` |
-| `/chopdebug` | `Config.Chop.Debug = true` |
-
----
-
-## Credits
-
-Phil and mack
+Support: https://buymeacoffee.com/rexshack

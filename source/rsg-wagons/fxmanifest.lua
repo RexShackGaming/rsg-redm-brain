@@ -1,37 +1,42 @@
 fx_version 'cerulean'
 rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aware my resources *will* become incompatible once RedM ships.'
 game 'rdr3'
+lua54 'yes'
 
-description 'rsg-wagons'
-version '2.0.3'
-author 'Phil and mack '
-ox_lib 'locale'
+author 'RexShack'
+description 'rsg-wagons - wagon store with full NUI catalogue, 3D preview and wagon ownership'
+version '3.0.0'
+
 shared_scripts {
-    '@ox_lib/init.lua',
-    'config.lua'
+    '@rsg-core/shared/locale.lua',
+    'shared/config.lua',
+    'shared/liveries.lua',
+    'shared/propsets.lua',
+    'shared/huntingcart.lua',
 }
 
 client_scripts {
-    'client/*.lua'
+    'client/client.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    'server/*.lua'
-}
-
-dependencies {
-    'ox_lib',
+    'server/server.lua',
 }
 
 ui_page 'html/index.html'
 
 files {
     'locales/*.json',
-    'images/*.png',
     'html/index.html',
     'html/style.css',
-    'html/script.js'
+    'html/app.js',
+    'html/drag.js',
 }
 
-lua54 'yes'
+dependencies {
+    'rsg-core',
+    'rsg-inventory',
+    'rsg-target',
+    'oxmysql',
+}

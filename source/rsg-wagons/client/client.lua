@@ -1,985 +1,972 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
-local wagonBlip, mywagon, wagonID, wagonNetId, wagonModel
-local isNearWagon, isOwner, openMenu, cargo = false, false, false, false
-local wagonVerificationCache, animalStorageCache = {}, {}
-local StashPrompt, DeletePrompt, CarcassPrompt, StockCarcassPrompt
-local WagonGroup = GetRandomIntInRange(0, 0xffffff)
+local npcs, blips = {}, {}
+local currentStore = nil
+local uiOpen = false
 
+local previewVeh = nil
+local previewCam = nil
+local previewCamActive = false
+local previewRotateDir = nil
+local previewZoomDelta = 0.0
+local previewToken = 0
 
-local function CallWagon()
-    if mywagon and DoesEntityExist(mywagon) then
-        return lib.notify({
-            title = locale("error"),
-            description = locale("cl_have_wagon"),
-            type = "error",
-            duration = 7000
-        })
+local myWagon = nil -- { id, entity, netId, name, model, condition, destroyed }
+local spawnOwnedWagon -- defined further down; used by the call (J) feature
+
+-- ===================== HELPERS =====================
+local function loadModel(model)
+    local hash = type(model) == 'number' and model or joaat(model)
+    if not IsModelValid(hash) then return nil end
+    RequestModel(hash, false)
+    local timeout = GetGameTimer() + 5000
+    while not HasModelLoaded(hash) do
+        if GetGameTimer() > timeout then return nil end
+        Wait(10)
     end
-
-    if wagonBlip and DoesBlipExist(wagonBlip) then
-        RemoveBlip(wagonBlip)
-        wagonBlip = nil
-    end
-
-    TriggerServerEvent("rsg-wagons:getWagonDataByCitizenID")
+    return hash
 end
 
-
-RegisterNetEvent("rsg-wagons:client:dellwagon", function()
-    DeleteWagon()
-end)
-
-RegisterNetEvent("rsg-wagons:client:callwagon", function()
-    CallWagon()
-end)
-
-local function FindSafeSpawnCoords(baseCoords, attempts, radius, minDistance)
-    attempts = attempts or 10
-    radius = radius or Config.SpawnRadius or 10.0
-    minDistance = minDistance or 5.0
-    local players = GetActivePlayers()
-    for i = 1, attempts do
-        local angle = math.rad((360 / attempts) * i)
-        local offsetX, offsetY = math.cos(angle) * radius, math.sin(angle) * radius
-        local tryCoords = vec3(baseCoords.x + offsetX, baseCoords.y + offsetY, baseCoords.z)
-
-        local isFar = true
-        for _, playerId in ipairs(players) do
-            if #(GetEntityCoords(GetPlayerPed(playerId)) - tryCoords) < minDistance then
-                isFar = false
-                break
-            end
-        end
-
-        if isFar then
-            local x, y, z = table.unpack(GetEntityCoords(cache.ped))
-            local found, roadCoords = GetClosestVehicleNode(x - 15, y, z, 0, 3.0, 0.0)
-            local _, _, nodeHeading = GetNthClosestVehicleNodeWithHeading(x - 15, y, z, 1, 1, 0, 0)
-            if found then
-                return found, roadCoords, nodeHeading
-            end
-        end
+local function applyLivery(veh, livery)
+    livery = tonumber(livery)
+    if veh and DoesEntityExist(veh) and livery and livery >= 0 then
+        Citizen.InvokeNative(0xF89D82A0582E46ED, veh, livery) -- _SET_VEHICLE_LIVERY
     end
-
-    
-    local pedCoords = GetEntityCoords(cache.ped)
-    local fallbackDistance = Config.FallbackSpawnDistance or 10.0
-    for i = 1, 8 do
-        local angle = math.rad((360 / 8) * i)
-        local offsetX, offsetY = math.cos(angle) * fallbackDistance, math.sin(angle) * fallbackDistance
-        local tryCoords = vec3(pedCoords.x + offsetX, pedCoords.y + offsetY, pedCoords.z)
-
-        local isFar = true
-        for _, playerId in ipairs(players) do
-            if #(GetEntityCoords(GetPlayerPed(playerId)) - tryCoords) < minDistance then
-                isFar = false
-                break
-            end
-        end
-
-        if isFar then
-            return true, tryCoords, GetEntityHeading(cache.ped)
-        end
-    end
-    return nil
 end
 
-local function SpawnWagon(model, tint, livery, props, extra, lantern, myWagonID, extras)
-    local hash = joaat(model)
-    if not lib.requestModel(hash, 10000) then
-        return lib.notify({ title = locale("error"), description = locale("cl_no_road"), type = "error", duration = 7000 })
+local function applyTint(veh, tint)
+    tint = tonumber(tint)
+    if veh and DoesEntityExist(veh) and tint and tint >= -1 then
+        Citizen.InvokeNative(0x8268B098F6FCA4E2, veh, math.floor(tint)) -- _SET_VEHICLE_TINT (-1 = default)
     end
+end
 
-    if IsPedInAnyVehicle(cache.ped, false) then
-        DeleteVehicle(cache.vehicle)
+-- Tint first, then livery. In RDR2 a tint is a full paint scheme: setting it also sets that scheme's own
+-- livery (tested: tint 5 on a cart forces livery 2). The chosen livery is applied after a short pause so
+-- it replaces the tint's built-in one (tested: tint 5 then livery 7 keeps both).
+local paintToken = {} -- per vehicle, so painting several wagons at once doesn't cancel each other
+local function applyPaint(veh, livery, tint)
+    if not veh or not DoesEntityExist(veh) then return end
+    paintToken[veh] = (paintToken[veh] or 0) + 1
+    local token = paintToken[veh]
+    applyTint(veh, tint)
+    applyLivery(veh, livery)
+    SetTimeout(150, function()
+        if paintToken[veh] ~= token or not DoesEntityExist(veh) then return end
+        applyLivery(veh, livery)
+    end)
+end
+
+-- RedM has no NETWORK_FADE_* natives: fade in with _SET_ENTITY_FADE_IN, fade out by stepping the alpha down
+local function fadeInEntity(ent)
+    if ent and DoesEntityExist(ent) then
+        Citizen.InvokeNative(0x744B9EF44779D9AB, ent)  -- RESET_ENTITY_ALPHA
+        Citizen.InvokeNative(0xA91E6CF94404E8C9, ent)  -- _SET_ENTITY_FADE_IN
     end
+end
 
-    local found, safeCoords, nodeHeading = FindSafeSpawnCoords(GetEntityCoords(cache.ped))
-    if not safeCoords or not found then
-        return lib.notify({ title = locale("error"), description = locale("cl_no_road"), type = "error", duration = 7000 })
+local function fadeOutEntity(ent, ms)
+    ms = ms or 700
+    local steps = 10
+    for i = steps - 1, 0, -1 do
+        if not DoesEntityExist(ent) then return end
+        Citizen.InvokeNative(0x0DF7692B1D9E7BA7, ent, math.floor(255 * i / steps), false) -- SET_ENTITY_ALPHA
+        Wait(math.floor(ms / steps))
     end
+end
 
-    mywagon = CreateVehicle(hash, safeCoords.x, safeCoords.y, safeCoords.z, nodeHeading, true, false)
-    SetVehicleDirtLevel(mywagon, 0.0)
-
-    Wait(100)
-    Citizen.InvokeNative(0x75F90E4051CC084C, mywagon, 0)
-    Citizen.InvokeNative(0xE31C0CB1C3186D40, mywagon)
-
-    if props then
-        Citizen.InvokeNative(0x75F90E4051CC084C, mywagon, GetHashKey(props))
-        Citizen.InvokeNative(0x31F343383F19C987, mywagon, 0.5, 1)
-    end
-    if lantern then
-        Citizen.InvokeNative(0xC0F0417A90402742, mywagon, GetHashKey(lantern))
-    end
-
-    Citizen.InvokeNative(0x8268B098F6FCA4E2, mywagon, tint)
-    Citizen.InvokeNative(0xF89D82A0582E46ED, mywagon, livery or 0)
-
-    Citizen.InvokeNative(0xAD738C3085FE7E11, mywagon, true, true)
-    Citizen.InvokeNative(0x9617B6E5F65329A5, mywagon)
-
-    for i = 0, 10 do
-        if DoesExtraExist(mywagon, i) then
-            Citizen.InvokeNative(0xBB6F89150BC9D16B, mywagon, i, true)
-        end
-    end
-    -- Multi-extra support (extras array); legacy single `extra` value from
-    -- older database rows is honoured as a one-item fallback.
-    local extrasList = nil
-    if type(extras) == 'table' and #extras > 0 then
-        extrasList = extras
-    elseif extra and tonumber(extra) and tonumber(extra) ~= -1 then
-        extrasList = { tonumber(extra) }
-    end
-    if extrasList then
-        for _, extraId in ipairs(extrasList) do
-            local eid = tonumber(extraId)
-            if eid then
-                Citizen.InvokeNative(0xBB6F89150BC9D16B, mywagon, eid, false)
-            end
-        end
-    end
-
-    if model == "huntercart01" then
-        Citizen.InvokeNative(0x75F90E4051CC084C, mywagon, joaat('pg_mp005_huntingWagonTarp01'))
-        Citizen.InvokeNative(0xC0F0417A90402742, mywagon, joaat('pg_teamster_cart06_lightupgrade3'))
-        Citizen.InvokeNative(0x31F343383F19C987, mywagon, 0.5, 1)
-    end
-
-    NetworkRegisterEntityAsNetworked(mywagon)
-    SetVehicleIsConsideredByPlayer(mywagon, true)
-    Citizen.InvokeNative(0xBB5A3FA8ED3979C5, mywagon, true)
-
-    local networkId = NetworkGetNetworkIdFromEntity(mywagon)
-    while not NetworkDoesEntityExistWithNetworkId(networkId) do
+-- cargo + lantern propsets, applied the way Rockstar's scripts do it (decompiled av_wagon_music.c, ambush_odr_*.c):
+-- _REQUEST_PROP_SET -> wait for _HAS_PROP_SET_LOADED -> _ADD_PROP_SET_FOR_VEHICLE (the vehicle's own cargo slot).
+-- The "additional" propset native (0x75F90E4051CC084C) is never used by Rockstar and is the likely cause of the screen judder while driving.
+local function loadPropset(hash)
+    if Citizen.InvokeNative(0x48A88FC684C55FDC, hash) then return true end -- _HAS_PROP_SET_LOADED
+    Citizen.InvokeNative(0xF3DE57A46D5585E9, hash)                       -- _REQUEST_PROP_SET
+    local timeout = GetGameTimer() + 5000
+    while not Citizen.InvokeNative(0x48A88FC684C55FDC, hash) do
+        if GetGameTimer() > timeout then return false end
         Wait(50)
     end
-
-    getControlOfEntity(mywagon)
-
-    TriggerServerEvent("rsg-wagons:registerWagon", networkId, myWagonID, model)
-
-    local targetOptions = {
-        {
-            name = "wagonStash",
-            icon = "fa-solid fa-box-open",
-            label = locale("cl_wagon_stash"),
-            onSelect = function(data)
-                local wagon = data.entity
-                local netId = NetworkGetNetworkIdFromEntity(wagon)
-                local cached = wagonVerificationCache[netId]
-                if cached then
-                    TriggerServerEvent("rsg-wagons:openWagonStash", "Wagon_Stash_" .. cached.id, cached.model, cached.id, netId)
-                else
-                    lib.callback('rsg-wagons:isWagonRegistered', false, function(isRegistered, owner, id, model)
-                        if isRegistered then
-                            wagonVerificationCache[netId] = { owner = owner, id = id, model = model }
-                            TriggerServerEvent("rsg-wagons:openWagonStash", "Wagon_Stash_" .. id, model, id, netId)
-                        else
-                            lib.notify({ title = "Error", description = "Wagon not registered", type = "error", duration = 5000 })
-                        end
-                    end, netId)
-                end
-            end,
-            distance = 1.5,
-        },
-        {
-            name = "wagonDelete",
-            icon = "fa-solid fa-warehouse",
-            label = locale("cl_flee_wagon"),
-            onSelect = function(data)
-                local wagon = data.entity
-                local netId = NetworkGetNetworkIdFromEntity(wagon)
-                local cached = wagonVerificationCache[netId]
-                if not cached then
-                    lib.callback('rsg-wagons:isWagonRegistered', false, function(isRegistered, owner, id, model)
-                        if isRegistered then wagonVerificationCache[netId] = { owner = owner, id = id, model = model } end
-                    end, netId)
-                    return
-                end
-                if not cached.owner then
-                    lib.notify({ title = locale("error"), description = locale("no_permission"), type = "error", duration = 7000 })
-                    return
-                end
-                mywagon = wagon
-                wagonID = cached.id
-                wagonNetId = netId
-                wagonModel = cached.model
-                DeleteWagon()
-            end,
-            distance = 1.5,
-        },
-    }
-    if model == "huntercart01" then
-        targetOptions[#targetOptions + 1] = {
-            name = "wagonShowCarcass",
-            icon = "fa-solid fa-boxes-stacked",
-            label = locale("cl_see_carcass"),
-            onSelect = function(data)
-                local wagon = data.entity
-                local netId = NetworkGetNetworkIdFromEntity(wagon)
-                local cached = wagonVerificationCache[netId]
-                if not cached then
-                    lib.callback('rsg-wagons:isWagonRegistered', false, function(isRegistered, owner, id, model)
-                        if isRegistered then wagonVerificationCache[netId] = { owner = owner, id = id, model = model } end
-                    end, netId)
-                    return
-                end
-                if not cached.owner then
-                    lib.notify({ title = locale("error"), description = locale("no_permission"), type = "error", duration = 7000 })
-                    return
-                end
-                ensureAnimalCapacityCached(netId, cached.model)
-                local maxAnimal = animalStorageCache[netId] or 0
-                if maxAnimal > 0 then
-                    wagonID = cached.id
-                    wagonModel = cached.model
-                    CarcassInWagon(cached.id)
-                else
-                    lib.notify({ title = locale("error"), description = locale("no_animals_in_wagon"), type = "error", duration = 7000 })
-                end
-            end,
-            distance = 1.5,
-        }
-        targetOptions[#targetOptions + 1] = {
-            name = "wagonStockCarcass",
-            icon = "fa-solid fa-paw",
-            label = locale("cl_stock_carcass"),
-            onSelect = function(data)
-                local wagon = data.entity
-                local netId = NetworkGetNetworkIdFromEntity(wagon)
-                local cached = wagonVerificationCache[netId]
-                if not cached then
-                    lib.callback('rsg-wagons:isWagonRegistered', false, function(isRegistered, owner, id, model)
-                        if isRegistered then wagonVerificationCache[netId] = { owner = owner, id = id, model = model } end
-                    end, netId)
-                    return
-                end
-                ensureAnimalCapacityCached(netId, cached.model)
-                local maxAnimal = animalStorageCache[netId] or 0
-                if maxAnimal > 0 then
-                    wagonID = cached.id
-                    wagonNetId = netId
-                    wagonModel = cached.model
-                    StoreCarriedEntityInWagon()
-                else
-                    lib.notify({ title = locale("error"), description = locale("no_animals_in_wagon"), type = "error", duration = 7000 })
-                end
-            end,
-            distance = 1.5,
-        }
-    end
-    if Config.Target then
-        exports.ox_target:addLocalEntity(mywagon, targetOptions)
-    end
-
-    local blipModel = GetHashKey("blip_player_coach")
-    wagonBlip = Citizen.InvokeNative(0x23F74C2FDA6E7C61, -1230993421, mywagon)
-    SetBlipSprite(wagonBlip, blipModel, true)
-    Citizen.InvokeNative(0x9CB1A1623062F402, wagonBlip, locale("cl_your_wagon"))
-
-    if model == "huntercart01" then
-        UpdateHuntingTarp()
-    end
+    return true
 end
 
-function UpdateHuntingTarp()
-    if not mywagon then return end
-    lib.callback('rsg-wagons:getAnimalStorage', false, function(menuData)
-        local count = 0
-        for _, v in pairs(menuData or {}) do
-            count += (v.infos.quantity or 1)
+local propToken = {}
+local function applyProps(veh, propset, lantern, tarp)
+    if not veh or not DoesEntityExist(veh) then return end
+    propToken[veh] = (propToken[veh] or 0) + 1
+    local token = propToken[veh]
+    CreateThread(function()
+        local pHash = (type(propset) == 'string' and propset ~= '') and joaat(propset) or nil
+        local lHash = (type(lantern) == 'string' and lantern ~= '') and joaat(lantern) or nil
+        if pHash then loadPropset(pHash) end
+        if lHash then loadPropset(lHash) end
+        if propToken[veh] ~= token or not DoesEntityExist(veh) then return end -- a newer change came in
+        Citizen.InvokeNative(0x3BCF32FF37EA9F1D, veh)                          -- _REMOVE_VEHICLE_PROP_SETS
+        if pHash then Citizen.InvokeNative(0xD80FAF919A2E56EA, veh, pHash) end -- _ADD_PROP_SET_FOR_VEHICLE
+        Citizen.InvokeNative(0xE31C0CB1C3186D40, veh)                          -- _REMOVE_VEHICLE_LIGHT_PROP_SETS
+        if lHash then Citizen.InvokeNative(0xC0F0417A90402742, veh, lHash) end -- _ADD_LIGHT_PROP_SET_TO_VEHICLE
+        if tarp then
+            Wait(250)
+            Citizen.InvokeNative(0x31F343383F19C987, veh, tarp + 0.0, true) -- _SET_BATCH_TARP_HEIGHT (hunting cart load)
         end
-        local maxAnimal = animalStorageCache[wagonNetId] or 20
-        local percentage = count / maxAnimal
-        Citizen.InvokeNative(0x31F343383F19C987, mywagon, percentage, 1)
-    end, wagonID)
+    end)
 end
 
-
-
-function getControlOfEntity(entity)
-    NetworkRequestControlOfEntity(entity)
-    SetEntityAsMissionEntity(entity, true, true)
-    local timeout = 2000
-    while timeout > 0 and not NetworkHasControlOfEntity(entity) do
-        Wait(100)
-        timeout -= 100
-    end
-    return NetworkHasControlOfEntity(entity)
+local function applyLook(veh, look)
+    if type(look) ~= 'table' then return end
+    applyPaint(veh, look.livery, look.tint)
+    applyProps(veh, look.propset, look.lantern, look.tarp)
 end
 
-local function EnumerateVehicles(callback)
-    local handle, vehicle = FindFirstVehicle()
-    local success
-    repeat
-        if DoesEntityExist(vehicle) then
-            callback(vehicle)
+local function notify(desc, ntype)
+    RSGCore.Functions.Notify({ title = locale('cl_title'), description = desc, type = ntype or 'inform' })
+end
+
+local UI_KEYS = {
+    'ui_subtitle', 'ui_for_sale', 'ui_my_wagons', 'ui_close', 'ui_buy', 'ui_price', 'ui_capacity',
+    'ui_slots', 'ui_seats', 'ui_rotate', 'ui_zoom', 'ui_controls_hint', 'ui_name_wagon', 'ui_name_placeholder',
+    'ui_cancel', 'ui_confirm', 'ui_take_out', 'ui_sell', 'ui_rename', 'ui_condition', 'ui_stored_at',
+    'ui_out', 'ui_no_owned', 'ui_sell_confirm', 'ui_trade_in', 'ui_all',
+    'ui_return_wagon', 'ui_kg', 'ui_search', 'ui_back', 'ui_livery', 'ui_no_liveries', 'ui_colour', 'ui_colour_default', 'ui_colour_n',
+    'ui_customise', 'ui_cargo', 'ui_lanterns', 'ui_none', 'ui_save', 'ui_repair',
+    'cat_carts', 'cat_buggies', 'cat_wagons', 'cat_coaches', 'cat_heavy',
+    'tier_1', 'tier_2', 'tier_3', 'tier_4',
+    'cond_damaged', 'cond_poor', 'cond_average', 'cond_quality', 'cond_exceptional',
+}
+
+local function uiStrings()
+    local t = {}
+    for _, k in ipairs(UI_KEYS) do t[k] = locale(k) end
+    return t
+end
+
+local function catalogue(storeKey)
+    local list = {}
+    for model, w in pairs(Config.Wagons) do
+        local allowed = true
+        if w.stores then
+            allowed = false
+            for _, s in ipairs(w.stores) do if s == storeKey then allowed = true break end end
         end
-        success, vehicle = FindNextVehicle(handle)
-    until not success
-    EndFindVehicle(handle)
+        if allowed then
+            list[#list + 1] = {
+                model = model, label = w.label, category = w.category, price = w.price,
+                weight = w.weight, slots = w.slots, seats = w.seats or 2, tier = w.tier or 1,
+                description = w.description or '',
+                liveries = (Config.Liveries and Config.Liveries[model]) or {},
+                tints = (Config.Tints and Config.Tints[model]) or 0,
+            }
+        end
+    end
+    table.sort(list, function(a, b) return a.price < b.price end)
+    return list
 end
 
-local function IsThisModelAWagon(model)
-    for _, wagonType in pairs(Config.Wagons) do
-        for wagonModel in pairs(wagonType) do
-            if GetHashKey(wagonModel) == model then
-                return true
+-- ===================== PREVIEW =====================
+local function destroyPreviewCam()
+    previewCamActive = false
+    previewRotateDir = nil
+    if previewCam then
+        RenderScriptCams(false, true, 500, true, true)
+        if DoesCamExist(previewCam) then DestroyCam(previewCam, false) end
+        previewCam = nil
+    end
+    FreezeEntityPosition(PlayerPedId(), false)
+end
+
+local function deletePreviewVehicle()
+    if previewVeh and DoesEntityExist(previewVeh) then
+        DeleteEntity(previewVeh)
+    end
+    previewVeh = nil
+end
+
+local function endPreview()
+    previewToken = previewToken + 1
+    destroyPreviewCam()
+    deletePreviewVehicle()
+end
+
+local function startPreviewCam(coords, heading)
+    if previewCam and DoesCamExist(previewCam) then return end
+    local P = Config.Preview
+    previewCam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
+    SetCamActive(previewCam, true)
+    RenderScriptCams(true, true, 500, true, true)
+    FreezeEntityPosition(PlayerPedId(), true)
+    previewCamActive = true
+    previewZoomDelta = 0.0
+
+    CreateThread(function()
+        local angle = (heading or 0.0) + 35.0  -- start on a three-quarter view
+        local radius = P.radius
+        while previewCamActive and previewCam and DoesCamExist(previewCam) do
+            local ft = GetFrameTime()
+            if previewRotateDir == 'left' then
+                angle = angle - P.rotateSpeed * ft
+            elseif previewRotateDir == 'right' then
+                angle = angle + P.rotateSpeed * ft
+            elseif P.autoRotate and P.autoRotate > 0 then
+                angle = angle + P.autoRotate * ft
             end
+            angle = angle % 360.0
+            if previewZoomDelta ~= 0.0 then
+                radius = math.max(P.radiusMin, math.min(P.radiusMax, radius + previewZoomDelta))
+                previewZoomDelta = 0.0
+            end
+            local rad = math.rad(angle)
+            SetCamCoord(previewCam, coords.x + math.cos(rad) * radius, coords.y + math.sin(rad) * radius, coords.z + P.height)
+            PointCamAtCoord(previewCam, coords.x, coords.y, coords.z + P.lookAtHeight)
+            Wait(0)
+        end
+    end)
+end
+
+local function showPreview(model, livery, tint)
+    if not currentStore or not Config.Wagons[model] then return end
+    previewToken = previewToken + 1
+    local token = previewToken
+    local p = Config.Stores[currentStore].preview
+
+    local hash = loadModel(model)
+    if not hash or token ~= previewToken then
+        if not hash then notify(locale('cl_preview_failed'), 'error') end
+        return
+    end
+
+    deletePreviewVehicle()
+    -- local (non-networked) preview vehicle; last arg false = auto-create draft animals
+    local veh = CreateVehicle(hash, p.x, p.y, p.z, p.w, false, false, not Config.Preview.draftAnimals, false)
+    SetModelAsNoLongerNeeded(hash)
+    if not DoesEntityExist(veh) then notify(locale('cl_preview_failed'), 'error') return end
+    if token ~= previewToken then DeleteEntity(veh) return end
+
+    PlaceEntityOnGroundProperly(veh, true)
+    FreezeEntityPosition(veh, true)
+    SetEntityInvincible(veh, true)
+    SetVehicleDoorsLocked(veh, 2)
+    applyPaint(veh, livery, tint)
+    previewVeh = veh
+
+    startPreviewCam(vector3(p.x, p.y, p.z), p.w)
+end
+
+-- ===================== NUI =====================
+local function closeUI()
+    if not uiOpen then return end
+    uiOpen = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'close' })
+    endPreview()
+end
+
+local opening = false
+local function openShop(storeKey)
+    if uiOpen or opening or not Config.Stores[storeKey] then return end
+    opening = true
+    currentStore = storeKey
+    local owned = RSGCore.Functions.AwaitCallback('rsg-wagons:server:getOwned', 5000) or {}
+    opening = false
+    uiOpen = true
+    SetNuiFocus(true, true)
+    SendNUIMessage({
+        action = 'open',
+        store = { key = storeKey, label = Config.Stores[storeKey].label },
+        categories = Config.Categories,
+        wagons = catalogue(storeKey),
+        owned = owned,
+        maxWagons = Config.MaxWagons,
+        nameMax = Config.NameMaxLength,
+        hasActive = myWagon ~= nil,
+        strings = uiStrings(),
+    })
+end
+
+RegisterNUICallback('close', function(_, cb) closeUI() cb('ok') end)
+
+RegisterNUICallback('preview', function(data, cb)
+    cb('ok')
+    if data and type(data.model) == 'string' then showPreview(data.model, data.livery, data.tint) end
+end)
+
+-- change the livery on the current preview wagon without respawning it
+RegisterNUICallback('previewLivery', function(data, cb)
+    cb('ok')
+    if data then applyPaint(previewVeh, data.livery, data.tint) end
+end)
+
+RegisterNUICallback('clearPreview', function(_, cb) endPreview() cb('ok') end)
+
+RegisterNUICallback('rotateCam', function(data, cb)
+    local dir = data and data.dir
+    previewRotateDir = (dir == 'left' or dir == 'right') and dir or nil
+    cb('ok')
+end)
+
+RegisterNUICallback('zoomCam', function(data, cb)
+    local dir = tonumber(data and data.dir) or 0
+    previewZoomDelta = previewZoomDelta + (dir > 0 and 1.0 or dir < 0 and -1.0 or 0.0)
+    cb('ok')
+end)
+
+RegisterNUICallback('buy', function(data, cb)
+    local ok, owned = RSGCore.Functions.AwaitCallback('rsg-wagons:server:buy', 8000, currentStore, data.model, data.name, data.livery, data.tint)
+    cb({ ok = ok == true, owned = owned })
+end)
+
+RegisterNUICallback('yardRepair', function(data, cb)
+    local ok, owned = RSGCore.Functions.AwaitCallback('rsg-wagons:server:yardRepair', 8000, currentStore, data.id)
+    cb({ ok = ok == true, owned = owned })
+end)
+
+RegisterNUICallback('rename', function(data, cb)
+    local ok, owned = RSGCore.Functions.AwaitCallback('rsg-wagons:server:rename', 5000, data.id, data.name)
+    cb({ ok = ok == true, owned = owned })
+end)
+
+RegisterNUICallback('sell', function(data, cb)
+    local ok, owned = RSGCore.Functions.AwaitCallback('rsg-wagons:server:sell', 8000, currentStore, data.id)
+    if ok == nil then notify(locale('cl_no_response'), 'error') end -- callback timed out (server error?)
+    cb({ ok = ok == true, owned = owned })
+end)
+
+local function wagonCondition()
+    if myWagon and myWagon.destroyed then return 10 end
+    if not myWagon then return 100 end
+    if not myWagon.entity or myWagon.entity == 0 or not DoesEntityExist(myWagon.entity) then return myWagon.condition or 100 end
+    local max = GetEntityMaxHealth(myWagon.entity)
+    if not max or max <= 0 then return 100 end
+    return math.floor(GetEntityHealth(myWagon.entity) / max * 100)
+end
+
+-- ===== map blip for the wagon that is out =====
+local wagonBlip = nil
+
+local function removeWagonBlip()
+    if wagonBlip and DoesBlipExist(wagonBlip) then RemoveBlip(wagonBlip) end
+    wagonBlip = nil
+end
+
+local function addWagonBlip(veh, name)
+    removeWagonBlip()
+    local cfg = Config.WagonBlip
+    if not cfg or not cfg.enabled or not veh or not DoesEntityExist(veh) then return end
+    wagonBlip = BlipAddForEntity(joaat(cfg.style or 'BLIP_STYLE_PLAYER_COACH'), veh)
+    if cfg.sprite then SetBlipSprite(wagonBlip, joaat(cfg.sprite), true) end
+    Citizen.InvokeNative(0x9CB1A1623062F402, wagonBlip, name or locale('cl_title')) -- SetBlipName
+end
+
+local function clearMyWagon()
+    removeWagonBlip()
+    if myWagon and myWagon.entity and DoesEntityExist(myWagon.entity) then
+        exports['rsg-target']:removeLocalEntity(myWagon.entity)
+    end
+    myWagon = nil
+end
+
+RegisterNUICallback('store', function(_, cb)
+    local ok, owned = RSGCore.Functions.AwaitCallback('rsg-wagons:server:store', 8000, currentStore, wagonCondition())
+    if ok then clearMyWagon() end
+    cb({ ok = ok == true, owned = owned, hasActive = myWagon ~= nil })
+end)
+
+-- ===== customise (cargo / lanterns) =====
+local customOpen = false
+
+local function propsetList(model)
+    return (Config.Propsets and Config.Propsets[model]) or {}, (Config.Lanterns and Config.Lanterns[model]) or {}
+end
+
+local function openCustomise()
+    if uiOpen or customOpen or not myWagon or not myWagon.entity or not DoesEntityExist(myWagon.entity) then return end
+    local props, lanterns = propsetList(myWagon.model)
+    if #props == 0 and #lanterns == 0 then return end
+    local look = Entity(myWagon.entity).state.rsgWagonLook or {}
+    customOpen = true
+    SetNuiFocus(true, true)
+    SendNUIMessage({
+        action = 'custom', strings = uiStrings(), name = myWagon.name,
+        propsets = props, lanterns = lanterns, propset = look.propset, lantern = look.lantern,
+    })
+end
+
+local function closeCustomise(revert)
+    if not customOpen then return end
+    customOpen = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'closeCustom' })
+    if revert and myWagon and myWagon.entity and DoesEntityExist(myWagon.entity) then
+        applyLook(myWagon.entity, Entity(myWagon.entity).state.rsgWagonLook)
+    end
+end
+
+RegisterNUICallback('customPreview', function(data, cb)
+    cb('ok')
+    if customOpen and myWagon and data then
+        local look = (myWagon.entity and Entity(myWagon.entity).state.rsgWagonLook) or {}
+        applyProps(myWagon.entity, data.propset or (look.tarp and look.propset), data.lantern, look.tarp)
+    end
+end)
+
+RegisterNUICallback('customSave', function(data, cb)
+    local ok = RSGCore.Functions.AwaitCallback('rsg-wagons:server:setLook', 8000, data and data.propset, data and data.lantern)
+    cb({ ok = ok == true })
+    closeCustomise(not ok)
+end)
+
+RegisterNUICallback('customClose', function(_, cb) cb('ok') closeCustomise(true) end)
+
+-- ===== field repair (temporary patch) =====
+local repairing = false
+
+local function wagonNeedsPatch()
+    if not myWagon then return false end
+    if myWagon.destroyed then return true end
+    return (myWagon.condition or wagonCondition()) < Config.FieldRepair.condition
+end
+
+-- quick client-side check so the player isn't made to work on a repair they can't pay for
+-- (the server checks and charges for real)
+local function canPayRepair()
+    local c = Config.FieldRepair.cost or {}
+    if c.type == 'item' then
+        if RSGCore.Functions.HasItem(c.item, c.amount or 1) then return true end
+        local item = RSGCore.Shared.Items[c.item]
+        notify(locale('sv_repair_need_item', c.amount or 1, item and item.label or c.item), 'error')
+        return false
+    end
+    local money = (RSGCore.Functions.GetPlayerData().money or {})[Config.MoneyType] or 0
+    if money >= (c.amount or 0) then return true end
+    notify(locale('sv_repair_no_money'), 'error')
+    return false
+end
+
+local function patchMyWagon()
+    if repairing or not Config.FieldRepair.enabled then return end
+    if not myWagon then return notify(locale('cl_no_wagon_out'), 'error') end
+    if not wagonNeedsPatch() then return notify(locale('sv_repair_not_needed', Config.FieldRepair.condition .. '%'), 'inform') end
+    if not canPayRepair() then return end
+    repairing = true
+    local ped = PlayerPedId()
+    local veh = myWagon.entity
+    local onSite = veh and veh ~= 0 and DoesEntityExist(veh) and not IsEntityDead(veh)
+    if onSite then
+        if #(GetEntityCoords(ped) - GetEntityCoords(veh)) > Config.UseDistance + 2.0 then
+            repairing = false
+            return notify(locale('sv_wagon_too_far'), 'error')
+        end
+        TaskTurnPedToFaceEntity(ped, veh, 1000, 0, 0, 0)
+        Wait(1000)
+    end
+    -- work on it (also for a wreck: you're patching up what's left of it)
+    TaskStartScenarioInPlaceHash(ped, joaat('WORLD_HUMAN_CROUCH_INSPECT'), Config.FieldRepair.duration, true, 0, GetEntityHeading(ped), false)
+    notify(locale('cl_repairing'), 'inform')
+    Wait(Config.FieldRepair.duration)
+    ClearPedTasks(ped, true, true)
+
+    local ok, newCond, wasWrecked = RSGCore.Functions.AwaitCallback('rsg-wagons:server:fieldRepair', 8000)
+    if ok then
+        if wasWrecked then
+            -- the wreck is cleared server side; the wagon is now "away" and can be called with J
+            local id, name, model = myWagon.id, myWagon.name, myWagon.model
+            clearMyWagon()
+            myWagon = { id = id, entity = 0, netId = 0, name = name, model = model, condition = newCond }
+        else
+            myWagon.condition = newCond
+            if onSite and DoesEntityExist(veh) then
+                local max = GetEntityMaxHealth(veh)
+                if max and max > 0 then SetEntityHealth(veh, math.max(1, math.floor(max * newCond / 100)), 0) end
+            end
+        end
+    end
+    repairing = false
+end
+
+-- ===== hunting cart =====
+local HC = Config.HuntingCart or {}
+local HC_QUALITY = { [0] = 'poor', [1] = 'good', [2] = 'perfect' } -- GetPedQuality, as rsg-hunting
+local cartBusy = false
+
+local function isMyHuntCart(entity)
+    return HC.enabled and myWagon and entity == myWagon.entity and HC.models[myWagon.model] == true
+end
+
+local function cartLoad(entity)
+    local look = Entity(entity).state.rsgWagonLook
+    return (look and look.cargo) or 0
+end
+
+local function knownCarcass(ent)
+    return ent and ent ~= 0 and DoesEntityExist(ent) and IsEntityAPed(ent) and IsEntityDead(ent)
+        and HC.animals[GetEntityModel(ent)] ~= nil
+end
+
+-- carcass strapped to the player's horse (same itemset loop as rsg-hunting / Rockstar's shop_butcher.c)
+local function horseCarcass()
+    if not HC.fromHorse then return 0 end
+    local ped = PlayerPedId()
+    local horse = Citizen.InvokeNative(0x4C8B59171957BCF7, ped) -- _GET_LAST_MOUNT
+    if not horse or horse == 0 or not DoesEntityExist(horse) then return 0 end
+    if #(GetEntityCoords(ped) - GetEntityCoords(horse)) > (HC.horseRange or 6.0) then return 0 end
+    if not Citizen.InvokeNative(0xA911EE21EDF69DAF, horse) then return 0 end -- IS_PED_CARRYING_SOMETHING
+    local found = 0
+    local set = Citizen.InvokeNative(0xA1AF16083320065A, true, Citizen.ResultAsInteger()) -- CREATE_ITEMSET
+    Citizen.InvokeNative(0xB5ACE8B23A438EC0, horse, set) -- FIND_ALL_ATTACHED_CARRIABLE_ENTITIES
+    local size = Citizen.InvokeNative(0x55F2E375AC6018A9, set, Citizen.ResultAsInteger()) -- GET_ITEMSET_SIZE
+    for i = 0, size - 1 do
+        local item = Citizen.InvokeNative(0x275A2E2C0FAB7612, i, set, Citizen.ResultAsInteger()) -- GET_INDEXED_ITEM_IN_ITEMSET
+        local ent = Citizen.InvokeNative(0xEE04C0AFD4EFAF0E, item, Citizen.ResultAsInteger()) -- _GET_ENTITY_FROM_ITEM
+        if knownCarcass(ent) then found = ent break end
+    end
+    Citizen.InvokeNative(0x712BC69F10549B92, set) -- DESTROY_ITEMSET
+    return found
+end
+
+-- rsg-target calls canInteract every frame while aiming at the cart, and the horse lookup builds an itemset,
+-- so the result is cached briefly
+local carcassCache, carcassCacheAt = 0, 0
+local function carriedCarcass(fresh)
+    local now = GetGameTimer()
+    if not fresh and now - carcassCacheAt < 500 then return carcassCache end
+    local ent = GetFirstEntityPedIsCarrying(PlayerPedId())
+    if not knownCarcass(ent) then ent = horseCarcass() end
+    carcassCache, carcassCacheAt = ent, now
+    return ent
+end
+
+local function nearButcherClient(coords)
+    for _, b in ipairs(HC.butchers or {}) do
+        if #(coords - b.coords) <= (HC.sellRange or 25.0) then return true end
+    end
+    return false
+end
+
+local function stowCarcass()
+    if cartBusy or not myWagon then return end
+    local carcass = carriedCarcass(true)
+    if carcass == 0 then return notify(locale('sv_not_carcass'), 'error') end
+    cartBusy = true
+    if not NetworkGetEntityIsNetworked(carcass) then
+        NetworkRegisterEntityAsNetworked(carcass)
+        Wait(200)
+    end
+    local netId = NetworkGetEntityIsNetworked(carcass) and NetworkGetNetworkIdFromEntity(carcass) or 0
+    if netId ~= 0 then
+        local quality = HC_QUALITY[GetPedQuality(carcass)] or 'poor'
+        local ok = RSGCore.Functions.AwaitCallback('rsg-wagons:server:stowCarcass', 8000, netId, quality)
+        if ok and DoesEntityExist(carcass) then -- don't leave it in the player's arms
+            DetachEntity(carcass, true, true)
+            NetworkRequestControlOfEntity(carcass)
+            SetEntityAsMissionEntity(carcass, true, true)
+            DeleteEntity(carcass)
+        end
+    end
+    cartBusy = false
+end
+
+local function sellCartLoad()
+    if cartBusy or not myWagon then return end
+    cartBusy = true
+    LocalPlayer.state:set('inv_busy', true, false)
+    local done = RSGCore.Functions.ProgressBar({
+        duration = HC.sellTime or 8000, position = 'bottom', useWhileDead = false, canCancel = true,
+        disable = { move = true, combat = true }, label = locale('cl_selling_load'),
+    })
+    if done then RSGCore.Functions.AwaitCallback('rsg-wagons:server:sellCargo', 8000) end
+    LocalPlayer.state:set('inv_busy', false, false)
+    cartBusy = false
+end
+
+local busyCall = false
+
+-- send the wagon away (like fleeing a horse): it stays out but leaves the world until called
+local function fleeMyWagon()
+    if busyCall or not myWagon or myWagon.destroyed then return end
+    local veh = myWagon.entity
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return notify(locale('cl_wagon_already_away'), 'inform') end
+    busyCall = true
+    local ped = PlayerPedId()
+    if GetVehiclePedIsIn(ped, false) == veh then
+        TaskLeaveVehicle(ped, veh, 0)
+        local t = GetGameTimer() + 4000
+        while GetVehiclePedIsIn(ped, false) == veh and GetGameTimer() < t do Wait(100) end
+    end
+    myWagon.condition = wagonCondition()
+    fadeOutEntity(veh, 700)
+    local ok = RSGCore.Functions.AwaitCallback('rsg-wagons:server:fleeWagon', 8000, myWagon.condition)
+    if ok then
+        exports['rsg-target']:removeLocalEntity(veh)
+        removeWagonBlip()
+        myWagon.entity, myWagon.netId = 0, 0
+        notify(locale('cl_wagon_sent'), 'inform')
+    elseif DoesEntityExist(veh) then
+        fadeInEntity(veh)
+    end
+    busyCall = false
+end
+
+-- find a road spot near the player (not right on top of them); fall back to beside the player
+local function callSpot()
+    local ped = PlayerPedId()
+    local p = GetEntityCoords(ped)
+    for n = 1, 6 do
+        local found, pos, heading = GetNthClosestVehicleNodeWithHeading(p.x, p.y, p.z, n, 1, 3.0, 0)
+        if found and pos then
+            local d = #(p - pos)
+            if d >= 6.0 and d <= Config.CallRoadDistance then return vector4(pos.x, pos.y, pos.z, heading or 0.0) end
+        end
+    end
+    local f = GetOffsetFromEntityInWorldCoords(ped, 0.0, 8.0, 0.0)
+    return vector4(f.x, f.y, f.z, GetEntityHeading(ped) + 90.0)
+end
+
+-- call the wagon to you (J), like whistling a horse
+local function callMyWagon()
+    if busyCall or uiOpen or customOpen then return end
+    if not myWagon then return notify(locale('cl_no_wagon_out'), 'error') end
+    if myWagon.destroyed then return notify(locale('cl_wagon_destroyed'), 'error') end
+    local veh = myWagon.entity
+    if veh and veh ~= 0 and DoesEntityExist(veh)
+        and #(GetEntityCoords(PlayerPedId()) - GetEntityCoords(veh)) <= Config.CallNearDistance then
+        return notify(locale('cl_wagon_nearby'), 'inform')
+    end
+    busyCall = true
+    local ok, info = RSGCore.Functions.AwaitCallback('rsg-wagons:server:callWagon', 8000)
+    if ok and info then
+        if veh and veh ~= 0 then exports['rsg-target']:removeLocalEntity(veh) end
+        if spawnOwnedWagon(info, callSpot(), true) then
+            notify(locale('cl_wagon_arrived', info.name), 'success')
+        end
+    end
+    busyCall = false
+end
+
+local storing = false
+local function storeMyWagon()
+    if storing or not myWagon then return end
+    storing = true
+    local ok = RSGCore.Functions.AwaitCallback('rsg-wagons:server:storeNearest', 8000, wagonCondition())
+    if ok then clearMyWagon() end
+    storing = false
+end
+
+local function addWagonTarget(veh)
+    exports['rsg-target']:addLocalEntity(veh, {
+        {
+            name = 'rsg_wagons_storage',
+            icon = 'fa-solid fa-box-open',
+            label = locale('cl_open_storage'),
+            distance = Config.UseDistance,
+            canInteract = function(entity) return myWagon and entity == myWagon.entity end,
+            onSelect = function()
+                if myWagon then TriggerServerEvent('rsg-wagons:server:openStorage', myWagon.netId) end
+            end,
+        },
+        {
+            name = 'rsg_wagons_store',
+            icon = 'fa-solid fa-warehouse',
+            label = locale('cl_store_wagon'),
+            distance = Config.UseDistance,
+            canInteract = function(entity) return myWagon and entity == myWagon.entity end,
+            onSelect = function() storeMyWagon() end,
+        },
+        {
+            name = 'rsg_wagons_flee',
+            icon = 'fa-solid fa-person-walking-arrow-right',
+            label = locale('cl_send_away'),
+            distance = Config.UseDistance,
+            canInteract = function(entity) return myWagon and entity == myWagon.entity end,
+            onSelect = function() CreateThread(fleeMyWagon) end,
+        },
+        {
+            name = 'rsg_wagons_customise',
+            icon = 'fa-solid fa-boxes-stacked',
+            label = locale('cl_customise'),
+            distance = Config.UseDistance,
+            canInteract = function(entity)
+                if not myWagon or entity ~= myWagon.entity then return false end
+                local props, lanterns = propsetList(myWagon.model)
+                return #props > 0 or #lanterns > 0
+            end,
+            onSelect = function() openCustomise() end,
+        },
+        {
+            name = 'rsg_wagons_stow',
+            icon = 'fa-solid fa-paw',
+            label = locale('cl_stow_carcass'),
+            distance = Config.UseDistance,
+            canInteract = function(entity)
+                return isMyHuntCart(entity) and not cartBusy and cartLoad(entity) < (HC.capacity or 20) and carriedCarcass() ~= 0
+            end,
+            onSelect = function() CreateThread(stowCarcass) end,
+        },
+        {
+            name = 'rsg_wagons_sell_load',
+            icon = 'fa-solid fa-sack-dollar',
+            label = locale('cl_sell_load'),
+            distance = Config.UseDistance,
+            canInteract = function(entity)
+                return isMyHuntCart(entity) and not cartBusy and cartLoad(entity) > 0 and nearButcherClient(GetEntityCoords(entity))
+            end,
+            onSelect = function() CreateThread(sellCartLoad) end,
+        },
+        {
+            name = 'rsg_wagons_patch',
+            icon = 'fa-solid fa-hammer',
+            label = locale('cl_patch_wagon'),
+            distance = Config.UseDistance,
+            canInteract = function(entity)
+                return Config.FieldRepair.enabled and myWagon and entity == myWagon.entity and not repairing and wagonNeedsPatch()
+            end,
+            onSelect = function() CreateThread(patchMyWagon) end,
+        },
+    })
+end
+
+-- spawn the player's owned wagon at coords (vector4) and register it with the server
+spawnOwnedWagon = function(info, c, fadeIn)
+    local hash = loadModel(info.model)
+    if not hash then
+        TriggerServerEvent('rsg-wagons:server:spawnFailed', info.id)
+        notify(locale('cl_spawn_failed'), 'error')
+        return false
+    end
+    local veh = CreateVehicle(hash, c.x, c.y, c.z, c.w, true, false, false, false)
+    SetModelAsNoLongerNeeded(hash)
+    applyPaint(veh, info.livery, info.tint)
+    local timeout = GetGameTimer() + 3000
+    while not NetworkGetEntityIsNetworked(veh) and GetGameTimer() < timeout do Wait(10) end
+    if not DoesEntityExist(veh) then
+        TriggerServerEvent('rsg-wagons:server:spawnFailed', info.id)
+        notify(locale('cl_spawn_failed'), 'error')
+        return false
+    end
+
+    PlaceEntityOnGroundProperly(veh, true)
+    SetEntityAsMissionEntity(veh, true, true)
+    local max = GetEntityMaxHealth(veh)
+    if max and max > 0 and info.condition and info.condition < 100 then
+        SetEntityHealth(veh, math.max(1, math.floor(max * info.condition / 100)), 0)
+    end
+    if fadeIn then fadeInEntity(veh) end
+
+    local netId = NetworkGetNetworkIdFromEntity(veh)
+    SetNetworkIdExistsOnAllMachines(netId, true)
+    myWagon = { id = info.id, entity = veh, netId = netId, name = info.name, model = info.model, condition = info.condition }
+    addWagonTarget(veh)
+    addWagonBlip(veh, info.name)
+    TriggerServerEvent('rsg-wagons:server:registerSpawned', info.id, netId)
+    return true
+end
+
+RegisterNUICallback('takeOut', function(data, cb)
+    local ok, info = RSGCore.Functions.AwaitCallback('rsg-wagons:server:takeOut', 8000, currentStore, data.id)
+    cb({ ok = ok == true })
+    if not ok then return end
+    closeUI()
+    if spawnOwnedWagon(info, info.coords, false) then
+        notify(locale('cl_wagon_ready', info.name), 'success')
+    end
+end)
+
+-- ===================== NPCS / TARGETS / BLIPS =====================
+local function spawnNpc(key, store)
+    local hash = loadModel(store.npcModel)
+    if not hash then return end
+    local n = store.npc
+    local ped = CreatePed(hash, n.x, n.y, n.z - 1.0, n.w, false, false, false, false)
+    SetModelAsNoLongerNeeded(hash)
+    if not DoesEntityExist(ped) then return end
+    Citizen.InvokeNative(0x283978A15512B2FE, ped, true) -- SetRandomOutfitVariation
+    SetEntityCanBeDamaged(ped, false)
+    SetEntityInvincible(ped, true)
+    FreezeEntityPosition(ped, true)
+    SetBlockingOfNonTemporaryEvents(ped, true)
+    SetPedCanBeTargetted(ped, false)
+    npcs[key] = ped
+
+    exports['rsg-target']:addLocalEntity(ped, {
+        {
+            name = 'rsg_wagons_shop_' .. key,
+            icon = 'fa-solid fa-horse-head',
+            label = locale('cl_browse'),
+            distance = Config.InteractDistance,
+            onSelect = function() openShop(key) end,
+        },
+    })
+end
+
+CreateThread(function()
+    for key, store in pairs(Config.Stores) do
+        if Config.Blip.enabled and store.showBlip ~= false then
+            local blip = BlipAddForCoords(1664425300, store.npc.x, store.npc.y, store.npc.z)
+            SetBlipSprite(blip, joaat(Config.Blip.sprite), true)
+            SetBlipScale(blip, Config.Blip.scale)
+            Citizen.InvokeNative(0x9CB1A1623062F402, blip, store.label) -- SetBlipName
+            blips[#blips + 1] = blip
+        end
+        spawnNpc(key, store)
+    end
+end)
+
+-- watch the active wagon: wrecked -> must be returned at a yard; gone from the world -> just "away" (call it with J)
+CreateThread(function()
+    while true do
+        Wait(2000)
+        if myWagon and not myWagon.destroyed and myWagon.entity and myWagon.entity ~= 0 then
+            if DoesEntityExist(myWagon.entity) and IsEntityDead(myWagon.entity) then
+                TriggerServerEvent('rsg-wagons:server:condition', 0, true)
+                notify(locale('cl_wagon_destroyed'), 'error')
+                if Config.FieldRepair.enabled and Config.FieldRepair.command then notify(locale('cl_patch_hint', Config.FieldRepair.command), 'inform') end
+                local id, name, model = myWagon.id, myWagon.name, myWagon.model
+                clearMyWagon()
+                myWagon = { id = id, entity = 0, netId = 0, name = name, model = model, destroyed = true } -- still "out" server side until stored at a yard
+            elseif DoesEntityExist(myWagon.entity) then
+                local cond = wagonCondition()
+                if cond ~= myWagon.condition then
+                    myWagon.condition = cond
+                    TriggerServerEvent('rsg-wagons:server:condition', cond, false)
+                end
+            else
+                exports['rsg-target']:removeLocalEntity(myWagon.entity)
+                removeWagonBlip()
+                myWagon.entity, myWagon.netId = 0, 0
+            end
+        end
+    end
+end)
+
+-- dress every player wagon in view the way its owner set it up (state bag 'rsgWagonLook').
+-- Propsets/tints aren't synced by the game, so every client applies them itself.
+CreateThread(function()
+    local applied = {}
+    while true do
+        Wait(2500)
+        local seen = {}
+        for _, veh in ipairs(GetGamePool('CVehicle')) do
+            local look = Entity(veh).state.rsgWagonLook
+            if look and not (customOpen and myWagon and veh == myWagon.entity) then
+                seen[veh] = true
+                local key = ('%s|%s|%s|%s|%s'):format(look.livery, look.tint, look.propset or '', look.lantern or '', look.tarp or '')
+                if applied[veh] ~= key then
+                    applyLook(veh, look)
+                    applied[veh] = key
+                end
+            end
+        end
+        for veh in pairs(applied) do
+            if not seen[veh] then applied[veh], paintToken[veh], propToken[veh] = nil, nil, nil end
+        end
+    end
+end)
+
+-- call key (J) + commands
+CreateThread(function()
+    if not Config.CallKey then return end
+    while true do
+        if myWagon and not uiOpen and not customOpen then
+            if IsControlJustReleased(0, Config.CallKey) then CreateThread(callMyWagon) end
+            Wait(0)
+        else
+            Wait(1000)
+        end
+    end
+end)
+if Config.FieldRepair.enabled and Config.FieldRepair.command then
+    RegisterCommand(Config.FieldRepair.command, function() CreateThread(patchMyWagon) end, false)
+end
+if Config.CallCommand then RegisterCommand(Config.CallCommand, function() CreateThread(callMyWagon) end, false) end
+if Config.FleeCommand then RegisterCommand(Config.FleeCommand, function() CreateThread(fleeMyWagon) end, false) end
+
+-- ===================== STORE PROMPT (near a yard) =====================
+local storePrompt, storeGroup = nil, GetRandomIntInRange(0, 0xffffff)
+
+local function createStorePrompt()
+    storePrompt = Citizen.InvokeNative(0x04F97DE45A519419) -- UiPromptRegisterBegin
+    Citizen.InvokeNative(0xB5352B7494A08258, storePrompt, Config.StoreKey) -- UiPromptSetControlAction
+    Citizen.InvokeNative(0x5DD02A8318420DD7, storePrompt, VarString(10, 'LITERAL_STRING', locale('cl_store_wagon'))) -- UiPromptSetText
+    Citizen.InvokeNative(0x8A0FB4D03A630D21, storePrompt, true) -- UiPromptSetEnabled
+    Citizen.InvokeNative(0x71215ACCFDE075EE, storePrompt, true) -- UiPromptSetVisible
+    Citizen.InvokeNative(0x94073D5CA3F16B7B, storePrompt, Config.StoreHoldTime) -- UiPromptSetHoldMode
+    Citizen.InvokeNative(0x2F11D3A254169EA4, storePrompt, storeGroup, 0) -- UiPromptSetGroup
+    Citizen.InvokeNative(0xF7AA2696A22AD8B9, storePrompt) -- UiPromptRegisterEnd
+end
+
+local function nearYardWithWagon()
+    if not myWagon then return false end
+    local pcoords = GetEntityCoords(PlayerPedId())
+    local wcoords = (myWagon.entity ~= 0 and DoesEntityExist(myWagon.entity)) and GetEntityCoords(myWagon.entity) or pcoords
+    local r = Config.StoreRadius - 2.0 -- small margin under the server check
+    for _, store in pairs(Config.Stores) do
+        local npc = vector3(store.npc.x, store.npc.y, store.npc.z)
+        local prev = vector3(store.preview.x, store.preview.y, store.preview.z)
+        if math.min(#(pcoords - npc), #(pcoords - prev)) <= r and math.min(#(wcoords - npc), #(wcoords - prev)) <= r then
+            return true
         end
     end
     return false
 end
 
-
-local function GetClosestWagon(callback)
-    local pedCoords = GetEntityCoords(cache.ped)
-    local closestWagon, closestDist, networkId
-    local maxDist = 2.0
-
-    EnumerateVehicles(function(vehicle)
-        if IsThisModelAWagon(GetEntityModel(vehicle)) then
-            local dist = #(pedCoords - GetEntityCoords(vehicle))
-            if dist <= maxDist then
-                closestWagon = vehicle
-                closestDist = dist
-                networkId = NetworkGetNetworkIdFromEntity(vehicle)
-                maxDist = dist
+CreateThread(function()
+    if not Config.StorePrompt then return end
+    createStorePrompt()
+    while true do
+        local sleep = 500
+        if not uiOpen and not storing and nearYardWithWagon() then
+            sleep = 0
+            Citizen.InvokeNative(0xC65A45D4453C2627, storeGroup, VarString(10, 'LITERAL_STRING', locale('cl_title')), 1, 0, 0, 0) -- UiPromptSetActiveGroupThisFrame
+            if Citizen.InvokeNative(0xE0F65F0640EF0617, storePrompt) then -- UiPromptHasHoldModeCompleted
+                storeMyWagon()
+                Wait(1000)
             end
         end
-    end)
-
-    if not closestWagon or not networkId then
-        return callback(nil, nil, nil, nil, nil, nil)
+        Wait(sleep)
     end
-
-    local cached = wagonVerificationCache[networkId]
-    if cached then
-        return callback(closestWagon, closestDist, cached.owner, cached.id, cached.model, networkId)
-    end
-
-    lib.callback('rsg-wagons:isWagonRegistered', false, function(isRegistered, owner, id, model, netId)
-        if isRegistered then
-            wagonVerificationCache[netId] = { owner = owner, id = id, model = model }
-            callback(closestWagon, closestDist, owner, id, model, netId)
-        else
-            callback(closestWagon, closestDist, nil, nil, nil, networkId)
-        end
-    end, networkId)
-end
-
-
-function ensureAnimalCapacityCached(netId, model)
-    if animalStorageCache[netId] ~= nil then return end
-    for _, modelos in pairs(Config.Wagons) do
-        if modelos[model] then
-            animalStorageCache[netId] = modelos[model].maxAnimals or 0
-            return
-        end
-    end
-    animalStorageCache[netId] = 0
-end
-
-function StashWagon()
-    GetClosestWagon(function(wagon, _, owner, id, model, netId)
-        if not wagon or not id then return end
-        isOwner, wagonID, wagonModel, wagonNetId = owner, id, model, netId
-        ensureAnimalCapacityCached(netId, wagonModel)
-        TriggerServerEvent("rsg-wagons:openWagonStash", "Wagon_Stash_" .. wagonID, wagonModel, wagonID, wagonNetId)
-    end)
-end
-
-function ShowCarcass()
-    GetClosestWagon(function(wagon, _, owner, id, model, netId)
-        if not wagon or not id then return end
-        isOwner, wagonID, wagonModel, wagonNetId = owner, id, model, netId
-        ensureAnimalCapacityCached(netId, wagonModel)
-
-        if isOwner then
-            local maxAnimal = animalStorageCache[wagonNetId] or 0
-            if maxAnimal > 0 then
-                CarcassInWagon(wagonID)
-            else
-                lib.notify({ title = locale("error"), description = locale("no_animals_in_wagon"), type = "error", duration = 7000 })
-            end
-        else
-            lib.notify({ title = locale("error"), description = locale("no_permission"), type = "error", duration = 7000 })
-        end
-    end)
-end
-
-function StockCarcass()
-    GetClosestWagon(function(wagon, _, owner, id, model, netId)
-        if not wagon or not id then return end
-        isOwner, wagonID, wagonModel, wagonNetId = owner, id, model, netId
-        ensureAnimalCapacityCached(netId, wagonModel)
-
-        local maxAnimal = animalStorageCache[wagonNetId] or 0
-        if maxAnimal > 0 then
-            StoreCarriedEntityInWagon()
-        else
-            lib.notify({ title = locale("error"), description = locale("no_animals_in_wagon"), type = "error", duration = 7000 })
-        end
-    end)
-end
-
-function DeleteThisWagon()
-    GetClosestWagon(function(wagon, _, owner, id, model, netId)
-        if not wagon or not id then return end
-        isOwner, wagonID, wagonModel, wagonNetId = owner, id, model, netId
-        ensureAnimalCapacityCached(netId, wagonModel)
-
-        if isOwner then
-            DeleteWagon()
-        else
-            lib.notify({ title = locale("error"), description = locale("no_permission"), type = "error", duration = 7000 })
-        end
-    end)
-end
-
-if not Config.Target then
-    CreateThread(function()
-        while true do
-            GetClosestWagon(function(wagon, _, owner, id, model, netId)
-                if wagon and id then
-                    isNearWagon, isOwner, wagonID, wagonModel, wagonNetId = true, owner, id, model, netId
-                    ensureAnimalCapacityCached(netId, model)
-                else
-                    isNearWagon = false
-                end
-            end)
-            Wait(500)
-        end
-    end)
-end
-
-local stashPromptHandle
-local deletePromptHandle
-local carcassPromptHandle
-local stockCarcassPromptHandle
-
-local function createPrompt(labelKey, control, group)
-    local prompt = Citizen.InvokeNative(0x04F97DE45A519419)
-    PromptSetControlAction(prompt, GetHashKey(control))
-    PromptSetText(prompt, CreateVarString(10, "LITERAL_STRING", locale(labelKey)))
-    PromptSetEnabled(prompt, true)
-    PromptSetVisible(prompt, true)
-    PromptSetHoldMode(prompt, true)
-    PromptSetGroup(prompt, group)
-    PromptRegisterEnd(prompt)
-    return prompt
-end
-
-function StashPrompt()
-    stashPromptHandle = createPrompt("cl_wagon_stash", "INPUT_JUMP", WagonGroup)          -- Spacebar
-end
-
-function DeletePrompt()
-    deletePromptHandle = createPrompt("cl_flee_wagon", "INPUT_FRONTEND_CANCEL", WagonGroup) -- Escape
-end
-
-function CarcassPrompt()
-    carcassPromptHandle = createPrompt("cl_see_carcass", "INPUT_DOCUMENT_PAGE_PREV", WagonGroup) -- Q
-end
-
-function StockCarcassPrompt()
-    stockCarcassPromptHandle = createPrompt("cl_stock_carcass", "INPUT_DOCUMENT_PAGE_NEXT", WagonGroup) -- E (scroll context)
-end
-
-if not Config.Target then
-    CreateThread(function()
-        StashPrompt()
-        DeletePrompt()
-        CarcassPrompt()
-        StockCarcassPrompt()
-
-        while true do
-            local waitTime = 2000
-            local pedInVehicle = IsPedInAnyVehicle(cache.ped, false)
-            local maxAnimal = wagonNetId and animalStorageCache[wagonNetId] or 0
-
-            if isNearWagon and not pedInVehicle and not openMenu then
-                waitTime = 2
-                local groupLabel = CreateVarString(10, "LITERAL_STRING", locale("cl_your_wagon"))
-                PromptSetActiveGroupThisFrame(WagonGroup, groupLabel)
-
-                if isOwner then
-                    PromptSetEnabled(carcassPromptHandle, false)
-                    PromptSetVisible(carcassPromptHandle, false)
-                    PromptSetEnabled(stockCarcassPromptHandle, false)
-                    PromptSetVisible(stockCarcassPromptHandle, false)
-
-                    if PromptHasHoldModeCompleted(stashPromptHandle) then
-                        PromptSetEnabled(stashPromptHandle, false)
-                        PromptSetVisible(stashPromptHandle, false)
-                        TriggerServerEvent("rsg-wagons:openWagonStash", "Wagon_Stash_" .. wagonID, wagonModel, wagonID,
-                            wagonNetId)
-                        Wait(500)
-                        PromptSetEnabled(stashPromptHandle, true)
-                        PromptSetVisible(stashPromptHandle, true)
-                    elseif PromptHasHoldModeCompleted(deletePromptHandle) then
-                        PromptSetEnabled(deletePromptHandle, false)
-                        PromptSetVisible(deletePromptHandle, false)
-                        DeleteWagon()
-                        Wait(500)
-                        PromptSetEnabled(deletePromptHandle, true)
-                        PromptSetVisible(deletePromptHandle, true)
-                    elseif maxAnimal > 0 then
-                        PromptSetEnabled(carcassPromptHandle, true)
-                        PromptSetVisible(carcassPromptHandle, true)
-                        PromptSetEnabled(stockCarcassPromptHandle, true)
-                        PromptSetVisible(stockCarcassPromptHandle, true)
-
-                        if PromptHasHoldModeCompleted(carcassPromptHandle) then
-                            PromptSetEnabled(carcassPromptHandle, false)
-                            PromptSetVisible(carcassPromptHandle, false)
-                            CarcassInWagon(wagonID)
-                            openMenu = true
-                            Wait(1000)
-                            PromptSetEnabled(carcassPromptHandle, true)
-                            PromptSetVisible(carcassPromptHandle, true)
-                        elseif PromptHasHoldModeCompleted(stockCarcassPromptHandle) then
-                            PromptSetEnabled(stockCarcassPromptHandle, false)
-                            PromptSetVisible(stockCarcassPromptHandle, false)
-                            StoreCarriedEntityInWagon()
-                            Wait(1000)
-                            PromptSetEnabled(stockCarcassPromptHandle, true)
-                            PromptSetVisible(stockCarcassPromptHandle, true)
-                        end
-                    end
-                else
-                    PromptSetEnabled(deletePromptHandle, false)
-                    PromptSetVisible(deletePromptHandle, false)
-
-                    if PromptHasHoldModeCompleted(stashPromptHandle) then
-                        PromptSetEnabled(stashPromptHandle, false)
-                        PromptSetVisible(stashPromptHandle, false)
-                        TriggerServerEvent("rsg-wagons:openWagonStash", "Wagon_Stash_" .. wagonID, wagonModel, wagonID,
-                            wagonNetId)
-                        Wait(500)
-                        PromptSetEnabled(stashPromptHandle, true)
-                        PromptSetVisible(stashPromptHandle, true)
-                    end
-
-                    if maxAnimal > 0 then
-                        PromptSetEnabled(stockCarcassPromptHandle, true)
-                        PromptSetVisible(stockCarcassPromptHandle, true)
-                        if PromptHasHoldModeCompleted(stockCarcassPromptHandle) then
-                            PromptSetEnabled(stockCarcassPromptHandle, false)
-                            PromptSetVisible(stockCarcassPromptHandle, false)
-                            StoreCarriedEntityInWagon()
-                            Wait(1000)
-                            PromptSetEnabled(stockCarcassPromptHandle, true)
-                            PromptSetVisible(stockCarcassPromptHandle, true)
-                        end
-                    else
-                        PromptSetEnabled(stockCarcassPromptHandle, false)
-                        PromptSetVisible(stockCarcassPromptHandle, false)
-                    end
-                end
-            end
-            Wait(waitTime)
-        end
-    end)
-end
-
-
-
-RegisterNetEvent("btc-wagon:askOwnerPermission", function(data)
-    local alert = lib.alertDialog({
-        header = locale("alert"),
-        content = locale("player_stash") .. data.firstname .. " " .. data.lastname .. locale("player_stash_02"),
-        centered = true,
-        cancel = true
-    })
-    TriggerServerEvent("rsg-wagons:giveOwnerPermission", alert, data)
 end)
 
-
-RegisterNetEvent("rsg-wagons:receiveWagonData", function(wModel, customData, animalsData, myWagonID)
-    if mywagon and DoesEntityExist(mywagon) then
-        DeleteWagon()
-        Wait(500)
+-- ===================== CLEANUP =====================
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    if uiOpen then SetNuiFocus(false, false) end
+    endPreview()
+    for _, ped in pairs(npcs) do
+        if DoesEntityExist(ped) then
+            exports['rsg-target']:removeLocalEntity(ped)
+            DeleteEntity(ped)
+        end
     end
-
-    if wagonBlip and DoesBlipExist(wagonBlip) then
-        RemoveBlip(wagonBlip)
-        wagonBlip = nil
-    end
-
-    if not wModel then
-        return lib.notify({
-            title = locale("error"),
-            description = locale("cl_no_wagon"),
-            type = "error",
-            duration = 7000
-        })
-    end
-
-    SpawnWagon(
-        wModel,
-        customData.tint,
-        customData.livery,
-        customData.props,
-        customData.extra,
-        customData.lantern,
-        myWagonID,
-        customData.extras
-    )
+    for _, b in ipairs(blips) do RemoveBlip(b) end
+    if storePrompt then Citizen.InvokeNative(0x00EDE88D4D13CF59, storePrompt) end -- UiPromptDelete
+    if customOpen then SetNuiFocus(false, false) end
+    clearMyWagon()
 end)
 
-
-RegisterNetEvent("rsg-wagons:saveWagonToDatabase", function(wagonModel, name, moneyType)
-    local customData = {
-        name = name,
-        tint = 0,
-        livery = -1,
-        props = false,
-        extras = {},
-        buyMoneyType = moneyType,
-    }
-    TriggerServerEvent("rsg-wagons:saveWagonToDatabase", wagonModel, customData, moneyType)
+RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
+    closeUI()
+    closeCustomise(true)
+    clearMyWagon()
 end)
 
-
--- Verified delete: requests control, retries, and ALWAYS clears local
--- state (even when the entity is already gone) so a "deleted" wagon
--- can never linger in the world and duplicate the next spawn.
-function DeleteWagon(netId)
-    -- Resolve the entity: live handle first, netId lookup as fallback.
-    local entity = nil
-    if mywagon and DoesEntityExist(mywagon) then
-        entity = mywagon
-    elseif netId and tonumber(netId) and tonumber(netId) ~= 0 then
-        local resolved = NetworkGetEntityFromNetworkId(tonumber(netId))
-        if resolved and resolved ~= 0 and DoesEntityExist(resolved) then
-            entity = resolved
-        end
+-- ===================== RESTORE AFTER RESTART / RELOG =====================
+-- a wagon that was out when the server restarted (or you logged off) is still out: it's "away" until you call it
+RegisterNetEvent('rsg-wagons:client:restore', function(info)
+    if myWagon or type(info) ~= 'table' then return end
+    if info.wrecked then
+        myWagon = { id = info.id, entity = 0, netId = 0, name = info.name, model = info.model, destroyed = true }
+        notify(locale('cl_wagon_destroyed'), 'error')
+        if Config.FieldRepair.enabled and Config.FieldRepair.command then notify(locale('cl_patch_hint', Config.FieldRepair.command), 'inform') end
+        return
     end
-
-    local resolvedNetId = nil
-    if entity then
-        resolvedNetId = NetworkGetNetworkIdFromEntity(entity)
-        if Config.Target then exports.ox_target:removeEntity(entity) end
-        TriggerServerEvent("rsg-wagons:removeWagon", resolvedNetId, entity)
-        getControlOfEntity(entity)
-        SetEntityAsMissionEntity(entity, true, true)
-        DeleteVehicle(entity)
-        local attempts = 0
-        while DoesEntityExist(entity) and attempts < 5 do
-            Wait(150)
-            getControlOfEntity(entity)
-            SetEntityAsMissionEntity(entity, true, true)
-            DeleteVehicle(entity)
-            attempts = attempts + 1
-        end
-        if DoesEntityExist(entity) then
-            -- Could not free it: hide/relocate so it never duplicates.
-            SetEntityVisible(entity, false, false)
-            SetEntityCollision(entity, false, false, false)
-            FreezeEntityPosition(entity, true)
-            SetEntityCoords(entity, 0.0, 0.0, -1000.0, false, false, false, false)
-        end
-    elseif netId and tonumber(netId) and tonumber(netId) ~= 0 then
-        -- Entity already gone locally: still tell the server so the
-        -- registry can't linger.
-        TriggerServerEvent("rsg-wagons:removeWagon", tonumber(netId), 0)
-    end
-
-    -- Always clear local state, even when there was nothing to delete.
-    mywagon = nil
-    wagonID = nil
-    wagonNetId = nil
-    wagonModel = nil
-    if wagonBlip and DoesBlipExist(wagonBlip) then
-        RemoveBlip(wagonBlip)
-        wagonBlip = nil
-    end
-    for cacheNetId in pairs(animalStorageCache) do
-        animalStorageCache[cacheNetId] = nil
-    end
-    if resolvedNetId then wagonVerificationCache[resolvedNetId] = nil end
-    if netId and tonumber(netId) then wagonVerificationCache[tonumber(netId)] = nil end
-end
-
--- Chop shop integration: owner-side delete. The owner has network
--- control of its wagon, so deleting here removes reliably where a
--- chopper-side delete would silently fail. Not ox_target related.
-RegisterNetEvent("rsg-wagons:client:chopDeleteOwnedWagon", function(netId)
-    if RSGWagonsChopBusy ~= nil then RSGWagonsChopBusy = false end
-    DeleteWagon(netId)
+    myWagon = { id = info.id, entity = 0, netId = 0, name = info.name, model = info.model, condition = info.condition }
+    notify(locale('cl_wagon_restored', info.name), 'inform')
 end)
 
-if Config.SpawnKey then
-    CreateThread(function()
-        while true do
-            local sleep = 250
-            if IsControlJustReleased(0, GetHashKey(Config.SpawnKey)) then
-                CallWagon()
-            end
-            if mywagon and DoesEntityExist(mywagon) then
-                sleep = 1000
-            end
-            Wait(sleep)
-        end
-    end)
-end
-
-if Config.usecommand then
-    RegisterCommand("callwagon", function()
-        CallWagon()
-    end, false)
-end
-
-
-
-local function GetFirstEntityPedIsCarrying(ped)
-    return Citizen.InvokeNative(0xD806CD2A4F2C2996, ped)
-end
-local function GetMetaPedAssetTint(ped, index)
-    return Citizen.InvokeNative(0xE7998FEC53A33BBE, ped, index, Citizen.PointerValueInt(), Citizen.PointerValueInt(),
-        Citizen.PointerValueInt(), Citizen.PointerValueInt())
-end
-local function GetMetaPedAssetGuids(ped, index)
-    return Citizen.InvokeNative(0xA9C28516A6DC9D56, ped, index, Citizen.PointerValueInt(), Citizen.PointerValueInt(),
-        Citizen.PointerValueInt(), Citizen.PointerValueInt())
-end
-local function GetNumComponentsInPed(ped)
-    return Citizen.InvokeNative(0x90403E8107B60E81, ped, Citizen.ResultAsInteger())
-end
-local function GetIsCarriablePelt(entity)
-    return Citizen.InvokeNative(0x255B6DB4E3AD3C3E, entity)
-end
-local function GetCarriableFromEntity(entity)
-    return Citizen.InvokeNative(0x31FEF6A20F00B963, entity)
-end
-local function GetCarcassMetaTag(entity)
-    local metatag, numComponents = {}, GetNumComponentsInPed(entity)
-    for i = 0, numComponents - 1 do
-        local drawable, albedo, normal, material = GetMetaPedAssetGuids(entity, i)
-        local palette, tint0, tint1, tint2 = GetMetaPedAssetTint(entity, i)
-        metatag[i] = {
-            drawable = drawable,
-            albedo = albedo,
-            normal = normal,
-            material = material,
-            palette = palette,
-            tint0 = tint0,
-            tint1 = tint1,
-            tint2 = tint2
-        }
-    end
-    return metatag
-end
-local function UpdatePedVariation(ped)
-    Citizen.InvokeNative(0xAAB86462966168CE, ped, true)
-    Citizen.InvokeNative(0xCC8CA3E88256E58F, ped, false, true, true, true, false)
-end
-local function SetMetaPedTag(ped, drawable, albedo, normal, material, palette, tint0, tint1, tint2)
-    return Citizen.InvokeNative(0xBC6DF00D7A4A6819, ped, drawable, albedo, normal, material, palette, tint0, tint1, tint2)
-end
-local function GetPedMetaOutfitHash(ped)
-    return Citizen.InvokeNative(0x30569F348D126A5A, ped, Citizen.ResultAsInteger())
-end
-local function IsEntityFullyLooted(entity)
-    return Citizen.InvokeNative(0x8DE41E9902E85756, entity)
-end
-local function GetPedDamageCleanliness(ped)
-    return Citizen.InvokeNative(0x88EFFED5FE8B0B4A, ped, Citizen.ResultAsInteger())
-end
-local function EquipMetaPedOutfit(ped, hash)
-    return Citizen.InvokeNative(0x1902C4CFCC5BE57C, ped, hash)
-end
-local function ApplyCarcasMetaTag(entity, metatag)
-    if type(metatag) ~= "table" then return end
-    for _, data in pairs(metatag) do
-        if data then
-            SetMetaPedTag(entity, data.drawable, data.albedo, data.normal, data.material, data.palette,
-                data.tint0, data.tint1, data.tint2)
-        end
-    end
-    UpdatePedVariation(entity)
-end
-local function SetPedDamageCleanliness(ped, damageCleanliness)
-    return Citizen.InvokeNative(0x7528720101A807A5, ped, damageCleanliness)
-end
-local function GetPedQuality(ped)
-    return Citizen.InvokeNative(0x7BCC6087D130312A, ped)
-end
-local function SetPedQuality(ped, quality)
-    return Citizen.InvokeNative(0xCE6B874286D640BB, ped, quality)
-end
-local function TaskStatus(task)
-    local count = 0
-    repeat
-        count += 1
-        Wait(0)
-    until (GetScriptTaskStatus(cache.ped, task, true) == 8) or count > 100
-end
-
-
-function StoreCarriedEntityInWagon()
-    lib.callback('rsg-wagons:getAnimalStorage', false, function(menuData)
-        local carriedEntity = GetFirstEntityPedIsCarrying(cache.ped)
-        if not carriedEntity or not DoesEntityExist(carriedEntity) then
-            return lib.notify({
-                title = locale("error"),
-                description = locale("carry_nothing"),
-                type = "error",
-                duration = 7000
-            })
-        end
-
-        local totalStored = 0
-        for _, v in pairs(menuData) do
-            totalStored += (v.infos.quantity or 1)
-        end
-
-        local maxAnimal = animalStorageCache[wagonNetId] or 0
-        if totalStored >= maxAnimal then
-            return lib.notify({
-                title = locale("error"),
-                description = locale("wagon_full"),
-                type = "error",
-                duration = 7000
-            })
-        end
-
-        local data = { model = GetEntityModel(carriedEntity) }
-
-        if GetIsCarriablePelt(carriedEntity) then
-            data.type = "pelt"
-            data.peltquality = GetCarriableFromEntity(carriedEntity)
-        else
-            if not Config.AnimalsStorage[data.model] then
-                return lib.notify({
-                    title = locale("error"),
-                    description = locale("carry_nothing"),
-                    type = "error",
-                    duration = 7000
-                })
-            end
-            data.type = "animal"
-            data.metatag = GetCarcassMetaTag(carriedEntity)
-            data.outfit = GetPedMetaOutfitHash(carriedEntity)
-            data.skinned = IsEntityFullyLooted(carriedEntity) or false
-            data.damage = GetPedDamageCleanliness(carriedEntity) or 0
-            data.quality = GetPedQuality(carriedEntity) or 0
-        end
-
-        TriggerServerEvent("rsg-wagons:storeAnimalInWagon", wagonID, data)
-        DeleteEntity(carriedEntity)
-
-        if wagonModel == "huntercart01" then
-            UpdateHuntingTarp()
-        end
-    end, wagonID)
-end
-
-function CarcassInWagon(wagonID)
-    local carcassInWagon = {}
-    lib.callback('rsg-wagons:getAnimalStorage', false, function(menuData)
-        if not menuData or #menuData == 0 then
-            openMenu = false
-            return lib.notify({
-                title = locale("error"),
-                description = locale("wagon_no_animals"),
-                type = "error",
-                duration = 7000
-            })
-        end
-
-        for _, v in pairs(menuData) do
-            carcassInWagon[#carcassInWagon + 1] = {
-                label       = v.label,
-                value       = v.infos.type,
-                infos       = v.infos,
-                description = locale("animal_desc") .. v.infos.quantity .. " " .. v.label .. locale("animal_desc2"),
-                onSelect    = function()
-                    TriggerServerEvent("rsg-wagons:removeAnimalFromWagon", wagonID, v.infos, v.label)
-                    openMenu = false
-                    if wagonModel == "huntercart01" then
-                        UpdateHuntingTarp()
-                    end
-                end
-            }
-        end
-
-        lib.registerContext({
-            id = 'mycarcass_menu',
-            title = locale("animals_in_wagon"),
-            options = carcassInWagon,
-            onExit = function()
-                openMenu = false
-            end,
-        })
-        lib.showContext('mycarcass_menu')
-    end, wagonID)
-end
-
-RegisterNetEvent("rsg-wagons:spawnAnimal", function(data)
-    local coords = GetEntityCoords(cache.ped)
-    if not lib.requestModel(data.model, 10000) then return end
-
-    local cargo
-    if IsModelAPed(data.model) then
-        cargo = CreatePed(data.model, coords.x, coords.y, coords.z, 0.0, true, true)
-        SetEntityHealth(cargo, 0, cache.ped)
-        SetPedQuality(cargo, data.quality or 0)
-        SetPedDamageCleanliness(cargo, data.damage or 0)
-
-        if data.skinned then
-            Wait(1000)
-            Citizen.InvokeNative(0x6BCF5F3D8FFE988D, cargo, true)
-            ApplyCarcasMetaTag(cargo, data.metatag)
-        else
-            EquipMetaPedOutfit(cargo, data.outfit)
-            UpdatePedVariation(cargo)
-        end
-    else
-        cargo = CreateObject(data.model, coords.x, coords.y, coords.z, true, true, true)
-        Citizen.InvokeNative(0x78B4567E18B54480, cargo)
-        Citizen.InvokeNative(0xF0B4F759F35CC7F5, cargo, Citizen.InvokeNative(0x34F008A7E48C496B, cargo, 0), cache.ped, 7,
-            512)
-        Citizen.InvokeNative(0x399657ED871B3A6C, cargo, data.peltquality or 0)
-    end
-
-    Citizen.InvokeNative(0x18FF3110CF47115D, cargo, 21, true)
-    SetEntityVisible(cargo, false)
-    FreezeEntityPosition(cargo, true)
-
-    TaskPickupCarriableEntity(cache.ped, cargo)
-    TaskStatus(`SCRIPT_TASK_PICKUP_CARRIABLE_ENTITY`)
-    Wait(500)
-
-    FreezeEntityPosition(cargo, false)
-    SetEntityVisible(cargo, true)
-    Citizen.InvokeNative(0x18FF3110CF47115D, cargo, 21, false)
-
-    SetModelAsNoLongerNeeded(data.model)
+RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
+    Wait(2000)
+    TriggerServerEvent('rsg-wagons:server:restore')
 end)
 
-AddEventHandler("onResourceStop", function(resourceName)
-    if GetCurrentResourceName() ~= resourceName then return end
-
-    if mywagon and DoesEntityExist(mywagon) then
-        local netId = NetworkGetNetworkIdFromEntity(mywagon)
-        if Config.Target then exports.ox_target:removeEntity(mywagon) end
-        TriggerServerEvent("rsg-wagons:removeWagon", netId, mywagon)
-        mywagon = nil
-        if wagonBlip and DoesBlipExist(wagonBlip) then
-            RemoveBlip(wagonBlip)
-            wagonBlip = nil
-        end
-        if wagonNetId and animalStorageCache[wagonNetId] then
-            animalStorageCache[wagonNetId] = nil
-        end
-        if netId then
-            wagonVerificationCache[netId] = nil
-        end
-    end
+-- resource (re)started while already logged in
+CreateThread(function()
+    Wait(2000)
+    if LocalPlayer.state.isLoggedIn then TriggerServerEvent('rsg-wagons:server:restore') end
 end)
