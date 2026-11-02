@@ -32,3 +32,8 @@ Run these in order. `audit/ai-procedure.md` describes the report format.
 ## 6. NUI
 - [ ] Matches ui/design-standard.md (Roboto, monochrome palette, no vignette)
 - [ ] `SetNuiFocus(false, false)` on close and on resource stop
+
+## 7. Documentation (see conventions/documentation.md)
+- [ ] `README.md` exists and is up to date: features, installation, config table, how to use, commands, locales, support footer
+- [ ] `DOCS.md` exists and is up to date: architecture, exports/events/callbacks, examples, saving, security, database, owner how-tos, troubleshooting
+- [ ] Nothing in either file refers to config options, exports, commands or items that no longer exist

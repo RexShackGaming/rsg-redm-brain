@@ -14,6 +14,7 @@ Read this file first, then open only the files you need for the task.
 8. **Before calling any RSG resource's export, event or callback, check `framework/resources/<resource>.md`** for the exact name and parameters. If you need behaviour details, read that resource's code in `source/<resource>/`.
 9. When building something similar to an existing RSG resource (shops, jobs, NUI menus, placeable props), study that resource in `source/` first and follow its patterns.
 10. When converting a VORP script, follow `vorp/README.md` (conversion map + porting checklist). Never use VORP APIs in RSG scripts unless asked.
+11. **Every session that creates or changes a resource must create or update its `README.md` and `DOCS.md`** to match the code (see `conventions/documentation.md`).
 
 ## Map
 | Folder | Use it for |
@@ -43,4 +44,5 @@ Read this file first, then open only the files you need for the task.
 2. Copy `templates/rsg-template/` and rename it (`rsg-<name>`).
 3. Find similar RSG resources in `framework/resources/README.md` and read their code in `source/`.
 4. Pull APIs from `framework/` and natives from `natives/`. Look up any data values.
-5. Before finishing, check the script against `audit/audit-checklist.md`.
+5. Create or update `README.md` and `DOCS.md` (`conventions/documentation.md`).
+6. Before finishing, check the script against `audit/audit-checklist.md`.
