@@ -32,7 +32,7 @@ local function PropPlacer()
     if not LoadModel(model) then return end
     placing = true
 
-    local ped = cache.ped
+    local ped = PlayerPedId()
     SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
 
     -- attach offsets are in the ped's local space, so "in front" is simply +Y

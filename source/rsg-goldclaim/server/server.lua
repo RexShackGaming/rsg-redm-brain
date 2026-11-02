@@ -1,5 +1,3 @@
-lib.locale()
-
 local RSGCore = exports['rsg-core']:GetCoreObject()
 local Inventory = exports['rsg-inventory']
 
@@ -13,7 +11,7 @@ local Cooldowns        = {} -- [src] = { [key] = GetGameTimer() expiry }
 -- helpers
 ---------------------------------------------
 local function Notify(src, title, description, nType, icon, duration)
-    TriggerClientEvent('ox_lib:notify', src, {
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
         title       = title,
         description = description,
         type        = nType or 'inform',
@@ -130,6 +128,35 @@ local function RemoveRocker(propid)
     MySQL.update('DELETE FROM player_goldrockers WHERE propid = ?', { propid })
 end
 
+local function EnsureDatabase()
+    local ok, err = pcall(function()
+        MySQL.query.await([[
+            CREATE TABLE IF NOT EXISTS `player_goldrockers` (
+                `id` int(11) NOT NULL AUTO_INCREMENT,
+                `citizenid` varchar(50) DEFAULT NULL,
+                `owner` varchar(50) DEFAULT NULL,
+                `properties` text NOT NULL,
+                `propid` int(11) NOT NULL,
+                `proptype` varchar(50) DEFAULT NULL,
+                `licensed` tinyint(1) NOT NULL DEFAULT 0,
+                `claimname` varchar(100) DEFAULT NULL,
+                `paydirt` int(3) NOT NULL DEFAULT 0,
+                `water` int(3) NOT NULL DEFAULT 0,
+                `quality` int(3) NOT NULL DEFAULT 100,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `propid` (`propid`),
+                KEY `citizenid` (`citizenid`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+        ]])
+    end)
+    if not ok then
+        print(('^1[rsg-goldclaim] database setup failed: %s^7'):format(err))
+        return false
+    end
+    print('^2[rsg-goldclaim] database tables ready^7')
+    return true
+end
+
 local function LoadProps()
     Config.PlayerProps = {}
     local result = MySQL.query.await('SELECT properties, licensed, claimname FROM player_goldrockers')
@@ -149,25 +176,26 @@ end
 -- startup
 ---------------------------------------------
 CreateThread(function()
+    if Config.AutoDatabase and not EnsureDatabase() then return end
     LoadProps()
     PropsLoaded = true
     RockerUpdateProps()
 end)
 
-lib.callback.register('rsg-goldclaim:server:getprops', function()
+RSGCore.Functions.CreateCallback('rsg-goldclaim:server:getprops', function(_, cb)
     while not PropsLoaded do Wait(100) end
-    return Config.PlayerProps
+    cb(Config.PlayerProps)
 end)
 
 --- unclaimed outputs for this character (so they survive a relog)
-lib.callback.register('rsg-goldclaim:server:getpending', function(source)
+RSGCore.Functions.CreateCallback('rsg-goldclaim:server:getpending', function(source, cb)
     local Player = RSGCore.Functions.GetPlayer(source)
-    if not Player then return {} end
+    if not Player then return cb({}) end
     local cid, list = Player.PlayerData.citizenid, {}
     for propid, p in pairs(PendingOutputs) do
         if p.cid == cid then list[#list + 1] = { propid = propid, gold = p.gold, paydirt = p.paydirt } end
     end
-    return list
+    cb(list)
 end)
 
 AddEventHandler('playerDropped', function()
@@ -220,26 +248,26 @@ end)
 ---------------------------------------------
 -- callbacks
 ---------------------------------------------
-lib.callback.register('rsg-goldclaim:server:countprops', function(source)
+RSGCore.Functions.CreateCallback('rsg-goldclaim:server:countprops', function(source, cb)
     local Player = RSGCore.Functions.GetPlayer(source)
-    if not Player then return 0 end
+    if not Player then return cb(0) end
     local cid, count = Player.PlayerData.citizenid, 0
     for _, v in pairs(Config.PlayerProps) do
         if v.builder == cid then count = count + 1 end
     end
-    return count
+    cb(count)
 end)
 
-lib.callback.register('rsg-goldclaim:server:getrockerdata', function(source, propid)
+RSGCore.Functions.CreateCallback('rsg-goldclaim:server:getrockerdata', function(source, cb, propid)
     propid = tonumber(propid)
     local propData = propid and GetRockerPropById(propid)
-    if not propData or not IsNearProp(source, propData, Config.ClaimZoneRadius) then return nil end
+    if not propData or not IsNearProp(source, propData, Config.ClaimZoneRadius) then return cb(nil) end
     local result = MySQL.single.await('SELECT propid, citizenid, owner, licensed, claimname, paydirt, water, quality FROM player_goldrockers WHERE propid = ?', { propid })
     if result then
         result.processing = ProcessingRockers[propid] ~= nil
         result.licensed = ToFlag(result.licensed)
     end
-    return result
+    cb(result)
 end)
 
 ---------------------------------------------
@@ -336,6 +364,11 @@ RegisterNetEvent('rsg-goldclaim:rocker:server:destroyProp', function(propid)
     if propData.builder ~= Player.PlayerData.citizenid then return end
 
     if OnCooldown(src, 'packup', 2000) then return end
+    local pending = PendingOutputs[propid]
+    if ProcessingRockers[propid] or (pending and (pending.gold > 0 or pending.paydirt > 0)) then
+        Notify(src, locale('rocker_collect_first'), nil, 'error', 'circle-xmark')
+        return
+    end
 
     local row = MySQL.single.await('SELECT quality FROM player_goldrockers WHERE propid = ?', { propid })
     -- re-check after the await: a second request could have removed it meanwhile (item dupe)
@@ -372,6 +405,7 @@ RegisterNetEvent('rsg-goldclaim:rocker:server:leodestroy', function(propid)
         return
     end
     if propData.licensed == 1 then return end
+    if OnCooldown(src, 'leodestroy', Config.DestroyTime - 1000) then return end
 
     RemoveRocker(propid)
     AddItem(src, 'tool_goldrocker', 1, 'rsg-goldclaim:confiscate')
@@ -550,10 +584,14 @@ RegisterNetEvent('rsg-goldclaim:rocker:server:repairrocker', function(propid)
         return
     end
 
-    if RemoveItem(src, 'resource_wood', Config.RepairWoodAmount, 'rsg-goldclaim:repair') then
-        MySQL.update('UPDATE player_goldrockers SET quality = 100 WHERE propid = ?', { propid })
-        Notify(src, locale('rocker_repaired'), nil, 'success', 'circle-check')
+    if not RemoveItem(src, 'resource_wood', Config.RepairWoodAmount, 'rsg-goldclaim:repair') then return end
+    -- conditional update: if someone else repaired it meanwhile, refund the wood
+    local affected = MySQL.update.await('UPDATE player_goldrockers SET quality = 100 WHERE propid = ? AND quality < 100', { propid })
+    if not affected or affected < 1 then
+        AddItem(src, 'resource_wood', Config.RepairWoodAmount, 'rsg-goldclaim:refund')
+        return
     end
+    Notify(src, locale('rocker_repaired'), nil, 'success', 'circle-check')
 end)
 
 ---------------------------------------------
@@ -584,9 +622,9 @@ RegisterNetEvent('rsg-goldclaim:rocker:server:renameclaim', function(propid, new
 end)
 
 ---------------------------------------------
--- equipment degradation cron
+-- equipment degradation (timer)
 ---------------------------------------------
-lib.cron.new(Config.CronJob, function()
+local function RunDegradation()
     -- remove broken rockers first (they had a full cycle at 0% to be repaired)
     local broken = MySQL.query.await('SELECT propid, owner, citizenid FROM player_goldrockers WHERE quality <= 0') or {}
     for i = 1, #broken do
@@ -601,5 +639,13 @@ lib.cron.new(Config.CronJob, function()
     MySQL.update('UPDATE player_goldrockers SET quality = quality - 1 WHERE quality > 0 AND RAND() * 100 < ?', { Config.DegradeChance })
 
     if #broken > 0 then RockerUpdateProps() end
-    Debug('degradation cron ran')
+    Debug('degradation ran')
+end
+
+CreateThread(function()
+    while not PropsLoaded do Wait(1000) end
+    while true do
+        Wait(math.max(1, Config.DegradeInterval) * 60000)
+        RunDegradation()
+    end
 end)

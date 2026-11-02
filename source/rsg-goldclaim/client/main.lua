@@ -31,12 +31,16 @@ local function PlaySmoke(propid)
     local sp = SpawnedProps[propid]
     if not sp or not DoesEntityExist(sp.obj) then return end
     local c = GetEntityCoords(sp.obj)
+    local asset = joaat(FX_GROUP)
+    Citizen.InvokeNative(0xF2B2353BBC0D4E8F, asset) -- RequestNamedPtfxAsset
+    local timeout = GetGameTimer() + 2000
+    while not Citizen.InvokeNative(0x65BB72F29138F5D6, asset) and GetGameTimer() < timeout do Wait(10) end -- HasNamedPtfxAssetLoaded
     UseParticleFxAsset(FX_GROUP)
     StartParticleFxNonLoopedAtCoord(FX_NAME, c.x, c.y, c.z, 0.0, 0.0, 0.0, 1.0, false, false, false, true)
 end
 
 local function GetRockerData(propid)
-    return lib.callback.await('rsg-goldclaim:server:getrockerdata', false, propid)
+    return RSGCore.Functions.AwaitCallback('rsg-goldclaim:server:getrockerdata', nil, propid)
 end
 
 local function IsOwner(propid)
@@ -59,7 +63,7 @@ local function DespawnRocker(propid)
     local sp = SpawnedProps[propid]
     if not sp then return end
     if DoesEntityExist(sp.obj) then
-        exports.ox_target:removeLocalEntity(sp.obj)
+        exports['rsg-target']:removeLocalEntity(sp.obj)
         SetEntityAsMissionEntity(sp.obj, false, false)
         DeleteObject(sp.obj)
     end
@@ -67,7 +71,7 @@ local function DespawnRocker(propid)
 end
 
 local function SetupRockerTarget(propid, obj)
-    exports.ox_target:addLocalEntity(obj, {
+    exports['rsg-target']:addLocalEntity(obj, {
         {
             name = 'rocker_menu_' .. propid,
             label = locale('rocker_target_menu'),
@@ -125,7 +129,7 @@ end
 
 CreateThread(function()
     while true do
-        local pos = GetEntityCoords(cache.ped)
+        local pos = GetEntityCoords(PlayerPedId())
         local sleep = 3000
 
         for i = 1, #Config.PlayerProps do
@@ -182,13 +186,13 @@ end
 
 CreateThread(function()
     while true do
-        Wait(500)
-        local pos = GetEntityCoords(cache.ped)
+        Wait(next(ClaimZones) and 500 or 2000)
+        local pos = GetEntityCoords(PlayerPedId())
         for _, z in pairs(ClaimZones) do
             local inside = #(pos - z.coords) <= Config.ClaimZoneRadius
             if inside ~= z.inside then
                 z.inside = inside
-                lib.notify({
+                RSGCore.Functions.Notify({
                     title       = z.name,
                     description = locale(inside and 'rocker_entering_claim_desc' or 'rocker_leaving_claim_desc', z.name),
                     type        = 'inform',
@@ -225,7 +229,7 @@ local function ClearOutputProps(rockerid)
     for outputId, o in pairs(SpawnedOutputProps) do
         if not rockerid or o.rockerid == rockerid then
             if DoesEntityExist(o.obj) then
-                exports.ox_target:removeLocalEntity(o.obj)
+                exports['rsg-target']:removeLocalEntity(o.obj)
                 DeleteObject(o.obj)
             end
             SpawnedOutputProps[outputId] = nil
@@ -235,9 +239,9 @@ end
 
 local function RequestProps()
     ClearOutputProps() -- character switch: drop the previous character's outputs
-    SetPropData(lib.callback.await('rsg-goldclaim:server:getprops', false))
+    SetPropData(RSGCore.Functions.AwaitCallback('rsg-goldclaim:server:getprops', nil))
     -- respawn any outputs the server still holds for this character (relog / resource restart)
-    for _, p in ipairs(lib.callback.await('rsg-goldclaim:server:getpending', false) or {}) do
+    for _, p in ipairs(RSGCore.Functions.AwaitCallback('rsg-goldclaim:server:getpending', nil) or {}) do
         for _ = 1, p.gold do TriggerEvent('rsg-goldclaim:rocker:client:spawnoutputprop', p.propid, 'gold', true) end
         for _ = 1, p.paydirt do TriggerEvent('rsg-goldclaim:rocker:client:spawnoutputprop', p.propid, 'paydirt', true) end
     end
@@ -412,7 +416,7 @@ local function PickupOutput(outputId, serverEvent)
         canCancel = true,
     }) then
         if DoesEntityExist(o.obj) then
-            exports.ox_target:removeLocalEntity(o.obj)
+            exports['rsg-target']:removeLocalEntity(o.obj)
             DeleteObject(o.obj)
         end
         SpawnedOutputProps[outputId] = nil
@@ -454,7 +458,7 @@ RegisterNetEvent('rsg-goldclaim:rocker:client:spawnoutputprop', function(propid,
     local outputId = ('%s_%s'):format(propid, outputCounter)
     SpawnedOutputProps[outputId] = { obj = obj, rockerid = propid }
 
-    exports.ox_target:addLocalEntity(obj, {
+    exports['rsg-target']:addLocalEntity(obj, {
         {
             name = 'pickup_' .. outputId,
             label = locale(isGold and 'rocker_target_pickup_gold' or 'rocker_target_pickup_paydirt'),
@@ -546,11 +550,12 @@ end)
 AddEventHandler('rsg-goldclaim:rocker:client:placeNewProp', function(pos, heading)
     if IsBusy() then return end
 
-    if IsEntityInWater(cache.ped) then
+    if IsEntityInWater(PlayerPedId()) then
         return Notify(locale('rocker_cant_place_here'), nil, 'error', 'circle-xmark')
     end
 
-    local count = lib.callback.await('rsg-goldclaim:server:countprops', false)
+    local count = RSGCore.Functions.AwaitCallback('rsg-goldclaim:server:countprops', nil)
+    if not count then return end
     if count >= Config.MaxGoldRockers then
         return Notify(locale('rocker_max_equipment'), nil, 'error', 'circle-xmark')
     end
@@ -579,13 +584,13 @@ end
 
 RegisterNetEvent('rsg-goldclaim:rocker:client:useshovel', function()
     if IsBusy() then return end
-    if not IsEntityInWater(cache.ped) then
+    if not IsEntityInWater(PlayerPedId()) then
         return Notify(locale('rocker_not_in_water'), nil, 'error', 'circle-xmark')
     end
     local dig = Config.Anims.dig
     if not LoadModel(Config.ShovelProp.model) or not LoadAnimDict(dig.dict) then return end
 
-    local ped = cache.ped
+    local ped = PlayerPedId()
     SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
 
     local coords = GetEntityCoords(ped)
@@ -618,7 +623,7 @@ end)
 ---------------------------------------------
 RegisterNetEvent('rsg-goldclaim:rocker:client:usebucket', function()
     if IsBusy() then return end
-    if not IsEntityInWater(cache.ped) then
+    if not IsEntityInWater(PlayerPedId()) then
         return Notify(locale('rocker_not_in_water'), nil, 'error', 'circle-xmark')
     end
 

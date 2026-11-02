@@ -376,8 +376,7 @@ html, body {
     margin-bottom: 6px;
 }
 
-.modal-input,
-.modal-select {
+.modal-input {
     width: 100%;
     padding: 9px 10px;
     background: rgba(0, 0, 0, 0.35);
@@ -389,16 +388,10 @@ html, body {
     transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
-.modal-input:focus,
-.modal-select:focus {
+.modal-input:focus {
     outline: none;
     border-color: var(--rdr-gold);
     box-shadow: 0 0 0 2px rgba(201, 162, 75, 0.15);
-}
-
-.modal-select option {
-    background: var(--rdr-panel);
-    color: var(--rdr-text);
 }
 
 .modal-actions {
@@ -429,8 +422,7 @@ html, body {
 }
 
 /* validation state for modal inputs */
-.modal-input.invalid,
-.modal-select.invalid {
+.modal-input.invalid {
     border-color: var(--rdr-cost-over);
     box-shadow: 0 0 0 2px rgba(224, 85, 79, 0.2);
 }

@@ -11,5 +11,11 @@
     "cl_temp_c": "%s°C",
     "cl_temp_f": "%s°F",
     "cl_wind_kph": "%s km/h",
-    "cl_wind_mph": "%s mph"
+    "cl_wind_mph": "%s mph",
+    "cl_discovered": "新たな発見",
+    "cl_places": "%s か所を発見しました",
+    "cl_cmd_places": "発見した場所の数を表示",
+    "zone_msg_new_austin": "無法地帯",
+    "zone_msg_guarma": "故郷から遠く離れて",
+    "zone_msg_saint_denis": "南部の宝石"
 }

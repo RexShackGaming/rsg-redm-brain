@@ -11,5 +11,11 @@
     "cl_temp_c": "%s°C",
     "cl_temp_f": "%s°F",
     "cl_wind_kph": "%s km/u",
-    "cl_wind_mph": "%s mph"
+    "cl_wind_mph": "%s mph",
+    "cl_discovered": "Nieuwe ontdekking",
+    "cl_places": "Je hebt %s plaatsen ontdekt",
+    "cl_cmd_places": "Toon hoeveel plaatsen je hebt ontdekt",
+    "zone_msg_new_austin": "Wetteloos gebied",
+    "zone_msg_guarma": "Ver van huis",
+    "zone_msg_saint_denis": "Het juweel van het Zuiden"
 }

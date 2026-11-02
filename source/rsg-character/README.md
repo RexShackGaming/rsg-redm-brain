@@ -1,45 +1,49 @@
 # rsg-character
 
-Character selection, creation, clothing store and spawn system for **RSG-Core** (RedM).
+Character selection, character creation, clothing stores, wardrobe and spawn selection for **RSG-Core** (RedM).
+
+> Server owners and developers: see **[DOCS.md](DOCS.md)** for the full flow, database layout, security model, exports and how to extend the script.
 
 ---
 
 ## Features
 
 ### Character Select
-- In-world character select screen: your characters' peds line up at a location you can configure.
+- In-world select screen: your characters' peds line up at a configurable location, with the camera framing every slot automatically.
 - Multiple character slots per player license (default **4**, configurable).
-- Create, select and delete characters, with the camera framing every slot automatically.
+- Create, play and delete characters. Deleting a character also removes its skin and saved outfits.
 
 ### Character Creator
 - Male / female selection.
-- Body options: body type (slim, sporty, medium, fat, strong), waist, chest, skin tone.
-- Detailed face options: eyes, eyelids, eyebrows, nose, mouth, lips, teeth, cheekbones, jaw, ears and chin.
+- Body: body type (slim, sporty, medium, fat, strong), waist, chest and skin tone.
+- Face: eyes, eyelids, eyebrows, nose, mouth, lips, teeth, cheekbones, jaw, ears and chin.
 - Hair and beard styles and colours.
 - Overlays: scars, freckles, moles, spots, ageing, eye shadow, blush, lipstick and eyeliner, each with colour and opacity.
-- Identity form: first name, last name, a nationality dropdown and a Day / Month / Year birth date picker (range set in config, checked on the server).
-- A profanity filter for character names.
-- Starter items given to each new character.
+- Identity form: first name, last name, nationality dropdown and a Day / Month / Year birth date picker (range set in config).
+- Names, nationality and birth date are all checked on the server; a profanity filter blocks bad names.
+- Starter items given once to each new character.
 
-### Clothing Store & Wardrobe
-- Clothing stores in Valentine, Rhodes, Saint Denis, Blackwater, Strawberry, Armadillo and Tumbleweed, with map blips.
-- Clothing is split into categories (Head, Shirts & Vests, Belts & Holsters, Coats, Legs, Feet, Hands, Accessories, Misc Gear).
-- Each category has its own price, paid in cash.
-- Every purchase is saved as a named outfit (up to 30). Wear or delete them at a cloakroom or any wardrobe/dresser prop (rsg-target).
+### Clothing Stores & Wardrobe
+- Stores in Valentine, Rhodes, Saint Denis, Blackwater, Strawberry, Armadillo and Tumbleweed, with map blips.
+- Clothing split into categories (Head, Shirts & Vests, Belts & Holsters, Coats & Outerwear, Legs, Feet, Hands, Belts & Satchels, Misc Gear).
+- Every category has its own cash price; you only pay for items you changed.
+- Fitting room runs in a private routing bucket so other players don't see you changing.
+- Every purchase is saved as a named outfit (up to **30** per character).
+- Wear or delete outfits at a cloakroom or any wardrobe / dresser / armoire prop (via rsg-target).
 - New characters get a protected **Default** outfit that can't be deleted.
-- The server checks every clothing purchase and outfit change.
-- Configurable store door states (open or locked).
+- Clothing layers are applied in a fixed order to stop clipping (see [Clothing Order](#clothing-order)).
 
 ### Spawn Select
-- A card-based spawn screen with an image for each location.
-- Default locations: Valentine, Rhodes, Saint Denis and Blackwater.
+- Card-based spawn screen with an image per location (Valentine, Rhodes, Saint Denis, Blackwater by default).
+- New characters pick a spawn; returning characters spawn back where they logged out.
 
 ### Other
-- Discord webhook logging for character created, deleted and selected, appearance saved and outfit purchased.
-- A `/loadskin` command to reload your appearance.
-- A `/logout` command that saves and returns you to character select (with cooldown, blocked while dead).
+- `/logout` saves the character and returns to character select (cooldown, blocked while dead).
+- `/loadskin` reloads your appearance if something looks wrong.
+- Discord webhook logging: character created, deleted, selected, logout, appearance saved and outfit purchased (rate-limit aware).
 - Locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro.
-- Exports for other resources (see below).
+- No ox_lib dependency — uses rsg-core notify, callbacks, locales and `require`.
+- Exports, events and callbacks for other resources.
 
 ---
 
@@ -47,13 +51,14 @@ Character selection, creation, clothing store and spawn system for **RSG-Core** 
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
 - [oxmysql](https://github.com/Rexshack-RedM/oxmysql)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory) (starter items)
-- Optional: [rsg-target](https://github.com/Rexshack-RedM/rsg-target) (wardrobe props), [rsg-weather](https://github.com/Rexshack-RedM/rsg-weather) (paused during character select)
+- Optional: [rsg-target](https://github.com/Rexshack-RedM/rsg-target) (wardrobe props)
+- Optional: [rsg-weather](https://github.com/Rexshack-RedM/rsg-weather) (paused during character select)
 
 ---
 
 ## Installation
 
-1. Download the resource and put the `rsg-character` folder in your server's `resources` folder (for example `resources/[rsg]/rsg-character`).
+1. Download the resource and place the `rsg-character` folder in your resources (e.g. `resources/[rsg]/rsg-character`). Keep the folder name `rsg-character` — NUI image paths use it.
 2. Make sure your database has the `playerskins` and `playeroutfit` tables. Most RSG-Core installs already include them. If yours doesn't, run:
 
 ```sql
@@ -77,157 +82,160 @@ CREATE TABLE IF NOT EXISTS `playeroutfit` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
-The `is_default` column is added automatically on start if it's missing, and existing characters get a Default outfit copied from what they're wearing.
+   On start the script adds the `is_default` column if it's missing and gives every existing character a **Default** outfit copied from what they're wearing.
 
-3. Ensure the resource in `server.cfg` **after** its dependencies:
+3. Add it to `server.cfg` **after** its dependencies:
 
 ```cfg
 ensure oxmysql
 ensure rsg-core
+ensure rsg-inventory
+ensure rsg-target
 ensure rsg-character
 ```
 
-4. Remove or disable any other multicharacter, appearance or clothing resource (such as `rsg-multicharacter` or `rsg-appearance`) so they don't conflict.
-5. Edit `shared/config.lua` (see below), then restart the server.
+4. Remove or disable any other multicharacter, appearance or clothing resource (`rsg-multicharacter`, `rsg-appearance`, `rsg-clothing` etc.) so they don't conflict.
+5. Set your language (optional, defaults to `en`):
+
+```cfg
+setr rsg:locale en
+```
+
+6. Edit `shared/config.lua` (paste your Discord webhook URLs, check spawn points and prices), then restart the server.
 
 ---
 
 ## Configuration
 
-All settings are in `shared/config.lua`.
+Everything is in `shared/config.lua`.
 
 | Option | Description |
 |---|---|
-| `RSG.MaxCharacterSlots` | Number of character slots per player license (default `4`). |
-| `RSG.Birthdate` | `Min`, `Max` and `Default` birth dates (`YYYY-MM-DD`) for the creator. |
+| `RSG.Debug` | Prints extra debug info to the client console. |
+| `RSG.MaxCharacterSlots` | Character slots per player license (default `4`). |
+| `RSG.Birthdate` | `Min`, `Max` and `Default` birth dates (`YYYY-MM-DD`), checked on client and server. |
 | `RSG.Logout` | `/logout` settings: `Enabled`, `Command`, `Cooldown` (seconds), `BlockWhenDead`. |
-| `RSG.ProfanityWords` | Words blocked in character names (`['word'] = true`). |
-| `RSG.Nationalities` | Locale keys shown in the nationality dropdown. Their display names are under `nationalities` in `locales/*.json`. |
-| `RSG.StarterItems` | Items given once to a new character: `{ item = 'bread', amount = 2 }`. |
-| `RSG.CharSelectLocation` | `coords` (vector4) where the peds line up, `spacing` between peds, and `camera` settings (`back`, `height`, `fov`). |
-| `RSG.Webhooks` | One entry per log event. Set `enabled`, paste your Discord webhook `url`, and optionally set `name`, `avatar` and `color`. |
-| `RSG.SpawnLocations` | Spawn cards: `label`, `coords` (vector4) and `image` (a path under `html/`, such as `img/spawn/valentine.jpg`). |
-| `RSG.Prompt` | Control hashes used in the creator (gender select, confirm, camera, rotate, zoom). |
-| `RSG.OpenKey` / `RSG.Keybind` | Key that opens the clothing store / wardrobe. |
+| `RSG.ProfanityWords` | Words blocked as names: `['word'] = true` (lowercase). |
+| `RSG.Nationalities` | Locale keys for the nationality dropdown. Names live under `nationalities` in `locales/*.json`. |
+| `RSG.StarterItems` | Items given once to a new character: `{ item = 'bread', amount = 2 }`. Unknown items are skipped. |
+| `RSG.CharSelectLocation` | `coords` (vector4) where peds line up, `spacing` between them, and `camera` (`back`, `height`, `fov`). |
+| `RSG.Webhooks` | One entry per log event: `enabled`, `url`, `name`, `avatar`, `color`. |
+| `RSG.SpawnLocations` | Spawn cards: `label`, `coords` (vector4) and `image` (path under `html/`). |
+| `RSG.SpawnChecks` | Safety net: anyone who loads within `Radius` of a `badSpawn` point is moved to `moveTo`. |
+| `RSG.Prompt` | Control hashes used in the creator (gender, confirm, camera, rotate, zoom). |
+| `RSG.OpenKey` / `RSG.Keybind` | Key that opens the clothing store / cloakroom. |
 | `RSG.BlipSprite`, `RSG.BlipSpriteCloakRoom`, `RSG.BlipScale` | Map blip settings. |
 | `RSG.SetDoorState` | Store door hashes and state (`0` = open, `1` = locked). |
-| `RSG.Zones1` | Clothing store locations: `blipcoords`, `fittingcoords`, `quitcoords`, `promtcoords` and `showblip`. |
-| `RSG.Cloakroom` | Wardrobe locations (vector3). |
-| `RSG.WardrobeTarget` | rsg-target wardrobe props: `enabled`, `distance`, `icon`, `label`, `models`. When enabled, saved outfits can be worn at any of these props. |
-| `RSG.MenuElements` | Which clothing categories appear under each store menu section. |
-| `RSG.Price` | Cash price for each clothing category. |
+| `RSG.Zones1` | Clothing stores: `blipcoords`, `fittingcoords`, `quitcoords`, `promtcoords`, `showblip`. |
+| `RSG.Cloakroom` | Cloakroom (wardrobe) locations, vector3. |
+| `RSG.WardrobeTarget` | rsg-target wardrobe props: `enabled`, `distance`, `icon`, `label`, `models`. |
+| `RSG.MenuElements` | Which clothing categories appear in each store menu section. |
+| `RSG.Price` | Cash price per clothing category. |
 
 ### Adding a spawn location
 ```lua
 { label = 'Strawberry', coords = vector4(-1790.0, -390.0, 160.3, 0.0), image = 'img/spawn/strawberry.jpg' },
 ```
-Put the image in `html/img/spawn/`. Existing entries use a locale key (`locale('spawn_locations.valentine')`) as the label. You can do the same for new ones by adding a key under `spawn_locations` in the locale files. A missing image just leaves the card blank.
+Put the image in `html/img/spawn/`. To translate the label, add a key under `spawn_locations` in every locale file and use `locale('spawn_locations.strawberry')`. A missing image just leaves the card blank.
+
+### Adding a clothing store
+Add an entry to `RSG.Zones1` (stand in the spot and grab coords in-game):
+```lua
+{
+    location = 'annesburg',
+    blipcoords    = vector3(x, y, z),       -- map blip
+    fittingcoords = vector4(x, y, z, h),    -- where the player stands while changing
+    quitcoords    = vector4(x, y, z, h),    -- where they are placed when leaving
+    promtcoords   = vector3(x, y, z),       -- where the open prompt shows
+    showblip = true
+},
+```
 
 ### Webhooks
-Replace the placeholder `https://discord.com/api/webhooks/XXXXXXXX/XXXXXXXX` URLs with your own. A category that is enabled but has no valid URL prints a warning to the server console instead of throwing an error.
-
-### Locales
-Text is loaded by rsg-core's shared locale loader (`@rsg-core/shared/locale.lua`) from `locales/<lang>.json`. Choose the language in `server.cfg` (`ox:locale` still works as a fallback), for example:
-```cfg
-setr rsg:locale en
-```
-
----
-
-## Clothing Order
-
-RedM draws clothing in layers, so the order items go on matters. If a coat goes on before a shirt, or a hat before the hair, you can get clipping, missing body parts or floating accessories. rsg-character always applies clothing in a fixed layer order, both when an outfit loads and when you change an item in the clothing store.
-
-### How it works
-1. **Base body first.** For each body part (upper and lower) that no clothing covers, the bare skin for your skin tone and body type goes on before any clothes.
-2. **Clothing in layer order.** Every category then goes on in the order below, so outer items always sit on top of inner ones.
-3. **Unknown categories last.** Any category not in the list goes on after everything else, sorted alphabetically.
-
-| Layer | Categories (in order) |
-|---|---|
-| 1. Inner | `pants`, `skirts`, `boots`, `shirts_full` |
-| 2. Middle | `vests`, `suspenders`, `chaps`, `spats`, `boot_accessories`, `leg_attachments` |
-| 3. Outer | `coats`, `coats_closed`, `ponchos`, `cloaks`, `aprons`, `armor`, `neckwear`, `neckties`, `gloves`, `gauntlets` |
-| 4. Equipment & accessories | `gunbelts`, `holsters_right`, `holsters_left`, `holsters_crossdraw`, `holsters_knife`, `loadouts`, `ammo_pistols`, `ammo_rifles`, `satchels`, `belts`, `belt_buckles`, `talisman_belt`, `talisman_holster`, `talisman_satchel`, `talisman_wrist`, `badges`, `accessories`, `jewelry_bracelets`, `jewelry_rings_left`, `jewelry_rings_right`, `masks`, `eyewear`, `hats` |
-
-### Changing the order
-The order is set by the `CLOTHING_ORDER` table at the top of `client/clothes.lua`. Move a category up or down to change when it goes on (later means drawn on top), or add a new category to give it a fixed place. The `OrderedClothes(tbl)` helper walks any clothes table in this order, so other client code can use it too:
-
-```lua
-for category, data in OrderedClothes(ClothesCache) do
-    -- applied in layer order
-end
-```
+Replace the placeholder `https://discord.com/api/webhooks/XXXXXXXX/XXXXXXXX` URLs with your own. An enabled category without a real URL prints a single console warning instead of erroring. Set `enabled = false` to turn a category off.
 
 ---
 
 ## Usage
 
 ### Players
-1. **Join the server.** The character select screen opens with your existing characters.
-2. **Choose a slot.** Click an existing character to play, or an empty slot to create a new one.
-3. **Create a character.** Pick male or female, shape the body and face, choose hair and makeup, then enter your name, nationality and birth date. Use the on-screen prompts to move the camera up and down, rotate and zoom.
-4. **Spawn.** Choose a spawn location from the cards.
-5. **Clothing stores.** Go to a store (clothing blip on the map), stand at the prompt and press the open key. Browse categories, try items on, and pay in cash to save the outfit.
-6. **Wardrobe.** At a cloakroom, wear or delete your saved outfits.
+1. **Join the server.** The character select screen opens with your characters lined up.
+2. **Choose a slot.** Click a character to play, or an empty slot to create one.
+3. **Create.** Pick male or female, shape body and face, choose hair and makeup, then enter your name, nationality and birth date. Use the on-screen prompts to move the camera, rotate and zoom.
+   - Names must be 2–20 letters, start with a capital and contain no spaces (e.g. `Arthur`).
+4. **Spawn.** New characters choose a town from the spawn cards. Existing characters return to where they logged out.
+5. **Shop for clothes.** Head to a clothing store blip, stand at the prompt and press the open key. Browse categories, try items on, then pay in cash and name the outfit.
+6. **Change outfits.** At a cloakroom or any wardrobe/dresser prop (target it), wear or delete saved outfits.
 
 ### Commands
 | Command | Description |
 |---|---|
-| `/logout` | Saves your character and returns you to character select. |
-| `/loadskin` | Reloads your saved skin and clothing. It doesn't work while you're dead, cuffed, hogtied, lassoed, being dragged, ragdolled, falling or jailed. |
+| `/logout` | Saves your character and returns you to character select. Has a cooldown and is blocked while dead or downed. |
+| `/loadskin` | Reloads your saved skin and clothing. Blocked while dead, cuffed, hogtied, lassoed, dragged, ragdolled, falling or jailed. |
 
-### Exports (client)
-```lua
-exports['rsg-character']:ApplySkin(...)
-exports['rsg-character']:ApplySkinMultiChar(...)
-exports['rsg-character']:SetFaceOverlays(target, data)
-exports['rsg-character']:SetHair(target, data)
-exports['rsg-character']:SetBeard(target, data)
-exports['rsg-character']:GetComponentId(name)
-exports['rsg-character']:GetBodyComponents()
-exports['rsg-character']:GetBodyCurrentComponentHash(name)
-exports['rsg-character']:GetComponentsMax(name)
-exports['rsg-character']:GetMaxTexturesForModel(category, model, isClothing)
-exports['rsg-character']:GetClothesCache(name)
-exports['rsg-character']:GetClothesComponentId(name)
-exports['rsg-character']:GetClothesCurrentComponentHash(name)
-exports['rsg-character']:IsCothingActive()
-```
+---
 
-### Events
-| Event | Side | Description |
-|---|---|---|
-| `rsg-character:client:OpenCharSelect` | client | Opens the character select screen. |
-| `rsg-character:client:OpenCreator` | client | Opens the character creator. Only saves when the server opened it (use the server flow, not a client trigger). |
-| `rsg-character:client:OpenSpawnSelect` | client | Opens the spawn select screen. |
-| `rsg-character:client:ApplySkin` | client | Applies a skin and clothes to the player. |
-| `rsg-character:client:outfits` | client | Opens the outfit wardrobe. |
+## Clothing Order
 
-### Callbacks (rsg-core)
-| Callback | Returns |
+RedM draws clothing in layers, so the order items go on matters (coat before shirt = clipping). rsg-character always applies clothing in a fixed order:
+
+1. **Base body** — bare upper/lower body for your skin tone and body type, wherever no clothing covers it.
+2. **Clothing in layer order** — inner → middle → outer → equipment & accessories.
+3. **Unknown categories last**, alphabetically.
+
+| Layer | Categories |
 |---|---|
-| `rsg-character:server:getAppearance` | `{ skin, clothes }` for the logged-in character, or `nil` |
-| `rsg-multicharacter:server:getAppearance` | Same, kept for older resources (`{ skin = {}, clothes = {} }` when none) |
-| `rsg-character:server:getOutfits` | The character's saved outfits |
+| 1. Inner | `pants`, `skirts`, `boots`, `shirts_full` |
+| 2. Middle | `vests`, `suspenders`, `chaps`, `spats`, `boot_accessories`, `leg_attachments` |
+| 3. Outer | `coats`, `coats_closed`, `ponchos`, `cloaks`, `aprons`, `armor`, `neckwear`, `neckties`, `gloves`, `gauntlets` |
+| 4. Equipment & accessories | `gunbelts`, holsters, `loadouts`, ammo, `satchels`, `belts`, `belt_buckles`, talismans, `badges`, `accessories`, jewellery, `masks`, `eyewear`, `hats` |
+
+Change it with the `CLOTHING_ORDER` table at the top of `client/clothes.lua` (later = drawn on top). See [DOCS.md](DOCS.md#clothing-order) for details.
+
+---
+
+## For developers
+
+Quick reference — full details in [DOCS.md](DOCS.md).
 
 ```lua
+-- get the logged-in character's appearance (server callback)
 local data = RSGCore.Functions.AwaitCallback('rsg-character:server:getAppearance')
+-- data = { skin = {...}, clothes = {...} } or nil
+
+-- reload the local player's saved skin + clothes (client)
+exports['rsg-character']:ApplySkin()
+
+-- apply a skin/clothes table to any ped (client)
+exports['rsg-character']:ApplySkinMultiChar(skinData, ped, clothesData)
+
+-- is the player in the clothing store? (client)
+local busy = exports['rsg-character']:IsCothingActive()
 ```
+
+---
 
 ## Changelog
+
+### 3.1.1
+- Current release. See DOCS.md for the full feature/flow reference.
+
 ### 3.0.10
-- Notifications now use rsg-core notify and callbacks use rsg-core callbacks 
+- Notifications use rsg-core notify and callbacks use rsg-core callbacks.
 - Locales load through rsg-core's shared loader; ox_lib is no longer a dependency (data files load with rsg-core's `require`).
 - Wardrobe props use rsg-target instead of ox_target.
-- Removed the unused `rsg-character:server:LoadSkin` net event: a logged-in player without a saved skin could call it to open a free creator session.
-- Wearing a saved outfit re-validates its clothes on the server before applying it.
-- The clothing store checks your cash before you leave the fitting room, so you keep your selection if you can't afford it.
-- The client no longer sends its gender when buying clothes (the server already uses the character record).
+- Removed the unused `rsg-character:server:LoadSkin` net event (could open a free creator session).
+- Wearing a saved outfit re-validates its clothes on the server.
+- The store checks your cash before you leave the fitting room, so you keep your selection if you can't afford it.
+- The client no longer sends its gender when buying clothes (the server uses the character record).
 
 ---
 
 ## Credits
 - RexShack / RSG Framework
 
-Support: https://buymeacoffee.com/rexshack
+## Support
+If you enjoy this script, you can support development here: https://buymeacoffee.com/rexshack
+
+## License
+See [LICENSE](LICENSE).

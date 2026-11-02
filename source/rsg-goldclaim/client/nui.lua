@@ -7,7 +7,6 @@ local pendingModalCallback = nil
 
 local function UiLabels()
     return {
-        select  = locale('ui_select'),
         cancel  = locale('ui_cancel'),
         confirm = locale('ui_confirm'),
         close   = locale('ui_close'),

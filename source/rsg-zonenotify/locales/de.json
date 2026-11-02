@@ -11,5 +11,11 @@
     "cl_temp_c": "%s°C",
     "cl_temp_f": "%s°F",
     "cl_wind_kph": "%s km/h",
-    "cl_wind_mph": "%s mph"
+    "cl_wind_mph": "%s mph",
+    "cl_discovered": "Neue Entdeckung",
+    "cl_places": "Du hast %s Orte entdeckt",
+    "cl_cmd_places": "Zeigt, wie viele Orte du entdeckt hast",
+    "zone_msg_new_austin": "Gesetzloses Gebiet",
+    "zone_msg_guarma": "Weit weg von zu Hause",
+    "zone_msg_saint_denis": "Das Juwel des Südens"
 }

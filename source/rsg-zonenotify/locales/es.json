@@ -11,5 +11,11 @@
     "cl_temp_c": "%s°C",
     "cl_temp_f": "%s°F",
     "cl_wind_kph": "%s km/h",
-    "cl_wind_mph": "%s mph"
+    "cl_wind_mph": "%s mph",
+    "cl_discovered": "Nuevo descubrimiento",
+    "cl_places": "Has descubierto %s lugares",
+    "cl_cmd_places": "Muestra cuántos lugares has descubierto",
+    "zone_msg_new_austin": "Territorio sin ley",
+    "zone_msg_guarma": "Lejos de casa",
+    "zone_msg_saint_denis": "La joya del Sur"
 }

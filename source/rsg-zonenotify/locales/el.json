@@ -11,5 +11,11 @@
     "cl_temp_c": "%s°C",
     "cl_temp_f": "%s°F",
     "cl_wind_kph": "%s χλμ/ώ",
-    "cl_wind_mph": "%s mph"
+    "cl_wind_mph": "%s mph",
+    "cl_discovered": "Νέα ανακάλυψη",
+    "cl_places": "Έχεις ανακαλύψει %s τοποθεσίες",
+    "cl_cmd_places": "Δείχνει πόσες τοποθεσίες έχεις ανακαλύψει",
+    "zone_msg_new_austin": "Περιοχή χωρίς νόμο",
+    "zone_msg_guarma": "Μακριά από το σπίτι",
+    "zone_msg_saint_denis": "Το κόσμημα του Νότου"
 }

@@ -21,7 +21,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-bossmenu](rsg-bossmenu.md) | Boss management menu for RedM servers using RSG Core. > ox_lib–based menu system allowing job bosses t | 0 | 13 |
 | [rsg-bountyhunter](rsg-bountyhunter.md) | rsg-bountyhunter - hunt wanted outlaws and bring them in dead or alive | 0 | 4 |
 | [rsg-canteen](rsg-canteen.md) | Fill a canteen at water pumps with rsg-target, or straight from rivers and lakes, and drink from it to res | 0 | 4 |
-| [rsg-character](rsg-character.md) | Character selection, creation, clothing store and spawn system for RSG-Core (RedM). - In-world character s | 14 | 19 |
+| [rsg-character](rsg-character.md) | Character selection, character creation, clothing stores, wardrobe and spawn selection for RSG-Core (RedM) | 14 | 19 |
 | [rsg-chat](rsg-chat.md) | A chat resource for RedM servers running RSG-Core. It replaces the default chat with channels that adm | 2 | 19 |
 | [rsg-cinema](rsg-cinema.md) | rsg-cinema - moving picture shows rebuilt from RDR2 show_movie_magic_lantern | 0 | 8 |
 | [rsg-consume](rsg-consume.md) | Universal consumption system for RedM using RSG Core. > Immersive eating and drinking system for RedM serv | 0 | 2 |
@@ -37,7 +37,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-fishmonger](rsg-fishmonger.md) | A fishmonger system for RSG-Core (RedM). Players visit a fishmonger NPC in any major town to sell their  | 0 | 1 |
 | [rsg-fortuneteller](rsg-fortuneteller.md) | Fortune teller machines for RSG-Core | 0 | 0 |
 | [rsg-gangmenu](rsg-gangmenu.md) | A gang boss management menu for RedM servers running the RSG Framework. Gang bosses can manage members | 0 | 14 |
-| [rsg-goldclaim](rsg-goldclaim.md) | A gold claim system for RedM (RSG-Core). Players place gold rockers, load them with paydirt and water, process | 0 | 31 |
+| [rsg-goldclaim](rsg-goldclaim.md) | Version 3.2.0 · requires rsg-core, rsg-inventory, rsg-target, oxmysql · no ox_lib · developer reference in | 0 | 31 |
 | [rsg-goldpanning](rsg-goldpanning.md) | Gold panning system for RSG Framework | 0 | 5 |
 | [rsg-guarma](rsg-guarma.md) | Boat travel between Saint Denis and Guarma for the RSG Framework (RedM). Players buy boat tickets from | 0 | 2 |
 | [rsg-herbalist](rsg-herbalist.md) | Herbalist script for RSG Framework | 0 | 15 |
@@ -46,7 +46,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-hud](rsg-hud.md) | Player and horse HUD for RSG-Core (RedM): health, stamina, dead eye, hunger, thirst, cleanliness, stress, temp | 17 | 13 |
 | [rsg-hunting](rsg-hunting.md) | Hunting, trapper and butcher script for RSG Framework | 5 | 1 |
 | [rsg-huntingpets](rsg-huntingpets.md) | A combined RedM / RSG-Core resource that adds hunting dogs and hunting birds to your server in one package | 0 | 16 |
-| [rsg-inventory](rsg-inventory.md) | Slot/weight inventory for RSG-Core with hotbar, persistent stashes, ground drops, shops and a legacy-compatibl | 43 | 16 |
+| [rsg-inventory](rsg-inventory.md) | Slot/weight inventory for the RSG Framework (rsg-core) with a hotbar, persistent stashes, ground drops, shops  | 43 | 16 |
 | [rsg-lawman](rsg-lawman.md) | Law enforcement and sheriff management system for RedM using RSG Core. > Full-featured law enforcement fra | 0 | 19 |
 | [rsg-legendary](rsg-legendary.md) | rsg-legendary - legendary animal hunting | 1 | 4 |
 | [rsg-loading](rsg-loading.md) | RSG RedM Loading Screen | 0 | 0 |
@@ -86,8 +86,8 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-treasure](rsg-treasure.md) | Treasure map hunting for RSG Framework | 1 | 3 |
 | [rsg-voice](rsg-voice.md) | rsg-voice - proximity voice for RSG Framework | 11 | 13 |
 | [rsg-wagons](rsg-wagons.md) | A wagon ownership, customisation and storage system for RedM servers running the RSG-Core framework. P | 0 | 27 |
-| [rsg-wardrobe](rsg-wardrobe.md) | Toggle individual clothing items on/off via chat commands for RSG Framework (RedM). - [rsg-core](https://githu | 6 | 4 |
+| [rsg-wardrobe](rsg-wardrobe.md) | Version 3.2.0 · RSG Framework (RedM) Take individual clothing items off and put them back on from a wardro | 9 | 9 |
 | [rsg-weaponcomp](rsg-weaponcomp.md) | Weapon customisation for RSG Framework (RedM). Players place a portable gunsmith workbench, then use it to | 0 | 14 |
 | [rsg-weapons](rsg-weapons.md) | Weapon handling for RSG Framework: dual wield, serial-based equipping, weapon wear, repairs, saved loadouts  | 6 | 14 |
 | [rsg-weather](rsg-weather.md) | rsg-weather - time, weather and wind sync for RSG Framework (weathersync compatible) | 16 | 15 |
-| [rsg-zonenotify](rsg-zonenotify.md) | rsg-zonenotify - location banner when entering states, districts and towns | 1 | 2 |
+| [rsg-zonenotify](rsg-zonenotify.md) | rsg-zonenotify - location banner when entering states, districts and towns | 8 | 4 |

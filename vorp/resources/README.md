@@ -34,6 +34,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [vorp_outlaws](vorp_outlaws.md) | A Npc outlaw ambush scrip for vorp core framework | 0 | 3 |
 | [vorp_paycheck](vorp_paycheck.md) | Paycheck System | 0 | 0 |
 | [vorp_police](vorp_police.md) | A police job for vorp core framework | 2 | 12 |
+| [vorp_progressbar](vorp_progressbar.md) | A tool to use within your scripts for vorp core framework | 3 | 0 |
 | [vorp_stables-lua](vorp_stables-lua.md) | A Stables script for vorp core framework | 0 | 2 |
 | [vorp_stores](vorp_stores.md) | A store script for vorp core framework | 0 | 2 |
 | [vorp_utils](vorp_utils.md) | A library to help build your scripts for vorp core framework | 1 | 1 |

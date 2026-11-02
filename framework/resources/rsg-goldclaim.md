@@ -1,12 +1,12 @@
 # rsg-goldclaim
 
-Version 3.0.0. rsg-goldclaim
+Version 3.1.0. rsg-goldclaim
 
-A gold claim system for RedM (RSG-Core). Players place gold rockers, load them with paydirt and water, process the load into gold ore, and manage licensed or unlicensed claims. Every menu and dialog uses a custom RDR2 leather & gold NUI. - **Placeable gold rocker**: placement preview with rotation, which persists across restarts. - **Licensed and unlicensed claims**: if you hold a `resource_gold_c
+**Version 3.2.0** · requires rsg-core, rsg-inventory, rsg-target, oxmysql · no ox_lib · developer reference in [DOCS.md](DOCS.md) A gold claim system for RedM (RSG-Core). Players place gold rockers, load them with paydirt and water, process the load into gold ore, and manage licensed or unlicensed claims. Every menu and dialog uses a custom RDR2 leather & gold NUI. - **Placeable gold rocker**: pla
 
 Source: https://github.com/Rexshack-RedM/rsg-goldclaim
 
-**Dependencies:** `rsg-core`, `rsg-inventory`, `ox_lib`, `ox_target`, `oxmysql`
+**Dependencies:** `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
 
 Has NUI (`ui_page`).
 
@@ -20,7 +20,7 @@ Has NUI (`ui_page`).
 
 **client:** `rsg-goldclaim:rocker:client:placeNewProp`
 
-## Callbacks (lib.callback)
+## Callbacks (RSGCore.Functions.CreateCallback)
 
 **server:** `rsg-goldclaim:server:countprops`, `rsg-goldclaim:server:getpending`, `rsg-goldclaim:server:getprops`, `rsg-goldclaim:server:getrockerdata`
 

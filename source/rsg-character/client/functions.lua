@@ -175,46 +175,70 @@ function GetMetaPedAssetGuids(ped, index)
     return Citizen.InvokeNative(0xA9C28516A6DC9D56, ped, index, Citizen.PointerValueInt(), Citizen.PointerValueInt(), Citizen.PointerValueInt(), Citizen.PointerValueInt())
 end
 
-function ApplyOverlays(overlayTarget)
+-- Overlays are serialised: only one head texture is built at a time. Rapid calls
+-- (e.g. spamming Randomize) collapse into one pending rebuild instead of freeing a
+-- texture another call is still waiting on, which crashed the game.
+local overlayBusy, overlayPending = false, nil
+
+local function BuildAndApplyOverlays(overlayTarget)
+    if not DoesEntityExist(overlayTarget) then return end
     if IsPedMale(overlayTarget) then
         Overlays.current_texture_settings = Overlays.texture_types["male"]
     else
         Overlays.current_texture_settings = Overlays.texture_types["female"]
     end
-    if textureId ~= -1 then
-        Citizen.InvokeNative(0xB63B9178D0F58D82, textureId)
-        Citizen.InvokeNative(0x6BEFAA907B076859, textureId)
-    end
     local index = GetHeadIndex(overlayTarget)
-    if not index then
-        return
-    end
+    if not index then return end
     local _, albedo, normal, material = GetMetaPedAssetGuids(overlayTarget, index)
-    textureId = Citizen.InvokeNative(0xC5E7204F322E49EB, albedo, normal, material);
-    for k, v in pairs(Overlays.overlay_all_layers) do
+    local newTex = Citizen.InvokeNative(0xC5E7204F322E49EB, albedo, normal, material)
+    if not newTex or newTex == -1 then return end
+    for _, v in pairs(Overlays.overlay_all_layers) do
         if v.visibility ~= 0 then
-            local overlay_id = Citizen.InvokeNative(0x86BB5FF45F193A02, textureId, v.tx_id, v.tx_normal, v.tx_material,
-                v.tx_color_type, v.tx_opacity, v.tx_unk);
+            local overlay_id = Citizen.InvokeNative(0x86BB5FF45F193A02, newTex, v.tx_id, v.tx_normal, v.tx_material,
+                v.tx_color_type, v.tx_opacity, v.tx_unk)
             if v.tx_color_type == 0 then
-                Citizen.InvokeNative(0x1ED8588524AC9BE1, textureId, overlay_id, v.palette);
-                Citizen.InvokeNative(0x2DF59FFE6FFD6044, textureId, overlay_id, v.palette_color_primary,
+                Citizen.InvokeNative(0x1ED8588524AC9BE1, newTex, overlay_id, v.palette)
+                Citizen.InvokeNative(0x2DF59FFE6FFD6044, newTex, overlay_id, v.palette_color_primary,
                     v.palette_color_secondary, v.palette_color_tertiary)
             end
-            Citizen.InvokeNative(0x3329AAE2882FC8E4, textureId, overlay_id, v.var);
-            Citizen.InvokeNative(0x6C76BC24F8BB709A, textureId, overlay_id, v.opacity);
+            Citizen.InvokeNative(0x3329AAE2882FC8E4, newTex, overlay_id, v.var)
+            Citizen.InvokeNative(0x6C76BC24F8BB709A, newTex, overlay_id, v.opacity)
         end
     end
-    local textureLoadDeadline = GetGameTimer() + 5000
-    while not Citizen.InvokeNative(0x31DC8D3F216D8509, textureId) do
-        if GetGameTimer() > textureLoadDeadline then
-            break
+    local deadline = GetGameTimer() + 5000
+    while not Citizen.InvokeNative(0x31DC8D3F216D8509, newTex) do
+        if GetGameTimer() > deadline or not DoesEntityExist(overlayTarget) then
+            -- never attach a texture that didn't finish loading
+            Citizen.InvokeNative(0xB63B9178D0F58D82, newTex)
+            Citizen.InvokeNative(0x6BEFAA907B076859, newTex)
+            return
         end
         Wait(0)
     end
-    Citizen.InvokeNative(0x92DAABA2C1C10B0E, textureId)
-    Citizen.InvokeNative(0x8472A1789478F82F, textureId)
-    Citizen.InvokeNative(0x0B46E25761519058, overlayTarget, GetHashKey("heads"), textureId)
-    Citizen.InvokeNative(0xCC8CA3E88256E58F, overlayTarget, 0, 1, 1, 1, false);
+    Citizen.InvokeNative(0x92DAABA2C1C10B0E, newTex)
+    Citizen.InvokeNative(0x8472A1789478F82F, newTex)
+    Citizen.InvokeNative(0x0B46E25761519058, overlayTarget, GetHashKey("heads"), newTex)
+    Citizen.InvokeNative(0xCC8CA3E88256E58F, overlayTarget, 0, 1, 1, 1, false)
+    -- free the previous texture only after the ped is wearing the new one
+    local oldTex = textureId
+    textureId = newTex
+    if oldTex ~= -1 and oldTex ~= newTex then
+        Citizen.InvokeNative(0xB63B9178D0F58D82, oldTex)
+        Citizen.InvokeNative(0x6BEFAA907B076859, oldTex)
+    end
+end
+
+function ApplyOverlays(overlayTarget)
+    overlayPending = overlayTarget
+    if overlayBusy then return end
+    overlayBusy = true
+    while overlayPending do
+        local target = overlayPending
+        overlayPending = nil
+        local ok, err = pcall(BuildAndApplyOverlays, target)
+        if not ok then print(('^1[rsg-character] ApplyOverlays error: %s^7'):format(err)) end
+    end
+    overlayBusy = false
 end
 
 function RemoveImaps()
@@ -1139,7 +1163,12 @@ CreateThread(function()
     end
 end)
 
+local lastRandomize = 0
 function RandomizeCreatorAppearance(target)
+    -- cooldown so spamming the button can't queue up ped/texture rebuilds
+    local now = GetGameTimer()
+    if now - lastRandomize < 1000 then return end
+    lastRandomize = now
     local function rnd(min, max) return math.random(min, max) end
     local function rndFeature() return rnd(-8, 8) * 5 end
     local isMale = IsPedMale(target)
@@ -1195,7 +1224,6 @@ function RandomizeCreatorAppearance(target)
     LoadHair(target, CreatorCache)
     if isMale then LoadBeard(target, CreatorCache) end
     LoadFeatures(target, CreatorCache)
-    LoadOverlays(target, CreatorCache)
     NativeUpdatePedVariation(target)
 
     RandomizeToken = (RandomizeToken or 0) + 1

@@ -1,12 +1,10 @@
-lib.locale()
-
 RSGCore = exports['rsg-core']:GetCoreObject()
 
 ---------------------------------------------
 -- shared client helpers (loaded first)
 ---------------------------------------------
 function Notify(title, description, nType, icon, duration)
-    lib.notify({
+    RSGCore.Functions.Notify({
         title       = title,
         description = description,
         type        = nType or 'inform',
@@ -92,7 +90,7 @@ function DoTimedAction(opts)
     if busy then return false end
     SetBusy(true)
 
-    local ped = cache.ped
+    local ped = PlayerPedId()
     if opts.scenario then
         TaskStartScenarioInPlace(ped, opts.scenario, 0, true)
     end

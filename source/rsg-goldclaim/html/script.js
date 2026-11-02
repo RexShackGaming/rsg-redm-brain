@@ -1,7 +1,7 @@
 const resourceName = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'rsg-goldclaim';
 
 // labels are always supplied by Lua from locales/*.json
-let labels = { select: '', cancel: '', confirm: '', close: '', back: '' };
+let labels = { cancel: '', confirm: '', close: '', back: '' };
 
 function post(endpoint, body) {
     return fetch(`https://${resourceName}/${endpoint}`, {
@@ -119,23 +119,6 @@ const modalFields = $('modal-fields');
 const modalActions = $('modal-actions');
 
 function buildControl(field) {
-    if (field.type === 'select') {
-        const select = el('select', 'modal-select');
-        if (field.required) {
-            const placeholder = el('option', null, labels.select);
-            placeholder.value = '';
-            placeholder.disabled = true;
-            placeholder.selected = true;
-            select.appendChild(placeholder);
-        }
-        (field.options || []).forEach((opt) => {
-            const option = el('option', null, opt.label);
-            option.value = opt.value;
-            select.appendChild(option);
-        });
-        return select;
-    }
-
     const input = el('input', 'modal-input');
     if (field.type === 'number') {
         input.type = 'number';

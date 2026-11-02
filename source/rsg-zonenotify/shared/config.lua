@@ -5,9 +5,9 @@ Config = {}
 ---------------------------------
 Config.CheckInterval = 500   -- ms between zone checks
 Config.DisplayTime   = 5000  -- ms the banner stays on screen
-Config.DisplayMode   = 'nui'    -- 'nui' = custom banner (works while riding), 'native' = RDR2 location banner, 'notify' = ox_lib notify
+Config.DisplayMode   = 'nui'    -- 'nui' = custom banner (works while riding), 'native' = RDR2 location banner, 'notify' = rsg-core notify
 -- only used with DisplayMode 'native': the native banner is not drawn while the player is moving
-Config.WhileMoving   = 'native' -- 'notify' = ox_lib notify when moving, 'wait' = banner once the player slows down, 'native' = always try the banner
+Config.WhileMoving   = 'native' -- 'notify' = rsg-core notify when moving, 'wait' = banner once the player slows down, 'native' = always try the banner
 Config.MovingSpeed   = 1.5      -- m/s; above this the player counts as moving
 Config.MaxFeedWait   = 3000  -- native only: ms to wait for a busy feed before showing the banner anyway
 Config.Debug         = false -- print zone hashes to F8 when they change and enable /zonetest
@@ -105,3 +105,47 @@ Config.LabelNames = {
     STATE_AMBARINO            = 'Ambarino',
     district_bayou_nwa        = 'Bayou Nwa',
 }
+
+---------------------------------
+-- discoveries: "NEW DISCOVERY" stamp the first time a character visits a place (saved in the database)
+---------------------------------
+Config.AutoDatabase = true -- create the table automatically; set false to import install.sql manually
+Config.Discovery = {
+    Enabled      = true,
+    ShowStamp    = true,     -- show the "New Discovery" stamp on the banner
+    Landmarks    = true,     -- also show a one-time banner for landmarks, lakes and rivers you ride past
+    Command      = 'places', -- shows how many places you have found; false to disable
+    MaxPerPlayer = 1000,     -- server-side cap (anti-spam)
+}
+
+---------------------------------
+-- sounds: played by the NUI page. Leave a file nil for the built-in chime,
+-- or put an .ogg/.mp3 in html/sounds/ and set e.g. town = 'sounds/town.ogg'. false = silent for that kind.
+---------------------------------
+Config.Sound = {
+    Enabled = true,
+    Volume  = 0.25, -- 0.0 - 1.0
+    Files = {
+        state     = nil,
+        district  = nil,
+        town      = nil,
+        landmark  = nil,
+        discovery = nil,
+        manual    = false,
+        custom    = nil,
+    },
+}
+
+---------------------------------
+-- flavour lines under the title: label key (see LabelNames / Debug) = locale key
+---------------------------------
+Config.ZoneMessages = {
+    state_new_austin = 'zone_msg_new_austin',
+    state_guarma     = 'zone_msg_guarma',
+    TOWN_SAINTDENIS  = 'zone_msg_saint_denis',
+}
+
+---------------------------------
+-- hide the banner while a scripted camera is rendering (rsg-moviemaker, cutscenes, character creator...)
+---------------------------------
+Config.HideWhileScriptedCam = true

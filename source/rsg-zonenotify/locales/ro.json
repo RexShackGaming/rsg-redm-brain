@@ -11,5 +11,11 @@
     "cl_temp_c": "%s°C",
     "cl_temp_f": "%s°F",
     "cl_wind_kph": "%s km/h",
-    "cl_wind_mph": "%s mph"
+    "cl_wind_mph": "%s mph",
+    "cl_discovered": "Descoperire nouă",
+    "cl_places": "Ai descoperit %s locuri",
+    "cl_cmd_places": "Arată câte locuri ai descoperit",
+    "zone_msg_new_austin": "Teritoriu fără lege",
+    "zone_msg_guarma": "Departe de casă",
+    "zone_msg_saint_denis": "Bijuteria Sudului"
 }

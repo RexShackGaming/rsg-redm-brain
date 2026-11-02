@@ -1,5 +1,7 @@
 # rsg-goldclaim
 
+**Version 3.2.0** · requires rsg-core, rsg-inventory, rsg-target, oxmysql · no ox_lib · developer reference in [DOCS.md](DOCS.md)
+
 A gold claim system for RedM (RSG-Core). Players place gold rockers, load them with paydirt and water, process the load into gold ore, and manage licensed or unlicensed claims. Every menu and dialog uses a custom RDR2 leather & gold NUI.
 
 ## Features
@@ -11,7 +13,7 @@ A gold claim system for RedM (RSG-Core). Players place gold rockers, load them w
 - **Async processing**: the server runs one cycle per `Config.ProcessingTime` and uses 1 water and 1 paydirt per cycle. Each cycle spawns a gold or paydirt output prop for the player who started it, so you can walk away.
 - **Gold ore drops**: each gold pickup gives a random amount of `Config.GoldOreItem` (default `resource_gold_nugget`, amount `Config.GoldOreAmount`).
 - **Gathering**: use a shovel in water to dig paydirt, or a bucket in water to fill it.
-- **Degradation**: each rocker has a cron-based quality roll and is lost at 0%. Repair it with wood.
+- **Degradation**: each rocker has a timed quality roll (every `Config.DegradeInterval` minutes) and is lost at 0%. Repair it with wood.
 - **Rename claims**: owners of licensed claims can rename them (3 to 50 characters).
 
 ## Security model
@@ -27,16 +29,18 @@ Clients only ask for things. The server decides everything:
 ## Dependencies
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
-- [ox_lib](https://github.com/overextended/ox_lib)
-- [ox_target](https://github.com/overextended/ox_target)
+- [rsg-target](https://github.com/Rexshack-RedM/rsg-target)
 - [oxmysql](https://github.com/overextended/oxmysql)
 
 ## Installation
-1. **Database**: run `installation/rsg-goldclaim.sql`. If you are upgrading, run the two `ALTER TABLE` lines at the bottom of that file instead.
+1. **Database**: the `player_goldrockers` table is created automatically on first start. To install manually, set `Config.AutoDatabase = false` and import `installation/rsg-goldclaim.sql` (upgrading an old install? run the two `ALTER TABLE` lines at the bottom of that file).
 2. **Items**: add `installation/shared_items.lua` to `rsg-core/shared/items.lua`.
 3. **Images**: copy the item images to `rsg-inventory/html/images/`.
 4. **server.cfg**:
    ```
+   ensure rsg-core
+   ensure rsg-inventory
+   ensure rsg-target
    ensure rsg-goldclaim
    ```
 
@@ -45,13 +49,14 @@ Everything lives in `shared/config.lua`. The key options are:
 
 | Option | Default | Description |
 |---|---|---|
-| `NotifyPosition` | `'top-right'` | Where ox_lib notifications appear on screen |
+| `AutoDatabase` | true | Create the database table on start (false = import the SQL manually) |
+| `NotifyPosition` | `'top-right'` | Where rsg-core notifications appear on screen |
 | `NotifyDuration` | 10000 | How long notifications stay on screen (ms) |
 | `MaxGoldRockers` | 4 | Rockers per character |
 | `OwnerOnlyProcessing` | true | Only the owner can start processing |
 | `LicenseItem` | `'resource_gold_claim_license'` | Item consumed to make a claim licensed |
 | `LeoJobType` | `'leo'` | Job type that can destroy illegal claims |
-| `DegradeChance` / `CronJob` | 5 / `*/30 * * * *` | Chance per rocker of losing 1% quality each cron run |
+| `DegradeChance` / `DegradeInterval` | 5 / 30 | % chance per rocker of losing 1% quality every `DegradeInterval` minutes |
 | `RepairWoodAmount` | 5 | Wood needed per repair |
 | `ProcessingTime` | 60000 | Time per cycle in ms |
 | `GoldChance` | 50 | % chance a cycle gives gold instead of paydirt |
@@ -71,7 +76,7 @@ Everything lives in `shared/config.lua`. The key options are:
 3. Target the rocker to **Add Paydirt** and **Add Water**.
 4. Open the rocker menu and choose **Start Processing**.
 5. Pick up each output prop as it appears. Unclaimed outputs are kept by the server: if your inventory is full the prop comes back, and they respawn after a relog (until the server restarts).
-6. Keep the rocker repaired. Packing it up requires 100% condition.
+6. Keep the rocker repaired. Packing it up requires 100% condition, no processing running and all outputs collected.
 7. Use or sell the gold nuggets through your own smelter or shop scripts.
 
 ## Discord Webhooks
@@ -101,17 +106,27 @@ Every embed includes the character name, server ID, Citizen ID, Discord mention,
 - **Using it from other code:** call `Webhook.Log(event, src, title, { { 'Field', value }, ... }, { description, ping })` or `Webhook.Suspicious(src, reason, fields)`.
 
 ## Localisation
-All text is in `locales/*.json` (ox_lib locales). This includes notifications, menus, placement prompts, NUI buttons, Discord webhook embeds. There is no hardcoded text in the Lua or the NUI.
+All text is in `locales/*.json`, loaded by rsg-core. This includes notifications, menus, placement prompts, NUI buttons, Discord webhook embeds. There is no hardcoded text in the Lua or the NUI.
 
 Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`
 
 To set the server language, add this to your `server.cfg`:
 ```
-setr ox:locale de
+setr rsg:locale de
 ```
 Any key missing from a translation falls back to `en`. To add a language, copy `en.json`, translate the values, and keep every `%s` placeholder.
 
 ## Changelog
+### 3.2.0
+- Removed ox_lib completely: locales, notifications and callbacks now use rsg-core; the degradation cron is a built-in timer (`Config.DegradeInterval` replaces `Config.CronJob`).
+- Switched targeting from ox_target to rsg-target.
+- Database table is now created automatically on start (`Config.AutoDatabase`); the SQL file is still included for manual installs.
+- Fix: pack-up/confiscation smoke effect never played because its particle asset was never loaded.
+- Fix: packing up while processing was running or outputs were uncollected silently destroyed those outputs. Pack-up is now blocked until they are collected.
+- Security: two players repairing the same rocker at once both paid wood; the second is now refunded. LEO confiscation now has a server cooldown.
+- Optimisation: the claim-zone thread idles at 2s when there are no licensed claims.
+- Cleanup: removed the unused native `<select>` support from the NUI modal (native selects crash RedM CEF) and the `ui_select` locale key.
+
 ### 3.1.1
 - Security: fixed a gold rocker duplication exploit. Firing the pack-up event twice quickly could return two rockers. The server now re-checks the rocker after its database read, and pack-up has a cooldown.
 - Security: fixed processing being started twice on the same rocker by two quick requests, which doubled the output rate.
@@ -188,3 +203,6 @@ Any key missing from a translation falls back to `en`. To add a language, copy `
 
 ## Credits
 - Originally two scripts: `mack-goldclaim` and `mack-smelter`.
+
+---
+Support: https://buymeacoffee.com/rexshack

@@ -2,8 +2,9 @@ Config = {}
 Config.PlayerProps = {} -- populated at runtime by the server, do not edit
 
 Config.Debug = false
+Config.AutoDatabase = true -- create the database table automatically on start (set false to import installation/rsg-goldclaim.sql manually)
 
--- ox_lib notification position: 'top' | 'top-right' | 'top-left' | 'bottom' | 'bottom-right' | 'bottom-left' | 'center-right' | 'center-left'
+-- rsg-core notification position: 'top' | 'top-right' | 'top-left' | 'bottom' | 'bottom-right' | 'bottom-left' | 'center-right' | 'center-left'
 Config.NotifyPosition = 'top-right'
 Config.NotifyDuration = 10000 -- default notification duration (ms)
 
@@ -14,7 +15,7 @@ Config.EnableVegModifier    = true                   -- clears vegetation around
 Config.GoldRocker           = `p_goldcradlestand01x` -- prop used for gold rocker
 Config.MaxGoldRockers       = 4                      -- maximum gold rockers per character
 Config.DegradeChance        = 5                      -- % chance (per rocker) of losing 1% quality each cron cycle
-Config.CronJob              = '*/30 * * * *'         -- cron schedule for degradation
+Config.DegradeInterval      = 30                     -- minutes between degradation rolls
 Config.RepairWoodAmount     = 5                      -- amount of wood needed to repair
 Config.LeoJobType           = 'leo'                  -- job type allowed to destroy unlicensed claims
 Config.OwnerOnlyProcessing  = true                   -- only the owner can start processing (and receives the output)

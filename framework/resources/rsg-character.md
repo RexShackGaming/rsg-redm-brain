@@ -1,8 +1,8 @@
 # rsg-character
 
-Version 3.1.0. rsg-character
+Version 3.1.1. rsg-character
 
-Character selection, creation, clothing store and spawn system for **RSG-Core** (RedM). - In-world character select screen: your characters' peds line up at a location you can configure. - Multiple character slots per player license (default **4**, configurable).
+Character selection, character creation, clothing stores, wardrobe and spawn selection for **RSG-Core** (RedM). > Server owners and developers: see **[DOCS.md](DOCS.md)** for the full flow, database layout, security model, exports and how to extend the script. - In-world select screen: your characters' peds line up at a configurable location, with the camera framing every slot automatically.
 
 Source: https://github.com/Rexshack-RedM/rsg-character
 

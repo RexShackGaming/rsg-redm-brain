@@ -11,5 +11,11 @@
     "cl_temp_c": "%s°C",
     "cl_temp_f": "%s°F",
     "cl_wind_kph": "%s km/h",
-    "cl_wind_mph": "%s mph"
+    "cl_wind_mph": "%s mph",
+    "cl_discovered": "Nowe odkrycie",
+    "cl_places": "Odkryto miejsc: %s",
+    "cl_cmd_places": "Pokaż, ile miejsc odkryłeś",
+    "zone_msg_new_austin": "Kraina bezprawia",
+    "zone_msg_guarma": "Daleko od domu",
+    "zone_msg_saint_denis": "Klejnot Południa"
 }
