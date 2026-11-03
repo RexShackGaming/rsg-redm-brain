@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>rsg-queue</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+    <div class="panel">
+        <div class="header">
+            <button class="circle-btn" id="refreshBtn" title="Refresh">&#x21bb;</button>
+            <div class="titles">
+                <div class="title" data-l="ui_title">Queue Control</div>
+                <div class="subtitle" data-l="ui_subtitle">Connection Queue &amp; VIP</div>
+            </div>
+            <button class="circle-btn" id="closeBtn" title="Close">&#x2715;</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat"><span id="statOnline">0/0</span><label data-l="ui_online">Online</label></div>
+            <div class="stat"><span id="statWaiting">0</span><label data-l="ui_waiting">Waiting</label></div>
+            <div class="stat"><span id="statReserved">0</span><label data-l="ui_reserved">Reserved</label></div>
+        </div>
+
+        <button class="wood-btn muted maint" id="maintBtn" data-act="maintenance"></button>
+
+        <div class="divider"><span>&#x2726;</span></div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="queue" data-l="ui_tab_queue">Queue</button>
+            <button class="tab" data-tab="vips" data-l="ui_tab_vips">VIP Members</button>
+        </div>
+
+        <div class="view" id="view-queue">
+            <div class="list" id="queueList"></div>
+        </div>
+
+        <div class="view hidden" id="view-vips">
+            <div class="form">
+                <input type="text" id="fIdentifier" maxlength="80" data-ph="ui_identifier">
+                <input type="text" id="fName" maxlength="100" data-ph="ui_name">
+                <div class="row2">
+                    <div class="dd" id="fTier"><div class="dd-value"></div><span class="dd-arrow">&#x25BE;</span><div class="dd-menu"></div></div>
+                    <input type="number" id="fDays" min="0" max="3650" value="30" data-ph="ui_days">
+                </div>
+                <button class="wood-btn" id="addBtn" data-l="ui_add">Add VIP</button>
+            </div>
+            <div class="list" id="vipList"></div>
+        </div>
+    </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

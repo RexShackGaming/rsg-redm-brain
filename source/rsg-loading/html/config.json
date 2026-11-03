@@ -1,5 +1,10 @@
 {
   "background_image": "images/background.jpeg",
   "background_dim": 0.45,
-  "tip_interval_seconds": 5
+  "tip_interval_seconds": 5,
+  "auto_close_seconds": 120,
+  "slideshow_seconds": 12,
+  "music": "",
+  "music_volume": 0.25,
+  "discord": ""
 }

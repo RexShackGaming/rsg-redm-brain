@@ -2,7 +2,9 @@
 
 A clean, configurable loading screen for RedM servers running the RSG Framework.
 
-![RedM](https://img.shields.io/badge/RedM-rdr3-red) ![Lua](https://img.shields.io/badge/Lua-5.4-blue) ![Version](https://img.shields.io/badge/version-2.0.0-green)
+Full technical reference: [DOCS.md](DOCS.md)
+
+![RedM](https://img.shields.io/badge/RedM-rdr3-red) ![Lua](https://img.shields.io/badge/Lua-5.4-blue) ![Version](https://img.shields.io/badge/version-3.0.3-green)
 
 ## Features
 
@@ -12,11 +14,19 @@ A clean, configurable loading screen for RedM servers running the RSG Framework.
 - Rotating tips with fade transition and configurable interval
 - Status text and in-game clock
 - Simulated progress fallback, so it previews correctly in a normal browser
-- Safety net auto-close after 45 seconds if the game never signals completion
-- Seasonal themes for Easter, Halloween and Christmas with their own colours, backgrounds, tips and particle effects (snow, bats, petals)
+- Configurable safety-net auto-close (default 120 seconds) if the game never signals completion
+- Holiday themes for Easter, Halloween, Christmas and New Year with their own colours, backgrounds, tips and particle effects (snow, bats, petals, fireworks)
 - Automatic theme switching by date, including Easter's moving date
 - Winter, spring, summer and autumn themes used the rest of the year when no holiday is active
 - Text and layout configured through JSON, seasonal themes through `config.lua`
+- Live server name and player count at the top of the screen
+- Server news / rules panel (from locales)
+- Background slideshow: give a list of images for the normal look or any theme
+- Optional looping background music (SPACE toggles it, fades out on close)
+- Discord link in the footer
+- Particle density setting for low-end PCs (also reduced automatically when the OS has "reduce motion" on)
+- Closes automatically when the player loads in (`RSGCore:Client:OnPlayerLoaded`)
+- Roboto font bundled locally, so it works offline and with no Google Fonts
 
 ## Installation
 
@@ -31,7 +41,7 @@ A clean, configurable loading screen for RedM servers running the RSG Framework.
 
 ## Requirements
 
-- [ox_lib](https://github.com/overextended/ox_lib) (used for locales)
+- [rsg-core](https://github.com/Rexshack-RedM/rsg-core) (server console locales only; ox_lib is no longer needed)
 
 ## Configuration
 
@@ -41,22 +51,32 @@ Visual settings live in `html/config.json`:
 {
   "background_image": "images/background.jpeg",
   "background_dim": 0.45,
-  "tip_interval_seconds": 5
+  "tip_interval_seconds": 5,
+  "auto_close_seconds": 120,
+  "slideshow_seconds": 12,
+  "music": "",
+  "music_volume": 0.25,
+  "discord": ""
 }
 ```
 
 | Key | Description |
 | --- | --- |
-| `background_image` | Path relative to `html/`, or a full URL. Falls back to a dark gradient if missing. |
+| `background_image` | Path relative to `html/` or a full URL, or a list of them for a slideshow, e.g. `["images/a.jpeg", "images/b.jpeg"]`. Falls back to a dark gradient if missing. |
 | `background_dim` | Darkness overlay on the background, `0` (none) to `1` (black). |
 | `tip_interval_seconds` | Seconds between tip changes. |
+| `auto_close_seconds` | Close the screen after this many seconds if the game never signals completion. `0` disables it (recommended if your spawn/character script calls `ShutdownLoadingScreenNui`). Default `120`. |
+| `slideshow_seconds` | Seconds per image when `background_image` (or a theme's `background`) is a list. `0` = no rotation. |
+| `music` | Music file inside `html/` (e.g. `music/theme.ogg`; put files in `html/music/`) or a URL. Blank = no music. |
+| `music_volume` | `0` to `1`. |
+| `discord` | Text shown in the footer, e.g. `discord.gg/yourserver`. Blank hides it. |
 
 ## Languages
 
-All text lives in the ox_lib locale files in `locales/`. Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
+All text lives in the locale files in `locales/`. Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
 
-- **Loading screen language:** set `Config.Locale` in `config.lua` (the loading screen runs before ox_lib, so it can't read the `ox:locale` convar).
-- **Server console language:** follows ox_lib's `setr ox:locale "de"` convar as usual.
+- **Loading screen language:** set `Config.Locale` in `config.lua` (the loading screen runs before any Lua, so it can't read the `rsg:locale` convar).
+- **Server console language:** follows rsg-core's `setr rsg:locale "de"` convar (falls back to `ox:locale`).
 
 Any key missing from a language falls back to `en.json`.
 
@@ -67,6 +87,9 @@ Any key missing from a language falls back to `en.json`.
 | `ui_status_loading` / `ui_status_ready` | Status text while loading / when done. |
 | `ui_footer_resource_name` | Text shown in the footer. |
 | `ui_tip_1`, `ui_tip_2` ... | Tips rotated during loading. Add more by adding the next number. |
+| `ui_news_title`, `ui_news_1`, `ui_news_2` ... | News / rules panel. Remove all `ui_news_N` keys to hide the panel. |
+| `ui_players` | Player count text, `%s / %s players`. |
+| `ui_music_hint` | Hint shown when music is enabled. |
 | `theme_<name>_subtitle` | Subtitle for a holiday or season theme (e.g. `theme_halloween_subtitle`). |
 | `theme_<name>_tip_1` ... | Tips for a holiday or season theme. |
 | `sv_*` | Server version checker messages. |
@@ -83,8 +106,11 @@ Seasonal themes are configured in `config.lua` in the resource root. The loading
 
 ```lua
 Config.Theme     = 'auto'   -- 'auto', 'default', 'easter', 'halloween', 'christmas' or 'newyear'
-Config.Particles = true     -- falling snow / bats / petals
+Config.Particles = true     -- snow / bats / petals / leaves / fireflies / fireworks
 Config.MergeTips = true     -- true = add seasonal tips to your normal tips, false = replace them
+Config.ParticleDensity = 1.0       -- 0.1 - 1.0, lower for low-end PCs
+Config.CloseOnPlayerLoaded = true  -- close when RSGCore:Client:OnPlayerLoaded fires
+Config.ServerInfo = true           -- show server name + player count
 ```
 
 | `Config.Theme` | Behaviour |
@@ -101,7 +127,7 @@ Config.MergeTips = true     -- true = add seasonal tips to your normal tips, fal
 | Easter | 7 days before Easter Sunday to 1 day after (calculated each year) | `images/easter.jpeg` |
 | Halloween | `10-15` to `11-01` | `images/halloween.jpeg` |
 | Christmas | `12-01` to `12-30` | `images/christmas.jpeg` |
-| New Year | `12-31` to `01-02` | normal background |
+| New Year | `12-31` to `01-02` | `images/newyear.jpeg` |
 
 Dates use the player's local clock in `MM-DD` format. A window can wrap the new year, e.g. `start = '12-01', finish = '01-06'`.
 
@@ -139,16 +165,11 @@ To use your own seasonal artwork, drop the image into `html/images/` and change 
 
 The manifest sets `loadscreen_manual_shutdown 'yes'`. The screen closes when:
 
+- the player loads in (`RSGCore:Client:OnPlayerLoaded`, when `Config.CloseOnPlayerLoaded = true`),
 - it receives an `endLoading` NUI message (`eventName` or `type`), or
-- the 45-second safety timeout fires.
+- the `auto_close_seconds` safety timeout fires (default 120s, `0` to disable).
 
-It then calls `shutdownLoadingScreenNui` itself. If you'd rather close it from Lua once the player has spawned or picked a character, add a client script such as:
-
-```lua
-AddEventHandler('RSGCore:Client:OnPlayerLoaded', function()
-    ShutdownLoadingScreenNui()
-end)
-```
+It then calls `shutdownLoadingScreenNui` itself. Your character script can also close it at any time with `ShutdownLoadingScreenNui()`.
 
 ## Custom status messages
 
@@ -167,22 +188,29 @@ Serve the resource folder with a local web server so `fetch` can read the config
 ```
 rsg-loading/
 ├── fxmanifest.lua
+├── README.md / DOCS.md
 ├── config.lua          # language + seasonal themes
-├── locales/            # ox_lib locale files (all text)
+├── locales/            # locale files (all text)
 │   ├── en.json
 │   └── de.json, el.json, es.json, fr.json, ja.json, nl.json, pl.json, pt-br.json, ro.json
+├── client/
+│   └── client.lua      # closes on player loaded
 ├── server/
+│   ├── server.lua      # live server info handover
 │   └── versionchecker.lua
 └── html/
     ├── index.html
     ├── style.css
     ├── script.js
     ├── config.json
+    ├── fonts.css + fonts/   # bundled Roboto
+    ├── music/               # optional music files
     └── images/
         ├── background.jpeg
         ├── easter.jpeg
         ├── halloween.jpeg
         ├── christmas.jpeg
+        ├── newyear.jpeg
         ├── winter.jpeg
         ├── spring.jpeg
         ├── summer.jpeg
@@ -192,3 +220,5 @@ rsg-loading/
 ## Credits
 
 Created by **RexShack** for the RSG Framework.
+
+Support: https://buymeacoffee.com/rexshack

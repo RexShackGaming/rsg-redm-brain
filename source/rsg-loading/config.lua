@@ -12,8 +12,8 @@
 Config = {}
 
 -- Loading screen language. Must match a file in locales/ (en, de, el, es, fr, ja, nl, pl, pt-br, ro).
--- The loading screen runs before ox_lib, so it cannot read the ox:locale convar; set it here.
--- Server console messages use ox_lib's ox:locale convar as normal.
+-- The loading screen runs before any Lua, so it cannot read the rsg:locale convar; set it here.
+-- Server console messages use rsg-core's rsg:locale convar (falls back to ox:locale) as normal.
 -- All text (title, subtitles, tips) lives in locales/<lang>.json:
 --   ui_tip_1, ui_tip_2 ...                 normal tips (add more by adding numbered keys)
 --   theme_<name>_subtitle                  subtitle for a holiday/season theme
@@ -29,6 +29,17 @@ Config.Theme = 'auto'
 -- Particle effects (snow, bats, petals, leaves, fireflies, fireworks). Set false to disable on all themes.
 Config.Particles = true
 
+-- Particle amount multiplier, 0.1 - 1.0. Lower it for players on low-end PCs.
+-- Particles are also reduced automatically when the OS has "reduce motion" turned on.
+Config.ParticleDensity = 1.0
+
+-- Close the loading screen when the player has fully loaded in (RSGCore:Client:OnPlayerLoaded).
+-- Safe to leave on even if your character script also closes it.
+Config.CloseOnPlayerLoaded = true
+
+-- Send live server info (player count / max players / server name) to the loading screen.
+Config.ServerInfo = true
+
 Config.Themes = {
 
     easter = {
@@ -41,7 +52,7 @@ Config.Themes = {
         seal       = '✿',
         divider    = '❀',
         particles  = 'petals',
-        background = 'images/easter.jpeg',   -- path inside html/ (or a URL). Blank = keep the normal background
+        background = 'images/easter.jpeg',   -- path inside html/ (or a URL), or a list { 'a.jpeg', 'b.jpeg' } for a slideshow. Blank = keep the normal background
         backgroundDim = 0.35,                -- 0 = full brightness, 1 = black
         colors = {
             accent   = '#f4c7e0',

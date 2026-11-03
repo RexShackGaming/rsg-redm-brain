@@ -66,6 +66,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-playerinfo](rsg-playerinfo.md) | Player information / quick stats display for RedM (RSG Core). > Shows a small context menu with the player | 0 | 1 |
 | [rsg-poison](rsg-poison.md) | Poison script for RSG Framework | 3 | 4 |
 | [rsg-prison](rsg-prison.md) | Prison system for RedM servers using RSG Core. - [rsg-core](https://github.com/Rexshack-RedM/rsg-core) - [ | 1 | 12 |
+| [rsg-queue](rsg-queue.md) | rsg-queue - connect queue with VIP priority, reserved slots and crash grace | 7 | 1 |
 | [rsg-radialmenu](rsg-radialmenu.md) | Radial interaction menu for RedM using RSG Core. A fast, themed radial menu with nested submenus, job-spec | 2 | 7 |
 | [rsg-railroad](rsg-railroad.md) | Advanced train management system for RedM (rsg-core). Buy railroad companies, hire drivers, manage trains, run | 0 | 32 |
 | [rsg-ranch](rsg-ranch.md) | A complete livestock ranching system for RedM servers running the RSG Framework. Buy a ranch, hire sta | 31 | 102 |
