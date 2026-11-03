@@ -6,7 +6,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 
 | Resource | Description | Exports | Net events |
 |---|---|---|---|
-| [rsg-adminmenu](rsg-adminmenu.md) | A staff admin panel for RSG Framework (RedM). React NUI with tiered staff roles, player management, report | 0 | 32 |
+| [rsg-adminmenu](rsg-adminmenu.md) | A full staff admin panel for RSG Framework (RedM): a React NUI with tiered staff roles, player management, | 0 | 32 |
 | [rsg-ambush](rsg-ambush.md) | rsg-ambush - random gang ambushes on the trail | 0 | 4 |
 | [rsg-ammo](rsg-ammo.md) | Persistent ammunition system for RedM using the RSG Framework. Players refill their weapons by using ammo  | 1 | 7 |
 | [rsg-animations](rsg-animations.md) | Emote & animation menu for RedM (RSG Core). > A Vue.js animation menu that lets players play gestures, dan | 2 | 3 |
