@@ -37,6 +37,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-fishmonger](rsg-fishmonger.md) | A fishmonger system for RSG-Core (RedM). Players visit a fishmonger NPC in any major town to sell their  | 0 | 1 |
 | [rsg-fortuneteller](rsg-fortuneteller.md) | Fortune teller machines for RSG-Core | 0 | 0 |
 | [rsg-gangmenu](rsg-gangmenu.md) | A gang boss management menu for RedM servers running the RSG Framework. Gang bosses can manage members | 0 | 14 |
+| [rsg-gizmo](rsg-gizmo.md) | Standard prop placement gizmo for the RSG Framework | 6 | 1 |
 | [rsg-goldclaim](rsg-goldclaim.md) | Version 3.2.0 · requires rsg-core, rsg-inventory, rsg-target, oxmysql · no ox_lib · developer reference in | 0 | 31 |
 | [rsg-goldpanning](rsg-goldpanning.md) | Gold panning system for RSG Framework | 0 | 5 |
 | [rsg-guarma](rsg-guarma.md) | Boat travel between Saint Denis and Guarma for the RSG Framework (RedM). Players buy boat tickets from | 0 | 2 |
@@ -74,7 +75,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-samples](rsg-samples.md) | Animal sample collector for RedM (best version) with leaderboard, certificate, and milestone rewards. - Sedate | 0 | 3 |
 | [rsg-smelting](rsg-smelting.md) | Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for RSG-Core (RedM) with ox_lib, ox_t | 1 | 1 |
 | [rsg-stables](rsg-stables.md) | Horse and stables script for RSG Framework | 1 | 18 |
-| [rsg-stores](rsg-stores.md) | Version 3.0.0 · requires rsg-core, rsg-inventory, rsg-target, oxmysql (no ox_lib) Create NPC shopkeepers,  | 1 | 20 |
+| [rsg-stores](rsg-stores.md) | Version 3.1.0 · requires rsg-core, rsg-inventory, rsg-target, rsg-gizmo, oxmysql (no ox_lib) Create NPC sh | 1 | 21 |
 | [rsg-target](rsg-target.md) | targeting system for RSG RedM Framework | 0 | 4 |
 | [rsg-targetpractise](rsg-targetpractise.md) | Placeable archery and throwing-knife practice targets for RSG Framework | 0 | 18 |
 | [rsg-telegram](rsg-telegram.md) |  | 0 | 2 |

@@ -17,6 +17,7 @@ This file is the source of truth. It overrides anything else in the brain.
 | Clothing | rsg-wardrobe (github.com/Rexshack-RedM/rsg-wardrobe) |
 | Voice | rsg-voice (github.com/Rexshack-RedM/rsg-voice) |
 | Targeting | rsg-target (github.com/Rexshack-RedM/rsg-target, in `[framework]`). Replaces ox_target and `provide`s it, so ox_target is removed. New code: `exports['rsg-target']` + `rsg-target` dependency |
+| Prop placement | **rsg-gizmo** (`[framework]`). The standard way any script places props: `exports['rsg-gizmo']:Place(model, opts)` / `Edit(entity, opts)` on the client, `IsPlacementValid` on the server. See `patterns/prop-placement.md`. Never write a custom placement loop |
 
 ## Removed or not installed (never depend on these)
 - **weathersync** has been removed. Use rsg-weather.

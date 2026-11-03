@@ -25,13 +25,13 @@ local boxLoading, isOpening, promptShown = false, false, false
 local function ShowOpenPrompt()
     if promptShown then return end
     promptShown = true
-    lib.showTextUI(locale('open_mysterybox_prompt'), { position = 'right-center' })
+    exports['rsg-core']:DrawText(locale('open_mysterybox_prompt'), 'right')
 end
 
 local function HideOpenPrompt()
     if not promptShown then return end
     promptShown = false
-    lib.hideTextUI()
+    exports['rsg-core']:HideText()
 end
 
 local function LoadBoxEntity()
@@ -109,7 +109,8 @@ CreateThread(function()
                 UnloadBoxEntity()
             end
 
-            if boxEntity and dist <= PICKUP_RANGE and not isOpening and not IsPedOnMount(ped) then
+            if boxEntity and dist <= PICKUP_RANGE and not isOpening and not IsPedOnMount(ped)
+                and not IsPedDeadOrDying(ped, true) then
                 sleep = 0
                 ShowOpenPrompt()
                 if IsPickupControlPressed() then

@@ -2,6 +2,8 @@
 
 A herb gathering, tonic crafting, and mystery box script for **RSG-Core** RedM servers, by RexShack.
 
+**Version 3.1.0** · No ox_lib required · Full developer/server-owner reference: [DOCS.md](DOCS.md)
+
 Players gather herbs from world-placed nodes, brew them into tonics at a mortar & pestle, and can stumble on a roaming mystery box that relocates around the map every so often. Every gather, craft, and loot roll is validated server-side, and an optional Discord webhook system can log activity (and flag likely exploiting) to your Discord.
 
 ---
@@ -11,7 +13,7 @@ Players gather herbs from world-placed nodes, brew them into tonics at a mortar 
 ### Herb gathering
 - Hundreds of herb/orchid spawn points across the map (`shared/zones_data.lua`), grouped into zones, each zone spawning a fixed rotation of plant types.
 - Nodes stream in/out as players approach (composite entity pickups, not peds/objects), so there's no meaningful client-side load cost even with thousands of spawn points defined.
-- Press the game's native "pick up" binding near a node to gather; a progress bar (via `ox_lib`) plays the gather animation.
+- Press the game's native "pick up" binding near a node to gather; an optional rsg-core progress circle plays with the gather animation.
 - Gathered nodes go empty and regrow after a configurable cooldown, becoming a new (server-picked) plant type from the same zone so it isn't the same herb every time.
 - Every gather is validated server-side: the client only sends a spawn **id**; the server knows which plant is live there, checks it isn't already picked, that the player is within range and not on cooldown, and that they have room before granting the item.
 - Spawn ids come from `shared/spawns.lua`, which builds the same deterministic list on client and server (no float-formatted coordinate keys, so no client/server mismatches).
@@ -44,20 +46,19 @@ Players gather herbs from world-placed nodes, brew them into tonics at a mortar 
 
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
-- [ox_lib](https://github.com/Rexshack-RedM/ox_lib)
 
-All three must be started **before** `rsg-herbalist` in your `server.cfg`.
+Both must be started **before** `rsg-herbalist` in your `server.cfg`.
 
 ---
 
 ## Installation
 
 1. Drop the `rsg-herbalist` folder into your server's `resources` directory.
-2. *(Only if you job-lock crafting with `Config.LockTonicCraftingToJob`)* create a `herbalist` job. If your server uses **rsg-multijob**, jobs live in the database, so add it there; `installation/shared_jobs.lua` shows the grades/fields to use. On a stock rsg-core install, paste it into `rsg-core/shared/jobs.lua` instead.
+2. *(Only if you job-lock crafting with `Config.LockTonicCraftingToJob`)* create a `herbalist` job in-game with rsg-core's `/jobadmin` (jobs live in the database). `installation/shared_jobs.lua` shows the grades/fields to use.
 3. Add the items in `installation/shared_items.lua` to your `rsg-core` (or `rsg-inventory`, depending on your setup) `shared/items.lua`. This covers every herb, all four tonics, and the `mortarpestle` crafting item.
 4. Copy every file in `installation/images/` into your inventory resource's item image folder (wherever `rsg-inventory` serves item icons from - commonly `rsg-inventory/html/images/`). This covers all the herb icons and the mortar & pestle icon.
    - Tonic icons (`tonic_*.png`) are included too. The crafting UI loads icons from `Config.InventoryImagePath` (default `nui://rsg-inventory/html/images/`) - change it if your inventory serves images from elsewhere.
-5. Add `ensure rsg-herbalist` to your `server.cfg`, after `rsg-core`, `rsg-inventory`, and `ox_lib`.
+5. Add `ensure rsg-herbalist` to your `server.cfg`, after `rsg-core` and `rsg-inventory`. No database tables are needed.
 6. Start the server. On first start, `Config.Debug = false` by default - flip it to `true` temporarily if you want verbose per-gather/per-craft console tracing while testing.
 
 ---
@@ -97,7 +98,7 @@ All gameplay settings live in `shared/config.lua`. Webhook settings are in their
 |---|---|
 | `Config.TonicCraftingEnabled` | Master switch for the whole crafting system. |
 | `Config.TonicCraftCooldownMs` | Server-side minimum time between craft requests, per player. |
-| `Config.TonicCraftProgressBarEnabled` | Show a cancellable `ox_lib` progress circle during crafting. If `false`, crafting still takes the recipe's full duration, it just isn't shown or cancellable. |
+| `Config.TonicCraftProgressBarEnabled` | Show a cancellable rsg-core progress circle during crafting. If `false`, crafting still takes the recipe's full duration, it just isn't shown or cancellable. |
 | `Config.TonicCraftAnim` | Animation dict/clips played during crafting, with a fallback generic scenario if disabled or the dict fails to stream in. |
 | `Config.TonicCraftCamera` | Scripted camera framing the player during the crafting animation. |
 | `Config.TonicAttributeIndex` | RDR3 ped-attribute indices used for the health/stamina "overpower" boost natives - only change if a game build shifts the enum ordering. |
@@ -138,7 +139,7 @@ To enable a category, set its `enabled = true` and paste a Discord webhook URL i
 
 ### Locales
 
-Player-facing text (notifications, progress bar labels, the "open mystery box" prompt) lives in `locales/en.json`. Add another file in the same folder (e.g. `locales/de.json`) and switch `lib.locale()`'s language via `ox_lib`'s locale convention to translate.
+Player-facing text (notifications, progress bar labels, the "open mystery box" prompt) lives in `locales/*.json`, loaded by rsg-core. Shipped languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro. Pick one with the `rsg:locale` convar, e.g. `setr rsg:locale de`.
 
 ---
 
@@ -165,7 +166,7 @@ html/                         tonic crafting NUI (index.html, script.js, style.c
 locales/                      player-facing text (en, de, el, es, fr, ja, nl, pl, pt-br, ro)
 installation/
   shared_items.lua              item definitions to copy into rsg-core/rsg-inventory
-  shared_jobs.lua                herbalist job definition to copy into rsg-core
+  shared_jobs.lua                herbalist job grades (reference for /jobadmin)
   images/                       herb/orchid/mortar & pestle icons to copy into your inventory's image folder
 ```
 

@@ -15,7 +15,7 @@ Config.CompositeLoadTimeoutMs = 10000  -- max time to wait for a composite asset
 -- Gathering
 Config.GatherDurationMs = 3000            -- length of the gather progress bar
 
--- When true, gathering herbs and opening the mystery box show an ox_lib
+-- When true, gathering herbs and opening the mystery box show an rsg-core
 -- progress circle (cancellable) for GatherDurationMs. When false, the bar is
 -- hidden - the action still takes GatherDurationMs, just isn't shown or
 -- cancellable.
@@ -32,7 +32,7 @@ Config.SuppressionWearoffSeconds = 10 * 60 -- how long a gathered node stays emp
 Config.TonicCraftingEnabled = true        -- master switch for the tonic crafting system
 Config.TonicCraftCooldownMs = 1500        -- server-side minimum time between craft requests per player
 
--- When true, crafting shows an ox_lib progress circle (cancellable) for the
+-- When true, crafting shows an rsg-core progress circle (cancellable) for the
 -- recipe's durationMs. When false, the bar is skipped entirely - crafting
 -- still takes the full durationMs (the animation sequence below still
 -- plays out over it), it just isn't shown or cancellable, and the craft
@@ -120,10 +120,9 @@ Config.TonicEffects = {
 Config.TonicUseCooldownMs = 5 * 60 * 1000 -- 5 minutes
 
 -- When true, only players whose current job matches Config.TonicCraftingJobName
--- (any grade) can open/use the crafting menu. Both the client (for UX - hides
--- the menu instead of letting a non-herbalist open it) and the server (for
--- security - the actual check that can't be bypassed by a modified client)
--- enforce this.
+-- (any grade) can open/use the crafting menu. Enforced on the server when the
+-- mortarpestle is used and again on every craft request. The job is defined in
+-- the database via rsg-core's /jobadmin (see installation/shared_jobs.lua for grades).
 Config.LockTonicCraftingToJob = false
 Config.TonicCraftingJobName = 'herbalist'
 

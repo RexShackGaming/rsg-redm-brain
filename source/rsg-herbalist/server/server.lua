@@ -1,7 +1,5 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
-lib.locale()
-
 local function Debug(msg)
     if Config.Debug then
         print('[rsg-herbalist] ' .. msg)
@@ -9,7 +7,7 @@ local function Debug(msg)
 end
 
 local function Notify(src, title, description, nType)
-    TriggerClientEvent('ox_lib:notify', src, {
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
         title = title, description = description, type = nType or 'error', duration = 5000,
     })
 end
@@ -33,10 +31,20 @@ local function PlayerItemCount(Player, itemName)
 end
 
 local function CanCarry(src, item, amount)
-    local ok, result = pcall(function()
-        return exports['rsg-inventory']:CanAddItem(src, item, amount)
-    end)
-    return not ok or result -- if the export is unavailable, fall back to AddItem's own result
+    return exports['rsg-inventory']:CanAddItem(src, item, amount) and true or false
+end
+
+local function GiveItem(src, item, amount, reason)
+    return exports['rsg-inventory']:AddItem(src, item, amount, nil, nil, reason) and true or false
+end
+
+local function TakeItem(src, item, amount, reason)
+    return exports['rsg-inventory']:RemoveItem(src, item, amount, nil, reason) and true or false
+end
+
+local function IsDead(Player)
+    local md = Player.PlayerData.metadata
+    return md and md.isdead
 end
 
 ----------------------------------------------------------------------------
@@ -79,7 +87,7 @@ local toItem = {
     SALTBUSH_DEF = 'herb_saltbush',
     TEXAS_BONNET_DEF = 'herb_texas_blue_bonnet',
     VIOLET_SNOWDROP_DEF = 'herb_violet_snowdrop',
-    WILD_CARROT_DEF = 'herb_wild_carrot',
+    WILD_CARROT_DEF = 'carrot',
     WILD_FEVERFEW_DEF = 'herb_wild_feverfew',
     WILD_MINT_DEF = 'herb_wild_mint',
     WILD_RHUBARB_DEF = 'herb_wild_rhubarb',
@@ -111,7 +119,15 @@ local suppressedUntil = {}  -- id -> os.time() the node regrows at
 local lastGatherAt = {}
 local lastSyncAt = {}
 
--- Warn once at start about plants that have no item mapping.
+-- Drop mappings to items that aren't registered (AddItem would always fail and the
+-- player would see a misleading "inventory full"), then warn once about unmapped plants.
+for key, item in pairs(toItem) do
+    if not RSGCore.Shared.Items[item] then
+        print(('[rsg-herbalist] ^3warning: item "%s" (plant %s) is not registered, skipping^7'):format(item, key))
+        toItem[key] = nil
+    end
+end
+
 do
     local warned = {}
     for _, s in ipairs(spawns) do
@@ -144,7 +160,7 @@ RegisterNetEvent('rsg-herbalist:server:gathered', function(id)
     end
 
     local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player then return end
+    if not Player or IsDead(Player) then return end
 
     local ped = GetPlayerPed(src)
     if ped == 0 then return end
@@ -160,7 +176,7 @@ RegisterNetEvent('rsg-herbalist:server:gathered', function(id)
 
     lastGatherAt[src] = now
 
-    if not CanCarry(src, item, 1) or not Player.Functions.AddItem(item, 1) then
+    if not CanCarry(src, item, 1) or not GiveItem(src, item, 1, 'rsg-herbalist:gather') then
         Notify(src, locale('inventory_full_title'), locale('inventory_full_description'))
         TriggerClientEvent('rsg-herbalist:client:ForceReload', src, id)
         return
@@ -168,7 +184,6 @@ RegisterNetEvent('rsg-herbalist:server:gathered', function(id)
 
     suppressedUntil[id] = os.time() + Config.SuppressionWearoffSeconds
     TriggerClientEvent('rsg-herbalist:client:SetSuppressed', -1, id, true)
-    TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items[item], 'add', 1)
     Webhook.LogGather(src, ItemLabel(item), ('#%d %s'):format(id, tostring(spawn.coord)))
 end)
 
@@ -250,7 +265,7 @@ RSGCore.Functions.CreateUseableItem('mortarpestle', function(source)
     if not Config.TonicCraftingEnabled then return end
 
     local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player then return end
+    if not Player or IsDead(Player) then return end
 
     if not HasHerbalistJob(Player) then
         Notify(src, locale('craft_locked_title'), locale('craft_locked_description'))
@@ -265,7 +280,7 @@ for itemName in pairs(Config.TonicEffects) do
     RSGCore.Functions.CreateUseableItem(itemName, function(source)
         local src = source
         local Player = RSGCore.Functions.GetPlayer(src)
-        if not Player then return end
+        if not Player or IsDead(Player) then return end
 
         local now = GetGameTimer()
         local cooldownMs = Config.TonicUseCooldownMs or 0
@@ -275,9 +290,8 @@ for itemName in pairs(Config.TonicEffects) do
             return
         end
 
-        if not Player.Functions.RemoveItem(itemName, 1) then return end
+        if not TakeItem(src, itemName, 1, 'rsg-herbalist:drink-tonic') then return end
         lastTonicUseAt[src] = now
-        TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items[itemName], 'remove', 1)
         TriggerClientEvent('rsg-herbalist:client:ApplyTonicEffect', src, itemName)
     end)
 end
@@ -287,7 +301,7 @@ RegisterNetEvent('rsg-herbalist:server:requestCraft', function(tonicId)
     if not Config.TonicCraftingEnabled then return end
 
     local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player then return end
+    if not Player or IsDead(Player) then return end
 
     if pendingCraft[src] then
         Webhook.FlagSuspicious(src, 'craft_double_request', 'tonicId=' .. tostring(tonicId))
@@ -350,27 +364,28 @@ RegisterNetEvent('rsg-herbalist:server:finishCraft', function()
         return
     end
 
+    local function Refund(removed)
+        for _, r in ipairs(removed) do GiveItem(src, r.item, r.amount, 'rsg-herbalist:craft-refund') end
+    end
+
     local removed = {}
     for _, ingredient in ipairs(tonic.ingredients) do
-        if not Player.Functions.RemoveItem(ingredient.item, ingredient.amount) then
-            for _, r in ipairs(removed) do Player.Functions.AddItem(r.item, r.amount) end
+        if not TakeItem(src, ingredient.item, ingredient.amount, 'rsg-herbalist:craft') then
+            Refund(removed)
             Notify(src, locale('craft_missing_title'), locale('craft_missing_description'))
             return
         end
         removed[#removed + 1] = ingredient
     end
 
-    if not Player.Functions.AddItem(tonic.output.item, tonic.output.amount) then
-        for _, r in ipairs(removed) do Player.Functions.AddItem(r.item, r.amount) end
+    if not GiveItem(src, tonic.output.item, tonic.output.amount, 'rsg-herbalist:craft') then
+        Refund(removed)
         Notify(src, locale('inventory_full_title'), locale('craft_inventory_full_description'))
         Webhook.LogCraft(src, tonic, 'refunded')
         return
     end
 
-    for _, ingredient in ipairs(tonic.ingredients) do
-        TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items[ingredient.item], 'remove', ingredient.amount)
-    end
-    TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items[tonic.output.item], 'add', tonic.output.amount)
+    Notify(src, locale('craft_done_title'), locale('craft_done_description', tonic.output.amount, ItemLabel(tonic.output.item)), 'success')
     Webhook.LogCraft(src, tonic, 'success')
 end)
 

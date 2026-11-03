@@ -1,12 +1,12 @@
 # rsg-beekeeper
 
-Version 3.1.0. Beekeeper script for RSG Framework
+Version 3.2.0. Beekeeper script for RSG Framework
 
-A beekeeping script for RedM, built on the RSG Framework. Players place beehives, start a colony with a queen bee, keep it fed and watered, calm it with a smoker, and harvest honey and beeswax once the colony is fully grown. - **Placeable beehives** -- 6 prop styles (`bee_house_gk_1` to `bee_house_gk_6`), each with its own inventory item. Placement shows a ghost hive on the ground in front of you 
+**Version 3.2.0** · Full developer reference: [DOCS.md](DOCS.md) A beekeeping script for RedM, built on the RSG Framework. Players place beehives, start a colony with a queen bee, keep it fed and watered, calm it with a smoker, and harvest honey and beeswax once the colony is fully grown. - **Placeable beehives** -- 6 prop styles (`bee_house_gk_1` to `bee_house_gk_6`), each with its own inventory 
 
 Source: https://github.com/Rexshack-RedM/rsg-beekeeper
 
-**Dependencies:** `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
+**Dependencies:** `rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-gizmo`, `oxmysql`
 
 Has NUI (`ui_page`).
 
@@ -21,8 +21,6 @@ Has NUI (`ui_page`).
 **server:** `/beehivewebhook`
 
 ## Public (table) functions
-
-**client/placement.lua:** `Placement.Start(model, checkFn, invalidMsg)`, `Placement.Cancel()`
 
 **server/webhook.lua:** `BeekeeperWebhook.Send(eventName, title, description, fields)`
 

@@ -98,12 +98,23 @@ local function isShopOpen(npc)
     return h >= open or h < close -- wraps past midnight
 end
 
+-- Player items merged by name (split stacks = one row). Worn / spoiled stacks below
+-- OwnedStores.MinQuality are left out, because the server won't buy or stock them.
+local MIN_QUALITY = tonumber(OS.MinQuality) or 0
 local function GetPlayerItems()
-    local items, data = {}, RSGCore.Functions.GetPlayerData()
+    local items, byName, data = {}, {}, RSGCore.Functions.GetPlayerData()
     for _, item in pairs(data and data.items or {}) do
-        if item and item.amount and item.amount > 0 then
-            local label, desc, image, category = itemMeta(item.name)
-            items[#items + 1] = { name = item.name, label = label or item.name, amount = item.amount, description = desc, image = image, category = category }
+        local q = item and type(item.info) == 'table' and tonumber(item.info.quality) or nil
+        if item and item.name and (tonumber(item.amount) or 0) > 0 and (not q or q >= MIN_QUALITY) then
+            local row = byName[item.name]
+            if row then
+                row.amount = row.amount + item.amount
+            else
+                local label, desc, image, category = itemMeta(item.name)
+                row = { name = item.name, label = label or item.name, amount = item.amount, description = desc, image = image, category = category }
+                byName[item.name] = row
+                items[#items + 1] = row
+            end
         end
     end
     return items
@@ -176,7 +187,8 @@ local function OpenCustomShop(npcData)
     SetNuiFocus(true, true)
 
     local code, strings = GetUiStrings()
-    local pct = npcData.kind == 'player' and (tonumber(OS.BuyBackPercentage) or SELL_PCT) or SELL_PCT
+    -- NPC shops pay sellers the discounted price too (matches the server)
+    local pct = npcData.kind == 'player' and (tonumber(OS.BuyBackPercentage) or SELL_PCT) or SELL_PCT * (1 - disc)
     local maxStock = npcData.kind == 'player' and (tonumber(OS.MaxStock) or 0)
         or ((Config.SellAddsStock ~= false) and (tonumber(Config.MaxShopStock) or 0) or 0)
     SendNUIMessage({
@@ -198,10 +210,10 @@ local function OpenCustomShop(npcData)
 
     -- auto-close if the player walks off or dies
     CreateThread(function()
-        local shopCoords = vector3(npcData.x, npcData.y, npcData.z)
-        while currentShop == npcData do
+        local id = npcData.id
+        while currentShop and currentShop.id == id do
             local ped = PlayerPedId()
-            if IsEntityDead(ped) or #(GetEntityCoords(ped) - shopCoords) > CLOSE_DIST then
+            if IsEntityDead(ped) or #(GetEntityCoords(ped) - vector3(currentShop.x, currentShop.y, currentShop.z)) > CLOSE_DIST then
                 CloseCustomShop()
                 break
             end
@@ -330,7 +342,12 @@ local function SpawnNPC(npcData)
         if GetGameTimer() > deadline then spawning[id] = nil return end
         Wait(10)
     end
-    if version ~= refreshVersion then SetModelAsNoLongerNeeded(model) spawning[id] = nil return end
+    -- refreshed or walked away (DespawnNPC cleared spawning) while the model loaded: don't leave an orphan ped
+    if version ~= refreshVersion or not spawning[id] then
+        SetModelAsNoLongerNeeded(model)
+        if version ~= refreshVersion then spawning[id] = nil end
+        return
+    end
 
     -- Snap to ground (also fixes NPCs saved before feet-level coords were stored)
     local found, gz = GetGroundZFor_3dCoord(npcData.x, npcData.y, npcData.z + 1.0, false)
@@ -353,9 +370,9 @@ local function SpawnNPC(npcData)
             exports['rsg-target']:addLocalEntity(ped, {{
                 name     = 'rsg_shop_' .. id,
                 icon     = 'fa-solid fa-shopping-cart',
-                label    = locale('cl_trade_with'):format(npcData.shop.label),
+                label    = locale('cl_open_store'),
                 distance = Config.TargetDistance,
-                onSelect = function() OpenCustomShop(npcData) end,
+                onSelect = function() local n = findNpcById(id) if n then OpenCustomShop(n) end end, -- always the latest data
             }})
         end)
     end
@@ -384,7 +401,7 @@ CreateThread(function()
             -- owned stores have no ped
             local near = npc.kind ~= 'player' and #(coords - vector3(npc.x, npc.y, npc.z)) < Config.DistanceSpawn
             if near and not spawning[npc.id] then
-                SpawnNPC(npc)
+                CreateThread(function() SpawnNPC(npc) end) -- model loading must not stall the loop
             elseif not near and spawning[npc.id] then
                 DespawnNPC(npc.id)
             end
@@ -406,6 +423,28 @@ isMyStore = function(npc)
     return npc and npc.owner ~= nil and npc.owner.citizenid == myCitizenId()
 end
 
+-- Stores this character works at (sent by the server; it re-checks every action).
+local staffStores = {}
+local function canManage(npc)
+    return npc ~= nil and npc.owner ~= nil and (isMyStore(npc) or staffStores[npc.id] == true)
+end
+
+RegisterNetEvent('rsg-stores:client:staffStores', function(ids)
+    staffStores = {}
+    for _, id in ipairs(type(ids) == 'table' and ids or {}) do staffStores[tonumber(id)] = true end
+    if manageShop and not canManage(manageShop) then CloseManage() end
+end)
+
+-- Server error -> text (some errors carry format args).
+local function errText(res)
+    local msg = locale(res and res.err or 'sv_try_again')
+    if res and type(res.errArgs) == 'table' then
+        local ok, out = pcall(string.format, msg, table.unpack(res.errArgs))
+        if ok then msg = out end
+    end
+    return msg
+end
+
 local function removeStoreZone(id)
     if storeZones[id] then
         pcall(function() exports['rsg-target']:removeZone(storeZones[id]) end)
@@ -422,9 +461,10 @@ local function storeOptions(npc)
         {
             name = 'rsg_store_browse_' .. id,
             icon = 'fa-solid fa-shopping-cart',
-            label = locale('cl_trade_with'):format(npc.shop.label),
+            label = locale('cl_open_store'),
             distance = Config.TargetDistance,
-            canInteract = function() local n = findNpcById(id) return n and n.owner ~= nil end,
+            -- staff can't trade with the store they work at (server enforces it too)
+            canInteract = function() local n = findNpcById(id) return n and n.owner ~= nil and not staffStores[id] end,
             onSelect = function() local n = findNpcById(id) if n then OpenCustomShop(n) end end,
         },
         {
@@ -440,10 +480,29 @@ local function storeOptions(npc)
             icon = 'fa-solid fa-key',
             label = locale('cl_manage_store'),
             distance = Config.TargetDistance,
-            canInteract = function() return isMyStore(findNpcById(id)) end,
+            canInteract = function() return canManage(findNpcById(id)) end,
             onSelect = function()
                 local n = findNpcById(id)
                 if n then CreateThread(function() OpenManage(n) end) end -- AwaitCallback needs a thread
+            end,
+        },
+        {
+            name = 'rsg_store_pickup_' .. id,
+            icon = 'fa-solid fa-dolly',
+            label = locale('cl_pickup_store'),
+            distance = Config.TargetDistance,
+            canInteract = function()
+                local n = findNpcById(id)
+                return n and n.prop ~= nil and (Config.ShopSign or {}).AllowMove ~= false and isMyStore(n)
+            end,
+            onSelect = function()
+                CreateThread(function()
+                    local res = RSGCore.Functions.AwaitCallback('rsg-stores:server:ownerPickUp', 8000, id)
+                    if not res or not res.ok then
+                        return RSGCore.Functions.Notify({ title = npc.shop.label, description = locale(res and res.err or 'sv_try_again'), type = 'error' })
+                    end
+                    RSGCore.Functions.Notify({ title = res.label, description = res.msg, type = 'success' })
+                end)
             end,
         },
     }
@@ -519,7 +578,7 @@ CreateThread(function()
         for _, npc in ipairs(savedNpcs) do
             if npc.prop then
                 local near = #(coords - vector3(npc.x, npc.y, npc.z)) < Config.DistanceSpawn
-                if near and signProps[npc.id] == nil then SpawnSign(npc)
+                if near and signProps[npc.id] == nil then CreateThread(function() SpawnSign(npc) end)
                 elseif not near and signProps[npc.id] ~= nil then DespawnSign(npc.id) end
             end
         end
@@ -531,44 +590,19 @@ end)
 -- SHOP SIGN PLACEMENT (using the item)
 -- ============================================
 local SIGN = Config.ShopSign or {}
-local placing = nil -- { obj, rot, dist }
-
-local function updateGhost()
-    if not placing then return end
-    local ped = PlayerPedId()
-    local c = GetOffsetFromEntityInWorldCoords(ped, 0.0, placing.dist, 0.0)
-    local z = groundZ(c.x, c.y, c.z)
-    placing.pos = vector3(c.x, c.y, z)
-    placing.h = (GetEntityHeading(ped) + 180.0 + placing.rot) % 360.0 -- faces the player by default
-    SetEntityCoords(placing.obj, c.x, c.y, z, false, false, false, false)
-    SetEntityHeading(placing.obj, placing.h)
-    PlaceObjectOnGroundProperly(placing.obj)
-end
+local placing = nil -- { pos, h, label, type, mode }
 
 local function stopPlacing()
     if not placing then return end
-    if DoesEntityExist(placing.obj) then DeleteEntity(placing.obj) end
+    if placing.mode == 'position' then pcall(function() exports['rsg-gizmo']:Cancel() end) end
     placing = nil
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'closeSign' })
-    SendNUIMessage({ action = 'signHelp', show = false })
 end
-
--- Positioning keys (hashes from rdr3_discoveries Controls/README.md)
-local SIGN_KEYS = {
-    left   = 0xA65EBAB4, -- INPUT_FRONTEND_LEFT   (Arrow Left)
-    right  = 0xDEB34313, -- INPUT_FRONTEND_RIGHT  (Arrow Right)
-    up     = 0x6319DB71, -- INPUT_FRONTEND_UP     (Arrow Up)
-    down   = 0x05CA7C52, -- INPUT_FRONTEND_DOWN   (Arrow Down)
-    accept = 0xC7B5340A, -- INPUT_FRONTEND_ACCEPT (Enter)
-    cancel = 0x156F7119, -- INPUT_FRONTEND_CANCEL (Backspace / Esc)
-}
-local ROT_SPEED, MOVE_SPEED = 90.0, 1.0 -- degrees / metres per second while held
 
 -- Step 2: sign is fixed, the player names the store (NUI focus).
 local function openSignDetails()
     placing.mode = 'details'
-    SendNUIMessage({ action = 'signHelp', show = false })
     local data = RSGCore.Functions.GetPlayerData()
     local first = data and data.charinfo and data.charinfo.firstname or ''
     local code, strings = GetUiStrings()
@@ -581,46 +615,47 @@ local function openSignDetails()
     })
 end
 
--- Step 1: the sign follows the player; arrows rotate / move it, Enter confirms.
-local function startPositioning()
+-- Moving a picked-up store: send the new spot straight away (server keeps name/type/stock).
+local startPositioning
+local function confirmMove()
+    local p, h, mv = placing.pos, placing.h, placing.move
+    local res = RSGCore.Functions.AwaitCallback('rsg-stores:server:placeSign', 8000,
+        { x = p.x, y = p.y, z = p.z, h = h, label = mv.label, type = mv.type })
+    stopPlacing()
+    if not res or not res.ok then
+        return RSGCore.Functions.Notify({ title = locale('ui_sign_title'), description = locale((res and res.err) or 'sv_try_again'):format(tonumber(SIGN.MaxPerPlayer) or 1), type = 'error' })
+    end
+    RSGCore.Functions.Notify({ title = locale('ui_sign_title'), description = res.msg, type = 'success' })
+end
+
+-- Step 1: place the sign with rsg-gizmo (standard placement controls / HUD).
+startPositioning = function()
     placing.mode = 'position'
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'closeSign' })
-    local code, strings = GetUiStrings()
-    SendNUIMessage({ action = 'signHelp', show = true, locale = code, uiStrings = strings })
     CreateThread(function()
-        while placing and placing.mode == 'position' do
-            for _, c in pairs(SIGN_KEYS) do DisableControlAction(0, c, true) end
-            local ped = PlayerPedId()
-            if IsEntityDead(ped) or IsPedInAnyVehicle(ped, false) then stopPlacing() break end
-            local dt = GetFrameTime()
-            if IsDisabledControlPressed(0, SIGN_KEYS.left)  then placing.rot = placing.rot + ROT_SPEED * dt end
-            if IsDisabledControlPressed(0, SIGN_KEYS.right) then placing.rot = placing.rot - ROT_SPEED * dt end
-            if IsDisabledControlPressed(0, SIGN_KEYS.up)    then placing.dist = math.min(3.0, placing.dist + MOVE_SPEED * dt) end
-            if IsDisabledControlPressed(0, SIGN_KEYS.down)  then placing.dist = math.max(0.75, placing.dist - MOVE_SPEED * dt) end
-            updateGhost()
-            if IsDisabledControlJustPressed(0, SIGN_KEYS.accept) then
-                openSignDetails()
-            elseif IsDisabledControlJustPressed(0, SIGN_KEYS.cancel) then
-                stopPlacing()
-            end
-            Wait(0)
-        end
+        local maxDist = math.min(4.0, tonumber(SIGN.PlaceDistance or 1.5) + 2.5) -- server allows 5 m
+        local res = exports['rsg-gizmo']:Place(SIGN.Model or 'p_sandwichboard02x', {
+            maxDistance  = maxDist,
+            rotation     = 'z',
+            snapToGround = true,
+            allowWater   = false,
+            startCoords  = placing.pos,
+            startRotation = placing.h and vector3(0.0, 0.0, placing.h) or nil,
+        })
+        if not placing then return end
+        if not res then stopPlacing() return end -- cancelled: sign stays in inventory
+        placing.pos = vector3(res.coords.x, res.coords.y, res.coords.z)
+        placing.h = (res.heading or (res.rotation and res.rotation.z) or 0.0) % 360.0
+        if placing.move then return confirmMove() end -- moving a picked-up store: no setup again
+        openSignDetails()
     end)
 end
 
-RegisterNetEvent('rsg-stores:client:startSignPlacement', function()
+RegisterNetEvent('rsg-stores:client:startSignPlacement', function(move)
     if placing or currentShop or manageShop or IsPedInAnyVehicle(PlayerPedId(), false) then return end
-    local model = joaat(SIGN.Model or 'p_chalksign_buysell01x')
-    if not loadModel(model) then return end
-    local obj = CreateObject(model, 0.0, 0.0, 0.0, false, false, false)
-    SetModelAsNoLongerNeeded(model)
-    if not obj or obj == 0 then return end
-    SetEntityAlpha(obj, 170, false)
-    SetEntityCollision(obj, false, false)
-    FreezeEntityPosition(obj, true)
-    placing = { obj = obj, rot = 0.0, dist = tonumber(SIGN.PlaceDistance) or 1.5 }
-    updateGhost()
+    if GetResourceState('rsg-gizmo') ~= 'started' or exports['rsg-gizmo']:IsActive() then return end
+    placing = { move = type(move) == 'table' and move or nil }
     startPositioning()
 end)
 
@@ -659,13 +694,13 @@ RebuildStoreZones = function()
 end
 
 -- Inventory items an owner could put on the shelf (server re-checks everything).
+local STOCK_BLACKLIST = {}
+for _, n in ipairs(OS.BlacklistItems or {}) do STOCK_BLACKLIST[n] = true end
 local function stockablePlayerItems()
-    local black = {}
-    for _, n in ipairs(OS.BlacklistItems or {}) do black[n] = true end
     local out = {}
     for _, it in ipairs(GetPlayerItems()) do
         local shared = RSGCore.Shared.Items[it.name]
-        if shared and not black[it.name] and not shared.unique and shared.type ~= 'weapon' then
+        if shared and not STOCK_BLACKLIST[it.name] and not shared.unique and shared.type ~= 'weapon' then
             out[#out + 1] = it
         end
     end
@@ -704,10 +739,10 @@ OpenManage = function(npc)
     SendNUIMessage(payload)
 
     CreateThread(function()
-        local c = vector3(npc.x, npc.y, npc.z)
-        while manageShop == npc do
+        local id = npc.id
+        while manageShop and manageShop.id == id do
             local ped = PlayerPedId()
-            if IsEntityDead(ped) or #(GetEntityCoords(ped) - c) > CLOSE_DIST then CloseManage() break end
+            if IsEntityDead(ped) or #(GetEntityCoords(ped) - vector3(manageShop.x, manageShop.y, manageShop.z)) > CLOSE_DIST then CloseManage() break end
             Wait(500)
         end
     end)
@@ -728,16 +763,32 @@ local MANAGE_OPS = {
     withdraw = { 'rsg-stores:server:ownerWithdraw',      function(d) return tonumber(d.amount) end },
     settings = { 'rsg-stores:server:ownerSetSettings',   function(d) return d.label, d.type end },
     packup   = { 'rsg-stores:server:ownerPackUp',        function(d) return end },
+    pickup   = { 'rsg-stores:server:ownerPickUp',        function(d) return end },
     wholesale = { 'rsg-stores:server:ownerWholesale',    function(d) return d.item, tonumber(d.qty), d.price ~= nil and tonumber(d.price) or nil end },
     upkeep   = { 'rsg-stores:server:ownerPayUpkeep',     function(d) return end },
+    staffHire   = { 'rsg-stores:server:staffHire',       function(d) return tonumber(d.target), d.rank, d.perms end },
+    staffUpdate = { 'rsg-stores:server:staffUpdate',     function(d) return d.cid, d.rank, d.perms end },
+    staffFire   = { 'rsg-stores:server:staffFire',       function(d) return d.cid end },
+    staffQuit   = { 'rsg-stores:server:staffQuit',       function(d) return end },
 }
+
+-- Nearby players the owner could hire (list only, no state change).
+RegisterNUICallback('manageNearby', function(_, cb)
+    if not manageShop then return cb({ ok = false }) end
+    local res = RSGCore.Functions.AwaitCallback('rsg-stores:server:staffNearby', 5000, manageShop.id)
+    if not res or not res.ok then
+        RSGCore.Functions.Notify({ title = manageShop.shop.label, description = errText(res), type = 'error' })
+        return cb({ ok = false })
+    end
+    cb(res)
+end)
 
 RegisterNUICallback('manageAction', function(data, cb)
     local op = type(data) == 'table' and MANAGE_OPS[data.op]
     if not manageShop or not op then return cb({ ok = false }) end
     local res = RSGCore.Functions.AwaitCallback(op[1], 8000, manageShop.id, op[2](data))
     if not res or not res.ok then
-        RSGCore.Functions.Notify({ title = manageShop.shop.label, description = locale(res and res.err or 'sv_try_again'), type = 'error' })
+        RSGCore.Functions.Notify({ title = manageShop.shop.label, description = errText(res), type = 'error' })
         return cb({ ok = false })
     end
     if res.msg then RSGCore.Functions.Notify({ title = res.label, description = res.msg, type = 'success' }) end
@@ -764,13 +815,40 @@ local function pushAdminData()
     SendNUIMessage({ action = 'adminData', npcs = savedNpcs, blips = customBlips, hidden = hiddenList() })
 end
 
+-- What a spawned ped / sign depends on; anything else updates without a respawn.
+local function spawnKey(n)
+    return ('%s|%s|%.2f|%.2f|%.2f|%.1f|%s|%s'):format(n.kind, n.model, n.x, n.y, n.z, n.h or 0, n.prop or '', n.shop and n.shop.label or '')
+end
+
+-- Only respawn peds/signs that changed or were removed, and keep open panels
+-- open, so one store being placed elsewhere doesn't kick every customer out.
 RegisterNetEvent('rsg-blipmenu:client:refreshNPCs', function(npcs)
     refreshVersion = refreshVersion + 1
-    if currentShop then CloseCustomShop() end
-    if manageShop then CloseManage() end
-    RemoveAllNPCs()
-    RemoveAllSigns()
+    local newById = {}
+    for _, n in ipairs(npcs or {}) do newById[n.id] = n end
+    for _, old in ipairs(savedNpcs) do
+        local new = newById[old.id]
+        if not new or spawnKey(new) ~= spawnKey(old) then
+            if spawning[old.id] then DespawnNPC(old.id, true) end
+            if signProps[old.id] ~= nil then DespawnSign(old.id) end
+        end
+    end
     savedNpcs = npcs or {}
+
+    if currentShop then
+        local n = newById[currentShop.id]
+        if n and n.shop then
+            n.discount = currentShop.discount
+            currentShop = n
+            SendNUIMessage({ action = 'updateItems', items = formatShopItems(n.shop.items, n.discount) })
+        else
+            CloseCustomShop()
+        end
+    end
+    if manageShop then
+        local n = newById[manageShop.id]
+        if n then manageShop = n else CloseManage() end
+    end
     RebuildStoreZones()
     pushAdminData()
 end)

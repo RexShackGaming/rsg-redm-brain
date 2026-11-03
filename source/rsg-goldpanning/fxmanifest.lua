@@ -1,13 +1,14 @@
 fx_version 'cerulean'
 rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aware my resources *will* become incompatible once RedM ships.'
 game 'rdr3'
+lua54 'yes'
 
 name 'rsg-goldpanning'
 description 'Gold panning system for RSG Framework'
-version '3.0.0'
+version '3.1.0'
 
 shared_scripts {
-    '@ox_lib/init.lua',
+    '@rsg-core/shared/locale.lua',
     'shared/config.lua'
 }
 
@@ -28,8 +29,5 @@ files {
 
 dependencies {
     'rsg-core',
-    'rsg-inventory',
-    'ox_lib',
+    'rsg-inventory'
 }
-
-lua54 'yes'

@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS `rsg_shops_npcs` (
   `prop_model` varchar(100) DEFAULT NULL,
   `upkeep_owed` decimal(10,2) NOT NULL DEFAULT 0.00,
   `upkeep_next` int(11) DEFAULT NULL,
+  `packed_at` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_shop_name` (`shop_name`),
   KEY `idx_owner` (`owner_citizenid`)
@@ -57,6 +58,22 @@ CREATE TABLE IF NOT EXISTS `rsg_shops_ledger` (
   `who` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_ledger_npc` (`npc_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Staff hired by store owners (3.1.0)
+CREATE TABLE IF NOT EXISTS `rsg_shops_staff` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `npc_id` int(11) NOT NULL,
+  `citizenid` varchar(50) NOT NULL,
+  `name` varchar(100) DEFAULT NULL,
+  `staff_rank` varchar(32) NOT NULL DEFAULT 'custom',
+  `perms` varchar(255) NOT NULL DEFAULT '',
+  `withdrawn` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `withdraw_day` int(11) NOT NULL DEFAULT 0,
+  `hired_at` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_store_staff` (`npc_id`, `citizenid`),
+  KEY `idx_staff_cid` (`citizenid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Admin-managed dropdown options (NPC models / blip types). Seeded from Config on first start.

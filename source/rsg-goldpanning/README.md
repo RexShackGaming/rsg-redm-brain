@@ -1,22 +1,23 @@
 # rsg-goldpanning
 
+**Version 3.1.0** · Requires rsg-core and rsg-inventory · Full developer docs: [DOCS.md](DOCS.md)
+
 Gold panning for the RSG Framework (RedM). Stand in a river, use a gold pan, and sift for nuggets.
 
 ## Features
 
 - Use the `tool_goldpan` item while standing in one of the configured rivers/creeks
-- ox_lib progress bar (cancellable) with scoop and shake animations
+- rsg-core progress bar (cancellable) with scoop and shake animations
 - Tiered rewards (small / medium / large) with configurable chances and amounts
 - Server-authoritative anti-exploit: the server chooses the pan duration, validates timing, checks the player didn't move away, and enforces spot memory so the same spot can't be farmed
-- Cooldown between pans
+- Cooldown between pans; stale sessions clear themselves so players never get stuck "already panning"
 - Optional Discord webhooks for rewards and suspicious claims, plus `rsg-log` support
-- ox_lib locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro
+- rsg-core JSON locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro
 
 ## Dependencies
 
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
-- [ox_lib](https://github.com/Rexshack-RedM/ox_lib)
 
 ## Installation
 
@@ -24,7 +25,7 @@ Gold panning for the RSG Framework (RedM). Stand in a river, use a gold pan, and
 2. Add the item from `installation/shared_items.lua` to `rsg-core/shared/items.lua` (skip if it already exists).
 3. Copy `installation/images/tool_goldpan.png` to `rsg-inventory/html/images/`.
 4. Make sure your reward item (default `resource_gold_nugget`) exists in `rsg-core/shared/items.lua`.
-5. Add `ensure rsg-goldpanning` to your `server.cfg` after `rsg-core`, `rsg-inventory` and `ox_lib`.
+5. Add `ensure rsg-goldpanning` to your `server.cfg` after `rsg-core` and `rsg-inventory`. No database tables are needed.
 
 ## Configuration
 
@@ -55,4 +56,8 @@ Key options:
 
 Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
 
-Set the language in `server.cfg`, e.g. `setr ox:locale de`. To add another, copy `locales/en.json` to `locales/<code>.json` and translate the values (keep the `%s` / `%d` / `%.2f` placeholders in the same order).
+Set the language in `server.cfg`, e.g. `setr rsg:locale de`. To add another, copy `locales/en.json` to `locales/<code>.json` and translate the values (keep the `%s` / `%d` / `%.2f` placeholders in the same order).
+
+---
+
+Support: https://buymeacoffee.com/rexshack

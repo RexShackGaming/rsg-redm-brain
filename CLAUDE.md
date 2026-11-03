@@ -12,7 +12,7 @@ Read this file first, then open only the files you need for the task.
 6. Give complete, runnable code split by file path. Put coords, timers, prices and text in config or locales.
 7. If sources disagree, follow this precedence: `server/environment.md` > `source/` (real code) > `framework/` > everything else.
 8. **Before calling any RSG resource's export, event or callback, check `framework/resources/<resource>.md`** for the exact name and parameters. If you need behaviour details, read that resource's code in `source/<resource>/`.
-9. When building something similar to an existing RSG resource (shops, jobs, NUI menus, placeable props), study that resource in `source/` first and follow its patterns.
+9. **Placing props in the world always uses rsg-gizmo** (`patterns/prop-placement.md`). When building something similar to an existing RSG resource (shops, jobs, NUI menus, placeable props), study that resource in `source/` first and follow its patterns.
 10. When converting a VORP script, follow `vorp/README.md` (conversion map + porting checklist). Never use VORP APIs in RSG scripts unless asked.
 11. **Every session that creates or changes a resource must create or update its `README.md` and `DOCS.md`** to match the code (see `conventions/documentation.md`).
 

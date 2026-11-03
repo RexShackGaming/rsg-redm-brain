@@ -5,7 +5,7 @@
     const panelEl = document.getElementById('panel');
     const headerEl = document.getElementById('panel-header');
 
-    // UI strings are supplied by Lua (ox_lib locales/*.json) on every open.
+    // UI strings are supplied by Lua (rsg-core locales/*.json) on every open.
     let L = {};
     let imagePath = 'nui://rsg-inventory/html/images/';
     let isOpen = false;

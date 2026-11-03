@@ -488,7 +488,7 @@
             <div class="section-divider"><span>&#9670;</span></div>
 
             <!-- Till -->
-            <div class="mng-till">
+            <div class="mng-till" id="mng-till">
                 <div class="mng-till-info">
                     <span class="mng-label" data-i18n="ui_mng_till">Till</span>
                     <span class="mng-till-value" id="mng-balance">$0.00</span>
@@ -497,13 +497,15 @@
                 <button class="wood-btn" id="mng-withdraw"><i class="fa-solid fa-sack-dollar"></i> <span data-i18n="ui_mng_withdraw">Withdraw</span></button>
                 <button class="wood-btn muted" id="mng-withdraw-all"><span data-i18n="ui_mng_all">All</span></button>
             </div>
+            <p class="mng-hint mng-limit hidden" id="mng-withdraw-left"></p>
 
             <div class="mng-tabs">
                 <button class="sort-btn mode-tab active" data-mng-tab="stock"><i class="fa-solid fa-boxes-stacked"></i> <span data-i18n="ui_mng_tab_stock">Shelves</span> <span class="qty-pill" id="mng-stock-count">0</span></button>
-                <button class="sort-btn mode-tab" data-mng-tab="add"><i class="fa-solid fa-box-open"></i> <span data-i18n="ui_mng_tab_add">Add Stock</span></button>
+                <button class="sort-btn mode-tab" data-mng-tab="add" id="mng-tab-add"><i class="fa-solid fa-box-open"></i> <span data-i18n="ui_mng_tab_add">Add Stock</span></button>
                 <button class="sort-btn mode-tab" data-mng-tab="wholesale" id="mng-tab-wholesale"><i class="fa-solid fa-truck"></i> <span data-i18n="ui_mng_tab_wholesale">Wholesale</span></button>
                 <button class="sort-btn mode-tab" data-mng-tab="ledger" id="mng-tab-ledger"><i class="fa-solid fa-book"></i> <span data-i18n="ui_mng_tab_ledger">Ledger</span></button>
-                <button class="sort-btn mode-tab" data-mng-tab="settings"><i class="fa-solid fa-gear"></i> <span data-i18n="ui_mng_tab_settings">Settings</span></button>
+                <button class="sort-btn mode-tab" data-mng-tab="settings" id="mng-tab-settings"><i class="fa-solid fa-gear"></i> <span data-i18n="ui_mng_tab_settings">Settings</span></button>
+                <button class="sort-btn mode-tab" data-mng-tab="staff" id="mng-tab-staff"><i class="fa-solid fa-user-tie"></i> <span data-i18n="ui_mng_tab_staff">Staff</span></button>
             </div>
 
             <div class="mng-upkeep hidden" id="mng-upkeep-banner">
@@ -521,24 +523,33 @@
             <div class="mng-scroll hidden" id="mng-add-view"></div>
             <div class="mng-scroll hidden" id="mng-wholesale-view"></div>
             <div class="mng-scroll hidden" id="mng-ledger-view"></div>
+            <div class="mng-scroll hidden" id="mng-staff-view"></div>
             <div class="mng-scroll mng-form hidden" id="mng-settings-view">
-                <label class="mng-field"><span data-i18n="ui_mng_sign">Shop Sign</span>
-                    <input type="text" class="mng-input" id="mng-label" maxlength="100"></label>
-                <div class="mng-field"><span data-i18n="ui_mng_counter">Counter</span>
-                    <div class="mng-type-tabs">
-                        <button class="sort-btn mode-tab" data-mng-type="both" data-i18n="cl_shop_both">Buy &amp; Sell</button>
-                        <button class="sort-btn mode-tab" data-mng-type="buy" data-i18n="cl_shop_buy">Buy only</button>
-                        <button class="sort-btn mode-tab" data-mng-type="sell" data-i18n="cl_shop_sell">Sell only</button>
+                <div class="mng-section" id="mng-settings-main">
+                    <div class="mng-section-title"><i class="fa-solid fa-store"></i> <span data-i18n="ui_mng_sec_details">Store Details</span></div>
+                    <label class="mng-field"><span data-i18n="ui_mng_sign">Shop Sign</span>
+                        <input type="text" class="mng-input" id="mng-label" maxlength="100"></label>
+                    <div class="mng-field"><span data-i18n="ui_mng_counter">Counter</span>
+                        <div class="mng-type-tabs">
+                            <button class="sort-btn mode-tab" data-mng-type="both" data-i18n="cl_shop_both">Buy &amp; Sell</button>
+                            <button class="sort-btn mode-tab" data-mng-type="buy" data-i18n="cl_shop_buy">Buy only</button>
+                            <button class="sort-btn mode-tab" data-mng-type="sell" data-i18n="cl_shop_sell">Sell only</button>
+                        </div>
+                        <p class="mng-hint" id="mng-buyback-hint"></p>
                     </div>
+                    <button class="wood-btn mng-wide" id="mng-save-settings"><i class="fa-solid fa-floppy-disk"></i> <span data-i18n="ui_adm_save">Save</span></button>
                 </div>
-                <p class="mng-hint" id="mng-buyback-hint"></p>
-                <button class="wood-btn mng-wide" id="mng-save-settings"><i class="fa-solid fa-floppy-disk"></i> <span data-i18n="ui_adm_save">Save</span></button>
-                <div id="mng-upkeep-block" class="hidden">
-                    <div class="ink-divider"></div>
+                <div class="mng-section hidden" id="mng-upkeep-block">
+                    <div class="mng-section-title"><i class="fa-solid fa-coins"></i> <span data-i18n="ui_mng_sec_upkeep">Upkeep</span></div>
                     <p class="mng-hint" id="mng-upkeep-hint"></p>
                 </div>
-                <div id="mng-packup-block" class="hidden">
-                    <div class="ink-divider"></div>
+                <div class="mng-section hidden" id="mng-pickup-block">
+                    <div class="mng-section-title"><i class="fa-solid fa-dolly"></i> <span data-i18n="ui_mng_sec_move">Move Store</span></div>
+                    <p class="mng-hint" data-i18n="ui_mng_pickup_hint">Take your sign back to set up somewhere else. Name, stock, prices and till are kept. Use the sign to place it again.</p>
+                    <button class="wood-btn muted mng-wide" id="mng-pickup"><i class="fa-solid fa-dolly"></i> <span id="mng-pickup-label" data-i18n="ui_mng_pickup">Pick Up &amp; Move</span></button>
+                </div>
+                <div class="mng-section mng-section-danger hidden" id="mng-packup-block">
+                    <div class="mng-section-title"><i class="fa-solid fa-box-archive"></i> <span data-i18n="ui_mng_sec_close">Close Store</span></div>
                     <p class="mng-hint" data-i18n="ui_mng_packup_hint">Shelves must be empty. The till is paid out and you get your shop sign back.</p>
                     <button class="wood-btn muted mng-wide mng-danger" id="mng-packup"><i class="fa-solid fa-box-archive"></i> <span id="mng-packup-label" data-i18n="ui_mng_packup">Pack Up Store</span></button>
                 </div>

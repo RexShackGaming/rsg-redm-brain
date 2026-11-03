@@ -26,8 +26,29 @@ Config.OwnedStores = {
     MaxStock          = 500,    -- most of any one item a store can hold (0 = no cap)
     MaxPrice          = 10000,  -- highest price an owner can set per item
     NotifyOwner       = true,   -- tell the owner (if online) when a customer buys or sells
+    MinQuality        = 75,     -- stacks below this quality (worn/spoiled) can't be stocked or sold to any shop (0 = off)
     -- Items owners may not stock (money items, unique/metadata items are always refused)
     BlacklistItems    = { 'dollar', 'cent', 'blood_dollar', 'blood_cent' },
+}
+
+-- Staff: owners of player stores hire nearby players and choose what each one may do.
+-- Staff can never buy from / sell to the store they work at, pack it up, move it or hire others.
+-- Permissions: restock (put items on the shelf), takestock (take items off), prices (set prices,
+-- remove listings - also needs takestock), wholesale, till (withdraw), ledger, settings, upkeep.
+Config.Staff = {
+    Enabled            = true,
+    MaxStaff           = 5,     -- staff per store
+    MaxJobsPerPlayer   = 2,     -- stores one character can work at (0 = no limit)
+    HireDistance       = 5.0,   -- the player being hired must stand this close to the owner
+    DailyWithdrawLimit = 0,     -- most a staff member can take from the till per real day (0 = no limit)
+    -- Ranks are quick presets in the hire panel (label = locale key ui_rank_<name>).
+    -- The owner can also pick "Custom" and tick permissions one by one.
+    Ranks = {
+        { name = 'clerk',      perms = { 'restock' } },
+        { name = 'stocker',    perms = { 'restock', 'takestock', 'wholesale' } },
+        { name = 'supervisor', perms = { 'restock', 'takestock', 'prices', 'wholesale', 'ledger', 'upkeep' } },
+        { name = 'manager',    perms = { 'restock', 'takestock', 'prices', 'wholesale', 'till', 'ledger', 'settings', 'upkeep' } },
+    },
 }
 
 -- Shop sign item: admins give players the item (e.g. /giveitem [id] shopsign 1).
@@ -42,6 +63,9 @@ Config.ShopSign = {
     PlaceDistance  = 1.5,     -- start distance in front of the player (owner can adjust 0.75 - 3.0)
     DefaultType    = 'buy',   -- starting counter type: 'buy' | 'sell' | 'both'
     ReturnOnPackUp = true,    -- give the sign back when the owner packs the store up
+    -- Pick up & move: the owner takes the sign back and re-places it anywhere with the item.
+    -- Name, type, stock, prices, till and ledger are kept; upkeep is paused while picked up.
+    AllowMove      = true,
     -- Upkeep (rent) for sign stores, taken from the till each period. Unpaid upkeep closes the store
     -- to customers until the owner pays; after EvictAfterMissed unpaid periods the store is repossessed
     -- (stock and till forfeited, sign not returned).

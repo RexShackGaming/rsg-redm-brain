@@ -11,6 +11,14 @@ var ManageUI = {
     modal: null,          // { op, item, max }
     busy: false,
     pickType: 'both',
+    nearby: null,         // players the owner could hire (null = list not opened)
+    fireArmed: null,      // citizenid armed for a two-click "let go"
+    quitArmed: false,
+    drafts: {},           // citizenid -> { rank, perms } unsaved staff edits
+
+    can: function(perm) { var p = this.state && this.state.perms; return !!(p && p[perm]); },
+    isOwner: function() { return !!(this.state && this.state.role === 'owner'); },
+    rankLabel: function(r) { return r === 'custom' || !r ? this.T('ui_staff_custom') : this.T('ui_rank_' + r); },
 
     T: function() { return ShopUI.T.apply(ShopUI, arguments); },
     $: function(id) { return document.getElementById(id); },
@@ -47,6 +55,7 @@ var ManageUI = {
         this.search = '';
         this.$('mng-search').value = '';
         this.$('mng-withdraw-amt').value = '';
+        this.nearby = null; this.fireArmed = null; this.quitArmed = false; this.drafts = {};
         this.setState(data);
         this.setTab('stock');
         this.$('manage-container').classList.remove('hidden');
@@ -66,16 +75,32 @@ var ManageUI = {
     setState: function(st) {
         this.state = st;
         this.$('mng-title').textContent = st.label || '';
+        var till = this.can('till');
+        this.$('mng-till').classList.toggle('hidden', !till);
         this.$('mng-balance').textContent = this.money(st.balance);
+        var lim = this.$('mng-withdraw-left');
+        lim.classList.toggle('hidden', !(till && st.withdrawLeft != null));
+        if (till && st.withdrawLeft != null) lim.textContent = this.T('ui_staff_limit_left', (Number(st.withdrawLeft) || 0).toFixed(2));
         this.$('mng-stock-count').textContent = (st.items || []).length + '/' + (st.maxListings || 0);
         this.$('mng-withdraw').disabled = !(st.balance > 0);
         this.$('mng-withdraw-all').disabled = !(st.balance > 0);
         var up = st.upkeep, owed = up && up.owed > 0;
         this.$('mng-upkeep-banner').classList.toggle('hidden', !owed);
         if (owed) this.$('mng-upkeep-banner-text').textContent = this.T('ui_mng_upkeep_owed', this.money(up.owed), up.evictAfter);
-        this.$('mng-tab-wholesale').classList.toggle('hidden', !(st.wholesale && st.wholesale.length));
-        this.$('mng-tab-ledger').classList.toggle('hidden', !st.ledger);
-        if ((this.tab === 'wholesale' && !(st.wholesale && st.wholesale.length)) || (this.tab === 'ledger' && !st.ledger)) this.tab = 'stock';
+        this.$('mng-upkeep-pay').classList.toggle('hidden', !this.can('upkeep'));
+        var show = {
+            add: this.can('restock'),
+            wholesale: !!(st.wholesale && st.wholesale.length),
+            ledger: !!st.ledger,
+            settings: this.can('settings') || st.canPackUp || st.canPickUp,
+            staff: !!st.staffOn,
+        };
+        this.$('mng-tab-add').classList.toggle('hidden', !show.add);
+        this.$('mng-tab-wholesale').classList.toggle('hidden', !show.wholesale);
+        this.$('mng-tab-ledger').classList.toggle('hidden', !show.ledger);
+        this.$('mng-tab-settings').classList.toggle('hidden', !show.settings);
+        this.$('mng-tab-staff').classList.toggle('hidden', !show.staff);
+        if (this.tab !== 'stock' && !show[this.tab]) { this.setTab('stock'); return; }
         if (this.tab === 'settings') this.fillSettings();
         this.render();
     },
@@ -90,7 +115,9 @@ var ManageUI = {
         this.$('mng-settings-view').classList.toggle('hidden', tab !== 'settings');
         this.$('mng-wholesale-view').classList.toggle('hidden', tab !== 'wholesale');
         this.$('mng-ledger-view').classList.toggle('hidden', tab !== 'ledger');
-        this.$('mng-toolbar').classList.toggle('hidden', tab === 'settings' || tab === 'ledger');
+        this.$('mng-staff-view').classList.toggle('hidden', tab !== 'staff');
+        this.$('mng-toolbar').classList.toggle('hidden', tab === 'settings' || tab === 'ledger' || tab === 'staff');
+        this.fireArmed = null; this.quitArmed = false;
         if (tab === 'settings') this.fillSettings();
         this.resetPackUp();
         this.render();
@@ -100,14 +127,19 @@ var ManageUI = {
         this.packArmed = false;
         clearTimeout(this.packTimer);
         this.$('mng-packup-label').textContent = this.T('ui_mng_packup');
+        this.pickArmed = false;
+        clearTimeout(this.pickTimer);
+        this.$('mng-pickup-label').textContent = this.T('ui_mng_pickup');
     },
 
     fillSettings: function() {
         var st = this.state || {};
+        this.$('mng-settings-main').classList.toggle('hidden', !this.can('settings'));
         this.$('mng-label').value = st.label || '';
         this.setPickType(st.type || 'both');
         this.$('mng-buyback-hint').textContent = this.T('ui_mng_buyback_hint', Math.round((st.buyBackPct || 0) * 100));
         this.$('mng-packup-block').classList.toggle('hidden', !st.canPackUp);
+        this.$('mng-pickup-block').classList.toggle('hidden', !st.canPickUp);
         var up = st.upkeep;
         this.$('mng-upkeep-block').classList.toggle('hidden', !up);
         if (up) {
@@ -139,10 +171,12 @@ var ManageUI = {
             empty = this.renderWholesale(); emptyKey = 'cl_no_results';
         } else if (this.tab === 'ledger') {
             empty = this.renderLedger(); emptyKey = 'ui_mng_no_ledger';
+        } else if (this.tab === 'staff') {
+            this.renderStaff();
         }
         this.$('mng-empty').classList.toggle('hidden', !empty);
         this.$('mng-empty-text').textContent = empty ? this.T(emptyKey) : '';
-        var hints = { stock: 'ui_mng_hint_stock', add: 'ui_mng_hint_add', settings: 'ui_mng_hint_settings', wholesale: 'ui_mng_hint_wholesale', ledger: 'ui_mng_hint_ledger' };
+        var hints = { stock: 'ui_mng_hint_stock', add: 'ui_mng_hint_add', settings: 'ui_mng_hint_settings', wholesale: 'ui_mng_hint_wholesale', ledger: 'ui_mng_hint_ledger', staff: 'ui_mng_hint_staff' };
         this.$('mng-footer-hint').textContent = this.T(hints[this.tab]);
     },
 
@@ -177,10 +211,10 @@ var ManageUI = {
             var held = self.heldCount(it.name);
             var sub = '<span class="mng-price">' + self.money(it.price) + '</span> ' + escHtml(self.T('ui_mng_each'));
             box.appendChild(self.row(it, sub, self.T('ui_mng_on_shelf', it.amount || 0), [
-                { icon: 'fa-plus', title: self.T('ui_mng_restock'), disabled: held < 1, fn: function() { self.openModal('stock', it, held, false); } },
-                { icon: 'fa-minus', title: self.T('ui_mng_take'), disabled: !(it.amount > 0), fn: function() { self.openModal('take', it, it.amount, false); } },
-                { icon: 'fa-tag', title: self.T('ui_mng_set_price'), fn: function() { self.openModal('price', it, 0, true); } },
-                { icon: 'fa-trash', title: self.T('ui_mng_remove'), danger: true, fn: function() { self.action({ op: 'remove', item: it.name }); } },
+                { icon: 'fa-plus', title: self.T('ui_mng_restock'), disabled: held < 1 || !self.can('restock'), fn: function() { self.openModal('stock', it, held, false); } },
+                { icon: 'fa-minus', title: self.T('ui_mng_take'), disabled: !(it.amount > 0) || !self.can('takestock'), fn: function() { self.openModal('take', it, it.amount, false); } },
+                { icon: 'fa-tag', title: self.T('ui_mng_set_price'), disabled: !self.can('prices'), fn: function() { self.openModal('price', it, 0, true); } },
+                { icon: 'fa-trash', title: self.T('ui_mng_remove'), danger: true, disabled: !(self.can('prices') && self.can('takestock')), fn: function() { self.action({ op: 'remove', item: it.name }); } },
             ]));
         });
         return shown === 0;
@@ -236,6 +270,170 @@ var ManageUI = {
             box.appendChild(el);
         });
         return rows.length === 0;
+    },
+
+    // ---------- staff ----------
+    el: function(tag, cls, text) {
+        var e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text != null) e.textContent = text;
+        return e;
+    },
+
+    btn: function(cls, icon, label, fn) {
+        var b = this.el('button', cls);
+        b.innerHTML = '<i class="fa-solid ' + icon + '"></i> ';
+        b.appendChild(this.el('span', null, label));
+        b.addEventListener('click', function(e) { e.stopPropagation(); fn(b); });
+        return b;
+    },
+
+    // Rank buttons + permission ticks. draft = { rank, perms } (edited in place).
+    // Buttons, not a native dropdown: those render as broken popups in RedM's CEF.
+    permEditor: function(draft) {
+        var self = this, st = this.state;
+        var ranks = this.el('div', 'mng-rank-row');
+        var rankBtns = {};
+        var grid = this.el('div', 'mng-perm-grid');
+        var boxes = {};
+        function paint() {
+            Object.keys(rankBtns).forEach(function(r) { rankBtns[r].classList.toggle('active', draft.rank === r); });
+            Object.keys(boxes).forEach(function(k) {
+                boxes[k].cb.checked = !!draft.perms[k];
+                boxes[k].lab.classList.toggle('on', !!draft.perms[k]);
+            });
+        }
+        (st.ranks || []).concat([{ name: 'custom' }]).forEach(function(r) {
+            var b = self.el('button', 'sort-btn mode-tab mng-rank', self.rankLabel(r.name));
+            b.type = 'button';
+            b.addEventListener('click', function(e) {
+                e.stopPropagation();
+                draft.rank = r.name;
+                if (r.perms) { draft.perms = {}; Object.keys(r.perms).forEach(function(k) { draft.perms[k] = true; }); }
+                paint();
+            });
+            rankBtns[r.name] = b;
+            ranks.appendChild(b);
+        });
+        (st.permList || []).forEach(function(k) {
+            var lab = self.el('label', 'mng-perm');
+            var cb = self.el('input'); cb.type = 'checkbox';
+            boxes[k] = { cb: cb, lab: lab };
+            lab.appendChild(cb);
+            lab.appendChild(self.el('span', null, self.T('ui_perm_' + k)));
+            cb.addEventListener('change', function() {
+                draft.perms[k] = cb.checked;
+                draft.rank = 'custom';
+                paint();
+            });
+            grid.appendChild(lab);
+        });
+        paint();
+        return { ranks: ranks, grid: grid };
+    },
+
+    newDraft: function() {
+        var r = (this.state.ranks || [])[0];
+        var d = { rank: r ? r.name : 'custom', perms: {} };
+        if (r) Object.keys(r.perms).forEach(function(k) { d.perms[k] = true; });
+        return d;
+    },
+
+    renderStaff: function() {
+        var box = this.$('mng-staff-view'), self = this, st = this.state;
+        box.innerHTML = '';
+        if (!this.isOwner()) {
+            // staff view: what I can do + leave job
+            var card = this.el('div', 'mng-staff-card');
+            card.appendChild(this.el('div', 'mng-staff-name', this.T('ui_staff_you_work', this.rankLabel(st.rank))));
+            card.appendChild(this.el('div', 'mng-label mng-staff-section', this.T('ui_staff_your_access')));
+            var grid = this.el('div', 'mng-perm-grid');
+            (st.permList || []).forEach(function(k) {
+                var on = self.can(k);
+                var lab = self.el('div', 'mng-perm locked' + (on ? ' on' : ''));
+                lab.innerHTML = '<i class="fa-solid ' + (on ? 'fa-check' : 'fa-xmark') + '"></i>';
+                lab.appendChild(self.el('span', null, self.T('ui_perm_' + k)));
+                grid.appendChild(lab);
+            });
+            card.appendChild(grid);
+            var acts = this.el('div', 'mng-staff-actions');
+            acts.appendChild(this.btn('wood-btn muted mng-danger', 'fa-door-open',
+                this.T(this.quitArmed ? 'ui_staff_confirm' : 'ui_staff_quit'), function() {
+                    if (!self.quitArmed) { self.quitArmed = true; self.render(); return; }
+                    self.quitArmed = false;
+                    self.post('manageAction', { op: 'staffQuit' });
+                }));
+            card.appendChild(acts);
+            box.appendChild(card);
+            return;
+        }
+
+        var list = st.staff || [];
+        var head = this.el('div', 'mng-staff-head');
+        head.appendChild(this.el('span', 'mng-label', this.T('ui_staff_count', list.length, st.maxStaff || 0)));
+        var hireBtn = this.btn('wood-btn', 'fa-user-plus', this.T('ui_staff_hire_nearby'), function() { self.loadNearby(); });
+        hireBtn.disabled = list.length >= (st.maxStaff || 0);
+        head.appendChild(hireBtn);
+        box.appendChild(head);
+        box.appendChild(this.el('p', 'mng-hint', this.T('ui_staff_hint')));
+
+        // hire list
+        if (this.nearby) {
+            box.appendChild(this.el('div', 'mng-label mng-staff-section', this.T('ui_staff_nearby')));
+            if (!this.nearby.length) box.appendChild(this.el('p', 'mng-hint', this.T('ui_staff_nobody')));
+            this.nearby.forEach(function(p) {
+                var draft = self.drafts['hire_' + p.id] = self.drafts['hire_' + p.id] || self.newDraft();
+                var card = self.el('div', 'mng-staff-card');
+                var top = self.el('div', 'mng-staff-top');
+                top.appendChild(self.el('span', 'mng-staff-name', p.name));
+                var ed = self.permEditor(draft);
+                card.appendChild(top);
+                card.appendChild(ed.ranks);
+                card.appendChild(ed.grid);
+                var acts = self.el('div', 'mng-staff-actions');
+                acts.appendChild(self.btn('wood-btn', 'fa-handshake', self.T('ui_staff_hire'), function() {
+                    self.action({ op: 'staffHire', target: p.id, rank: draft.rank, perms: draft.perms }).then(function(r) {
+                        if (r) { self.nearby = self.nearby.filter(function(x) { return x.id !== p.id; }); delete self.drafts['hire_' + p.id]; self.render(); }
+                    });
+                }));
+                card.appendChild(acts);
+                box.appendChild(card);
+            });
+        }
+
+        box.appendChild(this.el('div', 'mng-label mng-staff-section', this.T('ui_mng_tab_staff')));
+        if (!list.length) box.appendChild(this.el('p', 'mng-hint', this.T('ui_staff_none')));
+        list.forEach(function(m) {
+            var draft = self.drafts[m.cid] = self.drafts[m.cid] || { rank: m.rank, perms: Object.assign({}, m.perms) };
+            var card = self.el('div', 'mng-staff-card');
+            var top = self.el('div', 'mng-staff-top');
+            top.appendChild(self.el('span', 'mng-staff-dot' + (m.online ? ' on' : '')));
+            top.appendChild(self.el('span', 'mng-staff-name', m.name));
+            var ed = self.permEditor(draft);
+            card.appendChild(top);
+            card.appendChild(ed.ranks);
+            card.appendChild(ed.grid);
+            var acts = self.el('div', 'mng-staff-actions');
+            acts.appendChild(self.btn('wood-btn muted mng-danger', 'fa-user-minus',
+                self.T(self.fireArmed === m.cid ? 'ui_staff_confirm' : 'ui_staff_fire'), function() {
+                    if (self.fireArmed !== m.cid) { self.fireArmed = m.cid; self.render(); return; }
+                    self.fireArmed = null;
+                    self.action({ op: 'staffFire', cid: m.cid }).then(function(r) { if (r) delete self.drafts[m.cid]; });
+                }));
+            acts.appendChild(self.btn('wood-btn', 'fa-floppy-disk', self.T('ui_staff_save'), function() {
+                self.action({ op: 'staffUpdate', cid: m.cid, rank: draft.rank, perms: draft.perms }).then(function(r) { if (r) delete self.drafts[m.cid]; });
+            }));
+            card.appendChild(acts);
+            box.appendChild(card);
+        });
+    },
+
+    loadNearby: function() {
+        var self = this;
+        this.post('manageNearby').then(function(res) {
+            self.nearby = (res && res.ok && res.players) || [];
+            self.render();
+        });
     },
 
     listing: function(name) {
@@ -332,6 +530,18 @@ var ManageUI = {
             self.resetPackUp();
             self.busy = false;
             self.post('manageAction', { op: 'packup' });
+        });
+
+        $('mng-pickup').addEventListener('click', function() {
+            if (!self.pickArmed) {
+                self.pickArmed = true;
+                $('mng-pickup-label').textContent = self.T('ui_mng_packup_confirm');
+                self.pickTimer = setTimeout(function() { self.resetPackUp(); }, 3000);
+                return;
+            }
+            self.resetPackUp();
+            self.busy = false;
+            self.post('manageAction', { op: 'pickup' });
         });
 
         $('mng-modal-max').addEventListener('click', function() { if (self.modal) $('mng-modal-qty').value = self.modal.max; });

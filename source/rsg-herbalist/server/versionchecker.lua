@@ -43,6 +43,7 @@ local function CheckVersion()
     PerformHttpRequest(versionUrl, function(statusCode, remoteVersion, headers)
         if statusCode ~= 200 then
             printLog('error', ('Version check failed (HTTP %s). Check your internet or the GitHub URL.'):format(statusCode))
+            Webhook.LogVersionCheck('error', ('HTTP %s'):format(statusCode))
             return
         end
 
@@ -61,11 +62,13 @@ local function CheckVersion()
 
         if isVersionOutdated(currentVersion, remoteVersion) then
             printLog('error', ('OUTDATED! Please update to version %s'):format(remoteVersion))
-            printLog('error', 'Download from: https://github.com/Rexshack-RedM/'..GetCurrentResourceName()..'')
+            printLog('error', 'Download from: https://github.com/Rexshack-RedM/' .. resourceName)
+            Webhook.LogVersionCheck('outdated', ('installed %s, latest %s'):format(currentVersion, remoteVersion))
         else
             printLog('warning', ('You are running a newer version (%s) than the remote (%s). Possible dev build?'):format(currentVersion, remoteVersion))
+            Webhook.LogVersionCheck('newer', ('installed %s, remote %s'):format(currentVersion, remoteVersion))
         end
-    end, 'GET')
+    end, 'GET', '', {})
 end
 
 --------------------------------------------------------------------------------------------------

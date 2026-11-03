@@ -1,15 +1,16 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 local sessions  = {} -- [src] = { start, duration, coords }  active, server-authorised pans
 local cooldowns = {} -- [src] = GetGameTimer() of the last pan start
-local lastSpots = {} -- [src] = { coords, time }             last successfully panned spot
+local lastSpots = {} -- [src] = { coords, time }             last panned spot
+local lastFlag  = {} -- [src] = GetGameTimer() of the last exploit flag (webhook throttle)
 
 local CLAIM_EARLY_TOLERANCE = 1000  -- ms a claim may arrive early (timer drift)
 local CLAIM_LATE_TOLERANCE  = 10000 -- ms a claim may arrive late (latency / hitches)
+local FLAG_THROTTLE         = 10000 -- ms between exploit flags per player (stops webhook spam)
 
 local function Notify(src, key, nType, ...)
-    TriggerClientEvent('ox_lib:notify', src, {
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
         title       = locale('title'),
         description = locale(key, ...),
         type        = nType,
@@ -24,8 +25,25 @@ local function GetPedCoords(src)
 end
 
 local function Flag(src, reason, details)
+    local now = GetGameTimer()
+    if lastFlag[src] and now - lastFlag[src] < FLAG_THROTTLE then return end
+    lastFlag[src] = now
     print(('^1[rsg-goldpanning] %s from %s (%s): %s^0'):format(reason, GetPlayerName(src), src, details or ''))
     SendGoldPanExploitWebhook(reason, GetPlayerName(src), src, details)
+end
+
+local function HasPan(src)
+    return exports['rsg-inventory']:HasItem(src, Config.PanItem, 1)
+end
+
+-- drops a session the client never finished (crash, dropped event) so the player isn't stuck "already panning"
+local function GetActiveSession(src)
+    local s = sessions[src]
+    if s and GetGameTimer() - s.start > s.duration + CLAIM_LATE_TOLERANCE then
+        sessions[src] = nil
+        return nil
+    end
+    return s
 end
 
 local function RollTier()
@@ -34,8 +52,21 @@ local function RollTier()
         acc = acc + t.chance
         if roll <= acc then return t end
     end
-    return Config.RewardTiers[1]
+    return Config.RewardTiers[#Config.RewardTiers]
 end
+
+CreateThread(function()
+    local total = 0
+    for _, t in ipairs(Config.RewardTiers) do total = total + t.chance end
+    if total ~= 100 then
+        print(('^3[rsg-goldpanning] Config.RewardTiers chances add up to %s, not 100^0'):format(total))
+    end
+    for _, item in ipairs(Config.RewardItems) do
+        if not RSGCore.Shared.Items[item] then
+            print(('^1[rsg-goldpanning] reward item "%s" does not exist in rsg-core shared items^0'):format(item))
+        end
+    end
+end)
 
 ----------------------------
 -- useable item: ask the client to run its local checks (water, busy)
@@ -43,8 +74,7 @@ end
 RSGCore.Functions.CreateUseableItem(Config.PanItem, function(source)
     local src = source
     if not RSGCore.Functions.GetPlayer(src) then return end
-
-    if sessions[src] then return Notify(src, 'already_panning', 'error') end
+    if GetActiveSession(src) then return Notify(src, 'already_panning', 'error') end
 
     local last = cooldowns[src]
     if last then
@@ -62,12 +92,8 @@ end)
 ----------------------------
 RegisterNetEvent('rsg-goldpanning:server:startPan', function()
     local src = source
-    local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player or sessions[src] then return end
-
-    if not Player.Functions.GetItemByName(Config.PanItem) then
-        return Notify(src, 'no_pan', 'error')
-    end
+    if not RSGCore.Functions.GetPlayer(src) or GetActiveSession(src) then return end
+    if not HasPan(src) then return Notify(src, 'no_pan', 'error') end
 
     local now = GetGameTimer()
     if cooldowns[src] and now - cooldowns[src] < Config.Cooldown * 1000 then return end
@@ -110,6 +136,9 @@ RegisterNetEvent('rsg-goldpanning:server:claimPan', function()
     end
     sessions[src] = nil -- consume on first attempt to block replays
 
+    -- spot is used whether or not the claim succeeds, so failed/rejected claims can't re-farm it
+    lastSpots[src] = { coords = session.coords, time = GetGameTimer() }
+
     local elapsed = GetGameTimer() - session.start
     local minMs, maxMs = session.duration - CLAIM_EARLY_TOLERANCE, session.duration + CLAIM_LATE_TOLERANCE
     if elapsed < minMs or elapsed > maxMs then
@@ -124,12 +153,7 @@ RegisterNetEvent('rsg-goldpanning:server:claimPan', function()
         return Flag(src, locale('wh_drift'), locale('wh_drift_desc', drift, Config.MaxDriftDistance))
     end
 
-    if not Player.Functions.GetItemByName(Config.PanItem) then
-        return Notify(src, 'no_pan', 'error')
-    end
-
-    -- spot is used whether or not anything is found
-    lastSpots[src] = { coords = session.coords, time = GetGameTimer() }
+    if not HasPan(src) then return Notify(src, 'no_pan', 'error') end
 
     if math.random(1, 100) > Config.GoldChance then
         return Notify(src, 'nothing_found', 'error')
@@ -138,9 +162,7 @@ RegisterNetEvent('rsg-goldpanning:server:claimPan', function()
     local tier = RollTier()
     local item = Config.RewardItems[math.random(#Config.RewardItems)]
     local itemData = RSGCore.Shared.Items[item]
-    if not itemData then
-        return print(('^1[rsg-goldpanning] reward item "%s" does not exist in rsg-core shared items^0'):format(item))
-    end
+    if not itemData then return end -- already reported on start
 
     if not exports['rsg-inventory']:CanAddItem(src, item, tier.amount) then
         return Notify(src, 'inventory_full', 'error')
@@ -162,5 +184,5 @@ end)
 ----------------------------
 AddEventHandler('playerDropped', function()
     local src = source
-    sessions[src], cooldowns[src], lastSpots[src] = nil, nil, nil
+    sessions[src], cooldowns[src], lastSpots[src], lastFlag[src] = nil, nil, nil, nil
 end)

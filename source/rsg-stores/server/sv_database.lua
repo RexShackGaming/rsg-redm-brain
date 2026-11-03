@@ -28,6 +28,7 @@ local SCHEMA = {
               `prop_model` varchar(100) DEFAULT NULL,
               `upkeep_owed` decimal(10,2) NOT NULL DEFAULT 0.00,
               `upkeep_next` int(11) DEFAULT NULL,
+              `packed_at` int(11) DEFAULT NULL,
               PRIMARY KEY (`id`),
               KEY `idx_shop_name` (`shop_name`),
               KEY `idx_owner` (`owner_citizenid`)
@@ -45,6 +46,7 @@ local SCHEMA = {
             prop_model      = 'varchar(100) DEFAULT NULL',                -- sign prop for stores opened with a shop sign item
             upkeep_owed     = 'decimal(10,2) NOT NULL DEFAULT 0.00',      -- unpaid sign store upkeep
             upkeep_next     = 'int(11) DEFAULT NULL',                     -- unix time the next upkeep is due
+            packed_at       = 'int(11) DEFAULT NULL',                     -- set while a sign store is picked up (moving)
         },
         indexes = { idx_shop_name = '`shop_name`', idx_owner = '`owner_citizenid`' },
     },
@@ -110,6 +112,31 @@ local SCHEMA = {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
         ]],
         columns = {},
+        indexes = {},
+    },
+    {
+        -- Staff hired by store owners, with their permissions.
+        name = 'rsg_shops_staff',
+        create = [[
+            CREATE TABLE IF NOT EXISTS `rsg_shops_staff` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `npc_id` int(11) NOT NULL,
+              `citizenid` varchar(50) NOT NULL,
+              `name` varchar(100) DEFAULT NULL,
+              `staff_rank` varchar(32) NOT NULL DEFAULT 'custom',
+              `perms` varchar(255) NOT NULL DEFAULT '',
+              `withdrawn` decimal(12,2) NOT NULL DEFAULT 0.00,
+              `withdraw_day` int(11) NOT NULL DEFAULT 0,
+              `hired_at` int(11) NOT NULL DEFAULT 0,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uq_store_staff` (`npc_id`, `citizenid`),
+              KEY `idx_staff_cid` (`citizenid`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+        ]],
+        columns = {
+            withdrawn    = 'decimal(12,2) NOT NULL DEFAULT 0.00',
+            withdraw_day = 'int(11) NOT NULL DEFAULT 0',
+        },
         indexes = {},
     },
     {

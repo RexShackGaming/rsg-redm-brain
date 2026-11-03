@@ -30,5 +30,7 @@
     "ui_seconds_short": "δ",
     "ui_minutes_short": "λ",
     "craft_inventory_full_description": "You don't have room for the finished tonic. Your ingredients were not used.",
-    "mysterybox_inventory_full_description": "You don't have room to carry what's in this box."
+    "mysterybox_inventory_full_description": "You don't have room to carry what's in this box.",
+    "craft_done_title": "Το τονωτικό παρασκευάστηκε",
+    "craft_done_description": "Παρασκεύασες %sx %s."
 }

@@ -8,8 +8,6 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 local mb = Config.MysteryBox
 
-lib.locale()
-
 local function Debug(msg)
     if Config.Debug then
         print('[rsg-herbalist:mysterybox] ' .. msg)
@@ -36,6 +34,13 @@ local orchidPool = ValidatePool(mb.orchidPool, 'orchidPool')
 
 local currentCoord, currentIndex, relocateAt = nil, nil, nil
 local lastOpenAt = {}
+local lastRequestAt = {}
+
+local function Notify(src, title, description, nType)
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
+        title = title, description = description, type = nType or 'error', duration = 5000,
+    })
+end
 
 local function RelocateBox()
     local idx = math.random(#mb.coords)
@@ -50,11 +55,16 @@ local function RelocateBox()
 end
 
 RegisterNetEvent('rsg-herbalist:server:requestMysteryBox', function()
-    TriggerClientEvent('rsg-herbalist:client:SetMysteryBox', source, currentCoord)
+    local src = source
+    local now = GetGameTimer()
+    if lastRequestAt[src] and now - lastRequestAt[src] < 10000 then return end
+    lastRequestAt[src] = now
+    TriggerClientEvent('rsg-herbalist:client:SetMysteryBox', src, currentCoord)
 end)
 
 AddEventHandler('playerDropped', function()
     lastOpenAt[source] = nil
+    lastRequestAt[source] = nil
 end)
 
 CreateThread(function()
@@ -91,7 +101,7 @@ RegisterNetEvent('rsg-herbalist:server:openMysteryBox', function()
     end
 
     local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player then return end
+    if not Player or (Player.PlayerData.metadata and Player.PlayerData.metadata.isdead) then return end
 
     local ped = GetPlayerPed(src)
     if ped == 0 then return end
@@ -106,20 +116,19 @@ RegisterNetEvent('rsg-herbalist:server:openMysteryBox', function()
     local loot = RollLoot()
 
     -- Don't consume the box if the player can't carry its contents.
-    local ok, canCarry = pcall(function()
-        local counts = {}
-        for _, item in ipairs(loot) do counts[item] = (counts[item] or 0) + 1 end
-        for item, amount in pairs(counts) do
-            if not exports['rsg-inventory']:CanAddItem(src, item, amount) then return false end
-        end
-        return true
-    end)
-    if ok and not canCarry then
-        TriggerClientEvent('ox_lib:notify', src, {
-            title = locale('inventory_full_title'),
-            description = locale('mysterybox_inventory_full_description'),
-            type = 'error', duration = 5000,
-        })
+    -- CanAddItem is per item, so also check the haul's combined weight.
+    local counts, totalWeight = {}, 0
+    for _, item in ipairs(loot) do
+        counts[item] = (counts[item] or 0) + 1
+        totalWeight = totalWeight + (RSGCore.Shared.Items[item].weight or 0)
+    end
+    local canCarry = exports['rsg-inventory']:GetFreeWeight(src) >= totalWeight
+    for item, amount in pairs(counts) do
+        if not canCarry then break end
+        canCarry = exports['rsg-inventory']:CanAddItem(src, item, amount) and true or false
+    end
+    if not canCarry then
+        Notify(src, locale('inventory_full_title'), locale('mysterybox_inventory_full_description'))
         return
     end
 
@@ -128,19 +137,13 @@ RegisterNetEvent('rsg-herbalist:server:openMysteryBox', function()
     TriggerClientEvent('rsg-herbalist:client:SetMysteryBox', -1, nil)
 
     local granted = {}
-    for _, item in ipairs(loot) do
-        if Player.Functions.AddItem(item, 1) then
-            local def = RSGCore.Shared.Items[item]
-            TriggerClientEvent('rsg-inventory:client:ItemBox', src, def, 'add', 1)
-            granted[#granted + 1] = def.label or item
+    for item, amount in pairs(counts) do
+        if exports['rsg-inventory']:AddItem(src, item, amount, nil, nil, 'rsg-herbalist:mysterybox') then
+            granted[#granted + 1] = ('%dx %s'):format(amount, RSGCore.Shared.Items[item].label or item)
         end
     end
 
-    TriggerClientEvent('ox_lib:notify', src, {
-        title = locale('mysterybox_found_title'),
-        description = locale('mysterybox_found_description'),
-        type = 'success', duration = 5000,
-    })
+    Notify(src, locale('mysterybox_found_title'), locale('mysterybox_found_description'), 'success')
 
     if #granted > 0 then
         Webhook.LogMysteryBox(src, granted)

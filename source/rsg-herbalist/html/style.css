@@ -1,291 +1,178 @@
+/* rsg-herbalist - RDR2 "leather & gold" house theme (monochrome accent). No vignette. */
 :root {
-    --bg-panel: #14120f;
-    --bg-card: #1d1a15;
-    --bg-card-hover: #26221b;
-    --border: #332d23;
-    --accent: #c9973f;
-    --accent-soft: rgba(201, 151, 63, 0.16);
-    --text-main: #ece6d9;
-    --text-dim: #a49a86;
-    --text-faint: #6f6656;
-    --danger: #b3503f;
-    --ok: #6c9463;
-    --shadow: rgba(0, 0, 0, 0.55);
-    font-size: 15px;
+    --rdr-black: #000000;
+    --rdr-panel: #0a0a0a;
+    --rdr-panel-2: #141414;
+    --rdr-leather: #1c1c1c;
+    --rdr-red-bright: #2a2a2a;
+    --rdr-gold: #ffffff;
+    --rdr-gold-dim: #5a5a5a;
+    --rdr-text: #f2f2f2;
+    --rdr-muted: #9a9a9a;
+    --rdr-cost-ok: #6fbf73;
+    --rdr-cost-over: #e0554f;
+    --rdr-shadow: rgba(0, 0, 0, 0.85);
 }
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
     width: 100%;
     height: 100%;
     background: transparent;
-    font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
-    color: var(--text-main);
     overflow: hidden;
+    user-select: none;
+    font-family: 'Roboto', sans-serif;
+    color: var(--rdr-text);
 }
 
-#app {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-#app.hidden {
-    display: none;
-}
+#app { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+.hidden { display: none !important; }
 
 #panel {
-    width: 560px;
-    max-height: 640px;
-    background: linear-gradient(180deg, var(--bg-panel), #0f0d0a);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    box-shadow: 0 20px 60px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.03);
+    width: 540px;
+    max-height: 80vh;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    padding: 18px;
+    border: 1px solid var(--rdr-gold-dim);
+    border-radius: 3px;
+    outline: 1px solid rgba(0, 0, 0, 0.6);
+    outline-offset: -5px;
+    background:
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.015) 0 1px, transparent 1px 3px),
+        linear-gradient(160deg, var(--rdr-panel-2), var(--rdr-panel) 60%, var(--rdr-black));
+    box-shadow: 0 20px 60px var(--rdr-shadow), inset 0 0 40px rgba(0, 0, 0, 0.5);
 }
-
-/* While being dragged, position is switched to fixed left/top (set inline by
-   script.js) and everything below suppresses the usual drag side-effects -
-   text getting selected, the browser's native "you're dragging something"
-   cursor/ghost image, transitions lagging behind the pointer. */
-#panel.dragging {
-    user-select: none;
-    cursor: grabbing;
-}
-#panel.dragging * {
-    user-select: none;
-}
+#panel.dragging, #panel.dragging * { cursor: grabbing; }
 
 #panel-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 18px 20px;
-    background: rgba(0,0,0,0.25);
-    border-bottom: 1px solid var(--border);
     cursor: grab;
 }
-
-#panel-header:active {
-    cursor: grabbing;
-}
+#panel-header::before { content: ''; width: 32px; } /* balances the close button so the title stays centred */
+#panel-title { flex: 1; text-align: center; }
 
 .title-main {
     display: block;
-    font-size: 19px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-    color: var(--text-main);
+    font-size: 25px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 4px #000;
 }
-
 .title-sub {
     display: block;
-    font-size: 12px;
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
     margin-top: 2px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--rdr-muted);
 }
 
-#closeBtn {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    width: 30px;
-    height: 30px;
-    border-radius: 6px;
-    font-size: 18px;
+.circle-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--rdr-gold-dim);
+    background: radial-gradient(circle, #2a2a2a, #0a0a0a);
+    color: var(--rdr-text);
+    font-size: 16px;
     line-height: 1;
     cursor: pointer;
     transition: all 0.15s ease;
 }
+.circle-btn:hover { border-color: var(--rdr-gold); filter: brightness(1.3); }
 
-#closeBtn:hover {
-    background: var(--danger);
-    border-color: var(--danger);
-    color: #fff;
-}
+.divider { display: flex; align-items: center; gap: 10px; margin: 14px 0; color: var(--rdr-muted); font-size: 12px; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; }
+.divider::before { background: linear-gradient(90deg, transparent, var(--rdr-gold-dim)); }
+.divider::after { background: linear-gradient(90deg, var(--rdr-gold-dim), transparent); }
 
-#recipe-list {
-    overflow-y: auto;
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-#recipe-list::-webkit-scrollbar {
-    width: 8px;
-}
-#recipe-list::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 4px;
-}
+#recipe-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; padding-right: 4px; }
+#recipe-list::-webkit-scrollbar { width: 6px; }
+#recipe-list::-webkit-scrollbar-thumb { background: var(--rdr-gold-dim); border-radius: 3px; }
 
 .recipe-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px;
     display: flex;
     gap: 14px;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    padding: 12px 14px;
+    border-radius: 2px;
+    border: 1px solid rgba(201, 162, 75, 0.18);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.15));
+    transition: all 0.15s ease;
 }
-
 .recipe-card:hover {
-    background: var(--bg-card-hover);
-    border-color: #453d2e;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(0, 0, 0, 0.1));
+    border-color: var(--rdr-gold-dim);
+    transform: translateX(2px);
 }
 
 .recipe-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 6px;
-    background: #0e0c09 center/cover no-repeat;
-    border: 1px solid var(--border);
+    width: 54px;
+    height: 54px;
     flex-shrink: 0;
+    border-radius: 50%;
+    border: 1px solid var(--rdr-gold-dim);
+    background: radial-gradient(circle, #2a2a2a, #0a0a0a);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
+    overflow: hidden;
 }
+.recipe-icon img { width: 80%; height: 80%; object-fit: contain; }
 
-.recipe-icon img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.recipe-body {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.recipe-top-row {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 8px;
-}
-
-.recipe-name {
-    font-size: 15.5px;
-    font-weight: 600;
-    color: var(--text-main);
-}
-
+.recipe-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.recipe-top-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.recipe-name { font-size: 15px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 .recipe-time {
-    font-size: 12px;
-    color: var(--text-dim);
+    font-size: 11px;
     white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 4px;
+    border: 1px solid var(--rdr-gold-dim);
+    border-radius: 2px;
+    padding: 2px 8px;
+    letter-spacing: 1px;
+    color: var(--rdr-muted);
 }
+.recipe-time .clock { margin-right: 4px; }
+.recipe-desc { font-size: 12.5px; font-style: italic; color: var(--rdr-muted); line-height: 1.35; }
 
-.recipe-time .clock {
-    opacity: 0.8;
-}
-
-.recipe-desc {
-    font-size: 12.5px;
-    color: var(--text-dim);
-    line-height: 1.35;
-}
-
-.ingredient-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 2px;
-}
-
+.ingredient-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 .ingredient-pill {
     display: flex;
     align-items: center;
     gap: 5px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 3px 9px 3px 4px;
+    padding: 3px 8px 3px 4px;
     font-size: 11.5px;
+    border-radius: 2px;
+    border: 1px solid var(--rdr-gold-dim);
+    background: rgba(0, 0, 0, 0.35);
 }
+.ingredient-pill img { width: 18px; height: 18px; object-fit: contain; }
+.ingredient-count { font-weight: 600; }
+.ingredient-pill.ok .ingredient-count { color: var(--rdr-cost-ok); }
+.ingredient-pill.short .ingredient-count { color: var(--rdr-cost-over); }
 
-.ingredient-pill img {
-    width: 18px;
-    height: 18px;
-    object-fit: contain;
-    border-radius: 3px;
-    background: #0e0c09;
-}
-
-.ingredient-count {
-    font-weight: 600;
-}
-
-.ingredient-pill.ok .ingredient-count {
-    color: var(--ok);
-}
-
-.ingredient-pill.short .ingredient-count {
-    color: var(--danger);
-}
-
-.recipe-bottom-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 4px;
-}
-
-.output-label {
-    font-size: 11.5px;
-    color: var(--text-faint);
-}
-
-.output-label b {
-    color: var(--accent);
-}
+.recipe-bottom-row { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+.output-label { font-size: 11.5px; color: var(--rdr-muted); }
+.output-label b { color: var(--rdr-gold); }
 
 .craft-btn {
-    background: var(--accent-soft);
-    color: var(--accent);
-    border: 1px solid rgba(201, 151, 63, 0.4);
-    border-radius: 6px;
+    background: linear-gradient(180deg, #2e2e2e, #141414);
+    border: 1px solid var(--rdr-gold-dim);
+    border-radius: 2px;
+    color: var(--rdr-text);
     padding: 7px 16px;
+    font-family: inherit;
     font-size: 12.5px;
-    font-weight: 600;
-    letter-spacing: 0.4px;
     text-transform: uppercase;
+    letter-spacing: 1.5px;
     cursor: pointer;
     transition: all 0.15s ease;
 }
+.craft-btn:hover:not(:disabled) { border-color: var(--rdr-gold); filter: brightness(1.3); }
+.craft-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-.craft-btn:hover:not(:disabled) {
-    background: var(--accent);
-    color: #16130d;
-}
-
-.craft-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-}
-
-.empty-state {
-    padding: 30px;
-    text-align: center;
-    color: var(--text-faint);
-    font-size: 13px;
-}
+.empty-state { padding: 30px; text-align: center; font-style: italic; color: var(--rdr-muted); font-size: 13px; }

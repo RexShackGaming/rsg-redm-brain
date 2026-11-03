@@ -1,12 +1,12 @@
 # rsg-herbalist
 
-Version 3.0.2. Herbalist script for RSG Framework
+Version 3.1.1. Herbalist script for RSG Framework
 
-A herb gathering, tonic crafting, and mystery box script for **RSG-Core** RedM servers, by RexShack. Players gather herbs from world-placed nodes, brew them into tonics at a mortar & pestle, and can stumble on a roaming mystery box that relocates around the map every so often. Every gather, craft, and loot roll is validated server-side, and an optional Discord webhook system can log activity (and 
+A herb gathering, tonic crafting, and mystery box script for **RSG-Core** RedM servers, by RexShack. **Version 3.1.0** · No ox_lib required · Full developer/server-owner reference: [DOCS.md](DOCS.md) Players gather herbs from world-placed nodes, brew them into tonics at a mortar & pestle, and can stumble on a roaming mystery box that relocates around the map every so often. Every gather, craft, an
 
 Source: https://github.com/Rexshack-RedM/rsg-herbalist
 
-**Dependencies:** `rsg-core`, `rsg-inventory`, `ox_lib`
+**Dependencies:** `rsg-core`, `rsg-inventory`
 
 Has NUI (`ui_page`).
 

@@ -18,11 +18,31 @@ local lastTx = {}
 
 local getBalance, addBalance, takeBalance, broadcastShop, notifyOwner -- defined in OWNED STORE HELPERS
 local ownerUpkeepInfo, wholesaleList, ownerLedger                      -- defined in OWNER MANAGEMENT
+local relocateStore                                                -- defined in PICK UP / MOVE
+local SIGN_MOVE_ON = (Config.ShopSign or {}).AllowMove ~= false
 local OS = Config.OwnedStores or {}
 local OWNED_ENABLED = OS.Enabled ~= false
 local OWNED_PCT     = tonumber(OS.BuyBackPercentage) or SELL_PCT
 local BLACKLIST = {}
 for _, n in ipairs(OS.BlacklistItems or {}) do BLACKLIST[n] = true end
+local MIN_QUALITY = tonumber(OS.MinQuality) or 0 -- stacks below this quality can't be sold or stocked
+
+-- Staff: owners hire players and choose what each one may do.
+local STAFF = Config.Staff or {}
+local STAFF_ON = OWNED_ENABLED and STAFF.Enabled ~= false
+local STAFF_PERMS = { 'restock', 'takestock', 'prices', 'wholesale', 'till', 'ledger', 'settings', 'upkeep' }
+local PERM_SET = {}
+for _, k in ipairs(STAFF_PERMS) do PERM_SET[k] = true end
+local RANKS, RANK_BY = {}, {}
+for _, r in ipairs(STAFF.Ranks or {}) do
+    if type(r) == 'table' and type(r.name) == 'string' and r.name ~= 'custom' then
+        local perms = {}
+        for _, k in ipairs(r.perms or {}) do if PERM_SET[k] then perms[k] = true end end
+        local rank = { name = r.name, perms = perms }
+        RANKS[#RANKS + 1] = rank
+        RANK_BY[r.name] = rank
+    end
+end
 
 -- ============================================
 -- HELPERS
@@ -55,6 +75,7 @@ end
 
 local function coordStr(t) return ('%.2f, %.2f, %.2f'):format(t.x or 0, t.y or 0, t.z or 0) end
 
+-- "Firstname Lastname", falling back to the citizenid.
 local function charName(P)
     local ci = P and P.PlayerData.charinfo or {}
     local n = ((ci.firstname or '') .. ' ' .. (ci.lastname or '')):gsub('^%s+', ''):gsub('%s+$', '')
@@ -85,6 +106,16 @@ local function toQty(v)
     return v
 end
 
+-- Light throttle for read-only sync requests (stops spam asking for the full store list).
+local lastSync = {}
+local function syncThrottled(src, key, ms)
+    local now, t = GetGameTimer(), lastSync[src]
+    if not t then t = {}; lastSync[src] = t end
+    if t[key] and now - t[key] < ms then return true end
+    t[key] = now
+    return false
+end
+
 local function onCooldown(src)
     local now = GetGameTimer()
     if lastTx[src] and now - lastTx[src] < TX_COOLDOWN then return true end
@@ -95,6 +126,43 @@ end
 local function getCash(src)
     local P = RSGCore.Functions.GetPlayer(src)
     return P and P.PlayerData.money.cash or 0
+end
+
+-- Stacks of an item that are safe to resell (quality at or above OwnedStores.MinQuality).
+-- Stops worn / spoiled items being laundered into fresh ones through a shop.
+local function cleanCount(Player, name)
+    local n, slots = 0, {}
+    for _, it in pairs(Player.PlayerData.items or {}) do
+        if type(it) == 'table' and it.name == name then
+            local q = type(it.info) == 'table' and tonumber(it.info.quality) or nil
+            if not q or q >= MIN_QUALITY then
+                n = n + (tonumber(it.amount) or 0)
+                slots[#slots + 1] = it
+            end
+        end
+    end
+    return n, slots
+end
+
+-- Remove qty from clean stacks only. Returns true, or false + locale key.
+local function removeClean(src, Player, name, qty, reason)
+    local have, slots = cleanCount(Player, name)
+    if have < qty then
+        return false, (exports['rsg-inventory']:GetItemCount(src, name) or 0) >= qty and 'sv_bad_quality' or 'sv_no_items_held'
+    end
+    local left, removed = qty, 0
+    for _, it in ipairs(slots) do
+        if left <= 0 then break end
+        local take = math.min(left, tonumber(it.amount) or 0)
+        if take > 0 then
+            if not exports['rsg-inventory']:RemoveItem(src, name, take, it.slot, reason) then
+                if removed > 0 then exports['rsg-inventory']:AddItem(src, name, removed, nil, nil, reason .. '-rollback') end
+                return false, 'sv_remove_failed'
+            end
+            removed, left = removed + take, left - take
+        end
+    end
+    return true
 end
 
 local function findNpc(id)
@@ -118,6 +186,24 @@ local function findBlip(id)
     end
 end
 
+-- Picked-up (moving) sign stores stay in the cache with their stock, but are hidden from the world.
+local function visibleNPCs()
+    local out = {}
+    for _, npc in ipairs(CachedNPCs) do if not npc.packed then out[#out + 1] = npc end end
+    return out
+end
+
+local function visibleBlips()
+    local hidden = {}
+    for _, npc in ipairs(CachedNPCs) do if npc.packed then hidden[npc.id] = true end end
+    local out = {}
+    for _, b in ipairs(CachedBlips) do if not (b.associatedNpcId and hidden[b.associatedNpcId]) then out[#out + 1] = b end end
+    return out
+end
+
+local function broadcastNPCs() TriggerClientEvent('rsg-blipmenu:client:refreshNPCs', -1, visibleNPCs()) end
+local function broadcastBlips() TriggerClientEvent('rsg-blipmenu:client:refreshBlips', -1, visibleBlips()) end
+
 -- Player must be standing at the NPC (stops remote buy/sell via injected events).
 local function isNearNpc(src, npc)
     local ped = GetPlayerPed(src)
@@ -128,7 +214,7 @@ end
 -- Resolve + validate an open shop for a transaction. Returns npc or nil (and notifies).
 local function resolveShop(src, npcId, wantType, failEvent)
     local npc = findNpc(npcId)
-    if not npc or not npc.shop then
+    if not npc or not npc.shop or npc.packed then
         TriggerClientEvent(failEvent, src, false, locale('sv_shop_notfound'), getCash(src))
         return nil
     end
@@ -179,6 +265,84 @@ local function resyncStock(npc)
 end
 
 -- ============================================
+-- STAFF HELPERS
+-- npc.staff = { [citizenid] = { name, rank, perms = { perm = true }, withdrawn, withdrawDay } }
+-- ============================================
+local function decodePerms(s)
+    local out = {}
+    for k in tostring(s or ''):gmatch('[^,]+') do if PERM_SET[k] then out[k] = true end end
+    return out
+end
+
+local function encodePerms(t)
+    local o = {}
+    for _, k in ipairs(STAFF_PERMS) do if t[k] then o[#o + 1] = k end end
+    return table.concat(o, ',')
+end
+
+local function staffEntry(npc, cid) return STAFF_ON and npc.staff and cid and npc.staff[cid] or nil end
+local function isStaffOf(npc, cid) return npc.staff ~= nil and cid ~= nil and npc.staff[cid] ~= nil end
+
+-- perm: 'owner' = owner only, 'view' = owner or any staff, else a STAFF_PERMS key.
+local function hasPerm(npc, cid, perm)
+    if not cid then return false end
+    if npc.owner and npc.owner.citizenid == cid then return true end
+    if perm == 'owner' then return false end
+    local s = staffEntry(npc, cid)
+    if not s then return false end
+    return perm == 'view' or s.perms[perm] == true
+end
+
+local function today() return tonumber(os.date('%Y%m%d')) end
+
+-- Till money a staff member may still take today; nil = no limit.
+local function staffWithdrawLeft(s)
+    local limit = tonumber(STAFF.DailyWithdrawLimit) or 0
+    if not s or limit <= 0 then return nil end
+    local used = s.withdrawDay == today() and (s.withdrawn or 0) or 0
+    return math.max(0, math.floor((limit - used) * 100 + 0.5) / 100)
+end
+
+-- Tell a (possibly online) player which stores they work at, so their client shows "Manage".
+local function syncStaffClient(cid)
+    local P = cid and RSGCore.Functions.GetPlayerByCitizenId(cid)
+    if not P then return end
+    local ids = {}
+    for _, n in ipairs(CachedNPCs) do if n.staff and n.staff[cid] then ids[#ids + 1] = n.id end end
+    TriggerClientEvent('rsg-stores:client:staffStores', P.PlayerData.source, ids)
+end
+
+-- Remove every staff member from a store (store closed, deleted or changed owner).
+local function clearStaff(npc)
+    local list = npc.staff
+    npc.staff = nil
+    MySQL.query.await('DELETE FROM rsg_shops_staff WHERE npc_id = ?', { npc.id })
+    for cid in pairs(list or {}) do syncStaffClient(cid) end
+end
+
+local function staffList(npc)
+    local out = {}
+    for cid, s in pairs(npc.staff or {}) do
+        local perms = {}
+        for k in pairs(s.perms) do perms[k] = true end
+        out[#out + 1] = { cid = cid, name = s.name, rank = s.rank, perms = perms,
+            online = RSGCore.Functions.GetPlayerByCitizenId(cid) ~= nil }
+    end
+    table.sort(out, function(a, b) return a.name < b.name end)
+    return out
+end
+
+local function rankList()
+    local out = {}
+    for _, r in ipairs(RANKS) do
+        local perms = {}
+        for k in pairs(r.perms) do perms[k] = true end
+        out[#out + 1] = { name = r.name, perms = perms }
+    end
+    return out
+end
+
+-- ============================================
 -- PLAYER-OWNED STORE HELPERS
 -- ============================================
 getBalance = function(npcId)
@@ -210,9 +374,7 @@ end
 local function ownerFromServerId(id)
     local P = RSGCore.Functions.GetPlayer(tonumber(id) or -1)
     if not P then return nil end
-    local ci = P.PlayerData.charinfo or {}
-    local name = ((ci.firstname or '') .. ' ' .. (ci.lastname or '')):gsub('^%s+', ''):gsub('%s+$', '')
-    return { citizenid = P.PlayerData.citizenid, name = name ~= '' and name or P.PlayerData.citizenid }
+    return { citizenid = P.PlayerData.citizenid, name = charName(P) }
 end
 
 -- ============================================
@@ -412,6 +574,7 @@ local function LoadCacheFromDB()
     local npcs  = MySQL.query.await('SELECT * FROM rsg_shops_npcs ORDER BY id ASC') or {}
     local items = MySQL.query.await('SELECT * FROM rsg_shops_items ORDER BY id ASC') or {}
     local blips = MySQL.query.await('SELECT * FROM rsg_shops_blips ORDER BY id ASC') or {}
+    local staffRows = MySQL.query.await('SELECT * FROM rsg_shops_staff') or {}
 
     local itemsByNpc = {}
     for _, row in ipairs(items) do
@@ -437,9 +600,16 @@ local function LoadCacheFromDB()
             entry.owner = { citizenid = row.owner_citizenid, name = row.owner_name or row.owner_citizenid }
         end
         if entry.kind == 'player' and row.prop_model and row.prop_model ~= '' then entry.prop = row.prop_model end
+        -- older sign stores saved without prop_model: recognise them by their sign_ shop id and repair the row
+        if entry.kind == 'player' and not entry.prop and type(row.shop_name) == 'string' and row.shop_name:find('^sign_') then
+            entry.prop = (Config.ShopSign or {}).Model or 'p_sandwichboard02x'
+            MySQL.update('UPDATE rsg_shops_npcs SET prop_model = ? WHERE id = ?', { entry.prop, nid })
+        end
         if entry.kind == 'player' then
             entry.upkeepOwed = tonumber(row.upkeep_owed) or 0
             entry.upkeepNext = tonumber(row.upkeep_next)
+            entry.packedAt = tonumber(row.packed_at)
+            entry.packed = entry.packedAt ~= nil and entry.prop ~= nil
         end
         if entry.kind == 'player' then -- owned stock is always limited
             for _, it in ipairs(itemsByNpc[nid] or {}) do it.amount = it.amount or 0 end
@@ -455,6 +625,17 @@ local function LoadCacheFromDB()
         CachedNPCs[#CachedNPCs + 1] = entry
     end
 
+    local byId = {}
+    for _, n in ipairs(CachedNPCs) do byId[n.id] = n end
+    for _, r in ipairs(staffRows) do
+        local n = byId[tonumber(r.npc_id)]
+        if n and n.kind == 'player' and n.owner and r.citizenid ~= n.owner.citizenid then
+            n.staff = n.staff or {}
+            n.staff[r.citizenid] = { name = r.name or r.citizenid, rank = r.staff_rank or 'custom', perms = decodePerms(r.perms),
+                withdrawn = tonumber(r.withdrawn) or 0, withdrawDay = tonumber(r.withdraw_day) or 0 }
+        end
+    end
+
     CachedBlips = {}
     for _, row in ipairs(blips) do
         CachedBlips[#CachedBlips + 1] = {
@@ -466,6 +647,34 @@ local function LoadCacheFromDB()
 
     LoadPresets()
     print(('[rsg-stores] ' .. locale('sv_loaded')):format(#CachedNPCs, #CachedBlips))
+end
+
+-- Warn the console about price setups players can farm: buying an item somewhere
+-- (NPC shop or wholesale) for less than an NPC shop pays for it. Discounts scale both
+-- sides equally (see sellItem), so they're left out.
+local function checkArbitrage()
+    local cheapest = {}
+    local function seen(name, cost, where)
+        if cost > 0 and (not cheapest[name] or cost < cheapest[name].cost) then cheapest[name] = { cost = cost, where = where } end
+    end
+    for _, npc in ipairs(CachedNPCs) do
+        if npc.kind == 'npc' and npc.shop and npc.shop.type ~= 'sell' then
+            for _, it in ipairs(npc.shop.items) do seen(it.name, it.price, npc.shop.name) end
+        end
+    end
+    if (Config.Wholesale or {}).Enabled ~= false then
+        for name, cost in pairs((Config.Wholesale or {}).Items or {}) do seen(name, tonumber(cost) or 0, 'wholesale') end
+    end
+    for _, npc in ipairs(CachedNPCs) do
+        if npc.kind == 'npc' and npc.shop and npc.shop.type ~= 'buy' then
+            for _, it in ipairs(npc.shop.items) do
+                local c, pays = cheapest[it.name], round2(it.price * SELL_PCT)
+                if c and pays > c.cost then
+                    print(('^3[rsg-stores] price exploit: %s costs $%.2f at %s but %s pays $%.2f^7'):format(it.name, c.cost, c.where, npc.shop.name, pays))
+                end
+            end
+        end
+    end
 end
 
 local dbInstalled = false
@@ -483,9 +692,10 @@ local function BootDatabase()
         end)
         if ok then
             DbReady = true
+            checkArbitrage()
             Webhook.Send('system', locale('wh_t_started'), locale('wh_d_started'):format(#CachedNPCs, #CachedBlips))
-            TriggerClientEvent('rsg-blipmenu:client:refreshNPCs', -1, CachedNPCs)
-            TriggerClientEvent('rsg-blipmenu:client:refreshBlips', -1, CachedBlips)
+            broadcastNPCs()
+            broadcastBlips()
             return
         end
         print(('[rsg-stores] ' .. locale('sv_db_retry')):format(tries, tostring(err)))
@@ -495,8 +705,6 @@ local function BootDatabase()
     Webhook.Send('system', locale('wh_t_db_fail'), locale('wh_d_db_fail'), nil, nil, { ping = true })
 end
 
-local function broadcastNPCs() TriggerClientEvent('rsg-blipmenu:client:refreshNPCs', -1, CachedNPCs) end
-local function broadcastBlips() TriggerClientEvent('rsg-blipmenu:client:refreshBlips', -1, CachedBlips) end
 
 -- ============================================
 -- CALLBACKS
@@ -508,9 +716,7 @@ registerCallback('rsg-stores:server:getOnlinePlayers', function(source)
     for _, id in ipairs(GetPlayers()) do
         local P = RSGCore.Functions.GetPlayer(tonumber(id))
         if P then
-            local ci = P.PlayerData.charinfo or {}
-            local name = ((ci.firstname or '') .. ' ' .. (ci.lastname or '')):gsub('^%s+', ''):gsub('%s+$', '')
-            out[#out + 1] = { id = P.PlayerData.source, name = name ~= '' and name or GetPlayerName(id) or '?', citizenid = P.PlayerData.citizenid }
+            out[#out + 1] = { id = P.PlayerData.source, name = charName(P), citizenid = P.PlayerData.citizenid }
         end
     end
     table.sort(out, function(a, b) return a.name < b.name end)
@@ -548,11 +754,21 @@ RegisterNetEvent('rsg-stores:server:sellItem', function(npcId, itemName, quantit
     if not shopItem then return TriggerClientEvent(FAIL, src, false, locale('sv_shop_not_accept'), getCash(src)) end
 
     -- Counts across all stacks, not just the first slot.
-    local owned = exports['rsg-inventory']:GetItemCount(src, itemName) or 0
-    if owned < qty then return TriggerClientEvent(FAIL, src, false, locale('sv_no_items_held'), getCash(src)) end
+    -- Only clean (not worn / spoiled) stacks count, across all slots.
+    if cleanCount(Player, itemName) < qty then
+        local any = (exports['rsg-inventory']:GetItemCount(src, itemName) or 0) >= qty
+        return TriggerClientEvent(FAIL, src, false, locale(any and 'sv_bad_quality' or 'sv_no_items_held'), getCash(src))
+    end
+    -- Staff can't sell to their own store (price-setting staff could otherwise drain the till).
+    if npc.kind == 'player' and isStaffOf(npc, Player.PlayerData.citizenid) then
+        return TriggerClientEvent(FAIL, src, false, locale('sv_staff_no_trade'), getCash(src))
+    end
 
     local isOwned = npc.kind == 'player'
     local pct = isOwned and OWNED_PCT or SELL_PCT
+    -- NPC shops: a discounted buyer also sells at the discounted price, so a discount
+    -- bigger than the shop fee can't be used to buy and sell back for profit.
+    if not isOwned then pct = pct * (1 - discountFor(Player)) end
     local feePct = math.floor((1 - pct) * 100 + 0.5)
     local payout = round2(shopItem.price * qty * pct)
     if payout < 0.01 then return TriggerClientEvent(FAIL, src, false, locale('sv_bad_price'), getCash(src)) end
@@ -590,7 +806,7 @@ RegisterNetEvent('rsg-stores:server:sellItem', function(npcId, itemName, quantit
         end
     end
 
-    if not exports['rsg-inventory']:RemoveItem(src, itemName, qty, nil, 'rsg-stores-sell') then
+    if not removeClean(src, Player, itemName, qty, 'rsg-stores-sell') then
         if restock then restoreStock(npc.id, itemName, -qty) end -- undo the reservation
         if tillTaken then addBalance(npc.id, payout) end
         return TriggerClientEvent(FAIL, src, false, locale('sv_remove_failed'), getCash(src))
@@ -631,8 +847,10 @@ RegisterNetEvent('rsg-stores:server:purchaseCart', function(npcId, cartItems)
     if #cartItems > MAX_CART_LINES then return fail(locale('sv_invalid_qty')) end
 
     local npc = findNpc(npcId)
-    if not npc or not npc.shop then return fail(locale('sv_shop_notfound')) end
+    if not npc or not npc.shop or npc.packed then return fail(locale('sv_shop_notfound')) end
     if npc.kind == 'player' and not npc.owner then return fail(locale('sv_store_closed')) end
+    -- Staff can't buy from their own store (price-setting staff could otherwise buy stock at $0).
+    if npc.kind == 'player' and isStaffOf(npc, Player.PlayerData.citizenid) then return fail(locale('sv_staff_no_trade')) end
     if npc.kind == 'player' and (npc.upkeepOwed or 0) > 0 then return fail(locale('sv_store_upkeep')) end
     if npc.shop.type ~= 'both' and npc.shop.type ~= 'buy' then return fail(locale('sv_shop_not_sell')) end
     if not isNearNpc(src, npc) then
@@ -740,6 +958,7 @@ RegisterNetEvent('rsg-stores:server:purchaseCart', function(npcId, cartItems)
 end)
 
 RegisterNetEvent('rsg-stores:server:requestShopStock', function(npcId)
+    if not DbReady or not RSGCore.Functions.GetPlayer(source) or syncThrottled(source, 'stock', 300) then return end
     local npc = findNpc(npcId)
     if not npc or not npc.shop then return end
     TriggerClientEvent('rsg-stores:client:shopStock', source, shopItemsForClient(npc))
@@ -797,7 +1016,8 @@ RegisterNetEvent('rsg-blipmenu:server:deleteBlip', function(blipId)
 end)
 
 RegisterNetEvent('rsg-blipmenu:server:requestBlips', function()
-    TriggerClientEvent('rsg-blipmenu:client:refreshBlips', source, CachedBlips)
+    if syncThrottled(source, 'blips', 2000) then return end
+    TriggerClientEvent('rsg-blipmenu:client:refreshBlips', source, visibleBlips())
 end)
 
 -- ============================================
@@ -921,6 +1141,11 @@ RegisterNetEvent('rsg-blipmenu:server:updateNPC', function(npcId, data)
         if b.associatedNpcId == npc.id then b.x, b.y, b.z = npc.x, npc.y, npc.z end
     end
 
+    -- Staff stay with the store unless it changes owner or stops being player-owned.
+    npc.staff = existing.staff
+    if npc.staff and (npc.kind ~= 'player' or not owner or not existing.owner or owner.citizenid ~= existing.owner.citizenid) then
+        clearStaff(npc)
+    end
     CachedNPCs[idx] = npc
     broadcastNPCs()
     broadcastBlips()
@@ -944,6 +1169,7 @@ RegisterNetEvent('rsg-blipmenu:server:deleteNPC', function(npcId)
     MySQL.query.await('DELETE FROM rsg_shops_blips WHERE associated_npc_id = ?', { existing.id })
     MySQL.query.await('DELETE FROM rsg_shops_npcs WHERE id = ?', { existing.id })
     table.remove(CachedNPCs, idx)
+    clearStaff(existing)
     for i = #CachedBlips, 1, -1 do
         if CachedBlips[i].associatedNpcId == existing.id then table.remove(CachedBlips, i) end
     end
@@ -960,7 +1186,11 @@ RegisterNetEvent('rsg-blipmenu:server:deleteNPC', function(npcId)
 end)
 
 RegisterNetEvent('rsg-blipmenu:server:requestNPCs', function()
-    TriggerClientEvent('rsg-blipmenu:client:refreshNPCs', source, CachedNPCs)
+    local src = source
+    if syncThrottled(src, 'npcs', 2000) then return end
+    TriggerClientEvent('rsg-blipmenu:client:refreshNPCs', src, visibleNPCs())
+    local P = RSGCore.Functions.GetPlayer(src)
+    if P then syncStaffClient(P.PlayerData.citizenid) end
 end)
 
 -- ============================================
@@ -970,17 +1200,24 @@ end)
 -- ============================================
 local function ownerFail(err) return { ok = false, err = err } end
 
-local function requireOwner(src, npcId)
+-- perm: 'owner' (owner only), 'view' (owner or any staff) or a staff permission key.
+-- Returns npc, Player, isOwner  or  nil, nil, errorKey.
+local function requireAccess(src, npcId, perm)
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player or not OWNED_ENABLED then return nil, nil, 'sv_shop_notfound' end
     local npc = findNpc(npcId)
-    if not npc or npc.kind ~= 'player' or not npc.shop then return nil, nil, 'sv_shop_notfound' end
-    if not npc.owner or npc.owner.citizenid ~= Player.PlayerData.citizenid then
-        Webhook.Security(src, locale('wh_sec_not_owner'), shopFields(npc))
-        return nil, nil, 'sv_not_owner'
+    if not npc or npc.kind ~= 'player' or not npc.shop or npc.packed then return nil, nil, 'sv_shop_notfound' end
+    local cid = Player.PlayerData.citizenid
+    if not npc.owner then return nil, nil, 'sv_not_owner' end
+    if not hasPerm(npc, cid, perm or 'owner') then
+        if not staffEntry(npc, cid) then
+            Webhook.Security(src, locale('wh_sec_not_owner'), shopFields(npc))
+            return nil, nil, 'sv_not_owner'
+        end
+        return nil, nil, 'sv_no_permission'
     end
     if not isNearNpc(src, npc) then return nil, nil, 'sv_too_far' end
-    return npc, Player
+    return npc, Player, npc.owner.citizenid == cid
 end
 
 local function toPrice(v)
@@ -1024,21 +1261,36 @@ ownerLedger = function(npc)
     return rows
 end
 
-local function ownerState(npc, msg)
+-- What the management panel may show to this viewer (owner sees everything, staff what they're allowed).
+local function ownerState(npc, src, msg)
+    local P = RSGCore.Functions.GetPlayer(src)
+    local cid = P and P.PlayerData.citizenid
+    local isOwner = npc.owner ~= nil and npc.owner.citizenid == cid
+    local perms = {}
+    for _, k in ipairs(STAFF_PERMS) do perms[k] = hasPerm(npc, cid, k) end
+    local me = not isOwner and staffEntry(npc, cid) or nil
     return {
         ok = true, msg = msg,
         label = npc.shop.label, type = npc.shop.type,
-        balance = getBalance(npc.id),
+        role = isOwner and 'owner' or 'staff', rank = me and me.rank or nil, perms = perms,
+        balance = perms.till and getBalance(npc.id) or nil,
+        withdrawLeft = perms.till and me and staffWithdrawLeft(me) or nil,
         items = shopItemsForClient(npc),
         maxListings = tonumber(OS.MaxListings) or 50,
         maxStock = tonumber(OS.MaxStock) or 0,
         maxPrice = tonumber(OS.MaxPrice) or 10000,
         markup = tonumber(WHOLESALE.Markup) or 1.5,
         buyBackPct = OWNED_PCT,
-        canPackUp = npc.prop ~= nil,
+        canPackUp = isOwner and npc.prop ~= nil,
+        canPickUp = isOwner and npc.prop ~= nil and SIGN_MOVE_ON,
         upkeep = ownerUpkeepInfo(npc),
-        wholesale = wholesaleList(),
-        ledger = ownerLedger(npc),
+        wholesale = perms.wholesale and wholesaleList() or {},
+        ledger = perms.ledger and ownerLedger(npc) or nil,
+        staffOn = STAFF_ON,
+        staff = isOwner and STAFF_ON and staffList(npc) or nil,
+        ranks = STAFF_ON and rankList() or nil,
+        permList = STAFF_PERMS,
+        maxStaff = tonumber(STAFF.MaxStaff) or 5,
     }
 end
 
@@ -1054,35 +1306,33 @@ local function stockable(name)
     return shared
 end
 
-RSGCore.Functions.CreateCallback('rsg-stores:server:ownerGetState', function(source, cb, npcId)
-    local npc, _, err = requireOwner(source, npcId)
-    if not npc then return cb(ownerFail(err)) end
-    cb(ownerState(npc))
+registerCallback('rsg-stores:server:ownerGetState', function(source, npcId)
+    local npc, _, err = requireAccess(source, npcId, 'view')
+    if not npc then return (ownerFail(err)) end
+    return ownerState(npc, source)
 end)
 
 -- Move items from the owner's inventory onto the shelf (creates the listing if new).
-RSGCore.Functions.CreateCallback('rsg-stores:server:ownerAddStock', function(source, cb, npcId, itemName, qty, price)
-    local npc, _, err = requireOwner(source, npcId)
-    if not npc then return cb(ownerFail(err)) end
-    if onCooldown(source) then return cb(ownerFail('sv_slow_down')) end
+registerCallback('rsg-stores:server:ownerAddStock', function(source, npcId, itemName, qty, price)
+    local npc, Player, err = requireAccess(source, npcId, 'restock')
+    if not npc then return (ownerFail(err)) end
+    if onCooldown(source) then return (ownerFail('sv_slow_down')) end
     local shared = stockable(itemName)
-    if not shared then return cb(ownerFail('sv_cant_stock')) end
+    if not shared then return (ownerFail('sv_cant_stock')) end
     qty = toQty(qty)
-    if not qty then return cb(ownerFail('sv_invalid_qty')) end
+    if not qty then return (ownerFail('sv_invalid_qty')) end
 
     local listing = findShopItem(npc, itemName)
     local newPrice = price ~= nil and toPrice(price) or nil
-    if price ~= nil and not newPrice then return cb(ownerFail('sv_bad_price')) end
+    if price ~= nil and not newPrice then return (ownerFail('sv_bad_price')) end
     if not listing then
-        if not newPrice then return cb(ownerFail('sv_bad_price')) end
-        if #npc.shop.items >= (tonumber(OS.MaxListings) or 50) then return cb(ownerFail('sv_max_listings')) end
+        if not newPrice then return (ownerFail('sv_bad_price')) end
+        if #npc.shop.items >= (tonumber(OS.MaxListings) or 50) then return (ownerFail('sv_max_listings')) end
     end
     local cap = tonumber(OS.MaxStock) or 0
-    if cap > 0 and ((listing and listing.amount or 0) + qty) > cap then return cb(ownerFail('sv_stock_cap')) end
-    if (exports['rsg-inventory']:GetItemCount(source, itemName) or 0) < qty then return cb(ownerFail('sv_no_items_held')) end
-    if not exports['rsg-inventory']:RemoveItem(source, itemName, qty, nil, 'rsg-stores-owner-stock') then
-        return cb(ownerFail('sv_remove_failed'))
-    end
+    if cap > 0 and ((listing and listing.amount or 0) + qty) > cap then return (ownerFail('sv_stock_cap')) end
+    local removed, rmErr = removeClean(source, Player, itemName, qty, 'rsg-stores-owner-stock')
+    if not removed then return (ownerFail(rmErr)) end
 
     if listing then
         MySQL.update.await('UPDATE rsg_shops_items SET stock = stock + ?, price = ? WHERE npc_id = ? AND item_name = ?',
@@ -1099,41 +1349,41 @@ RSGCore.Functions.CreateCallback('rsg-stores:server:ownerAddStock', function(sou
         { name = locale('wh_f_item'), value = ('%dx %s (`%s`)'):format(qty, listing.label, itemName) },
         { name = locale('wh_f_price'), value = Webhook.Money(listing.price) },
     })
-    cb(ownerState(npc, locale('sv_owner_stocked'):format(qty, listing.label)))
+    return ownerState(npc, source, locale('sv_owner_stocked'):format(qty, listing.label))
 end)
 
 -- Take items off the shelf back into the owner's inventory.
-RSGCore.Functions.CreateCallback('rsg-stores:server:ownerTakeStock', function(source, cb, npcId, itemName, qty)
-    local npc, _, err = requireOwner(source, npcId)
-    if not npc then return cb(ownerFail(err)) end
-    if onCooldown(source) then return cb(ownerFail('sv_slow_down')) end
+registerCallback('rsg-stores:server:ownerTakeStock', function(source, npcId, itemName, qty)
+    local npc, _, err = requireAccess(source, npcId, 'takestock')
+    if not npc then return (ownerFail(err)) end
+    if onCooldown(source) then return (ownerFail('sv_slow_down')) end
     local listing = findShopItem(npc, itemName)
     qty = toQty(qty)
-    if not listing or not qty then return cb(ownerFail('sv_invalid_qty')) end
-    if not exports['rsg-inventory']:CanAddItem(source, itemName, qty) then return cb(ownerFail('sv_inv_full')) end
+    if not listing or not qty then return (ownerFail('sv_invalid_qty')) end
+    if not exports['rsg-inventory']:CanAddItem(source, itemName, qty) then return (ownerFail('sv_inv_full')) end
     if not takeStock(npc.id, itemName, qty) then
         resyncStock(npc)
-        return cb(ownerFail('sv_no_stock'))
+        return (ownerFail('sv_no_stock'))
     end
     if not exports['rsg-inventory']:AddItem(source, itemName, qty, nil, nil, 'rsg-stores-owner-take') then
         restoreStock(npc.id, itemName, qty)
-        return cb(ownerFail('sv_inv_full'))
+        return (ownerFail('sv_inv_full'))
     end
     resyncStock(npc)
     broadcastShop(npc)
     ownerLog(source, npc, locale('wh_t_owner_take'), {
         { name = locale('wh_f_item'), value = ('%dx %s (`%s`)'):format(qty, listing.label, itemName) },
     })
-    cb(ownerState(npc, locale('sv_owner_taken'):format(qty, listing.label)))
+    return ownerState(npc, source, locale('sv_owner_taken'):format(qty, listing.label))
 end)
 
-RSGCore.Functions.CreateCallback('rsg-stores:server:ownerSetPrice', function(source, cb, npcId, itemName, price)
-    local npc, _, err = requireOwner(source, npcId)
-    if not npc then return cb(ownerFail(err)) end
-    if onCooldown(source) then return cb(ownerFail('sv_slow_down')) end
+registerCallback('rsg-stores:server:ownerSetPrice', function(source, npcId, itemName, price)
+    local npc, _, err = requireAccess(source, npcId, 'prices')
+    if not npc then return (ownerFail(err)) end
+    if onCooldown(source) then return (ownerFail('sv_slow_down')) end
     local listing = findShopItem(npc, itemName)
     price = toPrice(price)
-    if not listing or not price then return cb(ownerFail('sv_bad_price')) end
+    if not listing or not price then return (ownerFail('sv_bad_price')) end
     MySQL.update.await('UPDATE rsg_shops_items SET price = ? WHERE npc_id = ? AND item_name = ?', { price, npc.id, itemName })
     local old = listing.price
     listing.price = price
@@ -1142,24 +1392,26 @@ RSGCore.Functions.CreateCallback('rsg-stores:server:ownerSetPrice', function(sou
         { name = locale('wh_f_item'), value = listing.label },
         { name = locale('wh_f_price'), value = ('%s → %s'):format(Webhook.Money(old), Webhook.Money(price)) },
     })
-    cb(ownerState(npc, locale('sv_owner_priced'):format(listing.label, price)))
+    return ownerState(npc, source, locale('sv_owner_priced'):format(listing.label, price))
 end)
 
 -- Remove a listing; any stock left goes back to the owner.
-RSGCore.Functions.CreateCallback('rsg-stores:server:ownerRemoveListing', function(source, cb, npcId, itemName)
-    local npc, _, err = requireOwner(source, npcId)
-    if not npc then return cb(ownerFail(err)) end
-    if onCooldown(source) then return cb(ownerFail('sv_slow_down')) end
+registerCallback('rsg-stores:server:ownerRemoveListing', function(source, npcId, itemName)
+    local npc, Player, err = requireAccess(source, npcId, 'prices')
+    if not npc then return (ownerFail(err)) end
+    -- leftover stock goes to whoever removes the listing, so staff also need takestock
+    if not hasPerm(npc, Player.PlayerData.citizenid, 'takestock') then return (ownerFail('sv_no_permission')) end
+    if onCooldown(source) then return (ownerFail('sv_slow_down')) end
     local listing = findShopItem(npc, itemName)
-    if not listing then return cb(ownerFail('sv_invalid_qty')) end
+    if not listing then return (ownerFail('sv_invalid_qty')) end
     local stock = tonumber(MySQL.scalar.await('SELECT stock FROM rsg_shops_items WHERE npc_id = ? AND item_name = ?', { npc.id, itemName })) or 0
-    if stock > 0 and not exports['rsg-inventory']:CanAddItem(source, itemName, stock) then return cb(ownerFail('sv_inv_full')) end
+    if stock > 0 and not exports['rsg-inventory']:CanAddItem(source, itemName, stock) then return (ownerFail('sv_inv_full')) end
     -- delete only if stock is unchanged (a customer may have just bought some)
     local affected = MySQL.update.await('DELETE FROM rsg_shops_items WHERE npc_id = ? AND item_name = ? AND stock = ?', { npc.id, itemName, stock })
-    if not affected or affected == 0 then resyncStock(npc) return cb(ownerFail('sv_try_again')) end
+    if not affected or affected == 0 then resyncStock(npc) return (ownerFail('sv_try_again')) end
     if stock > 0 and not exports['rsg-inventory']:AddItem(source, itemName, stock, nil, nil, 'rsg-stores-owner-remove') then
         insertShopItems(npc.id, { { name = itemName, label = listing.label, price = listing.price, amount = stock } })
-        return cb(ownerFail('sv_inv_full'))
+        return (ownerFail('sv_inv_full'))
     end
     for i, it in ipairs(npc.shop.items) do
         if it.name == itemName then table.remove(npc.shop.items, i) break end
@@ -1169,34 +1421,49 @@ RSGCore.Functions.CreateCallback('rsg-stores:server:ownerRemoveListing', functio
         { name = locale('wh_f_item'), value = ('%s (`%s`)'):format(listing.label, itemName) },
         { name = locale('wh_f_qty'), value = tostring(stock) },
     })
-    cb(ownerState(npc, locale('sv_owner_removed'):format(listing.label)))
+    return ownerState(npc, source, locale('sv_owner_removed'):format(listing.label))
 end)
 
 -- Collect money from the till as cash. amount nil/0 = everything.
-RSGCore.Functions.CreateCallback('rsg-stores:server:ownerWithdraw', function(source, cb, npcId, amount)
-    local npc, Player, err = requireOwner(source, npcId)
-    if not npc then return cb(ownerFail(err)) end
-    if onCooldown(source) then return cb(ownerFail('sv_slow_down')) end
+registerCallback('rsg-stores:server:ownerWithdraw', function(source, npcId, amount)
+    local npc, Player, isOwner = requireAccess(source, npcId, 'till')
+    if not npc then return (ownerFail(isOwner)) end
+    if onCooldown(source) then return (ownerFail('sv_slow_down')) end
+    local me = not isOwner and staffEntry(npc, Player.PlayerData.citizenid) or nil
+    local left = me and staffWithdrawLeft(me)
     local amt = tonumber(amount)
-    if amt == nil or amt == 0 then amt = getBalance(npc.id) end
-    if not amt or amt ~= amt or amt < 0.01 then return cb(ownerFail('sv_till_empty')) end
+    if amt == nil or amt == 0 then
+        amt = getBalance(npc.id)
+        if left then amt = math.min(amt, left) end
+    end
+    if not amt or amt ~= amt or amt < 0.01 then return (ownerFail(left and left < 0.01 and 'sv_staff_limit_none' or 'sv_till_empty')) end
     amt = round2(amt)
-    if not takeBalance(npc.id, amt) then return cb(ownerFail('sv_till_empty')) end
+    if left and amt > left then
+        return { ok = false, err = 'sv_staff_limit', errArgs = { left } }
+    end
+    if not takeBalance(npc.id, amt) then return (ownerFail('sv_till_empty')) end
+    if me then
+        local d = today()
+        me.withdrawn = (me.withdrawDay == d and (me.withdrawn or 0) or 0) + amt
+        me.withdrawDay = d
+        MySQL.update.await('UPDATE rsg_shops_staff SET withdrawn = ?, withdraw_day = ? WHERE npc_id = ? AND citizenid = ?',
+            { me.withdrawn, d, npc.id, Player.PlayerData.citizenid })
+    end
     Player.Functions.AddMoney('cash', amt, 'rsg-stores-till-withdraw')
     ledger(npc, 'withdraw', nil, 0, amt, charName(Player))
     ownerLog(source, npc, locale('wh_t_owner_withdraw'), {
         { name = locale('wh_f_payout'), value = Webhook.Money(amt) },
     })
-    cb(ownerState(npc, locale('sv_owner_withdrew'):format(amt)))
+    return ownerState(npc, source, locale('sv_owner_withdrew'):format(amt))
 end)
 
 -- Owner settings: shop sign (label) and what the counter does (buy/sell/both).
-RSGCore.Functions.CreateCallback('rsg-stores:server:ownerSetSettings', function(source, cb, npcId, label, sType)
-    local npc, _, err = requireOwner(source, npcId)
-    if not npc then return cb(ownerFail(err)) end
-    if onCooldown(source) then return cb(ownerFail('sv_slow_down')) end
+registerCallback('rsg-stores:server:ownerSetSettings', function(source, npcId, label, sType)
+    local npc, _, err = requireAccess(source, npcId, 'settings')
+    if not npc then return (ownerFail(err)) end
+    if onCooldown(source) then return (ownerFail('sv_slow_down')) end
     label = str(label, 60)
-    if not label or not VALID_TYPES[sType] then return cb(ownerFail('sv_bad_settings')) end
+    if not label or not VALID_TYPES[sType] then return (ownerFail('sv_bad_settings')) end
     MySQL.update.await('UPDATE rsg_shops_npcs SET shop_label = ?, shop_type = ? WHERE id = ?', { label, sType, npc.id })
     local old = npc.shop.label
     npc.shop.label, npc.shop.type = label, sType
@@ -1205,7 +1472,159 @@ RSGCore.Functions.CreateCallback('rsg-stores:server:ownerSetSettings', function(
         { name = locale('wh_f_shop_label'), value = ('%s → %s'):format(old, label) },
         { name = locale('wh_f_shop_type'), value = sType },
     })
-    cb(ownerState(npc, locale('sv_owner_saved')))
+    return ownerState(npc, source, locale('sv_owner_saved'))
+end)
+
+-- ============================================
+-- STAFF (owner hires players and chooses what each one may do)
+-- ============================================
+local function sanitizePerms(p)
+    local out = {}
+    if type(p) ~= 'table' then return out end
+    for _, k in ipairs(STAFF_PERMS) do if p[k] == true then out[k] = true end end
+    return out
+end
+
+-- A preset rank uses its configured permissions; 'custom' uses the ticked ones.
+local function resolveRank(rank, perms)
+    local r = type(rank) == 'string' and RANK_BY[rank]
+    if r then
+        local p = {}
+        for k in pairs(r.perms) do p[k] = true end
+        return r.name, p
+    end
+    return 'custom', sanitizePerms(perms)
+end
+
+local function rankLabel(rank) return rank == 'custom' and locale('ui_staff_custom') or locale('ui_rank_' .. tostring(rank)) end
+
+local function permsText(p)
+    local o = {}
+    for _, k in ipairs(STAFF_PERMS) do if p[k] then o[#o + 1] = k end end
+    return #o > 0 and table.concat(o, ', ') or '-'
+end
+
+local function jobsOf(cid)
+    local n = 0
+    for _, npc in ipairs(CachedNPCs) do if npc.staff and npc.staff[cid] then n = n + 1 end end
+    return n
+end
+
+local function staffCount(npc)
+    local n = 0
+    for _ in pairs(npc.staff or {}) do n = n + 1 end
+    return n
+end
+
+-- Players standing next to the owner who could be hired.
+registerCallback('rsg-stores:server:staffNearby', function(source, npcId)
+    if not STAFF_ON then return (ownerFail('sv_staff_disabled')) end
+    local npc, Player, err = requireAccess(source, npcId, 'owner')
+    if not npc then return (ownerFail(err)) end
+    local me = GetEntityCoords(GetPlayerPed(source))
+    local range = tonumber(STAFF.HireDistance) or 5.0
+    local out = {}
+    for _, id in ipairs(GetPlayers()) do
+        local tid = tonumber(id)
+        local P = tid ~= source and RSGCore.Functions.GetPlayer(tid)
+        if P and not isStaffOf(npc, P.PlayerData.citizenid) and P.PlayerData.citizenid ~= Player.PlayerData.citizenid then
+            local ped = GetPlayerPed(tid)
+            if ped and ped ~= 0 and #(GetEntityCoords(ped) - me) <= range then
+                out[#out + 1] = { id = tid, name = charName(P) }
+            end
+        end
+    end
+    table.sort(out, function(a, b) return a.name < b.name end)
+    return { ok = true, players = out }
+end)
+
+registerCallback('rsg-stores:server:staffHire', function(source, npcId, targetId, rank, perms)
+    if not STAFF_ON then return (ownerFail('sv_staff_disabled')) end
+    local npc, Player, err = requireAccess(source, npcId, 'owner')
+    if not npc then return (ownerFail(err)) end
+    if onCooldown(source) then return (ownerFail('sv_slow_down')) end
+    local max = tonumber(STAFF.MaxStaff) or 5
+    if staffCount(npc) >= max then return { ok = false, err = 'sv_staff_max', errArgs = { max } } end
+    local tid = tonumber(targetId)
+    local T = tid and tid ~= source and RSGCore.Functions.GetPlayer(tid)
+    if not T then return (ownerFail('sv_staff_not_found')) end
+    local tcid, tname = T.PlayerData.citizenid, charName(T)
+    if tcid == Player.PlayerData.citizenid then return (ownerFail('sv_staff_self')) end
+    if isStaffOf(npc, tcid) then return { ok = false, err = 'sv_staff_already', errArgs = { tname } } end
+    local tped = GetPlayerPed(tid)
+    if not tped or tped == 0 or #(GetEntityCoords(tped) - GetEntityCoords(GetPlayerPed(source))) > (tonumber(STAFF.HireDistance) or 5.0) then
+        return (ownerFail('sv_staff_not_found'))
+    end
+    local maxJobs = tonumber(STAFF.MaxJobsPerPlayer) or 0
+    if maxJobs > 0 and jobsOf(tcid) >= maxJobs then return { ok = false, err = 'sv_staff_jobs_max', errArgs = { tname } } end
+    local rName, p = resolveRank(rank, perms)
+    if next(p) == nil then return (ownerFail('sv_staff_no_perms')) end
+
+    MySQL.insert.await('INSERT INTO rsg_shops_staff (npc_id, citizenid, name, staff_rank, perms, hired_at) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), staff_rank = VALUES(staff_rank), perms = VALUES(perms)',
+        { npc.id, tcid, tname, rName, encodePerms(p), os.time() })
+    npc.staff = npc.staff or {}
+    npc.staff[tcid] = { name = tname, rank = rName, perms = p, withdrawn = 0, withdrawDay = 0 }
+    syncStaffClient(tcid)
+    notify(tid, npc.shop.label, locale('sv_staff_you_hired'):format(npc.shop.label, rankLabel(rName)), 'success')
+    ownerLog(source, npc, locale('wh_t_staff_hired'), {
+        { name = locale('wh_f_staff'), value = ('%s (`%s`)'):format(tname, tcid) },
+        { name = locale('wh_f_perms'), value = ('%s: %s'):format(rName, permsText(p)) },
+    })
+    return ownerState(npc, source, locale('sv_staff_hired'):format(tname))
+end)
+
+registerCallback('rsg-stores:server:staffUpdate', function(source, npcId, cid, rank, perms)
+    if not STAFF_ON then return (ownerFail('sv_staff_disabled')) end
+    local npc, _, err = requireAccess(source, npcId, 'owner')
+    if not npc then return (ownerFail(err)) end
+    if onCooldown(source) then return (ownerFail('sv_slow_down')) end
+    local s = type(cid) == 'string' and npc.staff and npc.staff[cid]
+    if not s then return (ownerFail('sv_staff_not_found')) end
+    local rName, p = resolveRank(rank, perms)
+    if next(p) == nil then return (ownerFail('sv_staff_no_perms')) end
+    MySQL.update.await('UPDATE rsg_shops_staff SET staff_rank = ?, perms = ? WHERE npc_id = ? AND citizenid = ?', { rName, encodePerms(p), npc.id, cid })
+    local old = ('%s: %s'):format(s.rank, permsText(s.perms))
+    s.rank, s.perms = rName, p
+    ownerLog(source, npc, locale('wh_t_staff_updated'), {
+        { name = locale('wh_f_staff'), value = ('%s (`%s`)'):format(s.name, cid) },
+        { name = locale('wh_f_perms'), value = ('%s → %s: %s'):format(old, rName, permsText(p)) },
+    })
+    return ownerState(npc, source, locale('sv_staff_updated'):format(s.name))
+end)
+
+local function removeStaff(npc, cid)
+    MySQL.query.await('DELETE FROM rsg_shops_staff WHERE npc_id = ? AND citizenid = ?', { npc.id, cid })
+    npc.staff[cid] = nil
+    if next(npc.staff) == nil then npc.staff = nil end
+    syncStaffClient(cid)
+end
+
+registerCallback('rsg-stores:server:staffFire', function(source, npcId, cid)
+    if not STAFF_ON then return (ownerFail('sv_staff_disabled')) end
+    local npc, _, err = requireAccess(source, npcId, 'owner')
+    if not npc then return (ownerFail(err)) end
+    if onCooldown(source) then return (ownerFail('sv_slow_down')) end
+    local s = type(cid) == 'string' and npc.staff and npc.staff[cid]
+    if not s then return (ownerFail('sv_staff_not_found')) end
+    removeStaff(npc, cid)
+    local T = RSGCore.Functions.GetPlayerByCitizenId(cid)
+    if T then notify(T.PlayerData.source, npc.shop.label, locale('sv_staff_you_fired'):format(npc.shop.label), 'inform') end
+    ownerLog(source, npc, locale('wh_t_staff_fired'), { { name = locale('wh_f_staff'), value = ('%s (`%s`)'):format(s.name, cid) } })
+    return ownerState(npc, source, locale('sv_staff_fired'):format(s.name))
+end)
+
+-- A staff member leaves the job themselves.
+registerCallback('rsg-stores:server:staffQuit', function(source, npcId)
+    local npc, Player, isOwner = requireAccess(source, npcId, 'view')
+    if not npc then return (ownerFail(isOwner)) end
+    if isOwner then return (ownerFail('sv_no_permission')) end
+    local cid = Player.PlayerData.citizenid
+    local s = npc.staff and npc.staff[cid]
+    if not s then return (ownerFail('sv_no_permission')) end
+    removeStaff(npc, cid)
+    notifyOwner(npc, locale('sv_staff_owner_quit'):format(s.name))
+    ownerLog(source, npc, locale('wh_t_staff_quit'), { { name = locale('wh_f_staff'), value = ('%s (`%s`)'):format(s.name, cid) } })
+    return { ok = true, closed = true, label = npc.shop.label, msg = locale('sv_staff_quit'):format(npc.shop.label) }
 end)
 
 -- ============================================
@@ -1222,9 +1641,16 @@ local function signStoresOwned(citizenid)
     return n
 end
 
+local function packedStoreOf(citizenid)
+    for _, npc in ipairs(CachedNPCs) do
+        if npc.packed and npc.owner and npc.owner.citizenid == citizenid then return npc end
+    end
+end
+
 local function signCheck(src, Player)
     if SIGN.Enabled == false or not OWNED_ENABLED then return 'sv_sign_disabled' end
     if (exports['rsg-inventory']:GetItemCount(src, SIGN_ITEM) or 0) < 1 then return 'sv_sign_no_item' end
+    if packedStoreOf(Player.PlayerData.citizenid) then return nil end -- re-placing a picked-up store
     local max = tonumber(SIGN.MaxPerPlayer) or 1
     if max > 0 and signStoresOwned(Player.PlayerData.citizenid) >= max then return 'sv_sign_limit' end
     return nil
@@ -1240,7 +1666,9 @@ CreateThread(function()
         if not Player or not DbReady then return end
         local err = signCheck(source, Player)
         if err then return notify(source, locale('t_error'), locale(err):format(tonumber(SIGN.MaxPerPlayer) or 1)) end
-        TriggerClientEvent('rsg-stores:client:startSignPlacement', source)
+        local moving = packedStoreOf(Player.PlayerData.citizenid)
+        TriggerClientEvent('rsg-stores:client:startSignPlacement', source,
+            moving and { label = moving.shop.label, type = moving.shop.type } or nil)
     end)
 end)
 
@@ -1258,24 +1686,27 @@ registerCallback('rsg-stores:server:placeSign', function(source, data)
     local sType = VALID_TYPES[data.type] and data.type or 'buy'
     if not x or not y or not z or x ~= x or y ~= y or z ~= z or h ~= h or not label then return { ok = false, err = 'sv_bad_settings' } end
     local pos = vector3(x, y, z)
-    if #(GetEntityCoords(GetPlayerPed(src)) - pos) > 5.0 then
+    -- standard rsg-gizmo server check (reach, line of sight etc.), plus our own 5 m limit
+    local gizmoOk = true
+    pcall(function() gizmoOk = exports['rsg-gizmo']:IsPlacementValid(src, pos, 5.0) ~= false end)
+    if not gizmoOk or #(GetEntityCoords(GetPlayerPed(src)) - pos) > 5.0 then
         Webhook.Security(src, locale('wh_sec_too_far_trade'), { { name = locale('wh_f_coords'), value = coordStr({ x = x, y = y, z = z }) } })
         return { ok = false, err = 'sv_sign_too_far' }
     end
     local spacing = tonumber(SIGN.MinSpacing) or 8.0
     for _, other in ipairs(CachedNPCs) do
-        if #(pos - vector3(other.x, other.y, other.z)) < spacing then return { ok = false, err = 'sv_sign_too_close' } end
+        if not other.packed and #(pos - vector3(other.x, other.y, other.z)) < spacing then return { ok = false, err = 'sv_sign_too_close' } end
     end
+    local moving = packedStoreOf(Player.PlayerData.citizenid)
+    if moving then return relocateStore(src, moving, x, y, z, h) end
     if not exports['rsg-inventory']:RemoveItem(src, SIGN_ITEM, 1, nil, 'rsg-stores-sign-placed') then
         return { ok = false, err = 'sv_sign_no_item' }
     end
 
-    local ci = Player.PlayerData.charinfo or {}
     local cid = Player.PlayerData.citizenid
-    local owner = { citizenid = cid, name = ((ci.firstname or '') .. ' ' .. (ci.lastname or '')):gsub('^%s+', ''):gsub('%s+$', '') }
-    if owner.name == '' then owner.name = cid end
+    local owner = { citizenid = cid, name = charName(Player) }
     local npc = {
-        name = label, model = '', kind = 'player', prop = SIGN.Model or 'p_chalksign_buysell01x', owner = owner,
+        name = label, model = '', kind = 'player', prop = SIGN.Model or 'p_sandwichboard02x', owner = owner,
         x = x, y = y, z = z, h = h % 360.0,
         shop = { name = ('sign_%s_%d'):format(cid, os.time()), label = label, type = sType, items = {} },
         upkeepOwed = 0,
@@ -1305,9 +1736,55 @@ registerCallback('rsg-stores:server:placeSign', function(source, data)
     return { ok = true, msg = locale('sv_sign_placed'):format(label) }
 end)
 
+-- ============================================
+-- PICK UP / MOVE (sign stores keep name, type, stock, prices, till and ledger)
+-- ============================================
+relocateStore = function(src, npc, x, y, z, h)
+    if not exports['rsg-inventory']:RemoveItem(src, SIGN_ITEM, 1, nil, 'rsg-stores-sign-moved') then
+        return { ok = false, err = 'sv_sign_no_item' }
+    end
+    local now = os.time()
+    -- upkeep clock is paused while the store is packed
+    if npc.upkeepNext and npc.packedAt then npc.upkeepNext = npc.upkeepNext + math.max(0, now - npc.packedAt) end
+    local old = coordStr(npc)
+    npc.x, npc.y, npc.z, npc.h = x, y, z, h % 360.0
+    npc.packed, npc.packedAt = nil, nil
+    MySQL.update.await('UPDATE rsg_shops_npcs SET x = ?, y = ?, z = ?, h = ?, packed_at = NULL, upkeep_next = ? WHERE id = ?',
+        { x, y, z, npc.h, npc.upkeepNext, npc.id })
+    for _, b in ipairs(CachedBlips) do
+        if b.associatedNpcId == npc.id then b.x, b.y, b.z = x, y, z end
+    end
+    MySQL.update.await('UPDATE rsg_shops_blips SET x = ?, y = ?, z = ? WHERE associated_npc_id = ?', { x, y, z, npc.id })
+    broadcastNPCs()
+    broadcastBlips()
+    ownerLog(src, npc, locale('wh_t_moved'), {
+        { name = locale('wh_f_coords'), value = ('%s → %s'):format(old, coordStr(npc)) },
+    })
+    return { ok = true, msg = locale('sv_move_placed'):format(npc.shop.label) }
+end
+
+registerCallback('rsg-stores:server:ownerPickUp', function(source, npcId)
+    if not SIGN_MOVE_ON then return ownerFail('sv_sign_disabled') end
+    local npc, _, err = requireAccess(source, npcId, 'owner')
+    if not npc then return ownerFail(err) end
+    if not npc.prop then return ownerFail('sv_packup_not_sign') end
+    if onCooldown(source) then return ownerFail('sv_slow_down') end
+    if not exports['rsg-inventory']:CanAddItem(source, SIGN_ITEM, 1) then return ownerFail('sv_packup_inv_full') end
+    npc.packed, npc.packedAt = true, os.time()
+    MySQL.update.await('UPDATE rsg_shops_npcs SET packed_at = ? WHERE id = ?', { npc.packedAt, npc.id })
+    if not exports['rsg-inventory']:AddItem(source, SIGN_ITEM, 1, nil, nil, 'rsg-stores-pickup') then
+        npc.packed, npc.packedAt = nil, nil
+        MySQL.update.await('UPDATE rsg_shops_npcs SET packed_at = NULL WHERE id = ?', { npc.id })
+        return ownerFail('sv_packup_inv_full')
+    end
+    ownerLog(source, npc, locale('wh_t_picked_up'), { { name = locale('wh_f_coords'), value = coordStr(npc) } })
+    SetTimeout(250, function() broadcastNPCs() broadcastBlips() end)
+    return { ok = true, closed = true, label = npc.shop.label, msg = locale('sv_pickup_done') }
+end)
+
 -- Owner closes a sign store: shelves must be empty; till is paid out; sign returned.
 registerCallback('rsg-stores:server:ownerPackUp', function(source, npcId)
-    local npc, Player, err = requireOwner(source, npcId)
+    local npc, Player, err = requireAccess(source, npcId, 'owner')
     if not npc then return ownerFail(err) end
     if not npc.prop then return ownerFail('sv_packup_not_sign') end
     if onCooldown(source) then return ownerFail('sv_slow_down') end
@@ -1330,6 +1807,7 @@ registerCallback('rsg-stores:server:ownerPackUp', function(source, npcId)
     for i = #CachedBlips, 1, -1 do
         if CachedBlips[i].associatedNpcId == npc.id then table.remove(CachedBlips, i) end
     end
+    clearStaff(npc)
     if giveBack then exports['rsg-inventory']:AddItem(source, SIGN_ITEM, 1, nil, nil, 'rsg-stores-packup') end
     ownerLog(source, npc, locale('wh_t_packup'), { { name = locale('wh_f_payout'), value = Webhook.Money(till) } })
     SetTimeout(250, function() broadcastNPCs() broadcastBlips() end) -- after the reply reaches the owner
@@ -1348,30 +1826,30 @@ local function payFromTillOrCash(npc, Player, cost, mode, reason)
 end
 
 -- Buy stock from the supplier straight onto the shelf.
-RSGCore.Functions.CreateCallback('rsg-stores:server:ownerWholesale', function(source, cb, npcId, itemName, qty, price)
-    local npc, Player, err = requireOwner(source, npcId)
-    if not npc then return cb(ownerFail(err)) end
-    if WHOLESALE.Enabled == false then return cb(ownerFail('sv_wholesale_off')) end
-    if onCooldown(source) then return cb(ownerFail('sv_slow_down')) end
+registerCallback('rsg-stores:server:ownerWholesale', function(source, npcId, itemName, qty, price)
+    local npc, Player, err = requireAccess(source, npcId, 'wholesale')
+    if not npc then return (ownerFail(err)) end
+    if WHOLESALE.Enabled == false then return (ownerFail('sv_wholesale_off')) end
+    if onCooldown(source) then return (ownerFail('sv_slow_down')) end
     local cost = type(itemName) == 'string' and tonumber((WHOLESALE.Items or {})[itemName])
     local shared = cost and stockable(itemName)
-    if not shared then return cb(ownerFail('sv_cant_stock')) end
+    if not shared then return (ownerFail('sv_cant_stock')) end
     qty = toQty(qty)
-    if not qty then return cb(ownerFail('sv_invalid_qty')) end
+    if not qty then return (ownerFail('sv_invalid_qty')) end
 
     local listing = findShopItem(npc, itemName)
     local newPrice = price ~= nil and toPrice(price) or nil
-    if price ~= nil and not newPrice then return cb(ownerFail('sv_bad_price')) end
+    if price ~= nil and not newPrice then return (ownerFail('sv_bad_price')) end
     if not listing then
-        if #npc.shop.items >= (tonumber(OS.MaxListings) or 50) then return cb(ownerFail('sv_max_listings')) end
+        if #npc.shop.items >= (tonumber(OS.MaxListings) or 50) then return (ownerFail('sv_max_listings')) end
         newPrice = newPrice or math.min(round2(cost * (tonumber(WHOLESALE.Markup) or 1.5)), tonumber(OS.MaxPrice) or 10000)
     end
     local cap = tonumber(OS.MaxStock) or 0
-    if cap > 0 and ((listing and listing.amount or 0) + qty) > cap then return cb(ownerFail('sv_stock_cap')) end
+    if cap > 0 and ((listing and listing.amount or 0) + qty) > cap then return (ownerFail('sv_stock_cap')) end
 
     local total = round2(cost * qty)
     local paid, from = payFromTillOrCash(npc, Player, total, WHOLESALE.PayFrom or 'either', 'rsg-stores-wholesale')
-    if not paid then return cb(ownerFail('sv_wholesale_funds')) end
+    if not paid then return (ownerFail('sv_wholesale_funds')) end
 
     if listing then
         MySQL.update.await('UPDATE rsg_shops_items SET stock = stock + ?, price = ? WHERE npc_id = ? AND item_name = ?',
@@ -1389,23 +1867,23 @@ RSGCore.Functions.CreateCallback('rsg-stores:server:ownerWholesale', function(so
         { name = locale('wh_f_item'), value = ('%dx %s (`%s`)'):format(qty, listing.label, itemName) },
         { name = locale('wh_f_total'), value = ('%s (%s)'):format(Webhook.Money(total), from or '-') },
     })
-    cb(ownerState(npc, locale('sv_owner_wholesale'):format(qty, listing.label, total)))
+    return ownerState(npc, source, locale('sv_owner_wholesale'):format(qty, listing.label, total))
 end)
 
 -- Pay off owed upkeep: till first, then cash.
-RSGCore.Functions.CreateCallback('rsg-stores:server:ownerPayUpkeep', function(source, cb, npcId)
-    local npc, Player, err = requireOwner(source, npcId)
-    if not npc then return cb(ownerFail(err)) end
-    if onCooldown(source) then return cb(ownerFail('sv_slow_down')) end
+registerCallback('rsg-stores:server:ownerPayUpkeep', function(source, npcId)
+    local npc, Player, err = requireAccess(source, npcId, 'upkeep')
+    if not npc then return (ownerFail(err)) end
+    if onCooldown(source) then return (ownerFail('sv_slow_down')) end
     local owed = round2(npc.upkeepOwed or 0)
-    if owed <= 0 then return cb(ownerFail('sv_upkeep_none')) end
-    if not payFromTillOrCash(npc, Player, owed, 'either', 'rsg-stores-upkeep') then return cb(ownerFail('sv_upkeep_funds')) end
+    if owed <= 0 then return (ownerFail('sv_upkeep_none')) end
+    if not payFromTillOrCash(npc, Player, owed, 'either', 'rsg-stores-upkeep') then return (ownerFail('sv_upkeep_funds')) end
     npc.upkeepOwed = 0
     MySQL.update.await('UPDATE rsg_shops_npcs SET upkeep_owed = 0 WHERE id = ?', { npc.id })
     ledger(npc, 'upkeep', nil, 0, owed, charName(Player))
     broadcastShop(npc)
     ownerLog(source, npc, locale('wh_t_upkeep_paid'), { { name = locale('wh_f_total'), value = Webhook.Money(owed) } })
-    cb(ownerState(npc, locale('sv_upkeep_paid'):format(owed)))
+    return ownerState(npc, source, locale('sv_upkeep_paid'):format(owed))
 end)
 
 -- Close an owned store. giveBack = return stock, till and sign to the (online) owner.
@@ -1417,14 +1895,20 @@ local function closeOwnedStore(npc, giveBack, reason)
     if src then
         for _, row in ipairs(MySQL.query.await('SELECT item_name, stock FROM rsg_shops_items WHERE npc_id = ? AND stock > 0', { npc.id }) or {}) do
             local q = tonumber(row.stock) or 0
-            if q > 0 and exports['rsg-inventory']:AddItem(src, row.item_name, q, nil, nil, 'rsg-stores-evict') then
+            if q > 0 and exports['rsg-inventory']:CanAddItem(src, row.item_name, q)
+                and exports['rsg-inventory']:AddItem(src, row.item_name, q, nil, nil, 'rsg-stores-evict') then
                 returned[#returned + 1] = ('%dx %s'):format(q, row.item_name)
+            elseif q > 0 then
+                returned[#returned + 1] = ('%dx %s (%s)'):format(q, row.item_name, locale('wh_lost_inv_full'))
             end
         end
         if till > 0 and takeBalance(npc.id, till) then Owner.Functions.AddMoney('cash', till, 'rsg-stores-evict-till') else till = 0 end
-        if npc.prop then exports['rsg-inventory']:AddItem(src, SIGN_ITEM, 1, nil, nil, 'rsg-stores-evict-sign') end
+        if npc.prop and exports['rsg-inventory']:CanAddItem(src, SIGN_ITEM, 1) then
+            exports['rsg-inventory']:AddItem(src, SIGN_ITEM, 1, nil, nil, 'rsg-stores-evict-sign')
+        end
     end
     MySQL.query.await('DELETE FROM rsg_shops_items WHERE npc_id = ?', { npc.id })
+    clearStaff(npc)
     if npc.prop then
         MySQL.query.await('DELETE FROM rsg_shops_ledger WHERE npc_id = ?', { npc.id })
         MySQL.query.await('DELETE FROM rsg_shops_blips WHERE associated_npc_id = ?', { npc.id })
@@ -1472,7 +1956,7 @@ local function runUpkeep()
     local now = os.time()
     for i = #CachedNPCs, 1, -1 do
         local npc = CachedNPCs[i]
-        if npc and upkeepOn(npc) and npc.owner then
+        if npc and upkeepOn(npc) and npc.owner and not npc.packed then
             if not npc.upkeepNext then npc.upkeepNext = now + interval
                 MySQL.update.await('UPDATE rsg_shops_npcs SET upkeep_next = ? WHERE id = ?', { npc.upkeepNext, npc.id })
             elseif now >= npc.upkeepNext then
@@ -1519,7 +2003,7 @@ end)
 -- LIFECYCLE
 -- ============================================
 AddEventHandler('playerDropped', function()
-    lastTx[source] = nil
+    lastTx[source], lastSync[source] = nil, nil
 end)
 
 CreateThread(function()

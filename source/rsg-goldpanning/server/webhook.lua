@@ -3,7 +3,6 @@
 -- Loaded before server.lua (see fxmanifest.lua) — functions below are
 -- declared as globals so server.lua can call them directly.
 -----------------------------------------------------------------------
-lib.locale()
 
 -- internal: fire a single embed at the given webhook url
 local function PostToDiscord(url, embed)

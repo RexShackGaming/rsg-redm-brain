@@ -1,8 +1,6 @@
 local ResourceName = GetCurrentResourceName()
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
-lib.locale()
-
 local function Debug(msg)
     if Config.Debug then
         print('[rsg-herbalist] ' .. msg)
@@ -95,13 +93,13 @@ end
 
 function ProgressOrWait(durationMs, label, showBar)
     if showBar then
-        return lib.progressCircle({
+        return RSGCore.Functions.ProgressCircle({
             duration = durationMs,
             label = label,
             position = 'bottom',
             useWhileDead = false,
             canCancel = true,
-            disable = { car = true, move = true, combat = true },
+            disable = { move = true, mount = true, combat = true },
         })
     end
     Wait(durationMs)
@@ -280,7 +278,8 @@ CreateThread(function()
             if entry then
                 sleep = 0
                 DisplayCompositePickupThisFrame(entry.entity)
-                if IsPickupControlPressed() and not IsPedOnMount(ped) and not IsPedInAnyVehicle(ped, false) then
+                if IsPickupControlPressed() and not IsPedOnMount(ped) and not IsPedInAnyVehicle(ped, false)
+                    and not IsPedDeadOrDying(ped, true) then
                     TryGather(entry)
                 end
             end
@@ -313,6 +312,7 @@ end
 
 local craftMenuOpen = false
 local isCrafting = false
+local activeCraftCam, activeDrinkProp = nil, nil -- tracked so onResourceStop can clean up mid-action
 
 local function BuildTonicPayload()
     local list = {}
@@ -393,6 +393,7 @@ RegisterNetEvent('rsg-herbalist:client:StartCraftProgress', function(durationMs)
     local anim = Config.TonicCraftAnim
     local camConfig = Config.TonicCraftCamera
     local craftCam = CreateCraftingCam(ped, camConfig)
+    activeCraftCam = craftCam
     local animDone = false
 
     if anim and anim.enabled and anim.clips and #anim.clips > 0
@@ -413,6 +414,7 @@ RegisterNetEvent('rsg-herbalist:client:StartCraftProgress', function(durationMs)
     animDone = true
     ClearPedTasks(ped)
     DestroyCraftingCam(craftCam, camConfig)
+    activeCraftCam = nil
     isCrafting = false
 
     TriggerServerEvent(completed and 'rsg-herbalist:server:finishCraft' or 'rsg-herbalist:server:cancelCraft')
@@ -435,6 +437,7 @@ RegisterNetEvent('rsg-herbalist:client:ApplyTonicEffect', function(itemName)
         and RequestAnimDictWithTimeout(drinkAnim.dict, drinkAnim.animDictLoadTimeoutMs or 5000) then
         local prop = drinkAnim.prop and AttachHandProp(ped, drinkAnim.prop, drinkAnim.propBone or 'PH_R_HAND',
             drinkAnim.propOffset or {}, drinkAnim.propRotation or {})
+        activeDrinkProp = prop
         for _, clip in ipairs(drinkAnim.clips) do
             TaskPlayAnim(ped, drinkAnim.dict, clip.anim, 8.0, -8.0, clip.duration or -1, 31, 0, false, false, false)
             Wait(clip.duration or 500)
@@ -442,6 +445,7 @@ RegisterNetEvent('rsg-herbalist:client:ApplyTonicEffect', function(itemName)
         ClearPedTasks(ped)
         RemoveAnimDict(drinkAnim.dict)
         DeleteHandProp(prop)
+        activeDrinkProp = nil
     end
 
     if effect.healthBoost and attr.health then
@@ -458,4 +462,7 @@ AddEventHandler('onResourceStop', function(resourceName)
         UnloadEntry(spawnEntries[i])
     end
     CloseTonicMenu()
+    if activeCraftCam then DestroyCraftingCam(activeCraftCam, Config.TonicCraftCamera) end
+    DeleteHandProp(activeDrinkProp)
+    if isCrafting or isGathering then ClearPedTasks(PlayerPedId()) end
 end)

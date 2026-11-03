@@ -30,5 +30,7 @@
     "ui_seconds_short": "s",
     "ui_minutes_short": "m",
     "craft_inventory_full_description": "You don't have room for the finished tonic. Your ingredients were not used.",
-    "mysterybox_inventory_full_description": "You don't have room to carry what's in this box."
+    "mysterybox_inventory_full_description": "You don't have room to carry what's in this box.",
+    "craft_done_title": "Tonicum gebrouwen",
+    "craft_done_description": "Je hebt %sx %s gebrouwen."
 }

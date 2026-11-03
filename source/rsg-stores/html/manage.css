@@ -13,10 +13,10 @@
 
 .mng-panel {
     position: relative;
-    width: 520px;
+    width: 820px;
     max-width: 96vw;
-    height: 82vh;
-    max-height: 760px;
+    height: 86vh;
+    max-height: 860px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -61,6 +61,8 @@
 .mng-tabs, .mng-type-tabs { display: flex; gap: 8px; padding: 0 20px; }
 .mng-type-tabs { padding: 0; }
 .mng-tabs .mode-tab, .mng-type-tabs .mode-tab { flex: 1; justify-content: center; }
+/* all 6 tabs on one row (panel is wide enough) */
+.mng-tabs .mode-tab { white-space: nowrap; padding: 8px 10px; }
 .mng-toolbar { padding: 10px 20px 6px; }
 
 .mng-scroll {
@@ -171,8 +173,7 @@
 .mng-form .mng-wide { flex: 0 0 auto; }
 
 /* pack up (danger) */
-#mng-packup-block { display: flex; flex-direction: column; gap: 10px; }
-#mng-packup-block.hidden { display: none; }
+
 .mng-danger:hover:not(:disabled) { border-color: var(--rdr-cost-over); color: var(--rdr-cost-over); }
 
 /* ---------- shop sign placement: docked bottom so the sign preview stays visible ---------- */
@@ -252,3 +253,62 @@
 .mng-ledger-row .lg-amt.in { color: var(--rdr-cost-ok); }
 .mng-ledger-row .lg-amt.out { color: var(--rdr-cost-over); }
 .mng-ledger-row .lg-time { width: 92px; text-align: right; color: var(--rdr-muted); font-size: 11px; }
+
+/* staff */
+.mng-limit { margin: -4px 20px 8px; }
+.mng-staff-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.mng-staff-head .mng-label { flex: 1; }
+.mng-staff-card {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(201,162,75,0.18);
+    border-radius: 2px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.15));
+}
+.mng-staff-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.mng-staff-name { flex: 1; min-width: 0; font-weight: 700; color: var(--rdr-text, #e8dcc0); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mng-staff-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--rdr-muted); flex: 0 0 7px; }
+.mng-staff-dot.on { background: var(--rdr-cost-ok); }
+.mng-perm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; margin-bottom: 8px; }
+.mng-perm { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--rdr-muted); cursor: pointer; user-select: none; }
+.mng-perm input { accent-color: var(--rdr-gold); margin: 0; }
+.mng-perm.on { color: var(--rdr-gold); }
+.mng-perm.locked { cursor: default; }
+.mng-staff-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.mng-staff-section { margin: 14px 0 8px; }
+
+
+/* settings sections */
+#mng-settings-view { gap: 14px; padding-top: 12px; }
+.mng-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 16px 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 2px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(0,0,0,0.2));
+}
+.mng-section.hidden { display: none; }
+.mng-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--rdr-text);
+}
+.mng-section-title i { color: var(--rdr-muted); font-size: 12px; }
+.mng-section .mng-field > span { font-size: 10.5px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--rdr-muted); }
+.mng-section .mng-hint { font-size: 12.5px; line-height: 1.5; color: #b8b8b8; margin: 0; }
+.mng-section .mng-type-tabs .mode-tab { padding: 10px 8px; white-space: normal; line-height: 1.3; }
+.mng-section .mng-input { padding: 10px 12px; font-size: 13px; }
+.mng-section-danger { border-color: rgba(224,85,79,0.25); }
+.mng-section-danger .mng-section-title i { color: var(--rdr-cost-over); }
+
+.mng-rank-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.mng-rank-row .mng-rank { flex: 1 1 auto; justify-content: center; padding: 6px 10px; font-size: 10.5px; }
