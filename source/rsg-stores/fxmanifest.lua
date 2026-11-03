@@ -3,10 +3,10 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 
 description 'rsg-stores'
-version '2.1.4'
+version '3.0.0'
 
 shared_scripts {
-    '@ox_lib/init.lua',
+    '@rsg-core/shared/locale.lua',
     'shared/config.lua'
 }
 
@@ -25,8 +25,8 @@ server_scripts {
 
 dependencies {
     'rsg-core',
-    'ox_lib',
-    'ox_target',
+    'rsg-inventory',
+    'rsg-target',
     'oxmysql'
 }
 
@@ -38,7 +38,9 @@ files {
     'html/style.css',
     'html/script.js',
     'html/admin.js',
-    'html/admin.css'
+    'html/admin.css',
+    'html/manage.js',
+    'html/manage.css'
 }
 
 lua54 'yes'

@@ -73,7 +73,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-samples](rsg-samples.md) | Animal sample collector for RedM (best version) with leaderboard, certificate, and milestone rewards. - Sedate | 0 | 3 |
 | [rsg-smelting](rsg-smelting.md) | Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for RSG-Core (RedM) with ox_lib, ox_t | 1 | 1 |
 | [rsg-stables](rsg-stables.md) | Horse and stables script for RSG Framework | 1 | 18 |
-| [rsg-stores](rsg-stores.md) | Create NPC shopkeepers, shops and map blips in-game for RSG-Core (RedM), all from an admin menu with no co | 1 | 17 |
+| [rsg-stores](rsg-stores.md) | Version 3.0.0 · requires rsg-core, rsg-inventory, rsg-target, oxmysql (no ox_lib) Create NPC shopkeepers,  | 1 | 20 |
 | [rsg-target](rsg-target.md) | targeting system for RSG RedM Framework | 0 | 4 |
 | [rsg-targetpractise](rsg-targetpractise.md) | Placeable archery and throwing-knife practice targets for RSG Framework | 0 | 18 |
 | [rsg-telegram](rsg-telegram.md) |  | 0 | 2 |

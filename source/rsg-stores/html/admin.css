@@ -1,5 +1,5 @@
 /* ============================================
-   ADMIN PANEL (/npcshops) — builds on style.css tokens/components
+   ADMIN PANEL (/createshop) — builds on style.css tokens/components
    Docked right so the world stays visible while placing NPCs.
    ============================================ */
 #admin-container {
@@ -325,3 +325,10 @@
 }
 .adm-dd-opt:hover { background: rgba(255,255,255,0.07); }
 .adm-dd-opt.active { background: rgba(255,255,255,0.12); font-weight: 600; }
+
+/* ---------- store kind (NPC / player-owned) ---------- */
+.adm-kind-tabs { display: flex; gap: 8px; }
+.adm-kind-tabs .mode-tab { flex: 1; justify-content: center; text-transform: uppercase; }
+.adm-warn { color: var(--rdr-amber); }
+#npc-owner-block, #npc-items-block { display: flex; flex-direction: column; gap: 10px; }
+#npc-owner-block.hidden, #npc-items-block.hidden, .adm-field.hidden, .adm-check.hidden { display: none; }

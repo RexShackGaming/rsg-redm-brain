@@ -136,7 +136,7 @@ RSG.SpawnLocations = {
     { label = locale('spawn_locations.valentine'),   coords = vector4(-169.47, 629.38, 113.03, 236.72), image = 'img/spawn/valentine.jpg' },
     { label = locale('spawn_locations.rhodes'),      coords = vector4(1263.6, -1305.7, 77.9, 210.0), image = 'img/spawn/rhodes.jpg' },
     { label = locale('spawn_locations.saint_denis'), coords = vector4(2694.69, -1448.48, 45.27, 23.27), image = 'img/spawn/saint_denis.jpg' },
-    { label = locale('spawn_locations.blackwater'),  coords = vector4(-1035.71, -2731.87, 12.86, 0.0), image = 'img/spawn/blackwater.jpg' },
+    { label = locale('spawn_locations.blackwater'),  coords = vector4(-858.67, -1337.61, 44.49, 274.53), image = 'img/spawn/blackwater.jpg' },
 }
 
 RSG.SpawnChecks = {

@@ -21,8 +21,16 @@ local SCHEMA = {
               `shop_name` varchar(100) DEFAULT NULL,
               `shop_label` varchar(100) DEFAULT NULL,
               `shop_type` varchar(10) NOT NULL DEFAULT 'both',
+              `store_kind` varchar(10) NOT NULL DEFAULT 'npc',
+              `owner_citizenid` varchar(50) DEFAULT NULL,
+              `owner_name` varchar(100) DEFAULT NULL,
+              `balance` decimal(12,2) NOT NULL DEFAULT 0.00,
+              `prop_model` varchar(100) DEFAULT NULL,
+              `upkeep_owed` decimal(10,2) NOT NULL DEFAULT 0.00,
+              `upkeep_next` int(11) DEFAULT NULL,
               PRIMARY KEY (`id`),
-              KEY `idx_shop_name` (`shop_name`)
+              KEY `idx_shop_name` (`shop_name`),
+              KEY `idx_owner` (`owner_citizenid`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
         ]],
         columns = {
@@ -30,8 +38,15 @@ local SCHEMA = {
             shop_name  = 'varchar(100) DEFAULT NULL',
             shop_label = 'varchar(100) DEFAULT NULL',
             shop_type  = "varchar(10) NOT NULL DEFAULT 'both'",
+            store_kind      = "varchar(10) NOT NULL DEFAULT 'npc'", -- 'npc' = NPC shopkeeper, 'player' = player-owned store
+            owner_citizenid = 'varchar(50) DEFAULT NULL',
+            owner_name      = 'varchar(100) DEFAULT NULL',
+            balance         = 'decimal(12,2) NOT NULL DEFAULT 0.00',      -- player-owned store till
+            prop_model      = 'varchar(100) DEFAULT NULL',                -- sign prop for stores opened with a shop sign item
+            upkeep_owed     = 'decimal(10,2) NOT NULL DEFAULT 0.00',      -- unpaid sign store upkeep
+            upkeep_next     = 'int(11) DEFAULT NULL',                     -- unix time the next upkeep is due
         },
-        indexes = { idx_shop_name = '`shop_name`' },
+        indexes = { idx_shop_name = '`shop_name`', idx_owner = '`owner_citizenid`' },
     },
     {
         name = 'rsg_shops_items',
@@ -76,6 +91,26 @@ local SCHEMA = {
             associated_npc_id = 'int(11) DEFAULT NULL',
         },
         indexes = { idx_assoc_npc = '`associated_npc_id`' },
+    },
+    {
+        -- Owner-facing sales ledger for player-owned stores.
+        name = 'rsg_shops_ledger',
+        create = [[
+            CREATE TABLE IF NOT EXISTS `rsg_shops_ledger` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `npc_id` int(11) NOT NULL,
+              `ts` int(11) NOT NULL,
+              `kind` varchar(16) NOT NULL,
+              `item` varchar(100) DEFAULT NULL,
+              `qty` int(11) NOT NULL DEFAULT 0,
+              `amount` decimal(12,2) NOT NULL DEFAULT 0.00,
+              `who` varchar(100) DEFAULT NULL,
+              PRIMARY KEY (`id`),
+              KEY `idx_ledger_npc` (`npc_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+        ]],
+        columns = {},
+        indexes = {},
     },
     {
         -- Admin-managed dropdown options (NPC models / blip sprites). Seeded from Config on first install.

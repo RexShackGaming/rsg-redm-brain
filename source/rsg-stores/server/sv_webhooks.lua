@@ -8,7 +8,6 @@
 -- Other resources: exports['rsg-stores']:SendWebhook(channel, title, description, src, fields)
 -- ============================================
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 local cfg = WebhookConfig or { Enabled = false, Urls = {} }
 
 Webhook = {}

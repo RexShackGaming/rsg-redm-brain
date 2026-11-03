@@ -1,6 +1,10 @@
 # rsg-stores
 
-Create NPC shopkeepers, shops and map blips in-game for **RSG-Core (RedM)**, all from an admin menu with no config editing. Players buy with a cart or sell straight back to the shop through a themed NUI. Every transaction is checked on the server and can be logged to Discord.
+**Version 3.0.0** · requires rsg-core, rsg-inventory, rsg-target, oxmysql (no ox_lib)
+
+Create NPC shopkeepers, **player-owned stores**, shops and map blips in-game for **RSG-Core (RedM)**, all from an admin menu with no config editing. Players buy with a cart or sell straight back to the shop through a themed NUI. Every transaction is checked on the server and can be logged to Discord.
+
+Full developer and server-owner reference: **[DOCS.md](DOCS.md)**.
 
 ---
 
@@ -15,7 +19,7 @@ Create NPC shopkeepers, shops and map blips in-game for **RSG-Core (RedM)**, all
 - **Auto-close** when you walk away or die.
 - NPCs **fade in and out** as you approach and leave.
 
-### For admins (`/npcshops`)
+### For admins (`/createshop`)
 - **Shop Manager panel:** a themed NUI panel (no ox_lib menus) for creating and editing NPCs, shops and blips in one form.
 - **NPCs:** create at your position (snapped to the ground), edit, teleport to, duplicate or delete.
 - **Shop contents:** searchable item picker with images; edit price and stock inline.
@@ -23,6 +27,26 @@ Create NPC shopkeepers, shops and map blips in-game for **RSG-Core (RedM)**, all
 - **Blips:** create, recolour, duplicate, show or hide, and delete. Shop blips are linked to their NPC and move with it.
 - **Presets:** add, edit or remove the NPC models and blip types offered in the dropdowns, in-game. They are saved to the database, so no config editing or restart is needed.
 - Everything saves to MySQL immediately and syncs live to every player.
+
+### Player-owned stores (new in 2.2.0)
+- Admins choose **Run By: NPC Shopkeeper** or **Run By: Player Owner** when creating a store. Owned stores have no NPC: customers use a counter target zone at the store position.
+- Admins assign the owner from a dropdown of **online players**, change or remove the owner at any time.
+- The owner targets the counter → **Manage Store** to open the management panel:
+  - **Shelves**: restock from their bag, take stock back, set prices, remove listings (remaining stock is returned).
+  - **Add Stock**: put any stockable item from their inventory on the shelf at a price they choose.
+  - **Till**: every sale goes into the store till; withdraw an amount or everything as cash.
+  - **Settings**: change the shop sign and whether the counter buys, sells or both.
+- Customers selling to an owned store are paid from the till (`Config.OwnedStores.BuyBackPercentage` of the owner's price), and the items go onto the shelf.
+- Stock is always limited and comes only from the owner: nothing is created from thin air. Money items, unique items and weapons cannot be stocked.
+- A store with no owner shows as **(Closed)** to customers. Stock and till stay with the store when the owner changes.
+
+### Shop sign item
+- Admins give a player the **`shopsign`** item (e.g. `/giveitem [id] shopsign 1`).
+- Using it shows a see-through sign that follows the player. They line it up with the arrow keys (on-screen key guide), press **Enter**, then name the store and choose the counter type.
+- The sign (`p_chalksign_buysell01x`) is placed and the player becomes the owner of a new player-owned store, with a map blip.
+- Customers target the **sign** to trade; the owner targets the same sign → **Manage Store**.
+- Owners can **Pack Up Store** (Settings tab) once the shelves are empty: the till is paid out and the sign comes back.
+- Limits: `Config.ShopSign.MaxPerPlayer` stores per character, `MinSpacing` from other stores.
 
 ### Security
 - **Server-side checks:** the server sets all prices and totals, and ignores any amounts the client sends.
@@ -32,6 +56,15 @@ Create NPC shopkeepers, shops and map blips in-game for **RSG-Core (RedM)**, all
 - **Rate limit:** each player can make one transaction every 750 ms.
 - **Admin events:** every admin event is permission-checked on the server, and admin input is cleaned before it's saved.
 - **Webhook security:** webhook URLs live in a server-only file and are never sent to clients.
+
+### New in 3.0.0
+- **Shopkeeper speech**: NPC shopkeepers greet you, thank you after a purchase and say goodbye (lines from the RDR2 decompiled `shop_general` script).
+- **Opening hours**: shops follow the in-game clock, with per-shop overrides and hours that can wrap past midnight.
+- **Job and gang discounts** on NPC shop purchases. The server works out the price; players see the discounted prices and get a notice.
+- **Upkeep (rent) for sign stores**: taken from the till each period. If it's unpaid the store closes to customers until the owner pays, and it is repossessed after a set number of unpaid periods.
+- **Wholesale**: owners order stock from a supplier straight onto their shelves, paid from the till or their cash.
+- **Sales ledger**: owners see recent sales, buy-ins, wholesale orders, upkeep and withdrawals.
+- **Admin eviction**: one button gives the stock, till and sign back to an online owner (or forfeits them if the owner is offline and you tick the box).
 
 ### Discord logging
 - Five channels: **purchases, sales, admin, security, system**.
@@ -52,8 +85,7 @@ Create NPC shopkeepers, shops and map blips in-game for **RSG-Core (RedM)**, all
 |---|---|
 | [rsg-core](https://github.com/Rexshack-RedM/rsg-core) | Framework |
 | [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory) | Must provide `AddItem`, `RemoveItem`, `CanAddItem` and `GetItemCount` exports |
-| [ox_lib](https://github.com/overextended/ox_lib) | Menus, dialogs, notifications, locales |
-| [ox_target](https://github.com/overextended/ox_target) | NPC interaction |
+| [rsg-target](https://github.com/Rexshack-RedM/rsg-target) | NPC and store counter interaction |
 | [oxmysql](https://github.com/overextended/oxmysql) | Database |
 
 ---
@@ -64,9 +96,8 @@ Create NPC shopkeepers, shops and map blips in-game for **RSG-Core (RedM)**, all
 2. Add it to `server.cfg` **after** its dependencies:
    ```cfg
    ensure oxmysql
-   ensure ox_lib
    ensure rsg-core
-   ensure ox_target
+   ensure rsg-target
    ensure rsg-inventory
    ensure rsg-stores
    ```
@@ -78,10 +109,10 @@ Create NPC shopkeepers, shops and map blips in-game for **RSG-Core (RedM)**, all
    ```
    To install manually instead, set `Config.AutoInstallDatabase = false` and import `install/rsg-stores.sql`. `install/example.sql` has optional sample data.
 4. *(Optional)* Add your Discord webhook URLs to `server/sv_webhooks_config.lua` (see below).
-5. Join the game as an admin and type **`/npcshops`**.
+5. Join the game as an admin and type **`/createshop`**.
 
 ### Updating from an older version
-Replace the files and restart. The auto-installer adds any missing columns or indexes and keeps your existing shops, items and blips. On first start after updating, the new presets table is filled from your `Config.NpcModels` and `Config.BlipTypes`, so your current dropdown options carry over.
+Replace the files and restart. 3.0.0 adds `upkeep_owed` and `upkeep_next` to `rsg_shops_npcs` and a new `rsg_shops_ledger` table. These are added automatically; for a manual install, run the new `CREATE TABLE` and the `ALTER TABLE` lines at the bottom of `install/rsg-stores.sql`. The auto-installer adds any missing columns or indexes (2.2.0 adds `store_kind`, `owner_citizenid`, `owner_name` and `balance` to `rsg_shops_npcs`) and keeps your existing shops, items and blips. Existing shops stay NPC shops. Manual installs: run the `ALTER TABLE` lines at the bottom of `install/rsg-stores.sql`. On first start after updating, the new presets table is filled from your `Config.NpcModels` and `Config.BlipTypes`, so your current dropdown options carry over.
 
 ---
 
@@ -91,7 +122,7 @@ Replace the files and restart. The auto-installer adds any missing columns or in
 
 | Option | Default | Description |
 |---|---|---|
-| `Config.AdminPermission` | `'admin'` | RSG permission required for `/npcshops` and every admin event |
+| `Config.AdminPermission` | `'admin'` | RSG permission required for `/createshop` and every admin event |
 | `Config.AutoInstallDatabase` | `true` | Create and upgrade tables on start |
 | `Config.DefaultScenario` | `'WORLD_HUMAN_STAND_IMPATIENT'` | Scenario the shopkeepers play |
 | `Config.DistanceSpawn` | `20.0` | Distance at which NPCs spawn and despawn |
@@ -99,7 +130,31 @@ Replace the files and restart. The auto-installer adds any missing columns or in
 | `Config.SellPricePercentage` | `0.80` | Players get 80% of the shop price when selling (20% fee) |
 | `Config.SellAddsStock` | `true` | Items sold to a shop go back into its stock (limited-stock items only) |
 | `Config.MaxShopStock` | `100` | Most of any one item a shop will hold from player sales (`0` = no cap) |
-| `Config.TargetDistance` | `2.5` | ox_target interaction range. The server allows up to +5.0 to cover lag |
+| `Config.TargetDistance` | `2.5` | rsg-target interaction range. The server allows up to +5.0 to cover lag |
+| `Config.OwnedStores.Enabled` | `true` | Allow player-owned stores |
+| `Config.OwnedStores.ZoneRadius` | `1.2` | Size of the counter target zone |
+| `Config.OwnedStores.BuyBackPercentage` | `0.80` | Share of the owner's price paid (from the till) to customers selling to the store |
+| `Config.OwnedStores.MaxListings` | `50` | Most different items one store can list |
+| `Config.OwnedStores.MaxStock` | `500` | Most of one item a store can hold (`0` = no cap) |
+| `Config.OwnedStores.MaxPrice` | `10000` | Highest price an owner can set |
+| `Config.OwnedStores.NotifyOwner` | `true` | Notify an online owner of each sale or buy-back |
+| `Config.OwnedStores.BlacklistItems` | money items | Items owners can never stock (unique items and weapons are always refused) |
+| `Config.ShopSign.Enabled` | `true` | Allow the shop sign item |
+| `Config.ShopSign.Item` | `'shopsign'` | Item name |
+| `Config.ShopSign.Model` | `'p_chalksign_buysell01x'` | Sign prop |
+| `Config.ShopSign.MaxPerPlayer` | `1` | Sign stores one character can own (`0` = no limit) |
+| `Config.ShopSign.MinSpacing` | `8.0` | Minimum distance from any other store |
+| `Config.ShopSign.PlaceDistance` | `1.5` | Starting distance in front of the player |
+| `Config.ShopSign.DefaultType` | `'buy'` | Starting counter type |
+| `Config.ShopSign.ReturnOnPackUp` | `true` | Give the sign back on pack up |
+| `Config.ShopSign.Blip` | general store, white | Blip created for each sign store (`Enabled = false` for none) |
+| `Config.ShopSign.ItemDefinition` | table | Registered in rsg-core at start if `shopsign` isn't in your items list |
+| `Config.ShopSign.Upkeep` | `{ Enabled = true, Amount = 5.0, IntervalHours = 24, EvictAfterMissed = 3 }` | Sign store rent, taken from the till. Unpaid upkeep closes the store; after `EvictAfterMissed` unpaid periods the store is repossessed (stock and till lost) |
+| `Config.Speech` | `Enabled = true`, `WELCOME` / `THANKS` / `GOODBYE_POS` | Shopkeeper speech lines (set a line to `false` to skip it) and the speech params hash |
+| `Config.OpeningHours` | `Enabled = false`, 7–21 | In-game opening hours. `OwnedStores` also applies them to player stores; `Shops['shop_id'] = { Open, Close }` overrides one shop |
+| `Config.Discounts` | `Enabled = false` | `Jobs` / `Gangs` maps of name → discount (0.10 = 10%), capped by `MaxDiscount`. NPC shops only |
+| `Config.Wholesale` | `Enabled = true` | `Items` maps item → cost each. `PayFrom` is `'till'`, `'cash'` or `'either'`; `Markup` sets the default shelf price for new listings |
+| `Config.Ledger` | `Enabled = true, Keep = 100, Show = 50` | Owner ledger: entries kept per store and shown in the panel |
 | `Config.BlipTypes` | list | Starting blip sprites, copied into the presets table on first start |
 | `Config.NpcModels` | list | Starting ped models, copied into the presets table on first start |
 | `Config.BlipColors` | list | Blip colours offered in the menu |
@@ -125,6 +180,7 @@ Replace the files and restart. The auto-installer adds any missing columns or in
 | `Urls.purchases` | Cart purchases and refunds |
 | `Urls.sales` | Items sold to shops |
 | `Urls.admin` | NPC, shop, blip and preset create / edit / delete (with a list of changes) |
+| `Urls.owners` | Player-owned store actions: stocking, taking stock, prices, listings, settings, till withdrawals |
 | `Urls.security` | Executor attempts, out-of-range trades, malformed data, large transactions |
 | `Urls.system` | Resource start, database install, database failures |
 | `SecurityPing` | Role or user to ping on security alerts, e.g. `'<@&123456789012345678>'` |
@@ -142,8 +198,9 @@ storeswebhooktest
 ### Language
 Set the locale in `server.cfg`:
 ```cfg
-setr ox:locale "de"
+setr rsg:locale "de"
 ```
+(`ox:locale` still works as a fallback.)
 Available: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
 
 ---
@@ -151,16 +208,57 @@ Available: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
 ## Usage
 
 ### The Shop Manager panel
-`/npcshops` opens the **Shop Manager**, a panel docked on the right of the screen so you can still see the world. It has three tabs, **NPCs**, **Blips** and **Presets**, each with a search box and a list. Click any row to edit it. Press **Esc** to go back one step or close the panel.
+`/createshop` opens the **Shop Manager**, a panel docked on the right of the screen so you can still see the world. It has three tabs, **Shops**, **Blips** and **Presets**, each with a search box and a list. Click any row to edit it. Press **Esc** to go back one step or close the panel.
 
 ### Creating a shop
 1. Stand where the shopkeeper should be, facing the way they should face.
-2. `/npcshops` → **New NPC**. The position fields fill in from where you're standing (at ground level). Click **Use My Position** at any time to refresh them.
+2. `/createshop` → **New Shop**. The position fields fill in from where you're standing (at ground level). Click **Use My Position** at any time to refresh them.
 3. Enter a name and pick a model.
 4. Leave **This NPC is a shopkeeper** ticked, then enter a **Shop ID** (internal, e.g. `valentine_general`), a **Shop Label** (e.g. *Valentine General Store*) and the shop type.
 5. **Add Item** opens a searchable list of every shared item (items already in the shop are greyed out). Pick one, then set its **price** and **stock** in the table. Leave stock empty for unlimited.
 6. *(Optional)* Tick **Create a blip for this shop?** and choose the name, icon and colour. The name follows the shop label unless you change it.
 7. Click **Create**. The NPC appears for everyone straight away.
+
+### Creating a player-owned store
+1. Stand at the store counter. `/createshop` → **New Shop**.
+2. Under **Run By**, choose **Player Owner**. The model, item list and "shopkeeper" options disappear: the owner handles stock.
+3. Enter a name, **Shop ID**, **Shop Label** and type.
+4. *(Optional)* Pick the owner from the **Assign Owner** dropdown, which lists every online player (name, server ID and citizenid) and is searchable. You can leave it empty and assign later; until then the store shows as closed.
+5. *(Optional)* create a blip, then **Create**.
+
+To change the owner later, open the store, pick a new player from the dropdown (or tick **Remove current owner**) and **Save**. Stock and till stay with the store. Switching a store between NPC and player-owned clears its stock and till (the till amount is logged).
+
+### Opening a store with a shop sign (players)
+1. Get a **Shop Sign** from an admin and use it from your inventory.
+2. A see-through preview of the sign appears in front of you, with a key guide in the bottom-right corner. You keep control of your character:
+
+   | Key | Action |
+   |---|---|
+   | W A S D | Walk; the sign follows you |
+   | ← → | Rotate the sign |
+   | ↑ ↓ | Move it further / nearer (0.75 – 3 m) |
+   | Enter | Confirm the position |
+   | Backspace | Cancel (the sign stays in your inventory) |
+
+3. Enter a store name, choose the counter type and click **Open Store** (or **Reposition** to go back). The sign is used up.
+4. Target your sign → **Manage Store** to stock it. Customers target the sign to shop.
+
+**Item:** add `shopsign` to your rsg-core items if you want your own label/image (it is registered automatically otherwise) and put a `shopsign.png` in `rsg-inventory/html/images/`:
+```lua
+shopsign = { name = 'shopsign', label = 'Shop Sign', weight = 2000, type = 'item', image = 'shopsign.png', unique = false, useable = true, shouldClose = true, description = 'Place it to open your own store' },
+```
+
+### Running your store (owners)
+Target the counter → **Manage Store**.
+
+| Tab | What it does |
+|---|---|
+| Till (top) | Shows takings. Enter an amount and **Withdraw**, or **All** |
+| Shelves | Each listing: **+** restock from your bag, **−** take back, **tag** set price, **bin** remove listing (stock comes back to you) |
+| Add Stock | Your stockable items; pick one, choose quantity and price, **Stock** |
+| Settings | Shop sign and whether the counter buys, sells or both. Sign stores also get **Pack Up Store** (click twice) |
+
+You must stand at the counter, and you need room in your inventory to take stock back.
 
 ### Editing an NPC
 Click an NPC in the list to open the same form. You can change any field, edit prices and stock in place, add or remove items, then **Save**. A linked blip moves with the NPC. The footer buttons let you **Teleport** to it, **Duplicate** it at your position (with its shop and blip, and separate stock) or **Delete** it (with a confirmation; linked blips are deleted too).
@@ -188,7 +286,7 @@ Duplicates and invalid values are rejected. Every change is permission-checked o
 ### Player controls
 | Action | How |
 |---|---|
-| Open shop | Target the shopkeeper → *Trade with …* |
+| Open shop | Target the shopkeeper (or store counter) → *Trade with …* |
 | Add to cart | Click an item, pick a quantity, **Add to Cart** |
 | Remove one from cart | Right-click the item |
 | Buy | **Purchase** |
@@ -210,7 +308,7 @@ exports['rsg-stores']:SendWebhook('admin', 'Title', 'Description', source, {
 
 | Table | Purpose |
 |---|---|
-| `rsg_shops_npcs` | NPC position, model and shop settings |
+| `rsg_shops_npcs` | NPC/store position, model, shop settings, `store_kind`, owner and till `balance` |
 | `rsg_shops_items` | Items per NPC (`npc_id`), with price and stock |
 | `rsg_shops_blips` | Blips, optionally linked to an NPC (`associated_npc_id`) |
 | `rsg_shops_presets` | Dropdown options: `kind` (`model` / `blip`), `label`, `value` |
@@ -227,7 +325,8 @@ rsg-stores/
 │   ├── server.lua                Transactions, admin events, cache
 │   └── versionchecker.lua        Update check on start
 ├── shared/config.lua             General settings
-├── html/                         NUI: shop (script.js, style.css) + Shop Manager (admin.js, admin.css)
+├── html/                         NUI: shop (script.js, style.css), Shop Manager (admin.js, admin.css),
+│                                 owner management (manage.js, manage.css)
 ├── locales/*.json                10 languages
 └── install/
     ├── rsg-stores.sql            Manual install (optional)
@@ -241,7 +340,7 @@ rsg-stores/
 | Problem | Fix |
 |---|---|
 | `Database retry…` in the console | The database user needs `CREATE` / `ALTER` rights, or set `AutoInstallDatabase = false` and import the SQL |
-| `/npcshops` says access denied | Give yourself the permission in `Config.AdminPermission` (e.g. `add_principal identifier.license:xxx group.admin`) |
+| `/createshop` says access denied | Give yourself the permission in `Config.AdminPermission` (e.g. `add_principal identifier.license:xxx group.admin`) |
 | "You are too far from the shop" | Stand next to the NPC. If you've moved the NPC, check its coordinates are at ground level |
 | "The shop only has room for …" when selling | The item has reached `Config.MaxShopStock`. Raise the cap, set it to `0`, or turn off `Config.SellAddsStock` |
 | NPC doesn't appear | Check the model name is valid. Invalid models are logged in the F8 console. Fix or remove bad model presets on the **Presets** tab |
@@ -249,8 +348,27 @@ rsg-stores/
 | Item images missing | Images come from `rsg-inventory/html/images/`; a fallback icon is shown if the image is missing |
 | No Discord messages | Check the URLs, then run `storeswebhooktest` |
 | Raw key such as `cfg_model_x` shows | That key is missing from `locales/en.json` |
+| "No player with that server ID is online" | The new owner must be online when assigned. Check the ID with your admin menu |
+| Owner doesn't see **Manage Store** | The store's owner citizenid must match the character they're on. Re-assign it from `/createshop` |
+| Customer sale refused with "not enough money in the till" | The owned store's till can't cover the buy-back. The owner needs sales first, or set the counter to Buy only |
 
 ---
 
+## Changelog
+### 3.0.0
+- Added shopkeeper speech, opening hours, job/gang discounts, sign store upkeep with repossession, wholesale ordering, an owner sales ledger and admin eviction.
+- New table `rsg_shops_ledger`; new columns `upkeep_owed` and `upkeep_next`.
+
+### 2.2.1
+- Fixed: the shop NUI could stay locked ("processing") if a buy/sell was rate-limited or sent before the database loaded; the server now always replies.
+- Fixed: item pop-ups showed twice on buy/sell (rsg-inventory already shows them).
+- Fixed: sign targets could fail to come back after walking away and returning.
+- Hardened: rate limit on owner price/settings changes, store names capped at 60 chars, sign placement rejects NaN coords and waits for the database.
+- Cleanup: removed unused variables and global client functions.
+
 ## Credits
-Original script by **Phil**. Security rewrite, webhooks, localisation and auto-install for RSG-Core.
+Original script by **Phil**. Security rewrite, webhooks, localisation, auto-install and player-owned stores for RSG-Core.
+
+---
+
+Support: https://buymeacoffee.com/rexshack

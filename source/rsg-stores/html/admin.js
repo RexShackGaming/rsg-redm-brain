@@ -1,5 +1,5 @@
 // ============================================
-// ADMIN PANEL (/npcshops) — NPC, shop and blip management
+// ADMIN PANEL (/createshop) — NPC, shop and blip management
 // Shares ShopUI (script.js) for i18n, image paths and escHtml.
 // ============================================
 var AdminUI = {
@@ -18,6 +18,8 @@ var AdminUI = {
     colors: [],
     editId: null,          // id of NPC/blip being edited (null = new)
     draftItems: [],
+    kind: 'npc',           // 'npc' = NPC shopkeeper, 'player' = player-owned store
+    editKind: null,        // kind of the store being edited (to warn on change)
     blipNameTouched: false,
     confirmAction: null,
 
@@ -294,7 +296,11 @@ var AdminUI = {
                 var sub = (typeLabel ? typeLabel + ' • ' : '') + (shop
                     ? shop.label + ' • ' + self.T('ui_adm_items_count', (shop.items || []).length) + ' • ' + self.T('ui_adm_type_' + (shop.type || 'both'))
                     : self.T('ui_adm_no_shop'));
-                rows.push({ id: n.id, icon: shop ? 'fa-store' : 'fa-user', title: n.name || n.model, sub: sub, pill: '#' + n.id, off: !shop });
+                if (n.kind === 'player') {
+                    sub = (n.owner ? self.T('ui_adm_owned_by', n.owner.name) : self.T('ui_adm_no_owner')) + ' • ' + sub;
+                }
+                rows.push({ id: n.id, icon: n.kind === 'player' ? 'fa-user-tie' : (shop ? 'fa-store' : 'fa-user'),
+                    title: n.name || n.model || (shop && shop.label) || ('#' + n.id), sub: sub, pill: '#' + n.id, off: !shop || (n.kind === 'player' && !n.owner) });
             });
         } else if (this.tab === 'presets') {
             [['model', this.models, 'fa-user', 'ui_adm_kind_model'], ['blip', this.blipTypes, 'fa-map-pin', 'ui_adm_kind_blip']].forEach(function(g) {
@@ -370,7 +376,17 @@ var AdminUI = {
         this.$('npc-save-label').textContent = this.T(npc ? 'ui_adm_save' : 'ui_adm_create');
         this.$('npc-tools').classList.toggle('hidden', !npc);
 
-        this.toggleShopFields();
+        this.editKind = npc ? (npc.kind || 'npc') : null;
+        this.loadOwnerOptions();
+        this.$('npc-owner-clear').checked = false;
+        this.$('npc-owner-clear-wrap').classList.toggle('hidden', !(npc && npc.owner));
+        this.$('npc-evict-wrap').classList.toggle('hidden', !(npc && npc.kind === 'player' && npc.owner));
+        this.$('npc-evict-force').checked = false;
+        this.evictArmed = false;
+        this.$('npc-evict-label').textContent = this.T('ui_adm_evict');
+        this.$('npc-owner-current').textContent = (npc && npc.owner)
+            ? this.T('ui_adm_owner_current', npc.owner.name, npc.owner.citizenid) : this.T('ui_adm_no_owner');
+        this.setKind(npc ? (npc.kind || 'npc') : 'npc');
         this.renderItems();
         this.renderLinkedBlip();
 
@@ -388,6 +404,32 @@ var AdminUI = {
         this.$(prefix + '-y').value = (+p.y).toFixed(2);
         this.$(prefix + '-z').value = (+p.z).toFixed(2);
         if (prefix === 'npc') this.$('npc-h').value = (+(p.h || 0)).toFixed(1);
+    },
+
+    // Online players for the owner dropdown (server-side admin check; the server re-validates on save).
+    loadOwnerOptions: function() {
+        var self = this;
+        this.fillSelect('npc-owner-id', [], true);
+        this.post('adminGetPlayers').then(function(list) {
+            if (!Array.isArray(list)) return;
+            self.fillSelect('npc-owner-id', list.map(function(p) {
+                return { value: p.id, label: p.name + ' [' + p.id + '] • ' + p.citizenid };
+            }), true);
+        });
+    },
+
+    setKind: function(kind) {
+        this.kind = kind === 'player' ? 'player' : 'npc';
+        var owned = this.kind === 'player';
+        this.$('npc-kind-npc').classList.toggle('active', !owned);
+        this.$('npc-kind-player').classList.toggle('active', owned);
+        this.$('npc-model-field').classList.toggle('hidden', owned);
+        this.$('npc-is-shop-wrap').classList.toggle('hidden', owned);
+        this.$('npc-items-block').classList.toggle('hidden', owned);
+        this.$('npc-owner-block').classList.toggle('hidden', !owned);
+        this.$('npc-kind-warn').classList.toggle('hidden', !this.editKind || this.editKind === this.kind);
+        if (owned) this.$('npc-is-shop').checked = true;
+        this.toggleShopFields();
     },
 
     toggleShopFields: function() {
@@ -447,15 +489,17 @@ var AdminUI = {
 
     saveNpc: function() {
         this.clearInvalid();
-        var isShop = this.$('npc-is-shop').checked;
+        var owned = this.kind === 'player';
+        var isShop = owned || this.$('npc-is-shop').checked;
         var req = ['npc-name', 'npc-x', 'npc-y', 'npc-z', 'npc-h'];
         if (isShop) req.push('adm-shop-name', 'adm-shop-label');
         if (!this.requireFields(req)) return;
-        if (!this.$('npc-model').value) return this.notify('error', this.T('ui_adm_required'));
+        if (!owned && !this.$('npc-model').value) return this.notify('error', this.T('ui_adm_required'));
 
         var npc = {
             name: this.$('npc-name').value.trim(),
-            model: this.$('npc-model').value,
+            kind: this.kind,
+            model: owned ? '' : this.$('npc-model').value,
             x: parseFloat(this.$('npc-x').value), y: parseFloat(this.$('npc-y').value),
             z: parseFloat(this.$('npc-z').value), h: parseFloat(this.$('npc-h').value)
         };
@@ -473,6 +517,10 @@ var AdminUI = {
                     };
                 })
             };
+        }
+        if (owned) {
+            var assign = parseInt(this.$('npc-owner-id').value, 10);
+            npc.owner = { assign: assign > 0 ? assign : null, clear: this.$('npc-owner-clear').checked };
         }
         var blip = null;
         if (!this.editId && isShop && this.$('npc-make-blip').checked) {
@@ -663,6 +711,24 @@ var AdminUI = {
 
         // NPC editor
         $('npc-is-shop').addEventListener('change', function() { self.toggleShopFields(); });
+        $('npc-kind-npc').addEventListener('click', function() { self.setKind('npc'); });
+        $('npc-kind-player').addEventListener('click', function() { self.setKind('player'); });
+        // two-click confirm so a stray click can't evict
+        $('npc-evict').addEventListener('click', function() {
+            if (!self.editId) return;
+            if (!self.evictArmed) {
+                self.evictArmed = true;
+                $('npc-evict-label').textContent = self.T('ui_mng_packup_confirm');
+                clearTimeout(self.evictTimer);
+                self.evictTimer = setTimeout(function() { self.evictArmed = false; $('npc-evict-label').textContent = self.T('ui_adm_evict'); }, 3000);
+                return;
+            }
+            self.evictArmed = false;
+            $('npc-evict-label').textContent = self.T('ui_adm_evict');
+            self.post('adminEvictOwner', { id: self.editId, force: $('npc-evict-force').checked });
+        });
+        $('npc-owner-clear').addEventListener('change', function(e) { if (e.target.checked) self.selectValue('npc-owner-id', ''); });
+        $('npc-owner-id').addEventListener('change', function(e) { if (e.target.value) $('npc-owner-clear').checked = false; });
         $('npc-make-blip').addEventListener('change', function() { self.toggleShopFields(); });
         $('npc-blip-name').addEventListener('input', function() { self.blipNameTouched = true; });
         $('adm-shop-label').addEventListener('input', function(e) {

@@ -15,6 +15,7 @@ WebhookConfig = {
         purchases = '',  -- cart purchases
         sales     = '',  -- items sold to shops
         admin     = '',  -- NPC / blip / shop edits
+        owners    = '',  -- player-owned store actions (stocking, prices, till withdrawals)
         security  = '',  -- exploit attempts, denied admin access, out-of-range trades
         system    = '',  -- resource start, DB load failures
     },
@@ -37,6 +38,7 @@ WebhookConfig = {
         purchases = 0x6FBF73,
         sales     = 0xD9A441,
         admin     = 0x5A8DEE,
+        owners    = 0xB07CD8,
         security  = 0xE0554F,
         system    = 0x9A9A9A,
     },

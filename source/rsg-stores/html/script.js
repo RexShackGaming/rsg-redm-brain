@@ -69,7 +69,7 @@ var ShopUI = {
         });
     },
 
-    // All user feedback goes through ox_lib (client.lua 'notify' -> lib.notify).
+    // All user feedback goes through rsg-core (client.lua 'notify' -> RSGCore.Functions.Notify).
     // No NUI toasts by design.
     notifyUI: function(type, title, message) {
         this.sendNUI('notify', { type: type, title: title, description: message });
@@ -377,7 +377,7 @@ var ShopUI = {
             if (!p || !p.name) return;
             (self.items || []).forEach(function(s) {
                 if (s.name === p.name) {
-                    var base = parseFloat(s.price) || 0;
+                    var base = parseFloat(s.basePrice != null ? s.basePrice : s.price) || 0;
                     var sell = Math.max(0.01, Math.round(base * self.sellPercentage * 100) / 100);
                     out.push({
                         name: p.name,
@@ -668,7 +668,7 @@ var ShopUI = {
     purchaseSuccess: function(message) {
         this.isPurchasing = false;
         this.cart = [];
-        // Purchase done: confirm via ox_lib notify and close the shop
+        // Purchase done: confirm via rsg-core notify and close the shop
         this.notifyUI('success', this.T('ui_purchase_done'), message || this.T('ui_purchase_thanks'));
         this.close();
     },
@@ -700,7 +700,7 @@ var ShopUI = {
     onTransactionResult: function(data) {
         this.isSelling = false;
         if (data.success) {
-            // Sale done: confirm via ox_lib notify and close the shop
+            // Sale done: confirm via rsg-core notify and close the shop
             this.notifyUI('success', this.T('ui_ok'), data.message || this.T('ui_ok'));
             this.close();
         } else {

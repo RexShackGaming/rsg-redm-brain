@@ -15,6 +15,7 @@
 
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="manage.css">
 </head>
 <body>
     <!-- Main Shop Root : fullscreen, toggles via .hidden -->
@@ -259,7 +260,7 @@
         </div>
     </div>
 
-    <!-- ============ ADMIN PANEL (/npcshops) ============ -->
+    <!-- ============ ADMIN PANEL (/createshop) ============ -->
     <div id="admin-container" class="hidden">
         <div class="adm-panel">
             <div class="shop-header adm-header">
@@ -275,7 +276,7 @@
             <!-- LIST VIEW -->
             <div class="adm-view" id="adm-list-view">
                 <div class="mode-tabs adm-tabs">
-                    <button class="sort-btn mode-tab active" id="adm-tab-npcs"><i class="fa-solid fa-users"></i> <span data-i18n="ui_adm_tab_npcs">NPCs</span> <span class="qty-pill" id="adm-npc-count">0</span></button>
+                    <button class="sort-btn mode-tab active" id="adm-tab-npcs"><i class="fa-solid fa-users"></i> <span data-i18n="ui_adm_tab_npcs">Shops</span> <span class="qty-pill" id="adm-npc-count">0</span></button>
                     <button class="sort-btn mode-tab" id="adm-tab-blips"><i class="fa-solid fa-map-location-dot"></i> <span data-i18n="ui_adm_tab_blips">Blips</span> <span class="qty-pill" id="adm-blip-count">0</span></button>
                     <button class="sort-btn mode-tab" id="adm-tab-presets"><i class="fa-solid fa-list-check"></i> <span data-i18n="ui_adm_tab_presets">Presets</span> <span class="qty-pill" id="adm-preset-count">0</span></button>
                 </div>
@@ -294,7 +295,7 @@
                     <p id="adm-list-empty-text"></p>
                 </div>
                 <div class="adm-footer">
-                    <button class="wood-btn" id="adm-new"><i class="fa-solid fa-plus"></i> <span id="adm-new-label" data-i18n="ui_adm_new_npc">New NPC</span></button>
+                    <button class="wood-btn" id="adm-new"><i class="fa-solid fa-plus"></i> <span id="adm-new-label" data-i18n="ui_adm_new_npc">New Shop</span></button>
                 </div>
             </div>
 
@@ -302,9 +303,17 @@
             <div class="adm-view hidden" id="adm-npc-view">
                 <div class="adm-scroll adm-form">
                     <div class="adm-section-title"><i class="fa-solid fa-user"></i> <span data-i18n="ui_adm_sec_npc">NPC</span></div>
-                    <label class="adm-field"><span data-i18n="cl_npc_name" class="req">NPC Name</span>
+                    <div class="adm-field">
+                        <span data-i18n="ui_adm_run_by">Run By</span>
+                        <div class="adm-kind-tabs">
+                            <button type="button" class="sort-btn mode-tab active" id="npc-kind-npc"><i class="fa-solid fa-user"></i> <span data-i18n="ui_adm_kind_npc">NPC Shopkeeper</span></button>
+                            <button type="button" class="sort-btn mode-tab" id="npc-kind-player"><i class="fa-solid fa-user-tie"></i> <span data-i18n="ui_adm_kind_player">Player Owner</span></button>
+                        </div>
+                    </div>
+                    <p class="adm-hint hidden adm-warn" id="npc-kind-warn" data-i18n="ui_adm_kind_warn">Changing who runs this store clears its stock and till.</p>
+                    <label class="adm-field"><span data-i18n="cl_npc_name" class="req">Shop Name</span>
                         <input type="text" id="npc-name" maxlength="100"></label>
-                    <label class="adm-field"><span data-i18n="cl_npc_model" class="req">NPC Model</span>
+                    <label class="adm-field" id="npc-model-field"><span data-i18n="cl_npc_model" class="req">NPC Model</span>
                         <select id="npc-model"></select></label>
 
                     <div class="adm-section-title"><i class="fa-solid fa-location-crosshairs"></i> <span data-i18n="ui_adm_sec_position">Position</span></div>
@@ -317,7 +326,7 @@
                     <button class="wood-btn muted adm-wide" id="npc-use-pos"><i class="fa-solid fa-person-walking"></i> <span data-i18n="ui_adm_use_pos">Use My Position</span></button>
 
                     <div class="adm-section-title"><i class="fa-solid fa-store"></i> <span data-i18n="ui_adm_sec_shop">Shop</span></div>
-                    <label class="adm-check"><input type="checkbox" id="npc-is-shop"> <span data-i18n="ui_adm_is_shop">This NPC is a shopkeeper</span></label>
+                    <label class="adm-check" id="npc-is-shop-wrap"><input type="checkbox" id="npc-is-shop"> <span data-i18n="ui_adm_is_shop">This NPC is a shopkeeper</span></label>
                     <div id="npc-shop-fields">
                         <div class="adm-grid2">
                             <label class="adm-field"><span data-i18n="cl_shop_identifier" class="req">Shop ID</span><input type="text" id="adm-shop-name" maxlength="100"></label>
@@ -330,6 +339,20 @@
                                 <option value="sell" data-i18n="cl_shop_sell">Sell only</option>
                             </select></label>
 
+                        <div id="npc-owner-block" class="hidden">
+                            <div class="adm-section-title"><i class="fa-solid fa-key"></i> <span data-i18n="ui_adm_sec_owner">Store Owner</span></div>
+                            <p class="adm-hint" id="npc-owner-current"></p>
+                            <label class="adm-field"><span data-i18n="ui_adm_owner_assign">Assign Owner (Online Player)</span><select id="npc-owner-id"></select></label>
+                            <label class="adm-check" id="npc-owner-clear-wrap"><input type="checkbox" id="npc-owner-clear"> <span data-i18n="ui_adm_owner_clear">Remove current owner</span></label>
+                            <p class="adm-hint" data-i18n="ui_adm_owner_hint">The owner stocks the store from their own inventory, sets prices and collects the till. Stock and till stay with the store if the owner changes.</p>
+                            <div id="npc-evict-wrap" class="hidden">
+                                <label class="adm-check"><input type="checkbox" id="npc-evict-force"> <span data-i18n="ui_adm_evict_force">Forfeit stock and till if the owner is offline</span></label>
+                                <button type="button" class="wood-btn muted adm-danger" id="npc-evict"><i class="fa-solid fa-door-open"></i> <span id="npc-evict-label" data-i18n="ui_adm_evict">Evict Owner</span></button>
+                                <p class="adm-hint" data-i18n="ui_adm_evict_hint">Stock, till and shop sign go back to the owner. Sign stores are removed; admin stores are emptied and left unowned.</p>
+                            </div>
+                        </div>
+
+                        <div id="npc-items-block">
                         <div class="adm-section-title"><i class="fa-solid fa-boxes-stacked"></i> <span data-i18n="ui_adm_sec_items">Shop Items</span> <span class="qty-pill" id="adm-item-count">0</span></div>
                         <div class="adm-items-head">
                             <span data-i18n="cl_field_item">Item</span><span data-i18n="cl_field_price">Price</span><span data-i18n="ui_adm_stock">Stock</span><span></span>
@@ -338,6 +361,7 @@
                         <p class="adm-hint hidden" id="adm-items-empty" data-i18n="ui_adm_no_items">No items yet</p>
                         <p class="adm-hint" data-i18n="ui_adm_stock_hint">Leave stock empty for unlimited.</p>
                         <button class="wood-btn muted adm-wide" id="adm-add-item"><i class="fa-solid fa-plus"></i> <span data-i18n="ui_adm_add_item">Add Item</span></button>
+                        </div>
 
                         <div id="npc-blip-block">
                             <div class="adm-section-title"><i class="fa-solid fa-map-pin"></i> <span data-i18n="ui_adm_sec_blip">Map Blip</span></div>
@@ -448,7 +472,162 @@
         </div>
     </div>
 
+    <!-- ============================================
+         OWNER STORE MANAGEMENT (player-owned stores)
+         ============================================ -->
+    <div id="manage-container" class="hidden">
+        <div class="mng-panel">
+            <div class="shop-header mng-header">
+                <span class="circle-btn mng-seal"><i class="fa-solid fa-key"></i></span>
+                <div class="header-content">
+                    <h1 class="shop-name mng-title" id="mng-title">Store</h1>
+                    <p class="shop-subtitle" data-i18n="ui_mng_subtitle">Store Management</p>
+                </div>
+                <button class="circle-btn" id="mng-close" data-i18n-title="ui_btn_close" title="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="section-divider"><span>&#9670;</span></div>
+
+            <!-- Till -->
+            <div class="mng-till">
+                <div class="mng-till-info">
+                    <span class="mng-label" data-i18n="ui_mng_till">Till</span>
+                    <span class="mng-till-value" id="mng-balance">$0.00</span>
+                </div>
+                <input type="number" min="0.01" step="0.01" class="mng-input mng-till-input" id="mng-withdraw-amt" data-i18n-ph="ui_mng_amount" placeholder="Amount">
+                <button class="wood-btn" id="mng-withdraw"><i class="fa-solid fa-sack-dollar"></i> <span data-i18n="ui_mng_withdraw">Withdraw</span></button>
+                <button class="wood-btn muted" id="mng-withdraw-all"><span data-i18n="ui_mng_all">All</span></button>
+            </div>
+
+            <div class="mng-tabs">
+                <button class="sort-btn mode-tab active" data-mng-tab="stock"><i class="fa-solid fa-boxes-stacked"></i> <span data-i18n="ui_mng_tab_stock">Shelves</span> <span class="qty-pill" id="mng-stock-count">0</span></button>
+                <button class="sort-btn mode-tab" data-mng-tab="add"><i class="fa-solid fa-box-open"></i> <span data-i18n="ui_mng_tab_add">Add Stock</span></button>
+                <button class="sort-btn mode-tab" data-mng-tab="wholesale" id="mng-tab-wholesale"><i class="fa-solid fa-truck"></i> <span data-i18n="ui_mng_tab_wholesale">Wholesale</span></button>
+                <button class="sort-btn mode-tab" data-mng-tab="ledger" id="mng-tab-ledger"><i class="fa-solid fa-book"></i> <span data-i18n="ui_mng_tab_ledger">Ledger</span></button>
+                <button class="sort-btn mode-tab" data-mng-tab="settings"><i class="fa-solid fa-gear"></i> <span data-i18n="ui_mng_tab_settings">Settings</span></button>
+            </div>
+
+            <div class="mng-upkeep hidden" id="mng-upkeep-banner">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span id="mng-upkeep-banner-text"></span>
+                <button class="wood-btn" id="mng-upkeep-pay"><i class="fa-solid fa-coins"></i> <span data-i18n="ui_mng_upkeep_pay">Pay Upkeep</span></button>
+            </div>
+
+            <div class="mng-toolbar" id="mng-toolbar">
+                <div class="search-box"><i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="mng-search" data-i18n-ph="ui_search_ph" placeholder="Search items..." autocomplete="off"></div>
+            </div>
+
+            <div class="mng-scroll" id="mng-stock-view"></div>
+            <div class="mng-scroll hidden" id="mng-add-view"></div>
+            <div class="mng-scroll hidden" id="mng-wholesale-view"></div>
+            <div class="mng-scroll hidden" id="mng-ledger-view"></div>
+            <div class="mng-scroll mng-form hidden" id="mng-settings-view">
+                <label class="mng-field"><span data-i18n="ui_mng_sign">Shop Sign</span>
+                    <input type="text" class="mng-input" id="mng-label" maxlength="100"></label>
+                <div class="mng-field"><span data-i18n="ui_mng_counter">Counter</span>
+                    <div class="mng-type-tabs">
+                        <button class="sort-btn mode-tab" data-mng-type="both" data-i18n="cl_shop_both">Buy &amp; Sell</button>
+                        <button class="sort-btn mode-tab" data-mng-type="buy" data-i18n="cl_shop_buy">Buy only</button>
+                        <button class="sort-btn mode-tab" data-mng-type="sell" data-i18n="cl_shop_sell">Sell only</button>
+                    </div>
+                </div>
+                <p class="mng-hint" id="mng-buyback-hint"></p>
+                <button class="wood-btn mng-wide" id="mng-save-settings"><i class="fa-solid fa-floppy-disk"></i> <span data-i18n="ui_adm_save">Save</span></button>
+                <div id="mng-upkeep-block" class="hidden">
+                    <div class="ink-divider"></div>
+                    <p class="mng-hint" id="mng-upkeep-hint"></p>
+                </div>
+                <div id="mng-packup-block" class="hidden">
+                    <div class="ink-divider"></div>
+                    <p class="mng-hint" data-i18n="ui_mng_packup_hint">Shelves must be empty. The till is paid out and you get your shop sign back.</p>
+                    <button class="wood-btn muted mng-wide mng-danger" id="mng-packup"><i class="fa-solid fa-box-archive"></i> <span id="mng-packup-label" data-i18n="ui_mng_packup">Pack Up Store</span></button>
+                </div>
+            </div>
+            <div class="no-items hidden" id="mng-empty"><i class="fa-solid fa-box-open"></i><p id="mng-empty-text"></p></div>
+
+            <div class="mng-footer">
+                <span class="mng-hint" id="mng-footer-hint"></span>
+            </div>
+        </div>
+
+        <!-- Quantity / price modal -->
+        <div class="modal hidden" id="mng-modal">
+            <div class="modal-backdrop" data-mng-dismiss></div>
+            <div class="modal-container">
+                <div class="modal-header">
+                    <div class="item-icon-large" id="mng-modal-icon"></div>
+                    <div class="modal-title-section">
+                        <h2 id="mng-modal-title">Item</h2>
+                        <span class="modal-item-type" id="mng-modal-sub"></span>
+                    </div>
+                </div>
+                <div class="ink-divider"></div>
+                <div class="modal-body mng-form">
+                    <label class="mng-field" id="mng-modal-qty-wrap"><span data-i18n="ui_mng_qty">Quantity</span>
+                        <div class="mng-qty-row">
+                            <input type="number" min="1" step="1" class="mng-input" id="mng-modal-qty" value="1">
+                            <button class="wood-btn muted" id="mng-modal-max"><span data-i18n="ui_mng_max">Max</span></button>
+                        </div></label>
+                    <label class="mng-field" id="mng-modal-price-wrap"><span data-i18n="ui_mng_price">Price Each</span>
+                        <input type="number" min="0" step="0.01" class="mng-input" id="mng-modal-price"></label>
+                </div>
+                <div class="modal-footer">
+                    <button class="wood-btn muted" data-mng-dismiss><span data-i18n="ui_adm_cancel">Cancel</span></button>
+                    <button class="wood-btn" id="mng-modal-ok"><i class="fa-solid fa-check"></i> <span id="mng-modal-ok-label">OK</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         SHOP SIGN PLACEMENT (shopsign item)
+         ============================================ -->
+    <div id="sign-container" class="hidden">
+        <div class="mng-panel sign-panel">
+            <div class="shop-header mng-header">
+                <span class="circle-btn mng-seal"><i class="fa-solid fa-sign-hanging"></i></span>
+                <div class="header-content">
+                    <h1 class="shop-name mng-title" data-i18n="ui_sign_title">Place Shop Sign</h1>
+                    <p class="shop-subtitle" data-i18n="ui_sign_sub">Open your own store</p>
+                </div>
+                <button class="circle-btn" id="sign-cancel-x" data-i18n-title="ui_btn_close" title="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="section-divider"><span>&#9670;</span></div>
+            <div class="mng-form sign-body">
+                <label class="mng-field"><span data-i18n="ui_sign_name">Store Name</span>
+                    <input type="text" class="mng-input" id="sign-label" maxlength="60"></label>
+                <div class="mng-field"><span data-i18n="ui_mng_counter">Counter</span>
+                    <div class="mng-type-tabs">
+                        <button class="sort-btn mode-tab" data-sign-type="both" data-i18n="cl_shop_both">Buy &amp; Sell</button>
+                        <button class="sort-btn mode-tab" data-sign-type="buy" data-i18n="cl_shop_buy">Buy only</button>
+                        <button class="sort-btn mode-tab" data-sign-type="sell" data-i18n="cl_shop_sell">Sell only</button>
+                    </div>
+                </div>
+                <p class="mng-hint" data-i18n="ui_sign_hint">Stand where customers will find you. The sign is placed in front of you.</p>
+            </div>
+            <div class="modal-footer sign-footer">
+                <button class="wood-btn muted" id="sign-cancel"><span data-i18n="ui_adm_cancel">Cancel</span></button>
+                <button class="wood-btn muted" id="sign-reposition"><i class="fa-solid fa-arrows-up-down-left-right"></i> <span data-i18n="ui_sign_reposition">Reposition</span></button>
+                <button class="wood-btn" id="sign-confirm"><i class="fa-solid fa-store"></i> <span data-i18n="ui_sign_place">Open Store</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sign positioning key help (no focus: the player keeps control) -->
+    <div id="sign-help" class="hidden">
+        <div class="sign-help-panel">
+            <div class="sign-help-title" data-i18n="ui_sign_help_title">Position Your Sign</div>
+            <div class="ink-divider"></div>
+            <div class="sign-help-row"><span class="sign-keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span data-i18n="ui_sign_key_move">Walk - the sign follows you</span></div>
+            <div class="sign-help-row"><span class="sign-keys"><kbd>&larr;</kbd><kbd>&rarr;</kbd></span><span data-i18n="ui_sign_rotate">Rotate</span></div>
+            <div class="sign-help-row"><span class="sign-keys"><kbd>&uarr;</kbd><kbd>&darr;</kbd></span><span data-i18n="ui_sign_distance">Distance</span></div>
+            <div class="sign-help-row"><span class="sign-keys"><kbd class="wide">Enter</kbd></span><span data-i18n="ui_sign_key_confirm">Confirm position</span></div>
+            <div class="sign-help-row"><span class="sign-keys"><kbd class="wide">Backspace</kbd></span><span data-i18n="ui_adm_cancel">Cancel</span></div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
     <script src="admin.js"></script>
+    <script src="manage.js"></script>
 </body>
 </html>
