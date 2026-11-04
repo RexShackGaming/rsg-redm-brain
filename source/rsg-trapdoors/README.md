@@ -1,5 +1,7 @@
 # rsg-trapdoors
 
+**Version 2.1.0** · Full developer reference: [DOCS.md](DOCS.md)
+
 Synced, animated trapdoors for **RSG-Core (RedM)** with an optional 4-digit passcode lock, a themed keypad UI, Discord webhook logging and full multi-language support.
 
 ---
@@ -10,17 +12,19 @@ Synced, animated trapdoors for **RSG-Core (RedM)** with an optional 4-digit pass
 - **Smooth animation** – time-based eased movement (not frame-rate dependent) that can be reversed mid-swing without twisting the prop.
 - **Auto-close** – open trapdoors close themselves after a configurable time.
 - **Passcode lock**
-  - Any player can **Set Passcode** on a trapdoor that doesn't have one and becomes its owner.
+  - Players can **Set Passcode** on a trapdoor that doesn't have one and become its owner (can be turned off globally with `Config.AllowPlayerCodes` or per door with `allowCode = false`).
   - Locked trapdoors show a keypad when opened; closing never needs the code.
-  - The owner can **Change Passcode** (current code → new code → confirm).
-  - Wrong guesses trigger a lockout per character, which survives relogging.
+  - The owner can **Change Passcode** (current code → new code → confirm) or **Remove Passcode** (current code).
+  - Wrong guesses trigger a lockout per account licence, which survives relogging and character swaps.
   - Codes are saved in the `rsg_trapdoors` SQL table (created automatically) and are never sent to clients.
   - Admin command to remove a passcode.
+  - The keypad closes itself if you walk away or die.
 - **Keypad UI** – dark leather-and-gold RDR2 style, usable by mouse or keyboard.
 - **Discord webhooks** – door, passcode and security logs across three channels, with batching, rate-limit handling and flood protection.
 - **Secure by design** – the client only ever sends a door id (and a code). The server validates the id, the player, the distance to the door, cooldowns and ownership before anything happens.
-- **Localised** – every player-facing, UI and log string comes from ox_lib locales. Ships with `en, de, el, es, fr, ja, nl, pl, pt-br, ro`.
-- **ox_target** interaction with context-aware options (Open / Close / Set Passcode / Change Passcode).
+- **Localised** – every player-facing, UI and log string comes from rsg-core JSON locales. Ships with `en, de, el, es, fr, ja, nl, pl, pt-br, ro`.
+- **rsg-target** interaction with context-aware options (Open / Close / Set / Change / Remove Passcode).
+- **No ox_lib** – uses rsg-core callbacks, notify, locales and commands.
 
 ---
 
@@ -28,10 +32,9 @@ Synced, animated trapdoors for **RSG-Core (RedM)** with an optional 4-digit pass
 
 | Resource | Purpose |
 |---|---|
-| [rsg-core](https://github.com/Rexshack-RedM/rsg-core) | Framework / player data |
+| [rsg-core](https://github.com/Rexshack-RedM/rsg-core) | Framework, callbacks, notify, locales, commands |
 | [oxmysql](https://github.com/overextended/oxmysql) | Stores passcodes in the database |
-| [ox_lib](https://github.com/overextended/ox_lib) | Callbacks, locales, notifications, commands |
-| [ox_target](https://github.com/overextended/ox_target) | Interaction options on the trapdoor props |
+| [rsg-target](https://github.com/Rexshack-RedM/rsg-target) | Interaction options on the trapdoor props |
 
 ---
 
@@ -42,9 +45,8 @@ Synced, animated trapdoors for **RSG-Core (RedM)** with an optional 4-digit pass
 
    ```cfg
    ensure oxmysql
-   ensure ox_lib
    ensure rsg-core
-   ensure ox_target
+   ensure rsg-target
    ensure rsg-trapdoors
    ```
 
@@ -59,7 +61,7 @@ Synced, animated trapdoors for **RSG-Core (RedM)** with an optional 4-digit pass
 
 ```
 rsg-trapdoors/
-├── client/client.lua        -- sync, animation, ox_target options, keypad bridge
+├── client/client.lua        -- sync, animation, rsg-target options, keypad bridge
 ├── server/sv_config.lua     -- webhook + database config (SERVER ONLY)
 ├── server/database.lua      -- automatic database installer / migrations
 ├── server/logs.lua          -- Discord webhook logger
@@ -84,6 +86,7 @@ rsg-trapdoors/
 | `Config.AutoCloseTime` | `30000` | ms before an open trapdoor closes itself. `0` disables auto-close. |
 | `Config.PlayerCooldown` | `1000` | ms between requests per player (anti-spam). |
 | `Config.StreamDistance` | `100.0` | Distance at which clients look for and sync the prop. |
+| `Config.AllowPlayerCodes` | `true` | `false` = players cannot set passcodes (admins can still reset). Per door: `allowCode = false`. |
 | `Config.MaxCodeAttempts` | `3` | Wrong passcodes before a lockout. |
 | `Config.CodeLockoutTime` | `60000` | Lockout length in ms. |
 | `Config.AdminResetCommand` | `'resettrapdoorcode'` | Name of the admin reset command. |
@@ -102,6 +105,7 @@ Config.Trapdoors = {
         closedRotation   = vec3(0.0, 0.0, 165.0),         -- pitch, roll, yaw (degrees)
         openRotation     = vec3(-90.0, 0.0, 165.0),
         interactDistance = 2.0,
+        allowCode        = true,                          -- optional, false = no passcodes on this door
     },
 }
 ```
@@ -148,6 +152,7 @@ Each event can be toggled, recoloured or moved to another channel in `WebhookCon
 | `door_autoclose` | doors | **off** | A trapdoor auto-closes |
 | `code_set` | passcode | on | A passcode is set (owner assigned) |
 | `code_changed` | passcode | on | The owner changes the passcode |
+| `code_removed` | passcode | on | The owner removes their passcode |
 | `code_reset` | passcode | on | An admin removes a passcode |
 | `code_wrong` | security | on | A wrong passcode is entered |
 | `code_lockout` | security | on | A player hits the attempt limit |
@@ -187,10 +192,10 @@ DatabaseConfig = {
 
 ## Languages
 
-Set the language with the ox_lib convar in `server.cfg`:
+Set the language with the rsg-core convar in `server.cfg` (falls back to `ox:locale`, then `en`):
 
 ```cfg
-setr ox:locale en
+setr rsg:locale en
 ```
 
 Available: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
@@ -205,7 +210,7 @@ This controls player notifications, target options, the keypad UI and the Discor
 
 ### Players
 
-Aim at a trapdoor with ox_target to see the available options:
+Aim at a trapdoor with rsg-target to see the available options:
 
 | Option | Shown when | What it does |
 |---|---|---|
@@ -213,6 +218,7 @@ Aim at a trapdoor with ox_target to see the available options:
 | **Close** | Trapdoor is open | Closes it. Never needs a code. |
 | **Set Passcode** | No passcode set yet | Enter a 4-digit code, then confirm it. You become the owner. |
 | **Change Passcode** | You own the passcode | Enter the current code, the new code, then confirm. |
+| **Remove Passcode** | You own the passcode | Enter the current code to unlock the door permanently. |
 
 **Keypad controls**
 
@@ -232,7 +238,7 @@ After `Config.MaxCodeAttempts` wrong codes you're locked out of that trapdoor fo
 /resettrapdoorcode <door id>
 ```
 
-Removes the passcode and owner from a trapdoor (e.g. `/resettrapdoorcode strawberry`). Requires `group.admin`. It can also be run from the server console. The next player can then set a new passcode.
+Removes the passcode and owner from a trapdoor (e.g. `/resettrapdoorcode strawberry`). Requires rsg-core `admin` permission. It can also be run from the server console. The next player can then set a new passcode.
 
 ---
 
@@ -249,9 +255,9 @@ Removes the passcode and owner from a trapdoor (e.g. `/resettrapdoorcode strawbe
 
 | Problem | Fix |
 |---|---|
-| No target options on the trapdoor | Check `ox_target` is started before this resource and that the prop exists within 3m of `closedPosition`. |
+| No target options on the trapdoor | Check `rsg-target` is started before this resource and that the prop exists within 3m of `closedPosition`. |
 | Trapdoor doesn't move for other players | Make sure `closedPosition` matches the prop's real world position. |
-| Keypad text is blank | The locale file for your `ox:locale` is missing keys – compare it with `en.json`. |
+| Keypad text is blank | The locale file for your `rsg:locale` is missing keys – compare it with `en.json`. |
 | Discord logs not arriving | Check the channel URL isn't empty, `WebhookConfig.Enabled = true`, the event is `enabled`, and watch the server console for `webhook failed` messages. |
 
 ---
@@ -259,3 +265,7 @@ Removes the passcode and owner from a trapdoor (e.g. `/resettrapdoorcode strawbe
 ## Credits
 
 Original script by **RMS and Phil Mcracken**.
+
+---
+
+Support: https://buymeacoffee.com/rexshack

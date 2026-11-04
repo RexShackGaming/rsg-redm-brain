@@ -35,6 +35,7 @@ WebhookConfig.Events = {
     door_autoclose = { enabled = false, channel = 'doors',   color = 0x5a5a5a },
     code_set       = { enabled = true, channel = 'passcode', color = 0x5a7d4f },
     code_changed   = { enabled = true, channel = 'passcode', color = 0xd9a441 },
+    code_removed   = { enabled = true, channel = 'passcode', color = 0x9a9a9a },
     code_reset     = { enabled = true, channel = 'passcode', color = 0xe0554f },
     code_wrong     = { enabled = true, channel = 'security', color = 0xd9a441 },
     code_lockout   = { enabled = true, channel = 'security', color = 0xe0554f },

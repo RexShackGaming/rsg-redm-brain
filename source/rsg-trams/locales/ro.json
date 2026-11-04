@@ -1,0 +1,15 @@
+{
+    "tram_blip": "Tramvai",
+    "tram_title": "Tramvaiele din Saint Denis",
+    "cmd_help": "Arată liniile, pornește/oprește o linie sau resetează",
+    "cmd_param_track": "Linie (loop) sau reset",
+    "cmd_param_state": "on sau off",
+    "status_running": "în circulație",
+    "status_spawning": "se creează",
+    "status_off": "oprită",
+    "cmd_reset": "Toate tramvaiele au fost eliminate, reapar în curând",
+    "cmd_bad_track": "Linie necunoscută. Folosește: %s",
+    "cmd_bad_state": "Folosește on sau off",
+    "cmd_on": "Linia %s pornită, tramvaiul apare în curând",
+    "cmd_off": "Linia %s oprită, tramvaiul a fost eliminat"
+}

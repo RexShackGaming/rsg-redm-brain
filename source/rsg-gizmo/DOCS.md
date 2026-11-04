@@ -129,3 +129,12 @@ No tables.
 | rsg-gizmo restarted mid-placement | The ghost is deleted and an edited entity is put back where it was automatically |
 
 Support: https://buymeacoffee.com/rexshack
+
+## Blocking other resources while placing
+
+While a session runs the gizmo disables `Config.BlockControls` (now including the mouse-wheel aliases and rsg-voice's range key) and sets the local state bag `LocalPlayer.state.gizmoActive = true`.
+Resources that read input through key mappings / commands (which `DisableControlAction` cannot block) should check it, e.g. in rsg-voice:
+
+```lua
+if LocalPlayer.state.gizmoActive then return end
+```

@@ -55,5 +55,6 @@
     "t_waypoint": "Wegpunkt gesetzt",
     "t_label_saved": "Name gespeichert: %s",
     "t_label_cleared": "Name entfernt",
-    "t_forgot": "Gespeicherter Zustand entfernt (gilt ab dem nächsten Neustart)"
+    "t_forgot": "Gespeicherter Zustand entfernt (gilt ab dem nächsten Neustart)",
+    "ui_no_coords": "Unbekannt (keine Koordinaten)"
 }

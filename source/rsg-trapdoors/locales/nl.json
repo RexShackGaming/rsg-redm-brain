@@ -69,5 +69,11 @@
     "log_hidden": "verborgen",
     "log_na": "n.v.t.",
     "log_unknown": "onbekend",
-    "log_none": "geen"
+    "log_none": "geen",
+    "target_remove_code": "Code verwijderen",
+    "code_removed": "Code verwijderd",
+    "codes_disabled": "Codes zijn uitgeschakeld op dit luik",
+    "ui_remove": "Voer code in om te verwijderen",
+    "log_title_code_removed": "Code verwijderd",
+    "log_desc_codes_disabled": "Probeerde een code in te stellen terwijl codes uitgeschakeld zijn"
 }

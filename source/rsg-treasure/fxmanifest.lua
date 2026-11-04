@@ -4,10 +4,10 @@ game 'rdr3'
 
 name 'rsg-treasure'
 description 'Treasure map hunting for RSG Framework'
-version '3.0.0'
+version '3.1.0'
 
 shared_scripts {
-    '@ox_lib/init.lua',
+    '@rsg-core/shared/locale.lua',
     'shared/config.lua'
 }
 
@@ -18,7 +18,8 @@ client_scripts {
 server_scripts {
     'server/sv_config.lua',
     'server/webhook.lua',
-    'server/server.lua'
+    'server/server.lua',
+    'server/versionchecker.lua'
 }
 
 ui_page 'html/index.html'
@@ -30,8 +31,7 @@ files {
 
 dependencies {
     'rsg-core',
-    'rsg-inventory',
-    'ox_lib'
+    'rsg-inventory'
 }
 
 lua54 'yes'

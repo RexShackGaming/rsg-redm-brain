@@ -1,5 +1,7 @@
 Config = {}
 
+Config.AutoDatabase   = true         -- create the rsg_imaps table on start (set false to import installation/rsg-imap.sql manually)
+
 Config.Command        = 'imaps'      -- /imaps [radius]  open the nearby IMAP menu
 Config.DrawCommand    = 'imapdraw'   -- /imapdraw [radius] toggle 3D labels in the world
 Config.DefaultRadius  = 50.0

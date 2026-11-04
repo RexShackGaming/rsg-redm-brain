@@ -1,0 +1,15 @@
+{
+    "tram_blip": "Straßenbahn",
+    "tram_title": "Straßenbahnen Saint Denis",
+    "cmd_help": "Strecken anzeigen, Strecke ein/aus oder zurücksetzen",
+    "cmd_param_track": "Strecke (loop) oder reset",
+    "cmd_param_state": "on oder off",
+    "status_running": "fährt",
+    "status_spawning": "wird erstellt",
+    "status_off": "aus",
+    "cmd_reset": "Alle Straßenbahnen entfernt, sie erscheinen gleich neu",
+    "cmd_bad_track": "Unbekannte Strecke. Verfügbar: %s",
+    "cmd_bad_state": "Benutze on oder off",
+    "cmd_on": "Strecke %s an, die Bahn erscheint gleich",
+    "cmd_off": "Strecke %s aus, die Bahn wurde entfernt"
+}

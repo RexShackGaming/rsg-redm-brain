@@ -1,0 +1,15 @@
+{
+    "tram_blip": "Bonde",
+    "tram_title": "Bondes de Saint Denis",
+    "cmd_help": "Ver linhas, ligar/desligar uma linha ou reiniciar",
+    "cmd_param_track": "Linha (loop) ou reset",
+    "cmd_param_state": "on ou off",
+    "status_running": "rodando",
+    "status_spawning": "surgindo",
+    "status_off": "desligada",
+    "cmd_reset": "Todos os bondes removidos, voltam em breve",
+    "cmd_bad_track": "Linha desconhecida. Use: %s",
+    "cmd_bad_state": "Use on ou off",
+    "cmd_on": "Linha %s ligada, o bonde surge em breve",
+    "cmd_off": "Linha %s desligada, o bonde foi removido"
+}

@@ -5,10 +5,10 @@ game 'rdr3'
 author 'RexShack'
 name 'rsg-mapping'
 description 'Mapping tool for RSG Framework'
-version '3.0.0'
+version '3.1.0'
 
 shared_scripts {
-    '@ox_lib/init.lua',
+    '@rsg-core/shared/locale.lua',
     'shared/config.lua'
 }
 
@@ -27,7 +27,6 @@ client_scripts {
 
 dependencies {
     'rsg-core',
-    'ox_lib',
     'oxmysql',
 }
 

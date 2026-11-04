@@ -1,12 +1,12 @@
 # rsg-trader
 
-Version 3.0.0. rsg-trader
+Version 3.1.0. rsg-trader
 
-Dynamic-price NPC traders for **RSG-Core (RedM)**. Players buy and sell items at prices that move with stock levels. Admins place traders and manage stock in game through a built-in admin panel, with no config edits or restarts. - NPC traders spawn and despawn by distance, with optional fade-in and an ox_target "Speak with the Trader" option - Buy / Sell UI that shows stock bars, your cash, owned 
+Dynamic-price NPC traders for **RSG-Core (RedM)**. Players buy and sell items at prices that move with stock levels. Admins place traders and manage stock in game through a built-in admin panel, with no config edits or restarts. - NPC traders spawn and despawn by distance, with optional fade-in and an rsg-target "Speak with the Trader" option - Buy / Sell UI that shows stock bars, your cash, owned
 
 Source: https://github.com/Rexshack-RedM/rsg-trader
 
-**Dependencies:** `rsg-core`, `rsg-inventory`, `ox_lib`, `ox_target`, `oxmysql`
+**Dependencies:** `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
 
 Has NUI (`ui_page`).
 
@@ -21,10 +21,6 @@ Has NUI (`ui_page`).
 ## Event handlers
 
 **server:** `rsg-trader:server:databaseReady`
-
-## Callbacks (lib.callback)
-
-**server:** `rsg-trader:server:admin:deleteItem`, `rsg-trader:server:admin:deleteTrader`, `rsg-trader:server:admin:isAdmin`, `rsg-trader:server:admin:items`, `rsg-trader:server:admin:saveItem`, `rsg-trader:server:admin:saveTrader`, `rsg-trader:server:admin:traders`, `rsg-trader:server:buy`, `rsg-trader:server:sell`, `rsg-trader:server:traderdata`
 
 ## Commands (RSGCore.Commands.Add)
 

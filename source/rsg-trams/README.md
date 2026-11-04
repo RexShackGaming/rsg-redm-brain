@@ -1,58 +1,42 @@
 # rsg-trams
 
-Saint Denis trolleys for RSG Framework.
+Saint Denis trolleys for RSG Framework, with **one trolley on the Saint Denis loop**.
 
 ## Features
-- Networked Saint Denis trolleys that every player sees, with map blips
-- Speeds, spawn points and station stops taken from Rockstar's ambient trolley code
-- Conductor shouts arrival and next-stop announcements with Rockstar's conductor voices (optional)
-- Trolleys keep their distance instead of driving through each other
-- Smooth braking for people, horses and carts on the rails; NPC traffic that blocks the line is cleared, and a trolley never waits forever (`Config.Avoid`)
-- Trolley engine sound forced on every client (`Config.Audio`)
-- Admin limit on how many trolleys run at once (`/trams`), saved across restarts
-- Free to ride: no fares or tickets
-- Self-healing: the server checks every trolley and respawns any that disappear
-- Trolleys survive the spawning player leaving; no duplicate trolleys on host change
-
-## How it matches Rockstar
-| Rockstar (medium_update.c) | rsg-trams |
-|---|---|
-| Ambient trains 8-12 `AMBIENT_NBX_TROLLEY*` (func_1283) | `Config.Lines` |
-| Config hashes via func_308 (`-1083616881`, `1936859429`, `-272646696`) | `line.config` |
-| Spawn coords/direction (func_1284 / func_1285) | `line.coords` / `line.direction` |
-| Cruise speed 3.5 (func_775), max 6.0 (func_779) | `Config.CruiseSpeed` / `Config.MaxSpeed` |
-| Stops for stations (func_1287) | `Config.StopForStations` |
-| Conductor voice `0835_S_M_M_GenConductor_01_WHITE_01-03` (func_1277) | set on each trolley driver |
-| Station-based `TROLLEY_ARRIVAL_*` / `TROLLEY_NEXT_*` / `CALL_OUT_NEUTRAL` shouts via `GET_CURRENT_STATION_FOR_TRAIN` (func_773/1278/1279) | `Config.Announce` / `Config.AnnounceRange` |
-
-## How it works
-The server picks one player (the host) to create the trolleys as networked mission trains, and stores their network IDs in `GlobalState.rsgTrams`. Every `Config.HostCheckInterval` ms the server checks that each enabled line's trolley still exists and asks the host to respawn any that are missing. Trolleys are set to persist when their owner leaves, and whichever client owns a trolley keeps its cruise speed applied. If the host leaves, the server picks a new one, which only spawns trolleys that are actually missing.
+- One networked trolley on the Saint Denis loop (upper and inner tracks removed), with map blips
+- Only one trolley ever: if a trolley already exists anywhere, no new one is spawned (a lost one is re-adopted)
+- Server enforces one trolley: a second or late spawn is deleted, stray cars are swept every check
+- Speeds, spawn points and station stops from Rockstar's ambient trolley code
+- Conductor shouts arrival and next-stop announcements with Rockstar's conductor voices
+- Smooth braking for people, horses, carts and other trolleys on the rails; NPC traffic that blocks the line is cleared, and a trolley never waits forever
+- Trolley engine sound forced on every client
+- Admins turn the loop on/off in-game (`/trams`), saved across restarts
+- Free to ride: every car carries the `ownFare` state bag, so rsg-railroad never charges riders
+- Self-healing: missing or driverless trolleys are replaced; trolleys survive the spawning player leaving
+- No ox_lib: rsg-core locales, notify and commands. Languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro
 
 ## Requirements
-- rsg-core, ox_lib, OneSync enabled
+- rsg-core, OneSync
 
 ## Install
 1. Drop `rsg-trams` into `resources/[framework]`.
-2. `ensure rsg-trams` after `rsg-core` and `ox_lib`.
+2. `ensure rsg-trams` after `rsg-core`.
+3. Optional: `setr rsg:locale "en"` in server.cfg for the language.
+
+No database is used.
 
 ## Admin command
-| Command | Permission | Description |
-|---|---|---|
-| `/trams` | `Config.AdminGroup` (default `group.admin`) | Show running trolleys and the current limit |
-| `/trams <number>` | same | Set how many trolleys run at once (0 = none). Extra trolleys are removed at once; missing ones spawn within `Config.HostCheckInterval` |
+| Command | Description |
+|---|---|
+| `/trams` | Status of every track (running / spawning / off) |
+| `/trams loop <on\|off>` | Turn the loop on or off (saved with resource KVP) |
+| `/trams reset` | Remove all trolleys; they respawn on the next check |
 
-The limit is saved (resource KVP) and overrides `Config.MaxTrams` until changed again.
+Permission: `Config.AdminPermission` (rsg-core permission, default `admin`).
 
-## Configuration
-All options are in `shared/config.lua`:
-- `Config.Lines`: which lines are enabled, spawn points and direction. `callOutOnly` makes a line's conductor only use the neutral call-out (Rockstar's upper line).
-- `Config.MaxTrams` / `Config.AdminGroup`: default trolley limit and who may change it
-- Speeds, passengers/conductor, invincibility, blip sprite and modifier, announcements
-- `Config.Audio`: trolley car models that get their sound forced on
-- `Config.TrafficGap`: gap kept behind the trolley ahead
-- `Config.Avoid`: look-ahead distance and width, braking/acceleration, stop gap, when NPC traffic is cleared (`clearNpcAfter`) and when a blocked trolley moves off anyway (`maxWait`, `pushTime`)
+## Upgrading from 3.x
+`Config.Lines` and `Config.MaxTrams` are gone. The three main-loop lines (Rockstar 8/9/10) are now one `loop` track with one trolley. The upper and inner tracks were removed. `/trams <number>` is replaced by per-track on/off. ox_lib is no longer needed.
 
-## Tickets
-Trolleys are free. Every trolley car carries the `ownFare` state bag, so any ticket system that respects it (rsg-railroad does) leaves trolleys alone and never charges riders.
+See `DOCS.md` for configuration and internals.
 
 Support: https://buymeacoffee.com/rexshack

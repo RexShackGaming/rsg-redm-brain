@@ -83,9 +83,9 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-theatre](rsg-theatre.md) | Theatre Raleur (Saint Denis) stage shows | 0 | 4 |
 | [rsg-track](rsg-track.md) | A custom horse race track builder and race manager for RSG-Core RedM servers. Players (or staff) lay out a | 0 | 16 |
 | [rsg-trader](rsg-trader.md) | Dynamic-price NPC traders for RSG-Core (RedM). Players buy and sell items at prices that move with stock l | 1 | 1 |
-| [rsg-trams](rsg-trams.md) | rsg-trams - Saint Denis trolley network | 0 | 3 |
-| [rsg-trapdoors](rsg-trapdoors.md) | Synced, animated trapdoors for RSG-Core (RedM) with an optional 4-digit passcode lock, a themed keypad UI, | 1 | 1 |
-| [rsg-treasure](rsg-treasure.md) | Treasure map hunting for RSG Framework | 1 | 3 |
+| [rsg-trams](rsg-trams.md) | rsg-trams - Saint Denis trolley network (one trolley per track) | 0 | 3 |
+| [rsg-trapdoors](rsg-trapdoors.md) | Version 2.1.0 · Full developer reference: [DOCS.md](DOCS.md) Synced, animated trapdoors for RSG-Core (Re | 1 | 1 |
+| [rsg-treasure](rsg-treasure.md) | Treasure map hunting for RSG Framework | 1 | 5 |
 | [rsg-voice](rsg-voice.md) | rsg-voice - proximity voice for RSG Framework | 11 | 13 |
 | [rsg-wagons](rsg-wagons.md) | rsg-wagons - wagon store with full NUI catalogue, 3D preview and wagon ownership | 2 | 8 |
 | [rsg-wardrobe](rsg-wardrobe.md) | Version 3.2.0 · RSG Framework (RedM) Take individual clothing items off and put them back on from a wardro | 9 | 9 |

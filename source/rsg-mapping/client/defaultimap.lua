@@ -40,7 +40,6 @@ RequestImap(-1744253204) -- something relating to green house in valentine
 RequestImap(-1781246069) -- something relating to green house in valentine
 RequestImap(610256856) -- window next to front door of house behind valentine gunsmith
 --RequestImap(-2083943324) --hay bales and boxes outside Keane's Saloon in valentine
-RequestImap(-159723514) -- barrels near rock to the right of valentine stables
 RequestImap(1936501508) -- Barrels by wagon near valentine -382.04, 729.91, 115.92
 RequestImap(-407068688) -- Skull, Flags and random props at -384.06, 875.9, 115.51 near valentine
 RequestImap(-983957271) -- Skull, Flags and random props at -434.07, 550.15, 103.8 near valentine
@@ -529,9 +528,6 @@ RequestImap(-1229109520) -- Green Plants
 --RequestImap(-2082201137)  --Blackwater Ground Town Hall
 --RequestImap(1343343014)  --Blackwater Town Hall Addons Construction
 --RequestImap(739412171)  -- Two Boards in front of city hall (Goes with Town Hall Construction)
-RequestImap(-5339556)  --Bank Under Construction
-RequestImap(1641449717)
-RequestImap(1258244391) -- something
 RequestImap(-501793326) -- construction
 RequestImap(1490756544) -- crates on main st
 RequestImap(-753454183) -- trapper
@@ -599,7 +595,6 @@ RequestImap(-186143124)
 RequestImap(966418260)
 RequestImap(-432154242)
 RequestImap(500829173)
-RequestImap(-1986209836)
 RequestImap(-1403908542)
 
 -- ############# -- Saint Denis Doctor office
@@ -656,7 +651,6 @@ RequestImap(1355914142)
 RequestImap(-1036688493)
 RequestImap(-30157790)
 RequestImap(-929277449)
-RequestImap(-801609437)
 
 -- ############# -- Saint Denis THEATRE
 RequestImap(-278745837) -- saint denis big theatre
@@ -1512,7 +1506,6 @@ RequestImap(334010167)
 RequestImap(-676881895)
 RequestImap(1331438832)
 RequestImap(376665102) -- rhodes
-RequestImap(-928815382) -- near saint denis train station 
 RequestImap(1736837788)
 RequestImap(1814624585)
 RequestImap(-1613262779) -- near straberry -1770.1, -479.72, 164.66
@@ -1834,8 +1827,6 @@ RequestImap(375693548)
 RequestImap(1636184722)
 RequestImap(371690004)
 RequestImap(-276524767)
-RequestImap(728046625)
-RequestImap(-929277449)
 RequestImap(1092530042)
 RequestImap(-492341871)
 RequestImap(-15009406)
@@ -1901,7 +1892,6 @@ RequestImap(854689865)
 RequestImap(1772877245)
 RequestImap(-1466175146)
 RequestImap(-1023331176)
-RequestImap(-276524767)
 RequestImap(1578454569)
 RequestImap(2101399188)
 RequestImap(-1218507547)
@@ -2213,7 +2203,6 @@ RemoveImap(1649548630)  -- Blackwater -- Town Hall -- Grass on Right side of Cit
 RemoveImap(1173561253) -- Blackwater -- Town Hall -- Tents Beside City Hall Near Trech
 RequestImap(1470738186) -- Blackwater -- Town Hall -- Adds Town Hall Pre-Construcion Ground (Ground does not mesh well with contrustion IPLs)
 RequestImap(-1632348233)-- Blackwater -- Town Hall -- Adds Trees and Grass (DO NOT USE WITH CONSTRUCTION IPL, WILL MERGE VISUALS)
-RemoveImap(1173561253)    -- Blackwater -- Town Hall -- Tents Beside City Hall Near Trech
 RemoveImap(1641449717)  -- Blackwater -- Town Hall -- Grass along path near tents
 -- End of Blackwater Town Hall
 

@@ -1,0 +1,15 @@
+{
+    "tram_blip": "Tramway",
+    "tram_title": "Tramways de Saint Denis",
+    "cmd_help": "Voir les lignes, activer/désactiver une ligne ou réinitialiser",
+    "cmd_param_track": "Ligne (loop) ou reset",
+    "cmd_param_state": "on ou off",
+    "status_running": "en service",
+    "status_spawning": "en création",
+    "status_off": "arrêtée",
+    "cmd_reset": "Tous les tramways retirés, ils réapparaissent bientôt",
+    "cmd_bad_track": "Ligne inconnue. Utilise : %s",
+    "cmd_bad_state": "Utilise on ou off",
+    "cmd_on": "Ligne %s activée, son tramway arrive bientôt",
+    "cmd_off": "Ligne %s désactivée, son tramway a été retiré"
+}

@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 local Saved = {}      -- [hash] = { label = string|nil, state = 1|0|nil }
 local lastWrite = {}  -- [src] = GetGameTimer() of last write (spam guard)
@@ -9,7 +8,7 @@ local INT32_MIN, INT32_MAX = -2147483648, 2147483647
 
 local function isAdmin(src)
     if not Config.OnlyAdmins then return true end
-    return RSGCore.Functions.HasPermission(src, Config.AdminPerm) or IsPlayerAceAllowed(src, 'command')
+    return RSGCore.Functions.HasPermission(src, Config.AdminPerm)
 end
 
 local function savedList()
@@ -31,16 +30,32 @@ end
 
 AddEventHandler('playerDropped', function() lastWrite[source] = nil end)
 
-lib.callback.register('rsg-mapping:server:canUse', function(source) return isAdmin(source) end)
-lib.callback.register('rsg-mapping:server:getSaved', function() return savedList() end)
+RSGCore.Functions.CreateCallback('rsg-mapping:server:canUse', function(source, cb) cb(isAdmin(source)) end)
+RSGCore.Functions.CreateCallback('rsg-mapping:server:getSaved', function(_, cb) cb(savedList()) end)
+
+local SCHEMA = [[CREATE TABLE IF NOT EXISTS `rsg_imaps` (
+    `hash` INT NOT NULL,
+    `name` VARCHAR(128) NULL,
+    `label` VARCHAR(100) NULL,
+    `state` TINYINT(1) NULL COMMENT '1 = enabled, 0 = disabled, NULL = game default',
+    `updated_by` VARCHAR(64) NULL,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`hash`)
+)]]
+
+local function ensureDatabase()
+    local ok, err = pcall(MySQL.query.await, SCHEMA)
+    if not ok then
+        print('^1[rsg-mapping] could not create database table: ' .. tostring(err) .. '^7')
+        return false
+    end
+    print('^2[rsg-mapping] database tables ready^7')
+    return true
+end
 
 MySQL.ready(function()
+    if Config.AutoDatabase and not ensureDatabase() then return end
     local ok, err = pcall(function()
-        MySQL.query.await([[CREATE TABLE IF NOT EXISTS `rsg_imaps` (
-            `hash` INT NOT NULL, `name` VARCHAR(128) NULL, `label` VARCHAR(100) NULL,
-            `state` TINYINT(1) NULL, `updated_by` VARCHAR(64) NULL,
-            `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (`hash`))]])
         local rows = MySQL.query.await('SELECT hash, label, state FROM rsg_imaps') or {}
         for _, r in ipairs(rows) do
             Saved[r.hash] = { label = r.label, state = r.state }

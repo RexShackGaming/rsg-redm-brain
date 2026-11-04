@@ -1,8 +1,13 @@
-lib.locale()
+local RSGCore = exports['rsg-core']:GetCoreObject()
 
 local hunt = nil   -- { loc, centre, blip, icon, chest }
 local textShown = false
 local lastText = nil
+local lastDetector = nil
+
+local function notify(desc, ntype)
+    RSGCore.Functions.Notify({ title = locale('title'), description = desc, type = ntype or 'inform', duration = 5000 })
+end
 
 local function hideText()
     if textShown then SendNUIMessage({ action = 'signal', show = false }) textShown = false lastText = nil end
@@ -10,6 +15,8 @@ end
 
 -- drives the detector's own vibration/needle (femga AI/BLACKBOARDS: 0.1 - 1.0)
 local function setDetectorValue(v)
+    if v == lastDetector then return end
+    lastDetector = v
     Citizen.InvokeNative(0x437C08DB4FEBE2BD, PlayerPedId(), 'MetalDetectorDetectionValue', v, -1) -- SET_PED_BLACKBOARD_FLOAT
 end
 
@@ -47,6 +54,12 @@ end
 
 local function dig()
     local ped = PlayerPedId()
+    hunt.digging = true   -- hides the [J] prompt
+    -- server checks distance, map, detector and tool before the anim, and starts the dig timer
+    if not RSGCore.Functions.AwaitCallback('rsg-treasure:server:digStart', 5000) then
+        if hunt then hunt.digging = false end
+        return
+    end
     hideText()
     -- put the metal detector away before digging (it's a kit item held in hand,
     -- so force-holster and remove it from the hand slot, then wait until it's gone)
@@ -56,8 +69,7 @@ local function dig()
     while GetPedCurrentHeldWeapon(ped) == Config.Detector and GetGameTimer() < t do Wait(50) end
     Wait(300)
     -- dig-up-chest anim scene (from the old rsg-treasure: script@mech@treasure_hunting@chest)
-    if not hunt or not hunt.pinpointed then return end
-    hunt.digging = true   -- hides the [J] prompt
+    if not hunt then return end
 
     local pos = GetEntityCoords(ped)
     local rot = GetEntityRotation(ped)
@@ -70,7 +82,6 @@ local function dig()
     SetModelAsNoLongerNeeded(Config.ChestModel)
     SetEntityVisible(chest, false)   -- keep it hidden until the dig is under way
     hunt.chest = chest
-    TriggerServerEvent('rsg-treasure:server:digStart')
 
     local scene = Citizen.InvokeNative(0x1FCA98E33C1437B3, Config.DigAnim.dict, 0, Config.DigAnim.playlist, 0, 1) -- _CREATE_ANIM_SCENE
     Citizen.InvokeNative(0x020894BF17A02EF2, scene, pos.x, pos.y, groundZ, rot.x, rot.y, rot.z, 2)     -- SET_ANIM_SCENE_ORIGIN
@@ -89,7 +100,7 @@ local function dig()
     Citizen.InvokeNative(0x84EEDB2C6E650000, scene)                                                    -- _DELETE_ANIM_SCENE
 
     local current = hunt
-    if lib.callback.await('rsg-treasure:server:dig', false) then return end -- server ends the hunt on success
+    if RSGCore.Functions.AwaitCallback('rsg-treasure:server:dig', 10000) then return end -- server ends the hunt on success
     -- rejected (too far, cooldown, missing item...): bury the box again and let them retry
     if hunt == current and current then
         removeChest()
@@ -134,7 +145,7 @@ local function markSpot()
         current.promptActive = false
     end)
 
-    lib.notify({ title = locale('title'), description = locale('pinpointed'), type = 'success', duration = 5000 })
+    notify(locale('pinpointed'), 'success')
 end
 
 local function signalBars(strength)
@@ -197,7 +208,7 @@ RegisterNetEvent('rsg-treasure:client:startHunt', function(loc, centre)
                 hideText()
                 setDetectorValue(0.0)
                 if inCircle and not warned and not current.pinpointed then
-                    lib.notify({ title = locale('title'), description = locale('need_detector'), type = 'inform', duration = 5000 })
+                    notify(locale('need_detector'), 'inform')
                     warned = true
                 end
                 wait = inCircle and 500 or 2000
@@ -214,6 +225,18 @@ RegisterNetEvent('rsg-treasure:client:startHunt', function(loc, centre)
 end)
 
 RegisterNetEvent('rsg-treasure:client:endHunt', cleanup)
+
+-- get the active hunt back after a relog or a resource restart
+RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
+    TriggerServerEvent('rsg-treasure:server:resume')
+end)
+RegisterNetEvent('RSGCore:Client:OnPlayerUnload', cleanup)
+
+AddEventHandler('onResourceStart', function(res)
+    if res == GetCurrentResourceName() and LocalPlayer.state.isLoggedIn then
+        TriggerServerEvent('rsg-treasure:server:resume')
+    end
+end)
 
 AddEventHandler('onResourceStop', function(res)
     if res == GetCurrentResourceName() then cleanup() end

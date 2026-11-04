@@ -69,5 +69,11 @@
     "log_hidden": "verborgen",
     "log_na": "k. A.",
     "log_unknown": "unbekannt",
-    "log_none": "keiner"
+    "log_none": "keiner",
+    "target_remove_code": "Passcode entfernen",
+    "code_removed": "Passcode entfernt",
+    "codes_disabled": "Passcodes sind für diese Falltür deaktiviert",
+    "ui_remove": "Passcode zum Entfernen eingeben",
+    "log_title_code_removed": "Passcode entfernt",
+    "log_desc_codes_disabled": "Versuchte einen Passcode zu setzen, obwohl Passcodes deaktiviert sind"
 }

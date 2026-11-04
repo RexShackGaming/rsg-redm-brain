@@ -69,5 +69,11 @@
     "log_hidden": "oculto",
     "log_na": "n/d",
     "log_unknown": "desconocido",
-    "log_none": "ninguno"
+    "log_none": "ninguno",
+    "target_remove_code": "Quitar código",
+    "code_removed": "Código eliminado",
+    "codes_disabled": "Los códigos están desactivados en esta trampilla",
+    "ui_remove": "Introduce el código para quitarlo",
+    "log_title_code_removed": "Código eliminado",
+    "log_desc_codes_disabled": "Intentó poner un código donde están desactivados"
 }

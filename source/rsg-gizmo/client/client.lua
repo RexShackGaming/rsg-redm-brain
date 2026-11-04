@@ -226,8 +226,10 @@ end
 -- shared wrapper: always hides the HUD and clears state, even if run() errors
 local function runSession(ent, o)
     active, cancelFlag = true, false
+    LocalPlayer.state:set('gizmoActive', true, false) -- lets other resources (e.g. rsg-voice) ignore input
     local ok, result = pcall(run, ent, o)
     active = false
+    LocalPlayer.state:set('gizmoActive', false, false)
     SendNUIMessage({ action = 'hide' })
     if not ok then dbg('error', result) return nil end
     return result

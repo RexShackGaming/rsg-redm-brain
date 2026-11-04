@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 local ANIM_DICT = 'mech_cover@env@doors@unlocked@generic@base@push_return@bow@left@no_lean'
 
@@ -136,13 +135,14 @@ local uiStrings = {
     enter = locale('ui_enter'), set = locale('ui_set'), confirm = locale('ui_confirm'),
     current = locale('ui_current'), new = locale('ui_new'), confirmNew = locale('ui_confirm_new'),
     btnConfirm = locale('ui_btn_confirm'), btnCancel = locale('ui_btn_cancel'),
+    remove = locale('ui_remove'),
     hint = locale('ui_hint'), mismatch = locale('code_mismatch'),
     clear = locale('ui_key_clear'), close = locale('ui_btn_close'),
 }
 
 local function playPushAnim()
-    if lib.requestAnimDict(ANIM_DICT, 2000) then
-        TaskPlayAnim(cache.ped, ANIM_DICT, 'open', 8.0, -8.0, -1, 0, 0, false, false, false)
+    if pcall(RSGCore.Functions.RequestAnimDict, ANIM_DICT, 2000) then
+        TaskPlayAnim(PlayerPedId(), ANIM_DICT, 'open', 8.0, -8.0, -1, 0, 0, false, false, false)
         RemoveAnimDict(ANIM_DICT)
     end
 end
@@ -154,8 +154,21 @@ local function closeKeypad()
 end
 
 local function openKeypad(id, mode)
+    if keypadDoor then return end
     keypadDoor = id
     SetNuiFocus(true, true)
+    -- close the keypad if the player walks off, dies or the door starts moving
+    CreateThread(function()
+        local cfg = Config.Trapdoors[id]
+        while keypadDoor == id do
+            local ped = PlayerPedId()
+            if IsEntityDead(ped) or #(GetEntityCoords(ped) - cfg.closedPosition) > cfg.interactDistance + 1.0 then
+                closeKeypad()
+                break
+            end
+            Wait(500)
+        end
+    end)
     SendNUIMessage({
         action = 'open',
         mode = mode, -- 'unlock' | 'set' | 'change'
@@ -175,11 +188,13 @@ RegisterNUICallback('submit', function(data, cb)
 
     local ok, msg
     if data.mode == 'unlock' then
-        ok, msg = lib.callback.await('rsg-trapdoors:server:open', false, id, data.code)
+        ok, msg = RSGCore.Functions.AwaitCallback('rsg-trapdoors:server:open', 5000, id, data.code)
     elseif data.mode == 'set' then
-        ok, msg = lib.callback.await('rsg-trapdoors:server:setCode', false, id, data.newCode)
+        ok, msg = RSGCore.Functions.AwaitCallback('rsg-trapdoors:server:setCode', 5000, id, data.newCode)
     elseif data.mode == 'change' then
-        ok, msg = lib.callback.await('rsg-trapdoors:server:changeCode', false, id, data.code, data.newCode)
+        ok, msg = RSGCore.Functions.AwaitCallback('rsg-trapdoors:server:changeCode', 5000, id, data.code, data.newCode)
+    elseif data.mode == 'remove' then
+        ok, msg = RSGCore.Functions.AwaitCallback('rsg-trapdoors:server:removeCode', 5000, id, data.code)
     end
 
     cb({ ok = ok == true, message = msg })
@@ -189,7 +204,7 @@ RegisterNUICallback('submit', function(data, cb)
         if data.mode == 'unlock' then
             playPushAnim()
         elseif msg then
-            lib.notify({ title = locale('notify_title'), description = msg, type = 'success', duration = 4000 })
+            RSGCore.Functions.Notify({ title = locale('notify_title'), description = msg, type = 'success', duration = 4000 })
         end
     end
 end)
@@ -210,11 +225,11 @@ local function openDoor(data)
         return openKeypad(id, 'unlock')
     end
 
-    local ok, msg = lib.callback.await('rsg-trapdoors:server:open', false, id)
+    local ok, msg = RSGCore.Functions.AwaitCallback('rsg-trapdoors:server:open', 5000, id)
     if ok then
         playPushAnim()
     elseif msg then
-        lib.notify({ title = locale('notify_title'), description = msg, type = 'error', duration = 4000 })
+        RSGCore.Functions.Notify({ title = locale('notify_title'), description = msg, type = 'error', duration = 4000 })
     end
 end
 
@@ -230,12 +245,20 @@ local function doorFor(entity)
     return id and doors[id], id
 end
 
+local function canSetCode(id)
+    return Config.AllowPlayerCodes and Config.Trapdoors[id].allowCode ~= false
+end
+
+local function isOwner(d)
+    return d and d.owner and d.owner == myCitizenId()
+end
+
 local models = {}
 for hash in pairs(modelToIds) do models[#models + 1] = hash end
 
-local optionNames = { 'rsg_trapdoor_open', 'rsg_trapdoor_close', 'rsg_trapdoor_setcode', 'rsg_trapdoor_changecode' }
+local optionNames = { 'rsg_trapdoor_open', 'rsg_trapdoor_close', 'rsg_trapdoor_setcode', 'rsg_trapdoor_changecode', 'rsg_trapdoor_removecode' }
 
-exports.ox_target:addModel(models, {
+exports['rsg-target']:addModel(models, {
     {
         name = optionNames[1],
         icon = 'fas fa-door-open',
@@ -264,8 +287,8 @@ exports.ox_target:addModel(models, {
         label = locale('target_set_code'),
         distance = 2.0,
         canInteract = function(entity)
-            local d = doorFor(entity)
-            return d and not d.owner
+            local d, id = doorFor(entity)
+            return d and not d.owner and canSetCode(id)
         end,
         onSelect = function(data)
             local _, id = doorFor(data.entity)
@@ -278,12 +301,24 @@ exports.ox_target:addModel(models, {
         label = locale('target_change_code'),
         distance = 2.0,
         canInteract = function(entity)
-            local d = doorFor(entity)
-            return d and d.owner and d.owner == myCitizenId()
+            return isOwner(doorFor(entity))
         end,
         onSelect = function(data)
             local _, id = doorFor(data.entity)
             if id then openKeypad(id, 'change') end
+        end,
+    },
+    {
+        name = optionNames[5],
+        icon = 'fas fa-lock-open',
+        label = locale('target_remove_code'),
+        distance = 2.0,
+        canInteract = function(entity)
+            return isOwner(doorFor(entity))
+        end,
+        onSelect = function(data)
+            local _, id = doorFor(data.entity)
+            if id then openKeypad(id, 'remove') end
         end,
     },
 })
@@ -291,7 +326,7 @@ exports.ox_target:addModel(models, {
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     if keypadDoor then SetNuiFocus(false, false) end
-    exports.ox_target:removeModel(models, optionNames)
+    exports['rsg-target']:removeModel(models, optionNames)
     for id, d in pairs(doors) do
         d.animToken = d.animToken + 1
         d.open = false

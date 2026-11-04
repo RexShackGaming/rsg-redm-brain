@@ -1,11 +1,10 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
-local hunts = {}      -- [citizenid] = { idx = location index, centre = vector3 }
-local cooldown = {}   -- [src] = os.time() of last dig attempt
+local hunts = {}      -- [citizenid] = { idx = location index, centre = vector3, digStart = ms }
+local cooldown = {}   -- [src] = os.time() of last payout attempt
 
 local function notify(src, desc, ntype)
-    TriggerClientEvent('ox_lib:notify', src, { title = locale('title'), description = desc, type = ntype or 'inform', duration = 5000 })
+    TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('title'), description = desc, type = ntype or 'inform', duration = 5000 })
 end
 
 local function pickLocation()
@@ -24,6 +23,29 @@ local function circleCentre(loc)
     local r = Config.SearchRadius * 0.6 * math.sqrt(math.random())
     local a = math.random() * 2 * math.pi
     return vector3(loc.x + r * math.cos(a), loc.y + r * math.sin(a), loc.z)
+end
+
+local function playerDist(src, hunt)
+    local ppos = GetEntityCoords(GetPlayerPed(src))
+    return #(ppos - Config.Locations[hunt.idx]), ppos
+end
+
+-- checks shared by dig start and payout; returns true or false after notifying the player
+local function canDig(src, hunt)
+    if not exports['rsg-inventory']:HasItem(src, Config.MapItem, 1) then
+        notify(src, locale('no_map'), 'error')
+        return false
+    end
+    if not exports['rsg-inventory']:HasItem(src, Config.DetectorItem, 1) then
+        notify(src, locale('need_detector'), 'error')
+        return false
+    end
+    if Config.RequiredItem and not exports['rsg-inventory']:HasItem(src, Config.RequiredItem, 1) then
+        local item = RSGCore.Shared.Items[Config.RequiredItem]
+        notify(src, locale('need_tool', item and item.label or Config.RequiredItem), 'error')
+        return false
+    end
+    return true
 end
 
 RSGCore.Functions.CreateUseableItem(Config.MapItem, function(source)
@@ -53,28 +75,56 @@ RSGCore.Functions.CreateUseableItem(Config.MapItem, function(source)
     })
 end)
 
--- client tells us the dig anim has started; the payout callback then requires the full dig time
-RegisterNetEvent('rsg-treasure:server:digStart', function()
+-- restore the search circle after a relog / resource restart
+RegisterNetEvent('rsg-treasure:server:resume', function()
     local src = source
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return end
     local hunt = hunts[Player.PlayerData.citizenid]
-    if not hunt then return end
-    if #(GetEntityCoords(GetPlayerPed(src)) - Config.Locations[hunt.idx]) > Config.DigDistance + 1.0 then return end
-    hunt.digStart = GetGameTimer()
+    if hunt then TriggerClientEvent('rsg-treasure:client:startHunt', src, Config.Locations[hunt.idx], hunt.centre) end
 end)
 
--- returns true when the treasure was paid out, false otherwise (client then resets the dig)
-lib.callback.register('rsg-treasure:server:dig', function(src)
+-- client asks before the dig anim: everything is checked up front so the player
+-- never sits through the full dig only to be refused. Starts the server-side dig timer.
+RSGCore.Functions.CreateCallback('rsg-treasure:server:digStart', function(src, cb)
     local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player then return false end
+    if not Player then return cb(false) end
+    local hunt = hunts[Player.PlayerData.citizenid]
+    if not hunt then return cb(false) end
+    if playerDist(src, hunt) > Config.DigDistance + 1.0 then
+        notify(src, locale('too_far'), 'error')
+        return cb(false)
+    end
+    if not canDig(src, hunt) then return cb(false) end
+    hunt.digStart = GetGameTimer()
+    cb(true)
+end)
+
+-- roll loot and make sure all of it fits before anything is taken or given
+local function rollLoot(src)
+    local loot = {}
+    for _, r in ipairs(Config.Rewards) do
+        local itemData = RSGCore.Shared.Items[r.item]
+        if itemData and math.random(100) <= r.chance then
+            local amount = math.random(r.min, r.max)
+            if not exports['rsg-inventory']:CanAddItem(src, r.item, amount) then return nil end
+            loot[#loot + 1] = { item = r.item, amount = amount, data = itemData }
+        end
+    end
+    return loot
+end
+
+-- answers true when the treasure was paid out, false otherwise (client then reburies the box)
+RSGCore.Functions.CreateCallback('rsg-treasure:server:dig', function(src, cb)
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player then return cb(false) end
     local cid = Player.PlayerData.citizenid
 
     local now = os.time()
     if cooldown[src] and now - cooldown[src] < Config.Cooldown then
         notify(src, locale('slow_down'), 'error')
         SendLog('Security', locale('log_spam_title'), locale('log_spam_desc'), 'warn', src)
-        return false
+        return cb(false)
     end
     cooldown[src] = now
 
@@ -83,39 +133,34 @@ lib.callback.register('rsg-treasure:server:dig', function(src)
         notify(src, locale('no_hunt'), 'error')
         TriggerClientEvent('rsg-treasure:client:endHunt', src)
         SendLog('Security', locale('log_nohunt_title'), locale('log_nohunt_desc'), 'alert', src)
-        return false
+        return cb(false)
     end
 
     -- must have started digging and stayed for (most of) the dig, so the callback can't be fired directly
-    if not hunt.digStart or GetGameTimer() - hunt.digStart < Config.DigTime - 1500 then
-        hunt.digStart = nil
+    local started = hunt.digStart
+    hunt.digStart = nil
+    if not started or GetGameTimer() - started < Config.DigTime - 1500 then
         notify(src, locale('too_fast'), 'error')
         SendLog('Security', locale('log_fast_title'), locale('log_fast_desc'), 'alert', src)
-        return false
+        return cb(false)
     end
-    hunt.digStart = nil
 
-    local loc = Config.Locations[hunt.idx]
-    local ppos = GetEntityCoords(GetPlayerPed(src))
-    local dist = #(ppos - loc)
+    local dist, ppos = playerDist(src, hunt)
     if dist > Config.DigDistance + 1.0 then
         notify(src, locale('too_far'), 'error')
         SendLog('Security', locale('log_far_title'), locale('log_far_desc'), dist > 50.0 and 'alert' or 'warn', src, {
             { name = locale('log_distance'), value = ('%.1fm'):format(dist), inline = true },
             { name = locale('log_player_pos'), value = ('%.2f, %.2f, %.2f'):format(ppos.x, ppos.y, ppos.z), inline = true },
         })
-        return false
+        return cb(false)
     end
 
-    if not exports['rsg-inventory']:HasItem(src, Config.DetectorItem, 1) then
-        notify(src, locale('need_detector'), 'error')
-        return false
-    end
+    if not canDig(src, hunt) then return cb(false) end
 
-    if Config.RequiredItem and not exports['rsg-inventory']:HasItem(src, Config.RequiredItem, 1) then
-        local item = RSGCore.Shared.Items[Config.RequiredItem]
-        notify(src, locale('need_tool', item and item.label or Config.RequiredItem), 'error')
-        return false
+    local loot = rollLoot(src)
+    if not loot then
+        notify(src, locale('inv_full'), 'error') -- nothing taken; free space and dig again
+        return cb(false)
     end
 
     -- consume the map first so the reward can't be claimed twice
@@ -124,7 +169,7 @@ lib.callback.register('rsg-treasure:server:dig', function(src)
         notify(src, locale('no_map'), 'error')
         SendLog('Security', locale('log_nomap_title'), locale('log_nomap_desc'), 'warn', src)
         TriggerClientEvent('rsg-treasure:client:endHunt', src)
-        return false
+        return cb(false)
     end
     TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items[Config.MapItem], 'remove', 1)
 
@@ -135,32 +180,22 @@ lib.callback.register('rsg-treasure:server:dig', function(src)
     end
 
     local found = {}
-    local full = false
-    for _, r in ipairs(Config.Rewards) do
-        local itemData = RSGCore.Shared.Items[r.item]
-        if itemData and math.random(100) <= r.chance then
-            local amount = math.random(r.min, r.max)
-            if exports['rsg-inventory']:CanAddItem(src, r.item, amount) then
-                exports['rsg-inventory']:AddItem(src, r.item, amount, nil, nil, 'treasure-hunt')
-                TriggerClientEvent('rsg-inventory:client:ItemBox', src, itemData, 'add', amount)
-                notify(src, locale('found_item', amount, itemData.label), 'success')
-                found[#found + 1] = ('%sx %s'):format(amount, itemData.label)
-            else
-                full = true
-            end
+    for _, l in ipairs(loot) do
+        if exports['rsg-inventory']:AddItem(src, l.item, l.amount, nil, nil, 'treasure-hunt') then
+            TriggerClientEvent('rsg-inventory:client:ItemBox', src, l.data, 'add', l.amount)
+            notify(src, locale('found_item', l.amount, l.data.label), 'success')
+            found[#found + 1] = ('%sx %s'):format(l.amount, l.data.label)
         end
     end
-    if full then notify(src, locale('inv_full'), 'warning') end
 
     SendLog('Rewards', locale('log_dug_title'), locale('log_dug_desc'), 'reward', src, {
         { name = locale('log_cash'), value = ('$%s'):format(cash), inline = true },
         { name = locale('log_location'), value = tostring(hunt.idx), inline = true },
         { name = locale('log_items'), value = #found > 0 and table.concat(found, '\n') or locale('log_none') },
-        { name = locale('log_inv_full'), value = full and locale('log_loot_lost') or locale('log_no'), inline = true },
     })
 
     TriggerClientEvent('rsg-treasure:client:endHunt', src)
-    return true
+    cb(true)
 end)
 
 -- warn about reward items that don't exist so they aren't silently skipped forever

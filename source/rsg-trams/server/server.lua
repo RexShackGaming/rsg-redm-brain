@@ -1,32 +1,70 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
--- One client (the host) spawns the networked trolleys; the server owns the truth about
--- which trolleys exist and asks the host to respawn any that disappear.
-local host = nil
-local pending = {} -- [index] = GetGameTimer() when a spawn was requested
-local SPAWN_TIMEOUT = 60000
+--------------------------------------------------------------------------------
+-- One trolley per track.
+-- The server is the single source of truth: GlobalState.rsgTrams[track] = lead netId.
+-- One client (the host) creates trolleys when asked. A track never has more than one
+-- spawn in flight, a late or second registration for a track is deleted, and any
+-- tagged car that does not belong to the registered trolley is swept away.
+--------------------------------------------------------------------------------
+local host       = nil
+local pending    = {} -- [track] = GetGameTimer() when the spawn was requested
+local driverless = {} -- [track] = consecutive checks without a living driver
+local enabled    = {} -- [track] = bool (config default, overridden by saved admin toggle)
 
 GlobalState.rsgTrams = {}
 
-local function tramEntity(netId)
+local function dbg(msg, ...) if Config.Debug then print(('[rsg-trams] ' .. msg):format(...)) end end
+
+local function sortedTracks()
+    local list = {}
+    for id, t in pairs(Config.Tracks) do list[#list + 1] = { id = id, order = t.order or 99 } end
+    table.sort(list, function(a, b) return a.order < b.order end)
+    return list
+end
+
+for id, t in pairs(Config.Tracks) do
+    local saved = GetResourceKvpString('rsg-trams:track:' .. id)
+    if saved == 'on' then enabled[id] = true
+    elseif saved == 'off' then enabled[id] = false
+    else enabled[id] = t.enabled ~= false end
+end
+
+local function entityFromNet(netId)
     if not netId then return 0 end
     local ent = NetworkGetEntityFromNetworkId(netId)
     return (ent ~= 0 and DoesEntityExist(ent)) and ent or 0
 end
 
+local trolleyModel = {}
+for _, m in ipairs(Config.TrolleyModels or { 'trolley01x' }) do trolleyModel[joaat(m)] = true end
+
+-- Is any trolley already in the world? A tagged one we lost track of is re-adopted
+-- instead of spawning a second; an untagged one (ambient/another script) blocks spawning.
+local function existingTrolley()
+    for _, veh in ipairs(GetAllVehicles()) do
+        if trolleyModel[GetEntityModel(veh)] then
+            local st = Entity(veh).state
+            return veh, st.rsgTram, st.rsgTramId
+        end
+    end
+end
+
+local function setTram(track, netId)
+    local trams = GlobalState.rsgTrams
+    trams[track] = netId
+    GlobalState.rsgTrams = trams
+end
+
 local function pickHost()
     host = nil
-    -- prefer players with a loaded character, fall back to anyone connected
-    for src in pairs(RSGCore.Functions.GetRSGPlayers() or {}) do
-        host = tonumber(src); break
-    end
+    for src in pairs(RSGCore.Functions.GetRSGPlayers() or {}) do host = tonumber(src); break end
     if not host then
         local players = GetPlayers()
         host = players[1] and tonumber(players[1]) or nil
     end
     pending = {}
-    if Config.Debug then print(('[rsg-trams] host: %s'):format(host or 'none')) end
+    dbg('host: %s', host or 'none')
 end
 
 local function hasPlayer(veh)
@@ -37,171 +75,158 @@ local function hasPlayer(veh)
     return false
 end
 
--- delete vehicles (a set: [veh] = true) and the NPCs riding in them
+-- delete a set of vehicles ([veh] = true) and the NPCs riding them
 local function deleteVehicles(set)
     if not next(set) then return end
     for _, ped in ipairs(GetAllPeds()) do
         if not IsPedAPlayer(ped) and set[GetVehiclePedIsIn(ped, false)] then DeleteEntity(ped) end
     end
-    for veh in pairs(set) do
-        if DoesEntityExist(veh) then DeleteEntity(veh) end
+    for veh in pairs(set) do if DoesEntityExist(veh) then DeleteEntity(veh) end end
+end
+
+-- remove every car tagged for a track (or every tagged car when track is nil)
+local function removeTrack(track)
+    local set = {}
+    for _, veh in ipairs(GetAllVehicles()) do
+        local tag = Entity(veh).state.rsgTram
+        if tag and (track == nil or tag == track) then set[veh] = true end
+    end
+    for id, netId in pairs(GlobalState.rsgTrams or {}) do
+        if track == nil or id == track then
+            local ent = entityFromNet(netId)
+            if ent ~= 0 then set[ent] = true end
+        end
+    end
+    deleteVehicles(set)
+    if track then
+        setTram(track, nil)
+        pending[track], driverless[track] = nil, nil
+    else
+        GlobalState.rsgTrams = {}
+        pending, driverless = {}, {}
     end
 end
 
-RegisterNetEvent('rsg-trams:server:registerTram', function(index, netId, cars)
-    local src = source
-    if src ~= host then return end
-    index, netId = tonumber(index), tonumber(netId)
-    local line = index and Config.Lines[index]
-    if not line or not line.enabled or not netId then return end
-    local ent = tramEntity(netId)
-    if ent == 0 then return end
-    if GetEntityType(ent) ~= 2 then return end
-    if not pending[index] then
-        -- spawn was cancelled (admin lowered the limit / host changed): the host owns the
-        -- new train, so it deletes it with the proper train native
-        TriggerClientEvent('rsg-trams:client:deleteTrain', src, netId)
-        return
-    end
-    -- tag the trolley and its cars (replicated to all clients) with the line index so
-    -- cleanup recognises every car; 'ownFare' tells ticket systems (rsg-railroad) to skip it
-    SetEntityOrphanMode(ent, 2) -- keep the trolley when the host leaves
-    Entity(ent).state:set('rsgTram', index, true)
-    Entity(ent).state:set('ownFare', true, true)
-    if type(cars) == 'table' then
-        local pos = GetEntityCoords(ent)
-        for n = 1, math.min(#cars, 8) do
-            local car = tramEntity(tonumber(cars[n]))
-            -- only accept unoccupied-by-players vehicles coupled to this trolley
-            if car ~= 0 and GetEntityType(car) == 2 and #(GetEntityCoords(car) - pos) < 40.0
-                and not hasPlayer(car) then
-                SetEntityOrphanMode(car, 2)
-                Entity(car).state:set('rsgTram', index, true)
-                Entity(car).state:set('ownFare', true, true)
+-- remove tagged cars that are not part of the registered trolley for their track
+local function sweepDuplicates()
+    local trams, set = GlobalState.rsgTrams, {}
+    for _, veh in ipairs(GetAllVehicles()) do
+        local st = Entity(veh).state
+        local track = st.rsgTram
+        if track then
+            if not Config.Tracks[track] or not enabled[track] or st.rsgTramId ~= trams[track] then
+                if not hasPlayer(veh) then set[veh] = true end
             end
         end
     end
-    pending[index] = nil
-    local trams = GlobalState.rsgTrams
-    trams[index] = netId
-    GlobalState.rsgTrams = trams
+    if next(set) then dbg('sweeping %d stray trolley car(s)', (function() local n = 0 for _ in pairs(set) do n += 1 end return n end)()) end
+    deleteVehicles(set)
+end
+
+RegisterNetEvent('rsg-trams:server:registerTram', function(track, netId, cars)
+    local src = source
+    netId = tonumber(netId)
+    local cfg = type(track) == 'string' and Config.Tracks[track]
+    local ent = entityFromNet(netId)
+    if ent == 0 or GetEntityType(ent) ~= 2 then return end
+
+    -- only the host, only for a spawn we asked for, only if the track is still empty
+    if src ~= host or not cfg or not enabled[track] or not pending[track]
+        or entityFromNet(GlobalState.rsgTrams[track]) ~= 0
+        or (function() for _, v in ipairs(GetAllVehicles()) do
+                if v ~= ent and trolleyModel[GetEntityModel(v)] and Entity(v).state.rsgTram then return true end
+            end end)() then
+        dbg('rejecting trolley for %s from %s', tostring(track), src)
+        TriggerClientEvent('rsg-trams:client:deleteTrain', src, netId)
+        return
+    end
+
+    SetEntityOrphanMode(ent, 2) -- keep the trolley when the host leaves
+    local st = Entity(ent).state
+    st:set('rsgTram', track, true)
+    st:set('rsgTramId', netId, true)
+    st:set('ownFare', true, true) -- ticket systems (rsg-railroad) skip trolleys
+
+    if type(cars) == 'table' then
+        local pos = GetEntityCoords(ent)
+        for n = 1, math.min(#cars, 8) do
+            local car = entityFromNet(tonumber(cars[n]))
+            if car ~= 0 and car ~= ent and GetEntityType(car) == 2
+                and #(GetEntityCoords(car) - pos) < 40.0 and not hasPlayer(car) then
+                SetEntityOrphanMode(car, 2)
+                local cs = Entity(car).state
+                cs:set('rsgTram', track, true)
+                cs:set('rsgTramId', netId, true)
+                cs:set('ownFare', true, true)
+            end
+        end
+    end
+
+    pending[track] = nil
+    setTram(track, netId)
+    dbg('track %s trolley registered (%s)', track, netId)
 end)
 
--- Don't spawn on top of another trolley (upper and inner share a spawn point)
-local function spawnClear(coords, trams)
-    for _, netId in pairs(trams) do
-        local ent = tramEntity(netId)
+-- nothing (registered or spawning) within clearance of a spawn point
+local function spawnClear(coords, now)
+    for _, netId in pairs(GlobalState.rsgTrams) do
+        local ent = entityFromNet(netId)
         if ent ~= 0 and #(GetEntityCoords(ent) - coords) < Config.SpawnClearance then return false end
     end
     for _, t in pairs(pending) do
-        if GetGameTimer() - t <= SPAWN_TIMEOUT then return false end -- one spawn at a time
+        if now - t <= Config.SpawnTimeout then return false end -- one spawn at a time
     end
     return true
 end
 
---------------------------------------------------------------------------------
--- Tram limit: admins set how many trolleys run at once (/trams <number>).
--- Saved with KVP so it survives restarts; lines spawn in Config.Lines order.
---------------------------------------------------------------------------------
-local function enabledCount()
-    local n = 0
-    for _, line in ipairs(Config.Lines) do if line.enabled then n += 1 end end
-    return n
-end
-
-local maxTrams = tonumber(GetResourceKvpString('rsg-trams:max')) or Config.MaxTrams or enabledCount()
-
-local function removeTram(i)
-    local set = {}
-    for _, veh in ipairs(GetAllVehicles()) do
-        if Entity(veh).state.rsgTram == i then set[veh] = true end
-    end
-    deleteVehicles(set)
-    local trams = GlobalState.rsgTrams
-    trams[i] = nil
-    GlobalState.rsgTrams = trams
-end
-
--- drop the highest-numbered trolleys until we're within the limit
-local function enforceLimit()
-    local trams, live = GlobalState.rsgTrams, {}
-    for i in pairs(trams) do live[#live + 1] = i end
-    table.sort(live)
-    for n = #live, maxTrams + 1, -1 do removeTram(live[n]) end
-    -- cancel spawns in flight; the host's late registration is then cleaned up
-    if #live >= maxTrams then pending = {} end
-end
-
-lib.addCommand('trams', {
-    help = locale('cmd_help'),
-    params = { { name = 'amount', type = 'number', help = locale('cmd_param'), optional = true } },
-    restricted = Config.AdminGroup or 'group.admin',
-}, function(src, args)
-    local total = enabledCount()
-    if not args.amount then
-        local running = 0
-        for _ in pairs(GlobalState.rsgTrams) do running += 1 end
-        TriggerClientEvent('ox_lib:notify', src, { title = locale('tram_title'), description = locale('cmd_status', running, maxTrams, total), type = 'inform' })
+-- a trolley whose driver is gone stops dead: replace it
+local function checkDriver(track, ent)
+    local driver = GetPedInVehicleSeat(ent, -1)
+    if driver ~= 0 and DoesEntityExist(driver) and GetEntityHealth(driver) > 0 then
+        driverless[track] = nil
+        SetEntityOrphanMode(driver, 2)
         return
     end
-    local amount = math.floor(math.max(0, math.min(args.amount, total)))
-    maxTrams = amount
-    SetResourceKvp('rsg-trams:max', tostring(amount))
-    enforceLimit()
-    TriggerClientEvent('ox_lib:notify', src, { title = locale('tram_title'), description = locale('cmd_set', amount, total), type = 'success' })
-end)
-
--- Driver watchdog: a mission trolley with no living driver stops dead and blocks every
--- trolley behind it. Keep drivers alive when their owner leaves, and replace any
--- trolley whose driver is gone (removed here, respawned by the health check).
-local driverless = {} -- [index] = consecutive checks without a living driver
-
-local function checkDrivers(trams)
-    for i, netId in pairs(trams) do
-        local ent = tramEntity(netId)
-        if ent ~= 0 then
-            local driver = GetPedInVehicleSeat(ent, -1)
-            if driver ~= 0 and DoesEntityExist(driver) and GetEntityHealth(driver) > 0 then
-                driverless[i] = nil
-                SetEntityOrphanMode(driver, 2) -- don't cull the driver when the host drops
-            else
-                driverless[i] = (driverless[i] or 0) + 1
-                if driverless[i] >= (Config.DriverlessChecks or 2) then
-                    if Config.Debug then print(('[rsg-trams] line %s has no driver, replacing'):format(i)) end
-                    driverless[i] = nil
-                    removeTram(i)
-                end
-            end
-        else
-            driverless[i] = nil
-        end
+    driverless[track] = (driverless[track] or 0) + 1
+    if driverless[track] >= (Config.DriverlessChecks or 2) then
+        dbg('track %s has no driver, replacing', track)
+        removeTrack(track)
     end
 end
 
--- Health check: spawn missing trolleys through the host
 CreateThread(function()
     Wait(5000)
     while true do
-        if host and not GetPlayerName(host) then pickHost() end
-        if not host then pickHost() end
+        if not host or not GetPlayerName(host) then pickHost() end
         if host then
-            checkDrivers(GlobalState.rsgTrams)
-            local trams, now, changed = GlobalState.rsgTrams, GetGameTimer(), false
-            -- running + spawning counts against the admin limit
-            local count = 0
-            for _, netId in pairs(trams) do if tramEntity(netId) ~= 0 then count += 1 end end
-            for _, t in pairs(pending) do if now - t <= SPAWN_TIMEOUT then count += 1 end end
-            for i, line in ipairs(Config.Lines) do
-                if line.enabled and tramEntity(trams[i]) == 0 then
-                    if trams[i] then trams[i] = nil; changed = true end
-                    if count < maxTrams and (not pending[i] or now - pending[i] > SPAWN_TIMEOUT) and spawnClear(line.coords, trams) then
-                        count += 1
-                        pending[i] = now
-                        TriggerClientEvent('rsg-trams:client:spawnLine', host, i)
+            local now = GetGameTimer()
+            for _, item in ipairs(sortedTracks()) do
+                local track, cfg = item.id, Config.Tracks[item.id]
+                local netId = GlobalState.rsgTrams[track]
+                local ent = entityFromNet(netId)
+                if not enabled[track] then
+                    if netId or ent ~= 0 then removeTrack(track) end
+                elseif ent ~= 0 then
+                    checkDriver(track, ent)
+                else
+                    if netId then setTram(track, nil); driverless[track] = nil end
+                    local veh, tag, tagId = existingTrolley()
+                    if veh then
+                        -- a trolley already exists: never spawn another
+                        if tag == track and tagId and entityFromNet(tagId) ~= 0 then
+                            setTram(track, tagId)
+                            dbg('re-adopted existing trolley on %s', track)
+                        else
+                            dbg('trolley already in the world, not spawning')
+                        end
+                    elseif (not pending[track] or now - pending[track] > Config.SpawnTimeout) and spawnClear(cfg.coords, now) then
+                        pending[track] = now
+                        TriggerClientEvent('rsg-trams:client:spawnTrack', host, track)
+                        dbg('asking host %s to spawn %s', host, track)
                     end
                 end
             end
-            if changed then GlobalState.rsgTrams = trams end
+            sweepDuplicates()
         end
         Wait(Config.HostCheckInterval)
     end
@@ -211,27 +236,61 @@ AddEventHandler('playerDropped', function()
     if source == host then pickHost() end
 end)
 
--- Remove every tagged trolley plus its driver and passengers. Trolleys are kept alive
--- when their owner leaves, so without this they would survive a resource restart.
-local function removeAllTrams()
-    local set = {}
-    for _, veh in ipairs(GetAllVehicles()) do
-        if Entity(veh).state.rsgTram then set[veh] = true end
-    end
-    for _, netId in pairs(GlobalState.rsgTrams or {}) do
-        local ent = tramEntity(netId)
-        if ent ~= 0 then set[ent] = true end
-    end
-    deleteVehicles(set)
+--------------------------------------------------------------------------------
+-- /trams                  status of every track
+-- /trams <track> on|off   enable or disable a track (saved)
+-- /trams reset            remove all trolleys; they respawn on the next check
+--------------------------------------------------------------------------------
+local function notify(src, msg, kind)
+    TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('tram_title'), description = msg, type = kind or 'inform', duration = 6000 })
 end
 
+RSGCore.Commands.Add('trams', locale('cmd_help'), {
+    { name = 'track', help = locale('cmd_param_track') },
+    { name = 'state', help = locale('cmd_param_state') },
+}, false, function(src, args)
+    local track, state = args[1] and args[1]:lower(), args[2] and args[2]:lower()
+
+    if not track then
+        local parts = {}
+        for _, item in ipairs(sortedTracks()) do
+            local id = item.id
+            local status = not enabled[id] and locale('status_off')
+                or entityFromNet(GlobalState.rsgTrams[id]) ~= 0 and locale('status_running')
+                or locale('status_spawning')
+            parts[#parts + 1] = ('%s: %s'):format(id, status)
+        end
+        notify(src, table.concat(parts, ' | '))
+        return
+    end
+
+    if track == 'reset' then
+        removeTrack(nil)
+        notify(src, locale('cmd_reset'), 'success')
+        return
+    end
+
+    if not Config.Tracks[track] then
+        local ids = {}
+        for _, item in ipairs(sortedTracks()) do ids[#ids + 1] = item.id end
+        notify(src, locale('cmd_bad_track', table.concat(ids, ', ')), 'error')
+        return
+    end
+    if state ~= 'on' and state ~= 'off' then
+        notify(src, locale('cmd_bad_state'), 'error')
+        return
+    end
+
+    enabled[track] = state == 'on'
+    SetResourceKvp('rsg-trams:track:' .. track, state)
+    if not enabled[track] then removeTrack(track) end
+    notify(src, locale(enabled[track] and 'cmd_on' or 'cmd_off', track), 'success')
+end, Config.AdminPermission or 'admin')
+
 AddEventHandler('onResourceStart', function(res)
-    if res ~= GetCurrentResourceName() then return end
-    removeAllTrams() -- leftovers from a previous run
+    if res == GetCurrentResourceName() then removeTrack(nil) end -- leftovers from a previous run
 end)
 
 AddEventHandler('onResourceStop', function(res)
-    if res ~= GetCurrentResourceName() then return end
-    removeAllTrams()
-    GlobalState.rsgTrams = {}
+    if res == GetCurrentResourceName() then removeTrack(nil) end
 end)

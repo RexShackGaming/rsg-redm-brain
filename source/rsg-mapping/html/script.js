@@ -82,7 +82,7 @@ function render() {
       <div class="info"><div class="name"></div><div class="desc"><span class="meta"></span><span class="raw"></span></div></div>
       <div class="pill${v.saved != null ? ' saved' : ''}"></div>`;
     el.querySelector('.name').textContent = v.label || v.name;
-    el.querySelector('.meta').textContent = `${v.global ? t('ui_outside') + ' · ' : ''}${v.dist.toFixed(1)}m · ${hex(v.hash)}`;
+    el.querySelector('.meta').textContent = `${v.global ? t('ui_outside') + ' · ' : ''}${v.nocoords ? t('ui_no_coords') : v.dist.toFixed(1) + 'm'} · ${hex(v.hash)}`;
     if (v.label) el.querySelector('.raw').textContent = ' · ' + v.name;
     const pill = el.querySelector('.pill');
     pill.textContent = (v.active ? t('ui_active') : t('ui_inactive')) + (v.saved != null ? ' 💾' : '');
@@ -117,9 +117,11 @@ function fillModal(v) {
   $('mSaved').textContent = v.saved == null ? t('ui_saved_none') : (v.saved == 1 || v.saved === true ? t('ui_enabled') : t('ui_disabled'));
   $('mStatus').textContent = v.active ? t('ui_active') : t('ui_inactive');
   $('mStatus').style.color = v.active ? 'var(--rdr-cost-ok)' : 'var(--rdr-muted)';
-  $('mDist').textContent = v.dist.toFixed(1) + 'm';
+  $('mDist').textContent = v.nocoords ? '-' : v.dist.toFixed(1) + 'm';
   $('mHash').textContent = `${hex(v.hash)} / ${v.hash}`;
-  $('mCoords').textContent = `${v.x.toFixed(1)}, ${v.y.toFixed(1)}, ${v.z.toFixed(1)}`;
+  $('mCoords').textContent = v.nocoords ? t('ui_no_coords') : `${v.x.toFixed(1)}, ${v.y.toFixed(1)}, ${v.z.toFixed(1)}`;
+  $('mWaypoint').disabled = $('mView').disabled = !!v.nocoords;
+  document.querySelector('[data-copy="coords"]').disabled = !!v.nocoords;
   $('mToggle').textContent = v.active ? t('ui_disable') : t('ui_enable');
   $('mForget').disabled = v.saved == null;
 }
@@ -130,7 +132,8 @@ function openModal(v) {
   $('mLabel').value = v.label || '';
   fillModal(v);
   $('modal').classList.remove('hidden');
-  post('select', { x: v.x, y: v.y, z: v.z, name: v.label || v.name || t('ui_unnamed'), hash: v.hash, active: v.active });
+  if (v.nocoords) post('deselect');
+  else post('select', { x: v.x, y: v.y, z: v.z, name: v.label || v.name || t('ui_unnamed'), hash: v.hash, active: v.active });
   render();
 }
 
@@ -207,7 +210,8 @@ $('mToggle').onclick = async () => {
   if (r.saved != null) v.saved = r.saved;
   const it = items.find(i => i.hash === v.hash); if (it && it !== v) { it.active = v.active; it.saved = v.saved; }
   toast(t(r.active ? 't_enabled' : 't_disabled', v.label || v.name), r.active ? 'success' : 'info');
-  if (current === v) { fillModal(v); post('select', { x: v.x, y: v.y, z: v.z, name: v.label || v.name, hash: v.hash, active: v.active }); }
+  if (current === v && v.nocoords) fillModal(v);
+  if (current === v && !v.nocoords) { fillModal(v); post('select', { x: v.x, y: v.y, z: v.z, name: v.label || v.name, hash: v.hash, active: v.active }); }
   render();
 };
 $('mWaypoint').onclick = async () => {

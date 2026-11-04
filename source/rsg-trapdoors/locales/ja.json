@@ -69,5 +69,11 @@
     "log_hidden": "非表示",
     "log_na": "該当なし",
     "log_unknown": "不明",
-    "log_none": "なし"
+    "log_none": "なし",
+    "target_remove_code": "パスコードを削除",
+    "code_removed": "パスコードを削除しました",
+    "codes_disabled": "この落とし戸ではパスコードは無効です",
+    "ui_remove": "削除するにはパスコードを入力",
+    "log_title_code_removed": "パスコード削除",
+    "log_desc_codes_disabled": "パスコード無効の扉にパスコードを設定しようとしました"
 }

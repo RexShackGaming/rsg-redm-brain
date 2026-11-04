@@ -1,5 +1,7 @@
 # rsg-mapping
 
+**Version 3.1.0** · Requires rsg-core and oxmysql · Full developer reference: [DOCS.md](DOCS.md)
+
 An in-game IMAP finder and mapping tool for the **RSG Framework** (RedM). Admins can browse the IMAPs (map data files) around them, turn them on or off, give them friendly names and save their state. Saved changes sync to every player.
 
 The resource also ships with a curated set of default IMAP removals/additions and interior entity sets (stores, banks, saloons, speakeasies and more) that load for every player.
@@ -29,7 +31,6 @@ The resource also ships with a curated set of default IMAP removals/additions an
 ## Requirements
 
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
-- [ox_lib](https://github.com/Rexshack-RedM/ox_lib)
 - [oxmysql](https://github.com/Rexshack-RedM/oxmysql)
 
 ---
@@ -37,11 +38,10 @@ The resource also ships with a curated set of default IMAP removals/additions an
 ## Installation
 
 1. Put the `rsg-mapping` folder in your resources directory (e.g. `resources/[rsg]/rsg-mapping`).
-2. **Database:** the table is created automatically on first start. To create it by hand, run `installation/rsg-imap.sql`.
+2. **Database:** the table is created automatically on first start (`Config.AutoDatabase = true`). To install manually, set `Config.AutoDatabase = false` and import `installation/rsg-imap.sql`.
 3. Make sure it starts **after** its dependencies in your `server.cfg`:
    ```cfg
    ensure oxmysql
-   ensure ox_lib
    ensure rsg-core
    ensure rsg-mapping
    ```
@@ -55,13 +55,14 @@ All settings are in `shared/config.lua`:
 
 | Option | Default | Description |
 |---|---|---|
+| `Config.AutoDatabase` | `true` | Create the `rsg_imaps` table on start. Set `false` to import the SQL file yourself. |
 | `Config.Command` | `'imaps'` | Command that opens the IMAP finder. |
 | `Config.DrawCommand` | `'imapdraw'` | Command that toggles 3D labels in the world. |
 | `Config.DefaultRadius` | `50.0` | Search radius (metres) when none is given. |
 | `Config.MaxRadius` | `500.0` | Largest radius allowed. |
 | `Config.MaxResults` | `200` | Max rows shown in the list at once. |
 | `Config.OnlyAdmins` | `true` | Restrict the tool to admins. |
-| `Config.AdminPerm` | `'admin'` | rsg-core permission required (players with the `command` ace are also allowed). |
+| `Config.AdminPerm` | `'admin'` | rsg-core permission required (checked on the server for every read and write). |
 | `Config.DrawDistance` | `60.0` | 3D labels further than this are hidden. |
 | `Config.DrawRefresh` | `1000` | How often (ms) the 3D labels rescan nearby IMAPs. |
 | `Config.HighlightSize` | `3.0` | Diameter of the ring around the selected IMAP. |
@@ -80,10 +81,10 @@ Saved states from the in-game tool are applied **after** these, so they always w
 
 ### Translations
 
-Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Choose one with the ox_lib locale convar in `server.cfg`:
+Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Locales are loaded by rsg-core. Choose one in `server.cfg`:
 
 ```cfg
-setr ox:locale de
+setr rsg:locale de
 ```
 
 To add another language, copy `locales/en.json` to e.g. `locales/it.json` and translate the values, keeping every `%s` placeholder.
@@ -115,6 +116,8 @@ To add another language, copy `locales/en.json` to e.g. `locales/it.json` and tr
    - **Back** (or Esc) returns to the list.
 6. Press **Esc** or ✕ to close.
 
+Some IMAPs in the data have no known coordinates. They can still be found by hash and toggled, but Waypoint, View and Copy Coords are disabled for them.
+
 ### Making a change permanent in code
 
 If you'd rather hard-code a change than keep it in the database, use **Copy Lua** and paste the line into `client/defaultimap.lua`. Change `RequestImap` to `RemoveImap` if you want it removed.
@@ -135,3 +138,7 @@ local list = exports['rsg-mapping']:GetNearbyImaps(50.0)
 
 - IMAP data generated from [femga/rdr3_discoveries](https://github.com/femga/rdr3_discoveries).
 - Original script by RexShack.
+
+---
+
+Support: https://buymeacoffee.com/rexshack

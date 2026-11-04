@@ -55,5 +55,6 @@
     "t_waypoint": "Waypoint setat",
     "t_label_saved": "Nume salvat: %s",
     "t_label_cleared": "Nume șters",
-    "t_forgot": "Starea salvată a fost ștearsă (se aplică de la următoarea repornire)"
+    "t_forgot": "Starea salvată a fost ștearsă (se aplică de la următoarea repornire)",
+    "ui_no_coords": "Necunoscut (fără coordonate)"
 }

@@ -55,5 +55,6 @@
     "t_waypoint": "Rota marcada",
     "t_label_saved": "Nome salvo: %s",
     "t_label_cleared": "Nome removido",
-    "t_forgot": "Estado salvo removido (vale a partir do próximo reinício)"
+    "t_forgot": "Estado salvo removido (vale a partir do próximo reinício)",
+    "ui_no_coords": "Desconhecido (sem coordenadas)"
 }

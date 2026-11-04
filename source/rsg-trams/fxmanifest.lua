@@ -3,11 +3,11 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 lua54 'yes'
 
-description 'rsg-trams - Saint Denis trolley network'
-version '3.0.1'
+description 'rsg-trams - Saint Denis trolley network (one trolley per track)'
+version '3.1.1'
 
 shared_scripts {
-    '@ox_lib/init.lua',
+    '@rsg-core/shared/locale.lua',
     'shared/config.lua'
 }
 
@@ -26,6 +26,5 @@ files {
 }
 
 dependencies {
-    'rsg-core',
-    'ox_lib'
+    'rsg-core'
 }

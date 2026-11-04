@@ -1,0 +1,15 @@
+{
+    "tram_blip": "Tram",
+    "tram_title": "Trams van Saint Denis",
+    "cmd_help": "Lijnen tonen, lijn aan/uit of resetten",
+    "cmd_param_track": "Lijn (loop) of reset",
+    "cmd_param_state": "on of off",
+    "status_running": "rijdt",
+    "status_spawning": "wordt gemaakt",
+    "status_off": "uit",
+    "cmd_reset": "Alle trams verwijderd, ze verschijnen zo opnieuw",
+    "cmd_bad_track": "Onbekende lijn. Gebruik: %s",
+    "cmd_bad_state": "Gebruik on of off",
+    "cmd_on": "Lijn %s aan, de tram verschijnt zo",
+    "cmd_off": "Lijn %s uit, de tram is verwijderd"
+}

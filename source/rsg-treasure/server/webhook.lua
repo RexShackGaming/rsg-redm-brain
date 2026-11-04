@@ -1,6 +1,5 @@
 -- Discord webhook logging (queued so bursts never hit Discord's rate limit)
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 local W = SvConfig.Webhooks
 local queue = {}
 local running = false

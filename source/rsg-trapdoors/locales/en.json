@@ -69,5 +69,11 @@
     "log_hidden": "hidden",
     "log_na": "n/a",
     "log_unknown": "unknown",
-    "log_none": "none"
+    "log_none": "none",
+    "target_remove_code": "Remove Passcode",
+    "code_removed": "Passcode removed",
+    "codes_disabled": "Passcodes are disabled on this trapdoor",
+    "ui_remove": "Enter Passcode to Remove",
+    "log_title_code_removed": "Passcode Removed",
+    "log_desc_codes_disabled": "Tried to set a passcode where passcodes are disabled"
 }

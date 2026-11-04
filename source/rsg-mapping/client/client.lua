@@ -1,4 +1,4 @@
-lib.locale()
+local RSGCore = exports['rsg-core']:GetCoreObject()
 
 local drawing, drawRadius, drawList = false, Config.DefaultRadius, {}
 local uiOpen = false
@@ -32,8 +32,8 @@ end)
 
 local function fetchSaved()
     for _ = 1, 10 do
-        local ok, list = pcall(lib.callback.await, 'rsg-mapping:server:getSaved', false)
-        if ok then return loadSaved(list) end
+        local list = RSGCore.Functions.AwaitCallback('rsg-mapping:server:getSaved', 5000)
+        if list then return loadSaved(list) end
         Wait(2000)
     end
 end
@@ -46,12 +46,11 @@ RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', fetchSaved)
 local function toHex(h) return ('0x%08X'):format(h & 0xFFFFFFFF) end
 
 local function canUse()
-    local ok, res = pcall(lib.callback.await, 'rsg-mapping:server:canUse', false)
-    return ok and res
+    return RSGCore.Functions.AwaitCallback('rsg-mapping:server:canUse', 5000) == true
 end
 
 local function notify(desc, ntype)
-    lib.notify({ title = locale('cl_title'), description = desc, type = ntype or 'inform', duration = 4000 })
+    RSGCore.Functions.Notify({ title = locale('cl_title'), description = desc, type = ntype or 'inform', duration = 4000 })
 end
 
 local function clampRadius(r)
@@ -75,7 +74,7 @@ end
 
 -- returns list sorted by distance of { hash, name, x, y, z, dist, active, label, saved }
 local function scan(radius)
-    local p = GetEntityCoords(cache.ped)
+    local p = GetEntityCoords(PlayerPedId())
     local px, py, pz = p.x, p.y, p.z
     local r2, res = radius * radius, {}
     for i = 1, #ImapData do
@@ -124,7 +123,7 @@ local function startDrawing()
     CreateThread(function()
         local maxDist = Config.DrawDistance
         while drawing do
-            local p = GetEntityCoords(cache.ped)
+            local p = GetEntityCoords(PlayerPedId())
             for i = 1, #drawList do
                 local v = drawList[i]
                 if #(p - v.pos) <= maxDist then
@@ -194,16 +193,12 @@ local function highlightLoop()
                 Config.HighlightSize + pulse, Config.HighlightSize + pulse, 0.25, r, g, b, 90 + math.floor(pulse * 80), false, false, 2, false, nil, nil, false)
             Citizen.InvokeNative(0x2A32FAA57B937173, MARKER_CYLINDER, s.x, s.y, s.z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                 0.25, 0.25, Config.HighlightBeam, r, g, b, 120, false, false, 2, false, nil, nil, false)
-            local p = GetEntityCoords(cache.ped)
+            local p = GetEntityCoords(PlayerPedId())
             DrawLine(p.x, p.y, p.z, s.x, s.y, s.z, r, g, b, 200)
             drawText3D(s.x, s.y, s.z + 1.0, s.text, r, g, b)
             Wait(0)
         end
     end)
-end
-
-local function clearRoute()
-    ClearGpsMultiRoute()
 end
 
 ---------------------------------------------------------------------
@@ -220,7 +215,7 @@ local function getUiStrings()
         'ui_saved_none', 'ui_enabled', 'ui_disabled', 'ui_enable', 'ui_disable', 'ui_waypoint', 'ui_view', 'ui_exit_view',
         'ui_copy_name', 'ui_copy_hash', 'ui_copy_lua', 'ui_copy_coords', 'ui_forget', 'ui_back', 'ui_state_saved',
         't_imap', 't_success', 't_error', 't_copied', 't_not_found', 't_enabled', 't_disabled', 't_waypoint',
-        't_label_saved', 't_label_cleared', 't_forgot',
+        't_label_saved', 't_label_cleared', 't_forgot', 'ui_no_coords',
     }) do uiStrings[k] = locale(k) end
     return uiStrings
 end
@@ -269,12 +264,13 @@ RegisterNUICallback('findHash', function(data, cb)
     local h = math.tointeger(tonumber(data.hash))
     if not h then return cb({}) end
     if h > 0x7FFFFFFF then h = h - 0x100000000 end -- unsigned -> signed
-    local p = GetEntityCoords(cache.ped)
+    local p = GetEntityCoords(PlayerPedId())
     for i = 1, #ImapData do
         local d = ImapData[i]
         if d[1] == h then
             local v = decorate({ hash = d[1], name = d[2], x = d[3], y = d[4], z = d[5], global = true })
-            v.dist = #(p - vector3(d[3], d[4], d[5]))
+            v.nocoords = d[3] == -1.0 and d[4] == -1.0
+            v.dist = v.nocoords and -1 or #(p - vector3(d[3], d[4], d[5]))
             return cb({ v })
         end
     end
@@ -305,7 +301,7 @@ end)
 RegisterNUICallback('waypoint', function(data, cb)
     local x, y, z = num(data.x), num(data.y), num(data.z)
     if not (x and y and z) then return cb(false) end
-    clearRoute()
+    ClearGpsMultiRoute()
     StartGpsMultiRoute(GetHashKey('COLOR_RED'), true, true)
     AddPointToGpsMultiRoute(x, y, z)
     SetGpsMultiRouteRender(true)
@@ -330,7 +326,7 @@ AddEventHandler('onResourceStop', function(r)
     if uiOpen then SetNuiFocus(false, false) end
     drawing, selected = false, nil
     if viewing then RenderScriptCams(false, false, 0, true, true); ClearFocus() end
-    clearRoute()
+    ClearGpsMultiRoute()
 end)
 
 ---------------------------------------------------------------------

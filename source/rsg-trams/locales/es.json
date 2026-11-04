@@ -1,0 +1,15 @@
+{
+    "tram_blip": "Tranvía",
+    "tram_title": "Tranvías de Saint Denis",
+    "cmd_help": "Ver vías, activar/desactivar una vía o reiniciar",
+    "cmd_param_track": "Vía (loop) o reset",
+    "cmd_param_state": "on u off",
+    "status_running": "en marcha",
+    "status_spawning": "apareciendo",
+    "status_off": "apagada",
+    "cmd_reset": "Tranvías eliminados, reaparecerán en breve",
+    "cmd_bad_track": "Vía desconocida. Usa: %s",
+    "cmd_bad_state": "Usa on u off",
+    "cmd_on": "Vía %s activada, su tranvía aparece en breve",
+    "cmd_off": "Vía %s desactivada, su tranvía fue eliminado"
+}

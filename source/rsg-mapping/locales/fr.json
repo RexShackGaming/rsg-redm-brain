@@ -55,5 +55,6 @@
     "t_waypoint": "Point de passage placé",
     "t_label_saved": "Nom enregistré : %s",
     "t_label_cleared": "Nom effacé",
-    "t_forgot": "État enregistré supprimé (effectif au prochain redémarrage)"
+    "t_forgot": "État enregistré supprimé (effectif au prochain redémarrage)",
+    "ui_no_coords": "Inconnu (pas de coordonnées)"
 }

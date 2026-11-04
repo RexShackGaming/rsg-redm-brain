@@ -69,5 +69,11 @@
     "log_hidden": "masqué",
     "log_na": "n/d",
     "log_unknown": "inconnu",
-    "log_none": "aucun"
+    "log_none": "aucun",
+    "target_remove_code": "Retirer le code",
+    "code_removed": "Code retiré",
+    "codes_disabled": "Les codes sont désactivés sur cette trappe",
+    "ui_remove": "Entrez le code pour le retirer",
+    "log_title_code_removed": "Code retiré",
+    "log_desc_codes_disabled": "A tenté de définir un code alors qu'ils sont désactivés"
 }

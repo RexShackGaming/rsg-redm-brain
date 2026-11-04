@@ -55,5 +55,6 @@
     "t_waypoint": "Ustawiono punkt trasy",
     "t_label_saved": "Zapisano nazwę: %s",
     "t_label_cleared": "Nazwa usunięta",
-    "t_forgot": "Usunięto zapisany stan (obowiązuje od następnego restartu)"
+    "t_forgot": "Usunięto zapisany stan (obowiązuje od następnego restartu)",
+    "ui_no_coords": "Nieznane (brak współrzędnych)"
 }

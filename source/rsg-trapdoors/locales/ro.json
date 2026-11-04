@@ -69,5 +69,11 @@
     "log_hidden": "ascuns",
     "log_na": "n/a",
     "log_unknown": "necunoscut",
-    "log_none": "niciunul"
+    "log_none": "niciunul",
+    "target_remove_code": "Elimină codul",
+    "code_removed": "Cod eliminat",
+    "codes_disabled": "Codurile sunt dezactivate pentru această trapă",
+    "ui_remove": "Introdu codul pentru a-l elimina",
+    "log_title_code_removed": "Cod eliminat",
+    "log_desc_codes_disabled": "A încercat să seteze un cod unde codurile sunt dezactivate"
 }

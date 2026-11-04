@@ -78,3 +78,6 @@ end)
 en, de, el, es, fr, ja, nl, pl, pt-br, ro (`setr rsg:locale "en"`)
 
 Support: https://buymeacoffee.com/rexshack
+
+### Note
+While placing, `LocalPlayer.state.gizmoActive` is `true` so other scripts (e.g. rsg-voice range cycling) can ignore input. See DOCS.md.

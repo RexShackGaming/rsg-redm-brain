@@ -55,5 +55,6 @@
     "t_waypoint": "Waypoint ingesteld",
     "t_label_saved": "Naam opgeslagen: %s",
     "t_label_cleared": "Naam gewist",
-    "t_forgot": "Opgeslagen status verwijderd (geldt vanaf de volgende herstart)"
+    "t_forgot": "Opgeslagen status verwijderd (geldt vanaf de volgende herstart)",
+    "ui_no_coords": "Onbekend (geen coördinaten)"
 }

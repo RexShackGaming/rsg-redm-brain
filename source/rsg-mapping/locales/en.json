@@ -7,7 +7,6 @@
     "cl_cmd_draw": "Toggle IMAP labels in the world",
     "cl_cmd_radius": "metres",
     "cl_cmd_radius_default": "metres (default %s)",
-
     "ui_title": "IMAP Finder",
     "ui_found": "%s found · %sm",
     "ui_active_count": "%s active",
@@ -46,7 +45,6 @@
     "ui_forget": "Forget Saved State",
     "ui_back": "Back",
     "ui_state_saved": "State saved",
-
     "t_imap": "IMAP",
     "t_success": "Success",
     "t_error": "Error",
@@ -57,5 +55,6 @@
     "t_waypoint": "Waypoint set",
     "t_label_saved": "Saved name: %s",
     "t_label_cleared": "Name cleared",
-    "t_forgot": "Saved state removed (applies from next restart)"
+    "t_forgot": "Saved state removed (applies from next restart)",
+    "ui_no_coords": "Unknown (no coords)"
 }

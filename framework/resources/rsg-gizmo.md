@@ -1,6 +1,6 @@
 # rsg-gizmo
 
-Version 3.0.0. Standard prop placement gizmo for the RSG Framework
+Version 3.0.1. Standard prop placement gizmo for the RSG Framework
 
 The standard prop placement gizmo for the RSG Framework. Any script that needs a player or admin to put a prop in the world calls rsg-gizmo, gets back coords + rotation, and does its own saving. **Version:** 3.0.0 · **Dependencies:** rsg-core · **Full API:** [DOCS.md](DOCS.md) - One blocking export: `exports['rsg-gizmo']:Place(model, options)` → `{ coords, rotation, heading }` or `nil`
 

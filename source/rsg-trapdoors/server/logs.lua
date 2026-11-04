@@ -1,7 +1,6 @@
 -- Discord webhook logging for rsg-trapdoors (server only)
 local RSGCore = exports['rsg-core']:GetCoreObject()
 local cfg = WebhookConfig
-lib.locale()
 
 local queues   = {} -- channel -> { embeds }
 local throttle = {} -- 'src:reason' -> game timer

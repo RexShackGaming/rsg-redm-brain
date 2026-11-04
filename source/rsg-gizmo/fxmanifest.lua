@@ -6,7 +6,7 @@ lua54 'yes'
 name 'rsg-gizmo'
 author 'RexShack'
 description 'Standard prop placement gizmo for the RSG Framework'
-version '3.0.0'
+version '3.0.1'
 
 shared_scripts { '@rsg-core/shared/locale.lua', 'shared/config.lua' }
 client_scripts { 'client/client.lua' }

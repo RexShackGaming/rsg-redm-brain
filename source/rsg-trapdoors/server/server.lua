@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 local states      = {} -- id -> bool (open)
 local busyUntil   = {} -- id -> game timer
@@ -7,7 +6,7 @@ local autoToken   = {} -- id -> int, invalidates stale auto-close timers
 local lastRequest = {} -- src -> game timer
 local codes       = {} -- id -> { code = '1234', owner = citizenid }
 local dbReady     = false -- passcodes loaded from SQL
-local failures    = {} -- citizenid -> id -> { count, lockUntil } (survives relogging)
+local failures    = {} -- license -> id -> { count, lockUntil } (survives relogging and character swaps)
 
 ---------------------------------------------------------------------
 -- state
@@ -69,7 +68,8 @@ end)
 -- helpers
 ---------------------------------------------------------------------
 local function notify(src, text, nType)
-    TriggerClientEvent('ox_lib:notify', src, {
+    if src <= 0 then return print(('[rsg-trapdoors] %s'):format(text)) end
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
         title = locale('notify_title'),
         description = text,
         type = nType or 'error',
@@ -113,6 +113,12 @@ local function validate(src, id)
     return door, Player
 end
 
+-- brute-force protection is keyed on the account licence, so swapping
+-- characters does not reset the attempt counter
+local function failKey(src, Player)
+    return GetPlayerIdentifierByType(src, 'license') or Player.PlayerData.citizenid
+end
+
 local function lockoutRemaining(cid, id)
     local f = failures[cid] and failures[cid][id]
     if not f then return 0 end
@@ -137,11 +143,11 @@ end
 ---------------------------------------------------------------------
 -- open (callback so the keypad can react to a wrong code)
 ---------------------------------------------------------------------
-lib.callback.register('rsg-trapdoors:server:open', function(src, id, code)
+local function handle_open(src, id, code)
     local door, Player, err = validate(src, id)
     if not door then return false, err end
     if states[id] then return false end
-    local cid = Player.PlayerData.citizenid
+    local cid = failKey(src, Player)
 
     local lock = codes[id]
     if lock then
@@ -168,6 +174,9 @@ lib.callback.register('rsg-trapdoors:server:open', function(src, id, code)
         fields = { { name = locale('log_field_method'), value = lock and locale('log_method_passcode') or locale('log_method_none'), inline = true } },
     })
     return true
+end
+RSGCore.Functions.CreateCallback('rsg-trapdoors:server:open', function(src, cb, id, code)
+    cb(handle_open(src, id, code))
 end)
 
 -- closing never needs a code
@@ -190,9 +199,13 @@ end)
 ---------------------------------------------------------------------
 -- passcode management
 ---------------------------------------------------------------------
-lib.callback.register('rsg-trapdoors:server:setCode', function(src, id, newCode)
+local function handle_setCode(src, id, newCode)
     local door, Player, err = validate(src, id)
     if not door then return false, err end
+    if not Config.AllowPlayerCodes or door.allowCode == false then
+        TrapdoorLog('suspicious', src, { door = id, description = locale('log_desc_codes_disabled') })
+        return false, locale('codes_disabled')
+    end
     if codes[id] then
         TrapdoorLog('suspicious', src, { door = id, description = locale('log_desc_already_set') })
         return false, locale('code_already_set')
@@ -205,9 +218,12 @@ lib.callback.register('rsg-trapdoors:server:setCode', function(src, id, newCode)
         fields = { { name = locale('log_field_passcode'), value = TrapdoorLogCode(newCode), inline = true } },
     })
     return true, locale('code_set')
+end
+RSGCore.Functions.CreateCallback('rsg-trapdoors:server:setCode', function(src, cb, id, newCode)
+    cb(handle_setCode(src, id, newCode))
 end)
 
-lib.callback.register('rsg-trapdoors:server:changeCode', function(src, id, current, newCode)
+local function handle_changeCode(src, id, current, newCode)
     local door, Player, err = validate(src, id)
     if not door then return false, err end
 
@@ -222,7 +238,7 @@ lib.callback.register('rsg-trapdoors:server:changeCode', function(src, id, curre
         return false, locale('not_owner')
     end
 
-    local cid = Player.PlayerData.citizenid
+    local cid = failKey(src, Player)
     local remaining = lockoutRemaining(cid, id)
     if remaining > 0 then return false, lockedOutText(remaining) end
     if not isValidCode(current) or not isValidCode(newCode) then return false, locale('invalid_code') end
@@ -245,25 +261,62 @@ lib.callback.register('rsg-trapdoors:server:changeCode', function(src, id, curre
         },
     })
     return true, locale('code_changed')
+end
+RSGCore.Functions.CreateCallback('rsg-trapdoors:server:changeCode', function(src, cb, id, current, newCode)
+    cb(handle_changeCode(src, id, current, newCode))
 end)
 
-lib.addCommand(Config.AdminResetCommand, {
-    help = locale('admin_reset_help'),
-    params = { { name = 'id', type = 'string', help = locale('admin_reset_arg') } },
-    restricted = 'group.admin',
-}, function(src, args)
-    if not Config.Trapdoors[args.id] then
+local function handle_removeCode(src, id, current)
+    local door, Player, err = validate(src, id)
+    if not door then return false, err end
+
+    local lock = codes[id]
+    if not lock then return false end
+    if lock.owner ~= Player.PlayerData.citizenid then
+        TrapdoorLog('suspicious', src, {
+            door = id,
+            description = locale('log_desc_not_owner'),
+            fields = { { name = locale('log_field_owner'), value = ('`%s`'):format(lock.owner), inline = true } },
+        })
+        return false, locale('not_owner')
+    end
+
+    local key = failKey(src, Player)
+    local remaining = lockoutRemaining(key, id)
+    if remaining > 0 then return false, lockedOutText(remaining) end
+    if not isValidCode(current) then return false, locale('invalid_code') end
+    if current ~= lock.code then
+        registerFailure(key, id)
+        TrapdoorLog(lockoutRemaining(key, id) > 0 and 'code_lockout' or 'code_wrong', src, {
+            door = id,
+            description = locale('log_desc_wrong_current'),
+            fields = { { name = locale('log_field_entered'), value = TrapdoorLogCode(current), inline = true } },
+        })
+        return false, locale('wrong_code')
+    end
+
+    saveCode(id, nil)
+    TrapdoorLog('code_removed', src, { door = id })
+    return true, locale('code_removed')
+end
+RSGCore.Functions.CreateCallback('rsg-trapdoors:server:removeCode', function(src, cb, id, current)
+    cb(handle_removeCode(src, id, current))
+end)
+
+RSGCore.Commands.Add(Config.AdminResetCommand, locale('admin_reset_help'), { { name = 'id', help = locale('admin_reset_arg') } }, true, function(src, args)
+    local id = args[1]
+    if not Config.Trapdoors[id] then
         return notify(src, locale('admin_reset_unknown'))
     end
-    local previousOwner = codes[args.id] and codes[args.id].owner
-    saveCode(args.id, nil)
-    notify(src, locale('admin_reset_done', args.id), 'success')
+    local previousOwner = codes[id] and codes[id].owner
+    saveCode(id, nil)
+    notify(src, locale('admin_reset_done', id), 'success')
     TrapdoorLog('code_reset', src > 0 and src or nil, {
-        door = args.id,
+        door = id,
         description = src > 0 and nil or locale('log_desc_console_reset'),
         fields = { { name = locale('log_field_previous_owner'), value = previousOwner and ('`%s`'):format(previousOwner) or locale('log_none'), inline = true } },
     })
-end)
+end, 'admin')
 
 AddEventHandler('playerDropped', function()
     lastRequest[source] = nil

@@ -51,6 +51,9 @@ Config.Controls = {
 Config.BlockControls = {
     0xB2F377E8, -- INPUT_MELEE_ATTACK
     0xB238FE0B, -- INPUT_TOGGLE_HOLSTER
+    0x62800C92, -- INPUT_CURSOR_SCROLL_UP   (wheel alias)
+    0x8BDE7443, -- INPUT_CURSOR_SCROLL_DOWN (wheel alias)
+    0xA5BDCD3C, -- rsg-voice Config.CycleKey (voice range) - change if yours differs
 }
 
 -- Admin test command: /gizmotest [model]

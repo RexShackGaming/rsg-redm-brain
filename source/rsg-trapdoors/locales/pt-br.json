@@ -69,5 +69,11 @@
     "log_hidden": "oculta",
     "log_na": "n/d",
     "log_unknown": "desconhecido",
-    "log_none": "nenhum"
+    "log_none": "nenhum",
+    "target_remove_code": "Remover senha",
+    "code_removed": "Senha removida",
+    "codes_disabled": "Senhas estão desativadas neste alçapão",
+    "ui_remove": "Digite a senha para remover",
+    "log_title_code_removed": "Senha removida",
+    "log_desc_codes_disabled": "Tentou definir uma senha onde estão desativadas"
 }

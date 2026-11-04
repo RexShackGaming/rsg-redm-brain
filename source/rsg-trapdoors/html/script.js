@@ -6,6 +6,7 @@ const FLOWS = {
     unlock: ['enter'],
     set:    ['set', 'confirm'],
     change: ['current', 'new', 'confirmNew'],
+    remove: ['remove'],
 };
 
 const el = {
@@ -94,7 +95,7 @@ async function submit() {
     }
 
     // local check that the new code was typed the same twice
-    if (state.mode !== 'unlock') {
+    if (state.mode === 'set' || state.mode === 'change') {
         const [a, b] = state.entries.slice(-2);
         if (a !== b) {
             flash('error');
@@ -108,7 +109,7 @@ async function submit() {
     }
 
     const payload = { mode: state.mode };
-    if (state.mode === 'unlock') payload.code = state.entries[0];
+    if (state.mode === 'unlock' || state.mode === 'remove') payload.code = state.entries[0];
     if (state.mode === 'set') payload.newCode = state.entries[0];
     if (state.mode === 'change') { payload.code = state.entries[0]; payload.newCode = state.entries[1]; }
 

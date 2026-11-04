@@ -69,5 +69,11 @@
     "log_hidden": "ukryty",
     "log_na": "b/d",
     "log_unknown": "nieznany",
-    "log_none": "brak"
+    "log_none": "brak",
+    "target_remove_code": "Usuń kod",
+    "code_removed": "Kod usunięty",
+    "codes_disabled": "Kody są wyłączone dla tej klapy",
+    "ui_remove": "Wpisz kod, aby go usunąć",
+    "log_title_code_removed": "Kod usunięty",
+    "log_desc_codes_disabled": "Próba ustawienia kodu, gdy kody są wyłączone"
 }

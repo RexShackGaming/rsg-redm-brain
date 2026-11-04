@@ -6,6 +6,7 @@ Config.PlayerCooldown = 1000  -- ms between toggle requests per player
 Config.StreamDistance = 100.0 -- distance at which clients look for / sync the prop
 
 -- passcodes
+Config.AllowPlayerCodes = true -- false = only admins can manage passcodes (stops players locking public doors). Per door: allowCode = false
 Config.MaxCodeAttempts = 3     -- wrong guesses before a player is locked out of that door
 Config.CodeLockoutTime = 60000 -- ms lockout after too many wrong guesses
 Config.AdminResetCommand = 'resettrapdoorcode' -- /resettrapdoorcode <door id> (group.admin)

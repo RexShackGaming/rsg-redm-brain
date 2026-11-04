@@ -1,0 +1,15 @@
+{
+    "tram_blip": "路面電車",
+    "tram_title": "サンドニ路面電車",
+    "cmd_help": "路線の表示、オン/オフ、リセット",
+    "cmd_param_track": "路線 (loop) または reset",
+    "cmd_param_state": "on または off",
+    "status_running": "運行中",
+    "status_spawning": "生成中",
+    "status_off": "停止",
+    "cmd_reset": "全ての路面電車を削除しました。まもなく再出現します",
+    "cmd_bad_track": "不明な路線です。使用可能: %s",
+    "cmd_bad_state": "on か off を指定してください",
+    "cmd_on": "路線 %s をオンにしました。まもなく電車が出現します",
+    "cmd_off": "路線 %s をオフにし、電車を削除しました"
+}

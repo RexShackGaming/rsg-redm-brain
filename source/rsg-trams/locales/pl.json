@@ -1,0 +1,15 @@
+{
+    "tram_blip": "Tramwaj",
+    "tram_title": "Tramwaje Saint Denis",
+    "cmd_help": "Pokaż linie, włącz/wyłącz linię lub zresetuj",
+    "cmd_param_track": "Linia (loop) lub reset",
+    "cmd_param_state": "on lub off",
+    "status_running": "kursuje",
+    "status_spawning": "tworzenie",
+    "status_off": "wyłączona",
+    "cmd_reset": "Usunięto wszystkie tramwaje, wkrótce pojawią się ponownie",
+    "cmd_bad_track": "Nieznana linia. Dostępne: %s",
+    "cmd_bad_state": "Użyj on lub off",
+    "cmd_on": "Linia %s włączona, tramwaj wkrótce się pojawi",
+    "cmd_off": "Linia %s wyłączona, tramwaj usunięty"
+}
