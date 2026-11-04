@@ -1,14 +1,16 @@
-lib.locale()
-
 local wanted, visible, ready, latest = false, false, false, nil
 local requestId = 0
 
 local function display()
     if not wanted or not ready or not latest then return end
-    local action = visible and 'leaderboard' or 'openLeaderboard'
+    local opening = not visible
     visible = true
-    SetNuiFocus(true, true)
-    SendNUIMessage({ action = action, data = latest, locales = TargetPractiseLocale.ui() })
+    if opening then SetNuiFocus(true, true) end
+    -- Locales are only needed once per open, not on every live refresh.
+    SendNUIMessage({
+        action = opening and 'openLeaderboard' or 'leaderboard', data = latest,
+        locales = opening and TargetPractiseLocale.ui() or nil
+    })
 end
 
 local function close()
@@ -29,7 +31,7 @@ RegisterNetEvent('rsg-targetpractise:client:openLeaderboard', function()
     SetTimeout(5000, function()
         if request == requestId and wanted and not visible then
             close()
-            lib.notify({ title = locale('notify_title'), description = locale('board_timeout'), type = 'error', duration = 5000 })
+            TargetPractiseNotify(locale('board_timeout'), 'error')
         end
     end)
 end)
@@ -63,6 +65,9 @@ end, false)
 RegisterNetEvent('RSGCore:Client:OnPlayerUnload', close)
 AddEventHandler('onResourceStop', function(resource)
     if resource == GetCurrentResourceName() then
-        if wanted or visible then SetNuiFocus(false, false) end
+        if wanted or visible then
+            SetNuiFocus(false, false)
+            TriggerServerEvent('rsg-targetpractise:server:leaderboard', false)
+        end
     end
 end)

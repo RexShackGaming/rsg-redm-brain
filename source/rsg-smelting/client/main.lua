@@ -7,7 +7,7 @@ local isSmelting = false
 local activeSmelter, activePropCoords
 
 local function notify(description, nType)
-    lib.notify({ title = locale('smelter_title'), description = description, type = nType or 'inform', duration = 5000 })
+    RSGCore.Functions.Notify({ title = locale('smelter_title'), description = description, type = nType or 'inform', duration = 5000 })
 end
 
 ---------------------------------------------------------------------
@@ -25,7 +25,7 @@ local function getUiStrings()
 end
 
 local function buildRecipeData()
-    local counts = lib.callback.await('rsg-smelting:server:getOreCounts', false) or {}
+    local counts = RSGCore.Functions.AwaitCallback('rsg-smelting:server:getOreCounts') or {}
     local items = RSGCore.Shared.Items
     local recipes = {}
     for i, r in ipairs(Config.Recipes) do
@@ -62,13 +62,15 @@ end
 local function openSmelter(index, propCoords)
     if uiOpen or isSmelting then return end
     activeSmelter, activePropCoords = index, propCoords
-    uiOpen = true
+    uiOpen = true -- set before the server round-trip so a double click can't open twice
+    local recipes = buildRecipeData()
+    if not uiOpen then return end -- closed (e.g. resource stopping) while waiting
     SetNuiFocus(true, true)
     SendNUIMessage({
         action = 'open',
         title = locale(index == 'prop' and Config.SmeltProps.label or Config.Smelters[index].label),
         strings = getUiStrings(),
-        recipes = buildRecipeData(),
+        recipes = recipes,
     })
 end
 
@@ -89,7 +91,7 @@ local function runProgress(duration, label)
         DisableAllControlActions(0)
         EnableControlAction(0, `INPUT_LOOK_LR`, true)
         EnableControlAction(0, `INPUT_LOOK_UD`, true)
-        if IsDisabledControlJustPressed(0, `INPUT_FRONTEND_CANCEL`) or IsEntityDead(cache.ped) then return false end
+        if IsDisabledControlJustPressed(0, `INPUT_FRONTEND_CANCEL`) or IsEntityDead(PlayerPedId()) then return false end
 
         local pct = math.floor(elapsed / duration * 100)
         if pct ~= lastPct then
@@ -110,7 +112,7 @@ RegisterNUICallback('smelt', function(data, cb)
     if not recipe or amount < 1 or amount > Config.MaxBatch or isSmelting then return end
 
     isSmelting = true
-    local ok, msg = lib.callback.await('rsg-smelting:server:startSmelt', false, activeSmelter, recipeIndex, amount, activePropCoords)
+    local ok, msg = RSGCore.Functions.AwaitCallback('rsg-smelting:server:startSmelt', nil, activeSmelter, recipeIndex, amount, activePropCoords)
     if not ok then
         isSmelting = false
         return notify(msg or locale('err_generic'), 'error')
@@ -119,7 +121,7 @@ RegisterNUICallback('smelt', function(data, cb)
     local finished = runProgress(recipe.time * amount, locale('progress_label', amount, locale(recipe.label)))
     SendNUIMessage({ action = 'progress:stop', cancelled = not finished })
 
-    local success, result = lib.callback.await('rsg-smelting:server:finishSmelt', false, not finished)
+    local success, result = RSGCore.Functions.AwaitCallback('rsg-smelting:server:finishSmelt', nil, not finished)
     isSmelting = false
     if result then
         notify(result, success and 'success' or (finished and 'error' or 'warning'))
@@ -127,12 +129,19 @@ RegisterNUICallback('smelt', function(data, cb)
 end)
 
 ---------------------------------------------------------------------
--- NPCs (spawned by proximity via lib.points)
+-- NPCs (spawned by proximity)
 ---------------------------------------------------------------------
 local function spawnSmelterPed(index, data)
     if spawnedPeds[index] then return end
     local hash = joaat(data.model)
-    if not IsModelValid(hash) or not pcall(lib.requestModel, hash, 5000) then return end
+    if not IsModelValid(hash) then return end
+    RequestModel(hash)
+    local timeout = GetGameTimer() + 5000
+    while not HasModelLoaded(hash) do
+        if GetGameTimer() > timeout then return end
+        Wait(10)
+    end
+    if spawnedPeds[index] then return end -- spawned by another call while loading
 
     local c = data.coords
     local ped = CreatePed(hash, c.x, c.y, c.z - 1.0, c.w, false, false, false, false)
@@ -149,7 +158,7 @@ local function spawnSmelterPed(index, data)
         TaskStartScenarioInPlace(ped, joaat(data.scenario), -1, true, false, false, false)
     end
 
-    exports.ox_target:addLocalEntity(ped, {
+    exports['rsg-target']:addLocalEntity(ped, {
         {
             name = 'rsg_smelting_' .. data.id,
             icon = 'fa-solid fa-fire',
@@ -166,7 +175,7 @@ local function deleteSmelterPed(index)
     local ped = spawnedPeds[index]
     spawnedPeds[index] = nil
     if ped and DoesEntityExist(ped) then
-        exports.ox_target:removeLocalEntity(ped)
+        exports['rsg-target']:removeLocalEntity(ped)
         DeleteEntity(ped)
     end
 end
@@ -182,19 +191,26 @@ for i, data in ipairs(Config.Smelters) do
         blips[#blips + 1] = blip
     end
 
-    lib.points.new({
-        coords = c.xyz,
-        distance = Config.SpawnDistance,
-        onEnter = function() spawnSmelterPed(i, data) end,
-        onExit = function() deleteSmelterPed(i) end,
-    })
 end
+
+-- Low-frequency proximity check (replaces lib.points)
+CreateThread(function()
+    while true do
+        local pos = GetEntityCoords(PlayerPedId())
+        for i, data in ipairs(Config.Smelters) do
+            local near = #(pos - data.coords.xyz) <= Config.SpawnDistance
+            if near and not spawnedPeds[i] then spawnSmelterPed(i, data)
+            elseif not near and spawnedPeds[i] then deleteSmelterPed(i) end
+        end
+        Wait(1000)
+    end
+end)
 
 ---------------------------------------------------------------------
 -- Prop targets (e.g. p_bucketore03x)
 ---------------------------------------------------------------------
 if Config.SmeltProps.enabled then
-    exports.ox_target:addModel(Config.SmeltProps.models, {
+    exports['rsg-target']:addModel(Config.SmeltProps.models, {
         {
             name = 'rsg_smelting_prop',
             icon = 'fa-solid fa-fire',
@@ -213,10 +229,10 @@ end
 ---------------------------------------------------------------------
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
-    if uiOpen then SetNuiFocus(false, false) end
+    if uiOpen then closeUI() end
     for i in pairs(spawnedPeds) do deleteSmelterPed(i) end
     for _, b in ipairs(blips) do RemoveBlip(b) end
     if Config.SmeltProps.enabled then
-        exports.ox_target:removeModel(Config.SmeltProps.models, 'rsg_smelting_prop')
+        exports['rsg-target']:removeModel(Config.SmeltProps.models, 'rsg_smelting_prop')
     end
 end)

@@ -41,7 +41,6 @@
   "diag_title": "Prática de Tiro - Relatório de Detecção",
   "diag_started": "Captura iniciada. Arremesse uma faca em até 10 segundos; o relatório abrirá automaticamente.",
   "diag_intro": "Envie uma captura de tela deste relatório para identificar a etapa de detecção que falhou.",
-  "diag_close": "Fechar",
   "diag_stopped": "Diagnóstico local de detecção desativado.",
   "diag_detector_error": "Um erro de detecção de alvo foi registrado. Use /targetdiag report para ver.",
   "unknown_player": "Jogador Desconhecido",
@@ -106,5 +105,6 @@
   "ui_place_ground_bad": "Sem chão",
   "ui_place_time": "Tempo restante",
   "ui_place_placed": "Alvo posicionado",
-  "ui_place_cancelled": "Posicionamento cancelado"
+  "ui_place_cancelled": "Posicionamento cancelado",
+  "diag_console": "Relatório de detecção exibido no console F8. Envie uma captura de tela."
 }

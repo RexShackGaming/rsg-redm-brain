@@ -41,7 +41,6 @@
   "diag_title": "Zielübung - Erkennungsbericht",
   "diag_started": "Erkennung gestartet. Wirf innerhalb von 10 Sekunden ein Messer; danach öffnet sich ein Bericht.",
   "diag_intro": "Sende einen Screenshot dieses Berichts, damit die fehlgeschlagene Erkennungsstufe ermittelt werden kann.",
-  "diag_close": "Schließen",
   "diag_stopped": "Lokale Erkennungsdiagnose deaktiviert.",
   "diag_detector_error": "Ein Fehler bei der Zielerkennung wurde aufgezeichnet. Mit /targetdiag report ansehen.",
   "unknown_player": "Unbekannter Spieler",
@@ -106,5 +105,6 @@
   "ui_place_ground_bad": "Kein Boden",
   "ui_place_time": "Verbleibend",
   "ui_place_placed": "Ziel platziert",
-  "ui_place_cancelled": "Platzierung abgebrochen"
+  "ui_place_cancelled": "Platzierung abgebrochen",
+  "diag_console": "Erkennungsbericht wurde in der F8-Konsole ausgegeben. Sende einen Screenshot davon."
 }

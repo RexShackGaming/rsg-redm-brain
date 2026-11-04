@@ -1,12 +1,12 @@
 # rsg-smelting
 
-Version 3.0.3. rsg-smelting
+Version 3.0.4. rsg-smelting
 
-Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for **RSG-Core** (RedM) with ox_lib, ox_target and rsg-inventory. - Smelter NPCs with blips, spawned/despawned by proximity (`lib.points`) - Optional world-prop smelters via ox_target (`p_bucketore03x`, `p_horseprops03x` by default)
+Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for **RSG-Core** (RedM) with rsg-target and rsg-inventory. No ox_lib required. - Smelter NPCs with blips, spawned/despawned by proximity - Optional world-prop smelters via rsg-target (`p_bucketore03x`, `p_horseprops03x` by default)
 
 Source: https://github.com/Rexshack-RedM/rsg-smelting
 
-**Dependencies:** `rsg-core`, `oxmysql`, `rsg-inventory`, `ox_lib`, `ox_target`
+**Dependencies:** `rsg-core`, `oxmysql`, `rsg-inventory`, `rsg-target`
 
 Has NUI (`ui_page`).
 
@@ -22,7 +22,7 @@ Has NUI (`ui_page`).
 
 **server:** `RSGCore:Server:OnPlayerUnload`
 
-## Callbacks (lib.callback)
+## Callbacks (RSGCore.Functions.CreateCallback)
 
 **server:** `rsg-smelting:server:finishSmelt`, `rsg-smelting:server:getOreCounts`, `rsg-smelting:server:startSmelt`
 

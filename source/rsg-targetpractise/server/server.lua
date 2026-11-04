@@ -1,5 +1,3 @@
-lib.locale()
-
 local Core = exports['rsg-core']:GetCoreObject()
 local G = TargetPractiseGeometry
 local targets, pending, shots, totals, throttles = {}, {}, {}, {}, {}
@@ -7,6 +5,7 @@ local hitMarks, boardViewers, debugPlayers = {}, {}, {}
 local VERSION = GetResourceMetadata(GetCurrentResourceName(), 'version', 0)
 local nextId, storageHealthy = 1, true
 local revision, lastSync = 0, {}
+local scoreRevision = 0
 local mutationBusy = false
 local weaponHashes = {}
 local weaponKinds = {}
@@ -35,7 +34,7 @@ local function distanceBonus(distance)
 end
 
 local function notify(src, message, kind)
-    TriggerClientEvent('ox_lib:notify', src, {
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
         title = locale('notify_title'), description = message, type = kind or 'inform', duration = 5000
     })
 end
@@ -217,9 +216,9 @@ local function sendLeaderboard(src)
             rings = Config.Scoring.rings or {},
             marks = hitMarks[player.PlayerData.citizenid] or {}
         },
-        scope = locale('ui_session'),
-        refreshMs = Config.LeaderboardRefreshMs
+        scope = locale('ui_session')
     })
+    boardViewers[src] = scoreRevision
 end
 
 RegisterNetEvent('rsg-targetpractise:server:leaderboard', function(open)
@@ -227,7 +226,6 @@ RegisterNetEvent('rsg-targetpractise:server:leaderboard', function(open)
     if open == false then boardViewers[src] = nil return end
     if open ~= true or not allow(src, 'leaderboard', 1000) then return end
     if not Core.Functions.GetPlayer(src) then return end
-    boardViewers[src] = true
     sendLeaderboard(src)
 end)
 
@@ -324,8 +322,11 @@ end)
 
 CreateThread(function()
     while true do
-        Wait(next(boardViewers) and Config.LeaderboardRefreshMs or 1000)
-        for src in pairs(boardViewers) do sendLeaderboard(src) end
+        Wait(Config.LeaderboardRefreshMs)
+        -- Only push to viewers whose board is out of date.
+        for src, seen in pairs(boardViewers) do
+            if seen ~= scoreRevision then sendLeaderboard(src) end
+        end
     end
 end)
 
@@ -391,7 +392,7 @@ RegisterNetEvent('rsg-targetpractise:server:diagnostic', function()
         if active(target) and target.bucket == bucket then count = count + 1 end
     end
     TriggerClientEvent('rsg-targetpractise:client:diagnosticServer', src, {
-        code = VERSION, version = VERSION,
+        code = VERSION,
         targets = count, bucket = bucket, storage = storageHealthy,
         mode = G.hitMode() and 'hit' or 'rings'
     })
@@ -479,6 +480,7 @@ RegisterNetEvent('rsg-targetpractise:server:hit', function(sequence, id, impact)
     total.name = TargetPractiseLeaderboard.name(player.PlayerData.charinfo)
     total.best = math.max(total.best or 0, points)
     totals[citizenid] = total
+    scoreRevision = scoreRevision + 1
     if not hitMode then
         local marks = hitMarks[citizenid]
         if not marks then marks = {} hitMarks[citizenid] = marks end
@@ -521,8 +523,20 @@ end, 'user')
 
 AddEventHandler('playerDropped', function()
     local src = source
+    scoreRevision = scoreRevision + 1 -- Online status changed for open boards.
     pending[src], shots[src], throttles[src] = nil, nil, nil
     boardViewers[src], debugPlayers[src], lastSync[src] = nil, nil, nil
+end)
+
+-- Ownership (canRemove) depends on the loaded character, so resync on load/unload.
+AddEventHandler('RSGCore:Server:PlayerLoaded', function(player)
+    local src = player and player.PlayerData and player.PlayerData.source
+    if src then sync(src) end
+end)
+
+AddEventHandler('RSGCore:Server:OnPlayerUnload', function(src)
+    pending[src], shots[src], boardViewers[src] = nil, nil, nil
+    if src then sync(src) end
 end)
 
 load()

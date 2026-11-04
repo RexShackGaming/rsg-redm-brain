@@ -21,7 +21,7 @@ do
     refresh(ok and data or nil)
 end
 
-AddEventHandler('RSGCore:Client:OnPlayerLoaded', function()
+RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
     refresh(RSGCore.Functions.GetPlayerData())
 end)
 

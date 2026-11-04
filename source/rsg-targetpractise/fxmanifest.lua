@@ -5,12 +5,10 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 name 'rsg-targetpractise'
 author 'Mack'
 description 'Placeable archery and throwing-knife practice targets for RSG Framework'
-version '3.0.0'
-
-ox_lib 'locale'
+version '3.1.0'
 
 shared_scripts {
-    '@ox_lib/init.lua',
+    '@rsg-core/shared/locale.lua',
     'shared/config.lua',
     'shared/locale.lua',
     'shared/geometry.lua'
@@ -41,8 +39,7 @@ files {
 dependencies {
     'rsg-core',
     'rsg-inventory',
-    'ox_lib',
-    'ox_target',
+    'rsg-target',
     '/onesync'
 }
 

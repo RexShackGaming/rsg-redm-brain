@@ -11,6 +11,7 @@ function close() {
 
 window.addEventListener('message', (e) => {
     const { action, data, locale: L } = e.data;
+    if (action === 'close') { app.classList.add('hidden'); return; }
     if (action !== 'open') return;
 
     $('title').textContent = L.title;

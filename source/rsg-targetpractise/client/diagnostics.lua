@@ -1,5 +1,3 @@
-lib.locale()
-
 -- Intentionally loads before the detector, so the report command survives a
 -- detector initialization failure. No inventory, permissions, or scoring changes.
 TargetPractiseDiagnostics = {
@@ -7,6 +5,15 @@ TargetPractiseDiagnostics = {
     stage = 'not-started', server = nil, captureId = 0
 }
 local D = TargetPractiseDiagnostics
+local RSGCore = exports['rsg-core']:GetCoreObject()
+
+-- Shared client notify (loaded first, used by every client file).
+function TargetPractiseNotify(message, kind, duration)
+    RSGCore.Functions.Notify({
+        title = locale('notify_title'), description = message,
+        type = kind or 'inform', duration = duration or 5000
+    })
+end
 
 local function translated(key)
     if type(locale) == 'function' then
@@ -28,12 +35,7 @@ end
 function D.recordError(name, message)
     D.errors[name] = tostring(message)
     print(('[rsg-targetpractise] %s ERROR: %s'):format(name, tostring(message)))
-    if lib and type(lib.notify) == 'function' then
-        lib.notify({
-            title = translated('notify_title'), description = translated('diag_detector_error'),
-            type = 'error', duration = 7000
-        })
-    end
+    pcall(TargetPractiseNotify, translated('diag_detector_error'), 'error', 7000)
 end
 
 function D.report()
@@ -86,15 +88,8 @@ end
 
 function D.show()
     local report = D.report()
-    print('[rsg-targetpractise] DETECTION REPORT\n' .. report)
-    if lib and type(lib.alertDialog) == 'function' then
-        lib.alertDialog({
-            header = translated('diag_title'),
-            content = translated('diag_intro') .. '\n\n```\n' .. report:gsub('`', "'") .. '\n```',
-            centered = true, size = 'lg', cancel = false,
-            labels = { confirm = translated('diag_close') }
-        })
-    end
+    print(('[rsg-targetpractise] %s\n%s\n%s'):format(translated('diag_title'), translated('diag_intro'), report))
+    pcall(TargetPractiseNotify, translated('diag_console'), 'inform', 7000)
 end
 
 RegisterNetEvent('rsg-targetpractise:client:diagnosticServer', function(data)
@@ -107,9 +102,7 @@ RegisterCommand('targetdiag', function(_, args)
     D.captureId = D.captureId + 1
     if args[1] == 'off' then
         if D.enable then D.enable(false) end
-        if lib and type(lib.notify) == 'function' then
-            lib.notify({ title = translated('notify_title'), description = translated('diag_stopped'), type = 'inform', duration = 5000 })
-        end
+        pcall(TargetPractiseNotify, translated('diag_stopped'))
         return
     end
     local capture = D.captureId
@@ -119,9 +112,7 @@ RegisterCommand('targetdiag', function(_, args)
     if D.enable then D.enable(true) end
     TriggerServerEvent('rsg-targetpractise:server:diagnostic')
     print('[rsg-targetpractise] Diagnostic capture started; client code ' .. D.codeVersion)
-    if lib and type(lib.notify) == 'function' then
-        lib.notify({ title = translated('notify_title'), description = translated('diag_started'), type = 'inform', duration = 7000 })
-    end
+    pcall(TargetPractiseNotify, translated('diag_started'), 'inform', 7000)
     SetTimeout(10000, function() if D.captureId == capture then D.show() end end)
 end, false)
 

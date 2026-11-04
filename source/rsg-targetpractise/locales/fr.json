@@ -41,7 +41,6 @@
   "diag_title": "Entraînement au Tir - Rapport de Détection",
   "diag_started": "Capture lancée. Lance un couteau dans les 10 secondes ; un rapport s'ouvrira automatiquement.",
   "diag_intro": "Envoie une capture de ce rapport afin d'identifier l'étape de détection défaillante.",
-  "diag_close": "Fermer",
   "diag_stopped": "Diagnostic de détection local désactivé.",
   "diag_detector_error": "Une erreur de détection de cible a été enregistrée. Utilise /targetdiag report pour la voir.",
   "unknown_player": "Joueur Inconnu",
@@ -106,5 +105,6 @@
   "ui_place_ground_bad": "Pas de sol",
   "ui_place_time": "Temps restant",
   "ui_place_placed": "Cible placée",
-  "ui_place_cancelled": "Placement annulé"
+  "ui_place_cancelled": "Placement annulé",
+  "diag_console": "Rapport de détection affiché dans la console F8. Envoyez-en une capture d’écran."
 }

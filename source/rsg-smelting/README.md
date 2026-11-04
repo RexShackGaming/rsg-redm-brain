@@ -1,21 +1,21 @@
 # rsg-smelting
 
-Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for **RSG-Core** (RedM) with ox_lib, ox_target and rsg-inventory.
+Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for **RSG-Core** (RedM) with rsg-target and rsg-inventory. No ox_lib required.
 
 ## Features
-- Smelter NPCs with blips, spawned/despawned by proximity (`lib.points`)
-- Optional world-prop smelters via ox_target (`p_bucketore03x`, `p_horseprops03x` by default)
+- Smelter NPCs with blips, spawned/despawned by proximity
+- Optional world-prop smelters via rsg-target (`p_bucketore03x`, `p_horseprops03x` by default)
 - NUI recipe list with live ore counts, batch quantity picker and progress bar (Backspace cancels)
 - All validation server-side: recipe, batch size, distance, item counts, elapsed time
-- Ores are taken when smelting starts and refunded on cancel, failure, full output inventory, resource stop, or disconnect. Refunds that don't fit, and refunds owed after a disconnect, logout or server crash, are saved (resource KVP) and paid when the character next logs in or opens a smelter
-- ox_lib notifications and locales (`locales/en.json`)
+- Ores are taken when smelting starts and refunded on cancel, failure, full output inventory, resource stop, or disconnect. Refunds that don't fit, and refunds owed after a disconnect, logout or server crash, are saved in MySQL (table `rsg_smelting_state`, created automatically) and paid when the character next logs in or opens a smelter
+- rsg-core notifications, callbacks and locales (`locales/*.json`)
 - Discord webhook logging with separate channels, per-event toggles, rate-limit queue and security pings
 
 ## Dependencies
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
-- [ox_lib](https://github.com/overextended/ox_lib)
-- [ox_target](https://github.com/overextended/ox_target)
+- [rsg-target](https://github.com/Rexshack-RedM/rsg-target)
+- [oxmysql](https://github.com/overextended/oxmysql)
 
 ## Installation
 1. Drop `rsg-smelting` into your resources folder.
@@ -27,7 +27,7 @@ Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for **RSG-C
 |---|---|
 | `Config.Smelters` | NPC locations: `id`, `label`, `model`, `coords` (vector4), `scenario`, `blip` |
 | `Config.SpawnDistance` | Distance at which NPCs spawn |
-| `Config.TargetDistance` | ox_target interaction range |
+| `Config.TargetDistance` | rsg-target interaction range |
 | `Config.SmeltProps` | Enable/disable prop smelters, UI label and prop models |
 | `Config.MaxUseDistance` | Server-side max distance from the smelter to start/finish |
 | `Config.MaxBatch` | Max bars per smelt |
@@ -56,9 +56,12 @@ exports['rsg-smelting']:SendWebhook('suspicious', source, { { 'Check', 'Custom' 
 ## Locales
 All player-facing text (notifications, target labels, blips, NUI, smelter/recipe names) and Discord webhook text live in `locales/<lang>.json`.
 
-Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language in server.cfg with `setr ox:locale de`.
+Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language in server.cfg with `setr rsg:locale de`.
 
 `label` values in `shared/config.lua` (smelters, blip, prop smelter, recipes) are locale keys; if a key doesn't exist the text is shown as-is, so plain text still works. When adding a smelter or recipe, add its key to every locale file.
+
+## Support
+[Buy Me a Coffee](https://buymeacoffee.com/rexshack)
 
 ## Notes
 - Prop smelters can't be verified server-side (map props aren't networked). Fill `Config.SmeltProps.locations` with the prop coordinates you allow, otherwise the server only checks the player is standing near the reported prop position. Set `Config.SmeltProps.enabled = false` if you only want fixed NPC smelters.
@@ -66,6 +69,13 @@ Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the
 - A smelt the client never finishes (game crash) is refunded automatically when the player next starts one.
 
 ## Changelog
+### 3.0.4
+- Removed ox_lib: locales, notify and callbacks now use rsg-core; ped proximity uses a 1s check instead of `lib.points`
+- Switched ox_target to rsg-target
+- Added a 2s per-player cooldown on starting a smelt (stops request and webhook spam)
+- Fixed a possible double ped spawn while the model was loading
+- NUI focus is now taken only after recipe data arrives; resource stop closes the UI properly
+- Removed unused locale keys (`wh_desc_stop`, `wh_f_owed`); README storage notes corrected (MySQL, not KVP)
 ### 3.0.0
 - All remaining hardcoded text moved to locales, including config labels and Discord webhook embeds
 - Added de, el, es, fr, ja, nl, pl, pt-br and ro translations

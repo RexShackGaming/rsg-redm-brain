@@ -41,7 +41,6 @@
   "diag_title": "Schietoefening - Detectierapport",
   "diag_started": "Detectie gestart. Gooi binnen 10 seconden een mes; het rapport opent automatisch.",
   "diag_intro": "Stuur een screenshot van dit rapport zodat de mislukte detectiestap kan worden gevonden.",
-  "diag_close": "Sluiten",
   "diag_stopped": "Lokale detectiediagnose uitgeschakeld.",
   "diag_detector_error": "Er is een fout bij de doeldetectie vastgelegd. Gebruik /targetdiag report om deze te bekijken.",
   "unknown_player": "Onbekende Speler",
@@ -106,5 +105,6 @@
   "ui_place_ground_bad": "Geen grond",
   "ui_place_time": "Resterend",
   "ui_place_placed": "Doel geplaatst",
-  "ui_place_cancelled": "Plaatsen geannuleerd"
+  "ui_place_cancelled": "Plaatsen geannuleerd",
+  "diag_console": "Detectierapport is in de F8-console weergegeven. Stuur er een screenshot van."
 }

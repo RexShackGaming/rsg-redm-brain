@@ -5,17 +5,20 @@ lua54 'yes'
 
 name 'rsg-target'
 description 'targeting system for RSG RedM Framework'
-version '3.0.0'
+version '3.0.1'
 license 'MIT License'
 
 ui_page 'html/index.html'
 
 shared_scripts {
-    '@ox_lib/init.lua',
+    '@rsg-core/shared/table.lua',
+    '@rsg-core/shared/locale.lua',
+    '@rsg-core/shared/require.lua',
     'shared/config.lua',
 }
 
 client_scripts {
+    '@rsg-core/client/zones.lua',
     'client/client.lua',
 }
 
@@ -44,5 +47,4 @@ provide 'ox_target'
 
 dependencies {
     'rsg-core',
-    'ox_lib',
 }

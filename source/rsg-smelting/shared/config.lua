@@ -13,9 +13,9 @@ Config.Smelters = {
 }
 
 Config.SpawnDistance  = 50.0   -- NPC spawns when player is within this range
-Config.TargetDistance = 2.5    -- ox_target interaction range
+Config.TargetDistance = 2.5    -- rsg-target interaction range
 
--- Props that can be targeted to open the smelter (ox_target addModel)
+-- Props that can be targeted to open the smelter (rsg-target addModel)
 Config.SmeltProps = {
     enabled = true,
     label   = 'prop_smelter',

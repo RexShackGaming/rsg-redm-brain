@@ -41,7 +41,6 @@
   "diag_title": "Trening Strzelecki - Raport Wykrywania",
   "diag_started": "Rozpoczęto wykrywanie. Rzuć nożem w ciągu 10 sekund; raport otworzy się automatycznie.",
   "diag_intro": "Wyślij zrzut ekranu tego raportu, aby ustalić etap wykrywania, który zawiódł.",
-  "diag_close": "Zamknij",
   "diag_stopped": "Lokalna diagnostyka wykrywania wyłączona.",
   "diag_detector_error": "Zarejestrowano błąd wykrywania tarczy. Użyj /targetdiag report, aby go zobaczyć.",
   "unknown_player": "Nieznany Gracz",
@@ -106,5 +105,6 @@
   "ui_place_ground_bad": "Brak podłoża",
   "ui_place_time": "Pozostało",
   "ui_place_placed": "Tarcza ustawiona",
-  "ui_place_cancelled": "Anulowano ustawianie"
+  "ui_place_cancelled": "Anulowano ustawianie",
+  "diag_console": "Raport wykrywania wypisano w konsoli F8. Wyślij jego zrzut ekranu."
 }

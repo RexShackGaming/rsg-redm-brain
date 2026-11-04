@@ -25,7 +25,8 @@ local function pickNextShow()
 end
 
 local function notify(src, desc, type)
-    TriggerClientEvent('ox_lib:notify', src, { title = locale('sv_title'), description = desc, type = type })
+    if not src or src <= 0 then return print(('[rsg-theatre] %s'):format(desc)) end -- console
+    TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('sv_title'), description = desc, type = type, duration = 5000 })
 end
 
 local function endShow(id)
@@ -98,18 +99,18 @@ CreateThread(function()
     end
 end)
 
-lib.callback.register('rsg-theatre:server:getPlaybill', function(src)
+RSGCore.Functions.CreateCallback('rsg-theatre:server:getPlaybill', function(src, cb)
     local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player then return nil end
+    if not Player then return cb(nil) end
     local show = Config.Shows[nextShowIndex]
-    return {
+    cb({
         label = locale('show_' .. show.id),
         description = locale('show_' .. show.id .. '_desc'),
         minutes = math.max(0, math.ceil((nextShowTime - os.time()) / 60)),
         price = Config.TicketPrice,
         hasTicket = tickets[Player.PlayerData.citizenid] == true,
         running = showRunning,
-    }
+    })
 end)
 
 RegisterNetEvent('rsg-theatre:server:buyTicket', function()
@@ -139,16 +140,23 @@ RegisterNetEvent('rsg-theatre:server:buyTicket', function()
     notify(src, locale('sv_ticket_bought', locale('show_' .. Config.Shows[nextShowIndex].id)), 'success')
 end)
 
-lib.addCommand(Config.AdminCommand, {
-    help = locale('cmd_help'),
-    params = { { name = 'show', type = 'string', help = locale('cmd_param'), optional = true } },
-    restricted = 'group.' .. Config.AdminPermission,
-}, function(src, args)
-    local index = args.show and getShowIndexById(args.show) or nextShowIndex
+-- advance the schedule after an admin-forced show so the same act isn't repeated straight after
+local function forceStart(index)
+    if startShow(index) then
+        if index == nextShowIndex then pickNextShow() end
+        nextShowTime = os.time() + (Config.ShowInterval * 60)
+    end
+end
+
+RSGCore.Commands.Add(Config.AdminCommand, locale('cmd_help'), { { name = 'show', help = locale('cmd_param') } }, false, function(src, args)
+    local index = args[1] and getShowIndexById(args[1]) or nextShowIndex
     if not index then
         local ids = {}
         for _, s in ipairs(Config.Shows) do ids[#ids + 1] = s.id end
         return notify(src, locale('cmd_unknown', table.concat(ids, ', ')), 'error')
+    end
+    if pendingStart then
+        return notify(src, locale('cmd_stopping'), 'inform')
     end
     -- admin gets a free ticket so they can watch
     local Player = RSGCore.Functions.GetPlayer(src)
@@ -161,17 +169,15 @@ lib.addCommand(Config.AdminCommand, {
         pendingStart = true
         SetTimeout(3000, function()
             pendingStart = false
-            startShow(index)
+            forceStart(index)
         end)
         return
     end
-    if pendingStart then
-        return notify(src, locale('cmd_stopping'), 'inform')
-    end
-    startShow(index)
-end)
+    forceStart(index)
+end, Config.AdminPermission)
 
 AddEventHandler('playerDropped', function()
-    cooldowns[source] = nil
-    viewerDone(source)
+    local src = source
+    cooldowns[src] = nil
+    viewerDone(src)
 end)

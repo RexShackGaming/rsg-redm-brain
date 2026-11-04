@@ -141,7 +141,7 @@ local function refund(src, job, reason)
         if not giveOrOwe(src, job.citizenid, inp.item, inp.amount * job.amount, reason) then allOk = false end
     end
     if not allOk then
-        TriggerClientEvent('ox_lib:notify', src, { title = locale('smelter_title'), description = locale('smelt_refund_deferred'), type = 'inform', duration = 6000 })
+        TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('smelter_title'), description = locale('smelt_refund_deferred'), type = 'inform', duration = 6000 })
     end
     saveState()
 end
@@ -166,7 +166,7 @@ local function payOwed(src)
     saveState()
     if #paid > 0 then
         Webhook.Send('rejoin_refund', src, { { locale('wh_f_refunded'), table.concat(paid, '\n'), inline = false } })
-        TriggerClientEvent('ox_lib:notify', src, { title = locale('smelter_title'), description = locale('smelt_refund_rejoin'), type = 'inform', duration = 5000 })
+        TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('smelter_title'), description = locale('smelt_refund_rejoin'), type = 'inform', duration = 5000 })
     end
 end
 
@@ -180,20 +180,26 @@ local function shelveJob(src, job, event)
     }, locale('wh_desc_dropped'))
 end
 
-lib.callback.register('rsg-smelting:server:getOreCounts', function(src)
+RSGCore.Functions.CreateCallback('rsg-smelting:server:getOreCounts', function(src, cb)
     local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player then return {} end
+    if not Player then return cb({}) end
     payOwed(src) -- opening a smelter retries any deferred refund
     local counts = {}
     for _, item in ipairs(oreList) do
         counts[item] = itemCount(Player, item)
     end
-    return counts
+    cb(counts)
 end)
 
 local STALE_GRACE = 60 -- seconds after a job's end before it counts as abandoned
+local START_COOLDOWN = 2000 -- ms between start attempts per player (stops request/webhook spam)
+local lastStart = {}
 
-lib.callback.register('rsg-smelting:server:startSmelt', function(src, smelterIndex, recipeIndex, amount, propCoords)
+local function startSmelt(src, smelterIndex, recipeIndex, amount, propCoords)
+    local now = GetGameTimer()
+    if lastStart[src] and now - lastStart[src] < START_COOLDOWN then return false, locale('err_busy') end
+    lastStart[src] = now
+
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return false, locale('err_player') end
 
@@ -271,9 +277,13 @@ lib.callback.register('rsg-smelting:server:startSmelt', function(src, smelterInd
         { locale('wh_f_inputs'), Webhook.Inputs(recipe, amount), inline = false },
     })
     return true
+end
+
+RSGCore.Functions.CreateCallback('rsg-smelting:server:startSmelt', function(src, cb, ...)
+    cb(startSmelt(src, ...))
 end)
 
-lib.callback.register('rsg-smelting:server:finishSmelt', function(src, cancelled)
+local function finishSmelt(src, cancelled)
     local job = pending[src]
     if not job then return false end
 
@@ -323,11 +333,16 @@ lib.callback.register('rsg-smelting:server:finishSmelt', function(src, cancelled
     refund(src, job, 'rsg-smelting:nospace')
     Webhook.Send('smelt_nospace', src, { { locale('wh_f_output'), ('%dx %s'):format(job.amount, locale(job.recipe.label)) } })
     return false, locale('smelt_no_space')
+end
+
+RSGCore.Functions.CreateCallback('rsg-smelting:server:finishSmelt', function(src, cb, cancelled)
+    cb(finishSmelt(src, cancelled == true))
 end)
 
 -- Disconnect mid-smelt: remember the job and refund on next login
 AddEventHandler('playerDropped', function()
     local src = source
+    lastStart[src] = nil
     local job = pending[src]
     if not job then return end
     pending[src] = nil

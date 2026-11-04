@@ -1,12 +1,12 @@
 # rsg-target
 
-Version 3.0.0. targeting system for RSG RedM Framework
+Version 3.0.1. targeting system for RSG RedM Framework
 
 Targeting system for the RSG Framework (RedM), rebuilt from ox_target into the standard RSG resource layout, with an RSG-style NUI and a nearby-target highlighter. - Hold **Left Alt** (or toggle) to target peds, horses/wagons, objects and zones - **Nearby highlighter** – eyeball icons over everything around you that you can interact with; the eye turns **green** when the target you're aiming at ca
 
 Source: https://github.com/Rexshack-RedM/rsg-target
 
-**Dependencies:** `rsg-core`, `ox_lib`
+**Dependencies:** `rsg-core`
 
 Has NUI (`ui_page`).
 
@@ -14,11 +14,11 @@ Has NUI (`ui_page`).
 
 **server:** `rsg-target:server:setEntityHasOptions`
 
-**client:** `RSGCore:Client:OnPlayerUnload`, `RSGCore:Player:SetPlayerData`, `rsg-target:client:removeEntity`
+**client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `RSGCore:Player:SetPlayerData`, `rsg-target:client:removeEntity`
 
 ## Event handlers
 
-**client:** `RSGCore:Client:OnPlayerLoaded`, `rsg-target:client:debug`
+**client:** `rsg-target:client:debug`
 
 ## Public (table) functions
 

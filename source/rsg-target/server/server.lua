@@ -1,5 +1,3 @@
-lib.checkDependency('ox_lib', '3.0.0', true)
-
 -- tracks networked entities flagged as having target options so clients can drop
 -- their options once the entity is deleted
 
@@ -7,7 +5,7 @@ lib.checkDependency('ox_lib', '3.0.0', true)
 local entityStates = {}
 
 RegisterNetEvent('rsg-target:server:setEntityHasOptions', function(netId)
-    if type(netId) ~= 'number' then return end
+    if type(netId) ~= 'number' or math.type(netId) ~= 'integer' or netId <= 0 then return end
 
     if entityStates[netId] then return end -- already flagged
 

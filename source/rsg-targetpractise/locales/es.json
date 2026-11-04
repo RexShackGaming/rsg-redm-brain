@@ -41,7 +41,6 @@
   "diag_title": "Práctica de Tiro - Informe de Detección",
   "diag_started": "Captura iniciada. Lanza un cuchillo en 10 segundos; el informe se abrirá automáticamente.",
   "diag_intro": "Envía una captura de este informe para identificar la fase de detección que falló.",
-  "diag_close": "Cerrar",
   "diag_stopped": "Diagnóstico local de detección desactivado.",
   "diag_detector_error": "Se registró un error de detección. Usa /targetdiag report para verlo.",
   "unknown_player": "Jugador Desconocido",
@@ -106,5 +105,6 @@
   "ui_place_ground_bad": "Sin suelo",
   "ui_place_time": "Tiempo restante",
   "ui_place_placed": "Diana colocada",
-  "ui_place_cancelled": "Colocación cancelada"
+  "ui_place_cancelled": "Colocación cancelada",
+  "diag_console": "Informe de detección impreso en la consola F8. Envía una captura de pantalla."
 }

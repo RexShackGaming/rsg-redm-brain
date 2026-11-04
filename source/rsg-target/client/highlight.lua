@@ -1,4 +1,5 @@
 -- Highlights nearby entities and zones that have target options while targeting is active.
+local RSGCore = exports['rsg-core']:GetCoreObject()
 local api = require 'client.api'
 local utils = require 'client.utils'
 
@@ -61,12 +62,13 @@ local function add(entry)
     return true
 end
 
-local function scanList(list, key, entityType, playerCoords)
+local function scanList(list, key, entityType, playerCoords, ped)
     for i = 1, #list do
         local entity = list[i][key]
-        if entity ~= cache.ped and (not cfg.RequireLineOfSight or HasEntityClearLosToEntity(cache.ped, entity, 17)) then
+        if entity ~= ped then
             local has, model = entityHasOptions(entity, entityType, playerCoords)
-            if has then
+            -- option check first: LOS is a raycast, only pay for it when the entity is usable
+            if has and (not cfg.RequireLineOfSight or HasEntityClearLosToEntity(ped, entity, 17)) then
                 local _, max = GetModelDimensions(model)
                 if not add({ entity = entity, z = max.z + cfg.HeightOffset }) then return end
             end
@@ -84,17 +86,18 @@ function highlight.scan()
     table.wipe(found)
     foundN = 0
 
-    local playerCoords = GetEntityCoords(cache.ped)
+    local ped = PlayerPedId()
+    local playerCoords = GetEntityCoords(ped)
 
-    if cfg.Peds then scanList(lib.getNearbyPeds(playerCoords, cfg.Radius), 'ped', 1, playerCoords) end
-    if cfg.Vehicles then scanList(lib.getNearbyVehicles(playerCoords, cfg.Radius, true), 'vehicle', 2, playerCoords) end
-    if cfg.Objects then scanList(lib.getNearbyObjects(playerCoords, cfg.Radius), 'object', 3, playerCoords) end
+    if cfg.Peds then scanList(RSGCore.Functions.GetNearbyPeds(playerCoords, cfg.Radius), 'ped', 1, playerCoords, ped) end
+    if cfg.Vehicles then scanList(RSGCore.Functions.GetNearbyVehicles(playerCoords, cfg.Radius, true), 'vehicle', 2, playerCoords, ped) end
+    if cfg.Objects then scanList(RSGCore.Functions.GetNearbyObjects(playerCoords, cfg.Radius), 'object', 3, playerCoords, ped) end
 
     -- zones without their own sprite (drawSprite = false) are skipped
     if cfg.Zones and Zones then
         for _, zone in pairs(Zones) do
-            if zone.drawSprite ~= false and #(playerCoords - zone.coords) <= cfg.Radius
-                and anyUsable(zone.options, nil, #(playerCoords - zone.coords), zone.coords) then
+            local dist = zone.drawSprite ~= false and #(playerCoords - zone.coords)
+            if dist and dist <= cfg.Radius and anyUsable(zone.options, nil, dist, zone.coords) then
                 if not add({ coords = zone.coords, zone = zone }) then break end
             end
         end
@@ -105,9 +108,12 @@ local GetScreenCoordFromWorldCoord = GetScreenCoordFromWorldCoord
 local markers = {}
 local style = { size = cfg.Size, pulse = cfg.Pulse, colour = cfg.Colour, hover = cfg.HoverColour }
 local sentEmpty = true
+local sentStyle = false
 
 local function send(list)
-    SendNuiMessage(json.encode({ event = 'markers', markers = list, style = style }))
+    -- style only needs sending once, the NUI keeps it
+    SendNuiMessage(json.encode({ event = 'markers', markers = list, style = not sentStyle and style or nil }))
+    sentStyle = true
 end
 
 ---Projects every highlighted target to the screen and sends them to the NUI (eye icons).

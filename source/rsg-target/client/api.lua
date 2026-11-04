@@ -46,7 +46,7 @@ function api.addPolyZone(data)
 
     data.resource = GetInvokingResource()
     data.options = checkOptions(data.options)
-    return lib.zones.poly(data).id
+    return zones.poly(data).id
 end
 
 ---@param data OxTargetBoxZone | table
@@ -56,7 +56,7 @@ function api.addBoxZone(data)
 
     data.resource = GetInvokingResource()
     data.options = checkOptions(data.options)
-    return lib.zones.box(data).id
+    return zones.box(data).id
 end
 
 ---@param data OxTargetSphereZone | table
@@ -66,7 +66,7 @@ function api.addSphereZone(data)
 
     data.resource = GetInvokingResource()
     data.options = checkOptions(data.options)
-    return lib.zones.sphere(data).id
+    return zones.sphere(data).id
 end
 
 ---@param id number | string The ID of the zone to check. It can be either a number or a string representing the zone's index or name, respectively.
@@ -126,6 +126,8 @@ local function removeTarget(target, remove, resource, showWarning)
                     if showWarning then
                         utils.warn(("Replacing existing target option '%s'."):format(option.name))
                     end
+
+                    break
                 end
             end
         end

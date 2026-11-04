@@ -41,7 +41,6 @@
   "diag_title": "射撃練習 - 検出レポート",
   "diag_started": "検出を開始しました。10秒以内にナイフを1本投げてください。レポートが自動で開きます。",
   "diag_intro": "失敗した検出段階を特定するため、このレポートのスクリーンショットを送ってください。",
-  "diag_close": "閉じる",
   "diag_stopped": "ローカル検出診断を無効化しました。",
   "diag_detector_error": "的の検出エラーが記録されました。/targetdiag report で確認してください。",
   "unknown_player": "不明なプレイヤー",
@@ -106,5 +105,6 @@
   "ui_place_ground_bad": "地面なし",
   "ui_place_time": "残り時間",
   "ui_place_placed": "的を設置しました",
-  "ui_place_cancelled": "設置をキャンセルしました"
+  "ui_place_cancelled": "設置をキャンセルしました",
+  "diag_console": "検出レポートをF8コンソールに出力しました。スクリーンショットを送ってください。"
 }

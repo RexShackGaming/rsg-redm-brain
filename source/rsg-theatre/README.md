@@ -3,7 +3,7 @@
 Theatre Raleur (Saint Denis) stage shows for RSG Framework, rebuilt from Rockstar's `show_nbx_*` scripts.
 
 ## Features
-- Ticket seller NPC at the theatre ticket fence (ox_target) with a playbill NUI
+- Ticket seller NPC at the theatre ticket fence (rsg-target) with a playbill NUI
 - Server-scheduled shows (rotation or random) every `Config.ShowInterval` minutes
 - Ticket holders near the stage when the show starts get the full performance: curtain opens, performers play the original anim scene, curtain closes
 - 14 shows: Can-Can I & II, Big Band I & II, Fire Performer, Fire Dancer, Fire Breather, Snake Dancer I & II, Sword Dancer, Feats of Strength, Escape Artist, Escape from the Noose, Odd Fellows
@@ -18,9 +18,9 @@ Theatre Raleur (Saint Denis) stage shows for RSG Framework, rebuilt from Rocksta
 All player-facing text (notifications, playbill UI, blip, show names and descriptions) is in `locales/`: en, de, el, es, fr, ja, nl, pl, pt-br, ro. Set the language with ox_lib's `ox:locale` convar, e.g. `setr ox:locale "de"`.
 
 ## Install
-1. Drop `rsg-theatre` into your resources and `ensure rsg-theatre` after rsg-core, ox_lib, ox_target, oxmysql and rsg-doorlock.
+1. Drop `rsg-theatre` into your resources and `ensure rsg-theatre` after rsg-core, ox_lib, rsg-target, oxmysql and rsg-doorlock.
 2. No items needed. Tickets are held server-side (per character) until the holder watches a show.
-3. On first start the four theatre door locks are inserted into `rsg_doorlocks` (skipped if a door with the same name already exists). Restart rsg-doorlock once afterwards to load them. `doors.sql` is the same data if you prefer to run it by hand.
+3. On first start the four theatre door locks are inserted into `rsg_doorlocks` (skipped if a door with the same name already exists). Restart rsg-doorlock once afterwards to load them. To add them by hand instead, insert the rows listed in `server/doors.lua` into `rsg_doorlocks` yourself.
 
 ## Config
 - `Config.TicketPrice`, `Config.TicketCooldown`, `Config.TicketSeller.buyDistance`
@@ -33,6 +33,8 @@ All player-facing text (notifications, playbill UI, blip, show names and descrip
 - `Config.AdminCommand`, `Config.AdminPermission`
 
 ## Notes
+- ox_lib is only used for locales now; notifications, callbacks and the admin command use rsg-core.
+- Forcing the next scheduled show with `/theatre` advances the rotation and resets the timer, so it isn't replayed straight after.
 - If an admin forces a show, the next scheduled show waits until it has finished instead of being skipped.
 - Performers, props and the NPC audience are spawned locally on each viewer's client, so nothing is networked.
 - Only the first Can-Can sets its scene origin in the decompiled scripts; every other act uses the origin baked into its scene. If an act stands off-mark, set its `origin = nil`.

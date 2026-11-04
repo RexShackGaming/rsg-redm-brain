@@ -2,107 +2,51 @@ local function exportHandler(exportName, func)
     exports(exportName, func)
 end
 
----@param options table
----@return table
-local function convert(options)
-    local distance = options.distance
-    options = options.options
+---Merges a legacy job / gang / citizenid filter into a { name = minGrade } map
+---@param groups table<string, number>
+---@param value string | string[] | table<string, number> | nil
+local function mergeGroups(groups, value)
+    local t = type(value)
 
-    -- People may pass options as a hashmap (or mixed, even)
-    for k, v in pairs(options) do
-        if type(k) ~= 'number' then
-            table.insert(options, v)
+    if t == 'string' then
+        groups[value] = groups[value] or 0
+    elseif t == 'table' then
+        for k, v in pairs(value) do
+            if type(k) == 'number' then
+                groups[v] = groups[v] or 0          -- array entry: any grade
+            else
+                groups[k] = tonumber(v) or 0        -- hash entry: minimum grade
+            end
         end
     end
+end
 
-    for id, v in pairs(options) do
-        if type(id) ~= 'number' then
-            options[id] = nil
-            goto continue
-        end
+---Converts qb/legacy target options to the ox_target / rsg-target format
+---@param data table
+---@return table
+local function convert(data)
+    local distance = data and data.distance
+    local input = data and data.options or {}
+    local options = {}
+
+    -- options may be passed as an array, a hashmap, or mixed
+    for _, v in pairs(input) do
+        if type(v) == 'table' then options[#options + 1] = v end
+    end
+
+    for i = 1, #options do
+        local v = options[i]
+        local groups = {}
+
+        mergeGroups(groups, v.job)
+        mergeGroups(groups, v.gang)
+        mergeGroups(groups, v.citizenid)
 
         v.onSelect = v.action
         v.distance = v.distance or distance
         v.name = v.name or v.label
         v.items = v.item
-        v.icon = v.icon
-        v.groups = v.job
-
-        local groupType = type(v.groups)
-        if groupType == 'nil' then
-            v.groups = {}
-            groupType = 'table'
-        end
-        if groupType == 'string' then
-            local val = v.gang
-            if type(v.gang) == 'table' then
-                if table.type(v.gang) ~= 'array' then
-                    val = {}
-                    for k in pairs(v.gang) do
-                        val[#val + 1] = k
-                    end
-                end
-            end
-
-            if val then
-                v.groups = {v.groups, type(val) == 'table' and table.unpack(val) or val}
-            end
-
-            val = v.citizenid
-            if type(v.citizenid) == 'table' then
-                if table.type(v.citizenid) ~= 'array' then
-                    val = {}
-                    for k in pairs(v.citizenid) do
-                        val[#val+1] = k
-                    end
-                end
-            end
-
-            if val then
-                v.groups = {v.groups, type(val) == 'table' and table.unpack(val) or val}
-            end
-        elseif groupType == 'table' then
-            local val = {}
-            if table.type(v.groups) ~= 'array' then
-                for k in pairs(v.groups) do
-                    val[#val + 1] = k
-                end
-                v.groups = val
-                val = nil
-            end
-
-            val = v.gang
-            if type(v.gang) == 'table' then
-                if table.type(v.gang) ~= 'array' then
-                    val = {}
-                    for k in pairs(v.gang) do
-                        val[#val + 1] = k
-                    end
-                end
-            end
-
-            if val then
-                v.groups = {table.unpack(v.groups), type(val) == 'table' and table.unpack(val) or val}
-            end
-
-            val = v.citizenid
-            if type(v.citizenid) == 'table' then
-                if table.type(v.citizenid) ~= 'array' then
-                    val = {}
-                    for k in pairs(v.citizenid) do
-                        val[#val+1] = k
-                    end
-                end
-            end
-
-            if val then
-                v.groups = {table.unpack(v.groups), type(val) == 'table' and table.unpack(val) or val}
-            end
-        end
-
-        if type(v.groups) == 'table' and table.type(v.groups) == 'empty' then
-            v.groups = nil
-        end
+        v.groups = next(groups) and groups or nil
 
         if v.event and v.type and v.type ~= 'client' then
             if v.type == 'server' then
@@ -112,44 +56,37 @@ local function convert(options)
             end
 
             v.event = nil
-            v.type = nil
         end
 
+        v.type = nil
         v.action = nil
         v.job = nil
         v.gang = nil
         v.citizenid = nil
         v.item = nil
         v.qtarget = true
-
-        ::continue::
     end
 
     return options
 end
 
 local api = require 'client.api'
+local utils = require 'client.utils'
 
 exportHandler('AddBoxZone', function(name, center, length, width, options, targetoptions)
-    local z = center.z
+    options = options or {}
+    options.minZ = options.minZ or -100
+    options.maxZ = options.maxZ or 800
 
-    if not options.minZ then
-        options.minZ = -100
-    end
-
-    if not options.maxZ then
-        options.maxZ = 800
-    end
-
+    -- legacy minZ/maxZ are world heights: centre the box between them
     if not options.useZ then
-        z = z + math.abs(options.maxZ - options.minZ) / 2
-        center = vec3(center.x, center.y, z)
+        center = vec3(center.x, center.y, (options.minZ + options.maxZ) / 2)
     end
 
     return api.addBoxZone({
         name = name,
         coords = center,
-        size = vec3(width, length, (options.useZ or not options.maxZ) and center.z or math.abs(options.maxZ - options.minZ)),
+        size = vec3(width, length, math.abs(options.maxZ - options.minZ)),
         debug = options.debugPoly,
         rotation = options.heading,
         options = convert(targetoptions),
@@ -157,6 +94,9 @@ exportHandler('AddBoxZone', function(name, center, length, width, options, targe
 end)
 
 exportHandler('AddPolyZone', function(name, points, options, targetoptions)
+    options = options or {}
+    options.minZ = options.minZ or -100
+    options.maxZ = options.maxZ or 800
     local newPoints = table.create(#points, 0)
     local thickness = math.abs(options.maxZ - options.minZ)
 
@@ -175,6 +115,7 @@ exportHandler('AddPolyZone', function(name, points, options, targetoptions)
 end)
 
 exportHandler('AddCircleZone', function(name, center, radius, options, targetoptions)
+    options = options or {}
     return api.addSphereZone({
         name = name,
         coords = center,
@@ -188,15 +129,10 @@ exportHandler('RemoveZone', function(id)
     api.removeZone(id, true)
 end)
 
-exportHandler('AddTargetBone', function(bones, options)
-    if type(bones) ~= 'table' then bones = { bones } end
-    options = convert(options)
-
-    for _, v in pairs(options) do
-        v.bones = bones
-    end
-
-    api.addGlobalVehicle(options)
+exportHandler('AddTargetBone', function(_, options)
+    -- bone targeting is not supported: options are added to all vehicles instead
+    utils.warn('AddTargetBone: bones are not supported by rsg-target, options were added as global vehicle options.')
+    api.addGlobalVehicle(convert(options))
 end)
 
 exportHandler('AddTargetEntity', function(entities, options)
@@ -267,8 +203,6 @@ end)
 exportHandler('RemoveGlobalPlayer', function(labels)
     api.removeGlobalPlayer(labels)
 end)
-
-local utils = require 'client.utils'
 
 exportHandler('AddEntityZone', function()
     utils.warn('AddEntityZone is not supported by rsg-target - try using addEntity/addLocalEntity.')

@@ -41,7 +41,6 @@
   "diag_title": "Target Practise - Detection Report",
   "diag_started": "Detection capture started. Throw one knife within 10 seconds; a report will open automatically.",
   "diag_intro": "Send a screenshot of this report so the failed detection stage can be identified.",
-  "diag_close": "Close",
   "diag_stopped": "Local detection diagnostics disabled.",
   "diag_detector_error": "A target detection error was recorded. Use /targetdiag report to view it.",
   "unknown_player": "Unknown Player",
@@ -106,5 +105,6 @@
   "ui_place_ground_bad": "No ground",
   "ui_place_time": "Time left",
   "ui_place_placed": "Target placed",
-  "ui_place_cancelled": "Placement cancelled"
+  "ui_place_cancelled": "Placement cancelled",
+  "diag_console": "Detection report printed to the F8 console. Send a screenshot of it."
 }

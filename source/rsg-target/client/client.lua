@@ -1,7 +1,4 @@
-if not lib.checkDependency('ox_lib', '3.0.0', true) then return end
-
-lib.locale()
-
+local RSGCore = exports['rsg-core']:GetCoreObject()
 local utils = require 'client.utils'
 local state = require 'client.state'
 local options = require 'client.api'.getTargetOptions()
@@ -33,8 +30,6 @@ local currentMenu
 local menuChanged
 local menuHistory = {}
 local nearbyZones
-
-local debug = Config.Debug
 
 local function isPauseMenuOrMapActive()
     return IsPauseMenuActive() or IsAppActive(`MAP`) ~= 0
@@ -86,6 +81,8 @@ local function shouldHide(option, distance, endCoords, entityHit, entityType, en
         local success, resp = pcall(option.canInteract, entityHit, distance, endCoords, option.name)
         return not success or not resp
     end
+
+    return false
 end
 
 
@@ -111,7 +108,7 @@ local function startTargeting()
             local canInteract = hasTarget and hasTarget ~= 0
             highlight.draw(canInteract and currentTarget.entity or nil, canInteract and nearbyZones or nil)
 
-            DisablePlayerFiring(cache.playerId, true)
+            DisablePlayerFiring(PlayerId(), true)
             Citizen.InvokeNative(0xFE99B66D079CF6BC, 0, 0x07CE1E61, true) -- disable attack
             Citizen.InvokeNative(0xFE99B66D079CF6BC, 0, 0xF84FA74F, true) -- disable aim
             Citizen.InvokeNative(0xFE99B66D079CF6BC, 0, 0xAC4BD4F1, true) -- disable weapon select
@@ -124,7 +121,7 @@ local function startTargeting()
                 DisableControlAction(0, 0xA987235F, true) --  MOUSE MOVE RIGHT
                 DisableControlAction(0, 0xD2047988, true) -- MOUSE MOVE DOWN
 
-                if not hasTarget or options and IsDisabledControlJustPressed(0, Config.Keys.Close) then
+                if not hasTarget or IsDisabledControlJustPressed(0, Config.Keys.Close) then
                     state.setNuiFocus(false)
                     state.setActive(false)
                     break
@@ -145,14 +142,15 @@ local function startTargeting()
     end)
 
     while state.isActive() do
-        -- close when another UI takes over (progress bar, inventory, context menu)
-        if (not state.isNuiFocused() and lib.progressActive()) or LocalPlayer.state.invOpen or lib.getOpenContextMenu() then
+        -- close when another UI takes over (progress bar, inventory)
+        if (not state.isNuiFocused() and RSGCore.Functions.IsProgressActive()) or LocalPlayer.state.invOpen then
             state.setActive(false)
             break
         end
 
-        local playerCoords = GetEntityCoords(cache.ped)
-        hit, entityHit, endCoords = lib.raycast.fromCamera(flag, 4, Config.RaycastDistance)
+        local ped = PlayerPedId()
+        local playerCoords = GetEntityCoords(ped)
+        hit, entityHit, endCoords = RSGCore.Functions.RaycastCamera(flag, 4, Config.RaycastDistance)
         distance = #(playerCoords - endCoords)
 
         if entityHit ~= 0 and entityHit ~= lastEntity then
@@ -162,7 +160,7 @@ local function startTargeting()
 
         if entityType == 0 then
             local _flag = flag == 30 and -1 or 30
-            local _hit, _entityHit, _endCoords = lib.raycast.fromCamera(_flag, 4, Config.RaycastDistance)
+            local _hit, _entityHit, _endCoords = RSGCore.Functions.RaycastCamera(_flag, 4, Config.RaycastDistance)
             local _distance = #(playerCoords - _endCoords)
 
             if _distance < distance then
@@ -184,17 +182,7 @@ local function startTargeting()
             currentMenu = nil
 
             if flag ~= 30 then
-                entityHit = HasEntityClearLosToEntity(entityHit, cache.ped, 7) and entityHit or 0
-            end
-
-            if lastEntity ~= entityHit and debug then
-                if lastEntity then
-                    Citizen.InvokeNative(0x76180407, lastEntity, false)
-                end
-
-                if entityType ~= 1 then
-                    Citizen.InvokeNative(0x76180407, entityHit, true)
-                end
+                entityHit = HasEntityClearLosToEntity(entityHit, ped, 7) and entityHit or 0
             end
 
             if entityHit > 0 then
@@ -309,13 +297,12 @@ local function startTargeting()
         Wait(hit and 50 or 100)
     end
 
-    if lastEntity and debug then
-        Citizen.InvokeNative(0x76180407, lastEntity, false)
-    end
-
     state.setNuiFocus(false)
     SendNuiMessage('{"event": "visible", "state": false}')
     table.wipe(currentTarget)
+    table.wipe(menuHistory)
+    currentMenu = nil
+    menuChanged = false
     highlight.clear()
     options:wipe()
 
@@ -407,6 +394,12 @@ RegisterNUICallback('select', function(data, cb)
     if not option?.openMenu and IsNuiFocused() then
         state.setActive(false)
     end
+end)
+
+RegisterNUICallback('close', function(_, cb)
+    cb(1)
+    state.setNuiFocus(false)
+    state.setActive(false)
 end)
 
 CreateThread(function()

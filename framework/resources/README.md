@@ -26,7 +26,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-cinema](rsg-cinema.md) | rsg-cinema - moving picture shows rebuilt from RDR2 show_movie_magic_lantern | 0 | 8 |
 | [rsg-consume](rsg-consume.md) | Universal consumption system for RedM using RSG Core. > Immersive eating and drinking system for RedM serv | 0 | 2 |
 | [rsg-cooking](rsg-cooking.md) | A cooking system for RSG-Core (RedM) that works the same way as [rsg-moonshine](https://github.com/Rexshac | 8 | 7 |
-| [rsg-core](rsg-core.md) | The core framework for RSG RedM servers: players, characters, money, jobs (with built-in multi-job), gangs, pe | 27 | 43 |
+| [rsg-core](rsg-core.md) | The core framework for RSG RedM servers: players, characters, money, jobs (with built-in multi-job), gangs, pe | 33 | 43 |
 | [rsg-crafting](rsg-crafting.md) | An XP-based crafting book for RSG-Core (RedM). Players use a crafting book item to open a NUI menu. From t | 5 | 2 |
 | [rsg-deliveries](rsg-deliveries.md) | Wagon delivery system RSG Framework | 0 | 4 |
 | [rsg-doorlock](rsg-doorlock.md) | A database-driven door lock system for RedM using the RSG Framework. Doors are created, edited and del | 0 | 7 |
@@ -73,15 +73,14 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-ranch](rsg-ranch.md) | A complete livestock ranching system for RedM servers running the RSG Framework. Buy a ranch, hire sta | 31 | 102 |
 | [rsg-roulette](rsg-roulette.md) | Multiplayer roulette tables for RSG Framework | 1 | 11 |
 | [rsg-samples](rsg-samples.md) | Animal sample collector for RedM (best version) with leaderboard, certificate, and milestone rewards. - Sedate | 0 | 3 |
-| [rsg-smelting](rsg-smelting.md) | Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for RSG-Core (RedM) with ox_lib, ox_t | 1 | 1 |
+| [rsg-smelting](rsg-smelting.md) | Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for RSG-Core (RedM) with rsg-target a | 1 | 1 |
 | [rsg-stables](rsg-stables.md) | Horse and stables script for RSG Framework | 1 | 18 |
 | [rsg-stores](rsg-stores.md) | Version 3.1.0 · requires rsg-core, rsg-inventory, rsg-target, rsg-gizmo, oxmysql (no ox_lib) Create NPC sh | 1 | 21 |
-| [rsg-target](rsg-target.md) | targeting system for RSG RedM Framework | 0 | 4 |
+| [rsg-target](rsg-target.md) | targeting system for RSG RedM Framework | 0 | 5 |
 | [rsg-targetpractise](rsg-targetpractise.md) | Placeable archery and throwing-knife practice targets for RSG Framework | 0 | 18 |
-| [rsg-telegram](rsg-telegram.md) |  | 0 | 2 |
+| [rsg-telegram](rsg-telegram.md) | Telegram system for RSG Framework (RedM). Send and receive telegrams at any post office, with an address book, | 0 | 2 |
 | [rsg-telephone](rsg-telephone.md) | rsg-telephone - persistent telephone props with private voice calls | 0 | 14 |
 | [rsg-theatre](rsg-theatre.md) | Theatre Raleur (Saint Denis) stage shows | 0 | 4 |
-| [rsg-track](rsg-track.md) | A custom horse race track builder and race manager for RSG-Core RedM servers. Players (or staff) lay out a | 0 | 16 |
 | [rsg-trader](rsg-trader.md) | Dynamic-price NPC traders for RSG-Core (RedM). Players buy and sell items at prices that move with stock l | 1 | 1 |
 | [rsg-trams](rsg-trams.md) | rsg-trams - Saint Denis trolley network (one trolley per track) | 0 | 3 |
 | [rsg-trapdoors](rsg-trapdoors.md) | Version 2.1.0 · Full developer reference: [DOCS.md](DOCS.md) Synced, animated trapdoors for RSG-Core (Re | 1 | 1 |

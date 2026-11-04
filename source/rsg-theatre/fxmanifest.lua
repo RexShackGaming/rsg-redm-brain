@@ -6,7 +6,7 @@ lua54 'yes'
 name 'rsg-theatre'
 author 'RexShack'
 description 'Theatre Raleur (Saint Denis) stage shows'
-version '3.0.0'
+version '3.0.1'
 
 shared_scripts {
     '@ox_lib/init.lua',
@@ -36,7 +36,7 @@ files {
 dependencies {
     'rsg-core',
     'ox_lib',
-    'ox_target',
+    'rsg-target',
     'oxmysql',
     'rsg-doorlock',
 }

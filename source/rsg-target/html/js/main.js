@@ -49,12 +49,14 @@ function addOption(type, data, id, zoneId) {
 
 const markerLayer = document.getElementById("markers");
 const markerPool = [];
+let pulse = false;
 
 function renderMarkers(markers, style) {
   if (style) {
     markerLayer.style.setProperty("--marker", style.colour);
     markerLayer.style.setProperty("--marker-active", style.hover);
     markerLayer.style.setProperty("--marker-size", `${style.size}px`);
+    pulse = !!style.pulse;
   }
 
   while (markerPool.length < markers.length) {
@@ -72,9 +74,13 @@ function renderMarkers(markers, style) {
     el.style.left = `${m.x * 100}%`;
     el.style.top = `${m.y * 100}%`;
     el.classList.toggle("active", !!m.a);
-    el.classList.toggle("pulse", !!(style && style.pulse));
+    el.classList.toggle("pulse", pulse);
   });
 }
+
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !app.classList.contains("hidden")) fetchNui("close");
+});
 
 window.addEventListener("message", ({ data }) => {
   if (data.event === "markers") {

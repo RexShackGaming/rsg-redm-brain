@@ -41,7 +41,6 @@
   "diag_title": "Antrenament la Țintă - Raport de Detecție",
   "diag_started": "Detecția a început. Aruncă un cuțit în 10 secunde; raportul se va deschide automat.",
   "diag_intro": "Trimite o captură a acestui raport pentru a identifica etapa de detecție care a eșuat.",
-  "diag_close": "Închide",
   "diag_stopped": "Diagnosticarea locală a detecției a fost dezactivată.",
   "diag_detector_error": "A fost înregistrată o eroare de detecție a țintei. Folosește /targetdiag report pentru a o vedea.",
   "unknown_player": "Jucător Necunoscut",
@@ -106,5 +105,6 @@
   "ui_place_ground_bad": "Fără teren",
   "ui_place_time": "Timp rămas",
   "ui_place_placed": "Țintă plasată",
-  "ui_place_cancelled": "Plasare anulată"
+  "ui_place_cancelled": "Plasare anulată",
+  "diag_console": "Raportul de detectare a fost afișat în consola F8. Trimite o captură de ecran."
 }

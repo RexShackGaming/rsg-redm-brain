@@ -16,14 +16,13 @@ Placeable archery and throwing-knife practice targets for **RSG-Core** on RedM. 
 - **Ownership:** only the owner or an admin can pack a target up. Packing it up returns the item.
 - **Admin tools:** item-free admin targets, calibration debug rings and a diagnostics report.
 - **Security:** item add/remove happens only on the server, with checks on owner, distance, routing bucket and spam rate. Every shot has to match one fired from a weapon the player owns, and points are calculated by the server.
-- **Fully localised (ox_lib):** en, de, el, es, fr, ja, nl, pl, pt-br, ro.
+- **Fully localised (rsg-core locales):** en, de, el, es, fr, ja, nl, pl, pt-br, ro.
 
 ## Requirements
 
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
-- [ox_lib](https://github.com/overextended/ox_lib)
-- [ox_target](https://github.com/overextended/ox_target)
+- [rsg-target](https://github.com/Rexshack-RedM/rsg-target)
 - OneSync enabled
 
 ## Installation
@@ -39,17 +38,16 @@ Placeable archery and throwing-knife practice targets for **RSG-Core** on RedM. 
 4. Add it to `server.cfg` after its dependencies:
 
    ```cfg
-   ensure ox_lib
    ensure rsg-core
    ensure rsg-inventory
-   ensure ox_target
+   ensure rsg-target
    ensure rsg-targetpractise
    ```
 
-5. Optional: pick a language with `setr ox:locale en`.
+5. Optional: pick a language with `setr rsg:locale en`.
 6. Make sure the server can write to `data/targets.json`, then restart the server.
 
-When the resource starts, F8 should show `[rsg-targetpractise] DETECTOR READY code=3.0.1 mode=rings`.
+When the resource starts, F8 should show `[rsg-targetpractise] DETECTOR READY code=3.1.0 mode=rings`.
 
 ## How to use
 
@@ -123,7 +121,7 @@ All settings are in `shared/config.lua`.
 | `Config.Placement.timeoutSeconds` | `120` | Placement auto-cancel time |
 | `Config.StreamDistance` | `120.0` | Distance at which target props spawn on clients |
 | `Config.RemoveDistance` | `3.0` | Interaction / pack-up distance |
-| `Config.LeaderboardRefreshMs` | `2000` | Leaderboard refresh rate while it is open |
+| `Config.LeaderboardRefreshMs` | `2000` | How often an open leaderboard is checked; it only re-sends when scores change |
 | `Config.PersistTargets` | `true` | Save targets to disk (required for player-placed targets) |
 | `Config.StorageFile` | `'data/targets.json'` | Save file |
 | `Config.Scoring.mode` | `'rings'` | `'rings'` for ring points, `'hit'` for 1 point per hit |
@@ -142,7 +140,7 @@ All settings are in `shared/config.lua`.
 
 ## Locales
 
-Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Choose one with `setr ox:locale <code>`. To add a language, copy `locales/en.json` to a new file named with the language code, translate the values and keep the keys unchanged.
+Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Choose one with `setr rsg:locale <code>` (falls back to `ox:locale`, then `en`). To add a language, copy `locales/en.json` to a new file named with the language code, translate the values and keep the keys unchanged.
 
 ## Data and storage
 
@@ -161,10 +159,27 @@ AddEventHandler('rsg-targetpractise:server:acceptedHit', function(data)
 end)
 ```
 
-Never register this as a net event.
+Never register this as a net event. Impact points are reported by the shooter's client and then checked by the server (shot sequence, weapon item, range, routing bucket, cooldown), so if you pay out money or items from this hook, add your own per-player cap or cooldown.
 
 ## Troubleshooting
 
 - **Hits not scoring:** run `/targetdiag` near a target, take a few shots and read the report. Check that you have the weapon item when `RequireWeaponItem` is on.
 - **"Storage error" when placing:** check that `data/targets.json` exists, is valid JSON and is writable.
+- **Diagnostic report:** `/targetdiag report` prints the report to the F8 console.
 - **Rings look off-centre:** an admin can run `/targetdebug` to see the scoring rings drawn on the target.
+
+## Support
+
+If you find this resource useful, you can support development here: https://buymeacoffee.com/rexshack
+
+## Changelog
+
+### 3.1.0
+- Switched targeting from ox_target to **rsg-target**.
+- Removed the ox_lib dependency completely: notifications use rsg-core notify and locales use rsg-core's locale loader.
+- Diagnostics report prints to the F8 console instead of an ox_lib dialog.
+- Fixed: target ownership (Pack Up option) could be missing after joining, because the join-time sync was throttled. The server now resyncs on character load/unload.
+- Fixed: closing the resource with the leaderboard open left the player registered as a viewer.
+- Leaderboard only re-sends data when scores or online players change, and locales are sent once per open instead of every refresh.
+- Placement is blocked or cancelled while mounted or in a vehicle.
+- Removed duplicate debug drawing code and the unused `refreshMs`, `version` and `diag_close` values.

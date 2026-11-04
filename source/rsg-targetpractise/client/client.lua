@@ -1,5 +1,3 @@
-lib.locale()
-
 local G = TargetPractiseGeometry
 local D = TargetPractiseDiagnostics
 D.detectorVersion = D.codeVersion
@@ -21,12 +19,10 @@ local function runThread(name, callback)
     end)
 end
 
-local function notify(message, kind)
-    lib.notify({ title = locale('notify_title'), description = message, type = kind or 'inform', duration = 5000 })
-end
+local notify = TargetPractiseNotify
 
 local function registerInteractions(pair, id)
-    exports.ox_target:addLocalEntity(pair, {
+    exports['rsg-target']:addLocalEntity(pair, {
         {
             name = 'rsg-targetpractise:leaderboard',
             label = locale('interaction_board'),
@@ -51,8 +47,8 @@ end
 
 local function removePair(pair)
     if not pair then return end
-    if GetResourceState('ox_target') == 'started' then
-        exports.ox_target:removeLocalEntity(pair, { 'rsg-targetpractise:pickup', 'rsg-targetpractise:leaderboard' })
+    if GetResourceState('rsg-target') == 'started' then
+        exports['rsg-target']:removeLocalEntity(pair, { 'rsg-targetpractise:pickup', 'rsg-targetpractise:leaderboard' })
     end
     for _, entity in ipairs(pair) do
         if DoesEntityExist(entity) then DeleteEntity(entity) end
@@ -127,7 +123,7 @@ RegisterNetEvent('rsg-targetpractise:client:scoreRejected', function(reason)
 end)
 
 AddEventHandler('onClientResourceStart', function(resource)
-    if resource ~= 'ox_target' then return end
+    if resource ~= 'rsg-target' then return end
     for id, pair in pairs(objects) do registerInteractions(pair, id) end
 end)
 
@@ -172,9 +168,13 @@ end
 
 RegisterNetEvent('rsg-targetpractise:client:place', function()
     if placing then return end
+    local ped = PlayerPedId()
+    if IsPedOnMount(ped) or IsPedInAnyVehicle(ped, false) then
+        TriggerServerEvent('rsg-targetpractise:server:cancel')
+        return notify(locale('placement_rejected'), 'error')
+    end
     placing = true
     CreateThread(function()
-        local ped = PlayerPedId()
         local target = { position = GetEntityCoords(ped), heading = GetEntityHeading(ped) }
         preview = createPair(target, true)
         if not preview then
@@ -196,18 +196,18 @@ RegisterNetEvent('rsg-targetpractise:client:place', function()
             for _, control in pairs(Config.Controls) do DisableControlAction(0, control, true) end
             DisableControlAction(0, 0x07CE1E61, true) -- Attack
             DisableControlAction(0, 0xF84FA74F, true) -- Aim
-            if IsDisabledControlPressed(0, Config.Controls.left) then target.heading = target.heading + Config.Placement.rotationSpeed * dt end
-            if IsDisabledControlPressed(0, Config.Controls.right) then target.heading = target.heading - Config.Placement.rotationSpeed * dt end
-            if IsDisabledControlPressed(0, Config.Controls.up) then height = math.min(Config.Placement.heightRange, height + Config.Placement.heightSpeed * dt) end
-            if IsDisabledControlPressed(0, Config.Controls.down) then height = math.max(-Config.Placement.heightRange, height - Config.Placement.heightSpeed * dt) end
-            target.position = { x = pos.x, y = pos.y, z = (found and ground or pos.z) + height }
-            applyPose(preview, target)
             local keys = {
                 left = IsDisabledControlPressed(0, Config.Controls.left),
                 right = IsDisabledControlPressed(0, Config.Controls.right),
                 up = IsDisabledControlPressed(0, Config.Controls.up),
                 down = IsDisabledControlPressed(0, Config.Controls.down)
             }
+            if keys.left then target.heading = target.heading + Config.Placement.rotationSpeed * dt end
+            if keys.right then target.heading = target.heading - Config.Placement.rotationSpeed * dt end
+            if keys.up then height = math.min(Config.Placement.heightRange, height + Config.Placement.heightSpeed * dt) end
+            if keys.down then height = math.max(-Config.Placement.heightRange, height - Config.Placement.heightSpeed * dt) end
+            target.position = { x = pos.x, y = pos.y, z = (found and ground or pos.z) + height }
+            applyPose(preview, target)
             local now = GetGameTimer()
             local key = ('%s%s%s%s%s'):format(tostring(keys.left), tostring(keys.right), tostring(keys.up), tostring(keys.down), tostring(validGround))
             if now - lastSent >= 100 or key ~= lastKey then
@@ -230,7 +230,7 @@ RegisterNetEvent('rsg-targetpractise:client:place', function()
                 notify(locale('ground_missing'), 'error')
             end
             if IsDisabledControlJustPressed(0, Config.Controls.cancel) or IsEntityDead(ped)
-                or GetGameTimer() > deadline then
+                or IsPedOnMount(ped) or IsPedInAnyVehicle(ped, false) or GetGameTimer() > deadline then
                 finishPlacement('cancel')
                 TriggerServerEvent('rsg-targetpractise:server:cancel')
                 return
@@ -603,6 +603,20 @@ local function line(a, b, r, g, blue)
         b.x + 0.0, b.y + 0.0, b.z + 0.0, r, g, blue, 255)
 end
 
+local function circle(target, c, radius, r, g, b)
+    local previous
+    for segment = 0, 48 do
+        local angle = segment * math.pi * 2 / 48
+        local p = G.faceWorld(target, {
+            x = c.x + math.cos(angle) * radius,
+            y = c.y - Config.Scoring.depthTolerance,
+            z = c.z + math.sin(angle) * radius
+        })
+        if previous then line(previous, p, r, g, b) end
+        previous = p
+    end
+end
+
 runThread('debug-draw', function()
     while not stopping do
         if debugEnabled then
@@ -610,32 +624,10 @@ runThread('debug-draw', function()
             for id, target in pairs(targets) do
                 if objects[id] and G.distance(position, target.position) < 30.0 then
                     local c = G.hitMode() and { x = 0.0, y = 0.0, z = 0.0 } or Config.Scoring.center
-                    for _, ring in ipairs(G.hitMode() and {} or Config.Scoring.rings) do
-                        local previous
-                        for segment = 0, 48 do
-                            local angle = segment * math.pi * 2 / 48
-                            local p = G.faceWorld(target, {
-                                x = c.x + math.cos(angle)*ring.radius,
-                                y = c.y - Config.Scoring.depthTolerance,
-                                z = c.z + math.sin(angle)*ring.radius
-                            })
-                            if previous then line(previous, p, 255, 190, 30) end
-                            previous = p
-                        end
-                    end
-                    local bullseyeRadius = Config.Scoring.bullseyeRadius or 0
-                    if not G.hitMode() and bullseyeRadius > 0 then
-                        local previous
-                        for segment = 0, 48 do
-                            local angle = segment * math.pi * 2 / 48
-                            local p = G.faceWorld(target, {
-                                x = c.x + math.cos(angle)*bullseyeRadius,
-                                y = c.y - Config.Scoring.depthTolerance,
-                                z = c.z + math.sin(angle)*bullseyeRadius
-                            })
-                            if previous then line(previous, p, 245, 197, 66) end
-                            previous = p
-                        end
+                    if not G.hitMode() then
+                        for _, ring in ipairs(Config.Scoring.rings) do circle(target, c, ring.radius, 255, 190, 30) end
+                        local bullseyeRadius = Config.Scoring.bullseyeRadius or 0
+                        if bullseyeRadius > 0 then circle(target, c, bullseyeRadius, 245, 197, 66) end
                     end
                     local center = G.faceWorld(target, c)
                     line(center, G.faceWorld(target, G.add(c, { x = 0.3, y = 0.0, z = 0.0 })), 255, 0, 0)

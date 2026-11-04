@@ -1,4 +1,9 @@
+local RSGCore = exports['rsg-core']:GetCoreObject()
 lib.locale()
+
+local function notify(desc, type)
+    RSGCore.Functions.Notify({ title = locale('cl_title'), description = desc, type = type, duration = 5000 })
+end
 
 -- Anim scene natives (names/usage from the decompiled show_nbx_* scripts)
 local function CreateScene(dict, flags, playlist)
@@ -114,7 +119,7 @@ end
 -- keep the curtain in place while the player is near the stage
 CreateThread(function()
     while true do
-        local near = #(GetEntityCoords(cache.ped) - Config.Stage) < Config.CurtainRange
+        local near = #(GetEntityCoords(PlayerPedId()) - Config.Stage) < Config.CurtainRange
         if near then spawnCurtain() elseif curtain.obj and not show.active then removeCurtain() end
         Wait(near and 5000 or 2000)
     end
@@ -210,6 +215,7 @@ end
 RegisterNetEvent('rsg-theatre:client:playShow', function(index)
     local data = Config.Shows[index]
     if not data then return end
+    TriggerEvent('rsg-theatre:client:closePlaybill')
     if show.active then show.active = false end -- a new show replaces the old one; its thread cleans itself up
     local run = newRun(true)
     show = run
@@ -221,7 +227,7 @@ RegisterNetEvent('rsg-theatre:client:playShow', function(index)
         return true
     end
 
-    lib.notify({ title = locale('cl_title'), description = locale('cl_show_starting', locale('show_' .. data.id)), type = 'inform' })
+    notify(locale('cl_show_starting', locale('show_' .. data.id)), 'inform')
 
     -- curtain should already be there (closed); make sure
     local c = Config.Curtain
@@ -258,7 +264,7 @@ RegisterNetEvent('rsg-theatre:client:playShow', function(index)
 
     if not waitFor(function() return not run.active or IsSceneLoaded(run.scene) end, 15000) or aborted() then
         if run.active then
-            lib.notify({ title = locale('cl_title'), description = locale('cl_show_failed'), type = 'error' })
+            notify(locale('cl_show_failed'), 'error')
             cleanupShow(run)
             TriggerServerEvent('rsg-theatre:server:showFinished')
         end
@@ -280,7 +286,7 @@ RegisterNetEvent('rsg-theatre:client:playShow', function(index)
     while run.active and GetGameTimer() < endTime do
         Wait(#sequence > 0 and 100 or 500)
         if not SceneExists(run.scene) then break end
-        if #(GetEntityCoords(cache.ped) - Config.Stage) > Config.AudienceRadius * 2 then break end
+        if #(GetEntityCoords(PlayerPedId()) - Config.Stage) > Config.AudienceRadius * 2 then break end
         if waitingFor then
             if PlaylistActive(run.scene, waitingFor) then waitingFor = nil end
         elseif step <= #sequence then
@@ -302,7 +308,7 @@ RegisterNetEvent('rsg-theatre:client:playShow', function(index)
         playCurtain(c.close)
         Wait(Config.CurtainCloseDelay)
         if completed then
-            lib.notify({ title = locale('cl_title'), description = locale('cl_show_over'), type = 'success' })
+            notify(locale('cl_show_over'), 'success')
         end
     end
     cleanupShow(run)
@@ -320,10 +326,19 @@ end)
 ---------------------------------------------------------------------
 -- ticket seller + NUI playbill
 ---------------------------------------------------------------------
+local nuiOpen = false
+local function closePlaybill()
+    if not nuiOpen then return end
+    nuiOpen = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'close' })
+end
+
 local function openPlaybill()
-    local bill = lib.callback.await('rsg-theatre:server:getPlaybill', false)
-    if not bill then return end
-    if show.active then return end
+    if nuiOpen or show.active then return end
+    local bill = RSGCore.Functions.AwaitCallback('rsg-theatre:server:getPlaybill', 5000)
+    if not bill or show.active then return end
+    nuiOpen = true
     SetNuiFocus(true, true)
     SendNUIMessage({
         action = 'open',
@@ -339,13 +354,16 @@ local function openPlaybill()
     })
 end
 
+AddEventHandler('rsg-theatre:client:closePlaybill', closePlaybill)
+
 RegisterNUICallback('close', function(_, cb)
-    SetNuiFocus(false, false)
+    closePlaybill()
     cb('ok')
 end)
 
 RegisterNUICallback('buy', function(_, cb)
-    SetNuiFocus(false, false)
+    if not nuiOpen then return cb('ok') end
+    closePlaybill()
     TriggerServerEvent('rsg-theatre:server:buyTicket')
     cb('ok')
 end)
@@ -364,7 +382,7 @@ CreateThread(function()
     FreezeEntityPosition(sellerPed, true)
     SetModelAsNoLongerNeeded(s.model)
 
-    exports.ox_target:addLocalEntity(sellerPed, {
+    exports['rsg-target']:addLocalEntity(sellerPed, {
         {
             name = 'rsg_theatre_ticket',
             icon = 'fa-solid fa-ticket',
@@ -377,11 +395,11 @@ end)
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
-    SetNuiFocus(false, false)
+    closePlaybill()
     cleanupShow()
     removeCurtain()
     if sellerPed and DoesEntityExist(sellerPed) then
-        exports.ox_target:removeLocalEntity(sellerPed, 'rsg_theatre_ticket')
+        exports['rsg-target']:removeLocalEntity(sellerPed, 'rsg_theatre_ticket')
         DeleteEntity(sellerPed)
     end
     if sellerBlip then RemoveBlip(sellerBlip) end

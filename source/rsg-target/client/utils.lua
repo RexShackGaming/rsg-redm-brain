@@ -1,7 +1,8 @@
+local RSGCore = exports['rsg-core']:GetCoreObject()
 local utils = {}
 
 function utils.getTexture()
-    return lib.requestStreamedTextureDict('menu_textures'), 'menu_icon_circle'
+    return RSGCore.Functions.RequestStreamedTextureDict('menu_textures'), 'menu_icon_circle'
 end
 
 -- SetDrawOrigin is limited to 32 calls per frame. Set as 0 to disable.
@@ -15,8 +16,6 @@ local currentZones = {}
 local previousZones = {}
 local drawZones = {}
 local drawN = 0
--- local width = 0.02
--- local height = width * GetAspectRatio(false)
 
 if drawZoneSprites == 0 then drawZoneSprites = -1 end
 
@@ -37,7 +36,7 @@ function utils.getNearbyZones(coords)
             currentZones[n] = zone
         end
 
-        if drawN <= drawZoneSprites and zone.drawSprite ~= false and (contains or (zone.distance or 7) < 7) then
+        if drawN < drawZoneSprites and zone.drawSprite ~= false and (contains or (zone.distance or 7) < 7) then
             drawN += 1
             drawZones[drawN] = zone
             zone.colour = contains and hover or nil
@@ -99,8 +98,6 @@ end
 ---@param hasAny boolean?
 ---@return boolean
 function utils.hasPlayerGotItems(filter, hasAny)
-    if not playerItems then return true end
-
     local _type = type(filter)
 
     if _type == 'string' then

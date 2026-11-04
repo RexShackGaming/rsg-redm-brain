@@ -1,5 +1,3 @@
-lib.locale()
-
 TargetPractiseLeaderboard = {}
 
 function TargetPractiseLeaderboard.name(charinfo)

@@ -1,6 +1,6 @@
 # rsg-core
 
-Version 3.1.2. rsg-core
+Version 3.1.3. rsg-core
 
 The core framework for RSG RedM servers: players, characters, money, jobs (with built-in multi-job), gangs, permissions, commands, callbacks, notifications and shared data. Documentation: https://rsgcore.com/docs - [oxmysql](https://github.com/overextended/oxmysql)
 
@@ -14,7 +14,7 @@ Has NUI (`ui_page`).
 
 **server:** `ExploitBan(playerId, origin)`, `GetCoreObject()`, `GetCoreVersion(InvokingResource)`, `SetField(fieldName, data)`, `SetMethod(methodName, handler)`
 
-**client:** `CancelProgress()`, `ChangeText`, `DrawText(text, pos)`, `GenerateCSRFToken()`, `GetCoreObject()`, `HideText()`, `IsProgressActive()`, `IsTextShown()`, `KeyPressed`, `Notify(...)`, `ProgressBar(data)`, `ProgressCircle(data)`, `RequestAnimDict(dict, timeout)`, `RequestAnimSet(set, timeout)`, `RequestModel(model, timeout)`, `RequestNamedPtfxAsset(asset, timeout)`, `createPrompt(name, coords, key, text, options)`, `createPromptGroup(group, label, coords, prompts)`, `deletePrompt(name)`, `deletePromptGroup(name)`, `getPrompt()`, `getPromptGroup()`
+**client:** `CancelProgress()`, `ChangeText`, `DrawText(text, pos)`, `GenerateCSRFToken()`, `GetCoreObject()`, `GetNearbyObjects(coords, maxDistance)`, `GetNearbyPeds(coords, maxDistance)`, `GetNearbyVehicles(coords, maxDistance, includePlayerVehicle)`, `HideText()`, `IsProgressActive()`, `IsTextShown()`, `KeyPressed`, `Notify(...)`, `ProgressBar(data)`, `ProgressCircle(data)`, `Raycast(from, to, flags, ignore)`, `RaycastCamera(flags, ignore, distance)`, `RequestAnimDict(dict, timeout)`, `RequestAnimSet(set, timeout)`, `RequestModel(model, timeout)`, `RequestNamedPtfxAsset(asset, timeout)`, `RequestStreamedTextureDict(dict, timeout)`, `createPrompt(name, coords, key, text, options)`, `createPromptGroup(group, label, coords, prompts)`, `deletePrompt(name)`, `deletePromptGroup(name)`, `getPrompt()`, `getPromptGroup()`
 
 **shared:** `GetWeapons()`
 
@@ -44,9 +44,11 @@ Has NUI (`ui_page`).
 
 **client/functions.lua:** `RSGCore.Functions.CreateClientCallback(name, cb)`, `RSGCore.Functions.TriggerClientCallback(name, cb, ...)`, `RSGCore.Functions.TriggerCallback(name, cb, ...)`, `RSGCore.Functions.AwaitCallback(name, timeout, ...)`, `RSGCore.Debug(...)`, `RSGCore.Functions.GetPlayerData(cb)`, `RSGCore.Functions.GetCoords(entity)`, `RSGCore.Functions.HasItem(items, amount)`, `RSGCore.Functions.LookAtEntity(entity, timeout, speed)`, `RSGCore.Functions.PlayAnim(animDict, animName, upperbodyOnly, duration)`, `RSGCore.Functions.GetVehicles()`, `RSGCore.Functions.GetObjects()`, `RSGCore.Functions.GetPlayers()`, `RSGCore.Functions.GetPlayersFromCoords(coords, distance)`, `RSGCore.Functions.GetClosestPlayer(coords)`, `RSGCore.Functions.GetPeds(ignoreList)`, `RSGCore.Functions.GetClosestPed(coords, ignoreList)`, `RSGCore.Functions.GetClosestVehicle(coords)`, `RSGCore.Functions.GetClosestObject(coords)`, `RSGCore.Functions.SpawnVehicle(model, cb, coords, isnetworked, teleportInto)`, `RSGCore.Functions.DeleteVehicle(vehicle)`, `RSGCore.Functions.DrawText(x, y, width, height, scale, r, g, b, a, text)`, `RSGCore.Functions.DrawText3D(x, y, z, text)`, `RSGCore.Functions.GetClosestBone(entity, list)`, `RSGCore.Functions.GetBoneDistance(entity, boneType, boneIndex)`, `RSGCore.Functions.AttachProp(ped, model, boneId, x, y, z, xR, yR, zR, vertex)`, `RSGCore.Functions.SpawnClear(coords, radius)`, `RSGCore.Functions.StartParticleAtCoord(dict, ptName, looped, coords, rot, scale, alpha, color, duration)`, `RSGCore.Functions.StartParticleOnEntity(dict, ptName, looped, entity, bone, offset, rot, scale, alpha, color, evolution, duration)`, `RSGCore.Functions.GetCardinalDirection(entity)`, `RSGCore.Functions.GetCurrentTime()`, `RSGCore.Functions.GetGroundZCoord(coords)`, `RSGCore.Functions.GetGroundHash(entity)`, `RSGCore.Functions.Notify(title, text, notifyType, duration, icon)`
 
-**client/lib.lua:** `RSGCore.Functions.RequestModel(model, timeout)`, `RSGCore.Functions.RequestAnimDict(dict, timeout)`, `RSGCore.Functions.RequestAnimSet(set, timeout)`, `RSGCore.Functions.RequestNamedPtfxAsset(asset, timeout)`, `RSGCore.Functions.PlayAnimOnPed(ped, dict, name, blendIn, blendOut, duration, flag, rate, lockX, lockY, lockZ)`
+**client/lib.lua:** `RSGCore.Functions.RequestModel(model, timeout)`, `RSGCore.Functions.RequestAnimDict(dict, timeout)`, `RSGCore.Functions.RequestAnimSet(set, timeout)`, `RSGCore.Functions.RequestNamedPtfxAsset(asset, timeout)`, `RSGCore.Functions.PlayAnimOnPed(ped, dict, name, blendIn, blendOut, duration, flag, rate, lockX, lockY, lockZ)`, `RSGCore.Functions.RequestStreamedTextureDict(dict, timeout)`, `RSGCore.Functions.Raycast(from, to, flags, ignore)`, `RSGCore.Functions.RaycastCamera(flags, ignore, distance)`, `RSGCore.Functions.GetNearbyPeds(coords, maxDistance)`, `RSGCore.Functions.GetNearbyVehicles(coords, maxDistance, includePlayerVehicle)`, `RSGCore.Functions.GetNearbyObjects(coords, maxDistance)`
 
 **client/progress.lua:** `RSGCore.Functions.ProgressBar(data)`, `RSGCore.Functions.ProgressCircle(data)`, `RSGCore.Functions.IsProgressActive()`, `RSGCore.Functions.CancelProgress()`
+
+**client/zones.lua:** `Zone:remove()`, `zones.sphere(data)`, `zones.box(data)`, `zones.poly(data)`, `zones.getAllZones()`, `zones.getCurrentZones()`, `zones.getNearbyZones()`
 
 **server/commands.lua:** `RSGCore.Commands.Add(name, help, arguments, argsrequired, callback, permission, ...)`, `RSGCore.Commands.Refresh(source)`
 

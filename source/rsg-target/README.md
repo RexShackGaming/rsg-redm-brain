@@ -7,12 +7,13 @@ Targeting system for the RSG Framework (RedM), rebuilt from ox_target into the s
 - **Nearby highlighter** – eyeball icons over everything around you that you can interact with; the eye turns **green** when the target you're aiming at can be used (in range, job/gang, items and `canInteract` all pass)
 - Option checks: `groups` (job / gang / citizenid with grades via rsg-core), `items` (rsg-inventory), `distance`, `offset`, `canInteract`
 - Sub-menus (`openMenu` / `menuName`) with a built-in Go back option
+- Left Mouse focuses the menu; Right Mouse or Esc closes it
 - Option actions: `onSelect`, `export`, `event`, `serverEvent`, `command`
 - Drop-in replacement: existing `exports.ox_target` and legacy rsg-target exports keep working
 
 ## Install
 1. **Stop / remove `ox_target`** – rsg-target replaces it (it `provide`s `ox_target`).
-2. Put `rsg-target` in your resources and `ensure rsg-target` after `ox_lib` and `rsg-core`.
+2. Put `rsg-target` in your resources and `ensure rsg-target` after `rsg-core` (3.1.2+ with zones/raycast). ox_lib is no longer required.
 3. Run `refresh` and restart the server (scripts register their targets when they start).
 4. Adjust `shared/config.lua`.
 
@@ -48,6 +49,8 @@ exports['rsg-target']:addLocalEntity(ped, {
 Legacy exports (`AddBoxZone`, `AddCircleZone`, `AddTargetModel`, `AddTargetEntity`, `AddGlobalPed`, …) are still provided for older scripts.
 
 > Never trust option data on the server: anything sent with `serverEvent` comes from the client and must be validated in your own resource.
+
+See [DOCS.md](DOCS.md) for the full option reference and changelog.
 
 ## Structure
 ```
