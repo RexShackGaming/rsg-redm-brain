@@ -21,8 +21,12 @@ local function applyWeather(weather, transition)
         Citizen.InvokeNative(0x59174F1AFE095B5A, joaat(weather), true, true, true, transition, false)
         return
     end
+    -- clear any override left by another script (admin menu, cutscenes, interiors) first,
+    -- otherwise the new type can be ignored and the sky stays as it was
+    Citizen.InvokeNative(0x80A398F16FFE3CC3)                                    -- CLEAR_OVERRIDE_WEATHER
+    Citizen.InvokeNative(0x193DFC0526830FD6, -1.0)                              -- _SET_RAIN -1 = let weather drive rain (undo scripts that forced 0.0)
     -- _SET_WEATHER_TYPE(hash, p1, p2, overrideNetwork, transitionTime, p5)
-    Citizen.InvokeNative(0x59174F1AFE095B5A, joaat(weather), true, false, true, transition, false)
+    Citizen.InvokeNative(0x59174F1AFE095B5A, joaat(weather), true, true, true, transition, false)
 end
 
 local function applyTime(h, m, s, transitionMs)
@@ -180,6 +184,18 @@ end
 local function getWeather()
     return syncEnabled and appliedWeather or localWeather
 end
+
+-- /weatherdebug: shows what this client is doing (sync state, server vs applied weather, region)
+RegisterCommand('weatherdebug', function()
+    local data = GlobalState.rsgWeather
+    local c = GetEntityCoords(PlayerPedId())
+    local server = data and data.weather or '?'
+    local info = locale('debug_info', tostring(syncEnabled), server, tostring(appliedWeather), tostring(localWeather),
+        translateWeather(server, c), c.x, c.y, GetTemperatureAtCoords(c.x, c.y, c.z))
+    print('[rsg-weather] ' .. info)
+    RSGCore.Functions.Notify({ title = locale('title'), description = info, type = 'inform', duration = 10000 })
+    if syncEnabled then syncWeather(true) end -- force re-apply
+end, false)
 
 RegisterNetEvent('rsg-weather:client:toggleSync', function() toggleSync(true) end)
 RegisterNetEvent('rsg-weather:client:setMyTime', setMyTime)

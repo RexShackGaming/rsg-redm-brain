@@ -39,6 +39,7 @@
     "day_4": "Cz",
     "day_5": "Pt",
     "day_6": "Sb",
+    "debug_info": "sync=%s | server=%s | applied=%s | local=%s | region=%s | x=%.0f y=%.0f | temp=%.1f",
     "dir_E": "E",
     "dir_N": "N",
     "dir_NE": "NE",
@@ -117,6 +118,7 @@
     "ui_patterns": "Wzorce",
     "ui_permanent_snow": "Stały śnieg",
     "ui_real": "rzecz.",
+    "ui_remove": "Usuń",
     "ui_reset_done": "Przywrócono config",
     "ui_reset_everything_to_config": "Przywróć wszystko do configu",
     "ui_reset_text": "Pogoda, czas, wiatr i wzorzec wrócą do wartości z configu.",
@@ -251,6 +253,5 @@
     "wh_wind": "Wiatr",
     "wh_wind_changed": "🌬️ Zmieniono wiatr",
     "wind_set": "Wiatr ustawiony na %s° z siłą %s",
-    "yes": "Tak",
-    "ui_remove": "Usuń"
+    "yes": "Tak"
 }

@@ -1,6 +1,6 @@
 # rsg-character
 
-Version 3.1.2. rsg-character
+Version 3.1.3. rsg-character
 
 Character selection, character creation, clothing stores, wardrobe and spawn selection for **RSG-Core** (RedM). > Server owners and developers: see **[DOCS.md](DOCS.md)** for the full flow, database layout, security model, exports and how to extend the script. - In-world select screen: your characters' peds line up at a configurable location, with the camera framing every slot automatically.
 

@@ -52,7 +52,7 @@ Character selection, character creation, clothing stores, wardrobe and spawn sel
 - [oxmysql](https://github.com/Rexshack-RedM/oxmysql)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory) (starter items)
 - Optional: [rsg-target](https://github.com/Rexshack-RedM/rsg-target) (wardrobe props)
-- Optional: [rsg-weather](https://github.com/Rexshack-RedM/rsg-weather) (paused during character select)
+- Optional: [rsg-weather](https://github.com/Rexshack-RedM/rsg-weather) (paused during character select; weather, time and rain are handed back to it when the scene ends)
 
 ---
 

@@ -39,6 +39,7 @@
     "day_4": "Do",
     "day_5": "Fr",
     "day_6": "Sa",
+    "debug_info": "sync=%s | server=%s | applied=%s | local=%s | region=%s | x=%.0f y=%.0f | temp=%.1f",
     "dir_E": "O",
     "dir_N": "N",
     "dir_NE": "NO",
@@ -117,6 +118,7 @@
     "ui_patterns": "Muster",
     "ui_permanent_snow": "Dauerhafter Schnee",
     "ui_real": "echt",
+    "ui_remove": "Entfernen",
     "ui_reset_done": "Auf Config zurückgesetzt",
     "ui_reset_everything_to_config": "Alles auf Config zurücksetzen",
     "ui_reset_text": "Wetter, Zeit, Wind und Muster werden auf die Config-Werte zurückgesetzt.",
@@ -251,6 +253,5 @@
     "wh_wind": "Wind",
     "wh_wind_changed": "🌬️ Wind geändert",
     "wind_set": "Wind gesetzt auf %s° mit %s",
-    "yes": "Ja",
-    "ui_remove": "Entfernen"
+    "yes": "Ja"
 }

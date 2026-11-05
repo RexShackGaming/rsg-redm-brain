@@ -1,6 +1,6 @@
 # rsg-adminmenu
 
-Version 3.1.1. rsg-adminmenu
+Version 3.1.2. rsg-adminmenu
 
 A full staff admin panel for **RSG Framework (RedM)**: a React NUI with tiered staff roles, player management, reports and tickets, logging, admin chat, world tools and server controls. **Version:** 3.1.0 · **Requires:** rsg-core, rsg-inventory, oxmysql · Developer and owner reference: [DOCS.md](DOCS.md) - **Dashboard**: live server stats, a greeting for the admin (their Discord name when a bot to
 

@@ -335,6 +335,7 @@ TriggerClientEvent('rsg-character:client:OpenCharSelect', src)
 | Wardrobe prop does nothing | rsg-target not started, or `WardrobeTarget.enabled = false`. |
 | Spawn card image blank | Image path wrong or missing from `html/img/spawn/`. |
 | Spawn at character select scene | Add/adjust `RSG.SpawnChecks`. |
+| No rain after selecting a character | Fixed: the select scene sets the rain level to 0.0 (`_SET_RAIN` 0x193DFC0526830FD6); `EndScene` now resets it to -1.0 so weather controls rain again. |
 
 Enable `RSG.Debug = true` for extra client console output.
 

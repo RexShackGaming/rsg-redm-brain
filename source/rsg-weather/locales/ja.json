@@ -39,6 +39,7 @@
     "day_4": "木",
     "day_5": "金",
     "day_6": "土",
+    "debug_info": "sync=%s | server=%s | applied=%s | local=%s | region=%s | x=%.0f y=%.0f | temp=%.1f",
     "dir_E": "東",
     "dir_N": "北",
     "dir_NE": "北東",
@@ -117,6 +118,7 @@
     "ui_patterns": "パターン",
     "ui_permanent_snow": "常時積雪",
     "ui_real": "実時間",
+    "ui_remove": "削除",
     "ui_reset_done": "設定値に戻しました",
     "ui_reset_everything_to_config": "すべて設定値に戻す",
     "ui_reset_text": "天気・時刻・風・パターンが設定ファイルの値に戻ります。",
@@ -251,6 +253,5 @@
     "wh_wind": "風",
     "wh_wind_changed": "🌬️ 風を変更",
     "wind_set": "風を %s°、風速 %s に設定しました",
-    "yes": "はい",
-    "ui_remove": "削除"
+    "yes": "はい"
 }

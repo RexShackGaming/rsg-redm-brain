@@ -12,7 +12,7 @@ Config.Debug          = false
 Config.ServerName     = 'My RSG Server'   -- shown at the top of the queue card
 Config.CardImage      = ''                -- optional banner image url (https) for the queue card, '' = none
 Config.UpdateInterval = 2000              -- ms between queue card refreshes
-Config.MinCardTime    = 10                 -- seconds the queue card always shows, even with a free slot (0 = join instantly)
+Config.MinCardTime    = 15                 -- seconds the queue card always shows, even with a free slot (0 = join instantly)
 Config.ConnectTimeout = 180               -- seconds an admitted player may take to load in before their slot is freed
 Config.VipRefresh     = 300               -- seconds between VIP cache reloads from the database (expiry)
 Config.EstimateWindow = 20                -- recent admits used to estimate the wait time on the card

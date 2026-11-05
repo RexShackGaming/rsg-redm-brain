@@ -3,7 +3,7 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 
 description 'rsg-weather - time, weather and wind sync for RSG Framework (weathersync compatible)'
-version '3.1.0'
+version '3.1.1'
 
 -- Backward compatibility: any resource calling exports.weathersync:xxx()
 -- or exports['weathersync']:xxx() is routed to this resource.

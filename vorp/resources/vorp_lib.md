@@ -1,6 +1,6 @@
 # vorp_lib
 
-Version 0.4. A library to use for RedM scripts
+Version 0.5. A library to use for RedM scripts
 
 VORP Lib is a modular scripting library for RedM that simplifies game development by providing reusable, instance-based components with automatic cleanup. Designed specifically for VORP Core Framework, it helps developers write cleaner, more efficient scripts while eliminating common issues like memory leaks and global variable pollution. - **Modular imports** - Import only what you need from the 
 
@@ -12,7 +12,7 @@ Has NUI (`ui_page`).
 
 **server:** `RemoveTemporayDensityMultipliers(source, name)`, `SetDefaultDensityMultipliers(source, name, value, enable)`, `SetTemporaryDensityMultipliers(source, name, value, timer)`
 
-**client:** `GetAllEntities()`, `GetAllObjects()`, `GetAllPeds()`, `GetAllVehicles()`, `GetDensityMultipliers(name)`, `Select(options)`, `StartGizmo(handle, alpha, placeOnGround, deleteOnStop, createCam, data)`, `StopGizmo()`, `TrackEntity(entity)`, `UntrackEntity(entity)`, `copyToClipBoard(text)`, `progressCancel()`, `progressStart(data, onComplete)`
+**client:** `GetAllEntities()`, `GetAllObjects()`, `GetAllPeds()`, `GetAllVehicles()`, `GetDensityMultipliers(name)`, `Select(options)`, `StartGizmo(handle, alpha, placeOnGround, deleteOnStop, createCam, data)`, `StopGizmo()`, `TrackEntity(entity)`, `UntrackEntity(entity)`, `copyToClipBoard(text, cb)`, `progressCancel()`, `progressStart(data, onComplete)`
 
 ## Net events registered
 
@@ -57,5 +57,3 @@ Has NUI (`ui_page`).
 **server/modules/commands.lua:** `Command:Register(commandName, params, state)`
 
 **shared/class.lua:** `class:Create(base, className)`, `cls:New(...)`, `cls:super(...)`
-
-**types/types.lua:** `exports.vorp_lib:copyToClipBoard(text)`

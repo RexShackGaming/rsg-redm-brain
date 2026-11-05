@@ -39,6 +39,7 @@
     "day_4": "Πέμ",
     "day_5": "Παρ",
     "day_6": "Σάβ",
+    "debug_info": "sync=%s | server=%s | applied=%s | local=%s | region=%s | x=%.0f y=%.0f | temp=%.1f",
     "dir_E": "Α",
     "dir_N": "Β",
     "dir_NE": "ΒΑ",
@@ -117,6 +118,7 @@
     "ui_patterns": "Μοτίβα",
     "ui_permanent_snow": "Μόνιμο χιόνι",
     "ui_real": "πραγμ.",
+    "ui_remove": "Αφαίρεση",
     "ui_reset_done": "Επαναφορά στο config",
     "ui_reset_everything_to_config": "Επαναφορά όλων στο config",
     "ui_reset_text": "Ο καιρός, η ώρα, ο άνεμος και το μοτίβο επιστρέφουν στις τιμές του config.",
@@ -251,6 +253,5 @@
     "wh_wind": "Άνεμος",
     "wh_wind_changed": "🌬️ Ο άνεμος άλλαξε",
     "wind_set": "Ο άνεμος ορίστηκε σε %s° με %s",
-    "yes": "Ναι",
-    "ui_remove": "Αφαίρεση"
+    "yes": "Ναι"
 }

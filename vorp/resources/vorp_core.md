@@ -1,6 +1,6 @@
 # vorp_core
 
-Version 3.3. A Tool to build your RedM server and scripts
+Version 3.4. A Tool to build your RedM server and scripts
 
 VORP Core is a comprehensive Lua-based framework for RedM, designed to enhance server functionality and player experience with a wide array of configurable settings and commands. - [oxmysql](https://github.com/overextended/oxmysql/releases): A must-have for database operations, ensuring smooth data handling and integration. 1. **Setup:**
 

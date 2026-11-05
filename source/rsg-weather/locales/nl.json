@@ -39,6 +39,7 @@
     "day_4": "Do",
     "day_5": "Vr",
     "day_6": "Za",
+    "debug_info": "sync=%s | server=%s | applied=%s | local=%s | region=%s | x=%.0f y=%.0f | temp=%.1f",
     "dir_E": "O",
     "dir_N": "N",
     "dir_NE": "NO",
@@ -117,6 +118,7 @@
     "ui_patterns": "Patronen",
     "ui_permanent_snow": "Permanente sneeuw",
     "ui_real": "echt",
+    "ui_remove": "Verwijderen",
     "ui_reset_done": "Teruggezet naar config",
     "ui_reset_everything_to_config": "Alles terugzetten naar config",
     "ui_reset_text": "Weer, tijd, wind en patroon gaan terug naar de configwaarden.",
@@ -251,6 +253,5 @@
     "wh_wind": "Wind",
     "wh_wind_changed": "🌬️ Wind gewijzigd",
     "wind_set": "Wind ingesteld op %s° met %s",
-    "yes": "Ja",
-    "ui_remove": "Verwijderen"
+    "yes": "Ja"
 }

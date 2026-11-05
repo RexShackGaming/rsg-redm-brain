@@ -1,12 +1,10 @@
 # vorp_admin
 
-Version 2.6. VORP admin menu
+Version 2.7. VORP admin menu
 
 - Built in database permissions - Permissions for all actions - Administration tools
 
 Source: https://github.com/VORPCORE/vorp_admin
-
-Has NUI (`ui_page`).
 
 ## Net events registered
 

@@ -39,6 +39,7 @@
     "day_4": "Qui",
     "day_5": "Sex",
     "day_6": "Sáb",
+    "debug_info": "sync=%s | server=%s | applied=%s | local=%s | region=%s | x=%.0f y=%.0f | temp=%.1f",
     "dir_E": "L",
     "dir_N": "N",
     "dir_NE": "NE",
@@ -117,6 +118,7 @@
     "ui_patterns": "Padrões",
     "ui_permanent_snow": "Neve permanente",
     "ui_real": "real",
+    "ui_remove": "Remover",
     "ui_reset_done": "Redefinido para a config",
     "ui_reset_everything_to_config": "Redefinir tudo para a config",
     "ui_reset_text": "Clima, hora, vento e padrão voltam aos valores da config.",
@@ -251,6 +253,5 @@
     "wh_wind": "Vento",
     "wh_wind_changed": "🌬️ Vento alterado",
     "wind_set": "Vento definido para %s° com %s",
-    "yes": "Sim",
-    "ui_remove": "Remover"
+    "yes": "Sim"
 }

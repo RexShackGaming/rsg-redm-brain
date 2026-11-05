@@ -39,6 +39,7 @@
     "day_4": "Joi",
     "day_5": "Vin",
     "day_6": "Sâm",
+    "debug_info": "sync=%s | server=%s | applied=%s | local=%s | region=%s | x=%.0f y=%.0f | temp=%.1f",
     "dir_E": "E",
     "dir_N": "N",
     "dir_NE": "NE",
@@ -117,6 +118,7 @@
     "ui_patterns": "Modele",
     "ui_permanent_snow": "Zăpadă permanentă",
     "ui_real": "real",
+    "ui_remove": "Elimină",
     "ui_reset_done": "Resetat la config",
     "ui_reset_everything_to_config": "Resetează totul la config",
     "ui_reset_text": "Vremea, ora, vântul și modelul revin la valorile din config.",
@@ -251,6 +253,5 @@
     "wh_wind": "Vânt",
     "wh_wind_changed": "🌬️ Vânt schimbat",
     "wind_set": "Vânt setat la %s° cu %s",
-    "yes": "Da",
-    "ui_remove": "Elimină"
+    "yes": "Da"
 }

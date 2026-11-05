@@ -164,3 +164,9 @@ locales/ en de el es fr ja nl pl pt-br ro (.json)
 
 ---
 Support: https://buymeacoffee.com/rexshack
+
+## Troubleshooting
+
+- `/weatherdebug` prints this client's sync state, the server weather, the weather actually applied, the regional translation and your coords/temperature, then forces a re-apply. If `sync=false`, run the sync toggle command (or another script turned sync off).
+- Weather is applied after clearing any weather override, so scripts that leave an override behind (e.g. older rsg-adminmenu world settings) no longer block it.
+- If `/weatherdebug` shows `applied=rain` but no rain falls, another script has forced the rain level (`_SET_RAIN`). rsg-weather now resets it to -1 on every weather change.
