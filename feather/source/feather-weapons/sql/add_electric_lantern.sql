@@ -1,0 +1,3 @@
+-- Retired failed Electric Lantern candidate; historical migration is now a no-op.
+-- Existing item definitions and owned instances are preserved.
+-- Use retire_electric_lantern.sql to disable the retired usable item.

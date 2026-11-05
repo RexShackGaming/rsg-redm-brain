@@ -1,0 +1,62 @@
+function AdminUI.OpenMain()
+    local page = AdminUI.RegisterPage('main')
+    AdminUI.SetTarget(GetPlayerServerId(PlayerId()))
+
+    AdminUI.AddHeader(page, AdminTranslate('admin_header'), AdminTranslate('main_menu'))
+    if AdminUI.CanUse('players.view') then
+        AdminUI.AddButton(page, AdminTranslate('player_list'), function()
+            Feather.RPC.Notify('feather-admin:players:request', {})
+            AdminUI.OpenPlayers()
+        end)
+    end
+
+    if AdminUI.CanUse('cases.view') then
+        AdminUI.AddButton(page, AdminChatTranslate('chat_case_list'), function() AdminChatCases.RequestList(0) end)
+    end
+
+    if AdminUI.HasNavigationItems('server_operations') then
+        AdminUI.AddButton(page, AdminTranslate('server_operations'), function()
+            AdminUI.OpenNavigationSection('server_operations')
+        end)
+    end
+
+    if AdminUI.HasNavigationItems('moderation_center') then
+        AdminUI.AddButton(page, AdminTranslate('moderation_center'), function()
+            AdminUI.OpenNavigationSection('moderation_center')
+        end)
+    end
+
+    if AdminUI.HasNavigationItems('staff_oversight') then
+        AdminUI.AddButton(page, AdminTranslate('staff_oversight'), function()
+            AdminUI.OpenNavigationSection('staff_oversight')
+        end)
+    end
+
+    if AdminUI.CanUseAny('teleport.') or AdminUI.CanUsePlayerStatus(true)
+        or AdminUI.CanUse('ped.change') or AdminUI.CanUse('troll.make_ped_giant') then
+        AdminUI.AddButton(page, AdminTranslate('self_tools'), function()
+            AdminUI.SetTarget(GetPlayerServerId(PlayerId()))
+            AdminUI.OpenSelfTools()
+        end)
+    end
+
+    if AdminUI.CanUseAny('developer.') then
+        AdminUI.AddButton(page, AdminTranslate('developer_tools'), function()
+            AdminUI.OpenDeveloperTools()
+        end)
+    end
+
+    if AdminUI.CanUse('player.spectate') and AdminPlayerManagement.IsSpectating() then
+        local label = AdminTranslate('stop_spectating')
+        AdminUI.AddButton(page, label, function()
+            AdminUI.RunAction(label, AdminPlayerManagement.StopSpectating)
+        end)
+    end
+
+    AdminUI.AddFooter(page)
+    AdminUI.AddFooterButton(page, AdminTranslate('close'), function()
+        AdminUI.Close()
+    end)
+
+    AdminUI.OpenPage('main')
+end

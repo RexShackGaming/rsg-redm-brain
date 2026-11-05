@@ -1,0 +1,5 @@
+html,body{margin:0;background:transparent;font-family:Georgia,serif;color:#f4ead7;pointer-events:none}
+[hidden]{display:none!important}
+main{position:fixed;bottom:5vh;left:50%;transform:translateX(-50%);min-width:290px;padding:14px 24px;text-align:center;background:rgba(22,18,15,.9);border:1px solid #a79676;border-radius:3px}
+p{margin:5px 0;font-size:16px}#hint{font-size:13px;color:#c4b89f}#error{color:#ffd3b2;font-size:13px}
+#respawn{margin:8px 0;font-weight:bold;color:#e0cfac}

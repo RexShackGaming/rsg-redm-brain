@@ -1,0 +1,57 @@
+fx_version 'cerulean'
+game 'rdr3'
+rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aware my resources *will* become incompatible once RedM ships.'
+lua54 'yes'
+
+description 'The Inventory API for the Feather Framework'
+author 'BCC Scripts'
+name 'feather-inventory'
+version '0.12.0'
+
+shared_scripts {
+  'config.lua'
+}
+
+-- translations/ loads in both contexts, immediately after imports.lua defines
+-- `Feather` (which the locale file calls into) and before anything that
+-- displays text. Not a shared_script: shared_scripts load before either
+-- imports.lua runs, so `Feather` wouldn't exist yet.
+server_scripts {
+  '@feather-mysql/lib/DB.lua',
+  '/server/imports.lua',
+  '/translations/*.lua',
+  '/server/helpers/*.lua',
+  '/server/controllers/*.lua',
+  '/server/internal/native_throwable_native_pickup_claim.lua',
+  '/server/internal/native_utility_equipment.lua',
+  '/server/internal/native_utility_exports.lua',
+  '/server/internal/native_equipment_snapshot.lua',
+  '/server/internal/native_move_contention_probe.lua',
+  '/server/internal/native_recovery_batch.lua',
+  '/server/internal/move_recovery.lua',
+  '/server/services/*.lua',
+  '/server/main.lua',
+}
+
+client_scripts {
+  '/client/imports.lua',
+  '/translations/*.lua',
+  '/client/helpers/*.lua',
+  '/client/controllers/*.lua',
+  '/client/services/*.lua',
+  '/client/main.lua',
+}
+
+ui_page {
+  'ui/index.html'
+}
+
+files {
+  'ui/index.html',
+  'ui/assets/*.*',
+  'ui/images/items/*.*'
+}
+
+dependencies {
+  'feather-mysql',
+}

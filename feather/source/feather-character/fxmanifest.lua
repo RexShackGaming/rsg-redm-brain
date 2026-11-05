@@ -1,0 +1,51 @@
+fx_version 'cerulean'
+game 'rdr3'
+rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aware my resources *will* become incompatible once RedM ships.'
+lua54 'yes'
+
+description 'Feather Character clean-room rewrite (first-playable development slice)'
+author 'Feather Framework'
+name 'feather-character'
+version '0.7.4'
+
+shared_scripts {
+    'config.lua',
+    'shared/result.lua',
+    'shared/defaults.lua',
+    'shared/catalog.lua',
+    'shared/hair_catalog.lua',
+    'shared/overlay_catalog.lua',
+    'shared/draft.lua'
+}
+
+server_scripts {
+    '@feather-mysql/lib/DB.lua',
+    'server/schema.lua',
+    'server/migrate.lua',
+    'server/profiles.lua',
+    'server/activation.lua',
+    'server/main.lua'
+}
+
+client_scripts {
+    'client/locale.lua',
+    'translations/*.lua',
+    'client/spawn_ownership.lua',
+    'client/flow.lua',
+    'client/environment.lua',
+    'client/preview.lua',
+    'client/appearance.lua',
+    'client/overlay_menu.lua',
+    'client/checkpoints.lua',
+    'client/arrival.lua',
+    'client/medical.lua',
+    'client/main.lua'
+}
+
+dependencies {
+    'feather-mysql',
+    'feather-core',
+    'feather-routing',
+    'feather-economy',
+    'feather-menu-v2'
+}

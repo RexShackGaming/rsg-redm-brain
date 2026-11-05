@@ -1,0 +1,537 @@
+-- (INV-11/INV-12/INV-23) Authorization layer for opening an inventory that
+-- isn't your own. Loads after inventory.lua (alphabetical server_scripts
+-- glob order -- InventoryAPI must already exist as a table).
+--
+-- Two independent gates, matched to the two legitimate ways this happens:
+--
+--   1. Owned/shared inventories (storage, saddlebags, job lockers) -- gated
+--      by ownership (`inventory.owner_character_id`) or a persistent
+--      per-character grant (`inventory_access`), or, for inventories the
+--      owner has marked public, a short-lived grant issued by whichever
+--      resource disclosed the inventory's UUID after checking whatever
+--      condition it's responsible for (see GrantTemporaryAccess).
+--   2. Another player's own character inventory (robbery / forced search)
+--      -- gated by proximity AND the target being in a status that
+--      justifies it (unconscious, hogtied, cuffed, ...).
+--
+-- Previously, InternalOpenInventory (server/services/inventory.lua) treated
+-- the act of a client asking for an inventory as authorization to open it --
+-- it self-registered the lock that the access check then trusted. Every
+-- function below exists so authorization comes from state the *client*
+-- cannot set: a persisted grant only the inventory's owner/an admin can
+-- create, a temporary grant only another server-side resource can create, or
+-- a status flag only feather-core (once it implements one) can set.
+
+------------------------------------------------------------------
+-- Status (robbery / forced search gate)
+------------------------------------------------------------------
+
+-- Lua has no enum type -- this is a plain table of named string constants
+-- so call sites read as `LootableStatuses.Cuffed` instead of a bare string,
+-- and so the set of reasons is defined in exactly one place.
+--
+-- Tracking *which* status a character is actually in is feather-core's job,
+-- not feather-inventory's -- this table only says which of core's status
+-- names feather-inventory is willing to accept as justification to let
+-- another player open this character's inventory without consent.
+LootableStatuses = {
+    Unconscious = 'unconscious',
+    Hogtied     = 'hogtied',
+    Cuffed      = 'cuffed',
+    Restrained  = 'restrained',
+}
+
+---
+-- Can Be Looted Due To Status
+--
+-- DEPENDENCY: no authoritative character-status provider exists yet.
+-- That is a deliberate fail-closed default: the robbery/forced-search path
+-- stays inert until an owning resource provides real status tracking, rather than this
+-- resource inventing its own notion of character state to fill the gap.
+--
+-- @param characterId Target character's id
+-- @return True if any status feather-inventory treats as "lootable" is set
+--
+function CanBeLootedDueToStatus(characterId)
+    -- Keep the argument to preserve this internal boundary for the future
+    -- status provider, but never infer authority from client state.
+    if not characterId then return false end
+    return false
+end
+
+------------------------------------------------------------------
+-- Proximity (robbery / forced search gate)
+------------------------------------------------------------------
+
+local function GetCharacterPosition(src)
+    return InventoryIdentity.GetPosition(src)
+end
+
+local function IsWithinDistance(x1, y1, z1, x2, y2, z2, maxDistance)
+    if not (x1 and y1 and z1 and x2 and y2 and z2) then
+        return false
+    end
+    local dx, dy, dz = x1 - x2, y1 - y2, z1 - z2
+    return (dx * dx + dy * dy + dz * dz) <= (maxDistance * maxDistance)
+end
+
+---
+-- Is Within Ground Pickup Distance
+--
+-- (Weapons review #9) A ground pile's UUID never expires, so proving you were
+-- near it once is not proof you are near it now. `is_public` is enough to
+-- READ a pile; taking from one additionally requires live proximity, checked
+-- at open and again on every mutation via CanAccessInventory.
+--
+-- @param src Caller's player source
+-- @param inventoryId Raw inventory.id of the ground pile
+-- @return True if the caller is currently within pickup range of that pile
+--
+function IsWithinGroundPickupDistance(src, inventoryId, query)
+    local rows = (query or DefaultQuery)([[SELECT g.`x`, g.`y`, g.`z`
+        FROM `inventory` i INNER JOIN `ground` g ON g.`id`=i.`ground_id`
+        WHERE i.`id`=? AND i.`location`='ground' LIMIT 1;]], { inventoryId })
+    local ground = rows and rows[1]
+    if not ground then return false end
+
+    local x, y, z = GetCharacterPosition(src)
+    -- Same buffer GetGroundUID uses, for the position-sync staleness window.
+    return IsWithinDistance(x, y, z, tonumber(ground.x), tonumber(ground.y), tonumber(ground.z),
+        Config.Dropped.PromptViewDistance + 1.0)
+end
+
+---
+-- Is Within Robbery Distance
+--
+-- True if src is currently near the character behind targetSrc's ped, using
+-- both live server-side ped positions.
+--
+-- @param src Caller's player source
+-- @param targetSrc Target player's source
+-- @return True if within Config.Access.RobberyDistance
+--
+function IsWithinRobberyDistance(src, targetSrc)
+    local x1, y1, z1 = GetCharacterPosition(src)
+    local x2, y2, z2 = GetCharacterPosition(targetSrc)
+    return IsWithinDistance(x1, y1, z1, x2, y2, z2, Config.Access.RobberyDistance)
+end
+
+---
+-- Is Within Give Distance
+--
+-- Same shape as IsWithinRobberyDistance, bound to Config.Access.GiveDistance
+-- instead. Used by GiveItem (server/services/callbacks.lua), which
+-- previously had no server-side distance check at all.
+--
+-- @param src Caller's player source
+-- @param targetSrc Target player's source
+-- @return True if within Config.Access.GiveDistance
+--
+function IsWithinGiveDistance(src, targetSrc)
+    local x1, y1, z1 = GetCharacterPosition(src)
+    local x2, y2, z2 = GetCharacterPosition(targetSrc)
+    return IsWithinDistance(x1, y1, z1, x2, y2, z2, Config.Access.GiveDistance)
+end
+
+------------------------------------------------------------------
+-- Owned/shared inventory ACL (storage, saddlebags, job lockers, ...)
+------------------------------------------------------------------
+
+local function EnsureAccessSchema()
+    local columns = DB.query("SHOW COLUMNS FROM `inventory` LIKE 'owner_character_id';")
+    if #columns < 1 then
+        DB.exec([[
+            ALTER TABLE `inventory`
+            ADD COLUMN `owner_character_id` CHAR(36) NULL;
+        ]])
+    end
+
+    columns = DB.query("SHOW COLUMNS FROM `inventory` LIKE 'is_public';")
+    if #columns < 1 then
+        DB.exec("ALTER TABLE `inventory` ADD COLUMN `is_public` TINYINT(1) NOT NULL DEFAULT 0;")
+    end
+
+    DB.exec([[
+        CREATE TABLE IF NOT EXISTS `inventory_access` (
+            `id` BIGINT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
+            `inventory_id` BIGINT UNSIGNED NOT NULL,
+            `character_id` CHAR(36) NOT NULL,
+            `granted_by_character_id` CHAR(36) NULL,
+            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY `UQ_InventoryAccess` (`inventory_id`, `character_id`),
+            CONSTRAINT `FK_InventoryAccessInventory` FOREIGN KEY (`inventory_id`) REFERENCES `inventory` (`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ]])
+end
+
+CreateThread(function()
+    InventoryAwaitDatabase()
+    EnsureAccessSchema()
+    InventoryAccessSchemaReady = true
+end)
+
+local function GetOwnCharacterId(src)
+    local session = InventoryIdentity.GetSession(src)
+    return Result.IsOk(session) and session.value.characterId or nil
+end
+
+local function IsOwnerOrAdmin(src, ownerCharacterId)
+    local callerCharacterId = GetOwnCharacterId(src)
+    if callerCharacterId and ownerCharacterId and tostring(callerCharacterId) == tostring(ownerCharacterId) then
+        return true
+    end
+    local decision = exports['feather-core']:Authorize('inventory.manage', {
+        source = src,
+        subject = { ownerCharacterId = ownerCharacterId }
+    })
+    return type(decision) == 'table' and decision.ok == true
+        and type(decision.value) == 'table' and decision.value.allowed == true
+end
+
+InventoryAPI.GetInventoryOwner = function(inventoryId, query)
+    query = query or DefaultQuery
+    local result = query('SELECT `owner_character_id` FROM `inventory` WHERE `id`=? LIMIT 1;', { inventoryId })[1]
+    return result and result.owner_character_id
+end
+
+-- Envelope form of the above, for external callers (contract 2). The bare
+-- form stays for this file's own hot paths, which run inside access checks.
+InventoryAPI.GetInventoryOwnerResult = function(inventoryId)
+    local owner = InventoryAPI.GetInventoryOwner(inventoryId)
+    if owner == nil then
+        return Result.Err(Result.Codes.NOT_FOUND, 'That inventory has no owner.')
+    end
+    return Result.Ok(owner)
+end
+
+InventoryAPI.GetInventoryOwnerAndVisibility = function(inventoryId)
+    local result = DB.query('SELECT `owner_character_id`, `is_public` FROM `inventory` WHERE `id`=? LIMIT 1;', inventoryId)[1]
+    if not result then
+        return nil, false
+    end
+    return result.owner_character_id, Boolean[result.is_public] == true
+end
+
+InventoryAPI.HasInventoryAccessGrant = function(characterId, inventoryId)
+    characterId = InventoryIdentity.NormalizeCharacterId(characterId)
+    if not characterId or not inventoryId then
+        return Result.Ok(false)
+    end
+    if InventoryDelegation then
+        local row = InventoryDelegation.Row(inventoryId)
+        if row and row.access_authority == 'access' then
+            local checked = InventoryDelegation.Access('CheckCapability', {targetType = 'inventory.storage',
+                targetId = row.uuid, capability = 'inventory.read', characterId = characterId})
+            return Result.Ok(checked.ok == true and checked.value.allowed == true)
+        end
+    end
+    local result = DB.query(
+        'SELECT `id` FROM `inventory_access` WHERE `inventory_id`=? AND `character_id`=? LIMIT 1;',
+        inventoryId, characterId
+    )[1]
+    return Result.Ok(result ~= nil)
+end
+
+---
+-- Grant Inventory Access / Revoke Inventory Access / Set Inventory Public / List Inventory Access
+--
+-- Only the inventory's owner or an admin may manage its access list or
+-- public flag -- re-derived server-side from `src` every call, never
+-- trusted from the client.
+--
+InventoryAPI.GrantInventoryAccess = function(src, inventoryId, targetCharacterId)
+    if InventoryDelegation and not InventoryDelegation.LegacyWrite(inventoryId) then
+        return Result.Err(Result.Codes.DENIED, 'Container uses Access or is migrating; use exact finite capability grants.')
+    end
+    targetCharacterId = InventoryIdentity.NormalizeCharacterId(targetCharacterId)
+    if not targetCharacterId then
+        return Result.Err(Result.Codes.INVALID_INPUT, 'A valid target character id is required.')
+    end
+    local ownerCharacterId = InventoryAPI.GetInventoryOwner(inventoryId)
+    if not ownerCharacterId then
+        return Result.Err(Result.Codes.DENIED, "This inventory has no owner and cannot have its access list managed.")
+    end
+    if not IsOwnerOrAdmin(src, ownerCharacterId) then
+        return Result.Err(Result.Codes.DENIED, "You do not own this inventory.")
+    end
+
+    if InventoryDelegation then
+        return InventoryDelegation.LegacyMutation(inventoryId, function(tx)
+            tx.exec('INSERT IGNORE INTO `inventory_access` (`inventory_id`,`character_id`,`granted_by_character_id`) VALUES (?,?,?)',
+                inventoryId, targetCharacterId, GetOwnCharacterId(src))
+        end)
+    end
+    DB.exec(
+        'INSERT IGNORE INTO `inventory_access` (`inventory_id`, `character_id`, `granted_by_character_id`) VALUES (?, ?, ?);',
+        inventoryId, targetCharacterId, GetOwnCharacterId(src)
+    )
+    return Result.Ok(true)
+end
+
+InventoryAPI.RevokeInventoryAccess = function(src, inventoryId, targetCharacterId)
+    if InventoryDelegation and not InventoryDelegation.LegacyWrite(inventoryId) then
+        return Result.Err(Result.Codes.DENIED, 'Container uses Access or is migrating; revoke its Access grants.')
+    end
+    targetCharacterId = InventoryIdentity.NormalizeCharacterId(targetCharacterId)
+    if not targetCharacterId then
+        return Result.Err(Result.Codes.INVALID_INPUT, 'A valid target character id is required.')
+    end
+    local ownerCharacterId = InventoryAPI.GetInventoryOwner(inventoryId)
+    if not IsOwnerOrAdmin(src, ownerCharacterId) then
+        return Result.Err(Result.Codes.DENIED, "You do not own this inventory.")
+    end
+
+    if InventoryDelegation then
+        return InventoryDelegation.LegacyMutation(inventoryId, function(tx)
+            tx.exec('DELETE FROM `inventory_access` WHERE `inventory_id`=? AND `character_id`=?', inventoryId, targetCharacterId)
+        end)
+    end
+    DB.exec(
+        'DELETE FROM `inventory_access` WHERE `inventory_id`=? AND `character_id`=?;',
+        inventoryId, targetCharacterId
+    )
+    return Result.Ok(true)
+end
+
+InventoryAPI.SetInventoryPublic = function(src, inventoryId, isPublic)
+    local ownerCharacterId = InventoryAPI.GetInventoryOwner(inventoryId)
+    if not IsOwnerOrAdmin(src, ownerCharacterId) then
+        return Result.Err(Result.Codes.DENIED, "You do not own this inventory.")
+    end
+
+    DB.exec('UPDATE `inventory` SET `is_public`=? WHERE `id`=?;', isPublic and 1 or 0, inventoryId)
+    return Result.Ok(true)
+end
+
+InventoryAPI.ListInventoryAccess = function(src, inventoryId)
+    if InventoryDelegation then
+        local row = InventoryDelegation.Row(inventoryId)
+        if row and row.access_authority == 'access' then
+            return Result.Err(Result.Codes.DENIED, 'Container uses Access; list exact grants with ListInventoryCapabilities.')
+        end
+    end
+    local ownerCharacterId = InventoryAPI.GetInventoryOwner(inventoryId)
+    if not IsOwnerOrAdmin(src, ownerCharacterId) then
+        return Result.Err(Result.Codes.DENIED, "You do not own this inventory.")
+    end
+
+    return Result.Ok(DB.query(
+        'SELECT `character_id`, `granted_by_character_id`, `created_at` FROM `inventory_access` WHERE `inventory_id`=?;',
+        inventoryId
+    ))
+end
+
+------------------------------------------------------------------
+-- Temporary access grants (public/UUID inventories -- ground pickups, etc.)
+------------------------------------------------------------------
+
+local TemporaryGrants = {} -- [tostring(src)][tostring(inventoryId)] = expiresAt (GetGameTimer() ms)
+
+---
+-- Grant Temporary Access
+--
+-- Called by another server-side resource (or another file in this one --
+-- see ground.lua's GetGroundUID) after it has independently verified
+-- whatever condition justifies src opening this inventory right now
+-- (proximity to a world object, a consent flow, ...). feather-inventory
+-- does not know or care why -- it only tracks that the grant exists and
+-- expires, and only ever honours it for inventories the owner has marked
+-- `is_public` (see IsAuthorizedForOwnedInventory below).
+--
+-- @param src Player source being granted access
+-- @param inventoryId Raw inventory.id
+-- @param ttlSeconds How long the grant is valid for (default Config.Access.TemporaryGrantTTL)
+--
+InventoryAPI.GrantTemporaryAccess = function(src, inventoryId, ttlSeconds)
+    if not src or not inventoryId then
+        return Result.Err(Result.Codes.INVALID_INPUT, 'A player source and inventory id are required.')
+    end
+    local key = tostring(src)
+    TemporaryGrants[key] = TemporaryGrants[key] or {}
+    TemporaryGrants[key][tostring(inventoryId)] = GetGameTimer() + ((tonumber(ttlSeconds) or Config.Access.TemporaryGrantTTL) * 1000)
+    return Result.Ok(true)
+end
+
+InventoryAPI.RevokeTemporaryAccess = function(src, inventoryId)
+    local grants = TemporaryGrants[tostring(src)]
+    if grants then
+        grants[tostring(inventoryId)] = nil
+    end
+    return Result.Ok(true)
+end
+
+InventoryAPI.HasTemporaryAccess = function(src, inventoryId)
+    local grants = TemporaryGrants[tostring(src)]
+    local expiresAt = grants and grants[tostring(inventoryId)]
+    local now = GetGameTimer()
+    if Config.Debug then
+        local keys = {}
+        if grants then
+            for k in pairs(grants) do table.insert(keys, k) end
+        end
+        DebugPrint('DEBUG-ACCESS', 'HasTemporaryAccess: src=%s inventoryId=%s expiresAt=%s now=%s grantKeysForSrc=[%s]',
+            tostring(src), tostring(inventoryId), tostring(expiresAt), tostring(now), table.concat(keys, ', '))
+    end
+    return Result.Ok(expiresAt ~= nil and expiresAt > now)
+end
+
+AddEventHandler('playerDropped', function()
+    TemporaryGrants[tostring(source)] = nil
+end)
+
+------------------------------------------------------------------
+-- Combined authorization check used by InternalOpenInventory
+------------------------------------------------------------------
+
+---
+-- Is Authorized For Owned Inventory
+--
+-- @param src Caller's player source
+-- @param callerCharacterId Caller's own character id
+-- @param inventoryId Raw inventory.id being requested (UUID already resolved)
+-- @return True if src may open this inventory right now
+--
+------------------------------------------------------------------
+-- Access modes (INV-W4)
+------------------------------------------------------------------
+
+-- (INV-W4) DEPENDENCY_SUPPORT_PLAN §4.4 asks for a generic
+-- `CanAccessInventory(source, inventoryId, action, context)` distinguishing
+-- read, insert, remove, manage, and temporary world pickup -- so a consumer
+-- can ask the real question ("may this player take something OUT of here?")
+-- instead of the blunt one this resource has been answering
+-- ("is this inventory accessible at all?").
+--
+-- The modes are deliberately NOT all distinct today. Ground piles are the
+-- clearest case: anyone standing near one may read it, take from it and put
+-- into it, but nobody may manage its access list because it has no owner.
+-- Modelling that honestly is better than inventing five separate permission
+-- bits that all currently resolve the same way and would rot out of sync.
+InventoryAPI.AccessModes = {
+    READ = 'read',       -- see contents
+    INSERT = 'insert',   -- put something in
+    REMOVE = 'remove',   -- take something out
+    MANAGE = 'manage',   -- grant/revoke access, change visibility
+}
+
+---
+-- Can Access Inventory
+--
+-- @param src Caller's player source
+-- @param inventoryId Raw inventory.id
+-- @param action One of InventoryAPI.AccessModes (defaults to READ)
+-- @param context Optional { reason, correlationId } for diagnostics
+-- @return Result envelope; Ok(true) when permitted
+--
+-- (feather-mysql migration bugfix) `query` is optional and, when given, must be
+-- in the (sql, paramsTable) shape the transaction-bound adapters throughout
+-- this resource use (see RunLegacyStyleTransaction / Tx.query in
+-- transactions.lua). Tx:RequireAccess and Tx:AssertAccess pass their own
+-- transaction's query here so every read in this whole chain stays on the
+-- transaction's connection instead of opening a second one that can block on
+-- a lock the transaction already holds. Every other caller omits it and gets
+-- the DefaultQuery fallback (plain DB.query), unchanged from before.
+InventoryAPI.CanAccessInventory = function(src, inventoryId, action, context, query)
+    action = action or InventoryAPI.AccessModes.READ
+    context = context or {}
+
+    if not src or not inventoryId then
+        return Result.Err(Result.Codes.INVALID_INPUT, 'Source and inventory id are required.',
+            nil, context.correlationId)
+    end
+
+    if CollectionStorageAPI and CollectionStorageAPI.IsManaged(inventoryId) then
+        return CollectionStorageAPI.Access(src,inventoryId,action,query) and Result.Ok(true) or Result.Err(Result.Codes.DENIED,'Item storage access ended.')
+    end
+    local location=InventoryControllers.GetInventoryLocationById(inventoryId,query)
+    if location=='character_collection' then
+        return Result.Err(Result.Codes.DENIED,'Use the owning resource to manage this collection.')
+    end
+
+    -- MANAGE is the one mode that genuinely differs: it is owner/admin only,
+    -- and is never granted by proximity, a share, or public visibility. A
+    -- ground pile is readable and lootable by anyone near it, and manageable
+    -- by nobody.
+    if action == InventoryAPI.AccessModes.MANAGE then
+        local ownerCharacterId = InventoryAPI.GetInventoryOwner(inventoryId, query)
+        if not ownerCharacterId then
+            return Result.Err(Result.Codes.DENIED, 'This inventory has no owner and cannot be managed.',
+                { action = action }, context.correlationId)
+        end
+        if not IsOwnerOrAdmin(src, ownerCharacterId) then
+            return Result.Err(Result.Codes.DENIED, 'You do not own this inventory.',
+                { action = action }, context.correlationId)
+        end
+        return Result.Ok(true, context.correlationId)
+    end
+
+    -- READ/INSERT/REMOVE all currently resolve through the same live
+    -- accessibility check, which already re-verifies proximity and status for
+    -- a robbery target on every call rather than trusting an open lock
+    -- (INV-11/INV-23). Re-checked here rather than cached, so a mutation
+    -- arriving late cannot ride an authorization that was true a minute ago.
+    if not InventoryAPI.Accessible(src, inventoryId, query, action) then
+        return Result.Err(Result.Codes.DENIED, 'You do not have access to that inventory.',
+            { action = action }, context.correlationId)
+    end
+
+    -- (Weapons review #9) Taking from or adding to a ground pile requires
+    -- being near it at THIS moment. Re-checked per call rather than cached,
+    -- so a mutation arriving late cannot ride proximity that has since ended
+    -- -- the "revalidate inside the mutation" point. READ is exempt: seeing
+    -- a pile you walked away from is harmless.
+    if action ~= InventoryAPI.AccessModes.READ
+        and location == 'ground'
+        and not IsWithinGroundPickupDistance(src, inventoryId, query) then
+        return Result.Err(Result.Codes.DENIED, 'You are too far away.',
+            { action = action }, context.correlationId)
+    end
+
+    return Result.Ok(true, context.correlationId)
+end
+
+function IsAuthorizedForOwnedInventory(src, callerCharacterId, inventoryId)
+    if CollectionStorageAPI and CollectionStorageAPI.IsManaged(inventoryId) then return CollectionStorageAPI.Access(src,inventoryId,'read') end
+    if InventoryControllers.GetInventoryLocationById(inventoryId)=='character_collection' then return false end
+    if InventoryDelegation then
+        local native = InventoryDelegation.Read(src, inventoryId, 'read')
+        if native ~= nil then return native end
+    end
+    local ownerCharacterId, isPublic = InventoryAPI.GetInventoryOwnerAndVisibility(inventoryId)
+    -- Predicates return envelopes (contract 2); unwrap fail-closed -- a
+    -- failure envelope is truthy, so testing it directly would grant access.
+    local grantResult = InventoryAPI.HasInventoryAccessGrant(callerCharacterId, inventoryId)
+    local tempResult = InventoryAPI.HasTemporaryAccess(src, inventoryId)
+    local hasGrant = Result.IsOk(grantResult) and grantResult.value == true
+    local hasTemp = Result.IsOk(tempResult) and tempResult.value == true
+    DebugPrint('DEBUG-ACCESS', 'IsAuthorizedForOwnedInventory: src=%s callerCharacterId=%s inventoryId=%s owner=%s isPublic=%s hasAccessGrant=%s hasTemporaryAccess=%s',
+        tostring(src), tostring(callerCharacterId), tostring(inventoryId), tostring(ownerCharacterId), tostring(isPublic), tostring(hasGrant), tostring(hasTemp))
+
+    if ownerCharacterId and callerCharacterId and tostring(ownerCharacterId) == tostring(callerCharacterId) then
+        return true
+    end
+
+    if hasGrant then
+        return true
+    end
+
+    -- (Public-access simplification) `is_public` used to still require a
+    -- short-lived temp grant on top -- meaningful for a resource that wants
+    -- to disclose one specific inventory to one specific player for a
+    -- moment, but ground piles have no privacy concern at all: there's
+    -- nothing to gate beyond "were you near it," which GetGroundUID already
+    -- checks server-side before a client can even learn the UUID at all.
+    -- Public now means public -- no additional expiring grant required.
+    if isPublic then
+        return true
+    end
+
+    -- Kept for non-public disclosed-UUID cases a future resource might
+    -- still want (see InventoryAPI.GrantTemporaryAccess's doc comment) --
+    -- just no longer required for is_public=true inventories specifically.
+    if hasTemp then
+        return true
+    end
+
+    return false
+end

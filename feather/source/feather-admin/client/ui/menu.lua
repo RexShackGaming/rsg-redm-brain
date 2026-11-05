@@ -1,0 +1,528 @@
+AdminUI = {
+    Pages = {},
+    targetPlayer = nil,
+    currentPage = nil,
+    toggleStates = {},
+    pendingToggles = {},
+    nextToggleRequest = 0,
+    menuId = nil,
+    pageGeneration = 0,
+    openSequence = 0
+}
+
+local Menu = exports['feather-menu-v2']
+
+local function RequireMenuResult(result, operation)
+    if type(result) ~= 'table' or result.ok ~= true then
+        local code = type(result) == 'table' and result.code or 'invalid_result'
+        local message = type(result) == 'table' and result.message or 'Menu provider returned an invalid result.'
+        error(('[feather-admin] %s failed (%s): %s'):format(operation, tostring(code), tostring(message)), 0)
+    end
+    return result.value
+end
+
+local function ResetMenuState()
+    AdminUI.menuId = nil
+    AdminUI.Pages = {}
+    AdminUI.currentPage = nil
+    AdminUI.openSequence = AdminUI.openSequence + 1
+end
+
+local function EnsureMenu()
+    if AdminUI.menuId then return AdminUI.menuId end
+
+    local created = RequireMenuResult(Menu:CreateMenu({
+        key = 'admin',
+        draggable = true,
+        resizable = true,
+        closable = true,
+        controller = true,
+        theme = { preset = 'redemption' },
+        focus = { keyboard = true, cursor = true }
+    }), 'create menu')
+
+    AdminUI.menuId = created.menuId
+    RequireMenuResult(Menu:RegisterMenuLifecycle(AdminUI.menuId, function(event)
+        if event.event == 'opened' or event.event == 'resumed' then
+            InMenu = true
+            DisplayRadar(false)
+        elseif event.event == 'closed' then
+            InMenu = false
+            DisplayRadar(true)
+            AdminUI.targetPlayer = nil
+            AdminUI.currentPage = nil
+        end
+    end), 'register menu lifecycle')
+
+    return AdminUI.menuId
+end
+
+local function NextElementKey(page, elementType)
+    page.nextElement = page.nextElement + 1
+    return ('%s-%s-%d'):format(page.key, elementType, page.nextElement)
+end
+
+local function AddElement(page, elementType, settings, callback)
+    local menuId = EnsureMenu()
+    settings.key = settings.key or NextElementKey(page, elementType)
+    if settings.slot ~= 'header' and settings.slot ~= 'footer' and elementType ~= 'accordion' then
+        settings.section = settings.section or page.section
+        settings.row = settings.row or page.row
+    end
+
+    local handle
+    local wrappedCallback
+    if callback then
+        wrappedCallback = function(event)
+            return callback(event, handle)
+        end
+    end
+
+    local created = RequireMenuResult(
+        Menu:AddElement(menuId, page.id, elementType, settings, wrappedCallback),
+        ('add %s element'):format(elementType)
+    )
+    handle = { id = created.elementId, pageId = page.id }
+    function handle:update(changes)
+        RequireMenuResult(
+            Menu:UpdateElement(EnsureMenu(), self.pageId, self.id, changes),
+            ('update %s element'):format(elementType)
+        )
+    end
+    return handle
+end
+
+local function NormalizeOptions(options)
+    local normalized, originals = {}, {}
+    for index, option in ipairs(options or {}) do
+        local original = type(option) == 'table' and option or { display = tostring(option), value = option }
+        local value = original.value
+        if value == nil then value = index end
+        normalized[#normalized + 1] = {
+            value = value,
+            label = tostring(original.label or original.display or value),
+            disabled = original.disabled == true
+        }
+        originals[#originals + 1] = original
+    end
+    return normalized, originals
+end
+
+local function ChoiceCallback(callback, originals)
+    if not callback then return nil end
+    return function(event, element)
+        for _, option in ipairs(originals) do
+            if option.value == event.value then
+                return callback({ value = option, action = event.action }, element)
+            end
+        end
+    end
+end
+
+function AdminUI.RegisterPage(key)
+    local menuId = EnsureMenu()
+    local previous = AdminUI.Pages[key]
+    AdminUI.pageGeneration = AdminUI.pageGeneration + 1
+    local pageKey = ('%s-%d'):format(key, AdminUI.pageGeneration)
+    local created = RequireMenuResult(Menu:CreatePage(menuId, { key = pageKey }), 'create page')
+    local page = { id = created.pageId, key = pageKey, route = key, nextElement = 0 }
+    AdminUI.Pages[key] = page
+
+    if previous then
+        RequireMenuResult(Menu:DestroyPage(menuId, previous.id, page.id), 'replace page')
+    end
+    return page
+end
+
+function AdminUI.AddHeader(page, title, subtitle)
+    AddElement(page, 'header', {
+        value = title,
+        slot = 'header'
+    })
+
+    if subtitle then
+        AddElement(page, 'subheader', {
+            value = subtitle,
+            slot = 'header'
+        })
+    end
+
+    AddElement(page, 'line', { slot = 'header' })
+    local route = page.route or ''
+    -- Scope to target workflows, never label server-wide pages with a stale player.
+    if route == 'selected_player' or route == 'selected_player_tools'
+        or route == 'character_management' or route == 'player_management'
+        or route == 'boosters_player' or route == 'boosters_self'
+        or route == 'character_administration' or route == 'economy_confirmation'
+        or route:find('inventory', 1, true) == 1 or route:find('weapon_', 1, true) == 1
+        or route == 'ammo_grant_quantity' or route == 'ammo_grant_catalog'
+        or route == 'trolls' or route == 'appearance' or route == 'player_info' then
+        local selected
+        if route:find('inventory', 1, true) == 1 then selected = AdminInventory and AdminInventory.target
+        elseif route:find('weapon_', 1, true) == 1 or route:find('ammo_grant_', 1, true) == 1 then
+            selected = AdminWeapons and AdminWeapons.target
+        end
+        AdminUI.AddTargetContext(page, selected)
+    end
+end
+
+function AdminUI.TargetLabel(selected)
+    local id
+    if selected then id = selected.serverId else id = AdminUI.GetTarget() end
+    local name = selected and (selected.characterName or selected.accountName or selected.playerName)
+    for _, player in ipairs(ClientAllPlayers or {}) do
+        if id and tonumber(player.serverId) == tonumber(id) then
+            name = name or player.characterName
+            break
+        end
+    end
+    local identity = id and (AdminTranslate('server_id') .. ': ' .. tostring(id))
+        or (AdminTranslate('character_id') .. ': ' .. tostring(selected and selected.characterId or AdminTranslate('not_available')))
+    local status = id and AdminTranslate('online') or AdminTranslate('offline')
+    return ('%s | %s | %s'):format(tostring(name or AdminTranslate('not_available')), identity, status)
+end
+
+function AdminUI.AddTargetContext(page, selected)
+    AddElement(page, 'textdisplay', { value = AdminTranslate('player') .. ': ' .. AdminUI.TargetLabel(selected), slot = 'header' })
+end
+
+function AdminUI.BeginSection(page, label, expanded)
+    local key = NextElementKey(page, 'section')
+    AddElement(page, 'accordion', { key = key, label = label, value = expanded == true, slot = 'content' })
+    page.section = key
+end
+
+function AdminUI.EndSection(page)
+    page.section, page.row = nil, nil
+end
+
+function AdminUI.BeginRow(page)
+    page.row = NextElementKey(page, 'row')
+end
+
+function AdminUI.EndRow(page)
+    page.row = nil
+end
+
+function AdminUI.AddImage(page, image, label, alt)
+    return AddElement(page, 'imagebox', {
+        image=image, label=label, alt=alt or label,
+        width='100%', height='4rem', objectFit='contain', slot='content'
+    })
+end
+
+function AdminUI.AddPagination(page, current, total, navigate)
+    if total <= 1 then return end
+    AddElement(page, 'pagearrows', { current = current, total = total, slot = 'content' }, function(event)
+        local nextPage = current + (event.value == -1 and -1 or event.value == 1 and 1 or 0)
+        if nextPage ~= current and nextPage >= 1 and nextPage <= total then navigate(nextPage) end
+    end)
+end
+
+-- Shared catalog navigation; sorting/filtering uses a private list, never the source.
+function AdminUI.AddCatalog(page, entries, state, reopen, itemLabel, choose)
+    local query = state.query or ''
+    page.row = NextElementKey(page, 'filter')
+    AdminUI.AddInput(page, AdminTranslate('filter_catalog'), AdminTranslate('search'), function(data)
+        query = tostring(data.value or '')
+    end, query)
+    AdminUI.AddButton(page, AdminTranslate('search'), function()
+        state.query, state.page = query, 1
+        reopen()
+    end)
+    page.row = nil
+    local filtered = {}
+    for _, item in ipairs(entries or {}) do
+        if query == '' or (itemLabel(item) .. ' ' .. tostring(item.id or item.name or '')):lower():find(query:lower(), 1, true) then
+            filtered[#filtered + 1] = item
+        end
+    end
+    table.sort(filtered, function(a,b)
+        local left, right = itemLabel(a):lower(), itemLabel(b):lower()
+        if left == right then return tostring(a.id or a.name) < tostring(b.id or b.name) end
+        return left < right
+    end)
+    local total = math.max(1, math.ceil(#filtered / 15))
+    state.page = math.min(total, math.max(1, math.floor(tonumber(state.page) or 1)))
+    AdminUI.AddText(page, ('%s: %d / %d | %d'):format(AdminTranslate('page'), state.page, total, #filtered))
+    if #filtered == 0 then AdminUI.AddText(page, AdminTranslate('catalog_empty')) end
+    for index = (state.page - 1) * 15 + 1, math.min(state.page * 15, #filtered) do
+        local item = filtered[index]
+        AdminUI.AddButton(page, itemLabel(item), function() choose(item) end)
+    end
+    local current = state.page
+    AdminUI.AddPagination(page, current, total, function(nextPage) state.page=nextPage; reopen() end)
+end
+
+function AdminUI.ConfirmTargetAction(label, callback, back)
+    local target, sequence = AdminUI.GetTarget(), AdminUI.openSequence
+    local page = AdminUI.RegisterPage('target_action_confirmation')
+    AdminUI.AddHeader(page, AdminTranslate('admin_header'), AdminTranslate('confirm_action'))
+    AdminUI.AddTargetContext(page)
+    AdminUI.AddText(page, label)
+    local submitted = false
+    AdminUI.AddButton(page, AdminTranslate('confirm_action'), function()
+        if submitted or AdminUI.GetTarget() ~= target or AdminUI.currentPage ~= 'target_action_confirmation'
+            or AdminUI.openSequence ~= sequence + 1 then return end
+        submitted = true
+        callback(target)
+        AdminUI.AddText(page, AdminTranslate('action_request_sent'))
+    end)
+    AdminUI.AddFooter(page)
+    AdminUI.AddFooterButton(page, AdminTranslate('back'), back)
+    AdminUI.OpenPage('target_action_confirmation')
+end
+
+function AdminUI.AddButton(page, label, callback)
+    return AddElement(page, 'button', {
+        label = label,
+        slot = 'content'
+    }, callback)
+end
+
+function AdminUI.AddInput(page, label, placeholder, callback, value)
+    return AddElement(page, 'input', {
+        label = label,
+        placeholder = placeholder,
+        value = value or '',
+        slot = 'content'
+    }, callback)
+end
+
+function AdminUI.AddDropdown(page, options, placeholder, callback)
+    local normalized, originals = NormalizeOptions(options)
+    return AddElement(page, 'dropdown', {
+        options = normalized,
+        value = normalized[1] and normalized[1].value,
+        placeholder = placeholder,
+        slot = 'content'
+    }, ChoiceCallback(callback, originals))
+end
+
+function AdminUI.AddText(page, value)
+    return AddElement(page, 'textdisplay', {
+        value = value,
+        slot = 'content'
+    })
+end
+
+function AdminUI.AddLine(page)
+    return AddElement(page, 'line', { slot = 'content' })
+end
+
+function AdminUI.AddArrows(page, label, options, selectedIndex, callback)
+    local normalized, originals = NormalizeOptions(options)
+    local selected = originals[(tonumber(selectedIndex) or 0) + 1] or originals[1]
+    return AddElement(page, 'arrows', {
+        label = label,
+        options = normalized,
+        value = selected and selected.value,
+        slot = 'content'
+    }, ChoiceCallback(callback, originals))
+end
+
+function AdminUI.AddFooter(page)
+    AddElement(page, 'bottomline', { slot = 'footer' })
+end
+
+function AdminUI.AddFooterButton(page, label, callback)
+    return AddElement(page, 'button', {
+        label = label,
+        slot = 'footer'
+    }, callback)
+end
+
+function AdminUI.OpenPage(key)
+    local page = AdminUI.Pages[key]
+    if not page then
+        print(('Feather Admin page is not registered: %s'):format(tostring(key)))
+        return false
+    end
+
+    local menuId = EnsureMenu()
+    AdminUI.currentPage = key
+    AdminUI.openSequence = AdminUI.openSequence + 1
+    local sequence = AdminUI.openSequence
+    CreateThread(function()
+        local ready = Menu:AwaitReady(5000)
+        if type(ready) ~= 'table' or ready.ok ~= true then
+            local message = type(ready) == 'table' and ready.message or 'invalid readiness result'
+            print(('[feather-admin] menu is not ready: %s'):format(tostring(message)))
+            return
+        end
+        if sequence ~= AdminUI.openSequence or menuId ~= AdminUI.menuId
+            or AdminUI.Pages[key] ~= page then return end
+        local opened = Menu:OpenMenu(menuId, {
+            pageId = page.id,
+            keyboard = true,
+            cursor = true,
+            replace = true
+        })
+        if type(opened) ~= 'table' or opened.ok ~= true then
+            print(('[feather-admin] open menu failed (%s): %s'):format(
+                tostring(opened and opened.code), tostring(opened and opened.message)))
+        end
+    end)
+
+    return true
+end
+
+function AdminUI.SetTarget(playerId)
+    AdminUI.targetPlayer = tonumber(playerId)
+end
+
+function AdminUI.GetTarget()
+    return AdminUI.targetPlayer
+end
+
+function AdminUI.CanUse(action)
+    return AdminPermissions[action] == true
+end
+
+function AdminUI.NotifyActionDenied()
+    Feather.Notify.RightNotify(AdminTranslate('action_not_permitted'), 3000)
+end
+
+function AdminUI.IsSelfTarget(target)
+    local targetId = tonumber(target or AdminUI.GetTarget())
+    return targetId ~= nil and targetId == GetPlayerServerId(PlayerId())
+end
+
+function AdminUI.CanUseOnTarget(action, ...)
+    if not AdminUI.CanUse(action) then return false end
+    local target
+    if select('#', ...) == 0 then
+        target = AdminUI.GetTarget()
+    else
+        target = select(1, ...)
+    end
+    -- An explicit nil represents an offline target. It must not fall back
+    -- to the last live menu target, which may be the acting administrator.
+    if target == nil then return true end
+    if not AdminUI.IsSelfTarget(target) then return true end
+
+    local hierarchy = type(Config.hierarchy) == 'table' and Config.hierarchy or {}
+    local allowSelf = type(hierarchy.allowSelf) == 'table' and hierarchy.allowSelf or {}
+    return allowSelf[action] == true
+end
+
+function AdminUI.RequireUseOnTarget(action, ...)
+    if AdminUI.CanUseOnTarget(action, ...) then return true end
+
+    AdminUI.NotifyActionDenied()
+    return false
+end
+
+function AdminUI.CanUseAnyAction(actions)
+    for _, action in ipairs(actions or {}) do
+        if AdminUI.CanUse(action) then return true end
+    end
+    return false
+end
+
+function AdminUI.RequireAnyUseOnTarget(actions, ...)
+    for _, action in ipairs(actions or {}) do
+        if AdminUI.CanUseOnTarget(action, ...) then return true end
+    end
+    AdminUI.NotifyActionDenied()
+    return false
+end
+
+function AdminUI.CanUseAny(prefix)
+    for action, allowed in pairs(AdminPermissions) do
+        if allowed and action:sub(1, #prefix) == prefix then return true end
+    end
+    return false
+end
+
+function AdminUI.RunAction(label, callback)
+    local succeeded = callback()
+    if succeeded == true then
+        Feather.Notify.RightNotify(label, 2000)
+    end
+    return succeeded
+end
+
+local function getToggleStateKey(action)
+    local target = AdminUI.GetTarget() or GetPlayerServerId(PlayerId())
+    return ('%s:%s'):format(target, action)
+end
+
+function AdminUI.GetToggleLabel(label, action)
+    local enabled = AdminUI.toggleStates[getToggleStateKey(action)]
+    if enabled == nil then return label end
+    return ('%s: %s'):format(label, AdminTranslate(enabled and 'status_on' or 'status_off'))
+end
+
+function AdminUI.SetToggleState(action, enabled, target)
+    local stateTarget = tonumber(target) or AdminUI.GetTarget() or GetPlayerServerId(PlayerId())
+    AdminUI.toggleStates[('%s:%s'):format(stateTarget, action)] = enabled == true
+end
+
+function AdminUI.RunToggleAction(label, action, element, callback)
+    local stateKey = getToggleStateKey(action)
+    local enabled = not AdminUI.toggleStates[stateKey]
+
+    callback(enabled)
+    AdminUI.toggleStates[stateKey] = enabled
+    element:update({ label = AdminUI.GetToggleLabel(label, action) })
+end
+
+function AdminUI.RunServerToggleAction(label, action, element, callback)
+    local stateKey = getToggleStateKey(action)
+    for _, pending in pairs(AdminUI.pendingToggles) do
+        if pending.stateKey == stateKey then return false end
+    end
+
+    AdminUI.nextToggleRequest = AdminUI.nextToggleRequest + 1
+    local requestId = AdminUI.nextToggleRequest
+    AdminUI.pendingToggles[requestId] = {
+        stateKey = stateKey,
+        label = label,
+        element = element,
+        enabled = not AdminUI.toggleStates[stateKey]
+    }
+    callback(requestId)
+
+    CreateThread(function()
+        Wait(10000)
+        AdminUI.pendingToggles[requestId] = nil
+    end)
+    return true
+end
+
+function AdminUI.ResolveServerToggle(requestId, succeeded)
+    local pending = AdminUI.pendingToggles[tonumber(requestId)]
+    if not pending then return end
+    AdminUI.pendingToggles[tonumber(requestId)] = nil
+    if succeeded ~= true then return end
+
+    AdminUI.toggleStates[pending.stateKey] = pending.enabled
+    pcall(function()
+        pending.element:update({
+            label = ('%s: %s'):format(pending.label,
+                AdminTranslate(pending.enabled and 'status_on' or 'status_off'))
+        })
+    end)
+end
+
+function AdminUI.Close()
+    AdminUI.openSequence = AdminUI.openSequence + 1
+    if not AdminUI.menuId then return end
+    local closed = Menu:CloseMenu(AdminUI.menuId)
+    if type(closed) ~= 'table' or closed.ok ~= true then
+        print(('[feather-admin] close menu failed (%s): %s'):format(
+            tostring(closed and closed.code), tostring(closed and closed.message)))
+    end
+end
+
+AddEventHandler('onClientResourceStop', function(resource)
+    if resource ~= 'feather-menu-v2' then return end
+    ResetMenuState()
+    InMenu = false
+    DisplayRadar(true)
+end)
+
+function AdminUI.OpenPedParent()
+    AdminUI.OpenAppearance()
+end

@@ -1,0 +1,16 @@
+dofile('config.lua')
+dofile('shared/constants.lua')
+dofile('shared/results.lua')
+dofile('shared/contract/canonical.lua')
+dofile('shared/contract/registry.lua')
+dofile('shared/contract/validator.lua')
+dofile('server/services/projection.lua')
+dofile('producer/event_id.lua')
+dofile('producer/event_builder.lua')
+dofile('producer/outbox.lua')
+dofile('server/core/config.lua')
+
+local schema = dofile('schemas/examples/economy_transfer_completed_v1.lua')
+assert(FeatherAuditSchemaRegistry.Register(schema))
+
+return dofile('tests/support/assertions.lua')

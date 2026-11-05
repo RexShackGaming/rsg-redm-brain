@@ -1,0 +1,20 @@
+dofile('client/character_ammunition_creation_native.lua')
+local decode=WeaponCharacterAmmoCreationNative.DecodeEquippedChild
+local raw=string.rep('\0',32)..string.pack('<I4I4',0xf1234567,0)..string.rep('\0',64)
+local item=assert(decode(raw,1))
+assert(item.itemHash==0xf1234567 and item.itemHashHex=='0xF1234567' and item.fieldOffsetBytes==32)
+assert(decode(raw,true).itemHash==item.itemHash)
+assert(not decode(raw,0) and not decode(raw,false))
+assert(not decode('short',1) and not decode(nil,1) and not decode(string.rep('\0',104),1))
+assert(not decode(string.pack('<I4',123)..string.rep('\0',100),1),'GUID word is not item hash')
+print('equipped child decode PASS (script-slot f4, unsigned hash, failed/short/zero refusal)')
+local flagDecode=WeaponCharacterAmmoCreationNative.DecodeChildEquippedFlag
+local function itemRaw(flag)
+    return string.rep('\0',32)..string.pack('<I4I4',0xf1234567,0)..string.rep('\0',40)
+        ..string.pack('<I4I4',flag,0)..string.rep('\0',16)
+end
+assert(flagDecode(itemRaw(1),true).equipped==true)
+assert(flagDecode(itemRaw(0),1).equipped==false)
+assert(flagDecode(itemRaw(2),1).equippedFlagReadable==false and flagDecode(itemRaw(2),1).equipped==nil)
+assert(not flagDecode(itemRaw(1),false) and not flagDecode(itemRaw(1):sub(1,87),1))
+print('child f10 equipped flag decode PASS (script-slot offset80, BOOL0/1 only, failed/short refusal)')

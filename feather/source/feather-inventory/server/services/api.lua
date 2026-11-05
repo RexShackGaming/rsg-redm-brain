@@ -1,0 +1,244 @@
+InventoryReadiness = { state = 'starting', failure = nil }
+local function InventoryReadyResult()
+  if InventoryReadiness.state == 'ready' then return Result.Ok({ state = 'ready' }) end
+  return Result.Err(InventoryReadiness.state == 'failed' and 'startup_failed' or 'not_ready',
+    'Inventory is not ready.', { state = InventoryReadiness.state, reason = InventoryReadiness.failure })
+end
+exports('GetHealth', function()
+  return Result.Ok({ state = InventoryReadiness.state, failure = InventoryReadiness.failure })
+end)
+exports('AwaitReady', function(timeoutMs)
+  timeoutMs = timeoutMs == nil and 30000 or timeoutMs
+  if type(timeoutMs) ~= 'number' or timeoutMs % 1 ~= 0 or timeoutMs < 0 or timeoutMs > 60000 then
+    return Result.Err('invalid_input', 'Readiness timeout must be an integer from 0 to 60000.')
+  end
+  local deadline = GetGameTimer() + timeoutMs
+  while InventoryReadiness.state == 'starting' and GetGameTimer() < deadline do Wait(50) end
+  return InventoryReadyResult()
+end)
+
+function StartAPI()
+  for name,method in pairs({GetCharacterCollection='Get',GetCharacterCollectionItem='Item',SetCharacterCollectionEquipment='Batch',RetireCharacterCollectionItemsOnce='Retire',TransferCharacterCollectionItemsOnce='Transfer'}) do
+    local operation=method
+    exports(name,function(request)
+      local ready=InventoryReadyResult();if not ready.ok then return ready end
+      return CharacterCollectionAPI[operation](request,GetInvokingResource())
+    end)
+  end
+
+  for name,method in pairs({RegisterCollectionStorage='Register',GetCollectionStorage='Get',OpenCollectionStorage='Open'}) do
+    local operation=method
+    exports(name,function(request)
+      local ready=InventoryReadyResult();if not ready.ok then return ready end
+      return CollectionStorageAPI[operation](request,GetInvokingResource())
+    end)
+  end
+
+  exports('GetConsumptionContract', function()
+    local contract=ConsumptionOnceAPI.Contract()
+    if InventoryReadiness.state~='ready' then contract.ready=false; contract.durableConsumption=0;contract.durableWear=0 end
+    return contract
+  end)
+  for name, method in pairs({ConsumeCharacterItemOnce='Consume', InspectCharacterConsumption='Inspect', CancelCharacterConsumption='Cancel',
+    WearCharacterItemOnce='Wear',InspectCharacterItemWear='InspectWear',CancelCharacterItemWear='CancelWear'}) do
+    local operation=method
+    exports(name,function(request)
+      local ready=InventoryReadyResult()
+      if not ready.ok then return ready end
+      if operation=='Inspect' and StablesCareConsumptionProof then
+        local handled,result=StablesCareConsumptionProof.TryInspect(request,GetInvokingResource())
+        if handled then return result end
+      end
+      return ConsumptionOnceAPI[operation](request,GetInvokingResource())
+    end)
+  end
+  exports('StablesCareProofFixture',function(action)
+    local ready=InventoryReadyResult(); if not ready.ok then return ready end
+    return StablesCareConsumptionProof.Step(action,GetInvokingResource())
+  end)
+  exports('GetNativeIssuanceContract',function()
+    return {contractVersion=1,ready=InventoryReadiness.state=='ready'
+      and Config.CharacterAmmunitionEnabled==true and NativeFirearmIssuanceAPI~=nil}
+  end)
+  exports('IssueNativeFirearmOnce',function(context,spec)
+    local ready=InventoryReadyResult()
+    if not ready.ok then return ready end
+    return NativeFirearmIssuanceAPI.Issue(context,spec,GetInvokingResource())
+  end)
+  exports('GetCharacterAmmunitionSnapshot', function(context, limits)
+    local ready = InventoryReadyResult()
+    if not ready.ok then return ready end
+    return CharacterAmmunitionAPI.Snapshot(context, limits, GetInvokingResource())
+  end)
+  exports('GetCharacterFirearmRuntimeSnapshot', function(context, limits)
+    local ready = InventoryReadyResult()
+    if not ready.ok then return ready end
+    return CharacterAmmunitionAPI.RuntimeSnapshot(context, limits, GetInvokingResource())
+  end)
+  exports('ObserveCharacterAmmunition', function(context, spec)
+    local ready = InventoryReadyResult()
+    if not ready.ok then return ready end
+    return CharacterAmmunitionAPI.Observe(context, spec, GetInvokingResource())
+  end)
+  exports('MutateCharacterAmmunition', function(context, spec)
+    local ready = InventoryReadyResult()
+    if not ready.ok then return ready end
+    return CharacterAmmunitionAPI.Mutate(context, spec, GetInvokingResource())
+  end)
+  exports('GrantCharacterItemOnce', function(request)
+    local ready = InventoryReadyResult()
+    if not ready.ok then return ready end
+    return GrantOnceAPI.Grant(request, GetInvokingResource())
+  end)
+  exports('CancelCharacterItemGrant', function(request)
+    local ready = InventoryReadyResult()
+    if not ready.ok then return ready end
+    return GrantOnceAPI.Cancel(request, GetInvokingResource())
+  end)
+  exports('GrantCharacterUniqueItemOnce', function(request)
+    local ready = InventoryReadyResult()
+    if not ready.ok then return ready end
+    return UniqueGrantOnceAPI.Grant(request, GetInvokingResource())
+  end)
+  exports('CancelCharacterUniqueItemGrant', function(request)
+    local ready = InventoryReadyResult()
+    if not ready.ok then return ready end
+    return UniqueGrantOnceAPI.Cancel(request, GetInvokingResource())
+  end)
+  ItemsAPI.RegisterInternalUseGuard()
+  local inventoryServerAPI = {}
+  inventoryServerAPI.Inventory = InventoryAPI
+  inventoryServerAPI.Items = ItemsAPI
+  inventoryServerAPI.Categories = CategoriesAPI
+  -- (INV-W1) Item-instance contract layer -- instance_mode, versioned
+  -- metadata documents, normalized reads, capability query.
+  inventoryServerAPI.Instances = InstancesAPI
+  -- (INV-W2) Transaction runner. Also surfaced as Inventory.Transaction,
+  -- the interface name DEPENDENCY_SUPPORT_PLAN §4.4 specifies.
+  inventoryServerAPI.Transaction = TransactionAPI.Transaction
+  inventoryServerAPI.MutateItem = TransactionAPI.MutateItem
+  inventoryServerAPI.MutateItems = TransactionAPI.MutateItems
+  inventoryServerAPI.DestroyInstances = TransactionAPI.DestroyInstances
+  inventoryServerAPI.UseItemAction = TransactionAPI.UseItemAction
+  inventoryServerAPI.CreateInstance = TransactionAPI.CreateInstance
+  inventoryServerAPI.MutateCharacterAmmunition = function(context, spec)
+    return CharacterAmmunitionAPI.Mutate(context, spec, GetInvokingResource())
+  end
+  -- (INV-W3) Pre-move/destroy guard registry and structured post-commit
+  -- events. This is how feather-weapons forces an authoritative unequip
+  -- before an equipped item is allowed to move.
+  inventoryServerAPI.Guards = GuardsAPI
+  -- (INV-W4) Operational surface: transaction counters for contention
+  -- monitoring, and the access-mode decision function.
+  inventoryServerAPI.Diagnostics = {
+    GetTransactionMetrics = TransactionAPI.GetMetrics,
+    RunIntegrityDiagnostics = DiagnosticsAPI.RunIntegrityDiagnostics,
+  }
+  -- (Weapons review #5) Persisted equipment slots -- generic
+  -- character/slot/instance storage, survives restarts.
+  inventoryServerAPI.Equipment = EquipmentAPI
+
+  -- (Weapons review #10) The provider surface feather-weapons' adapter
+  -- expects, exposed at the top level under exactly those names so the
+  -- adapter needs no translation layer.
+  inventoryServerAPI.GetCapabilities = InstancesAPI.GetCapabilities
+  inventoryServerAPI.GetItemForCharacter = InstancesAPI.GetItemForCharacter
+  inventoryServerAPI.GetEquippedForCharacter = EquipmentAPI.GetEquippedForCharacter
+  inventoryServerAPI.SetEquippedForCharacter = EquipmentAPI.SetEquippedForCharacter
+  inventoryServerAPI.SetEquipmentBatchForCharacter = EquipmentAPI.SetEquipmentBatchForCharacter
+  inventoryServerAPI.PromoteEquippedSlot = EquipmentAPI.PromoteEquippedSlot
+  -- Consumer-safe UUID Character inventory lookup. Keep a top-level alias
+  -- because Cfx resource boundaries do not reliably preserve newly-added
+  -- nested function members on an API table returned by an export.
+  inventoryServerAPI.GetCharacterInventory = function(characterId)
+    if type(InventoryAPI) ~= 'table' or type(InventoryAPI.GetCharacterInventory) ~= 'function' then
+      return Result.Err(Result.Codes.INTERNAL, 'Character inventory lookup is unavailable.')
+    end
+    return InventoryAPI.GetCharacterInventory(characterId)
+  end
+
+  exports('initiate', function()
+    return inventoryServerAPI
+  end)
+
+  exports('GetCharacterInventory', function(characterId)
+    if type(InventoryAPI) ~= 'table' or type(InventoryAPI.GetCharacterInventory) ~= 'function' then
+      return Result.Err(Result.Codes.INTERNAL, 'Character inventory lookup is unavailable.')
+    end
+    return InventoryAPI.GetCharacterInventory(characterId)
+  end)
+
+  exports('RemoveCharacterInventoryInstance', function(characterId, instanceId, reason)
+    local normalized = InventoryIdentity.NormalizeCharacterId(characterId)
+    local numericInstance = tonumber(instanceId)
+    if not normalized or not numericInstance then
+      return Result.Err(Result.Codes.INVALID_INPUT, 'UUID Character id and item instance id are required.')
+    end
+    local inventoryId = InventoryControllers.GetInventoryByCharacter(normalized)
+    if not inventoryId then
+      return Result.Err(Result.Codes.NOT_FOUND, 'The Character inventory does not exist.')
+    end
+    return TransactionAPI.Transaction({
+      reason = type(reason) == 'string' and reason:sub(1, 100) or 'admin_remove',
+      resource = GetInvokingResource() or 'unknown'
+    }, function(tx)
+      local locked = tx:GetItemForUpdate(numericInstance)
+      if not Result.IsOk(locked) then return locked end
+      if locked.value.inventoryId ~= tonumber(inventoryId) then
+        return Result.Err(Result.Codes.NOT_FOUND, 'That Character does not hold this item.',
+          { characterId = normalized, instanceId = numericInstance })
+      end
+      local removed = tx:RemoveInstances(inventoryId, locked.value.definition.id, { numericInstance })
+      if not Result.IsOk(removed) then return removed end
+      return Result.Ok({ instanceId = numericInstance, inventoryId = inventoryId,
+        definitionId = locked.value.definition.id, itemName = locked.value.definition.name,
+        displayName = locked.value.definition.displayName })
+    end)
+  end)
+
+  exports('GrantCharacterItem', function(characterId, itemName, quantity, reason)
+    local normalized = InventoryIdentity.NormalizeCharacterId(characterId)
+    local wanted = math.floor(tonumber(quantity) or 0)
+    if not normalized or type(itemName) ~= 'string' or itemName == '' or wanted < 1 or wanted > 10000 then
+      return Result.Err(Result.Codes.INVALID_INPUT, 'UUID Character id, item name, and quantity are required.')
+    end
+    local definition = ItemControllers.GetItemDefinitionByName(itemName)
+    if not definition then return Result.Err(Result.Codes.NOT_FOUND, 'Item definition does not exist.') end
+    if definition.instance_mode == 'unique' then
+      return Result.Err('unique_requires_issuer', 'Unique items must be issued by their owning resource.')
+    end
+    local inventoryId = InventoryControllers.GetInventoryByCharacter(normalized)
+    if not inventoryId then
+      return Result.Err(Result.Codes.NOT_FOUND, 'The Character inventory does not exist.')
+    end
+    return TransactionAPI.Transaction({
+      reason = type(reason) == 'string' and reason:sub(1, 100) or 'trusted_character_grant',
+      resource = GetInvokingResource() or 'unknown'
+    }, function(tx)
+      local granted = tx:AddQuantity(inventoryId, definition.id, wanted)
+      if not Result.IsOk(granted) then return granted end
+      return Result.Ok({ characterId = normalized, inventoryId = inventoryId,
+        definitionId = definition.id, itemName = definition.name, quantity = wanted })
+    end)
+  end)
+
+  -- Register the complete API before the first database yield. Consumers can
+  -- discover it immediately, but must await readiness before doing work.
+  InventoryAwaitDatabase()
+  if InventoryDelegation then
+    local delegationDeadline = GetGameTimer() + 30000
+    while not InventoryDelegation.ready and GetGameTimer() < delegationDeadline do Wait(50) end
+    if not InventoryDelegation.ready then
+      InventoryReadiness.state, InventoryReadiness.failure = 'failed', 'delegation_schema_unavailable'
+      return Result.Err('startup_failed', 'Inventory delegation schema did not become ready.')
+    end
+  end
+  CharacterCollectionAPI.Start()
+  CollectionStorageAPI.Start()
+  GrantOnceAPI.Start()
+  ConsumptionOnceAPI.Start()
+  InventoryMoveRecovery.Start()
+  RegisterCharacterStart(inventoryServerAPI)
+  RegisterGroundInventory()
+  InventoryReadiness.state = 'ready'
+end

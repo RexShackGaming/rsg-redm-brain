@@ -1,0 +1,246 @@
+local providerInstalled = false
+
+local function Decision(allowed, code, reason, details)
+    return {
+        ok = true,
+        value = {
+            allowed = allowed == true,
+            code = code,
+            reason = reason,
+            details = details,
+        }
+    }
+end
+
+local function EvaluateService(action,context)
+    if type(context)~='table' or context.source~=0 or context.system~=true
+        or context.accountId~=nil or context.characterId~=nil or context.sessionId~=nil
+        or type(context.caller)~='string' or type(context.subject)~='table'
+        or type(context.subject.resource)~='string' then
+        return Decision(false,'invalid_service_context','Authenticated service context is required.')
+    end
+    local disabled = type(Config.identity)=='table' and Config.identity.disabledActions
+    local exception = type(Config.servicePolicyActionExceptions)=='table' and Config.servicePolicyActionExceptions[action]==true
+    if (type(disabled)=='table' and disabled[action]) or (not FeatherAdmin.IsActionEnabled(action) and not exception) then
+        return Decision(false,'action_disabled','That action is disabled.')
+    end
+    local callers=type(Config.servicePolicy)=='table' and Config.servicePolicy[context.caller]
+    local actions=type(callers)=='table' and callers[context.subject.resource]
+    if type(actions)~='table' or actions[action]~=true then
+        return Decision(false,'service_forbidden','No explicit service action grant exists.', {
+            serviceCaller = context.caller, servicePrincipal = context.subject.resource,
+        })
+    end
+    return Decision(true,'allowed','The configured service action is permitted.')
+end
+
+local function Evaluate(action, context)
+    if type(action) ~= 'string' or type(context) ~= 'table' then
+        return Decision(false, 'invalid_input', 'Policy action and context are required.')
+    end
+    if context.source==0 then return EvaluateService(action,context) end
+    if not FeatherAdmin.IsActionEnabled(action) then
+        return Decision(false, 'action_disabled', 'That action is disabled.')
+    end
+
+    if type(Config.permissions[action]) ~= 'string' then
+        return Decision(false, 'unknown_action', 'That action has no configured policy.')
+    end
+    if not FeatherAdmin.CanUse(tonumber(context.source), action) then
+        return Decision(false, 'forbidden', 'The active character does not have permission for that action.')
+    end
+    return Decision(true, 'allowed', 'The action is permitted.')
+end
+
+local function InstallProvider()
+    if providerInstalled then return end
+    local result = exports['feather-core']:RegisterPolicyProvider('feather-admin', {
+        Evaluate = Evaluate
+    }, {
+        contract = 1,
+        default = true,
+        capabilities = { characterRoles = 1, configuredActions = 1, servicePrincipals = 1 }
+    })
+    if type(result) ~= 'table' or result.ok ~= true then
+        error(('[feather-admin] policy provider registration failed: %s'):format(
+            tostring(type(result) == 'table' and result.message or 'invalid result')))
+    end
+    providerInstalled = true
+    print('[feather-admin] Contract 1 policy provider installed')
+end
+
+InstallProvider()
+
+RegisterCommand('AdminAccessServicePolicySmokeTest', function(source)
+    if source ~= 0 then return end
+    CreateThread(function()
+        local callers = type(Config.servicePolicy) == 'table' and Config.servicePolicy['feather-access']
+        local principal = type(callers) == 'table' and callers['feather-access-tests']
+        local context = { caller = 'feather-access', source = 0, system = true,
+            subject = { resource = 'feather-access-tests' } }
+        local foreign = { caller = 'feather-access', source = 0, system = true, subject = { resource = 'foreign' } }
+        local spoof = { caller = 'feather-access-tests', source = 0, system = true,
+            subject = { resource = 'feather-access-tests' } }
+        local called, provider = pcall(function() return exports['feather-core']:GetProvider('policy', nil, 1) end)
+        local metadata = called and type(provider) == 'table' and provider.ok == true
+            and type(provider.value) == 'table' and provider.value.provider
+        local tests = {
+            { 'loaded manage grant', type(principal) == 'table' and principal['access.grant.manage'] == true },
+            { 'loaded read grant', type(principal) == 'table' and principal['access.grant.read'] == true },
+            { 'manage evaluates allowed', EvaluateService('access.grant.manage', context).value.allowed == true },
+            { 'read evaluates allowed', EvaluateService('access.grant.read', context).value.allowed == true },
+            { 'foreign principal denied', EvaluateService('access.grant.manage', foreign).value.allowed == false },
+            { 'broker spoof denied', EvaluateService('access.grant.manage', spoof).value.allowed == false },
+            { 'unknown action denied', EvaluateService('access.unconfigured', context).value.allowed == false },
+            { 'default provider is Admin', type(metadata) == 'table' and metadata.owner == 'feather-admin' },
+        }
+        local passed = 0
+        for _, test in ipairs(tests) do
+            if test[2] then passed = passed + 1 end
+            print(('[AdminAccessServicePolicySmokeTest] %s %s'):format(test[2] and 'PASS' or 'FAIL', test[1]))
+        end
+        print(('[AdminAccessServicePolicySmokeTest] done %d/%d passed (read-only)'):format(passed, #tests))
+    end)
+end, true)
+
+RegisterCommand('AdminReleaseContractSmokeTest',function(source)
+    if source~=0 then return end
+    local called,reason=xpcall(function()
+        local registered={}
+        for _,command in ipairs(GetRegisteredCommands() or {}) do registered[command.name]=true end
+        local actions={
+            'organizations.organization.create',
+            'organizations.organization.update',
+            'organizations.organization.suspend',
+            'organizations.organization.dissolve',
+            'organizations.relationship.manage',
+            'organizations.interest.manage'
+        }
+        local policy=type(Config.servicePolicy)=='table' and Config.servicePolicy['feather-organizations'] or nil
+        local shops=type(policy)=='table' and policy['feather-shops'] or nil
+        local organizations=type(policy)=='table' and policy['feather-organizations'] or nil
+        local admin=type(policy)=='table' and policy['feather-admin'] or nil
+        local function HasEvery(grants)
+            if type(grants)~='table' then return false end
+            for _,action in ipairs(actions) do if grants[action]~=true then return false end end
+            return true
+        end
+        local provider=exports['feather-core']:GetProvider('policy',nil,1)
+        local authorityProvider=exports['feather-core']:GetProvider('policy','feather-authority',1)
+        local catalog=FeatherAdmin.AuthorityCatalog and FeatherAdmin.AuthorityCatalog.State() or nil
+        local providerValue=type(provider)=='table' and provider.ok==true and type(provider.value)=='table'
+            and type(provider.value.provider)=='table' and provider.value.provider or nil
+        local tests={
+            {'provider installed',providerInstalled and providerValue~=nil
+                and providerValue.owner=='feather-admin'},
+            {'service principals enabled',providerValue~=nil and type(providerValue.capabilities)=='table'
+                and providerValue.capabilities.servicePrincipals==1},
+            {'Authority configured',type(Config.authority)=='table'
+                and type(Config.authority.roles)=='table' and #Config.authority.roles==3},
+            {'character hierarchy active',type(Config.hierarchy)=='table'},
+            {'Authority provider available',authorityProvider.ok==true
+                and authorityProvider.value.provider.owner=='feather-authority'},
+            {'Authority catalog ready',type(catalog)=='table' and catalog.ready==true
+                and type(catalog.result)=='table' and catalog.result.capabilities==90
+                and catalog.result.roles==3 and catalog.result.moderator==33
+                and catalog.result.administrator==67 and catalog.result.owner==90
+                and catalog.result.totalGrants==190},
+            {'owner bootstrap available',registered.AdminBootstrapOwner==true},
+            {'clean Authority commands',registered.AdminAuthorityContractSmokeTest==true
+                and not registered.AdminAuthorityMigrationContractSmokeTest
+                and not registered.AdminAuthorityShadowPolicyLiveTest
+                and not registered.AdminAuthorityEnforcementContractSmokeTest
+                and not registered.AdminLegacyCharacterCutoverSmokeTest},
+            {'shop test controls absent',not registered.ShopBusinessLifecycleControl
+                and not registered.ShopOrganizationLifecycleLiveTest},
+            {'shops create and update',type(shops)=='table'
+                and shops['organizations.organization.create']==true
+                and shops['organizations.organization.update']==true},
+            {'shops elevated grants absent',type(shops)=='table'
+                and shops['organizations.organization.suspend']~=true
+                and shops['organizations.organization.dissolve']~=true
+                and shops['organizations.relationship.manage']~=true
+                and shops['organizations.interest.manage']~=true},
+            {'organizations grants complete',HasEvery(organizations)},
+            {'admin grants complete',HasEvery(admin)},
+            {'foreign grants absent',type(policy)=='table' and policy.foreign==nil}
+        }
+        local passed=0
+        for _,test in ipairs(tests) do
+            if test[2] then passed=passed+1 end
+            print(('[AdminReleaseContractSmokeTest] %-28s %s'):format(test[1],test[2] and 'PASS' or 'FAIL'))
+        end
+        print(('[AdminReleaseContractSmokeTest] done %d/%d passed (read-only)'):format(passed,#tests))
+    end,debug.traceback)
+    if not called then print('[AdminReleaseContractSmokeTest] FAIL '..tostring(reason)) end
+end,true)
+
+RegisterCommand('AdminServicePolicySmokeTest',function(source)
+    if source~=0 then return end
+    local called,reason=xpcall(function()
+        local tests={}
+        local function Check(label,good) tests[#tests+1]={label,good==true} end
+        local action='organizations.interest.manage'
+        local base={caller='feather-organizations',source=0,system=true,subject={resource='feather-organizations'}}
+        Check('explicit service grant',EvaluateService(action,base).value.allowed==true)
+        for _,case in ipairs({
+            {'untrusted caller',{caller='foreign',source=0,system=true,subject={resource='feather-organizations'}}},
+            {'untrusted principal',{caller='feather-organizations',source=0,system=true,subject={resource='foreign'}}},
+            {'player not service',{caller='feather-organizations',source=1,system=true,subject={resource='feather-organizations'}}},
+            {'system flag required',{caller='feather-organizations',source=0,subject={resource='feather-organizations'}}},
+            {'subject required',{caller='feather-organizations',source=0,system=true}},
+            {'actor claims rejected',{caller='feather-organizations',source=0,system=true,characterId='forged',subject={resource='feather-organizations'}}},
+            {'delegation required',{caller='feather-admin',source=0,system=true,subject={resource='feather-organizations'}}}
+        }) do Check(case[1],EvaluateService(action,case[2]).value.allowed==false) end
+        Check('unknown action denied',EvaluateService('organizations.unknown',base).value.allowed==false)
+        local provider=exports['feather-core']:GetProvider('policy',nil,1)
+        Check('service provider installed',provider.ok and provider.value.provider.owner=='feather-admin'
+            and provider.value.provider.capabilities.servicePrincipals==1)
+        local actual=exports['feather-core']:Authorize(action,{subject={resource='feather-organizations'}})
+        Check('Core caller not spoofable',actual.ok and actual.value.allowed==false and actual.value.code=='service_forbidden')
+        local passed=0
+        for _,test in ipairs(tests) do
+            if test[2] then passed=passed+1 end
+            print(('[AdminServicePolicySmokeTest] %-29s %s'):format(test[1],test[2] and 'PASS' or 'FAIL'))
+        end
+        print(('[AdminServicePolicySmokeTest] done %d/%d passed (read-only)'):format(passed,#tests))
+    end,debug.traceback)
+    if not called then print('[AdminServicePolicySmokeTest] FAIL '..tostring(reason)) end
+end,true)
+
+RegisterCommand('AdminPolicySmokeTest', function(source, args)
+    if source ~= 0 then return end
+    local ownerSource = tonumber(args and args[1])
+    local playerSource = tonumber(args and args[2])
+    local provider = exports['feather-core']:GetProvider('policy', nil, 1)
+    local ownerMenu = ownerSource and exports['feather-core']:Authorize('menu.open', { source = ownerSource }) or nil
+    local ownerInventory = ownerSource
+        and exports['feather-core']:Authorize('inventory.manage', { source = ownerSource }) or nil
+    local unknown = ownerSource and exports['feather-core']:Authorize('smoke.unknown', { source = ownerSource }) or nil
+    local playerMenu = playerSource and exports['feather-core']:Authorize('menu.open', { source = playerSource }) or nil
+    local ownerChatMute = ownerSource
+        and exports['feather-core']:Authorize('chat.mute.issue', { source = ownerSource }) or nil
+    local playerChatMute = playerSource
+        and exports['feather-core']:Authorize('chat.mute.issue', { source = playerSource }) or nil
+
+    local tests = {
+        { name = 'provider available', passed = type(provider) == 'table' and provider.ok == true },
+        { name = 'owner menu allowed', passed = ownerMenu and ownerMenu.ok == true and ownerMenu.value.allowed == true },
+        { name = 'inventory manage allowed', passed = ownerInventory and ownerInventory.ok == true
+            and ownerInventory.value.allowed == true },
+        { name = 'unknown action denied', passed = unknown and unknown.ok == true and unknown.value.allowed == false
+            and unknown.value.code == 'unknown_action' },
+        { name = 'player menu denied', passed = playerMenu and playerMenu.ok == true and playerMenu.value.allowed == false },
+        { name = 'owner chat mute allowed', passed = ownerChatMute and ownerChatMute.ok == true
+            and ownerChatMute.value.allowed == true },
+        { name = 'player chat mute denied', passed = playerChatMute and playerChatMute.ok == true
+            and playerChatMute.value.allowed == false }
+    }
+    local passed = 0
+    for _, test in ipairs(tests) do
+        if test.passed then passed = passed + 1 end
+        print(('[AdminPolicySmokeTest] %-27s %s'):format(test.name, test.passed and 'PASS' or 'FAIL'))
+    end
+    print(('[AdminPolicySmokeTest] done %d/%d passed owner=%s player=%s'):format(
+        passed, #tests, tostring(ownerSource), tostring(playerSource)))
+end, true)

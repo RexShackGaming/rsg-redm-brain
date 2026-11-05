@@ -1,0 +1,20 @@
+FeatherAuditResults = {
+    ok = 'ok',
+    notImplemented = 'not_implemented',
+    unavailable = 'unavailable',
+    invalidRequest = 'invalid_request',
+    forbidden = 'forbidden',
+    internalError = 'internal_error',
+    producerNotAllowed = 'producer_not_allowed',
+    sourceMismatch = 'source_mismatch',
+    instanceMismatch = 'instance_mismatch',
+    payloadTooLarge = 'payload_too_large',
+    contractUnsupported = 'contract_unsupported',
+    eventSchemaUnknown = 'event_schema_unknown',
+    eventVersionUnsupported = 'event_version_unsupported',
+    fieldInvalid = 'field_invalid',
+    contextUnknownField = 'context_unknown_field',
+    prohibitedContent = 'prohibited_content',
+    occurredAtFuture = 'occurred_at_future',
+    eventIdentityConflict = 'event_identity_conflict'
+}

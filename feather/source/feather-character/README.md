@@ -1,0 +1,345 @@
+# Feather Character
+
+Feather Character provides character creation, selection, appearance,
+first-spawn placement, position saving, logout, and character deletion for a
+Feather Framework RedM server.
+
+## Requirements
+
+Install and start these resources before `feather-character`:
+
+- `feather-mysql`
+- `feather-core`
+- `feather-routing`
+- `feather-economy`
+- `feather-menu-v2`
+
+Do not run this resource alongside the legacy Feather Character resource. Both
+versions use the same resource name and character contracts.
+
+## Installation
+
+1. Back up your database and server resources.
+2. Place the complete `feather-character` folder in your resources directory.
+3. Confirm all requirements are installed and configured.
+4. Add the resources to `server.cfg` in dependency order:
+
+```cfg
+ensure feather-mysql
+ensure feather-core
+ensure feather-routing
+ensure feather-economy
+ensure feather-menu-v2
+ensure feather-character
+```
+
+5. Start the server and run `CharacterV2Status` in the server console.
+6. Allow players to connect only after the command reports `state=ready`.
+
+Character's server scripts import `@feather-mysql/lib/DB.lua` and use plain
+`DB.*` calls. On startup it waits for the database, then database migrations
+run automatically. The resource creates and maintains its
+own `fc2_*` tables. It does not import or modify legacy character tables.
+
+## Basic configuration
+
+Edit `config.lua` to configure:
+
+- the maximum characters allowed per account;
+- identity and birth-date limits;
+- available starting towns;
+- direct spawn positions;
+- optional horse arrival sequences;
+- selector and creator presentation settings;
+- model and collision timeouts.
+
+### Selection and creation weather
+
+`feather-weather` is an optional presentation provider, not a mandatory Character dependency.
+Start it before Character when installed. Weather `0.1.1` admits `feather-character`
+at maximum priority 10 by default; for an existing/custom Weather config, add
+`['feather-character'] = { maxPriority=10 }` to `overrideOwners` and restart Weather.
+Character never needs an entry in Weather's server mutation allowlist.
+
+`sceneEnvironment` configures separate selector/creator presets (both default to
+fixed noon/sunny), a 1-second weather transition, calm wind, and primary snow coverage.
+The client reuses one local handle when cycling characters or switching between
+selection and creation. It renews the 120-second lifetime every 30 seconds, so long
+creator sessions stay consistent. Set `enabled=false` to keep shared conditions.
+Use finite limits: priority `0..100` within the Weather owner policy, TTL `2..3600`
+within Weather's configured maximum, renewal `1000..TTL*500` milliseconds, readiness
+wait `0..10000` milliseconds, and transition `0..300` seconds. Preset clock values
+are seconds of week `0..<604800`; weather names must be accepted by Weather.
+
+Character requests the scene before opening/revealing its preview. It waits at most
+5 seconds for application by default, then continues with background recovery.
+Missing, unready, denied, or restarting Weather cannot prevent character use. F8
+reports degraded environment status rather than altering global weather or calling
+weather natives directly. `characterWeatherStatus` prints view, status, and handle
+presence in F8; `active` confirms effective requested channels, not visual proof.
+
+Activation releases the override while faded out, before leaving the selection
+route and before direct spawn or horse arrival. The newest shared conditions then
+apply. Bootstrap cleanup and Character stop release its handle too; Weather's
+owner-stop cleanup/TTL is an additional safety net. Weather restarting during a
+selector/creator scene invalidates the handle and triggers reacquisition when ready;
+restarting it during gameplay never acquires a Character scene override.
+
+No bucket change, admin permission, appearance document, or persisted character
+state is changed by this integration. Stable previews remain a separate consumer.
+
+Each selectable town requires an entry in `spawnPoints`. This position is used
+for Direct spawning and as the safe fallback when a cinematic cannot finish.
+
+```lua
+spawnPoints = {
+    valentine = {
+        label = 'Valentine',
+        x = -273.9114,
+        y = 794.7129,
+        z = 118.6634,
+        heading = 158.8537
+    }
+}
+```
+
+## Selecting Direct or Horse by town
+
+Every configured town under `arrivals.towns` has a `type` setting:
+
+```lua
+arrivals = {
+    enabled = true,
+    towns = {
+        valentine = {
+            type = 'horse', -- Use 'direct' or 'horse'.
+            playerSpawn = {
+                x = -259.387,
+                y = 827.443,
+                z = 121.058,
+                heading = 148.436
+            },
+            horseSpawn = {
+                x = -260.298,
+                y = 828.047,
+                z = 120.908,
+                heading = 157.753
+            },
+            destination = {
+                x = -357.067,
+                y = 785.343,
+                z = 116.139
+            },
+            horse = {
+                -- Horse model, travel speed, equipment, and cleanup settings.
+            },
+            camera = {
+                offsetX = 0.0,
+                offsetY = -7.0,
+                offsetZ = 3.0,
+                fov = 50.0
+            }
+        }
+    }
+}
+```
+
+Use one of these values:
+
+- `type = 'direct'` places a newly created character at the matching
+  `spawnPoints` position.
+- `type = 'horse'` plays the configured horse arrival after character creation.
+
+Horse arrivals keep the screen black while the player and horse are prepared.
+The screen fades in after road navigation begins. At the destination, the
+player dismounts naturally, then the screen fades out and the temporary horse
+and camera are deleted before shared-world handoff. The horse remains local to
+this private cinematic; nearby world players see only the completed reveal.
+The old `horse.cleanup` flee/fade settings are retained for config compatibility
+but no longer run after the ride.
+
+Each pending activation uses its own Feather Routing route (`relaxed`, population
+disabled), including direct placement. Selection moves directly into that route.
+Successful horse arrivals keep the exact dismount position and facing: after
+private cleanup under fade, Character only returns the player to the shared
+route. It does not teleport, turn or snap the player to the ground again.
+Nearby players and concurrent arrivals do not block either horse handoff or
+direct spawn; normal shared-world collision handles proximity. Direct spawning
+and failed-ride fallback still place the player at the authorized direct spawn.
+Character waits up to 20 seconds for the server-observed arrival position to
+reach the configured destination area before handoff; those coordinates are
+only an authorization boundary, not a placement target. Session/route and
+replicated position readiness checks still happen before route release. The server expires unfinished private spawns after 180
+seconds. Logout/cancellation, disconnect and owner stop release owned routes;
+resource-stop recovery places pending players at their authorized direct spawn.
+Do not restart Character or Routing during active arrivals as a normal operation.
+
+Horse arrivals run only after initial character creation. Returning characters
+load at their last saved position. If an arrival cannot load, mount, navigate,
+or finish within its timeout, Character cleans it up and uses the town's Direct
+spawn instead.
+
+## Adding or changing a town
+
+For every town you enable:
+
+1. Add a safe Direct fallback under `spawnPoints`.
+2. Add a matching entry under `arrivals.towns`.
+3. Choose `type = 'direct'` or `type = 'horse'`.
+4. For Horse, provide `playerSpawn`, `horseSpawn`, and `destination`.
+5. Test collision loading, mounting, navigation, dismounting, logout, and the
+   Direct fallback in game.
+
+`playerSpawn` and `horseSpawn` use `x`, `y`, `z`, and `heading`.
+`destination` uses only `x`, `y`, and `z`; the player keeps the natural facing
+direction produced by the dismount animation.
+
+The included configuration contains Direct and Horse data for:
+
+- Valentine
+- Saint Denis
+- Strawberry
+- Rhodes
+- Blackwater
+- Van Horn
+- Armadillo
+- Tumbleweed
+
+## Testing controls
+
+The selector can display temporary Town and Spawn sequence controls for testing:
+
+```lua
+debug = {
+    selectorSpawnSequence = false
+}
+```
+
+Set `selectorSpawnSequence = true` only while testing. It allows a tester to
+select any configured town and force either Direct or Horse using an existing
+character. Keep it `false` on a normal player-facing server.
+
+## Player commands
+
+- `/logout` saves the current position and returns the player to character
+  selection.
+- `/savequit` saves the current position and disconnects the player.
+
+Logging out during a horse arrival cancels the sequence, cleans up its horse and
+camera, and returns the player to selection. Selecting that character again uses
+the town's safe Direct spawn.
+
+## Operational notes
+
+- Character suppresses generic automatic spawnmanager spawning and reasserts
+  ownership after map/resource starts. Do not run resources that call
+  `spawnPlayer` directly or replace its callback; they can replace the character.
+- This guard preserves the ped on death. Persisted death, doctor respawn,
+  ailments and authorized recovery still require the Medical lifecycle in the
+  framework docs. Staff revive remains the existing Admin path.
+- After this manifest update, restart the test server and verify male/female
+  death past the default respawn timer, appearance, location, staff revive,
+  map start and spawnmanager restart in game.
+
+- Restarting `feather-character` while players are connected is not a supported
+  production workflow. Character lifecycle integrations in Inventory, Settings,
+  and other resources can also be interrupted.
+- Use a full coordinated server restart when updating Character or its required
+  Feather resources.
+- Back up the database before updating the resource.
+- Confirm creation, selection, logout, reconnect, Direct spawn, and every
+  enabled cinematic on a test server before deploying changes.
+
+Architecture plans and development documents are maintained separately in the
+[Feather Framework Docs repository](https://github.com/DavFount/feather-framework-docs/tree/main/feather-character).
+
+
+## Medical integration
+
+Medical settings live in feather-medical/config.lua. Character checks Medical's
+GetHealth export during activation. Missing Medical retains normal behavior;
+explicitly disabled Medical also retains normal behavior. Installed but stopped,
+unavailable or invalid Medical blocks activation rather than clearing death.
+Start Medical before Character. Persistent death defaults on. Hospital recovery
+is selected by Medical; temporary fallback uses Config.medical.temporarySpawnPoint.
+Update Character, Medical and Admin together; see Medical's owner README.
+
+## Creator hairstyle controls
+
+Hair style uses left/right arrows, including None. Hair and beard names and
+colors live in `translations/en_us.lua`, using Character-owned keys registered
+through Core's account-scoped locale. Missing locale entries fall back to
+English. Additional `translations/*.lua` files call `CharacterV2Locale.Register`
+with their locale name and translated keys. Labels are read when creator
+controls are built or refreshed; reopen the creator after changing language.
+
+Each name is separate from its stable game-data style number. For example:
+
+```lua
+['character.hair.male.004'] = 'Center Part',
+['character.hair.color.blonde'] = 'Blonde',
+['character.beard.male.001'] = 'Chevron Moustache',
+```
+
+The UI appends ` 04` to `Center Part`; do not include the number in the translated
+name. Keys use verified technical component IDs, not a translated name or array
+position. Numbers of 100 or higher retain their full number. Style numbers may
+have gaps where the underlying catalog does. There are 27 male hair, 29 female
+hair and 24 male beard name entries, with 17 shared hair/beard color entries.
+All 56 hairstyle and 24 facial-hair names are descriptive labels based on the
+supplied creator screenshots, not official Rockstar names. Names can be edited independently
+of catalog identifiers and automatically appended numbers.
+
+Color selections, appearance persistence and model filtering retain their
+existing hash-based behavior. Facial hair uses the same left/right arrows as hairstyles and retains
+male-only filtering. None clears the facial-hair components and disables its
+color selector; switching to the female model disables facial-hair selection. The verified technical component names remain in
+`shared/hair_catalog.lua` comments for catalog mapping and support.
+
+The translation-file addition changes the manifest: run `refresh` before the
+operator-coordinated Character restart. Do not restart during active character
+flows.
+
+
+## Fresh creator appearance
+
+Entering Character Create, including after logout and when changing creator
+model, rebuilds the player metaped even when the model matches the previous
+character. Before applying the neutral preset and canonical base outfit/hair,
+Character clears its old face texture, wetness, blood/damage decals, dirt and
+decorations. The creator receives the fresh default appearance rather than the
+logged-out character's facial details. A second visual clean runs after default
+application and before reveal.
+
+Empty overlay lists actively replace the face texture with a clean base; they
+also clear the last overlay when its creator control is set to None. Saved
+characters still receive their own persisted overlays in selection/world entry.
+This visual reset does not change saved appearance, health or world weather.
+
+
+## Admin profile search provider
+
+The server-only `character-profile` provider (contract 1) exposes
+`SearchProfiles(query, page, limit)` with `profileSearch = 1`. The actual invoking
+resource must be `feather-admin`; other/missing callers receive `forbidden`.
+There is no client search RPC. Admin remains responsible for `staff.search`
+permission, inbound rate limits, account hierarchy and role filtering.
+
+`query` is a string of at most 96 bytes, without control characters; surrounding
+whitespace is trimmed. Empty query lists active profiles. Search supports literal
+first/last/full-name substrings and exact character/account UUIDs. SQL wildcard
+characters are escaped. Matching case/accents follow the database collation.
+`page` is an integer 1-1000; `limit` is an integer 1-100. Invalid inputs return
+`invalid_input`. Database failure returns `database_unavailable` without SQL text.
+
+Success is `{ok=true,value={profiles={...},page=page,limit=limit,hasNext=boolean}}`.
+Rows contain `characterId`, `accountId`, `firstName`, `lastName` and `status`.
+Only active profiles are returned, ordered by last name, first name and UUID.
+Deleted profiles, DOB, descriptions and appearance data are excluded.
+Pagination fetches one lookahead row; it is bounded offset pagination rather
+than a snapshot. Admin filters staff hierarchy/role after paging, so a page may
+be shorter than the limit while more raw results exist.
+
+This additive provider method uses Admin's existing staff-search screen. No
+Admin restart, schema migration or manifest refresh is required by this change;
+coordinate Character activation/restart outside active character flows.

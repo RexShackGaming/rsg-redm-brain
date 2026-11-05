@@ -1,0 +1,118 @@
+:root {
+    font-family: Georgia, 'Times New Roman', serif;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: transparent !important;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.progress {
+    --color: #7c2d2d;
+    --duration: 1000ms;
+    --width: 20vw;
+    position: fixed;
+    left: 50%;
+    bottom: 18vh;
+    width: var(--width);
+    transform: translateX(-50%);
+    color: #f7f1e7;
+    text-align: center;
+    text-shadow: 0 1px 2px #000;
+}
+
+.progress-track {
+    position: relative;
+    height: 2rem;
+    overflow: hidden;
+    border: 1px solid rgba(240, 220, 180, 0.35);
+    border-radius: 0.25rem;
+    background: rgba(18, 14, 12, 0.82);
+}
+
+.progress-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0;
+    background: var(--color);
+    animation: toolkit-progress-fill var(--duration) linear forwards;
+}
+
+.progress-label {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0 0.75rem;
+    font-size: 0.95rem;
+}
+
+.progress-ring {
+    display: none;
+    width: 4.5rem;
+    height: 4.5rem;
+    margin: 0 auto 0.5rem;
+    place-items: center;
+    border: 0.5rem solid rgba(18, 14, 12, 0.82);
+    border-top-color: var(--color);
+    border-radius: 50%;
+    animation: toolkit-progress-spin 1s linear infinite;
+}
+
+.theme-circle .progress-track, .theme-innercircle .progress-track {
+    height: auto;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+}
+
+.theme-circle .progress-fill, .theme-innercircle .progress-fill {
+    display: none;
+}
+
+.theme-circle .progress-ring, .theme-innercircle .progress-ring {
+    display: grid;
+}
+
+.theme-circle .progress-seconds {
+    visibility: hidden;
+}
+
+.theme-circle .progress-label, .theme-innercircle .progress-label {
+    height: auto;
+}
+
+.progress-seconds {
+    animation: toolkit-progress-counter-spin 1s linear infinite reverse;
+}
+
+@keyframes toolkit-progress-fill {
+    from {
+        width: 0;
+    }
+
+    to {
+        width: 100%;
+    }
+}
+
+@keyframes toolkit-progress-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes toolkit-progress-counter-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

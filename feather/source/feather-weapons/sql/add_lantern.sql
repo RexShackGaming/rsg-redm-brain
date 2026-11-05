@@ -1,0 +1,3 @@
+-- Retired failed candidate. This historical migration no longer creates or enables items.
+-- Existing carrier rows and quantities are deliberately preserved.
+-- For the supported Lantern, use add_davy_lantern.sql.

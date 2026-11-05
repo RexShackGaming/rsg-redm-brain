@@ -1,0 +1,45 @@
+local M = dofile('server/lifecycle.lua')
+local count = 0
+local function check(label, condition)
+    assert(condition, label)
+    count = count + 1
+    print('PASS ' .. label)
+end
+local config = {lethalMode = 'incapacitated', bleedOutSeconds = 60, doctorDelaySeconds = 120}
+local alive = M.New('character-one', 1000)
+local down = assert(M.ObserveLethal(alive, config, 1001, 'episode-one'))
+check('configurable incapacitation', down.lifeState == 'incapacitated')
+check('input remains unchanged', alive.lifeState == 'alive' and alive.revision == 0)
+check('server deadlines captured once', down.bleedOutAt == 1061 and down.doctorAvailableAt == 1121)
+local duplicate = M.ObserveLethal(down, config, 1050, 'replacement-episode')
+check('duplicate observation cannot reset episode or timers', duplicate.episodeId == 'episode-one' and duplicate.bleedOutAt == 1061 and duplicate.revision == 1)
+check('before bleedout remains incapacitated', M.Advance(down, 1060).lifeState == 'incapacitated')
+local dead = M.Advance(down, 2000)
+check('elapsed offline deadline becomes dead', dead.lifeState == 'dead' and dead.revision == 2)
+check('bleedout preserves doctor deadline and episode', dead.doctorAvailableAt == 1121 and dead.episodeId == 'episode-one')
+check('doctor unavailable before deadline', not M.CanRequestDoctor(down, 1120))
+check('doctor unlock does not automatically recover', M.CanRequestDoctor(dead, 2000) and M.Advance(dead, 3000).lifeState == 'dead')
+check('stale recovery cannot clear new episode', M.CompleteRecovery(dead, 'old-episode', 2001) == nil)
+local recovered = M.CompleteRecovery(dead, 'episode-one', 2001)
+check('recovery clears episode and timers', recovered.lifeState == 'alive' and recovered.episodeId == nil and recovered.bleedOutAt == nil and recovered.doctorAvailableAt == nil and recovered.revision == 3)
+check('duplicate recovery rejected', M.CompleteRecovery(recovered, 'episode-one', 2002) == nil)
+config.lethalMode = 'dead'
+local immediate = M.ObserveLethal(alive, config, 1001, 'episode-two')
+check('immediate death configuration', immediate.lifeState == 'dead' and immediate.bleedOutAt == nil)
+check('alive cannot request doctor', not M.CanRequestDoctor(alive, 9999))
+config.doctorDelaySeconds = -1
+check('invalid configuration rejected', M.ObserveLethal(alive, config, 1001, 'episode-three') == nil)
+config.doctorDelaySeconds = 0 / 0
+check('NaN deadline rejected', not M.ValidateConfig(config))
+print(('PASS %d checks'):format(count))
+dofile('tests/storage_spec.lua')
+dofile('tests/worker_spec.lua')
+dofile('tests/recovery_spec.lua')
+dofile('tests/gameplay_spec.lua')
+dofile('tests/client_input_spec.lua')
+dofile('tests/client_lifecycle_spec.lua')
+dofile('tests/hospitals_spec.lua')
+dofile('tests/outbox_spec.lua')
+dofile('tests/core_restart_spec.lua')
+
+dofile('tests/integration_policy_spec.lua')

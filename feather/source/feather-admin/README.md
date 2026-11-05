@@ -1,0 +1,443 @@
+# Feather Admin
+
+Current version: **0.15.8** authorizes Stables horse ownership transfers through the Assets broker, with direct and forged broker requests refused.
+
+0.15.7 adds scoped service policy for the isolated Doors Property-binding fixture.
+
+0.15.6 adds audited cash/gold additions and removals, scoped service grants and catalog diagnostics.
+
+0.15.5 adds gated Weather and seasons management, a compact forecast table and reusable monochrome weather symbols.
+
+0.15.4 added audited Economy wallet funding and scoped Stables asset-management permissions.
+
+Feather Admin adds an in-game admin menu to RedM servers that use the Feather Framework. Staff access uses character-scoped Feather Authority roles and explicit capability grants.
+
+## Optional Weather and seasons controls
+
+Server operations → Weather and seasons reads shared conditions and the global forecast from `feather-weather`. Moderators receive `weather.view`; administrators and owners additionally receive `weather.clock`, `weather.weather`, `weather.wind`, `weather.seasons` and `weather.reset`. These exact role grants were approved by the user. Provisioning upgrades the reviewed catalog to 96 capabilities / 203 cumulative grants while preserving role identities; repeated starts reuse existing grants.
+
+Controls cover simulated/UTC clock and freeze/rate/offset, weather/transition/freeze/forced coverage, manual wind, automatic wind/freeze, calendar season/day/enabled/frozen and a confirmed reset. Each shared mutation has a confirmation page. Requests are checked on the server, limited to three per two seconds with a 1024-byte payload bound, and successful changes are audited. Client menu visibility is not authorization. Conditions shown are snapshots; refresh after timeout/restart or to inspect current progression.
+
+Weather is optional and must explicitly trust `feather-admin` for mutations (its current default). Missing/stopped/denying Weather produces an unavailable/denied response without blocking unrelated Admin tools. The server bridge invokes only fixed Weather exports, never a client-supplied method or resource name. Feather Menu renders the UI; no new NUI bundle/build is required. New pages and role upgrades need `refresh`, then a coordinated Admin restart. Weather remains an independent resource.
+
+Weather presentation uses seven original monochrome SVG symbols in `web/weather/`, covering clear, cloudy, rain, storm, snow, fog and sandstorm. The compact current shared-weather card uses a four-rem icon; the next three forecast entries are shown as paired Weather / Expected in columns. View full forecast opens the complete snapshot, while paused forecasts show Paused instead of a misleading countdown. These are global conditions, not the observer's regional projection. The symbols are standalone transparent vectors, suitable for reuse in other Feather interfaces; no remote images or generated landscape assets are required. Their asset glob is included in the manifest, so run `refresh` before restarting Admin after this update.
+
+## 0.15.2 Inventory Access policy update
+
+Adds exact `access.grant.manage` and `access.grant.read` service permissions for
+`feather-inventory` through the `feather-access` broker. Access caller trust and
+Inventory target authority remain required. No wildcard or staff-role changes.
+
+### 0.15.1 native domain policy update
+
+Adds exact native Jobs service-policy grants and scoped employment/Access fixture
+actions. Native employer checks passed 7/7 for active/inactive/missing cases;
+Access employment lifecycle passed 28/28 and restart/cleanup 10/10. Domain DevMode
+stays true for early alpha at owner direction. No new player-role grants, schema
+changes or UI changes in this patch. Earlier UI acceptance limits remain below.
+
+## 0.15.0 UI and evidence update
+
+Uses the current `feather-menu-v2` layout contract (reviewed against
+`2.0.0-alpha.8`): native accordions, responsive rows and page arrows, with the
+shared redemption theme and no Admin menu CSS overrides. Noclip keeps its own HUD
+styling. Player tools are directly accessible from grouped player sections;
+online players, inspected items and grant catalogs support search/pagination.
+Item details are structured with a separate read-only raw metadata view.
+
+Native firearm evidence controls are restricted to the actor's own current,
+unequipped item and the existing default-off Weapons opt-in. They require the
+matching Weapons evidence exports and Inventory revision projection. They do
+not implement cross-character custody or destruction.
+
+See [release preparation and deployment](docs/PR_PREPARATION_0.15.0.md) for the
+verified scope, dependencies and remaining live UI gate. No new role assignments
+or automatic feature activation are part of this update.
+
+With `feather-audit` started, Staff Oversight → Framework Audit provides bounded
+event searches, detail reads, and related-event navigation. It requires
+`audit.search` (Administrator by default); `audit.sensitive.view` (Owner by default)
+controls restricted events and approved restricted detail fields. Feather Audit
+is Admin's central audit store. Audit availability does not block Admin startup.
+
+> [!WARNING]
+> Online identity, Inventory grants, moderation, reports, Staff Cases, and
+> action auditing use Core account sessions and UUID Character profiles.
+> Staff authorization and role changes use character-scoped Feather Authority assignments.
+> Target hierarchy uses the highest staff assignment held by any active character on the target account.
+> Economy screens remain hidden until their dedicated provider is available.
+
+The moderation database foundation now records canonical Core account UUIDs
+for targets, acting staff, and ban revocations. Moderation search, warnings,
+kicks, bans, history, active-ban review, reports, Staff Cases, and revocation
+now use that contract.
+
+## Features
+
+For alpha-only death/UI lifecycle testing, see the disabled-by-default
+[self-kill helper](docs/dev-selfkill.md). It retains existing server permissions
+and auditing and is planned for removal during production release cleanup.
+
+- Browse connected players and search online or offline characters through one Players directory
+- Review player capacity, uptime, OneSync mode, and configured Feather resource health
+- Send confirmed server-wide announcements with configurable limits and cooldowns
+- View character details, account staff role, and identifiers
+- Teleport to a player, bring them to you, or send them back
+- Spectate another player, including players outside normal streaming range
+- Kick an online player from the Moderation page with a required reason
+- Issue persistent warnings and review moderation history
+- Apply permanent or temporary account bans
+- Issue, inspect, and revoke scoped account-level Feather Chat mutes
+- Browse, search, inspect, and revoke currently active bans
+- Convert serious player reports into durable staff cases with priorities, ownership, linked records, and resolutions
+- Add account-scoped internal player notes with immutable edit history and Staff Case linking
+- Accept persistent player reports that staff can claim, release, investigate, and close
+- See online or offline status directly on player search results
+- Revoke active bans from the in-game menu
+- Block banned accounts before they enter the server
+- Give configured inventory items to online players with quantity and capacity checks
+- Inspect online or offline Character inventories, review instance metadata, and remove items through guarded confirmation
+- Issue unique weapons and grant mapped ammunition to online or offline characters through Feather Weapons and Feather Inventory
+- Restore a player's saved character model, clothing, and appearance
+- Use clearly grouped Teleportation, Character Management, Player Tools, and Special Effects pages
+- Toggle god mode, invisibility, infinite stamina, and noclip
+- Heal or kill a player
+- Teleport to a map waypoint
+- Automatically teleport when a new waypoint is placed
+- Change a player into a configured human or animal model
+- Inspect entities and display player bones for development work
+- Freeze, cage, handcuff, or remove a player from a vehicle
+- Apply several optional player effects
+- Open the menu with a key or chat command
+- Queue admin actions durably and review them through Feather Audit's paginated viewer
+- Filter admin logs by administrator, player, action, or date
+- Record admin actions in the server console and optionally Discord
+
+## Dependencies
+
+- `feather-mysql`
+- `feather-core`
+- `feather-organizations`
+- `feather-authority`
+- `feather-toolkit`
+- `feather-character`
+- `feather-menu-v2`
+- `feather-inventory`
+- `feather-chat`
+- `feather-weapons`
+
+These resources must already be installed. They also need to start before Feather Admin.
+
+Feather Admin and Feather Authority create their tables automatically.
+Feather Admin waits for `feather-mysql` before creating its tables and running database-ready callbacks.
+Server code imports `@feather-mysql/lib/DB.lua` and uses plain `DB.*` calls with positional arguments; transactions use `tx.*`.
+
+## Installation
+
+1. Download Feather Admin.
+2. Place its folder inside your server's `resources` folder.
+3. Make sure the folder is named `feather-admin`.
+4. Make sure all dependencies listed above are installed.
+5. Open your `server.cfg` file with a text editor.
+6. Add these lines in this order:
+
+   ```cfg
+   ensure feather-mysql
+   ensure feather-core
+   ensure feather-organizations
+   ensure feather-authority
+   ensure feather-toolkit
+   ensure feather-menu-v2
+   ensure feather-character
+   ensure feather-inventory
+   ensure feather-chat
+   ensure feather-weapons
+   ensure feather-admin
+   ```
+
+7. Save `server.cfg` and restart your server.
+
+## First role assignment
+
+After the catalog provisions on a clean database, connect the initial owner and
+run this once from the server console with a unique, stable request ID:
+
+```text
+AdminBootstrapOwner <serverId> <requestId>
+```
+
+Example:
+
+```text
+AdminBootstrapOwner 1 initial-owner-001
+```
+
+Then run:
+
+```text
+AdminIdentitySmokeTest <serverId>
+```
+
+All seven checks must pass before testing the menu.
+
+In the client F8 console, run `AdminToolkitContractSmokeTest`. All four checks
+must pass before testing key access, clipboard actions, developer overlays, or
+spawned Admin effects.
+
+## Permissions
+
+Every enabled menu action maps to the minimum named role whose Authority catalog receives that capability. The defaults are:
+
+- Moderator: player support, reports, staff cases, warnings, kicks, Chat mutes, spectating, travel, healing, and reviving
+- Administrator: report and case oversight, case closure, bans, unbans, identifier searches, item grants, admin-log review, character repair, advanced status tools, appearance tools, and reversible player effects
+- Owner: staff assignments, sensitive log details, and the most disruptive special effects
+
+Capabilities, rather than labels or precedence values, authorize actions. Adjust the named minimum role for individual actions in `configs/permissions.lua`; keep `menu.open` assigned to every role that should open the menu.
+
+Buttons a staff member cannot use are hidden. Self-target buttons also follow `configs/hierarchy.lua`. Every request is checked again by the server, so changing the local menu does not grant permission.
+
+If an administrator cannot open the menu, confirm that the currently selected
+active character has the expected assignment in Feather Authority.
+
+## Configuration
+
+Most server owners only need to edit `configs/config.lua`. Open it with a text editor to change the following settings:
+
+- `controls.enabled`: turn keyboard access on or off
+- `controls.openMenu`: choose the key used to open the menu; the default is `PGDN` (Page Down)
+- `commands.enabled`: turn chat-command access on or off
+- `commands.openMenu`: change the menu command; the default is `adminMenu`
+- `configs/permissions.lua`: choose the minimum named role for every admin action
+- `configs/hierarchy.lua`: control staff hierarchy, helpful exemptions, and allowed self-actions
+- Server-only `configs/audit.lua`: producer instance, batch size, and polling interval
+- `serverOverview.resources`: choose which resources appear on Server Overview
+- `announcements`: configure title/message limits, cooldown, and display duration
+- `economy.maxAmount`: client-side displayed amount limit; the server also applies `walletFunding.maxBaseUnits`
+- `walletFunding`: allowed currencies (dollars and gold by default) and integer base-unit limit for audited Economy wallet additions/removals
+- `inventory.maxGrantQuantity`: limit the quantity in one admin item grant
+- `weapons.maxAmmoGrantQuantity`: limit ammunition granted in one admin action
+- `weapons.issuedCondition`: set the starting condition of admin-issued weapons
+- `staff`: reserved limits for the future provider-backed staff directory
+- `moderation.searchLimit`: limit offline search results
+- `moderation.activeBanLimit`: set the number of active bans shown per page
+- `reports`: configure the report command, categories, cooldown, limits, and page size
+- `cases`: configure case priorities, page size, and text limits
+- `moderation.minSearchLength`: require a minimum offline-search length
+- `moderation.historyLimit`: limit the history records shown
+- `moderation.maxReasonLength`: set the maximum warning or ban reason length
+- `moderation.maxBanMinutes`: set the longest allowed temporary ban
+- `moderation.chatMuteDurations`: choose the bounded Chat mute durations offered to staff
+- `moderation.chatMuteScopes`: choose the Chat mute scopes offered to staff
+
+Chat-related labels, conversation statuses and notifications use the standard
+Feather locale system and the player's saved language. English, Romanian and
+Spanish cover the Chat-specific keys. Other incomplete languages fall back to
+English for these Admin screens. Names, message bodies, mute reasons and stable
+API error codes are not translated. No development/alpha notice is displayed;
+the conversation helper text explains normal player-facing usage.
+
+Mute scope/duration options accept an optional `translationKey` from
+`translations/*.lua`. Defaults supply keys; owner-defined options without keys
+retain their configured `label`. Successful mutes send only scope/duration data
+to the target, who resolves the notice in their own language. No notice is sent
+for a failed mute. Command suggestions carry a locale key for Chat to resolve
+in each player's language.
+
+Translation acceptance checks:
+
+- **Server console:** `AdminChatTranslationContractSmokeTest` (expect 6/6;
+  static catalog/wiring checks, no connected players or database writes).
+- **Player F8 console:** `AdminChatTranslationSmokeTest` (expect 6/6; connected
+  client required, no active character/admin privilege or database writes needed).
+- **Live UI:** active admin character required. Choose Romanian or Spanish in
+  Settings and reopen Admin. Check conversation create/list/history, reply,
+  close/archive status, mute scope/duration selection and confirmation. Names,
+  messages and reasons should remain unchanged. Test a denied mute/action too;
+  the failure label should translate while its stable error code remains readable.
+- **Two-player notification:** one authorized admin and a lower-ranked target
+  on active characters. Choose different account languages, issue a one-minute
+  Say mute, and verify the target's brief notice uses the **target's** language.
+  Confirm the mute expires or revoke it afterward. Test conversation create/reply/
+  close notifications in each participant's language. These actions persist real
+  conversations/moderation records, so use disposable test conversations.
+
+Local contract tests: `node --test tests/chat_translations.test.mjs` from this
+resource's source directory. Reload updated Admin and Chat code before live
+acceptance; do not restart Character or Core as part of these tests.
+Admin's translation catalogs also load server-side for Chat operator diagnostics.
+After this manifest update, run `refresh` before restarting Admin. This does not
+require restarting Core or Character.
+- `moderation.banMessage`: change the message shown to banned players
+- `pedChanger.modelLoadTimeout`: set how long the game waits for a player model to load
+- `pedChanger.categories`: choose which human and animal models appear in the menu
+
+Only ped models listed in `configs/config.lua` can be used. This prevents players from requesting unapproved models.
+
+Admin owns a durable audit outbox. Events are delivered to Feather Audit with
+stable IDs and retried during Audit downtime. Admin webhook delivery is retired;
+Feather Audit's future notification service owns that responsibility.
+
+## Usage
+
+With the default settings, an account assigned Moderator, Administrator, or Owner can open the menu by pressing **Page Down** or entering this command in chat:
+
+```text
+/adminMenu
+```
+
+Choose **Players** to browse connected players or search all characters by character ID, account name, character name, or complete license identifier. Results show whether each character is online or offline. Online characters expose live actions; offline characters expose database-safe moderation and staff-role tools. Selected-player actions are grouped under Player Information, Moderation, Teleportation, Character Management, Player Tools, and Special Effects.
+
+Open **Character Management**, then **Inventory**, to browse configured item categories, choose an item and quantity, and confirm the grant. Item limits, available slots, and weight are validated by Feather Inventory before anything is added.
+
+Open **Character Management**, then **Weapons and Ammunition**, to issue a new
+unique weapon or grant ammunition to the selected online or offline character.
+Weapon definitions and ammunition mappings come directly from Feather Weapons;
+Inventory applies its normal capacity rules. Each weapon issuance creates a new
+serial-numbered instance and every action is audited.
+
+Server owners can inspect or recover both equipped weapon slots for an online
+character from the server console:
+
+```text
+AdminWeaponInspect <serverId>
+AdminWeaponReconcile <serverId>
+```
+
+Inspection is read-only. Reconciliation clears unaccepted native weapon state
+and restores the authoritative primary/offhand assignments and metadata.
+
+Owners can select an online or offline character through **Players**, open **Staff Role**, choose a configured role, enter a required reason, and confirm the change. The assignment applies only to that character, allowing another character on the same account to remain a normal player. The Players search includes a role filter, and assignment history is paginated. An assignment can never exceed the acting character's precedence. When targeting another account, hierarchy compares the acting character with the highest staff assignment held by any active character on the target account. Self-edits and changes to equal- or higher-ranked accounts are blocked; use the console-only bootstrap command for initial installation or emergency recovery.
+
+Player searches use prefix matching for names. License searches require the complete `license:` identifier and the `moderation.search_identifiers` permission. Use **Self Tools** for travel, status, and appearance actions that apply to your own character.
+
+Administrators can open **Staff & Oversight → Framework Audit** and filter source
+`feather-admin`, event type `admin.action.recorded`, exact Admin action, and target
+account/character IDs. Approved actor/target names and character IDs appear in
+detail; free-form details require Owner's sensitive permission. Raw licenses are
+not submitted. Case activity uses visible Audit events from the last seven days;
+role history opens a seven-day character/action query in the same viewer.
+
+Staff with `server.announce` permission can open **Server Operations**, then **Announcements**, enter an optional title and required message, review the confirmation page, and send it to every connected player.
+
+Senior staff can open **Moderation Center**, then **Active Bans**, to browse current bans, search by name, inspect details, and confirm a revocation. Exact-license searches require `moderation.search_identifiers` permission.
+
+Authorized operators can run `AdminChatDiagnostics <staffServerId>` from the
+server console to inspect aggregate active-mute, ignore, audit, and provider
+health without exposing message bodies.
+
+Players can submit a report with `/report <category> <message>`. Staff can open **Moderation Center**, then **Player Reports**, to claim reports, go to an online reporter, release claimed work, and close a report with a required resolution.
+
+Staff can convert a player report into a case from its details page. Cases keep the subject, priority, assigned staff member, source report, linked warning/kick/ban/audit records, and final resolution together in one durable file.
+
+Every page has a **Back** button. Use **Close** on the main page or tap **ESC** to exit the menu.
+
+Use **Self Tools** for personal travel, status, and appearance actions. While noclip is active, use `W`/`S` to move forward or backward, `A`/`D` to strafe, `Space`/`Ctrl` to move vertically, `Shift` to change speed, and `Backspace` to exit. A small on-screen panel shows these controls and the current speed.
+
+The remaining feature roadmap and planned navigation layout are maintained in the
+[Feather Framework documentation repository](https://github.com/FeatherFramework/feather-framework-docs/blob/main/feather-admin/FEATHER_ADMIN_MASTER_PLAN.md).
+
+## Localization
+
+All English menu text is stored in `translations/en_us.lua`. Server owners who only want to change wording can edit the text on the right side of each entry.
+
+## Common Problems
+
+### The menu does not open
+
+- Confirm that `feather-core`, `feather-toolkit`, `feather-menu-v2`, and `feather-admin` are running.
+- Confirm that the administrator's active character has an Authority assignment whose role grants `staff.admin.menu.open`.
+- Check that keyboard or command access is enabled in `configs/config.lua`.
+
+### Feather Admin does not start
+
+- Confirm that the folder is named `feather-admin`.
+- Check that the three `ensure` lines are in the correct order in `server.cfg`.
+- Look in the server console for the first error shown during startup.
+
+### A ped model does not appear
+
+- Confirm that the model is listed under `pedChanger.categories` in `configs/config.lua`.
+- Check the model name for spelling mistakes.
+
+## Development
+
+### Staff conversation archiving
+
+`Config.chatConversations` controls manual archiving and optional automatic
+archiving of closed staff conversations. `autoArchiveClosedDays = 0` disables
+scheduled archiving (default). Set a whole number of days from 1 to 3650 to
+archive closed conversations after that age. Open conversations are never
+automatically archived. Sweeps are bounded to `archiveBatchLimit` (1–100) and
+run every `archiveSweepMinutes` (1–1440). Restart Admin after config changes.
+
+Archiving does not delete messages: history is retained indefinitely. There is
+no automatic purge. Staff may link a conversation to an internal case through
+Admin's Your Conversations page using its case ID; this requires `cases.link`, valid
+assignment/management permissions and matching target accounts. Internal case
+summaries, notes and links are never included in player conversation history.
+Closing/archiving a conversation does not close the linked internal case.
+
+This resource is under active development. Test new versions on a private or test server before using them on a live server.
+
+For Feather Framework documentation, visit [featherframework.net/api](https://featherframework.net/api).
+
+
+## Medical revive
+
+Admin checks Medical's GetHealth export. Enabled Medical receives authorized
+recovery requests with the existing staff permission and hierarchy checks.
+Installed but stopped or unhealthy Medical blocks revival instead of falling back
+to a direct revive. Absent or explicitly disabled Medical retains normal Admin
+behavior. Configure Medical in its config.lua; no Medical convars are required.
+## Feather Audit metadata permissions
+
+Admin now produces `admin.action.recorded` v1 through `feather_admin_audit_outbox`.
+Configure `configs/audit.lua` sourceInstance to match Audit's SourceInstance.
+`AdminAuditOutboxStatus` reports pending/leased/delivered/quarantined counts;
+`AdminAuditPublish` requests a publish pass. Quarantined rows require investigation,
+not automatic re-enqueue. Payload and producer ID persist unchanged across retries.
+The retired actions table is no longer created/read/written; existing test tables
+are left inert and history is not imported. Old audit permission keys are reserved
+catalog entries, not active read authorization.
+
+Audit outages do not block action execution. A completed outbox insert is durable;
+database failure during queueing reports AUDIT QUEUE FAILED. Remote actions and
+their subsequent audit insert are not atomic. Action records retain the existing
+logger's semantics; a recorded client request does not prove its in-game effect.
+
+Server-console operators can assign Administrator to a loaded character with
+`AdminBootstrapAdministrator <serverId> <stableRequestId>`. The command uses
+Authority's audited assignment path, refreshes access immediately, and rejects
+a target character already holding Owner authority. The assignment belongs to
+that character, not every character on its account. Reuse the same request ID
+only to retry the same operation; use a fresh ID for a new assignment intent.
+
+Admin provisions `staff.admin.audit.search` for Administrator and Owner, and
+`staff.admin.audit.sensitive.view` for Owner. These grants are separate from
+retired Admin audit-log permission keys. Audit enforces active read grants through Authority and
+Core's current character session; sealed events remain excluded.
+
+The Audit development API is `exports['feather-audit']:Search(request, actorSource)`
+from the Admin server adapter. Do not accept a player-supplied actorSource.
+See Audit's README for its bounded metadata request and result contract.
+# Audit test role recovery
+
+`AdminAuditDowngradeTestOwner <source> <unique runId>` temporarily replaces Owner
+with Administrator during an active Audit development read pause. It reports
+retained search and removed sensitive access. `AdminAuditRestoreTestRole <runId>`
+restores the saved original role, including Owner. After an Admin restart, restore
+the original Owner character with AdminBootstrapOwner and a fresh request ID.
+
+The server-console commands `AdminAuditRevokeTestRole <source> <unique runId>`
+and `AdminAuditRestoreTestRole <runId>` temporarily remove and restore the
+loaded Administrator character's Admin assignment through Authority. Revocation
+requires Audit development smoke commands and an active paused read on the same
+session. Owners are refused. Restore after the read completes; retry the same
+run ID if restoration fails. After an Admin restart, recovery requires loading
+the original character and using `AdminBootstrapAdministrator` with a fresh
+request ID. Full acceptance procedures live in feather-framework-docs.
+
+Cash and gold additions/removals are implemented in Balances and economy using
+Economy Issue/Destroy with exact staff permissions, removal confirmation and
+receipt-backed retries. Tokens/XP remain disabled. See [wallet adjustments](docs/WALLET_FUNDING.md)
+for configuration, exact deployment paths and the pending live test gate.

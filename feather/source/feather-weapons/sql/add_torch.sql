@@ -1,0 +1,2 @@
+-- Retired Torch candidate. Historical migration is now a no-op.
+-- Owned carriers are preserved; use retire_torch.sql to disable their usable definition.

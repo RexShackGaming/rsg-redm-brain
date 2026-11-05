@@ -14,6 +14,7 @@ Read this file first, then open only the files you need for the task.
 8. **Before calling any RSG resource's export, event or callback, check `framework/resources/<resource>.md`** for the exact name and parameters. If you need behaviour details, read that resource's code in `source/<resource>/`.
 9. **Placing props in the world always uses rsg-gizmo** (`patterns/prop-placement.md`). When building something similar to an existing RSG resource (shops, jobs, NUI menus, placeable props), study that resource in `source/` first and follow its patterns.
 10. When converting a VORP script, follow `vorp/README.md` (conversion map + porting checklist). Never use VORP APIs in RSG scripts unless asked.
+10b. When converting a **Feather Framework** script, follow `feather/README.md` (architecture, conversion map, porting checklist). Never use Feather APIs in RSG scripts unless asked.
 11. **Every session that creates or changes a resource must create or update its `README.md` and `DOCS.md`** to match the code (see `conventions/documentation.md`).
 
 ## Map
@@ -38,6 +39,7 @@ Read this file first, then open only the files you need for the task.
 | `ui/` | NUI design standard and drop-in theme CSS |
 | `audit/` | Checklist for auditing or converting existing scripts |
 | `vorp/` | **VORP Core reference only** (not installed): API guide + RSG ⇄ VORP conversion map (`vorp/README.md`), official docs, generated API per resource, code mirror. Use when porting VORP scripts or the user asks for VORP/bridge support |
+| `feather/` | **Feather Framework reference only** (not installed): contract-based framework guide + RSG ⇄ Feather conversion map (`feather/README.md`), official docs, generated API per resource, code mirror. Use when porting Feather scripts or the user asks for Feather/bridge support |
 
 ## Workflow for a new script
 1. Read `server/environment.md` and `conventions/coding-rules.md`.

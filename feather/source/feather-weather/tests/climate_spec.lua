@@ -1,0 +1,117 @@
+dofile('config.lua'); dofile('shared/contract.lua'); dofile('server/engine.lua')
+local W=Weather
+local count=0
+local function test(name,fn) fn(); count=count+1; print('PASS '..name) end
+local function eq(a,b) assert(a==b,('expected %s got %s'):format(tostring(b),tostring(a))) end
+local function near(a,b) assert(math.abs(a-b)<0.00001,('%s ~= %s'):format(a,b)) end
+local function engine(change)
+    local c=W.Copy(WeatherConfig); if change then change(c) end
+    local result=WeatherEngine.New(c,'climate',function() return 100 end)
+    assert(result.ok,result.message); return result.value
+end
+test('default climate validates and snapshot is detached',function()
+    local e=engine(); assert(W.Snapshot(e:Snapshot())); eq(e.season.name,'spring')
+    local s=e:Snapshot(); s.windMotion.target.speed=100; s.season.day=10
+    assert(W.Snapshot(e:Snapshot())); eq(e.season.day,1)
+end)
+test('old configurations without climate remain valid and manual',function()
+    local e=engine(function(c) c.windProgression=nil; c.seasons=nil end)
+    e:Advance(100,0); eq(e.wind.speed,0); eq(e.season.enabled,false)
+    assert(not e:Mutate('windControl',{automatic=true}).ok)
+    assert(not e:Mutate('season',{enabled=true}).ok)
+end)
+test('calendar follows rate independently of clock freeze',function()
+    local e=engine(function(c) c.clock.rate=120; c.clock.frozen=true end)
+    e:Advance(720,0); eq(e.season.day,2); eq(e.clock.seconds,21600)
+end)
+test('calendar pause is independent of weather and clock',function()
+    local e=engine(); e:Mutate('season',{frozen=true}); e:Advance(100,0)
+    eq(e.season.seconds,0); assert(e.clock.seconds>21600)
+end)
+test('zero simulation rate pauses calendar but not automatic wind',function()
+    local e=engine(function(c) c.clock.rate=0 end); e:Advance(10,0)
+    eq(e.season.seconds,0); assert(e.wind.speed>0)
+end)
+test('wall calendar uses elapsed real seconds, not discontinuous weekly anchor',function()
+    local e=engine(function(c) c.clock.mode='wall' end); e:Advance(5,1000); e:Advance(5,2000)
+    eq(e.season.seconds,10); eq(e.clock.seconds,2000)
+end)
+test('season rollover changes pattern and forecast generation',function()
+    local e=engine(function(c) c.seasons.day=7 end)
+    local generation=e.generation; e:Advance(86400/30,0)
+    eq(e.season.name,'summer'); eq(e.season.day,1); eq(e.season.seconds,0)
+    assert(e.generation>generation); assert(e.pattern.overcast==nil)
+end)
+test('winter wraps into spring and increments cycle',function()
+    local e=engine(function(c) c.seasons.start='winter'; c.seasons.day=7 end)
+    e:Advance(86400/30,0); eq(e.season.name,'spring'); eq(e.season.cycle,1)
+end)
+test('large calendar catch-up is bounded and produces a valid snapshot',function()
+    local e=engine(); e:Advance(86400*28*100/30,0)
+    eq(e.season.name,'spring'); eq(e.season.cycle,100); assert(W.Snapshot(e:Snapshot()))
+end)
+test('forecast omits entries across the next season change',function()
+    local e=engine(function(c) c.seasons.day=7 end)
+    e.season.seconds=86390
+    eq(#e:Forecast().value.entries,0)
+end)
+test('season selection rebuilds future while preserving frozen current weather',function()
+    local e=engine(); e:Mutate('weather',{name='rain',frozen=true})
+    assert(e:Mutate('season',{name='winter',day=2}).ok)
+    eq(e.weather.name,'rain'); eq(e.season.day,2); assert(e.pattern.snow)
+    e:Advance(200,0); eq(e.weather.name,'rain')
+end)
+test('disable seasons restores configured base graph',function()
+    local e=engine(); e:Mutate('season',{enabled=false}); assert(e.pattern.overcast)
+    e:Advance(100,0); eq(e.season.seconds,0)
+end)
+test('invalid mutations are atomic',function()
+    local e=engine(); local revision=e.revision
+    for _,spec in ipairs({{name='monsoon'},{day=8},{frozen='yes'},{cycle=5},{name={}}}) do
+        assert(not e:Mutate('season',spec).ok); eq(e.revision,revision)
+    end
+    assert(not e:Mutate('windControl',{automatic=1}).ok); eq(e.revision,revision)
+end)
+test('wind advances gradually within configured rates',function()
+    local e=engine(); local target=e.windTarget.speed
+    e:Advance(1,0); near(e.wind.speed,0.15); assert(e.wind.speed<target)
+    near(e.wind.direction,1.5)
+end)
+test('wind freeze holds wind while calendar advances',function()
+    local e=engine(); e:Mutate('windControl',{frozen=true}); e:Advance(100,0)
+    eq(e.wind.speed,0); eq(e:Snapshot().windMotion.speedPerSecond,0); assert(e.season.seconds>0)
+end)
+test('manual wind takes precedence until automatic explicitly resumes',function()
+    local e=engine(); assert(e:Mutate('wind',{direction=90,speed=10}).ok)
+    e:Advance(500,0); eq(e.wind.speed,10); eq(e.wind.direction,90); eq(e.windControl.automatic,false)
+    e:Mutate('windControl',{automatic=true}); e:Advance(1,0); assert(e.wind.speed<10)
+end)
+test('storm targets are bounded by weather profile',function()
+    local e=engine(); e:Mutate('weather',{name='hurricane',frozen=true})
+    eq(e.windTarget.speed,25); e:Advance(10,0); assert(e.wind.speed<=1.5)
+end)
+test('wind uses shortest direction path and never overshoots',function()
+    local s=W.ProjectWind({direction=359,speed=1},{direction=1,speed=2},1,1,0.5)
+    near(s.direction,0); near(s.speed,1.5)
+    s=W.ProjectWind(s,{direction=1,speed=2},100,1,0.5); eq(s.direction,1); eq(s.speed,2)
+end)
+test('client elapsed wind projection agrees with authority between retargets',function()
+    local e=engine(); local s=e:Snapshot(); e:Advance(3,0)
+    local w=W.ProjectWind(s.wind,s.windMotion.target,3,s.windMotion.degreesPerSecond,s.windMotion.speedPerSecond)
+    near(w.speed,e.wind.speed); near(w.direction,e.wind.direction)
+end)
+test('reset restores calendar and automatic wind defaults',function()
+    local e=engine(); e:Mutate('season',{name='winter',day=3}); e:Mutate('wind',{speed=10})
+    e:Mutate('reset'); eq(e.season.name,'spring'); eq(e.season.day,1); eq(e.windControl.automatic,true); eq(e.wind.speed,0)
+end)
+test('malformed climate configurations are rejected',function()
+    for _,change in ipairs({
+        function(c) c.windProgression.speedPerSecond=0 end,
+        function(c) c.windProgression.default.max=31 end,
+        function(c) c.windProgression.profiles.sunny.min=10 end,
+        function(c) c.seasons.day=0 end,
+        function(c) c.seasons.daysPerSeason=366 end,
+        function(c) c.seasons.patterns.winter.snow[1].weight=0 end
+    }) do local c=W.Copy(WeatherConfig); change(c); assert(not W.Config(c)) end
+end)
+print(('Climate checks: %d passed'):format(count))

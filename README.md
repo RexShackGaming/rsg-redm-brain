@@ -53,6 +53,7 @@ The result: scripts that use the right item names, call real exports, keep money
 | `audit/` | Audit checklist and report procedure | Reviewing or converting scripts |
 | `tools/` | Refresh scripts and generators | Updating the brain |
 | `vorp/` | VORP Core reference (not installed): API guide, RSG ⇄ VORP conversion map, official docs, generated API for ~40 VORPCORE resources, code mirror | Porting VORP scripts to RSG, or framework-bridge scripts |
+| `feather/` | Feather Framework reference (not installed): contract/service-based framework guide, RSG ⇄ Feather conversion map, official docs, generated API for ~33 FeatherFramework resources, code mirror | Porting Feather scripts to RSG, or framework-bridge scripts |
 
 **Precedence when sources disagree:** `server/environment.md` > `source/` (real code) > `framework/` > everything else.
 
@@ -327,7 +328,7 @@ Remove the `html/` folder and `ui_page`/`files` entries if the script has no NUI
 
 ## Auditing and converting existing scripts
 
-To review a script, or port one from VORP / RedEM / an older RSG version:
+To review a script, or port one from VORP / Feather / RedEM / an older RSG version:
 
 > Audit `rsg-mything` using `audit/ai-procedure.md` and `audit/audit-checklist.md`. Report each failure with file and line, then give fixed files.
 
@@ -337,7 +338,7 @@ The checklist covers security, notifications, locales, environment (removed reso
 
 ## Keeping the brain up to date
 
-- **RSG updates:** run `tools/refresh.sh` (or `refresh.ps1`). It re-pulls the Rexshack-RedM repos into `source/` (code only) and regenerates `framework/resources/` via `tools/extract.py`. It also rebuilds `natives/db/` and `data/rdr3-native-enums/`, and the VORP reference in `vorp/`. `source/LAST_REFRESH.txt` shows when it last ran. Add repos missing from the txAdmin recipe to `tools/extra-repos.txt`.
+- **RSG updates:** run `tools/refresh.sh` (or `refresh.ps1`). It re-pulls the Rexshack-RedM repos into `source/` (code only) and regenerates `framework/resources/` via `tools/extract.py`. It also rebuilds `natives/db/` and `data/rdr3-native-enums/`, the VORP reference in `vorp/` and the Feather reference in `feather/`. `source/LAST_REFRESH.txt` shows when it last ran. Add repos missing from the txAdmin recipe to `tools/extra-repos.txt`.
 - **Server changes:** update `server/environment.md` whenever you add/remove a resource or rename an item.
 - **Lessons learned:** when a native needs a specific call order or a value turns out wrong, add it to the relevant `natives/` or `conventions/` file.
 - **Reusable code:** drop working snippets from finished scripts into `patterns/` and list them in `patterns/README.md`.

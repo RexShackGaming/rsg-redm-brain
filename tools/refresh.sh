@@ -34,6 +34,19 @@ git clone --depth 1 -q https://github.com/VORPCORE/VORP_txAdmin.git "$TMP/vrecip
   BRAIN_ORG=VORPCORE BRAIN_TITLE="VORP resources" python3 "$BRAIN/tools/extract.py" "$TMP/vrepos" "$BRAIN/vorp/resources"
   date -u +"%Y-%m-%d %H:%M UTC" > "$BRAIN/vorp/source/LAST_REFRESH.txt"
 } || echo "skip vorp"
+
+# Feather Framework reference (feather/): all non-archived FeatherFramework repos
+git clone --depth 1 -q https://github.com/FeatherFramework/feather-website.git "$TMP/fweb" && { mkdir -p "$BRAIN/feather/docs"; cp -r "$TMP/fweb/docs/"* "$BRAIN/feather/docs/"; } || echo "skip feather docs"
+curl -s "https://api.github.com/orgs/FeatherFramework/repos?per_page=100" | python3 -c "import json,sys;[print(r['name']) for r in json.load(sys.stdin) if not r['archived'] and r['name'] not in ('.github','feather-website','feather-loadscreen')]" > "$TMP/flist.txt" && [ -s "$TMP/flist.txt" ] && {
+  mkdir -p "$TMP/frepos"
+  xargs -P 8 -I{} sh -c 'git clone --depth 1 -q https://github.com/FeatherFramework/{}.git "'"$TMP"'/frepos/{}" 2>/dev/null || echo "skip {}"' < "$TMP/flist.txt"
+  rm -rf "$BRAIN/feather/source"; mkdir -p "$BRAIN/feather/source"
+  ( cd "$TMP/frepos" && find . \( -name '*.lua' -o -name '*.sql' -o -name '*.md' -o -name '*.js' -o -name '*.html' -o -name '*.css' -o -name '*.json' \) \
+      -not -path '*/.git/*' -not -path '*/node_modules/*' -not -path '*/images/*' -not -path '*/img/*' -not -name '*.min.*' -size -400k -print0 \
+    | while IFS= read -r -d '' f; do mkdir -p "$BRAIN/feather/source/$(dirname "$f")"; cp "$f" "$BRAIN/feather/source/$f"; done )
+  BRAIN_ORG=FeatherFramework BRAIN_TITLE="Feather resources" python3 "$BRAIN/tools/extract.py" "$TMP/frepos" "$BRAIN/feather/resources"
+  date -u +"%Y-%m-%d %H:%M UTC" > "$BRAIN/feather/source/LAST_REFRESH.txt"
+} || echo "skip feather"
 date -u +"%Y-%m-%d %H:%M UTC" > "$BRAIN/source/LAST_REFRESH.txt"
 rm -rf "$TMP" 2>/dev/null || true
 echo "Done. $(ls "$BRAIN/source" | wc -l) resources in source/"

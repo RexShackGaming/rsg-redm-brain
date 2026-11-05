@@ -1,0 +1,194 @@
+Config = {
+
+    -- Admin permissions use the active Character's assignment from feather-authority.
+    identity = {
+        -- Cash/gold wallet adjustments are integrated; other legacy economy actions stay hidden.
+        disabledActionPrefixes = { 'economy.' },
+        enabledActions = {
+            ['economy.dollars.add'] = true,
+            ['economy.dollars.remove'] = true,
+            ['economy.gold.add'] = true,
+            ['economy.gold.remove'] = true,
+        },
+        disabledActions = { ['character.restore_model'] = true }
+    },
+
+    -- Keyboard shortcut used to open the admin menu.
+    controls = {
+        enabled = true,    -- Set to false to disable the shortcut.
+        openMenu = 'PGDN', -- Feather key name; PGDN is Page Down.
+    },
+    -----------------------------------------------------
+
+    -- Chat command used to open the admin menu.
+    commands = {
+        enabled = true,                      -- Set to false to disable the command.
+        openMenu = 'adminMenu',              -- Used in chat as /adminMenu.
+        suggestionKey = 'command_suggestion' -- Translation key for chat help text.
+    },
+    -----------------------------------------------------
+
+    -- Admin action logs are always written to the server console.
+    -----------------------------------------------------
+
+    -- Resources displayed on the read-only Server Overview page.
+    serverOverview = {
+        resources = {
+            'feather-core',
+            'feather-menu-v2',
+            'feather-inventory',
+            'feather-character',
+            'feather-admin'
+        }
+    },
+    -----------------------------------------------------
+
+    -- Limits and timing for server-wide staff announcements.
+    announcements = {
+        maxTitleLength = 60,    -- Maximum optional title length.
+        maxMessageLength = 300, -- Maximum required message length.
+        cooldownSeconds = 30,   -- Delay between announcements from one staff member.
+        duration = 8000         -- Time the announcement remains visible in milliseconds.
+    },
+    -----------------------------------------------------
+
+    -- Player report command, limits, and available categories.
+    reports = {
+        enabled = true,          -- Enables the player /report command.
+        command = 'report',      -- Used in chat as /report <category> <message>.
+        cooldownSeconds = 120,   -- Delay between reports from one player.
+        maxOpenPerPlayer = 3,    -- Maximum open or claimed reports per account.
+        maxMessageLength = 500,  -- Maximum player report length.
+        maxResolutionLength = 500, -- Maximum staff closing-resolution length.
+        pageLimit = 20,          -- Reports shown on each staff page.
+        categories = {
+            { value = 'player', labelKey = 'report_category_player' },
+            { value = 'bug', labelKey = 'report_category_bug' },
+            { value = 'question', labelKey = 'report_category_question' },
+            { value = 'other', labelKey = 'report_category_other' }
+        }
+    },
+    -----------------------------------------------------
+
+    -- Limits a single economy adjustment to a safe amount.
+    economy = {
+        maxAmount = 1000000
+    },
+    -- Audited wallet adjustments. Server limit is integer currency BASE UNITS.
+    walletFunding = { maxBaseUnits = 1000000, currencies = { dollars = true, gold = true } },
+    -----------------------------------------------------
+
+    -- Limits the quantity added by one admin item grant.
+    inventory = {
+        maxGrantQuantity = 100
+    },
+    -----------------------------------------------------
+
+    -- Limits Admin grants routed through Feather Weapons.
+    weapons = {
+        maxAmmoGrantQuantity = 500,
+        issuedCondition = 100
+    },
+    -----------------------------------------------------
+
+    -- Limits offline character searches in Staff Management.
+    staff = {
+        searchLimit = 20,       -- Characters shown on each search page.
+        historyLimit = 20,      -- Role changes shown on each history page.
+        minSearchLength = 2,    -- Minimum characters required for a search.
+        maxReasonLength = 200   -- Maximum required role-change reason length.
+    },
+    -----------------------------------------------------
+
+    -- Limits and messages used by persistent moderation tools.
+    moderation = {
+        searchLimit = 25,       -- Maximum offline results shown at once.
+        activeBanLimit = 20,    -- Active bans shown on each browser page.
+        minSearchLength = 2,    -- Minimum characters required for offline search.
+        historyLimit = 50,      -- Maximum history records returned at once.
+        maxReasonLength = 200,  -- Maximum ban or warning reason length.
+        maxBanMinutes = 525600, -- Longest temporary ban (one year); use 0 for permanent.
+        banDurations = {        -- Options shown in the ban duration dropdown.
+            { label = 'Permanent', minutes = 0 },
+            { label = '1 Hour', minutes = 60 },
+            { label = '6 Hours', minutes = 360 },
+            { label = '1 Day', minutes = 1440 },
+            { label = '3 Days', minutes = 4320 },
+            { label = '7 Days', minutes = 10080 },
+            { label = '30 Days', minutes = 43200 }
+        },
+        chatMuteDurations = {
+            { label = '1 Minute', minutes = 1, translationKey = 'chat_duration_1' },
+            { label = '15 Minutes', minutes = 15, translationKey = 'chat_duration_15' },
+            { label = '1 Hour', minutes = 60, translationKey = 'chat_duration_60' },
+            { label = '6 Hours', minutes = 360, translationKey = 'chat_duration_360' },
+            { label = '1 Day', minutes = 1440, translationKey = 'chat_duration_1440' },
+            { label = '3 Days', minutes = 4320, translationKey = 'chat_duration_4320' },
+            { label = '7 Days', minutes = 10080, translationKey = 'chat_duration_10080' }
+        },
+        chatMuteScopes = {
+            { label = 'All Player Chat', translationKey = 'chat_scope_all', scopeType = 'all' },
+            { label = 'Say', translationKey = 'chat_scope_say', scopeType = 'channel', scopeKey = 'local.say' },
+            { label = 'Whisper', translationKey = 'chat_scope_whisper', scopeType = 'channel', scopeKey = 'local.whisper' },
+            { label = 'Shout', translationKey = 'chat_scope_shout', scopeType = 'channel', scopeKey = 'local.shout' },
+            { label = '/me', translationKey = 'chat_scope_me', scopeType = 'channel', scopeKey = 'roleplay.me' },
+            { label = '/do', translationKey = 'chat_scope_do', scopeType = 'channel', scopeKey = 'roleplay.do' },
+            { label = 'OOC', translationKey = 'chat_scope_ooc', scopeType = 'ooc' }
+        },
+        banMessage = 'You are banned from this server.'
+    },
+    -----------------------------------------------------
+
+    -- Persistent staff cases created from serious player reports.
+    chatConversations = {
+        manualArchiveEnabled = true,
+        autoArchiveClosedDays = 0, -- 0 disables scheduled archiving; never archives open conversations.
+        archiveSweepMinutes = 60,
+        archiveBatchLimit = 100
+        -- History is retained indefinitely. No automatic message deletion.
+    },
+    cases = {
+        pageLimit = 20,          -- Cases shown on each queue page.
+        activityLimit = 20,      -- Recent records available for linking.
+        maxTitleLength = 100,    -- Maximum case title length.
+        maxSummaryLength = 500,  -- Maximum opening summary length.
+        maxResolutionLength = 500,
+        priorities = {
+            { value = 'normal', labelKey = 'case_priority_normal' },
+            { value = 'high', labelKey = 'case_priority_high' },
+            { value = 'critical', labelKey = 'case_priority_critical' },
+            { value = 'low', labelKey = 'case_priority_low' }
+        }
+    },
+    -----------------------------------------------------
+
+    -- Internal account-scoped staff notes with immutable edit history.
+    notes = {
+        pageLimit = 20,
+        historyLimit = 20,
+        maxBodyLength = 1000
+    },
+    -----------------------------------------------------
+
+    -- Ped models available through the Change Ped Model menu.
+    pedChanger = {
+        modelLoadTimeout = 10000, -- Maximum loading time in milliseconds.
+        categories = {
+            {
+                labelKey = 'human_peds', -- Category translation key.
+                models = {
+                    -- labelKey controls the menu text; model is the game model name.
+                    { labelKey = 'micah_bell',          model = 'cs_micahbell' },
+                    { labelKey = 'dutch_van_der_linde', model = 'cs_dutch' }
+                }
+            },
+            {
+                labelKey = 'animal_peds', -- Category translation key.
+                models = {
+                    { labelKey = 'alligator', model = 'a_c_alligator_02' },
+                    { labelKey = 'bear',      model = 'a_c_bear_01' }
+                }
+            }
+        }
+    }
+}

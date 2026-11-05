@@ -1,0 +1,82 @@
+# Feather Framework TX Recipe
+
+> This is the official recipe for the Feather Framework
+
+## Features
+
+- Contract-based Core account identity, sessions, RPC, events, providers, policies, and guards
+- UUID Character creation, selection, appearance, deletion, spawn, travel, logout, and doctor respawn
+- Transactional Inventory with metadata, revisions, equipment, access control, and UUID ownership
+- Medical death persistence, player-requested nearest-hospital respawn, and staff revival
+- Persistent Weapons equipment, ammunition, condition, repair, and attachments
+- Character-scoped roles with active-character authority and account-wide hierarchy protection
+- Durable account-scoped Authority capabilities, staff roles, assignments, hierarchy, and policy evaluation
+- Authority-backed Admin moderation, reports, cases, player notes, inventory inspection, and weapon grants
+- Authoritative routing buckets and restart-safe character selection isolation
+- Durable Access delegation with Inventory, Assets and Property providers
+- Feather Weather clock, regional weather, wind progression and simulation seasons
+- Standalone notification, world, PVP, settings, and reusable Toolkit services
+- Optional operator-owned GitHub release reporting through Feather Versioner
+- Feather Menu and HUD integration
+- Economy-owned UUID wallets, integer balances, balanced journal, and durable payment/refund receipts
+- Feather Shops catalog, quotes, purchases, compensation, and background reconciliation
+- Canonical Organizations business identities, lifecycle, interests, audit history, and events
+
+Core, Character, Medical, Admin, Economy, Organizations, Authority, Access, and Shops apply their own database migrations when
+the server starts. The recipe bootstraps only Inventory's base catalog tables
+and the supported starter items.
+
+The generated startup order loads MySQL before Core, Core/Audit before Access,
+and Access before its Inventory/Assets/Property providers. Weather starts before
+HUD, Character and Admin, so weather displays and scene/admin controls can connect.
+Economy starts before Character/HUD, Organizations before Authority, Authority before Admin,
+and Shops after Admin plus its Organizations/Inventory/Menu v2/Toolkit dependencies.
+Routing precedes Character, PVP precedes Settings, and Versioner starts last.
+
+Access and Weather download their FeatherFramework `main` branches. Access owns
+its migrations; no extra recipe SQL is imported. Weather is standalone and needs
+no database migration. It replaces weathersync: the recipe no longer downloads or
+starts that provider. Keep exactly one clock/weather provider enabled.
+
+Economy, Organizations, Authority, Admin, and Shops download their FeatherFramework main branches. Ensure the
+tested integrations are merged upstream before deploying the updated recipe;
+HUD and Inventory release downloads must also include the corresponding tested
+contracts. For public deployment disable development commands (Economy/Organizations/Shops
+DevMode and Shops shops_dev_tests metadata) and configure Economy supply policy
+authorization. Development test funding is not starter-money configuration.
+
+Keep Organizations and Authority authorization enabled and Admin's composite policy
+provider installed. Retain Admin's narrow Shops create/update grants. New Shops payments settle to organization
+treasuries; existing accepted destinations remain unchanged. The development-only
+`feather-organizations-tests` fixture is intentionally excluded. Clean deployment
+still requires the tested Admin, Authority, Economy, Organizations, and Shops changes to be
+available on the downloaded refs.
+
+The Feather-native bcc-stashes rewrite is not downloaded yet: its deployment
+repository must be identified first. Do not substitute the original VORP resource.
+
+## Setup Guide and Requirements
+
+[https://featherframework.net/guide](https://featherframework.net/guide)
+
+## API Documentation and Usage
+
+[https://featherframework.net/api](https://featherframework.net/api)
+
+## Troubleshooting
+
+If you encounter any issues or have questions, post in our [discord](https://discord.gg/zBCPbPJGZw).
+You may also open an issue in GitHub.
+
+## Medical setup
+
+The recipe installs feather-medical from the FeatherFramework main branch and
+starts it after MySQL/Core/Toolkit and before Character. Medical creates its own
+database tables. Its settings are in feather-medical/config.lua; no Medical
+convars or extra SQL imports are needed. Medical is enabled by default and saved
+death is on, preventing logout from reviving a dead character. Players press E
+after the default two-minute wait to respawn at the nearest enabled hospital.
+
+Medical, Character and Admin must include the matching tested integration before
+this recipe is deployed. Make those changes available on the downloaded main
+branches first. See Medical's README for changing settings and troubleshooting.

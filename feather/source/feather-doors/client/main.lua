@@ -1,0 +1,2 @@
+-- Reserved for door-native application, synchronization and basic interaction.
+-- The scaffold registers no events, prompts, threads or door-system natives.
