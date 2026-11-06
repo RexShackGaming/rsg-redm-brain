@@ -1,6 +1,7 @@
 # Tools
 
 - `refresh.sh` / `refresh.ps1`: pull the latest Rexshack-RedM resources into `source/` (code only, no images) and regenerate `framework/resources/`. Run it whenever RSG updates.
+- `build_support_docs.py`: refreshes the generated sections of the root `DOCS.md` support playbook (environment snapshot plus troubleshooting harvested from `source/*/DOCS.md` and `source/*/README.md`). `refresh.sh` runs it automatically.
 - `extract.py`: the generator. It reads the Lua, SQL and fxmanifest files and writes one API file per resource.
 - VORP: `refresh.sh` also mirrors the VORPCORE repos into `vorp/source/`, copies the official docs to `vorp/docs/` and generates `vorp/resources/` (`extract.py` with `BRAIN_ORG=VORPCORE`). 
 - Feather: `refresh.sh` also mirrors every non-archived FeatherFramework repo into `feather/source/`, copies the `feather-website` docs to `feather/docs/` and generates `feather/resources/` (`BRAIN_ORG=FeatherFramework`). `refresh.ps1` runs the same `refresh.sh` through Git Bash.

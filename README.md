@@ -5,6 +5,8 @@ A knowledge base that AI assistants (Claude, ChatGPT, Cursor, Copilot, etc.) loa
 The result: scripts that use the right item names, call real exports, keep money/items server-side, and look like the rest of your server.
 
 > **AI entry point:** [`CLAUDE.md`](CLAUDE.md). Claude Code reads it automatically when this folder is opened as a project. For any other tool, attach or paste it first.
+>
+> **Support tickets:** load [`DOCS.md`](DOCS.md) first. It is the framework-wide troubleshooting playbook for a support AI: triage questions, symptoms by area, error index, migration traps and per-resource troubleshooting harvested from the mirrored source.
 
 ---
 
@@ -31,6 +33,7 @@ The result: scripts that use the right item names, call real exports, keep money
 | Folder / file | What it holds | When to use it |
 |---|---|---|
 | `CLAUDE.md` | Golden rules, folder map and workflow for the AI | Always loaded first |
+| `DOCS.md` | **Support playbook**: triage, symptom tables, error index, migration traps and resource-specific troubleshooting. Generated sections refresh with `tools/refresh.sh` | Any support/troubleshooting ticket |
 | `server/environment.md` | **Source of truth**: installed resources, removed ones, server item names | Every script |
 | `conventions/coding-rules.md` | Lua style, structure, config/locale layout | Every script |
 | `conventions/security.md` | Server-authoritative rules: validation, distance, cooldowns, permissions | Anything touching money, items or jobs |
@@ -338,7 +341,7 @@ The checklist covers security, notifications, locales, environment (removed reso
 
 ## Keeping the brain up to date
 
-- **RSG updates:** run `tools/refresh.sh` (or `refresh.ps1`). It re-pulls the Rexshack-RedM repos into `source/` (code only) and regenerates `framework/resources/` via `tools/extract.py`. It also rebuilds `natives/db/` and `data/rdr3-native-enums/`, the VORP reference in `vorp/` and the Feather reference in `feather/`. `source/LAST_REFRESH.txt` shows when it last ran. Add repos missing from the txAdmin recipe to `tools/extra-repos.txt`.
+- **RSG updates:** run `tools/refresh.sh` (or `refresh.ps1`). It re-pulls the Rexshack-RedM repos into `source/` (code only) and regenerates `framework/resources/` via `tools/extract.py`. It also rebuilds `natives/db/` and `data/rdr3-native-enums/`, the VORP reference in `vorp/` and the Feather reference in `feather/`, then refreshes the generated sections of the root `DOCS.md` support playbook. `source/LAST_REFRESH.txt` shows when it last ran. Add repos missing from the txAdmin recipe to `tools/extra-repos.txt`.
 - **Server changes:** update `server/environment.md` whenever you add/remove a resource or rename an item.
 - **Lessons learned:** when a native needs a specific call order or a value turns out wrong, add it to the relevant `natives/` or `conventions/` file.
 - **Reusable code:** drop working snippets from finished scripts into `patterns/` and list them in `patterns/README.md`.
@@ -348,6 +351,8 @@ The checklist covers security, notifications, locales, environment (removed reso
 ---
 
 ## Troubleshooting
+
+> For a full support triage flow, symptom tables by area, an error-string index and per-resource troubleshooting, use [`DOCS.md`](DOCS.md).
 
 | Problem | Fix |
 |---|---|

@@ -48,5 +48,7 @@ curl -s "https://api.github.com/orgs/FeatherFramework/repos?per_page=100" | pyth
   date -u +"%Y-%m-%d %H:%M UTC" > "$BRAIN/feather/source/LAST_REFRESH.txt"
 } || echo "skip feather"
 date -u +"%Y-%m-%d %H:%M UTC" > "$BRAIN/source/LAST_REFRESH.txt"
+# Keep the support playbook (DOCS.md) in sync with the refreshed mirror.
+python3 "$BRAIN/tools/build_support_docs.py" || echo "skip support docs"
 rm -rf "$TMP" 2>/dev/null || true
 echo "Done. $(ls "$BRAIN/source" | wc -l) resources in source/"

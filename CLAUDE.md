@@ -2,6 +2,7 @@
 
 You are helping build RedM resources for a server running the **RSG Framework (rsg-core 3.0.3)**, Lua 5.4, oxmysql and rsg-target (replaces ox_target). ox_lib is being phased out: rsg-core now provides notify, callbacks and multi-job.
 Read this file first, then open only the files you need for the task.
+For support/troubleshooting tickets (rather than new code), open `DOCS.md` first: it is the framework-wide support playbook.
 
 ## Golden rules
 1. **Never guess** hashes, model names, anim dicts, scenarios, flag IDs, item names or native hashes. Look them up in `data/rdr3_discoveries/` (open `MAP.md`, then search the file; never read big files whole), `natives/db/`, `data/rdr3-native-enums/` (flag/enum values for natives), `natives/` or `server/environment.md` (cross-check online via `data/redm-info.md` or `data/redm-forge.md`). Tell the user which file each value came from.
@@ -20,6 +21,7 @@ Read this file first, then open only the files you need for the task.
 ## Map
 | Folder | Use it for |
 |---|---|
+| `DOCS.md` | **Support AI playbook**: triage, symptom tables, error index, migration traps, per-resource troubleshooting (generated sections refresh with `tools/refresh.sh`) |
 | `server/environment.md` | What's installed on this server, item names, resources that are removed |
 | `conventions/` | Coding style, security rules, notify/locale rules |
 | `framework/` | Hand-written RSGCore, rsg-inventory and rsg-banking guides |
