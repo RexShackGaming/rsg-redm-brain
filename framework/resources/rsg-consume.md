@@ -1,6 +1,6 @@
 # rsg-consume
 
-Version 3.1.0. rsg-consume
+Version 3.1.1. rsg-consume
 
 **Universal consumption system for RedM using RSG Core.** > Immersive eating and drinking system for RedM servers built on RSG Core. > Adds configurable hunger, thirst, alcohol and stress effects with synchronized animations and props.
 

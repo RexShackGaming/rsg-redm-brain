@@ -97,6 +97,66 @@ local function NextSerial(definition)
     return nil
 end
 
+-- Normal commerce admission is independent of the developer grant switch.
+-- These helpers only prepare canonical data; they never deliver or charge.
+function IssuanceService.PurchaseAvailable()
+    local proof=GetResourceState('feather-weapons-native-proof')
+    return (proof=='stopped' or proof=='missing') and Config.NativeAlphaRuntime==true and Config.CharacterAmmunitionEnabled==true
+        and Config.CharacterAmmoTransportEnabled==true
+        and WeaponCharacterAmmoInventoryProvider.Status()=='ready'
+        and WeaponProvenanceService.IsReady()==true
+end
+function IssuanceService.PurchaseDefinition(itemName)
+    if not IssuanceService.PurchaseAvailable() or type(itemName)~='string' then return nil end
+    local registry=WeaponCharacterAmmoPolicy.Build(WeaponDefinitionCatalog)
+    for id,definition in pairs(WeaponDefinitionCatalog.weapons) do
+        if definition.itemName==itemName and registry and registry.weapons[id]
+            and (definition.slot=='sidearm' or definition.slot=='longgun') then return definition end
+    end
+end
+function IssuanceService.PreparePurchase(context,request)
+    local function refused(message)
+        return WeaponResult.Error(WeaponErrors.AUTHORIZATION_INVALID,message)
+    end
+    if type(context)~='table' or type(request)~='table'
+        or type(context.targetSource)~='number' or context.targetSource<1 or context.targetSource%1~=0
+        or type(context.sessionId)~='string' or context.sessionId==''
+        or type(context.epoch)~='string' or context.epoch==''
+        or not ValidateRequestId(request.orderId) or #request.orderId~=36
+        or not request.orderId:match('^%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x$')
+        or type(request.currency)~='string' or #request.currency>32 or not request.currency:match('^[a-z][a-z0-9_]*$')
+        or type(request.total)~='number' or request.total<1 or request.total%1~=0 or request.total>1000000000000 then
+        return refused('Canonical purchase identity required.')
+    end
+    for key in pairs(request) do
+        if key~='orderId' and key~='itemName' and key~='currency' and key~='total' then
+            return refused('Purchase preparation accepts only canonical order fields.')
+        end
+    end
+    local definition=IssuanceService.PurchaseDefinition(request.itemName)
+    local character=CoreAdapter.NormalizeCharacterId(context.characterId)
+    if not definition or not character or not CoreAdapter.IsSessionCurrent(context.targetSource,context.sessionId,character)
+        or (WeaponNativeEquipmentBindings and WeaponNativeEquipmentBindings.IsStopping(context.targetSource)) then
+        return refused('Current native buyer and admitted weapon required.')
+    end
+    local state=WeaponCharacterAmmoDispatcher.Status(context.targetSource)
+    if not state or state.phase~='active' or state.busy or not state.identity
+        or state.identity.characterId~=character or state.identity.sessionId~=context.sessionId
+        or state.identity.epoch~=context.epoch then return refused('Current native buyer epoch required.') end
+    local serial=NextSerial(definition)
+    if not serial then return refused('Weapon serial allocation failed.') end
+    local built=WeaponMetadata.Build(definition,{serialNumber=serial,condition=100,quality=100,
+        provenance={type='purchase',reference=request.orderId,resource='feather-shops',
+            issuedToCharacterId=character,createdAt=os.time()}})
+    if not built.ok then return built end
+    local checked=WeaponMetadata.Validate(built.value,definition)
+    if not checked.ok then return checked end
+    return WeaponResult.Ok({resource='feather-shops',requestId=request.orderId,
+        definitionId=definition.id,itemName=definition.itemName,metadata=checked.value,
+        fingerprint=table.concat({'native-purchase-v1',character,request.orderId,definition.id,
+            request.currency,tostring(request.total)},'|')})
+end
+
 local function Authorize(context, definitionId, purpose)
     local settings = Config.Issuance or {}
     if (settings.trustedResources or {})[context.resource] ~= true then

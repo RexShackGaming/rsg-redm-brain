@@ -42,7 +42,23 @@ function ShopOrders.Start()
         DB.insert('INSERT INTO `shop_schema_migrations` (`id`,`checksum`) VALUES (?,?)',
             '002_shop_orders', checksum)
     end
-    return Ok({ applied = stored and 0 or 1 })
+    local fences=[[CREATE TABLE IF NOT EXISTS shop_checkout_request_fences (
+        request_id VARCHAR(128) NOT NULL,quote_id CHAR(36) NOT NULL,
+        buyer_account_id CHAR(36) NOT NULL,buyer_character_id CHAR(36) NOT NULL,
+        state VARCHAR(16) NOT NULL DEFAULT 'open',
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY(request_id),CONSTRAINT chk_shop_request_fence CHECK(state IN ('open','closed'))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci]]
+    local fenceHash=2166136261
+    for i=1,#fences do fenceHash=((fenceHash~fences:byte(i))*16777619)&0xffffffff end
+    local fenceChecksum=('fnv1a32:%08x'):format(fenceHash)
+    local fenceStored=DB.value('SELECT checksum FROM shop_schema_migrations WHERE id=?','007_checkout_request_fences')
+    if fenceStored and fenceStored~=fenceChecksum then return Err('migration_checksum_mismatch','Checkout request fence migration changed.') end
+    if not fenceStored then
+        DB.exec(fences)
+        DB.insert('INSERT INTO shop_schema_migrations (id,checksum) VALUES (?,?)','007_checkout_request_fences',fenceChecksum)
+    end
+    return Ok({applied=(stored and 0 or 1)+(fenceStored and 0 or 1)})
 end
 local function RequestId(value)
     return type(value) == 'string' and #value <= 128
@@ -68,13 +84,61 @@ local function Find(resource, requestId)
     return DB.one([[SELECT * FROM `shop_orders`
         WHERE `source_resource`=? AND `request_id`=?]], resource, requestId)
 end
+local function LockRequest(tx,request,session)
+    tx.exec([[INSERT IGNORE INTO shop_checkout_request_fences
+        (request_id,quote_id,buyer_account_id,buyer_character_id) VALUES (?,?,?,?)]],
+        request.requestId,request.quoteId,session.accountId,session.characterId)
+    local rows=tx.query('SELECT * FROM shop_checkout_request_fences WHERE request_id=? FOR UPDATE',request.requestId) or {}
+    local row=rows[1]
+    if not row or row.quote_id~=request.quoteId or row.buyer_account_id~=session.accountId
+        or row.buyer_character_id~=session.characterId then return nil end
+    return row
+end
+-- Status polling may arrive before the original RPC. It shares this request-key
+-- lock with Prepare, so a confirmed not-accepted result fences that late RPC.
+function ShopOrders.ResolveRequest(request,source)
+    if not ShopService.IsReady() or type(request)~='table' or not RequestId(request.requestId)
+        or not ShopService.Uuid(request.quoteId) then return Err('invalid_input','Canonical request required.') end
+    local session=exports['feather-core']:GetSessionContext(source)
+    if not session or not session.ok then return Err('session_expired','Current buyer required.') end
+    -- Settled/accepted requests use indexed immutable-order reads. Only the
+    -- missing-order case needs a request fence transaction against a late RPC.
+    local existing=Find('feather-shops',request.requestId)
+    if not exports['feather-core']:IsSessionCurrent(source,session.value.sessionId,session.value.characterId) then
+        return Err('session_expired','Buyer session changed.')
+    end
+    if existing then return Replay(existing,request,session.value) end
+    local result
+    local called,committed=pcall(DB.transaction,function(tx)
+        local fence=LockRequest(tx,request,session.value)
+        if not fence then result=Err('idempotency_conflict','Request belongs to another buyer or quote.');return false end
+        local rows=tx.query("SELECT * FROM shop_orders WHERE source_resource='feather-shops' AND request_id=? FOR UPDATE",request.requestId) or {}
+        if rows[1] then result=Replay(rows[1],request,session.value)
+        else
+            tx.exec("UPDATE shop_checkout_request_fences SET state='closed' WHERE request_id=?",request.requestId)
+            result=Ok({notAccepted=true})
+        end
+        if not exports['feather-core']:IsSessionCurrent(source,session.value.sessionId,session.value.characterId) then
+            result=Err('session_expired','Buyer session changed.');return false
+        end
+        return result.ok
+    end)
+    if not called or committed~=true then
+        if result and not result.ok then return result end
+        return Err('checkout_pending','Request outcome is awaiting readback.')
+    end
+    if result.value.notAccepted then
+        return Err('checkout_not_accepted','No checkout was accepted.',{safeToClear=true,purchaseState='not_accepted'})
+    end
+    return result
+end
 local function Prepare(request, source, resource)
-    if Config.Quotes.trustedCallers[resource or ''] ~= true then
+    if resource~='feather-shops' then
         return Err('authorization_denied', 'Order caller is not trusted.')
     end
     if not ShopService.IsReady() then return Err('not_ready', 'Shops is not ready.') end
     if type(request) ~= 'table' or not RequestId(request.requestId)
-        or not ShopService.Uuid(request.quoteId) or not ShopService.Integer(source, 1, 65535) then
+        or not ShopService.Uuid(request.quoteId) or not ShopService.Integer(source, 1, 2147483647) then
         return Err('invalid_input', 'Stable request ID, quote UUID, and active source required.')
     end
     for key in pairs(request) do
@@ -101,6 +165,11 @@ local function Prepare(request, source, resource)
     if not ShopService.Uuid(orderId) then return Err('internal_error', 'Could not allocate order identity.') end
     local result
     local called, committed = pcall(DB.transaction, function(tx)
+        local fence=LockRequest(tx,request,session.value)
+        if not fence then result=Err('idempotency_conflict','Request belongs to another buyer or quote.');return false end
+        if fence.state=='closed' then
+            result=Err('checkout_not_accepted','Request was closed by independent readback.',{safeToClear=true,purchaseState='not_accepted'});return false
+        end
         if not Current() or quote.sessionId ~= session.value.sessionId
             or quote.expiresAt <= os.time() then
             result = Err('session_expired', 'Quote or buyer session expired.')

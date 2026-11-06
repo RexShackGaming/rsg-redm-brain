@@ -36,8 +36,29 @@ git clone --depth 1 -q https://github.com/VORPCORE/VORP_txAdmin.git "$TMP/vrecip
 } || echo "skip vorp"
 
 # Feather Framework reference (feather/): all non-archived FeatherFramework repos
+GITHUB_API_AUTH=()
+if [ -n "${GITHUB_TOKEN:-}" ]; then GITHUB_API_AUTH=(-H "Authorization: Bearer $GITHUB_TOKEN"); fi
 git clone --depth 1 -q https://github.com/FeatherFramework/feather-website.git "$TMP/fweb" && { mkdir -p "$BRAIN/feather/docs"; cp -r "$TMP/fweb/docs/"* "$BRAIN/feather/docs/"; } || echo "skip feather docs"
-curl -s "https://api.github.com/orgs/FeatherFramework/repos?per_page=100" | python3 -c "import json,sys;[print(r['name']) for r in json.load(sys.stdin) if not r['archived'] and r['name'] not in ('.github','feather-website','feather-loadscreen')]" > "$TMP/flist.txt" && [ -s "$TMP/flist.txt" ] && {
+# The GitHub API can return an empty body or an error JSON when rate-limited.
+# Parse defensively; an empty flist means "skip feather" instead of a traceback.
+curl -fsSL --retry 2 --retry-delay 2 --connect-timeout 15 --max-time 30 \
+  -H "Accept: application/vnd.github+json" \
+  -H "User-Agent: rsg-redm-brain" \
+  "${GITHUB_API_AUTH[@]}" \
+  "https://api.github.com/orgs/FeatherFramework/repos?per_page=100" \
+  | python3 -c '
+import json, sys
+try:
+    repos = json.load(sys.stdin)
+except Exception:
+    raise SystemExit(1)
+if not isinstance(repos, list):
+    raise SystemExit(1)
+for repo in repos:
+    if isinstance(repo, dict) and not repo.get("archived") and repo.get("name") not in (".github", "feather-website", "feather-loadscreen"):
+        print(repo["name"])
+' > "$TMP/flist.txt" || : > "$TMP/flist.txt"
+[ -s "$TMP/flist.txt" ] && {
   mkdir -p "$TMP/frepos"
   xargs -P 8 -I{} sh -c 'git clone --depth 1 -q https://github.com/FeatherFramework/{}.git "'"$TMP"'/frepos/{}" 2>/dev/null || echo "skip {}"' < "$TMP/flist.txt"
   rm -rf "$BRAIN/feather/source"; mkdir -p "$BRAIN/feather/source"

@@ -228,6 +228,7 @@ function EconomyFoundation.GetCapabilities()
             accountHistory = 1,
             transactionRead = 1,
             scopedPaymentReversals = 1,
+            atomicShopPayment = 1,
             transfers = 1,
             journal = 1,
             idempotency = 1,

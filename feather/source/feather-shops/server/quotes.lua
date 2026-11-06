@@ -41,25 +41,19 @@ local function Terms(request)
 end
 
 local function Definition(itemName)
-    local called, listed = pcall(function()
-        local api = exports['feather-inventory']:initiate()
-        if type(api) ~= 'table' or type(api.Items) ~= 'table'
-            or not IsCallable(api.Items.GetDefinitions) then return nil end
-        return api.Items.GetDefinitions()
-    end)
-    if not called or type(listed) ~= 'table' or not listed.ok or type(listed.value) ~= 'table' then
-        return Err('dependency_unavailable', 'Inventory definitions are unavailable.')
+    local called,listed=pcall(function() return exports['feather-inventory']:GetShopCheckoutDefinition(itemName) end)
+    if not called or type(listed)~='table' or not listed.ok then
+        return Err('item_unavailable','Active Inventory checkout definition required.')
     end
-    for _, definition in pairs(listed.value) do
-        if definition.name == itemName then
-            if definition.archived_at ~= nil or definition.type == 'weapon'
-                or (definition.instanceMode or definition.instance_mode) ~= 'stack' then
-                return Err('item_unavailable', 'This offer requires an active ordinary stack item.')
-            end
-            return Ok({ id = definition.id, name = definition.name })
+    local definition=listed.value
+    local weapon=definition.type=='item_weapon' or definition.type=='weapon'
+    if weapon then
+        local accepted,result=pcall(function() return exports['feather-weapons']:GetShopWeaponDefinition(itemName) end)
+        if not accepted or type(result)~='table' or not result.ok or definition.instanceMode~='unique' then
+            return Err('item_unavailable','An admitted canonical firearm is required.')
         end
-    end
-    return Err('item_unavailable', 'Offer item is not in the active Inventory catalog.')
+    elseif definition.instanceMode~='stack' then return Err('item_unavailable','Ordinary checkout requires a stack item.') end
+    return Ok({id=definition.id,name=definition.name,weapon=weapon})
 end
 local function Near(source, shop)
     local ped = GetPlayerPed(source)
@@ -80,7 +74,7 @@ end
 
 local function CreateQuote(request, source)
     if not ShopService.IsReady() then return Err('not_ready', 'Shops is not ready.') end
-    if not ShopService.Integer(source, 1, 65535) then return Err('invalid_input', 'Active player source required.') end
+    if not ShopService.Integer(source, 1, 2147483647) then return Err('invalid_input', 'Active player source required.') end
     local terms = Terms(request)
     if not terms.ok then return terms end
     local commerce=ShopOrganizations.CheckCommerce(request.shopId)
@@ -91,6 +85,7 @@ local function CreateQuote(request, source)
     end
     local definition = Definition(terms.value.offer.itemName)
     if not definition.ok then return definition end
+    if definition.value.weapon and request.quantity~=1 then return Err('invalid_quantity','Purchase one canonical weapon at a time.') end
     local currency = exports['feather-economy']:GetCurrency(terms.value.offer.currency)
     if type(currency) ~= 'table' or not currency.ok or not currency.value.enabled then
         return Err('currency_unavailable', 'Offer currency is unavailable.')
@@ -100,7 +95,7 @@ local function CreateQuote(request, source)
         accountId = session.value.accountId, shopId = request.shopId, offerId = request.offerId,
         itemName = terms.value.offer.itemName, definitionId = definition.value.id,
         quantity = request.quantity, currency = terms.value.offer.currency,
-        unitPrice = terms.value.offer.unitPrice, total = terms.value.total,
+        unitPrice = terms.value.offer.unitPrice, total = terms.value.total, currencyPrecision=currency.value.precision,
         catalogRevision = terms.value.revision, expiresAt = os.time() + Config.Quotes.lifetimeSeconds }
     -- Definition and UUID lookups may yield: re-check identity and position last.
     if not BindingCurrent(source, quote) then return Err('session_expired', 'Buyer session changed.') end
@@ -115,7 +110,7 @@ local function CreateQuote(request, source)
 end
 local function ValidateQuote(quoteId, source)
     if not ShopService.IsReady() then return Err('not_ready', 'Shops is not ready.') end
-    if not ShopService.Uuid(quoteId) or not ShopService.Integer(source, 1, 65535) then
+    if not ShopService.Uuid(quoteId) or not ShopService.Integer(source, 1, 2147483647) then
         return Err('invalid_input', 'Quote UUID and active player source required.')
     end
     local quote = quotes[source]
@@ -145,10 +140,28 @@ local function ValidateQuote(quoteId, source)
     if quotes[source]~=quote then return Err('quote_not_found','Quote was replaced while validating.') end
     return Ok(Copy(quote))
 end
+-- Non-yielding authority checks used while Inventory holds the checkout
+-- transaction. Catalog/session/position are memory/native reads; no DB work.
+local function CurrentQuote(quoteId,source,expected)
+    local quote=quotes[source]
+    if not quote or quote.id~=quoteId or type(expected)~='table' then return false end
+    for _,key in ipairs({'id','sessionId','characterId','accountId','shopId','offerId',
+        'itemName','definitionId','quantity','currency','unitPrice','total','catalogRevision','expiresAt'}) do
+        if quote[key]~=expected[key] then return false end
+    end
+    if quote.expiresAt<=os.time() or not BindingCurrent(source,quote) then return false end
+    local terms=Terms({shopId=quote.shopId,offerId=quote.offerId,quantity=quote.quantity})
+    return terms.ok and terms.value.revision==quote.catalogRevision and Near(source,terms.value.shop).ok or false
+end
 local function Allowed()
     return Config.Quotes.trustedCallers[GetInvokingResource() or ''] == true
 end
-ShopQuotes = { Create = CreateQuote, Validate = ValidateQuote }
+ShopQuotes = { Create = CreateQuote, Validate = ValidateQuote, Current = CurrentQuote,
+    Capture = function(id,source)
+        local quote=quotes[source]
+        if not quote or not CurrentQuote(id,source,quote) then return Err('quote_expired','Quote or buyer authority changed.') end
+        return Ok(Copy(quote))
+    end }
 exports('CreateQuote', function(request, source)
     if not Allowed() then return Err('authorization_denied', 'Quote caller is not trusted.') end
     return CreateQuote(request, source)

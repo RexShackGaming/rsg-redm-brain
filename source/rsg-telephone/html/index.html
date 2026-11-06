@@ -71,19 +71,15 @@
     </div>
   </div>
 </div>
-<div id="placer" class="hidden">
-  <div class="placer-title" id="plTitle"></div>
-  <div class="ink-divider"></div>
-  <div class="pl-row"><span class="kc" data-pk="left">&#9664;</span><span class="kc" data-pk="right">&#9654;</span><span class="pl-label" id="plRotate"></span></div>
-  <div class="pl-row"><span class="kc" data-pk="up">&#9650;</span><span class="kc" data-pk="down">&#9660;</span><span class="pl-label" id="plHeight"></span></div>
-  <div class="pl-row"><span class="kc" data-pk="fwd">E</span><span class="kc" data-pk="bwd">Q</span><span class="pl-label" id="plMove"></span></div>
-  <div class="pl-row"><span class="kc wide" data-pk="enter"></span><span class="pl-label" id="plPlace"></span></div>
-  <div class="pl-row"><span class="kc wide" data-pk="back"></span><span class="pl-label" id="plCancel"></span></div>
-  <div class="ink-divider"></div>
-  <div class="pl-stats">
-    <div><span id="plHeadingL"></span><b id="plHeading">0°</b></div>
-    <div><span id="plOffsetL"></span><b id="plOffset">0.00</b></div>
-    <div><span id="plFwdL"></span><b id="plFwd">0.00</b></div>
+<div id="confirmDlg" class="confirm hidden">
+  <div class="modal confirm-modal">
+    <div class="modal-title" id="cTitle"></div>
+    <div class="ink-divider"></div>
+    <div class="confirm-text" id="cText"></div>
+    <div class="actions">
+      <button class="wood-btn end" id="cNo"></button>
+      <button class="wood-btn" id="cYes"></button>
+    </div>
   </div>
 </div>
 <div id="admin" class="hidden">

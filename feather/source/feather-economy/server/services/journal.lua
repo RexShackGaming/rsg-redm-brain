@@ -100,7 +100,7 @@ function EconomyJournal.MayPost(operation, resource, reasonCode)
         or EconomyOperators.SupplyAllowed(resource, reasonCode)
 end
 
-local function Post(operation, request, context)
+local function Post(operation, request, context, borrowedTransaction, shopScope)
     request, context = type(request) == 'table' and request or {},
         type(context) == 'table' and context or {}
     local resource = context.resource
@@ -130,7 +130,7 @@ local function Post(operation, request, context)
         referenceType = referenceType, referenceId = referenceId
     })
     local bodyResult, bodyError
-    local called, committed = pcall(DB.transaction, function(tx)
+    local function Apply(tx)
         -- Values are passed as separate arguments so a nil anywhere binds SQL NULL.
         local function query(sql, ...) return tx.raw(sql, ...) end
         local ok, result = pcall(function()
@@ -169,6 +169,10 @@ local function Post(operation, request, context)
             ]], resource, operation, idempotencyKey) or {}
             local transaction = transactionRows[1]
             if not transaction then return Failure('internal_error', 'Transfer request could not be reserved.') end
+            if shopScope and (transaction.actor_character_id ~= context.actorCharacterId
+                or transaction.actor_account_id ~= context.actorAccountId) then
+                return Failure('idempotency_conflict', 'Payment receipt belongs to another buyer.')
+            end
             if transaction.request_fingerprint ~= fingerprint then
                 return Failure('idempotency_conflict',
                     'Idempotency key was already used for a different transfer.')
@@ -200,6 +204,11 @@ local function Post(operation, request, context)
             end
             if from.currency_code ~= request.currency or to.currency_code ~= request.currency then
                 return Failure('currency_mismatch', 'Transfer accounts do not use the requested currency.')
+            end
+            if shopScope and (from.account_type ~= 'wallet' or from.owner_type ~= 'character'
+                or from.owner_id ~= context.actorCharacterId or to.account_type ~= 'treasury'
+                or to.owner_type ~= 'organization' or to.owner_id ~= shopScope.organizationId) then
+                return Failure('authorization_denied', 'Checkout accounts do not belong to the buyer and shop.')
             end
             local typesAllowed = EconomyJournal.AccountTypesAllowed(operation, from, to, request, resource, context, tx)
             if not typesAllowed then
@@ -258,7 +267,17 @@ local function Post(operation, request, context)
         if not ok then bodyError = tostring(result) return false end
         bodyResult = result
         return EconomyResults.Is(result) and result.ok
-    end)
+    end
+    if borrowedTransaction then
+        -- This is staging, never a commit acknowledgement. The transaction owner
+        -- must roll back on any failure (including a later Inventory failure).
+        if not Apply(borrowedTransaction) then
+            if EconomyResults.Is(bodyResult) then return bodyResult end
+            return Failure('internal_error', 'Checkout payment could not be staged.', { reason = bodyError })
+        end
+        return EconomyResults.Ok(bodyResult.value, { pendingCommit = true })
+    end
+    local called, committed = pcall(DB.transaction, Apply)
     if not called then
         -- DB.transaction raises after rolling back when a statement fails, and also
         -- when the transaction cannot begin; either way nothing was committed.
@@ -271,6 +290,39 @@ local function Post(operation, request, context)
         return Failure('internal_error', 'Economy transfer transaction failed.', { reason = bodyError })
     end
     return bodyResult
+end
+
+-- Private transaction participant; deliberately not exported. The checkout
+-- coordinator must supply its locked, immutable shop_orders row and canonical
+-- account identities. No client fields, SQL strings, callbacks or new transaction
+-- authority are accepted through the public Economy API.
+function EconomyJournal.ApplyShopPayment(transaction, order, accounts)
+    local function Callable(value)
+        return type(value) == 'function' or (type(value) == 'table'
+            and type(rawget(value, '__cfx_functionReference')) == 'string')
+    end
+    if type(transaction) ~= 'table' or not Callable(transaction.raw)
+        or type(order) ~= 'table' or type(accounts) ~= 'table'
+        or order.source_resource ~= 'feather-shops'
+        or not IsUuid(order.order_id) or not IsUuid(order.buyer_character_id)
+        or not IsUuid(order.buyer_account_id) or not IsUuid(accounts.organizationId)
+        or not IsUuid(accounts.fromAccountId) or not IsUuid(accounts.toAccountId)
+        or type(order.quantity) ~= 'number' or order.quantity % 1 ~= 0
+        or order.quantity < 1 or order.quantity > 100
+        or type(order.unit_price) ~= 'number' or order.unit_price % 1 ~= 0 or order.unit_price < 1
+        or type(order.total_amount) ~= 'number'
+        or order.total_amount ~= order.quantity * order.unit_price then
+        return Failure('invalid_input', 'Locked checkout order and canonical accounts are required.')
+    end
+    return Post('transfer', {
+        fromAccountId = accounts.fromAccountId, toAccountId = accounts.toAccountId,
+        amount = order.total_amount, currency = order.currency_code,
+        reasonCode = 'shop.purchase', referenceType = 'shop_order', referenceId = order.order_id,
+        idempotencyKey = 'shop-payment:' .. order.order_id
+    }, {
+        resource = 'feather-shops', actorAccountId = order.buyer_account_id,
+        actorCharacterId = order.buyer_character_id, correlationId = order.order_id
+    }, transaction, { organizationId = accounts.organizationId })
 end
 
 function EconomyJournal.Transfer(request, context)

@@ -79,7 +79,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-target](rsg-target.md) | targeting system for RSG RedM Framework | 0 | 5 |
 | [rsg-targetpractise](rsg-targetpractise.md) | Placeable archery and throwing-knife practice targets for RSG Framework | 0 | 18 |
 | [rsg-telegram](rsg-telegram.md) | Telegram system for RSG Framework (RedM). Send and receive telegrams at any post office, with an address book, | 0 | 2 |
-| [rsg-telephone](rsg-telephone.md) | rsg-telephone - persistent telephone props with private voice calls | 0 | 14 |
+| [rsg-telephone](rsg-telephone.md) | rsg-telephone - persistent telephone props with private voice calls | 0 | 16 |
 | [rsg-theatre](rsg-theatre.md) | Theatre Raleur (Saint Denis) stage shows | 0 | 4 |
 | [rsg-trader](rsg-trader.md) | Dynamic-price NPC traders for RSG-Core (RedM). Players buy and sell items at prices that move with stock l | 1 | 1 |
 | [rsg-trams](rsg-trams.md) | rsg-trams - Saint Denis trolley network (one trolley per track) | 0 | 3 |

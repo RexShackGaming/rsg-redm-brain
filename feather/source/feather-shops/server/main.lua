@@ -47,7 +47,7 @@ local function Validate()
     end
     local ids, offerIds = {}, {}
     local reconciliation = Config.Reconciliation
-    if type(reconciliation) ~= 'table' or type(reconciliation.enabled) ~= 'boolean'
+    if type(reconciliation) ~= 'table'
         or not Integer(reconciliation.pollIntervalMs, 1000, 60000)
         or not Integer(reconciliation.retryDelaySeconds, 5, 3600)
         or not Integer(reconciliation.batchSize, 1, 50) then
@@ -188,7 +188,7 @@ exports('GetCapabilities', function()
         version = health.version, features = { lifecycle = 1, migrations = 1,
             catalog = 1, quotes = 1, durableOrders = 1,
             payments = 1, fulfillment = 1, playerPurchases = 1,
-            compensation = 1, reconciliation = 1, organizationLinks = 1, playerShops = 0 } })
+            compensation = 0, atomicCheckout = 1, recoveryReadback = 1, firearmPurchases = 1, reconciliation = 1, organizationLinks = 1, playerShops = 0 } })
 end)
 exports('ListShops', ListShops)
 exports('GetCatalog', GetCatalog)
@@ -360,6 +360,7 @@ RegisterCommand('ShopReleaseContractSmokeTest',function(source)
     local catalogRoute=shopRoutes['shops.catalog.v1']
     local quoteRoute=shopRoutes['shops.quote.v1']
     local purchaseRoute=shopRoutes['shops.purchase.v1']
+    local statusRoute=shopRoutes['shops.purchase.status.v1']
     local tests={
         {'service ready',health.state=='ready'},
         {'server development disabled',Config.DevMode==false},
@@ -368,7 +369,8 @@ RegisterCommand('ShopReleaseContractSmokeTest',function(source)
         {'development commands absent',forbiddenAbsent},
         {'catalog available pre-character',catalogRoute and catalogRoute.requireCharacter==false},
         {'commerce routes character-bound',quoteRoute and quoteRoute.requireCharacter==true
-            and purchaseRoute and purchaseRoute.requireCharacter==true},
+            and purchaseRoute and purchaseRoute.requireCharacter==true
+            and statusRoute and statusRoute.requireCharacter==true},
         {'operator purchase state available',registered.ShopPurchaseState==true},
         {'operator reconciliation state available',registered.ShopReconciliationState==true}
     }

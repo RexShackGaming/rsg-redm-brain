@@ -36,6 +36,26 @@ local function addItem(src, itemName, reason)
     exports['rsg-inventory']:AddItem(src, itemName, 1, nil, nil, reason)
 end
 
+---Applies hunger/thirst on the server. rsg-hud (Config.ServerNeeds) owns these values and runs a
+---decay loop + gain limiter; client-side writes could race the decay or be reverted, so drinks/food
+---appeared to do nothing. exports['rsg-hud']:SetNeed is a trusted write that bypasses both.
+local function applyNeeds(src, data)
+    local hud = GetResourceState('rsg-hud') == 'started'
+    local state = Player(src).state
+    for _, key in ipairs({ 'hunger', 'thirst' }) do
+        local amount = tonumber(data[key])
+        if amount and amount ~= 0 then
+            local current = tonumber(state[key]) or 100
+            local value = math.max(0, math.min(100, current + amount))
+            if hud then
+                exports['rsg-hud']:SetNeed(src, key, value)
+            else
+                TriggerClientEvent(key == 'hunger' and 'hud:client:UpdateHunger' or 'hud:client:UpdateThirst', src, value)
+            end
+        end
+    end
+end
+
 ---Registers every item in a category as usable. The item is removed server-side
 ---BEFORE the client plays the animation, so the client never decides whether it is consumed.
 local function registerConsumables(category, items)
@@ -78,6 +98,7 @@ RegisterNetEvent('rsg-consume:server:finish', function(consumed)
 
     if consumed == true then
         local data = config.Consumables[active.category][active.item]
+        applyNeeds(src, data)
         if data.giveItem then addItem(src, data.giveItem, 'rsg-consume-return') end
     else
         addItem(src, active.item, 'rsg-consume-refund')

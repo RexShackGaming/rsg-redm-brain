@@ -16,9 +16,9 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [feather-contracts](feather-contracts.md) | Authoritative payable obligations for the Feather Framework | 16 | 0 |
 | [feather-core](feather-core.md) | The Core service for the Feather Framework | 44 | 2 |
 | [feather-doors](feather-doors.md) | Authoritative door domain for the Feather Framework (schema foundation) | 2 | 0 |
-| [feather-economy](feather-economy.md) | Authoritative monetary accounting service for the Feather Framework | 21 | 0 |
+| [feather-economy](feather-economy.md) | Authoritative monetary accounting service for the Feather Framework | 22 | 0 |
 | [feather-hud](feather-hud.md) | The player HUD for the Feather Framework | 0 | 4 |
-| [feather-inventory](feather-inventory.md) | The Inventory API for the Feather Framework | 43 | 6 |
+| [feather-inventory](feather-inventory.md) | The Inventory API for the Feather Framework | 47 | 6 |
 | [feather-jobs](feather-jobs.md) | Authoritative job definitions, grades, character assignments, and duty state for the Feather Framework | 3 | 0 |
 | [feather-justice](feather-justice.md) | Authoritative legal records: cases, charges, warrants, citations, custody, rulings, sentences and evidence | 3 | 0 |
 | [feather-licenses](feather-licenses.md) | Authoritative registry of issued licenses, certifications and permits for the Feather Framework | 3 | 0 |
@@ -33,9 +33,9 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [feather-pvp](feather-pvp.md) | Client PVP state enforcement for Feather Framework | 3 | 0 |
 | [feather-routing](feather-routing.md) | Authoritative routing-bucket service for the Feather Framework | 8 | 0 |
 | [feather-settings](feather-settings.md) | Player settings presentation for Feather Framework | 2 | 0 |
-| [feather-shops](feather-shops.md) | Authoritative commerce workflows for the Feather Framework | 8 | 0 |
+| [feather-shops](feather-shops.md) | Authoritative commerce workflows for the Feather Framework | 9 | 0 |
 | [feather-toolkit](feather-toolkit.md) | Owned, reusable client utility contracts for Feather Framework | 22 | 0 |
 | [feather-versioner](feather-versioner.md) | Optional, operator-owned GitHub release notification service for Feather Framework | 0 | 0 |
-| [feather-weapons](feather-weapons.md) | The official weapon system for Feather framework. | 24 | 37 |
+| [feather-weapons](feather-weapons.md) | The official weapon system for Feather framework. | 29 | 37 |
 | [feather-weather](feather-weather.md) | World time, weather, and climate synchronization for RedM | 7 | 4 |
 | [feather-world](feather-world.md) | World population and map compatibility runtime for Feather Framework | 6 | 0 |

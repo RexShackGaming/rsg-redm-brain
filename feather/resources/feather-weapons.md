@@ -1,6 +1,6 @@
 # feather-weapons
 
-Version 0.19.0. The official weapon system for Feather framework.
+Version 0.20.0. The official weapon system for Feather framework.
 
 Current version: **0.19.0**. Feather's native-only, Inventory-backed firearm system. Weapons are unique item instances; equipped assignments and maintenance persist per character.
 
@@ -10,7 +10,7 @@ Source: https://github.com/FeatherFramework/feather-weapons
 
 ## Exports (call as exports['feather-weapons']:Name)
 
-**server:** `ApplyInventoryMoveDelivery(id,raw)`, `AuditInventoryMoveDelivery(id,raw)`, `DestroyWeapon(request, context)`, `HoldWeaponEvidence(request, context)`, `InspectWeaponHistory(request, context)`, `IssueWeapon(request, context)`, `ReadNativeEvidenceStatus(target,itemId)`, `ReadNativeMaintenanceAuditSpec(target,itemId)`, `ReadNativeRepairAuditSpec(target,itemId)`, `ReleaseWeaponEvidence(request, context)`, `ValidateCharacterAmmoRuntimeOperation(context,operation,spec)`, `ValidateNativeEquipmentCommit(context,spec)`, `ValidateNativeEvidenceCommit(context,spec)`, `ValidateNativeIssuance(context,spec)`, `initiate()`
+**server:** `ApplyInventoryMoveDelivery(id,raw)`, `AuditInventoryMoveDelivery(id,raw)`, `DestroyWeapon(request, context)`, `GetShopWeaponDefinition(itemName)`, `HoldWeaponEvidence(request, context)`, `InspectWeaponHistory(request, context)`, `IsShopCheckoutWeaponCurrent(id,order)`, `IssueWeapon(request, context)`, `PrepareShopCheckoutWeapon(source,order)`, `ReadNativeEvidenceStatus(target,itemId)`, `ReadNativeMaintenanceAuditSpec(target,itemId)`, `ReadNativeRepairAuditSpec(target,itemId)`, `ReleaseShopCheckoutWeapon(id)`, `ReleaseWeaponEvidence(request, context)`, `StageShopCheckoutProvenance(query,id,order,inventoryId,itemId)`, `ValidateCharacterAmmoRuntimeOperation(context,operation,spec)`, `ValidateNativeEquipmentCommit(context,spec)`, `ValidateNativeEvidenceCommit(context,spec)`, `ValidateNativeIssuance(context,spec)`, `initiate()`
 
 **client:** `ChangeNativeAttachment(itemId,action,scope,attachmentId)`, `ChangeNativeEquipment(itemId,action,slot,scope)`, `CheckpointBeforeLogout()`, `CheckpointCharacterAmmunitionBeforeLogout(context)`, `CheckpointJanePrimaryLogout(context)`, `GetNativeAmmunitionControls(itemName)`, `GetNativeEquipmentControls(itemId)`, `RepairNativeEquipment(itemId,scope)`, `TransferNativeAmmunition(id,quantity,direction,scope)`, `initiate()`
 
@@ -106,7 +106,7 @@ Source: https://github.com/FeatherFramework/feather-weapons
 
 **server/services/evidence.lua:** `WeaponEvidenceService.SetHold(context, request, invokingResource, held)`, `WeaponEvidenceService.NativeAvailable()`, `WeaponEvidenceService.ValidateNativeCommit(context,spec)`, `WeaponEvidenceService.NativeChange(context,request,resource,held)`, `WeaponEvidenceService.NativeStatus(target,itemId)`, `WeaponEvidenceService.Hold(context, request, resource)`, `WeaponEvidenceService.Release(context, request, resource)`, `WeaponEvidenceService.CheckContract()`
 
-**server/services/issuance.lua:** `IssuanceService.NativeAvailable()`, `IssuanceService.Issue(context, request, invokingResource)`, `IssuanceService.CheckContract()`
+**server/services/issuance.lua:** `IssuanceService.NativeAvailable()`, `IssuanceService.PurchaseAvailable()`, `IssuanceService.PurchaseDefinition(itemName)`, `IssuanceService.PreparePurchase(context,request)`, `IssuanceService.Issue(context, request, invokingResource)`, `IssuanceService.CheckContract()`
 
 **server/services/metadata.lua:** `WeaponMetadata.Build(definition, options)`, `WeaponMetadata.Validate(metadata,definition,correlationId)`
 
@@ -122,7 +122,7 @@ Source: https://github.com/FeatherFramework/feather-weapons
 
 **server/services/ownership.lua:** `WeaponOwnershipService.EvaluateAdministrativeHold(metadata)`, `WeaponOwnershipService.HandleCommittedMove(payload)`, `WeaponOwnershipService.GetDiagnostics()`, `WeaponOwnershipService.Destroy(context, request, invokingResource)`, `WeaponOwnershipService.CheckDestructionContract()`
 
-**server/services/provenance.lua:** `WeaponProvenanceService.Start()`, `WeaponProvenanceService.Record(fact)`, `WeaponProvenanceService.Inspect(request, context, invokingResource)`, `WeaponProvenanceService.IsReady()`, `WeaponProvenanceService.FindIssuanceEvent(itemInstanceId, correlationId)`, `WeaponProvenanceService.CheckContract()`
+**server/services/provenance.lua:** `WeaponProvenanceService.Start()`, `WeaponProvenanceService.Record(fact)`, `WeaponProvenanceService.StagePurchase(query, order, spec, inventoryId, itemId)`, `WeaponProvenanceService.Inspect(request, context, invokingResource)`, `WeaponProvenanceService.IsReady()`, `WeaponProvenanceService.FindIssuanceEvent(itemInstanceId, correlationId)`, `WeaponProvenanceService.CheckContract()`
 
 **shared/ammunition_migration_preview.lua:** `WeaponAmmoMigrationPreview.Build(items, catalog, limits)`
 

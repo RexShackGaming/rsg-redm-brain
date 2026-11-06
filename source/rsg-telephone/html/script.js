@@ -20,7 +20,11 @@ function applyText(ui) {
 
 /* ---------------- audio (WebAudio, no sound files) — antique line ---------------- */
 let ctx = null, lineBus = null;
-const ac = () => (ctx = ctx || new (window.AudioContext || window.webkitAudioContext)());
+const ac = () => {
+  ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  return ctx;
+};
 
 // everything heard "down the line" goes through a narrow, slightly overdriven band like an old carbon earpiece
 function line() {
@@ -196,6 +200,24 @@ function open(data) {
 }
 function close() { $('app').classList.add('hidden'); stopRingback(); stopTimer(); state = 'idle'; digits = ''; }
 
+/* ---------------- generic confirm dialog ---------------- */
+function showConfirm(data) {
+  $('cTitle').textContent = data.title || '';
+  $('cText').textContent = data.text || '';
+  $('cYes').textContent = data.yes || '';
+  $('cNo').textContent = data.no || '';
+  $('confirmDlg').classList.remove('hidden');
+}
+function hideConfirm() { $('confirmDlg').classList.add('hidden'); }
+function answerConfirm(ok) { hideConfirm(); post('confirmResult', { ok }); }
+$('cYes').onclick = () => answerConfirm(true);
+$('cNo').onclick = () => answerConfirm(false);
+document.addEventListener('keydown', e => {
+  if ($('confirmDlg').classList.contains('hidden')) return;
+  if (e.key === 'Escape') answerConfirm(false);
+  else if (e.key === 'Enter') answerConfirm(true);
+});
+
 /* ---------------- events ---------------- */
 document.querySelectorAll('.key').forEach(k => k.addEventListener('click', () => {
   if (state !== 'idle') return;
@@ -238,23 +260,8 @@ window.addEventListener('message', ({ data }) => {
       if (pay) showCredit(data.left, fmt(T.mins_left, (data.cost > 0 ? Math.floor(data.left / data.cost) : 0) + 1));
       break;
     case 'formShow': openForm(data); break;
-    case 'placeShow': {
-      const u = data.ui || {};
-      const ke = document.querySelector('[data-pk="enter"]'), kb = document.querySelector('[data-pk="back"]');
-      if (u.key_enter) ke.textContent = u.key_enter; if (u.key_back) kb.textContent = u.key_back;
-      [['plTitle','title'],['plRotate','rotate'],['plHeight','height'],['plMove','move'],['plFwdL','distance'],['plPlace','place'],['plCancel','cancel'],['plHeadingL','heading'],['plOffsetL','offset']]
-        .forEach(([id, k]) => { if (u[k]) $(id).textContent = u[k]; });
-      document.querySelectorAll('.kc').forEach(k => k.classList.remove('on'));
-      $('placer').classList.remove('hidden'); break;
-    }
-    case 'placeUpdate':
-      document.querySelectorAll('.kc').forEach(k => k.classList.toggle('on', !!(data.keys && data.keys[k.dataset.pk])));
-      $('plHeading').textContent = `${data.heading}°`;
-      $('plOffset').textContent = `${data.offset > 0 ? '+' : ''}${data.offset}`;
-      $('plFwd').textContent = `${data.forward > 0 ? '+' : ''}${data.forward}`;
-      document.querySelector('[data-pk="enter"]').classList.toggle('off', !data.valid);
-      break;
-    case 'placeHide': $('placer').classList.add('hidden'); break;
+    case 'confirmShow': showConfirm(data); break;
+    case 'confirmHide': hideConfirm(); break;
     case 'bell':
       if (data.volume > 0) bells[data.id] = { volume: data.volume, pan: data.pan || 0, muffled: !!data.muffled };
       else delete bells[data.id];
@@ -274,7 +281,7 @@ function openForm(data) {
   [['fTitle','title'],['fLabelL','label'],['fModelL','model'],['fNumberL','number'],['fListedL','listed'],['fJobL','job'],['fCancel','cancel'],['fConfirm','confirm']]
     .forEach(([id, k]) => { if (formUI[k]) $(id).textContent = formUI[k]; });
   if (formUI.job_hint) $('fJob').placeholder = formUI.job_hint;
-  const box = $('fModels'); box.innerHTML = '';
+  const box = $('fModels'); box.innerHTML = ''; formModel = null;
   (data.models || []).forEach((m, i) => {
     const el = document.createElement('div'); el.className = 'row model';
     el.innerHTML = '<div class="badge">&#9742;</div><div class="name"></div>';

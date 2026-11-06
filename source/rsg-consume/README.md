@@ -103,9 +103,16 @@ coffee  = { name = 'coffee',  label = 'Cup of Coffee',      weight = 80,  type =
    ```cfg
    ensure rsg-core
    ensure rsg-inventory
+   ensure rsg-hud
    ensure rsg-consume
    ```
 4. Restart your server.
+
+---
+
+## 📝 Changelog
+**3.1.1**
+- Fixed: drinking/eating sometimes did not restore thirst/hunger. Values are now applied **server-side** through `exports['rsg-hud']:SetNeed` (works with rsg-hud `Config.ServerNeeds`), instead of a client write that could race the HUD decay loop or be reverted by its gain limiter.
 
 ---
 

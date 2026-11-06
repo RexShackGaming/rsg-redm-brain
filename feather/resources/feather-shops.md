@@ -1,8 +1,8 @@
 # feather-shops
 
-Version 0.2.0. Authoritative commerce workflows for the Feather Framework
+Version 0.3.0. Authoritative commerce workflows for the Feather Framework
 
-Feather-native commerce service. Original BCC Shops is reference only; this resource has no VORP compatibility layer or legacy table dependency. Shipped defaults are production-safe: `Config.DevMode=false` and manifest metadata
+Native Feather commerce. Shops owns catalogs, quotes and immutable orders; Economy owns money, Inventory owns capacity/items, and Weapons owns canonical firearm metadata and provenance. There is one atomic purchase path.
 
 Source: https://github.com/FeatherFramework/feather-shops
 
@@ -10,22 +10,24 @@ Source: https://github.com/FeatherFramework/feather-shops
 
 ## Exports (call as exports['feather-shops']:Name)
 
-**server:** `AwaitReady(timeoutMs)`, `CreateQuote(request, source)`, `GetCapabilities()`, `GetCatalog(shopId)`, `GetHealth()`, `ListShops()`, `PrepareOrder(request, source)`, `ValidateQuote(quoteId, source)`
+**server:** `AwaitReady(timeoutMs)`, `CreateQuote(request, source)`, `GetCapabilities()`, `GetCatalog(shopId)`, `GetHealth()`, `ListShops()`, `PrepareOrder(request, source)`, `ValidateCheckoutPermit(id,order)`, `ValidateQuote(quoteId, source)`
+
+## Event handlers
+
+**client:** `feather-core:locale:changed`
 
 ## Commands (RegisterCommand)
 
-**server:** `/ShopCompensationFenceTest`, `/ShopDeliveryRefundConcurrencyTest`, `/ShopFulfillmentLiveTest`, `/ShopPurchaseConcurrencyReplayTest`, `/ShopPurchaseConcurrencyTest`, `/ShopPurchaseInsufficientTest`, `/ShopPurchaseLiveTest`, `/ShopPurchaseRecoveryTest`, `/ShopPurchaseState`, `/ShopReconciliationState`, `/ShopRefundDeliveredTest`, `/ShopRefundLiveTest`, `/ShopReleaseContractSmokeTest`
-
-**client:** `/ShopPurchaseClientTest`, `/ShopPurchaseRangeClientTest`, `/ShopQuoteClientTest`
+**server:** `/ShopPurchaseState`, `/ShopReconciliationState`, `/ShopReleaseContractSmokeTest`
 
 ## Public (table) functions
 
 **server/main.lua:** `ShopService.RegisterDevCommand(name,handler,restricted)`
 
-**server/orders.lua:** `ShopOrders.Start()`
+**server/orders.lua:** `ShopOrders.Start()`, `ShopOrders.ResolveRequest(request,source)`
 
 **server/organizations.lua:** `ShopOrganizations.GetId(shopId)`, `ShopOrganizations.Settlement(shopId,currency,orderId)`, `ShopOrganizations.CommerceState(result,id)`, `ShopOrganizations.CheckCommerce(shopId)`, `ShopOrganizations.Start()`
 
 **server/player_routes.lua:** `ShopPlayerRoutes.Start()`
 
-**server/purchases.lua:** `ShopPurchases.Start()`
+**server/purchases.lua:** `ShopPurchases.Start()`, `ShopPurchases.RecoverPurchase(id,originalFailure)`, `ShopPurchases.Status(id)`, `ShopPurchases.Purchase(id,source)`, `ShopPurchases.IsActive(id)`

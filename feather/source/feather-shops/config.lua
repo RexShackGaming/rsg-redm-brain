@@ -3,7 +3,7 @@ Config = {
     DevMode = false,
     ReadinessTimeoutMs = 30000,
     MaximumOffersPerShop = 100,
-    Reconciliation = { enabled = true, pollIntervalMs = 5000, retryDelaySeconds = 15, batchSize = 10 },
+    Reconciliation = { pollIntervalMs = 5000, retryDelaySeconds = 15, batchSize = 10 },
     Quotes = {
         lifetimeSeconds = 30,
         maximumDistance = 4.0,
@@ -24,6 +24,15 @@ Config = {
                     currency = 'dollars',
                     unitPrice = 100,
                     maximumQuantity = 10
+                },
+                -- Initial live-test price selected by the server owner.
+                {
+                    id = '00000000-0000-4000-8000-000000000102',
+                    itemName = 'weapon_revolver_cattleman',
+                    label = 'Cattleman Revolver',
+                    currency = 'dollars',
+                    unitPrice = 2500,
+                    maximumQuantity = 1
                 }
             }
         }

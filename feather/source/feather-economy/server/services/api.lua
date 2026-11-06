@@ -324,6 +324,60 @@ function EconomyAPI.Destroy(request, context, resource)
     return EconomyAPI.Supply('destroy', request, context, resource)
 end
 
+-- Scoped participant for the Inventory-owned checkout transaction. It accepts
+-- an order identity, never caller-supplied prices, wallets or treasury identities.
+-- Only Inventory may lend its bound query callback; all monetary SQL stays here.
+function EconomyAPI.StageShopCheckoutPayment(query, orderId, resource)
+    local callable = type(query) == 'function' or (type(query) == 'table'
+        and type(rawget(query, '__cfx_functionReference')) == 'string')
+    if resource ~= 'feather-inventory' then
+        return EconomyResults.Err('authorization_denied', 'Inventory checkout owner required.')
+    end
+    if not callable or type(orderId) ~= 'string' or not orderId:match(
+        '^%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x$') then
+        return EconomyResults.Err('invalid_input', 'Bound query and canonical order identity required.')
+    end
+    if EconomyFoundation.GetHealth().state ~= 'ready' then
+        return EconomyResults.Err('not_ready', 'Economy is not ready.')
+    end
+    local rows = query([[SELECT o.*,l.organization_id FROM shop_orders o
+        INNER JOIN shop_organization_links l ON l.shop_id=o.shop_id
+        INNER JOIN feather_organizations b ON b.organization_id=l.organization_id
+        WHERE o.order_id=? AND o.source_resource='feather-shops' AND b.status='active'
+        LOCK IN SHARE MODE]], {orderId})
+    local order = rows and rows[1]
+    if not order then return EconomyResults.Err('checkout_unavailable', 'Active canonical shop order required.') end
+    local currency=EconomyCurrencies.Get(order.currency_code)
+    if not currency.ok or not currency.value.enabled then
+        return EconomyResults.Err('currency_unavailable','Checkout currency is disabled.')
+    end
+    -- Definitions/accounts may be provisioned before checkout, never here while
+    -- inventory and treasury rows are held. Canonical identities are indexed.
+    rows = query([[SELECT account_id,account_type,owner_type,owner_id FROM economy_accounts
+        WHERE currency_code=? AND ((owner_type='character' AND owner_id=? AND account_type='wallet')
+            OR (owner_type='organization' AND owner_id=? AND account_type='treasury'))]],
+        {order.currency_code,order.buyer_character_id,order.organization_id}) or {}
+    local accounts = {organizationId=order.organization_id}
+    for _, account in ipairs(rows) do
+        if account.account_type == 'wallet' and account.owner_type == 'character'
+            and account.owner_id == order.buyer_character_id then
+            if accounts.fromAccountId then return EconomyResults.Err('account_conflict', 'Ambiguous buyer wallet.') end
+            accounts.fromAccountId = account.account_id
+        elseif account.account_type == 'treasury' and account.owner_type == 'organization'
+            and account.owner_id == order.organization_id then
+            if accounts.toAccountId then return EconomyResults.Err('account_conflict', 'Ambiguous shop treasury.') end
+            accounts.toAccountId = account.account_id
+        end
+    end
+    order.quantity,order.unit_price,order.total_amount = tonumber(order.quantity),tonumber(order.unit_price),tonumber(order.total_amount)
+    return EconomyJournal.ApplyShopPayment({raw=function(sql, ...)
+        return query(sql, table.pack(...))
+    end}, order, accounts)
+end
+exports('StageShopCheckoutPayment', function(query, orderId)
+    return EconomyAPI.StageShopCheckoutPayment(query, orderId, GetInvokingResource())
+end)
+
 exports('GetCapabilities', EconomyAPI.GetCapabilities)
 exports('GetHealth', EconomyAPI.GetHealth)
 exports('AwaitReady', EconomyAPI.AwaitReady)

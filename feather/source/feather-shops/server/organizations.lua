@@ -9,11 +9,6 @@ local schema=[[CREATE TABLE IF NOT EXISTS `shop_organization_links` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci]]
 function ShopOrganizations.GetId(shopId) return links[shopId] end
 function ShopOrganizations.Settlement(shopId,currency,orderId)
-    -- Stored intent fixes the destination permanently, including old sink orders.
-    if orderId then
-        local execution=DB.one('SELECT `to_account_id` FROM `shop_order_executions` WHERE `order_id`=?',orderId)
-        if execution then return exports['feather-economy']:GetAccount({accountId=execution.to_account_id}) end
-    end
     local id=links[shopId]
     if not ShopService.Uuid(id) then return Err('dependency_unavailable','Business treasury identity unavailable.') end
     -- Checkout is a read when the treasury already exists; no repeated write locks.

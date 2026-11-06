@@ -53,22 +53,13 @@ html,body{width:100%;height:100%;background:transparent;overflow:hidden;user-sel
 .wood-btn.end{background:linear-gradient(180deg,#1c1c1c,#0a0a0a);color:var(--rdr-muted)}
 .wood-btn.end:not(:disabled){color:var(--rdr-cost-over)}
 
-/* placement helper (top-left, no focus) */
-#placer{position:fixed;top:24px;left:24px;width:280px;padding:14px 16px;border-radius:3px;border:1px solid var(--rdr-gold-dim);outline:1px solid rgba(0,0,0,0.6);outline-offset:-5px;
-  background:repeating-linear-gradient(0deg,rgba(255,255,255,0.015) 0 1px,transparent 1px 3px),linear-gradient(160deg,var(--rdr-panel-2),var(--rdr-panel) 60%,var(--rdr-black));
-  box-shadow:0 20px 60px var(--rdr-shadow),inset 0 0 40px rgba(0,0,0,0.5);animation:plIn .25s ease}
-@keyframes plIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:none}}
-.placer-title{font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:1px;text-align:center;text-shadow:0 2px 4px #000}
+/* dialogs */
 .ink-divider{height:1px;width:70%;margin:10px auto;background:linear-gradient(90deg,transparent,var(--rdr-gold-dim),transparent)}
-.pl-row{display:flex;align-items:center;gap:6px;margin:7px 0}
-.kc{min-width:30px;height:28px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;letter-spacing:1px;
-  border:1px solid var(--rdr-gold-dim);border-radius:2px;color:var(--rdr-muted);background:linear-gradient(180deg,#2e2e2e,#141414);transition:all .1s ease}
-.kc.wide{min-width:66px}
-.kc.on{color:var(--rdr-black);background:linear-gradient(180deg,#ffffff,#cfcfcf);border-color:var(--rdr-gold);box-shadow:0 0 8px rgba(255,255,255,0.35);transform:translateY(1px)}
-.kc.off{opacity:.45}
-.pl-label{margin-left:6px;font-size:12px;text-transform:uppercase;letter-spacing:1.5px}
-.pl-stats{display:flex;justify-content:space-between;font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--rdr-muted)}
-.pl-stats b{margin-left:6px;color:var(--rdr-text);font-weight:600;letter-spacing:1px}
+.confirm-text{font-size:13px;line-height:1.4;color:var(--rdr-muted);text-align:center;margin:4px 2px 2px}
+.confirm-modal{width:340px}
+@keyframes plIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:none}}
+.confirm .modal-title{font-size:16px}
+
 
 /* directory admin controls */
 .row .name{display:flex;flex-direction:column}

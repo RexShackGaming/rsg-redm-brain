@@ -126,6 +126,10 @@ def bullet_entries(lines: list[str]) -> tuple[list[tuple[str, str]], list[str]]:
             if bold:
                 rows.append((bold.group(1).strip(), bold.group(2).strip()))
                 continue
+            bold_colon = re.match(r"^\*\*(.+?):\*\*\s*(.+)$", item)
+            if bold_colon:
+                rows.append((bold_colon.group(1).strip(), bold_colon.group(2).strip()))
+                continue
             plain = re.match(r"^(.{1,80}?)\s*[:—–]\s*(.+)$", item)
             if plain:
                 rows.append((plain.group(1).strip(), plain.group(2).strip()))

@@ -21,7 +21,7 @@ end
 local function PublicQuote(quote)
     return { id = quote.id, shopId = quote.shopId, offerId = quote.offerId,
         itemName = quote.itemName, quantity = quote.quantity, currency = quote.currency,
-        unitPrice = quote.unitPrice, total = quote.total,
+        unitPrice = quote.unitPrice, total = quote.total, currencyPrecision=quote.currencyPrecision,
         catalogRevision = quote.catalogRevision, expiresAt = quote.expiresAt }
 end
 local function PublicError(result)
@@ -34,44 +34,31 @@ local function Quote(request, source)
     if not result.ok then return PublicError(result) end
     return Ok(PublicQuote(result.value))
 end
-local function UnpaidRejection(execution)
-    return type(execution) == 'table' and execution.state == 'rejected'
-        and execution.payment_transaction_id == nil and execution.fulfillment_json == nil
+local function PublicPurchase(result,order)
+    if not result.ok then return result end
+    return Ok({orderId=result.value.orderId,state=result.value.state,quantity=order.quantity,
+        currency=order.currency,total=order.total,replayed=result.value.replayed})
 end
-local function StaleQuote(result)
-    return type(result) == 'table' and (result.code == 'quote_expired' or result.code == 'quote_not_found')
-end
-local function PurchaseInner(request, source)
-    if not PurchasePayload(request) then return Err('invalid_input', 'Quote UUID and stable request ID only.') end
-    local prepared = ShopOrders.Prepare(request, source, 'feather-shops')
+local function PurchaseInner(request,source)
+    if not PurchasePayload(request) then return Err('invalid_input','Canonical quote and request required.') end
+    local prepared=ShopOrders.Prepare(request,source,'feather-shops')
     if not prepared.ok then
-        local failure = PublicError(prepared)
-        if StaleQuote(prepared) then
-            -- Prepare replays existing receipts before inspecting ephemeral quotes.
-            -- A stale-quote failure here means this key was not accepted.
-            failure.message = 'Quote expired or was replaced. No payment was taken. Review a new price.'
-            failure.details = { purchaseState = 'not_accepted', safeToClear = true }
+        if prepared.code=='quote_expired' or prepared.code=='quote_not_found' then
+            -- No accepted order was returned. Fence the request key before
+            -- telling the client it can abandon this saved request.
+            local readback=ShopOrders.ResolveRequest(request,source)
+            if not readback.ok then return readback end
+            return PublicPurchase(ShopPurchases.Status(readback.value.id),readback.value)
         end
-        return failure
+        return prepared
     end
-    local result = ShopPurchases.Purchase(prepared.value.id, source)
-    if not result.ok then
-        local failure = PublicError(result)
-        -- A code/timeout/missing row alone cannot authorize dropping a retry.
-        local execution = DB.one('SELECT `state`,`payment_transaction_id`,`fulfillment_json` FROM `shop_order_executions` WHERE `order_id`=?',
-            prepared.value.id)
-        if UnpaidRejection(execution) then
-            failure.message = 'Purchase rejected. No payment was taken.'
-            failure.details = { purchaseState = 'rejected', safeToClear = true }
-        elseif execution == nil and StaleQuote(result) then
-            failure.message = 'Quote expired or was replaced. No payment was taken. Review a new price.'
-            failure.details = { purchaseState = 'not_accepted', safeToClear = true }
-        end
-        return failure
-    end
-    return Ok({ orderId = result.value.orderId, state = result.value.state,
-        quantity = prepared.value.quantity, currency = prepared.value.currency,
-        total = prepared.value.total, replayed = result.value.replayed })
+    return PublicPurchase(ShopPurchases.Purchase(prepared.value.id,source),prepared.value)
+end
+local function Status(request,source)
+    if not PurchasePayload(request) then return Err('invalid_input','Canonical request required.') end
+    local prepared=ShopOrders.ResolveRequest(request,source)
+    if not prepared.ok then return prepared end
+    return PublicPurchase(ShopPurchases.Status(prepared.value.id),prepared.value)
 end
 local requestsRunning = {}
 local function Purchase(request, source)
@@ -82,7 +69,7 @@ local function Purchase(request, source)
     requestsRunning[request.requestId] = nil
     if not called then
         print('[feather-shops] event=player.purchase_uncertain ' .. tostring(result))
-        return Err('purchase_pending', 'Response uncertain. Retry the original purchase request.')
+        return Err('checkout_pending', 'Automatic readback is pending.')
     end
     return result
 end
@@ -116,18 +103,35 @@ function ShopPlayerRoutes.Start()
             handler = function()
                 local listed = ShopService.ListShops()
                 if not listed.ok then return PublicError(listed) end
-                local shops = {}
+                local shops,precisions = {},{}
                 for _, location in ipairs(listed.value) do
                     local found = ShopService.GetCatalog(location.id)
                     if not found.ok then return PublicError(found) end
+                    for _,offer in ipairs(found.value.offers) do
+                        if precisions[offer.currency]==nil then
+                            local currency=exports['feather-economy']:GetCurrency(offer.currency)
+                            precisions[offer.currency]=type(currency)=='table' and currency.ok and currency.value.precision or false
+                        end
+                        if precisions[offer.currency]~=false then offer.currencyPrecision=precisions[offer.currency] end
+                    end
                     shops[#shops + 1] = found.value
                 end
                 return Ok(shops)
             end },
         { name = 'shops.quote.v1', handler = Quote, validate = QuotePayload, calls = 4 },
-        { name = 'shops.purchase.v1', handler = Purchase, validate = PurchasePayload, calls = 2 }
+        { name = 'shops.purchase.v1', handler = Purchase, validate = PurchasePayload, calls = 2 },
+        { name = 'shops.purchase.status.v1', handler = Status, validate = PurchasePayload, calls = 2 }
     }) do
-        local registered = exports['feather-core']:RegisterRpc(route.name, route.handler, {
+        local registered = exports['feather-core']:RegisterRpc(route.name,function(request,source)
+            local called,result=pcall(route.handler,request,source)
+            if not called or type(result)~='table' then result=Err('checkout_pending','Automatic readback is pending.') end
+            if result.ok then return result end
+            local failure=Err(result.code or 'checkout_pending',ShopText(source,'error_'..tostring(result.code)))
+            if type(result.details)=='table' and result.details.safeToClear==true then
+                failure.details={safeToClear=true,purchaseState=result.details.purchaseState or 'rejected'}
+            end
+            return failure
+        end, {
             contract = 1, direction = 'client_to_server', requireCharacter = route.requireCharacter ~= false,
             windowMs = 1000, maxCalls = route.calls, maxPayloadBytes = 512,
             maxDepth = 2, maxNodes = 8,

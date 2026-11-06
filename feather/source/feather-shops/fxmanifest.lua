@@ -6,11 +6,10 @@ lua54 'yes'
 name 'feather-shops'
 description 'Authoritative commerce workflows for the Feather Framework'
 author 'Feather Framework'
-version '0.2.0'
-shops_dev_tests 'false'
+version '0.3.0'
 
-client_script 'client/quote_tests.lua'
-client_script 'client/purchase_tests.lua'
+shared_script 'shared/localization.lua'
+
 client_script 'client/shop.lua'
 
 server_scripts {
@@ -20,10 +19,7 @@ server_scripts {
     'server/organizations.lua',
     'server/quotes.lua',
     'server/orders.lua',
-    'server/fulfillment.lua',
     'server/purchases.lua',
-    'server/purchase_tests.lua',
-    'server/compensation_tests.lua',
     'server/reconciliation.lua',
     'server/player_routes.lua'
 }

@@ -42,7 +42,7 @@ function WeaponProvenanceService.Start()
     return WeaponResult.Ok(true)
 end
 
-function WeaponProvenanceService.Record(fact)
+local function Persist(fact, insert)
     if not ready or type(fact) ~= 'table' then
         return WeaponResult.Error(WeaponErrors.DEPENDENCY_UNAVAILABLE,
             'Weapon provenance ledger is unavailable', nil, fact and fact.correlationId)
@@ -59,7 +59,7 @@ function WeaponProvenanceService.Record(fact)
     -- DB.insert raises on failure (unlike MySQL.insert.await, which returned nil); pcall keeps
     -- that failure inside this service's existing WeaponResult.Error contract instead of letting
     -- a raw Lua error cross the exports() boundary into whatever resource called IssueWeapon etc.
-    local inserted, id = pcall(DB.insert, [[
+    local inserted, id = pcall(insert, [[
         INSERT INTO `feather_weapon_events`
         (`item_instance_id`,`serial_number`,`definition_id`,`event_type`,`operation`,
          `actor_character_id`,`from_character_id`,`to_character_id`,
@@ -78,6 +78,41 @@ function WeaponProvenanceService.Record(fact)
             'Weapon provenance event could not be persisted', nil, fact.correlationId)
     end
     return WeaponResult.Ok({ eventId = id }, fact.correlationId)
+end
+
+function WeaponProvenanceService.Record(fact)
+    return Persist(fact, DB.insert)
+end
+
+-- Private checkout participant: the caller owns commit/rollback and receipt
+-- deduplication. Exactly one insert on the existing connection; no nested DB
+-- transaction, historical-event scan or post-commit provenance gap.
+function WeaponProvenanceService.StagePurchase(query, order, spec, inventoryId, itemId)
+    local callable = type(query) == 'function' or (type(query) == 'table'
+        and type(rawget(query, '__cfx_functionReference')) == 'string')
+    local metadata = type(spec) == 'table' and spec.metadata
+    local provenance = type(metadata) == 'table' and metadata.provenance
+    local definition = type(spec) == 'table' and IssuanceService.PurchaseDefinition(spec.itemName)
+    if not callable or type(order) ~= 'table' or order.source_resource ~= 'feather-shops'
+        or order.quantity ~= 1 or not definition or definition.id ~= spec.definitionId
+        or order.order_id ~= spec.requestId or order.item_name ~= spec.itemName
+        or type(provenance) ~= 'table' or provenance.type ~= 'purchase'
+        or provenance.resource ~= 'feather-shops' or provenance.reference ~= order.order_id
+        or provenance.issuedToCharacterId ~= order.buyer_character_id
+        or type(inventoryId) ~= 'number' or inventoryId < 1 or inventoryId % 1 ~= 0
+        or type(itemId) ~= 'number' or itemId < 1 or itemId % 1 ~= 0 then
+        return WeaponResult.Error(WeaponErrors.AUTHORIZATION_INVALID, 'Canonical checkout provenance required')
+    end
+    local checked = WeaponMetadata.Validate(metadata, definition)
+    if not checked.ok then return checked end
+    return Persist({itemInstanceId=itemId,serialNumber=metadata.serialNumber,
+        definitionId=spec.definitionId,eventType='issuance',operation='purchase',
+        actorCharacterId=order.buyer_character_id,toCharacterId=order.buyer_character_id,
+        toInventoryId=inventoryId,reason='shop.purchase',resource='feather-shops',
+        correlationId=order.order_id,occurredAt=provenance.createdAt}, function(sql, ...)
+            local inserted = query(sql, table.pack(...))
+            return type(inserted) == 'table' and tonumber(inserted.insertId or inserted.insert_id) or nil
+        end)
 end
 
 function WeaponProvenanceService.Inspect(request, context, invokingResource)

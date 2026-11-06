@@ -363,6 +363,7 @@ The checklist covers security, notifications, locales, environment (removed reso
 | AI loads a huge data file and loses context | Tell it to grep, per `data/rdr3_discoveries/MAP.md` |
 | NUI stuck on screen | Ensure `SetNuiFocus(false, false)` on close and `onResourceStop` (`patterns/nui-bridge.lua`) |
 | `'.\refresh.ps1' is not recognized` | You're in Command Prompt or the wrong folder; see [Windows setup](#windows-setup) |
+| `JSONDecodeError` while the refresh fetches Feather | GitHub API rate limit or an empty response. Set `GITHUB_TOKEN` and re-run, or ignore it: the refresh prints `skip feather` and continues. |
 | `cd` won't change to `D:\...` in cmd | Use `cd /d D:\...`; see [Windows setup](#windows-setup) |
 | Exploit found | Re-run `audit/audit-checklist.md` section 1 and follow `conventions/security.md` |
 

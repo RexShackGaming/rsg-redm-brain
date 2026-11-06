@@ -216,12 +216,7 @@ local function applyStats(data)
     if data.alcohol then
         alcoholCount = clamp(alcoholCount + data.alcohol, 0, alc.MaxAlcoholLevel)
     end
-    if data.hunger and data.hunger ~= 0 then
-        TriggerEvent('hud:client:UpdateHunger', clamp((LocalPlayer.state.hunger or 0) + data.hunger, 0, 100))
-    end
-    if data.thirst and data.thirst ~= 0 then
-        TriggerEvent('hud:client:UpdateThirst', clamp((LocalPlayer.state.thirst or 0) + data.thirst, 0, 100))
-    end
+    -- hunger/thirst are applied server-side in rsg-consume:server:finish (rsg-hud ServerNeeds is authoritative)
     if data.stress then
         if data.stress > 0 then
             TriggerEvent('hud:client:RelieveStress', data.stress)
