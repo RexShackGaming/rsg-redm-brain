@@ -111,10 +111,14 @@ end
 
 RegisterNetEvent(RES .. ':server:request', function(clientKey, x, y, z)
     local src = source
-    if type(clientKey) ~= 'string' or #clientKey > 64 then return end
+    if type(clientKey) ~= 'string' or #clientKey == 0 or #clientKey > 64 then return end
+    -- Coords are optional for configured machines; for world props they must be finite numbers
+    if x ~= nil and (type(x) ~= 'number' or x ~= x) then return end
+    if y ~= nil and (type(y) ~= 'number' or y ~= y) then return end
+    if z ~= nil and (type(z) ~= 'number' or z ~= z) then return end
 
     local now = GetGameTimer()
-    if lastRequest[src] and now - lastRequest[src] < Config.RequestCooldown * 1000 then
+    if lastRequest[src] and now - lastRequest[src] < (Config.RequestCooldown or 2) * 1000 then
         return deny(src, 'slowDown')
     end
     lastRequest[src] = now
@@ -123,7 +127,7 @@ RegisterNetEvent(RES .. ':server:request', function(clientKey, x, y, z)
     if not Player then return end
 
     local key, coords = resolveMachine(clientKey, x, y, z)
-    if not key then return deny(src, 'unavailable') end
+    if not key or not coords then return deny(src, 'unavailable') end
     if bySource[src] or sessions[key] then return deny(src, 'busy') end
     if distanceTo(src, coords) > Config.InteractionDistance + 3.0 then return deny(src, 'tooFar') end
 
@@ -154,6 +158,8 @@ RegisterNetEvent(RES .. ':server:request', function(clientKey, x, y, z)
 end)
 
 RegisterNetEvent(RES .. ':server:failed', function(id)
+    id = tonumber(id)
+    if not id then return end
     local session = bySource[source]
     if session and session.id == id and session.state == 'preparing' then
         release(session, false) -- no charge
@@ -162,6 +168,8 @@ end)
 
 RegisterNetEvent(RES .. ':server:ready', function(id)
     local src = source
+    id = tonumber(id)
+    if not id then return end
     local session = bySource[src]
     if not session or session.id ~= id or session.state ~= 'preparing' then return end
 

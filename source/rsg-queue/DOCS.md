@@ -33,7 +33,7 @@
    This means a VIP behind a public player can still take a reserved slot.
 5. Admitted players count as "connecting" until `playerJoining` fires or `ConnectTimeout` passes, so slots are not double-booked.
 6. Once admitted, a player still sees the card until it has been on screen for `Config.MinCardTime` seconds (their slot is held meanwhile, and the `ConnectTimeout` load-in timer restarts when they actually join). Set it to `0` to join instantly.
-7. While waiting, the card refreshes every `UpdateInterval` ms and shows position, tier, time waited, an estimated wait (average gap between the last `EstimateWindow` admits × position) and, for VIPs, how many earlier players they skipped. Players who close the game leave the queue automatically.
+7. While waiting, the card refreshes every second (`UpdateInterval`, capped at 1 s so the clock does not skip) and shows position, tier, time waited, an estimated wait and, for VIPs, how many earlier players they skipped. The estimated wait counts down every second and is re-anchored when the queue position or admit pace changes (average gap between the last `EstimateWindow` admits × position). Players who close the game leave the queue automatically.
 8. If the resource stops, every waiting player is sent a "queue is restarting" message instead of a frozen card.
 
 ## Priority rules

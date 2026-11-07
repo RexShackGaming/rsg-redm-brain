@@ -1,6 +1,6 @@
 # rsg-queue
 
-Version 3.0.1. rsg-queue - connect queue with VIP priority, reserved slots and crash grace
+Version 3.0.2. rsg-queue - connect queue with VIP priority, reserved slots and crash grace
 
 **Version 3.0.1** · A modern connect queue for RSG Framework RedM servers. Players wait in line on a styled Adaptive Card, and VIP members you manage get priority, reserved slots and tiers. Dependencies: `rsg-core`, `oxmysql` (no ox_lib). Optional: `rsg-log` for logging. Full developer and server owner documentation: [DOCS.md](DOCS.md)
 

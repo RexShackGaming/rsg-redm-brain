@@ -4,6 +4,10 @@ let state = null;
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtDur = (sec) => {
+    sec = Math.max(0, Math.floor(Number(sec) || 0));
+    return `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+};
 
 function post(name, body = {}) {
     return fetch(`https://${RES}/${name}`, {
@@ -62,15 +66,18 @@ function render() {
     mb.classList.toggle('on', !!state.maintenance);
 
     const q = $('queueList');
+    const renderedAt = Date.now();
     if (!state.queue.length) {
         q.innerHTML = `<div class="empty">${esc(L.ui_empty_queue)}</div>`;
     } else {
-        q.innerHTML = state.queue.map((e) => `
+        q.innerHTML = state.queue.map((e) => {
+            const waitedSec = Math.max(0, Math.floor(Number(e.waitedSec) || 0));
+            return `
             <div class="row">
                 <div class="badge">${e.pos}</div>
                 <div class="info">
                     <div class="name">${esc(e.name)}</div>
-                    <div class="desc">${esc(e.label)} · ${esc(e.waited)}${e.grace ? ' · ' + esc(L.card_grace) : ''}</div>
+                    <div class="desc">${esc(e.label)} · <span class="waited" data-base="${waitedSec}" data-at="${renderedAt}">${fmtDur(waitedSec)}</span>${e.grace ? ' · ' + esc(L.card_grace) : ''}</div>
                 </div>
                 <span class="pill">${e.priority}</span>
                 <div class="actions">
@@ -78,7 +85,8 @@ function render() {
                     <button class="wood-btn small" data-act="queue_front" data-src="${e.src}">${esc(L.ui_front)}</button>
                     <button class="wood-btn small muted" data-act="queue_remove" data-src="${e.src}">${esc(L.ui_remove)}</button>
                 </div>
-            </div>`).join('');
+            </div>`;
+        }).join('');
     }
 
     const v = $('vipList');
@@ -152,7 +160,24 @@ $('refreshBtn').addEventListener('click', async () => {
     if (d) { state = d; render(); }
 });
 
-function close() { closeDds(); $('app').classList.add('hidden'); post('close'); }
+let waitTick = null;
+
+function tickWaited() {
+    const now = Date.now();
+    document.querySelectorAll('.waited').forEach((el) => {
+        const base = Number(el.dataset.base) || 0;
+        const at = Number(el.dataset.at) || now;
+        el.textContent = fmtDur(base + Math.floor((now - at) / 1000));
+    });
+}
+
+function close() {
+    closeDds();
+    clearInterval(waitTick);
+    waitTick = null;
+    $('app').classList.add('hidden');
+    post('close');
+}
 $('closeBtn').addEventListener('click', close);
 document.addEventListener('keyup', (e) => { if (e.key === 'Escape' && !$('app').classList.contains('hidden')) close(); });
 
@@ -165,15 +190,24 @@ window.addEventListener('message', (e) => {
         applyLabels();
         render();
         $('app').classList.remove('hidden');
+        clearInterval(waitTick);
+        waitTick = setInterval(tickWaited, 1000);
         clearInterval(poll);
         poll = setInterval(async () => {
-            if ($('app').classList.contains('hidden')) return clearInterval(poll);
+            if ($('app').classList.contains('hidden')) {
+                clearInterval(poll);
+                clearInterval(waitTick);
+                waitTick = null;
+                return;
+            }
             const d = await post('refresh');
             if (d) { state = d; render(); }
         }, 5000);
     } else if (m.action === 'close') {
         closeDds();
         clearInterval(poll);
+        clearInterval(waitTick);
+        waitTick = null;
         $('app').classList.add('hidden');
     }
 });

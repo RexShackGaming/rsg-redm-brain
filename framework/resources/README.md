@@ -18,7 +18,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-bathing](rsg-bathing.md) | Interactive bathhouse system for RedM servers running the RSG Framework. Players pay for a bath, scrub themsel | 1 | 10 |
 | [rsg-beekeeper](rsg-beekeeper.md) | Beekeeper script for RSG Framework | 0 | 23 |
 | [rsg-boats](rsg-boats.md) | rsg-boats - multi-yard boat shop with dock storing, per-boat storage, transfers and an NUI admin panel | 0 | 6 |
-| [rsg-bossmenu](rsg-bossmenu.md) | Boss management menu for RedM servers using RSG Core. > ox_lib–based menu system allowing job bosses t | 0 | 13 |
+| [rsg-bossmenu](rsg-bossmenu.md) | Boss management menu for RSG Framework (RedM). Job bosses can manage employees, hire nearby players, open  | 0 | 10 |
 | [rsg-bountyhunter](rsg-bountyhunter.md) | rsg-bountyhunter - hunt wanted outlaws and bring them in dead or alive | 0 | 4 |
 | [rsg-canteen](rsg-canteen.md) | Fill a canteen at water pumps with rsg-target, or straight from rivers and lakes, and drink from it to res | 0 | 4 |
 | [rsg-character](rsg-character.md) | Character selection, character creation, clothing stores, wardrobe and spawn selection for RSG-Core (RedM) | 14 | 19 |
@@ -36,11 +36,11 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-fishing](rsg-fishing.md) | Fishing for RSG-Core (RedM). Players equip a fishing rod, bait it with an item from their inventory, cast, | 0 | 3 |
 | [rsg-fishmonger](rsg-fishmonger.md) | A fishmonger system for RSG-Core (RedM). Players visit a fishmonger NPC in any major town to sell their  | 0 | 1 |
 | [rsg-fortuneteller](rsg-fortuneteller.md) | Fortune teller machines for RSG-Core | 0 | 0 |
-| [rsg-gangmenu](rsg-gangmenu.md) | A gang boss management menu for RedM servers running the RSG Framework. Gang bosses can manage members | 0 | 14 |
+| [rsg-gangmenu](rsg-gangmenu.md) | A gang boss management menu for RedM servers running the RSG Framework. Gang bosses can manage members | 0 | 10 |
 | [rsg-gizmo](rsg-gizmo.md) | Standard prop placement gizmo for the RSG Framework | 6 | 1 |
 | [rsg-goldclaim](rsg-goldclaim.md) | Version 3.2.0 · requires rsg-core, rsg-inventory, rsg-target, oxmysql · no ox_lib · developer reference in | 0 | 31 |
 | [rsg-goldpanning](rsg-goldpanning.md) | Gold panning system for RSG Framework | 0 | 5 |
-| [rsg-guarma](rsg-guarma.md) | Boat travel between Saint Denis and Guarma for the RSG Framework (RedM). Players buy boat tickets from | 0 | 2 |
+| [rsg-guarma](rsg-guarma.md) | Boat travel between Saint Denis and Guarma for the RSG Framework | 0 | 2 |
 | [rsg-herbalist](rsg-herbalist.md) | Herbalist script for RSG Framework | 0 | 15 |
 | [rsg-hotair](rsg-hotair.md) | Hireable hot air balloons for RedM servers running the RSG-Core framework. Players hire a balloon at a doc | 0 | 7 |
 | [rsg-housing](rsg-housing.md) | Monthly house rentals for the RSG Framework (RedM). Players rent a house directly at the property, pay rent ev | 0 | 6 |

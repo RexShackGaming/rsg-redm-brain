@@ -5,10 +5,10 @@ lua54 'yes'
 
 name 'rsg-fortuneteller'
 description 'Fortune teller machines for RSG-Core'
-version '3.0.0'
+version '3.0.1'
 
 shared_scripts {
-    '@ox_lib/init.lua',
+    '@rsg-core/shared/locale.lua',
     'shared/config.lua',
     'shared/lines.lua',
     'shared/utils.lua',
@@ -21,7 +21,7 @@ client_scripts {
 
 server_scripts {
     'server/main.lua',
-    'server/versionchecker.lua'
+    'server/versionchecker.lua',
 }
 
 ui_page 'ui/index.html'
@@ -34,5 +34,12 @@ files {
 
 dependencies {
     'rsg-core',
-    'ox_lib',
+    'rsg-target',
+}
+
+escrow_ignore {
+    'locales/*',
+    'shared/config.lua',
+    'shared/lines.lua',
+    'README.md',
 }

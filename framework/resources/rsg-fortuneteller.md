@@ -1,12 +1,12 @@
 # rsg-fortuneteller
 
-Version 3.0.0. Fortune teller machines for RSG-Core
+Version 3.0.1. Fortune teller machines for RSG-Core
 
-Coin-operated fortune teller machines for **RSG-Core** (RedM). Pay at the machine, hand over your cash, and the machine reads you a random fortune using RDR2's own `FTELL` voice lines. Players nearby hear the reading too. - Configured machines spawn and stream in/out by distance. Machines already on the map can be used too (optional). - 72 game fortune lines, plus optional intro lines and your own
+Coin-operated fortune teller machines for **RSG Framework** (RedM). Pay at the machine, hand over cash, and the machine reads a random fortune using RDR2 `FTELL` voice lines. Nearby players hear the reading too. - Configured machines stream in/out by distance; map-placed machines can also be used - 72 game fortune lines, optional intro lines, and custom `.ogg` files
 
 Source: https://github.com/Rexshack-RedM/rsg-fortuneteller
 
-**Dependencies:** `rsg-core`, `ox_lib`
+**Dependencies:** `rsg-core`, `rsg-target`
 
 Has NUI (`ui_page`).
 

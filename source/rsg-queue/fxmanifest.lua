@@ -5,7 +5,7 @@ lua54 'yes'
 
 author 'RexShack'
 description 'rsg-queue - connect queue with VIP priority, reserved slots and crash grace'
-version '3.0.1'
+version '3.0.2'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',

@@ -55,7 +55,7 @@ Full developer and server owner documentation: [DOCS.md](DOCS.md)
 | `Debug` | `false` | Print queue activity to the console |
 | `ServerName` | `'My RSG Server'` | Title on the queue card |
 | `CardImage` | `''` | Optional banner image URL on the card |
-| `UpdateInterval` | `2000` | ms between card refreshes |
+| `UpdateInterval` | `1000` | ms between card refreshes (capped at 1 s so the on-card clock does not skip seconds) |
 | `MinCardTime` | `10` | Seconds the queue card always shows, even with a free slot (`0` = join instantly) |
 | `ConnectTimeout` | `180` | Seconds an admitted player has to load in before their slot is freed |
 | `VipRefresh` | `300` | Seconds between VIP reloads (for expiry) |

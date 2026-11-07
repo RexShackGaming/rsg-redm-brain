@@ -1,5 +1,3 @@
-lib.locale()
-
 Fortune = {}
 
 --- Total length of a reading in seconds. Server and client use the same timeline.

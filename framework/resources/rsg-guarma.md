@@ -1,12 +1,12 @@
 # rsg-guarma
 
-Version 3.0.0. rsg-guarma
+Version 3.0.1. Boat travel between Saint Denis and Guarma for the RSG Framework
 
-Boat travel between **Saint Denis** and **Guarma** for the RSG Framework (RedM). Players buy boat tickets from a port worker, then sail to the other port. The script swaps the world horizon, water and minimap automatically when you enter or leave Guarma, including when you log in there or an admin teleports you. - Port worker NPCs (ox_target) at both ports, which fade in and out with distance
+Boat travel between **Saint Denis** and **Guarma** for the RSG Framework (RedM). Version **3.0.1**. See [DOCS.md](DOCS.md) for architecture, events, security and troubleshooting. Players buy boat tickets from a port worker, then sail to the other port. The script swaps the world horizon, water and minimap automatically when you enter or leave Guarma, including when you log in there or an admin tel
 
 Source: https://github.com/Rexshack-RedM/rsg-guarma
 
-**Dependencies:** `rsg-core`, `rsg-inventory`, `ox_lib`, `ox_target`
+**Dependencies:** `rsg-core`, `rsg-inventory`, `rsg-target`
 
 Has NUI (`ui_page`).
 
@@ -20,6 +20,6 @@ Has NUI (`ui_page`).
 
 **client:** `rsg-guarma:client:guarmaChanged`
 
-## Callbacks (lib.callback)
+## Callbacks (RSGCore.Functions.CreateCallback)
 
 **server:** `rsg-guarma:server:buyTicket`

@@ -1,3 +1,4 @@
+local RSGCore = exports['rsg-core']:GetCoreObject()
 local RES = GetCurrentResourceName()
 local modelHash = joaat(Config.Model)
 
@@ -18,7 +19,12 @@ local function debug(...)
 end
 
 local function notify(msg, kind)
-    lib.notify({ title = locale('machine'), description = msg, type = kind or 'inform', duration = 5000 })
+    RSGCore.Functions.Notify({
+        title = locale('machine'),
+        description = msg,
+        type = kind or 'inform',
+        duration = 5000,
+    })
 end
 
 local function loadDict(dict, untilMs)
@@ -341,14 +347,19 @@ local function canUse(entity)
 end
 
 local function setupTarget()
-    exports.ox_target:addModel(modelHash, {
+    exports['rsg-target']:addModel({ modelHash }, {
         {
-            name = 'rsg_fortuneteller',
+            name = 'rsg-fortuneteller:use',
             icon = Config.TargetIcon,
             label = priceLabel(),
             distance = Config.InteractionDistance,
-            canInteract = function(entity) return canUse(entity) end,
-            onSelect = function(data) startInteraction(data.entity) end,
+            canInteract = function(entity)
+                return canUse(entity)
+            end,
+            onSelect = function(data)
+                local entity = data and data.entity or data
+                startInteraction(entity)
+            end,
         },
     })
 end
@@ -387,13 +398,13 @@ end
 
 CreateThread(function()
     local mode = Config.Interaction
-    if mode ~= 'prompt' and GetResourceState('ox_target') ~= 'missing' then
+    if mode ~= 'prompt' and GetResourceState('rsg-target') ~= 'missing' then
         local tries = 0
-        while GetResourceState('ox_target') ~= 'started' and tries < 100 do
+        while GetResourceState('rsg-target') ~= 'started' and tries < 100 do
             tries = tries + 1
             Wait(100)
         end
-        usingTarget = GetResourceState('ox_target') == 'started'
+        usingTarget = GetResourceState('rsg-target') == 'started'
     end
     if usingTarget then setupTarget() else setupPrompt() end
 end)
@@ -477,7 +488,11 @@ AddEventHandler('onResourceStop', function(res)
     if res ~= RES then return end
     stopReading()
     clearHandoverProp()
-    if usingTarget then exports.ox_target:removeModel(modelHash, 'rsg_fortuneteller') end
+    if usingTarget then
+        pcall(function()
+            exports['rsg-target']:removeModel(modelHash, 'rsg-fortuneteller:use')
+        end)
+    end
     if prompt then PromptDelete(prompt) end
     for _, ent in pairs(spawned) do
         if ent and DoesEntityExist(ent) then DeleteEntity(ent) end

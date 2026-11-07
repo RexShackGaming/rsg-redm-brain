@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 local blips = {}
 local nuiPort = false
@@ -40,21 +39,27 @@ end
 function OpenTicketUI(portId)
     local port = Config.Ports[portId]
     if not port or travelling then return end
+
     local dest = Config.Ports[port.destination]
+    if not dest then return end
+
     local cash, owned = GetTicketData()
     nuiPort = portId
     SetNuiFocus(true, true)
 
-    -- close if the player dies or gets moved away while the ticket office is open
+    -- close if the player dies or moves away while the ticket office is open
     CreateThread(function()
         local origin = port.npccoords.xyz
         while nuiPort == portId do
-            if IsEntityDead(cache.ped) or #(GetEntityCoords(cache.ped) - origin) > Config.InteractRadius then
+            local ped = PlayerPedId()
+            if IsEntityDead(ped) or #(GetEntityCoords(ped) - origin) > Config.InteractRadius then
                 CloseTicketUI()
+                break
             end
             Wait(500)
         end
     end)
+
     SendNUIMessage({
         action      = 'open',
         port        = locale(port.label),
@@ -81,9 +86,11 @@ end
 
 RegisterNUICallback('buy', function(data, cb)
     if not nuiPort then return cb({}) end
-    local ok = lib.callback.await('rsg-guarma:server:buyTicket', false, nuiPort, data.amount)
+
+    local ok = RSGCore.Functions.AwaitCallback('rsg-guarma:server:buyTicket', nil, nuiPort, data and data.amount)
     if not ok then return cb({}) end
-    Wait(250) -- let the money/inventory update reach the client
+
+    Wait(250) -- allow money/inventory sync to reach the client
     local cash, owned = GetTicketData()
     cb({ cash = cash, owned = owned })
 end)
@@ -92,10 +99,17 @@ RegisterNUICallback('travel', function(_, cb)
     cb({})
     local portId = nuiPort
     CloseTicketUI()
-    if not portId then return end
-    if IsPedOnMount(cache.ped) or IsPedInAnyVehicle(cache.ped, false) then
-        return lib.notify({ title = locale('dismount_first'), type = 'error' })
+    if not portId or travelling then return end
+
+    local ped = PlayerPedId()
+    if IsPedOnMount(ped) or IsPedInAnyVehicle(ped, false) then
+        return RSGCore.Functions.Notify({
+            title = locale('dismount_first'),
+            type = 'error',
+            duration = 5000,
+        })
     end
+
     TriggerServerEvent('rsg-guarma:server:requestTravel', portId)
 end)
 
@@ -108,23 +122,32 @@ end)
 -- travel (server only sends this after taking a ticket)
 -------------------------------------
 RegisterNetEvent('rsg-guarma:client:performTravel', function(destId)
-    if GetInvokingResource() or travelling then return end -- must come from the server
+    -- must come from the server (GetInvokingResource is nil for TriggerClientEvent)
+    if GetInvokingResource() or travelling then return end
+
     local dest = Config.Ports[destId]
     if not dest then return end
+
     travelling = true
+    local ped = PlayerPedId()
 
     DoScreenFadeOut(1000)
     while not IsScreenFadedOut() do Wait(0) end
 
     SetGuarmaWorld(dest.guarma)
     local a = dest.arrival
-    Citizen.InvokeNative(0x203BEFFDBE12E96A, cache.ped, a.x, a.y, a.z - 1.0, a.w) -- _SET_ENTITY_COORDS_AND_HEADING
-    FreezeEntityPosition(cache.ped, true)
+    -- _SET_ENTITY_COORDS_AND_HEADING
+    Citizen.InvokeNative(0x203BEFFDBE12E96A, ped, a.x, a.y, a.z - 1.0, a.w)
+    FreezeEntityPosition(ped, true)
     RequestCollisionAtCoord(a.x, a.y, a.z)
+
     local timeout = GetGameTimer() + 5000
-    while not HasCollisionLoadedAroundEntity(cache.ped) and GetGameTimer() < timeout do Wait(100) end
+    while not HasCollisionLoadedAroundEntity(ped) and GetGameTimer() < timeout do
+        Wait(100)
+    end
+
     Wait(Config.TravelTime)
-    FreezeEntityPosition(cache.ped, false)
+    FreezeEntityPosition(ped, false)
 
     DoScreenFadeIn(1500)
     travelling = false
@@ -135,10 +158,17 @@ end)
 -------------------------------------
 AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
+
     for _, blip in ipairs(blips) do
         if DoesBlipExist(blip) then RemoveBlip(blip) end
     end
+
     CloseTicketUI()
-    if travelling then FreezeEntityPosition(cache.ped, false) end
+
+    if travelling then
+        FreezeEntityPosition(PlayerPedId(), false)
+        travelling = false
+    end
+
     if IsScreenFadedOut() then DoScreenFadeIn(500) end
 end)

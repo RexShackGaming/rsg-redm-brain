@@ -3,11 +3,12 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 lua54 'yes'
 
-description 'rsg-guarma'
-version '3.0.0'
+name 'rsg-guarma'
+description 'Boat travel between Saint Denis and Guarma for the RSG Framework'
+version '3.0.1'
 
 shared_scripts {
-    '@ox_lib/init.lua',
+    '@rsg-core/shared/locale.lua',
     'shared/config.lua',
 }
 
@@ -36,6 +37,5 @@ files {
 dependencies {
     'rsg-core',
     'rsg-inventory',
-    'ox_lib',
-    'ox_target',
+    'rsg-target',
 }

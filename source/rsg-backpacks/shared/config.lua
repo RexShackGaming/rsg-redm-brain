@@ -121,7 +121,7 @@ Config.Belt = {
         },
         quiver = {
             {
-                alwaysAttached = true,
+                alwaysAttached = false,
                 hashName = { 'weapon_bow', 'weapon_bow_improved' },
                 model = `p_arrowbundle01x`,
                 bone = {

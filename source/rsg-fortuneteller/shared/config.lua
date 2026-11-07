@@ -9,7 +9,7 @@ Config.CooldownSeconds = 0    -- per-machine cooldown after a reading
 Config.RequestCooldown = 2    -- per-player anti-spam (seconds)
 
 -- ── Interaction ─────────────────────────────────────────────────────────────
-Config.Interaction         = 'auto'  -- 'auto' = ox_target if started, else native prompt | 'target' | 'prompt'
+Config.Interaction         = 'auto'  -- 'auto' = rsg-target if started, else native prompt | 'target' | 'prompt'
 Config.InteractionDistance = 2.0
 Config.TargetIcon          = 'fa-solid fa-moon'
 Config.PromptKey           = 0x760A9C6F -- G
@@ -87,3 +87,6 @@ Config.Machines = {
     { id = 'machine_2', enabled = true, spawn = true, coords = vector4(2629.61, -1219.4, 52.27, 90.00) },   -- Saint Denis
     { id = 'machine_3', enabled = true, spawn = true, coords = vector4(1324.49, -1294.63, 76.0, 240.00) },  -- Rhodes
 }
+
+-- Clamp price so a misconfigured negative value cannot credit players
+if type(Config.Price) ~= 'number' or Config.Price < 0 then Config.Price = 0 end

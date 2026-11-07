@@ -190,6 +190,7 @@ local function positionOf(entry)
 end
 
 local function fmtTime(sec)
+    sec = math.max(0, math.floor(tonumber(sec) or 0))
     return ('%02d:%02d'):format(math.floor(sec / 60), sec % 60)
 end
 
@@ -221,7 +222,27 @@ local function buildCard(entry)
     local body = {}
     local pos = positionOf(entry)
     local interval = admitInterval()
-    local eta = entry.admit and fmtTime(0) or (interval and ('~' .. fmtTime(math.floor(interval * pos))) or locale('card_eta_unknown'))
+    local nowMs = GetGameTimer()
+    local eta
+    if entry.admit then
+        eta = fmtTime(0)
+    elseif interval then
+        local remainMs = interval * pos * 1000
+        -- anchor the estimate once, then let it tick down with the clock. It is only
+        -- re-anchored when the queue position or the admit pace changes, so the
+        -- countdown does not stay frozen or jump on every card refresh.
+        if not entry.etaEnd or entry.etaPos ~= pos or entry.etaInterval ~= interval then
+            entry.etaEnd = nowMs + remainMs
+            entry.etaPos = pos
+            entry.etaInterval = interval
+        end
+        -- a shorter fresh estimate means somebody ahead got in: snap down immediately
+        local fresh = nowMs + remainMs
+        if fresh < entry.etaEnd then entry.etaEnd = fresh end
+        eta = '~' .. fmtTime((entry.etaEnd - nowMs) / 1000)
+    else
+        eta = locale('card_eta_unknown')
+    end
     if Config.CardImage ~= '' then
         body[#body + 1] = { type = 'Image', url = Config.CardImage, horizontalAlignment = 'Center', size = 'Stretch' }
     end
@@ -235,7 +256,7 @@ local function buildCard(entry)
         type = 'FactSet', spacing = 'Medium',
         facts = {
             { title = locale('card_tier_title'), value = entry.label },
-            { title = locale('card_waited_title'), value = fmtTime(os.time() - entry.joined) },
+            { title = locale('card_waited_title'), value = fmtTime((nowMs - (entry.joinedMs or nowMs)) / 1000) },
             { title = locale('card_eta_title'), value = eta },
         },
     }
@@ -302,7 +323,7 @@ AddEventHandler('playerConnecting', function(name, _, deferrals)
     local entry = {
         src = src, license = license, name = name, deferrals = deferrals, staff = info.staff,
         priority = info.priority, tier = info.tier, label = info.label,
-        reserved = info.reserved, grace = info.grace, joined = os.time(),
+        reserved = info.reserved, grace = info.grace, joined = os.time(), joinedMs = GetGameTimer(),
     }
     Queue[#Queue + 1] = entry
     sortQueue()
@@ -310,6 +331,9 @@ AddEventHandler('playerConnecting', function(name, _, deferrals)
 
     local started    = GetGameTimer()
     local minCardMs  = math.max(0, (Config.MinCardTime or 0) * 1000)
+    -- the card carries a MM:SS clock, so it has to be refreshed at least once a
+    -- second or the visible seconds skip. a slower config value is capped at 1 s.
+    local cardMs     = math.max(250, math.min(tonumber(Config.UpdateInterval) or 1000, 1000))
     local nextCard   = 0
 
     local function freeHeldSlot()
@@ -349,7 +373,10 @@ AddEventHandler('playerConnecting', function(name, _, deferrals)
         end
         if now >= nextCard then
             deferrals.presentCard(buildCard(entry))
-            nextCard = now + Config.UpdateInterval
+            -- advance by a fixed step instead of "now + interval" so the refresh
+            -- does not drift and make the clock skip a second every few ticks
+            nextCard = nextCard + cardMs
+            if nextCard <= now then nextCard = now + cardMs end
         end
         Wait(250)
     end
@@ -496,9 +523,13 @@ end
 ---------------------------------
 local function getAdminData()
     sortQueue()
-    local now, q = os.time(), {}
+    local nowMs, q = GetGameTimer(), {}
     for i, e in ipairs(Queue) do
-        q[#q + 1] = { pos = i, src = e.src, license = e.license, tier = e.tier, name = e.name, label = e.label, priority = e.priority, waited = fmtTime(now - e.joined), grace = e.grace }
+        local waited = math.max(0, math.floor((nowMs - (e.joinedMs or nowMs)) / 1000))
+        q[#q + 1] = {
+            pos = i, src = e.src, license = e.license, tier = e.tier, name = e.name,
+            label = e.label, priority = e.priority, waited = fmtTime(waited), waitedSec = waited, grace = e.grace,
+        }
     end
     local rows = MySQL.query.await([[SELECT identifier, name, tier, DATE_FORMAT(expires_at, '%Y-%m-%d %H:%i') AS expires,
         (expires_at IS NOT NULL AND expires_at <= NOW()) AS expired, added_by FROM rsg_queue_vip ORDER BY tier, name]]) or {}
