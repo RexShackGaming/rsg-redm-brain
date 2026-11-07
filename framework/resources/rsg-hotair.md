@@ -1,12 +1,12 @@
 # rsg-hotair
 
-Version 2.0.1. rsg-hotair
+Version 3.0.0. rsg-hotair
 
-Hireable hot air balloons for RedM servers running the **RSG-Core** framework. Players hire a balloon at a dock, pilot it (or ride along as a passenger), and store it again when they're done. Includes its own weight-limited storage stash per balloon, full ox_target integration, an ox_lib-driven multi-language NUI, and a live on-screen flight control HUD. - **Hire / store flow** — players hire a ba
+Hireable hot air balloons for RedM servers running the **RSG-Core** framework. Players hire a balloon at a dock, pilot it (or ride along as a passenger), and store it again when they're done. Includes its own weight-limited storage stash per balloon, full rsg-target integration, an rsg-core locale-driven multi-language NUI, and a live on-screen flight control HUD. - **Hire / store flow** — players
 
 Source: https://github.com/Rexshack-RedM/rsg-hotair
 
-**Dependencies:** `rsg-core`, `ox_lib`, `ox_target`, `rsg-inventory`
+**Dependencies:** `rsg-core`, `rsg-target`, `rsg-inventory`
 
 Has NUI (`ui_page`).
 

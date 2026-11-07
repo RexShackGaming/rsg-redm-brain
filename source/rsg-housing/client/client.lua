@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 local OwnedHouses    = {} -- [houseid] = { owner, label, home } for every rented house
 local MyHouses       = {} -- [houseid] = true for houses this player rents
@@ -82,7 +81,7 @@ end
 
 -- turn the player to face the door before using the key
 local function faceCoords(coords)
-    local ped = cache.ped
+    local ped = PlayerPedId()
     local pos = GetEntityCoords(ped)
     local heading = GetHeadingFromVector_2d(coords.x - pos.x, coords.y - pos.y)
     local diff = math.abs(((GetEntityHeading(ped) - heading + 180.0) % 360.0) - 180.0)
@@ -100,11 +99,11 @@ local function faceCoords(coords)
 end
 
 local function playKeyAnimation()
-    local ped = cache.ped
+    local ped = PlayerPedId()
     local dict = 'script_common@jail_cell@unlock@key'
     local model = joaat('P_KEY02X')
-    lib.requestAnimDict(dict)
-    lib.requestModel(model)
+    RSGCore.Functions.RequestAnimDict(dict)
+    RSGCore.Functions.RequestModel(model)
 
     local prop = CreateObject(model, GetEntityCoords(ped) + vec3(0, 0, 0.2), false, false, false)
     TaskPlayAnim(ped, dict, 'action', 8.0, -8.0, 2500, 31, 0, true, 0, false, 0, false)
@@ -133,7 +132,7 @@ CreateThread(function()
     createDoorPrompt()
     while true do
         local sleep = 1000
-        local coords = GetEntityCoords(cache.ped)
+        local coords = GetEntityCoords(PlayerPedId())
         local nearest, nearestDist
 
         for i = 1, #Config.HouseDoors do
@@ -162,7 +161,7 @@ CreateThread(function()
                 local doorCoords = nearest.doorcoords
                 CreateThread(function()
                     faceCoords(doorCoords)
-                    if lib.callback.await('rsg-housing:server:toggleDoor', false, doorid) then
+                    if RSGCore.Functions.AwaitCallback('rsg-housing:server:toggleDoor', nil, doorid) then
                         playKeyAnimation()
                     end
                     doorBusy = false
@@ -178,7 +177,7 @@ end)
 -- sync from server
 ---------------------------------------
 local function loadState()
-    local owned, doors, mine = lib.callback.await('rsg-housing:server:getState', false)
+    local owned, doors, mine = RSGCore.Functions.AwaitCallback('rsg-housing:server:getState', nil)
     OwnedHouses = owned or {}
     MyHouses = mine or {}
     DoorStates = doors or {}
@@ -243,12 +242,12 @@ local function closeUI()
 end
 
 local function pushStatus(houseid, isUpdate)
-    local status = lib.callback.await('rsg-housing:server:getHouseStatus', false, houseid)
+    local status = RSGCore.Functions.AwaitCallback('rsg-housing:server:getHouseStatus', nil, houseid)
     if not status then return closeUI() end
 
     if status.rented and not status.access then
         closeUI()
-        return lib.notify({ title = houseName(houseid), description = locale('house_occupied'), type = 'error' })
+        return RSGCore.Functions.Notify({ title = houseName(houseid), description = locale('house_occupied'), type = 'error' })
     end
 
     SendNUIMessage({
@@ -277,7 +276,7 @@ end
 
 -- run a server action, show the result as a toast and refresh the panel
 local function runAction(name, ...)
-    local result = lib.callback.await('rsg-housing:server:' .. name, false, ...)
+    local result = RSGCore.Functions.AwaitCallback('rsg-housing:server:' .. name, nil, ...)
     if result and result.msg then
         SendNUIMessage({ action = 'toast', type = result.type, message = result.msg })
     end
@@ -299,13 +298,13 @@ local function wearOutfit(clothes)
         -- rsg-wardrobe strips the current pieces first so nothing is left over
         TriggerEvent('rsg-wardrobe:client:dress', clothes)
     else
-        TriggerEvent('rsg-character:client:ApplyClothes', clothes, cache.ped)
+        TriggerEvent('rsg-character:client:ApplyClothes', clothes, PlayerPedId())
     end
 end
 
 RegisterNUICallback('outfits', function(data, cb)
     if not uiOpen or not uiHouse or type(data) ~= 'table' then return cb({ available = false }) end
-    local result = lib.callback.await('rsg-housing:server:outfits', false, uiHouse, data.action, data.id)
+    local result = RSGCore.Functions.AwaitCallback('rsg-housing:server:outfits', nil, uiHouse, data.action, data.id)
     if result and result.wear then
         wearOutfit(result.wear)
         result.wear = nil
@@ -319,13 +318,13 @@ end)
 ---------------------------------------
 RegisterNUICallback('mailbox', function(data, cb)
     if not uiOpen or not uiHouse or type(data) ~= 'table' then return cb({ available = false }) end
-    local result = lib.callback.await('rsg-housing:server:mailbox', false, uiHouse, data.action, data.id)
+    local result = RSGCore.Functions.AwaitCallback('rsg-housing:server:mailbox', nil, uiHouse, data.action, data.id)
     cb(result or { skipped = true })
 end)
 
 RegisterNUICallback('searchPlayers', function(data, cb)
     if not uiOpen or type(data) ~= 'table' or type(data.query) ~= 'string' then return cb({}) end
-    local results = lib.callback.await('rsg-housing:server:searchPlayers', false, uiHouse, data.query)
+    local results = RSGCore.Functions.AwaitCallback('rsg-housing:server:searchPlayers', nil, uiHouse, data.query)
     cb({ results = results or {}, query = data.query, skipped = results == nil })
 end)
 
@@ -364,7 +363,7 @@ CreateThread(function()
     while true do
         if uiOpen and uiHouse then
             local house = HousesById[uiHouse]
-            if IsEntityDead(cache.ped) or #(GetEntityCoords(cache.ped) - house.menucoords) > Config.InteractDistance then
+            if IsEntityDead(PlayerPedId()) or #(GetEntityCoords(PlayerPedId()) - house.menucoords) > Config.InteractDistance then
                 closeUI()
             end
             Wait(500)
@@ -398,7 +397,7 @@ end
 
 RegisterNetEvent('rsg-housing:client:openAdmin', function()
     if adminOpen or uiOpen then return end
-    local result = lib.callback.await('rsg-housing:server:admin', false, 'list')
+    local result = RSGCore.Functions.AwaitCallback('rsg-housing:server:admin', nil, 'list')
     if not result or not result.ok then return end
 
     local strings = {}
@@ -422,7 +421,7 @@ end)
 
 RegisterNUICallback('admin', function(data, cb)
     if not adminOpen or type(data) ~= 'table' then return cb({ ok = false }) end
-    local result = lib.callback.await('rsg-housing:server:admin', false, data.action, data.houseid, data.data) or { ok = false }
+    local result = RSGCore.Functions.AwaitCallback('rsg-housing:server:admin', nil, data.action, data.houseid, data.data) or { ok = false }
 
     if result.denied then
         closeAdmin()
@@ -435,7 +434,7 @@ RegisterNUICallback('admin', function(data, cb)
         CreateThread(function()
             DoScreenFadeOut(500)
             while not IsScreenFadedOut() do Wait(10) end
-            SetEntityCoords(cache.ped, c.x, c.y, c.z, false, false, false, false)
+            SetEntityCoords(PlayerPedId(), c.x, c.y, c.z, false, false, false, false)
             Wait(500)
             DoScreenFadeIn(500)
         end)
@@ -462,7 +461,7 @@ CreateThread(function()
     while true do
         local sleep = 1000
         if not uiOpen and not adminOpen then
-            local coords = GetEntityCoords(cache.ped)
+            local coords = GetEntityCoords(PlayerPedId())
             local nearest, nearestDist
             for i = 1, #Config.Houses do
                 local house = Config.Houses[i]

@@ -57,8 +57,8 @@ function SpawnShopNPC(npcmodel, npccoords, scenario)
             SetEntityAlpha(spawnedPed, i, false)
         end
     end
-    -- ox_target
-    exports.ox_target:addLocalEntity(spawnedPed, {
+    -- rsg-target
+    exports['rsg-target']:addLocalEntity(spawnedPed, {
         {
             name = 'rsg-huntingpets_shop',
             label = locale('label_petshop'),

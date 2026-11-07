@@ -4,10 +4,10 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-looting'
-version '3.0.2'
+version '3.0.4'
 
 shared_scripts {
-  '@ox_lib/init.lua',
+  '@rsg-core/shared/locale.lua',
   'shared/config.lua',
 }
 
@@ -27,9 +27,7 @@ dependencies {
     'rsg-core',
     'rsg-inventory',
     'rsg-lawman',
-    'ox_lib',
-    'ox_target',
+    'rsg-target',
     'oxmysql',
 }
 
-ox_lib 'locale'

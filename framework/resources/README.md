@@ -26,7 +26,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-cinema](rsg-cinema.md) | rsg-cinema - moving picture shows rebuilt from RDR2 show_movie_magic_lantern | 0 | 8 |
 | [rsg-consume](rsg-consume.md) | Universal consumption system for RedM using RSG Core. > Immersive eating and drinking system for RedM serv | 0 | 2 |
 | [rsg-cooking](rsg-cooking.md) | A cooking system for RSG-Core (RedM) that works the same way as [rsg-moonshine](https://github.com/Rexshac | 8 | 7 |
-| [rsg-core](rsg-core.md) | The core framework for RSG RedM servers: players, characters, money, jobs (with built-in multi-job), gangs, pe | 33 | 43 |
+| [rsg-core](rsg-core.md) | The core framework for RSG RedM servers: players, characters, money, jobs (with built-in multi-job), gangs, pe | 35 | 43 |
 | [rsg-crafting](rsg-crafting.md) | An XP-based crafting book for RSG-Core (RedM). Players use a crafting book item to open a NUI menu. From t | 5 | 2 |
 | [rsg-deliveries](rsg-deliveries.md) | Wagon delivery system RSG Framework | 0 | 4 |
 | [rsg-doorlock](rsg-doorlock.md) | A database-driven door lock system for RedM using the RSG Framework. Doors are created, edited and del | 0 | 7 |
@@ -52,7 +52,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-legendary](rsg-legendary.md) | rsg-legendary - legendary animal hunting | 1 | 4 |
 | [rsg-loading](rsg-loading.md) | RSG RedM Loading Screen | 0 | 0 |
 | [rsg-lockpick](rsg-lockpick.md) | Simple lockpicking minigame for RedM (RSG Core). > A lightweight NUI lockpicking game (pin + cylinder) you | 0 | 0 |
-| [rsg-looting](rsg-looting.md) | Secure NPC looting and player robbery for RSG Framework (RedM), with ox_lib notifications, multi-language  | 1 | 2 |
+| [rsg-looting](rsg-looting.md) | Secure NPC looting and player robbery for RSG Framework (RedM), with rsg-core notifications, progress bars | 1 | 2 |
 | [rsg-lottery](rsg-lottery.md) | Lottery script for RSG Framework | 0 | 0 |
 | [rsg-loyalty](rsg-loyalty.md) | Loyalty script for RSG Framework | 4 | 11 |
 | [rsg-lumberjack](rsg-lumberjack.md) | Lumberjack gameplay: grow, chop, carry, and sell wagon loads of logs | 0 | 26 |

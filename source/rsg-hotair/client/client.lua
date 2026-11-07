@@ -1,4 +1,3 @@
-lib.locale()
 
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
@@ -83,7 +82,7 @@ end
 -- ============================================================================
 
 local function Notify(title, message, ntype)
-    lib.notify({
+    RSGCore.Functions.Notify({
         title = title,
         description = message,
         type = ntype or 'info',
@@ -351,7 +350,7 @@ function StoreHiredBalloon()
     end
     local netId = NetworkGetNetworkIdFromEntity(hiredBalloon)
     TriggerServerEvent('rsg-hotair:server:disembarkAll', netId)
-    exports.ox_target:removeLocalEntity(hiredBalloon)
+    exports['rsg-target']:removeLocalEntity(hiredBalloon)
     DeleteEntity(hiredBalloon)
     hiredBalloon = nil
     hiredDock = nil
@@ -369,7 +368,7 @@ end
 -- ============================================================================
 
 function RegisterBalloonTarget(balloon)
-    exports.ox_target:addLocalEntity(balloon, {
+    exports['rsg-target']:addLocalEntity(balloon, {
         {
             name = 'hotair_pilot',
             icon = 'fas fa-paper-plane',
@@ -419,7 +418,7 @@ end
 -- Board / disembark apply to every balloon of this model (owner + visitors)
 Citizen.CreateThread(function()
     local model = GetHashKey(Config.Model)
-    exports.ox_target:addModel(model, {
+    exports['rsg-target']:addModel(model, {
         {
             name = 'hotair_board',
             icon = 'fas fa-user-plus',
@@ -563,7 +562,7 @@ Citizen.CreateThread(function()
             end
             -- wrecked: clean up + free the slot
             if IsEntityDead(hiredBalloon, false) then
-                exports.ox_target:removeLocalEntity(hiredBalloon)
+                exports['rsg-target']:removeLocalEntity(hiredBalloon)
                 DeleteEntity(hiredBalloon)
                 hiredBalloon = nil
                 hiredDock = nil
@@ -747,7 +746,7 @@ Citizen.CreateThread(function()
             Citizen.InvokeNative(0x9CB1A1623062F402, blip, dock.blip.name)
 
             local dockIndex = i
-            exports.ox_target:addLocalEntity(ped, {
+            exports['rsg-target']:addLocalEntity(ped, {
                 {
                     name = 'hotair_hire_' .. dockIndex,
                     icon = 'fas fa-paper-plane',
@@ -801,7 +800,7 @@ end)
 local function CleanUp()
     HideFlightHint()
     if HasActiveBalloon() then
-        exports.ox_target:removeLocalEntity(hiredBalloon)
+        exports['rsg-target']:removeLocalEntity(hiredBalloon)
         DeleteEntity(hiredBalloon)
         hiredBalloon = nil
     end
@@ -813,7 +812,7 @@ local function CleanUp()
     end
     for _, ped in pairs(dockPeds) do
         if DoesEntityExist(ped) then
-            exports.ox_target:removeLocalEntity(ped)
+            exports['rsg-target']:removeLocalEntity(ped)
             DeletePed(ped)
         end
     end

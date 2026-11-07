@@ -133,8 +133,8 @@ RegisterDogTarget = function()
         end,
         distance = 2.5,
     }
-    exports.ox_target:removeLocalEntity(currentDogPed)
-    exports.ox_target:addLocalEntity(currentDogPed, options)
+    exports['rsg-target']:removeLocalEntity(currentDogPed)
+    exports['rsg-target']:addLocalEntity(currentDogPed, options)
 end
 
 StopDogAnimation = function()
@@ -299,7 +299,7 @@ local function spawnDog(model, player, x, y, z, h, skin, playerPed, isdead, issh
 
     if #(EntityPedCoord - EntitydogCoord) > 100.0 or isshop or isdead or currentDogPed == nil then
         if currentDogPed ~= nil then
-            exports.ox_target:removeLocalEntity(currentDogPed)
+            exports['rsg-target']:removeLocalEntity(currentDogPed)
             DeleteEntity(currentDogPed)
         end
 
@@ -356,7 +356,7 @@ local function spawnDog(model, player, x, y, z, h, skin, playerPed, isdead, issh
             AddPrompt(HuntModePrompt, currentDogPed, 0xB2F377E8, locale('prompt_dog_huntmode'))
         end
 
-        -- ox_target: Dog Actions + Stop Animation (only while posed)
+        -- rsg-target: Dog Actions + Stop Animation (only while posed)
         DogAnimActive = false
         RegisterDogTarget()
 
@@ -420,7 +420,7 @@ RegisterNetEvent('rsg-huntingpets:client:putawayDog')
 AddEventHandler('rsg-huntingpets:client:putawayDog', function()
     if currentDogPed then
         DogAnimActive = false
-        exports.ox_target:removeLocalEntity(currentDogPed)
+        exports['rsg-target']:removeLocalEntity(currentDogPed)
         DeleteEntity(currentDogPed)
         currentDogPed = nil
         currentDogId = nil
@@ -431,7 +431,7 @@ end)
 RegisterNetEvent('rsg-huntingpets:client:sellDogConfirm')
 AddEventHandler('rsg-huntingpets:client:sellDogConfirm', function()
     if currentDogPed then
-        exports.ox_target:removeLocalEntity(currentDogPed)
+        exports['rsg-target']:removeLocalEntity(currentDogPed)
         DeleteEntity(currentDogPed)
         currentDogPed = nil
         currentDogId = nil
@@ -592,7 +592,7 @@ Citizen.CreateThread(function()
                 recentlySpawned = Config.DogPetAttributes.DeathCooldown
                 Notify(locale('error_petdead'), '', 'ERROR')
                 Wait(3000)
-                exports.ox_target:removeLocalEntity(currentDogPed)
+                exports['rsg-target']:removeLocalEntity(currentDogPed)
                 DeleteEntity(currentDogPed)
                 currentDogPed = nil
                 currentDogId = nil

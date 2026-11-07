@@ -71,19 +71,19 @@ AddEventHandler('rsg-huntingpets:server:buyBird', function(model, preset)
 
     local entry = GetBirdShopEntry(model, preset)
     if not entry then
-        TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_not_for_sale_bird'), duration = 5000, type = 'error'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_not_for_sale_bird'), duration = 5000, type = 'error'})
         return
     end
     local price = entry.price
 
     if Player.PlayerData.money.cash < price then
-        TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_not_enough_money'), duration = 5000, type = 'error'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_not_enough_money'), duration = 5000, type = 'error'})
         return
     end
 
     Player.Functions.RemoveMoney('cash', price)
     MySQL.insert('INSERT INTO player_birds (identifier, charid, model, preset, xp, price) VALUES (?, ?, ?, ?, 0, ?)', {cid, charid, tostring(entry.model), entry.preset, price})
-    TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_bird_purchased'), duration = 5000, type = 'success'})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_bird_purchased'), duration = 5000, type = 'success'})
 end)
 
 -- ═══════════════════════════════════════════════════════════
@@ -105,7 +105,7 @@ AddEventHandler('rsg-huntingpets:server:sellBird', function(birdId)
         if not deleted or deleted < 1 then return end
         Player.Functions.AddMoney('cash', sellPrice, 'rsg-huntingpets-sell')
         TriggerClientEvent('rsg-huntingpets:client:birdSold', src)
-        TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_bird_sold', sellPrice), duration = 5000, type = 'success'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_bird_sold', sellPrice), duration = 5000, type = 'success'})
     end
 end)
 
@@ -125,7 +125,7 @@ AddEventHandler('rsg-huntingpets:server:callBird', function(birdId)
         local modelNum = tonumber(result[1].model)
         TriggerClientEvent('rsg-huntingpets:client:spawnBird', src, result[1].id, modelNum, result[1].preset, result[1].xp)
     else
-        TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_no_bird_found'), duration = 5000, type = 'error'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_no_bird_found'), duration = 5000, type = 'error'})
     end
 end)
 
@@ -142,7 +142,7 @@ AddEventHandler('rsg-huntingpets:server:loadBird', function()
 
     local sel = MySQL.query.await('SELECT selected_bird FROM player_selected_pets WHERE identifier = ? AND charid = ?', {cid, charid})
     if not sel or not sel[1] or not sel[1].selected_bird then
-        TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_no_bird_selected'), duration = 5000, type = 'error'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_no_bird_selected'), duration = 5000, type = 'error'})
         return
     end
 
@@ -152,7 +152,7 @@ AddEventHandler('rsg-huntingpets:server:loadBird', function()
         local modelNum = tonumber(result[1].model)
         TriggerClientEvent('rsg-huntingpets:client:spawnBird', src, result[1].id, modelNum, result[1].preset, result[1].xp)
     else
-        TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_bird_no_longer_exists'), duration = 5000, type = 'error'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_bird_no_longer_exists'), duration = 5000, type = 'error'})
         MySQL.execute('UPDATE player_selected_pets SET selected_bird = NULL WHERE identifier = ? AND charid = ?', {cid, charid})
     end
 end)
@@ -176,7 +176,7 @@ AddEventHandler("rsg-huntingpets:checkhunt", function()
                 return
             end
         end
-        TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_hunting_birds'), description = Config.Texts.NoJob, duration = 5000, type = 'error'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_hunting_birds'), description = Config.Texts.NoJob, duration = 5000, type = 'error'})
     else
         ActiveHunts[src] = os.time()
         TriggerClientEvent("rsg-huntingpets:starthunt", src)
@@ -232,7 +232,7 @@ AddEventHandler('rsg-huntingpets:addscavengeditem', function(name, am)
     if not item then return end
 
     Player.Functions.AddItem(item.name, item.amount)
-    TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_hunting_birds'), description = Config.Texts.FoundScavItem, duration = 5000, type = 'success'})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_hunting_birds'), description = Config.Texts.FoundScavItem, duration = 5000, type = 'success'})
 end)
 
 -- Check job for selling birds
@@ -251,7 +251,7 @@ AddEventHandler("rsg-huntingpets:check_sell", function()
         if go then
             TriggerClientEvent("rsg-huntingpets:start_sell", src)
         else
-        TriggerClientEvent('ox_lib:notify', src, {title = Config.Texts.Bird, description = Config.Texts.NoJob, duration = 5000, type = 'error'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = Config.Texts.Bird, description = Config.Texts.NoJob, duration = 5000, type = 'error'})
         end
     end
 end)
@@ -321,15 +321,15 @@ AddEventHandler("rsg-huntingpets:sell:buyoffer", function(_owner, _price, _id)
 
     local OwnerPlayer = RSGCore.Functions.GetPlayer(owner)
     if not OwnerPlayer then
-        TriggerClientEvent('ox_lib:notify', src, {title = Config.Texts.PlayerBuyBird, description = locale('notif_no_bird_found'), duration = 5000, type = 'error'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = Config.Texts.PlayerBuyBird, description = locale('notif_no_bird_found'), duration = 5000, type = 'error'})
         SellPoints[tonumber(_id)] = nil
         TriggerClientEvent("rsg-huntingpets:sell:updatepoints", -1, nil, tonumber(_id), tonumber(sellData.pedid))
         return
     end
 
     if Player.PlayerData.money.cash < price then
-        TriggerClientEvent('ox_lib:notify', src, {title = Config.Texts.PlayerBuyBird, description = Config.Texts.PlayerBuyNoMoney, duration = 5000, type = 'error'})
-        TriggerClientEvent('ox_lib:notify', owner, {title = Config.Texts.PlayerBuyBird, description = Config.Texts.PlayerBuyNoMoneyAtBuyer, duration = 5000, type = 'error'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = Config.Texts.PlayerBuyBird, description = Config.Texts.PlayerBuyNoMoney, duration = 5000, type = 'error'})
+        TriggerClientEvent('RSGCore:Client:Notify', owner, {title = Config.Texts.PlayerBuyBird, description = Config.Texts.PlayerBuyNoMoneyAtBuyer, duration = 5000, type = 'error'})
         return
     end
 
@@ -346,6 +346,6 @@ AddEventHandler("rsg-huntingpets:sell:buyoffer", function(_owner, _price, _id)
     SellPoints[tonumber(_id)] = nil
     TriggerClientEvent("rsg-huntingpets:sell:finishsell", owner)
     TriggerClientEvent("rsg-huntingpets:sell:updatepoints", -1, nil, tonumber(_id), tonumber(sellData.pedid))
-    TriggerClientEvent('ox_lib:notify', src, {title = Config.Texts.PlayerBuyBird, description = Config.Texts.PlayerBoughtBird, duration = 5000, type = 'success'})
-    TriggerClientEvent('ox_lib:notify', owner, {title = Config.Texts.PlayerBuyBird, description = Config.Texts.PlayerSoldBird, duration = 5000, type = 'success'})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {title = Config.Texts.PlayerBuyBird, description = Config.Texts.PlayerBoughtBird, duration = 5000, type = 'success'})
+    TriggerClientEvent('RSGCore:Client:Notify', owner, {title = Config.Texts.PlayerBuyBird, description = Config.Texts.PlayerSoldBird, duration = 5000, type = 'success'})
 end)

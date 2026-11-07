@@ -67,6 +67,17 @@ Converting from ox_lib:
 | `lib.callback.await(name, src, ...)` (server) | `RSGCore.Functions.AwaitClientCallback(name, src, nil, ...)` |
 | client `lib.callback.register` | `RSGCore.Functions.CreateClientCallback(name, function(cb, ...) end)` |
 
+## Cron scheduler (server, replaces `lib.cron`)
+```lua
+local task = RSGCore.Functions.CreateCron('0 * * * *', function(task, date)
+    -- every hour on the hour (server local time)
+end, { debug = false })              -- or exports['rsg-core']:CreateCron(...)
+RSGCore.Functions.StopCron(task.id)
+```
+- 5-field `min hour day month weekday`; `*`, `a-b`, `a,b,c`, `*/n`, `jan`-`dec`, `sun`-`sat` (0/7 = Sunday), `@hourly`/`@daily`/`@midnight`/`@weekly`/`@monthly`/`@yearly`.
+- Invalid expression errors at creation; job errors are caught and printed; tasks auto-stop with the creating resource.
+- From other resources stop with `StopCron(task.id)` – task methods don't cross the export boundary.
+
 ## Multi-job (built into rsg-core; rsg-multijob is removed)
 Job definitions live in the `multijob_jobs` table (manage in-game with `/jobadmin`); players hold several jobs in `player_jobs` (`/myjobs`). Settings: `RSGConfig.MultiJob`.
 Server (`RSGCore.Functions.*` or `exports['rsg-core']:*`, `id` = server id or citizenid):

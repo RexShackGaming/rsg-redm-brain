@@ -1,5 +1,11 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
+
+-- rsg-core callbacks answer via cb(...); keep handlers returning values
+local function registerCallback(name, handler)
+    RSGCore.Functions.CreateCallback(name, function(source, cb, ...)
+        cb(handler(source, ...))
+    end)
+end
 
 ---------------------------------------------
 -- state / lookups
@@ -30,7 +36,7 @@ local function isTrue(value)
 end
 
 local function notify(src, title, description, nType)
-    TriggerClientEvent('ox_lib:notify', src, {
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
         title = title,
         description = description,
         type = nType or 'inform',
@@ -292,13 +298,13 @@ end)
 ---------------------------------------------
 -- callbacks
 ---------------------------------------------
-lib.callback.register('rsg-housing:server:getState', function(source)
+registerCallback('rsg-housing:server:getState', function(source)
     local Player = RSGCore.Functions.GetPlayer(source)
     return publicHouses(), DoorStates, Player and housesOf(Player.PlayerData.citizenid) or {}
 end)
 
 -- everything the house menu needs in one call
-lib.callback.register('rsg-housing:server:getHouseStatus', function(source, houseid)
+registerCallback('rsg-housing:server:getHouseStatus', function(source, houseid)
     local Player = RSGCore.Functions.GetPlayer(source)
     if not Player then return nil end
     local house = getHouse(houseid)
@@ -334,7 +340,7 @@ end)
 ---------------------------------------------
 -- rent a house (first month paid up front)
 ---------------------------------------------
-lib.callback.register('rsg-housing:server:rentHouse', function(src, houseid)
+registerCallback('rsg-housing:server:rentHouse', function(src, houseid)
     if onCooldown(src, 2000) then return reply(false) end
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return reply(false) end
@@ -388,7 +394,7 @@ end)
 ---------------------------------------------
 -- pay rent (adds 1 calendar month to the due date, max 1 month ahead)
 ---------------------------------------------
-lib.callback.register('rsg-housing:server:payRent', function(src, houseid)
+registerCallback('rsg-housing:server:payRent', function(src, houseid)
     if onCooldown(src, 2000) then return reply(false) end
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return reply(false) end
@@ -425,7 +431,7 @@ end)
 ---------------------------------------------
 -- 'at home' toggle (tenant only, kept in memory)
 ---------------------------------------------
-lib.callback.register('rsg-housing:server:setHome', function(src, houseid, on)
+registerCallback('rsg-housing:server:setHome', function(src, houseid, on)
     if onCooldown(src, 1500) then return reply(false) end
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return reply(false) end
@@ -471,7 +477,7 @@ end)
 ---------------------------------------------
 -- storage upgrade (tenant pays the difference between tiers, cash)
 ---------------------------------------------
-lib.callback.register('rsg-housing:server:upgradeStorage', function(src, houseid, level)
+registerCallback('rsg-housing:server:upgradeStorage', function(src, houseid, level)
     if onCooldown(src, 2000) then return reply(false) end
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return reply(false) end
@@ -517,7 +523,7 @@ local function cleanHouseName(value)
     return value
 end
 
-lib.callback.register('rsg-housing:server:renameHouse', function(src, houseid, value)
+registerCallback('rsg-housing:server:renameHouse', function(src, houseid, value)
     if onCooldown(src, 2000) then return reply(false) end
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return reply(false) end
@@ -546,7 +552,7 @@ end)
 ---------------------------------------------
 -- end tenancy (no refund)
 ---------------------------------------------
-lib.callback.register('rsg-housing:server:endTenancy', function(src, houseid)
+registerCallback('rsg-housing:server:endTenancy', function(src, houseid)
     if onCooldown(src, 2000) then return reply(false) end
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return reply(false) end
@@ -562,7 +568,7 @@ end)
 ---------------------------------------------
 -- guests
 ---------------------------------------------
-lib.callback.register('rsg-housing:server:addGuest', function(src, houseid, targetCid)
+registerCallback('rsg-housing:server:addGuest', function(src, houseid, targetCid)
     if onCooldown(src) then return reply(false) end
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player or type(targetCid) ~= 'string' then return reply(false) end
@@ -599,7 +605,7 @@ lib.callback.register('rsg-housing:server:addGuest', function(src, houseid, targ
 end)
 
 -- tenant turns one guest permission on or off
-lib.callback.register('rsg-housing:server:setGuestPermission', function(src, houseid, targetCid, perm, allowed)
+registerCallback('rsg-housing:server:setGuestPermission', function(src, houseid, targetCid, perm, allowed)
     if onCooldown(src, 400, 'perm') then return reply(false) end
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player or type(targetCid) ~= 'string' or not GUEST_PERM_SET[perm] then return reply(false) end
@@ -616,7 +622,7 @@ lib.callback.register('rsg-housing:server:setGuestPermission', function(src, hou
 end)
 
 -- search characters by name (or exact citizen id) for the add-guest box
-lib.callback.register('rsg-housing:server:searchPlayers', function(src, houseid, query)
+registerCallback('rsg-housing:server:searchPlayers', function(src, houseid, query)
     if onCooldown(src, 300, 'search') then return nil end
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player or type(query) ~= 'string' then return {} end
@@ -654,7 +660,7 @@ lib.callback.register('rsg-housing:server:searchPlayers', function(src, houseid,
     return results
 end)
 
-lib.callback.register('rsg-housing:server:removeGuest', function(src, houseid, targetCid)
+registerCallback('rsg-housing:server:removeGuest', function(src, houseid, targetCid)
     if onCooldown(src) then return reply(false) end
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player or type(targetCid) ~= 'string' then return reply(false) end
@@ -677,7 +683,7 @@ end)
 ---------------------------------------------
 -- wardrobe: saved outfits from rsg-character (playeroutfit table)
 ---------------------------------------------
-lib.callback.register('rsg-housing:server:outfits', function(src, houseid, action, id)
+registerCallback('rsg-housing:server:outfits', function(src, houseid, action, id)
     local Player = RSGCore.Functions.GetPlayer(src)
     local house = HousesById[houseid]
     if not Player or not house then return { available = false } end
@@ -720,7 +726,7 @@ local function canUseMailbox(src, houseid)
     return Player.PlayerData.citizenid
 end
 
-lib.callback.register('rsg-housing:server:mailbox', function(src, houseid, action, id)
+registerCallback('rsg-housing:server:mailbox', function(src, houseid, action, id)
     local citizenid = canUseMailbox(src, houseid)
     if not citizenid then return { available = false } end
 
@@ -772,7 +778,7 @@ end)
 ---------------------------------------------
 -- doors (state kept in memory: rented houses lock on restart, vacant houses stay open)
 ---------------------------------------------
-lib.callback.register('rsg-housing:server:toggleDoor', function(source, doorid)
+registerCallback('rsg-housing:server:toggleDoor', function(source, doorid)
     local src = source
     doorid = tostring(doorid)
     local door = DoorsById[doorid]
@@ -966,7 +972,7 @@ AdminActions.storage = function(src, houseid)
     return { ok = true, closed = true }
 end
 
-lib.callback.register('rsg-housing:server:admin', function(src, action, houseid, data)
+registerCallback('rsg-housing:server:admin', function(src, action, houseid, data)
     if not isAdmin(src) then return { ok = false, denied = true } end
     if action == 'list' then return { ok = true, houses = adminList() } end
 
@@ -991,7 +997,7 @@ end, Config.AdminPermission)
 ---------------------------------------------
 -- rent check: reminders and evictions
 ---------------------------------------------
-lib.cron.new(Config.RentCheckCronJob, function()
+RSGCore.Functions.CreateCron(Config.RentCheckCronJob, function()
     -- reminders (sent once per rent period)
     local dueSoon = MySQL.query.await([[
         SELECT houseid, citizenid, fullname, DATE_FORMAT(rent_due, '%d/%m/%Y') AS due_text

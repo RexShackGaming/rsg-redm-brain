@@ -25,7 +25,7 @@ Config.StoreMaxSpeed     = 3.0 -- m/s, balloon must be near-stationary to store
 Config.StoreMaxHeightAGL = 4.0 -- must be close to the ground to store
 Config.BoardMaxSpeed     = 3.0 -- same limits for boarding / piloting
 Config.BoardMaxHeightAGL = 4.0
-Config.TargetDistance    = 6.0 -- ox-target distance (balloon is a large entity)
+Config.TargetDistance    = 6.0 -- rsg-target distance (balloon is a large entity)
 
 -- Balloon storage (rsg-inventory stash per owner citizenid)
 Config.StorageMaxWeight = 100000

@@ -1,9 +1,7 @@
 Config = Config or {}
 
--- Load the ox_lib locale for this resource (server picks the language via the
--- 'ox:locale' convar, e.g. `setr ox:locale "de"` in server.cfg; defaults to 'en').
--- Must run before any locale() calls below/in the other shared config files.
-lib.locale()
+-- Locales are provided by rsg-core (@rsg-core/shared/locale.lua). Language is
+-- set by the 'rsg:locale' convar, e.g. `setr rsg:locale "de"` (defaults to 'en').
 
 ---------------------------------
 -- General Settings

@@ -232,7 +232,28 @@ local heading = RSGCore.Functions.AwaitClientCallback('myres:client:getHeading',
 | `RSGCore.Debug(tbl, indent?)` | Pretty-prints to server console |
 | `RSGCore.ShowError(resource, msg)` / `ShowSuccess(resource, msg)` | Coloured console output |
 | `RSGCore.Functions.CreateAccountNumber()` | |
+| `RSGCore.Functions.CreateCron(expression, job, options?)` | Scheduled task, replaces `lib.cron.new` – see *Cron scheduler* below |
+| `RSGCore.Functions.StopCron(taskOrId)` | Stops a cron task |
 | `RSGCore.Player.CreateCitizenId()` / `CreateFingerId()` / `CreateWalletId()` / `CreateSerialNumber()` | Unique id generators |
+
+### Cron scheduler (replaces `lib.cron`)
+
+```lua
+local task = RSGCore.Functions.CreateCron('0 * * * *', function(task, date)
+    -- runs every hour on the hour (server local time); date = os.date('*t')
+end, { debug = false })        -- or exports['rsg-core']:CreateCron(...)
+
+RSGCore.Functions.StopCron(task.id)   -- or task:stop() / task:isActive() / task:run()
+```
+
+- Standard 5-field expression: `minute hour day month weekday`.
+- Supports `*`, `n`, `a-b`, `a,b,c`, `*/n`, `a-b/n`, month names `jan`–`dec`, day names `sun`–`sat` (`0` or `7` = Sunday).
+- Macros: `@yearly`/`@annually`, `@monthly`, `@weekly`, `@daily`/`@midnight`, `@hourly`.
+- If both day-of-month and weekday are restricted, either matching runs the task (standard cron behaviour).
+- Each task runs at most once per matching minute in its own thread; errors are caught and printed with the owning resource.
+- An invalid expression raises an error at creation.
+- Tasks are stopped automatically when the resource that created them stops.
+- Examples: `'*/15 * * * *'` every 15 min · `'0 6 * * mon-fri'` 06:00 weekdays · `'30 3 1 * *'` 03:30 on the 1st.
 
 ### Extending the core at runtime
 
@@ -717,7 +738,7 @@ TriggerEvent('hud:client:UpdateThirst', math.max(0, math.min(100, (LocalPlayer.s
 
 **Shared:** `GetCoreObject`, `GetWeapons`
 
-**Server:** `SetMethod`, `SetField`, `GetCoreVersion`, `ExploitBan(playerId, origin)`, `AddItem(s)`, `UpdateItem`, `RemoveItem`, `AddJob(s)`, `UpdateJob`, `RemoveJob`, `AddGang(s)`, `UpdateGang`, `RemoveGang`, `AddPlayerJob`, `RemovePlayerJob`, `GetPlayerJobs`, `HasPlayerJob`, `CanTakePlayerJob`, `GetPlayerJobCount`, `GetJobDefinition`, `GetJobDefinitions`
+**Server:** `SetMethod`, `SetField`, `CreateCron`, `StopCron`, `GetCoreVersion`, `ExploitBan(playerId, origin)`, `AddItem(s)`, `UpdateItem`, `RemoveItem`, `AddJob(s)`, `UpdateJob`, `RemoveJob`, `AddGang(s)`, `UpdateGang`, `RemoveGang`, `AddPlayerJob`, `RemovePlayerJob`, `GetPlayerJobs`, `HasPlayerJob`, `CanTakePlayerJob`, `GetPlayerJobCount`, `GetJobDefinition`, `GetJobDefinitions`
 
 **Client:** `Notify`, `ProgressBar`, `ProgressCircle`, `IsProgressActive`, `CancelProgress`, `DrawText`, `ChangeText`, `HideText`, `KeyPressed`, `IsTextShown`, `createPrompt`, `createPromptGroup`, `getPrompt`, `getPromptGroup`, `deletePrompt`, `deletePromptGroup`, `RequestModel`, `RequestAnimDict`, `RequestAnimSet`, `RequestNamedPtfxAsset`, `GenerateCSRFToken`
 
@@ -737,6 +758,7 @@ TriggerEvent('hud:client:UpdateThirst', math.max(0, math.min(100, (LocalPlayer.s
 | `lib.requestModel / requestAnimDict / requestAnimSet / requestNamedPtfxAsset` | `RSGCore.Functions.Request*` |
 | `lib.locale()` + `locale()` | `@rsg-core/shared/locale.lua` → `locale()` |
 | `lib.require` / `require` | `@rsg-core/shared/require.lua` |
+| `lib.cron.new(expr, job, opts)` | `RSGCore.Functions.CreateCron(expr, job, opts)` |
 | `'@ox_lib/init.lua'` | remove |
 
 ---
@@ -767,6 +789,20 @@ z:contains(coords)   z:remove()
 zones.getAllZones()  zones.getCurrentZones()  zones.getNearbyZones()
 ```
 Each zone has `id`, `coords`, `distance` (to the player, updated every 300 ms) and `insideZone`. Extra fields you pass are kept. The global `Zones` (id → zone) and `lib.zones` are set for ox_lib-style code. `inside` and debug drawing run per frame only while needed.
+
+### Points – `@rsg-core/client/points.lua` (replaces `lib.points`)
+Include it in the resource that owns the points:
+```lua
+client_scripts { '@rsg-core/client/points.lua', 'client/*.lua' }
+```
+```lua
+local p = points.new({ coords = vec3(0, 0, 0), distance = 50.0,
+    onEnter = function(self) end, onExit = function(self) end, nearby = function(self) end })
+points.new(coords, distance, { onEnter = ... })   -- ox_lib positional form
+p:remove()
+points.getAllPoints()  points.getNearbyPoints()  points.getClosestPoint()
+```
+Each point has `id`, `coords`, `distance`, `currentDistance` (while nearby, updated every 300 ms) and `isClosest`. Extra fields you pass are kept. `nearby` runs every frame only while the player is in range. Points are removed (with `onExit`) when the owning resource stops. Global `points` and `lib.points` are set for ox_lib-style code. Migrating is usually just a matter of swapping `lib.points.new` for `points.new`.
 
 ### Raycast (replaces `lib.raycast`)
 ```lua

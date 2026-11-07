@@ -1,4 +1,3 @@
-lib.locale()
 
 local RSGCore = exports['rsg-core']:GetCoreObject()
 

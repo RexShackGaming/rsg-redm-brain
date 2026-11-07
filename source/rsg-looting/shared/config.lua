@@ -9,7 +9,7 @@ Config.CommonCash  = { 1, 5 }     -- min / max cash with common loot
 Config.RareCash    = { 5, 10 }    -- min / max cash with rare loot
 
 -- 'native' = use the game's own hold-to-loot prompt on bodies
--- 'target' = ox_target option with a progress bar
+-- 'target' = rsg-target option with a progress bar
 Config.LootMethod   = 'native'
 
 Config.LootTime     = 3000        -- ms searching the body (target mode only)

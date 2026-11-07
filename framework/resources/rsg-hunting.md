@@ -1,6 +1,6 @@
 # rsg-hunting
 
-Version 3.2.1. Hunting, trapper and butcher script for RSG Framework
+Version 3.2.2. Hunting, trapper and butcher script for RSG Framework
 
 Hunting, trapper and butcher script for the RSG Framework (RedM). Players skin animals for materials, sell those materials to trappers, sell whole carcasses to butchers, and earn **hunting XP** that unlocks level perks and ranks them on a server **leaderboard**. - Hooks into the game's native skinning event (no minigame) - Up to 5 reward items per animal, 90+ animals preconfigured (`Config.Animals
 

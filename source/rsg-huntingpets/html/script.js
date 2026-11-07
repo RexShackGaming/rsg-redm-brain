@@ -25,7 +25,7 @@ var state = {
 
 /* ─────────────── LOCALIZATION ───────────────
    English fallback text. The Lua side (client_shop.lua's GetUiLocale())
-   sends the real strings resolved through ox_lib's locale() -- keyed off
+   sends the real strings resolved through rsg-core's locale() -- keyed off
    the same names -- on every 'open'/'openDogAnims' NUI message. These
    defaults are only used if that hasn't arrived yet (or a key is missing),
    so the UI never shows a blank/undefined label. */

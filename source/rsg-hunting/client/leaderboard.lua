@@ -34,20 +34,6 @@ local function runPttWhitelist()
     end
 end
 
-    DisableAllControlActions(0)
-    DisableAllControlActions(1)
-    DisableAllControlActions(2)
-    local list = Config.PushToTalkControls
-    if list then
-        for i = 1, #list do
-            local c = list[i]
-            EnableControlAction(0, c, true)
-            EnableControlAction(1, c, true)
-            EnableControlAction(2, c, true)
-        end
-    end
-end
-
 local function labels()
     return {
         title     = locale('hunting_board_title'),

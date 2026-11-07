@@ -1,12 +1,12 @@
 # rsg-huntingpets
 
-A combined RedM / RSG-Core resource that adds hunting dogs **and** hunting birds to your server in one package, with a single leather-and-gold themed NUI shop for buying, selling and managing both. Built on `ox_lib` and `ox_target`.
+A combined RedM / RSG-Core resource that adds hunting dogs **and** hunting birds to your server in one package, with a single leather-and-gold themed NUI shop for buying, selling and managing both. Built on `rsg-core` and `rsg-target` — no `ox_lib` required.
 
 ## Features
 
 ### Hunting Dogs
 - 11 purchasable dog breeds (Husky, Mutt, Labrador Retriever, Rufus, Coon Hound, Hound Dog, Border Collie, Poodle, Foxhound, Australian Shepherd, Street Dog).
-- Follow, Stay, Attack and Track commands via `ox_target`.
+- Follow, Stay, Attack and Track commands via `rsg-target`.
 - **Hunt Mode** — toggle on and your dog will automatically retrieve animals you kill nearby.
 - **Defensive Mode** — your dog will engage anyone you're in combat with.
 - Growth/XP system: feed your dog to level it up through juvenile → half-grown → fully-grown stages, unlocking Stay/Hunt Mode as it matures.
@@ -27,7 +27,7 @@ A combined RedM / RSG-Core resource that adds hunting dogs **and** hunting birds
 - All purchase prices are validated server-side against the config — the NUI is display-only and can't be used to buy pets for arbitrary prices.
 
 ### Multi-language support
-- All in-game notifications, prompts, menu text and the shop UI itself are fully localized via `ox_lib`'s locale system.
+- All in-game notifications, prompts, menu text and the shop UI itself are fully localized via `rsg-core`'s locale system.
 - Shipped languages: **English (en), German (de), Greek (el), Spanish (es), French (fr), Japanese (ja), Dutch (nl), Polish (pl), Brazilian Portuguese (pt-br), Romanian (ro)**.
 - The server picks one language for everyone via a convar — see [Localization](#localization) below.
 
@@ -39,8 +39,7 @@ A combined RedM / RSG-Core resource that adds hunting dogs **and** hunting birds
 | Resource | Purpose |
 |---|---|
 | [`rsg-core`](https://github.com/Rexshack-RedM) | Framework (player/money/inventory functions) |
-| [`ox_lib`](https://github.com/overextended/ox_lib) | Notifications, locales |
-| [`ox_target`](https://github.com/overextended/ox_target) | Interaction prompts (shop NPC, pets, sell points) |
+| [`rsg-target`](https://github.com/Rexshack-RedM/rsg-target) | Interaction prompts (shop NPC, pets, sell points) |
 | `oxmysql` | Database access (auto-creates its own tables — see below) |
 
 Make sure all four are started **before** `rsg-huntingpets` in your `server.cfg`.
@@ -127,7 +126,7 @@ All config files live under `shared/` and are loaded before the client/server sc
    - **Call** a pet to spawn it (only one dog *or* bird can be active at a time — send the current one home first).
    - **Sell** a pet back for half its purchase price.
    - **Select** a pet as your default so `/calldog` or `/callbird` spawns it without opening the shop.
-4. Once a dog is out: use the `ox_target` options on it for Follow/Stay/Attack/Track/Hunt Mode/Feed, or open its Animations menu.
+4. Once a dog is out: use the `rsg-target` options on it for Follow/Stay/Attack/Track/Hunt Mode/Feed, or open its Animations menu.
 5. Once a bird is out: use the on-screen prompts to send it home, have it follow, send it hunting (Hunt/Scavenge/Fish depending on species), or open the camera view while it's flying.
 6. To sell a bird to another player instead of the shop: use the Sell prompt while your bird is with you, set a price, and other players nearby can then buy it directly off you.
 
@@ -149,10 +148,10 @@ All config files live under `shared/` and are loaded before the client/server sc
 The server-wide language is chosen with a convar in `server.cfg` (defaults to English if unset):
 
 ```
-setr ox:locale "de"
+setr rsg:locale "de"
 ```
 
-Use one of: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Every player sees the same language — this resource follows `ox_lib`'s standard single-locale-per-server model, it doesn't do per-player language switching.
+Use one of: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Every player sees the same language — this resource follows `rsg-core`'s single-locale-per-server model, it doesn't do per-player language switching.
 
 To add or edit translations, edit the matching file under `locales/<code>.json` (flat `"key": "value"` pairs) — no code changes needed. If you add a brand-new piece of UI text, add its key to every locale file so it doesn't fall back to the raw key name.
 

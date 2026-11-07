@@ -3,10 +3,10 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 
 description 'rsg-huntingpets'
-version '3.1.0'
+version '3.1.1'
 
 shared_scripts {
-    '@ox_lib/init.lua',
+    '@rsg-core/shared/locale.lua',
     'shared/config_shared.lua',
     'shared/config_dogs.lua',
     'shared/config_birds.lua',
@@ -39,8 +39,7 @@ files {
 
 dependencies {
     'rsg-core',
-    'ox_lib',
-    'ox_target',
+    'rsg-target',
 }
 
 lua54 'yes'

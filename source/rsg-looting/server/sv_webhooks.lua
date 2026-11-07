@@ -1,6 +1,5 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 local cfg = WebhookConfig
-lib.locale()
 
 -----------------------------------------------------------------------
 -- queue: Discord allows ~30 requests/min per webhook, so send one at a time

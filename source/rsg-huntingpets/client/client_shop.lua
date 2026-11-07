@@ -12,7 +12,7 @@ function HasActivePet()
 end
 
 -- ═══════════════════════════════════════════════════════════
--- NOTIFICATION HELPER (ox_lib)
+-- NOTIFICATION HELPER (rsg-core)
 -- ═══════════════════════════════════════════════════════════
 local TypeMap = {
     ERROR = 'error',
@@ -23,7 +23,7 @@ local TypeMap = {
 
 function Notify(title, message, template, duration)
     local notifyType = TypeMap[template] or (template and template:lower()) or 'inform'
-    lib.notify({
+    RSGCore.Functions.Notify({
         title = title,
         description = message,
         duration = duration or 5000,
@@ -34,8 +34,8 @@ end
 -- ═══════════════════════════════════════════════════════════
 -- NUI LOCALE BUNDLE
 -- Every static/generated string the NUI (html/script.js) needs, resolved
--- through ox_lib's locale() so the shop UI follows the server's language
--- (set via the 'ox:locale' convar) instead of being hardcoded in English.
+-- through rsg-core's locale() so the shop UI follows the server's language
+-- (set via the 'rsg:locale' convar) instead of being hardcoded in English.
 -- ═══════════════════════════════════════════════════════════
 local UiLocaleKeys = {
     'ui_back', 'ui_close', 'ui_header_title', 'ui_header_subtitle', 'ui_tab_shop', 'ui_tab_mypets',

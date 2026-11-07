@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 local lootedBodies = {}   -- [netId] = true
 local lootCooldown = {}   -- [src] = os.time()
@@ -11,7 +10,7 @@ local ROB_MAX_TIME  = 30000  -- ms: approval from canRob expires after this
 local HANDSUP_TIMEOUT = 3000 -- ms to wait for the victim's client to answer
 
 local function notify(src, title, desc, nType)
-    TriggerClientEvent('ox_lib:notify', src, { title = title, description = desc, type = nType or 'inform', duration = 7000 })
+    TriggerClientEvent('RSGCore:Client:Notify', src, { title = title, description = desc, type = nType or 'inform', duration = 7000 })
 end
 
 -- reject + log a failed validation (possible exploit)
@@ -34,7 +33,7 @@ end
 -----------------------------------------------------------------------
 -- NPC loot reward
 -----------------------------------------------------------------------
-lib.callback.register('rsg-looting:server:lootReward', function(src, netId)
+local function lootReward(src, netId)
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return false end
     if type(netId) ~= 'number' then return reject(src, 'lootReward', locale('wh_reason_bad_netid')) end
@@ -81,6 +80,10 @@ lib.callback.register('rsg-looting:server:lootReward', function(src, netId)
     addOutlaw(Player, Config.OutlawLoot)
     Webhooks.Loot(src, given, given and 1 or 0, cashAmount, rare)
     return true
+end
+
+RSGCore.Functions.CreateCallback('rsg-looting:server:lootReward', function(src, cb, netId)
+    cb(lootReward(src, netId) == true)
 end)
 
 -- entity netIds get reused, so clear them when the body is removed
@@ -107,18 +110,15 @@ local function canRob(src, targetId)
     if md.ishandcuffed then return Player, Target, locale('wh_state_handcuffed') end
     -- ask the victim's own client (the robber cannot spoof this); time out so an
     -- unresponsive victim client can't hang the robber's callback forever
-    local p = promise.new()
-    lib.callback('rsg-looting:client:isHandsUp', targetId, function(up) p:resolve(up == true) end)
-    SetTimeout(HANDSUP_TIMEOUT, function() if p.state == 0 then p:resolve(false) end end)
-    if Citizen.Await(p) then return Player, Target, locale('wh_state_handsup') end
+    if RSGCore.Functions.AwaitClientCallback('rsg-looting:client:isHandsUp', targetId, HANDSUP_TIMEOUT) == true then return Player, Target, locale('wh_state_handsup') end
     return false
 end
 
-lib.callback.register('rsg-looting:server:canRob', function(src, targetId)
-    if pendingRob[src] and GetGameTimer() - pendingRob[src].time < 1000 then return false end -- spam guard
+RSGCore.Functions.CreateCallback('rsg-looting:server:canRob', function(src, cb, targetId)
+    if pendingRob[src] and GetGameTimer() - pendingRob[src].time < 1000 then return cb(false) end -- spam guard
     local ok = canRob(src, targetId)
     pendingRob[src] = ok and { target = tonumber(targetId), time = GetGameTimer() } or nil
-    return ok and true or false
+    cb(ok and true or false)
 end)
 
 local function takeMoney(Player, Target, moneyType, victimKey, robberKey)

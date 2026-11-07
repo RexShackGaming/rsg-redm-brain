@@ -1,6 +1,6 @@
 # rsg-hotair
 
-Hireable hot air balloons for RedM servers running the **RSG-Core** framework. Players hire a balloon at a dock, pilot it (or ride along as a passenger), and store it again when they're done. Includes its own weight-limited storage stash per balloon, full ox_target integration, an ox_lib-driven multi-language NUI, and a live on-screen flight control HUD.
+Hireable hot air balloons for RedM servers running the **RSG-Core** framework. Players hire a balloon at a dock, pilot it (or ride along as a passenger), and store it again when they're done. Includes its own weight-limited storage stash per balloon, full rsg-target integration, an rsg-core locale-driven multi-language NUI, and a live on-screen flight control HUD.
 
 ## Features
 
@@ -9,19 +9,18 @@ Hireable hot air balloons for RedM servers running the **RSG-Core** framework. P
 - **Custom flight model** — momentum-based drift controls (not the default RDR3 aircraft handling): burner to climb, WASD to drift, an altitude lock toggle, a brake, and a configurable altitude ceiling.
 - **Live on-screen controls HUD** — a persistent panel on the left of the screen listing every flight control, with each key badge lighting up green in real time while it's actually held down.
 - **Per-player balloon storage** — each player gets their own weight/slot-limited stash (via `rsg-inventory`) tied to their currently-hired balloon, accessible by targeting it. The stash is wiped whenever the balloon is stored, so it's not a permanent personal locker.
-- **ox_target integration everywhere** — hire, pilot, open storage, store, board, and disembark are all ox_target options on the dock NPCs and the balloon itself; no `uiprompt` or other prompt dependency.
-- **Multi-language ox_lib NUI** — every player-facing string (server callbacks, client notifications, ox_target labels, and the full HTML/JS panel) is driven by `ox_lib` locale files. Ships with 10 languages out of the box: English, German, Greek, Spanish, French, Japanese, Dutch, Polish, Brazilian Portuguese, and Romanian.
+- **rsg-target integration everywhere** — hire, pilot, open storage, store, board, and disembark are all rsg-target options on the dock NPCs and the balloon itself; no `uiprompt` or other prompt dependency.
+- **Multi-language NUI** — every player-facing string (server callbacks, client notifications, rsg-target labels, and the full HTML/JS panel) is driven by rsg-core locale files. Ships with 10 languages out of the box: English, German, Greek, Spanish, French, Japanese, Dutch, Polish, Brazilian Portuguese, and Romanian.
 - **Exploit-hardened server logic** — server-side ownership validation on balloon registration (a client can't claim someone else's networked entity), distance/speed checks before boarding or storing, and no client-trusted state for money or ownership.
 - **Multiple docks** — add as many hire docks as you like in the config; each spawns its own NPC, blip, and target automatically.
 
 ## Dependencies
 
 - [`rsg-core`](https://github.com/Rexshack-RedM/rsg-core)
-- [`ox_lib`](https://github.com/overextended/ox_lib)
-- [`ox_target`](https://github.com/overextended/ox_target)
+- [`rsg-target`](https://github.com/Rexshack-RedM/rsg-target)
 - [`rsg-inventory`](https://github.com/Rexshack-RedM/rsg-inventory)
 
-All four must be started **before** `rsg-hotair` in your `server.cfg`.
+All three must be started **before** `rsg-hotair` in your `server.cfg`.
 
 ## Installation
 
@@ -30,8 +29,7 @@ All four must be started **before** `rsg-hotair` in your `server.cfg`.
 3. Add it to your `server.cfg`, after the dependencies:
    ```cfg
    ensure rsg-core
-   ensure ox_lib
-   ensure ox_target
+   ensure rsg-target
    ensure rsg-inventory
    ensure rsg-hotair
    ```
@@ -55,10 +53,10 @@ All settings live in `config.lua`.
 | `Config.StoreMaxHeightAGL` | Balloon must be lower than this (meters AGL) to be stored. |
 | `Config.BoardMaxSpeed` | Same speed limit, but for boarding/piloting instead of storing. |
 | `Config.BoardMaxHeightAGL` | Same height limit, but for boarding/piloting instead of storing. |
-| `Config.TargetDistance` | ox_target interaction distance for the balloon (it's a large entity, so this is larger than a typical ped/object target). |
+| `Config.TargetDistance` | rsg-target interaction distance for the balloon (it's a large entity, so this is larger than a typical ped/object target). |
 | `Config.StorageMaxWeight` | Max weight (in `rsg-inventory` units) of each player's balloon storage stash. |
 | `Config.StorageMaxSlots` | Max slot count of each player's balloon storage stash. |
-| `Config.Docks` | A list of hire docks. Add as many entries as you like — each one automatically gets its own NPC ped, map blip, and ox_target hire option. Each entry needs: `label` (display name), `npcModel`, `npcCoords` (`vector4`, includes heading), `spawnCoords`/`spawnHeading` (where the hired balloon spawns), and a `blip` table (`sprite`, `scale`, `name`). |
+| `Config.Docks` | A list of hire docks. Add as many entries as you like — each one automatically gets its own NPC ped, map blip, and rsg-target hire option. Each entry needs: `label` (display name), `npcModel`, `npcCoords` (`vector4`, includes heading), `spawnCoords`/`spawnHeading` (where the hired balloon spawns), and a `blip` table (`sprite`, `scale`, `name`). |
 
 ### Adding another dock
 
@@ -87,12 +85,12 @@ Config.Docks = {
 
 ### Changing the language
 
-Player-facing text is pulled from `locales/*.json` via `ox_lib`. The resource ships English (`en`), German (`de`), Greek (`el`), Spanish (`es`), French (`fr`), Japanese (`ja`), Dutch (`nl`), Polish (`pl`), Brazilian Portuguese (`pt-br`), and Romanian (`ro`).
+Player-facing text is pulled from `locales/*.json` via rsg-core's locale system. The resource ships English (`en`), German (`de`), Greek (`el`), Spanish (`es`), French (`fr`), Japanese (`ja`), Dutch (`nl`), Polish (`pl`), Brazilian Portuguese (`pt-br`), and Romanian (`ro`).
 
-The active language is controlled by `ox_lib`'s standard convar, which applies server-wide to every `ox_lib`-based resource — it isn't set per-resource. Add this to your `server.cfg` (before `ensure ox_lib`) and set it to whichever language code you want:
+The active language is controlled by rsg-core's `rsg:locale` convar, which applies server-wide — it isn't set per-resource (falls back to `ox:locale`, then `en`). Add this to your `server.cfg` (before `ensure rsg-core`):
 
 ```cfg
-setr ox:locale "de"
+setr rsg:locale "de"
 ```
 
 If you want to add or edit a language, create/edit the matching `locales/<code>.json` file, keeping the same nested keys as `locales/en.json`.
@@ -127,6 +125,10 @@ Exiting the vehicle normally is locked while airborne — use the pilot/passenge
 ### For server owners / developers
 
 - All server-side logic lives in `server/server.lua`: hire/store validation, ownership registration, seat management, and the storage stash (via `rsg-inventory`).
-- All client-side logic lives in `client/client.lua`: flight physics, ox_target registration, NUI messaging, and the flight-control HUD.
+- All client-side logic lives in `client/client.lua`: flight physics, rsg-target registration, NUI messaging, and the flight-control HUD.
 - The NUI panel is a single self-contained page at `html/index.html`; it receives a `setLocale` message from the client with every translated string, so no text is hardcoded into the page itself.
 - Debug/console `print()` lines in `server.lua` are intentionally left in English — they're server-console diagnostics, not player-facing text.
+
+## Support
+
+If you find this useful, you can support development at https://buymeacoffee.com/rexshack

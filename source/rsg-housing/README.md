@@ -21,7 +21,6 @@ Monthly house rentals for the RSG Framework (RedM). Players rent a house directl
 ## Dependencies
 
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
-- [ox_lib](https://github.com/Rexshack-RedM/ox_lib)
 - [oxmysql](https://github.com/Rexshack-RedM/oxmysql)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
 
@@ -92,10 +91,10 @@ With `EnableGovenor = true`, rent and storage upgrades are paid to the rsg-bossm
 
 All text (notifications, prompts, telegrams and the whole NUI) comes from `locales/`. Included: English (`en`), German (`de`), Greek (`el`), Spanish (`es`), French (`fr`), Japanese (`ja`), Dutch (`nl`), Polish (`pl`), Brazilian Portuguese (`pt-br`) and Romanian (`ro`).
 
-The language follows ox_lib's locale setting, for example in your server config:
+The language follows rsg-core's locale setting (`rsg:locale` convar), for example in your server config:
 
 ```
-setr ox:locale de
+setr rsg:locale de
 ```
 
 To add a language, copy `locales/en.json` to `locales/<code>.json` and translate the values. Keep every `%s` in the same order, and keep `**bold**` markers and `~e~` / `~t6~` / `~q~` colour codes as they are.

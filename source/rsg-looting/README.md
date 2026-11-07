@@ -1,13 +1,13 @@
 # rsg-looting
 
-Secure NPC looting and player robbery for **RSG Framework (RedM)**, with ox_lib notifications, multi-language support and Discord webhook logging.
+Secure NPC looting and player robbery for **RSG Framework (RedM)**, with rsg-core notifications, progress bars and callbacks (no ox_lib), multi-language support and Discord webhook logging.
 
 ---
 
 ## Features
 
 ### NPC Looting
-- Loot dead NPCs with **ox_target** (third-eye a body → *Loot Body*), with a search animation and progress bar.
+- Loot dead NPCs with the **native RDR2 loot prompt** (default) or **rsg-target** (target a body → *Loot Body*, with a search animation and progress bar) — set by `Config.LootMethod`.
 - Looted bodies are flagged server side (entity state bag) so the prompt disappears for everyone.
 - Random reward on every body: **common** or **rare** item plus a small amount of cash.
 - Configurable rare chance, item pools and cash ranges.
@@ -37,7 +37,7 @@ Secure NPC looting and player robbery for **RSG Framework (RedM)**, with ox_lib 
 - Webhook URLs are kept in a **server-only** file so players can't read them.
 
 ### Localisation
-- All player-facing and webhook text uses ox_lib locales.
+- All player-facing and webhook text uses rsg-core locales.
 - Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
 
 ---
@@ -47,8 +47,7 @@ Secure NPC looting and player robbery for **RSG Framework (RedM)**, with ox_lib 
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
 - [rsg-lawman](https://github.com/Rexshack-RedM/rsg-lawman)
-- [ox_lib](https://github.com/overextended/ox_lib)
-- [ox_target](https://github.com/overextended/ox_target)
+- [rsg-target](https://github.com/Rexshack-RedM/rsg-target)
 - [oxmysql](https://github.com/overextended/oxmysql)
 - OneSync enabled (used for server-side entity checks)
 
@@ -61,8 +60,7 @@ Secure NPC looting and player robbery for **RSG Framework (RedM)**, with ox_lib 
 3. Add to your `server.cfg`:
    ```cfg
    ensure oxmysql
-   ensure ox_lib
-   ensure ox_target
+   ensure rsg-target
    ensure rsg-core
    ensure rsg-inventory
    ensure rsg-lawman
@@ -70,7 +68,7 @@ Secure NPC looting and player robbery for **RSG Framework (RedM)**, with ox_lib 
    ```
 4. Set your server language (optional, defaults to English):
    ```cfg
-   setr ox:locale en
+   setr rsg:locale en
    ```
 5. Add the items you want to use to `Config.CommonItems` / `Config.RareItems` (they must exist in `rsg-core/shared/items.lua`).
 6. (Optional) Add your Discord webhook URLs in `server/sv_webhooks_config.lua`.
@@ -89,7 +87,8 @@ Secure NPC looting and player robbery for **RSG Framework (RedM)**, with ox_lib 
 | `Config.RareChance` | `5` | % chance a body gives rare loot |
 | `Config.CommonCash` | `{ 1, 5 }` | Min / max cash with common loot |
 | `Config.RareCash` | `{ 5, 10 }` | Min / max cash with rare loot |
-| `Config.LootTime` | `3000` | ms searching the body (progress bar) |
+| `Config.LootMethod` | `'native'` | `'native'` loot prompt or `'target'` (rsg-target + progress bar) |
+| `Config.LootTime` | `3000` | ms searching the body (target mode only) |
 | `Config.LootDistance` | `3.0` | Max distance to the body (checked on server) |
 | `Config.LootCooldown` | `3` | Seconds between loot rewards per player |
 | `Config.LawAlert` | `true` | Alert lawmen when a body is looted |
@@ -125,7 +124,7 @@ Leave any webhook URL empty (`''`) to disable that channel.
 
 ### Looting NPCs
 1. Kill an NPC.
-2. Target the body with ox_target and choose **Loot Body**.
+2. Target the body with rsg-target and choose **Loot Body**.
 3. When the search finishes, the server gives you a random item and some cash.
 
 Each body can only be rewarded once.
@@ -165,7 +164,7 @@ Channel must be `loot`, `rob` or `exploit`.
 
 1. Copy `locales/en.json` to `locales/<code>.json` (e.g. `it.json`).
 2. Translate the values. Keep every `%s` placeholder.
-3. Set `setr ox:locale <code>` in your `server.cfg`.
+3. Set `setr rsg:locale <code>` in your `server.cfg`.
 
 ---
 
@@ -186,6 +185,7 @@ rsg-looting/
 ├── shared/
 │   └── config.lua
 ├── fxmanifest.lua
+├── DOCS.md
 └── README.md
 ```
 

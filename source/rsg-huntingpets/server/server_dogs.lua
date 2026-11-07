@@ -43,20 +43,20 @@ AddEventHandler('rsg-huntingpets:server:buyDog', function(model)
 
     local entry = GetDogShopEntry(model)
     if not entry then
-        TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_not_for_sale_dog'), duration = 5000, type = 'error'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_not_for_sale_dog'), duration = 5000, type = 'error'})
         return
     end
     local price = entry.Param.Price
 
     if Player.PlayerData.money.cash < price then
-        TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_not_enough_money'), duration = 5000, type = 'error'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_not_enough_money'), duration = 5000, type = 'error'})
         return
     end
 
     local skin = math.random(0, 2)
     Player.Functions.RemoveMoney('cash', price)
     MySQL.insert('INSERT INTO player_dogs (identifier, charid, model, preset, xp, price) VALUES (?, ?, ?, ?, 0, ?)', {cid, charid, entry.Param.Model, skin, price})
-    TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_dog_purchased'), duration = 5000, type = 'success'})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_dog_purchased'), duration = 5000, type = 'success'})
 end)
 
 -- ═══════════════════════════════════════════════════════════
@@ -78,7 +78,7 @@ AddEventHandler('rsg-huntingpets:server:sellDog', function(dogId)
         if not deleted or deleted < 1 then return end
         Player.Functions.AddMoney('cash', sellPrice, 'rsg-huntingpets-sell')
         TriggerClientEvent('rsg-huntingpets:client:putawayDog', src)
-        TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_dog_sold', sellPrice), duration = 5000, type = 'success'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_dog_sold', sellPrice), duration = 5000, type = 'success'})
     end
 end)
 
@@ -97,7 +97,7 @@ AddEventHandler('rsg-huntingpets:server:callDog', function(dogId)
     if result and result[1] then
         TriggerClientEvent('rsg-huntingpets:client:spawnDog', src, result[1].id, result[1].model, result[1].preset, false, result[1].xp)
     else
-        TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_no_dog_found'), duration = 5000, type = 'error'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_no_dog_found'), duration = 5000, type = 'error'})
     end
 end)
 
@@ -114,14 +114,14 @@ AddEventHandler('rsg-huntingpets:server:feedDog', function(dogId)
 
     local food = Player.Functions.GetItemByName(Config.AnimalFood)
     if not food then
-        TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_no_food'), duration = 5000, type = 'error'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_no_food'), duration = 5000, type = 'error'})
         return
     end
 
     -- Ownership + current XP are read from the DB, never trusted from the client
     local result = MySQL.query.await('SELECT xp FROM player_dogs WHERE id = ? AND identifier = ? AND charid = ?', {dogId, cid, charid})
     if not result or not result[1] then
-        TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_dog_not_yours'), duration = 5000, type = 'error'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_dog_not_yours'), duration = 5000, type = 'error'})
         return
     end
 
@@ -129,7 +129,7 @@ AddEventHandler('rsg-huntingpets:server:feedDog', function(dogId)
     local newXp = math.min(result[1].xp + Config.DogXpPerFeed, Config.DogFullGrownXp)
     MySQL.execute('UPDATE player_dogs SET xp = ? WHERE id = ?', {newXp, dogId})
     TriggerClientEvent('rsg-huntingpets:client:dogFed', src, newXp)
-    TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_pet_fed', newXp, Config.DogFullGrownXp), duration = 5000, type = 'inform'})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_pet_fed', newXp, Config.DogFullGrownXp), duration = 5000, type = 'inform'})
 end)
 
 -- ═══════════════════════════════════════════════════════════
@@ -145,7 +145,7 @@ AddEventHandler('rsg-huntingpets:server:loadDog', function()
 
     local sel = MySQL.query.await('SELECT selected_dog FROM player_selected_pets WHERE identifier = ? AND charid = ?', {cid, charid})
     if not sel or not sel[1] or not sel[1].selected_dog then
-        TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_no_dog_selected'), duration = 5000, type = 'error'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_no_dog_selected'), duration = 5000, type = 'error'})
         return
     end
 
@@ -154,7 +154,7 @@ AddEventHandler('rsg-huntingpets:server:loadDog', function()
     if result and result[1] then
         TriggerClientEvent('rsg-huntingpets:client:spawnDog', src, result[1].id, result[1].model, result[1].preset, false, result[1].xp)
     else
-        TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_dog_no_longer_exists'), duration = 5000, type = 'error'})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_dog_no_longer_exists'), duration = 5000, type = 'error'})
         MySQL.execute('UPDATE player_selected_pets SET selected_dog = NULL WHERE identifier = ? AND charid = ?', {cid, charid})
     end
 end)
@@ -175,7 +175,7 @@ RSGCore.Functions.CreateCallback('rsg-huntingpets:server:selectDog', function(so
     if not owned or not owned[1] then cb(false) return end
 
     MySQL.execute('INSERT INTO player_selected_pets (identifier, charid, selected_dog) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE selected_dog = ?', {cid, charid, dogId, dogId})
-    TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_dog_selected'), duration = 5000, type = 'success'})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_dog_selected'), duration = 5000, type = 'success'})
     cb(true)
 end)
 
@@ -193,7 +193,7 @@ RSGCore.Functions.CreateCallback('rsg-huntingpets:server:selectBird', function(s
     if not owned or not owned[1] then cb(false) return end
 
     MySQL.execute('INSERT INTO player_selected_pets (identifier, charid, selected_bird) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE selected_bird = ?', {cid, charid, birdId, birdId})
-    TriggerClientEvent('ox_lib:notify', src, {title = locale('notif_title_pets'), description = locale('notif_bird_selected'), duration = 5000, type = 'success'})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {title = locale('notif_title_pets'), description = locale('notif_bird_selected'), duration = 5000, type = 'success'})
     cb(true)
 end)
 
