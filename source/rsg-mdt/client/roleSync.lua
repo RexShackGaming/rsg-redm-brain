@@ -199,7 +199,7 @@ end)
 -- ============================================
 -- Callbacks
 -- ============================================
-lib.callback.register('rsg-mdt:roleSync:getLocalState', function()
+RegisterClientCallback('rsg-mdt:roleSync:getLocalState', function()
     return {
         myRole = RoleState.myRole,
         configVersion = RoleState.configVersion,

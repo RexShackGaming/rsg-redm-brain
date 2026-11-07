@@ -5,8 +5,7 @@ process them into wood, and sell full wagon loads of logs for cash.
 
 ## Dependencies
 - `rsg-core`
-- `ox_lib`
-- `ox_target`
+- `rsg-target`
 - `rsg-inventory`
 - `oxmysql`
 
@@ -60,12 +59,12 @@ Everything lives in `shared/config.lua`:
 
 ## Localisation
 All player-facing text (notifications, progress bars, target labels, prompts and
-blip names) lives in `locales/*.json`, loaded by ox_lib. Included languages:
+blip names) lives in `locales/*.json`, loaded by rsg-core (`setr rsg:locale <lang>`). Included languages:
 `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
 
 Set the language in your server.cfg with:
 ```
-setr ox:locale de
+setr rsg:locale de
 ```
 To add a language, copy `locales/en.json` to `locales/<code>.json` and translate
 the values (keep the keys, `%s` placeholders and `~e~`/`~s~` colour codes).

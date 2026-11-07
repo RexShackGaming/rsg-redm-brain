@@ -4,10 +4,10 @@ game 'rdr3'
 
 name 'rsg-lumberjack'
 description 'Lumberjack gameplay: grow, chop, carry, and sell wagon loads of logs'
-version '3.1.0'
+version '3.2.0'
 
 shared_scripts {
-    '@ox_lib/init.lua',
+    '@rsg-core/shared/locale.lua',
     'shared/config.lua',
 }
 
@@ -23,8 +23,7 @@ client_scripts {
 
 dependencies {
     'rsg-core',
-    'ox_lib',
-    'ox_target',
+    'rsg-target',
     'rsg-inventory',
     'oxmysql',
 }

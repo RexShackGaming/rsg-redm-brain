@@ -13,13 +13,13 @@ A comprehensive loyalty points system for RedM/RSG Framework servers. Players ea
 - **Export API**: Other resources can read/write loyalty points via secure exports
 - **Discord Logging**: Webhook-based logging for all loyalty events (configurable per event)
 - **Security**: Atomic SQL point operations, inventory re-checks on redemption, export allowlist, rate-limited events
-- **Localization**: Full locale support via ox_lib (English included)
+- **Localization**: Full locale support via rsg-core (en, de, el, es, fr, ja, nl, pl, pt-br, ro)
 
 ## Installation
 
 ### Prerequisites
 - RSG Framework (rsg-core)
-- ox_lib
+- rsg-target
 - ox_mysql
 - rsg-inventory (for item images)
 

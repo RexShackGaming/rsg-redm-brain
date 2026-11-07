@@ -3,7 +3,6 @@
 -- reset on resource restart. Planted trees persist in `rsg_lumberjack_trees`.
 
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 -- ============================================================================
 -- STATE
@@ -28,7 +27,7 @@ local function DebugPrint(...)
 end
 
 local function Notify(src, key, args, ntype)
-    TriggerClientEvent('ox_lib:notify', src, {
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
         title = locale('notify_title'),
         description = args and locale(key, table.unpack(args)) or locale(key),
         type = ntype or 'inform',

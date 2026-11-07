@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 ---------------------------------------------------------------------
 -- Constants / state
@@ -43,7 +42,7 @@ local function notify(src, description, nType)
         print(('[rsg-loyalty] %s'):format(description))
         return
     end
-    TriggerClientEvent('ox_lib:notify', src, {
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
         title = locale('loyalty_title'),
         description = description,
         type = nType or 'inform',

@@ -4,10 +4,10 @@ game 'rdr3'
 
 author 'RexShack'
 description 'Loyalty script for RSG Framework'
-version '3.0.0'
+version '3.0.1'
 
 shared_scripts {
-    '@ox_lib/init.lua',
+    '@rsg-core/shared/locale.lua',
     'shared/config.lua',
 }
 
@@ -20,6 +20,7 @@ server_scripts {
 }
 
 client_scripts {
+    '@rsg-core/client/points.lua',
     'client/client.lua',
     'client/npcs.lua'
 }
@@ -35,8 +36,7 @@ files {
 
 dependencies {
     'rsg-core',
-    'ox_lib',
-    'ox_target',
+    'rsg-target',
     'rsg-inventory',
     'oxmysql',
 }

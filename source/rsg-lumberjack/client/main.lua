@@ -1,7 +1,6 @@
 -- rsg-lumberjack - Client
 
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 local KEY_E = 0xCEFD9220
 
@@ -23,7 +22,7 @@ local State = {
 -- HELPERS
 -- ============================================================================
 local function Notify(key, args, ntype)
-    lib.notify({
+    RSGCore.Functions.Notify({
         title = locale('notify_title'),
         description = args and locale(key, table.unpack(args)) or locale(key),
         type = ntype or 'inform',
@@ -56,7 +55,7 @@ end
 
 local function DeleteLocalProp(entity)
     if entity and DoesEntityExist(entity) then
-        exports.ox_target:removeLocalEntity(entity)
+        exports['rsg-target']:removeLocalEntity(entity)
         DeleteEntity(entity)
     end
 end
@@ -91,17 +90,17 @@ local function SetBusy(busy)
     LocalPlayer.state:set('inv_busy', busy, true)
 end
 
--- Plays a scenario under an ox_lib progress bar. Returns true if completed.
+-- Plays a scenario under an rsg-core progress bar. Returns true if completed.
 local function RunScenarioProgress(scenario, duration, label)
     local ped = PlayerPedId()
     SetBusy(true)
     TaskStartScenarioInPlace(ped, scenario, 0, true)
-    local ok = lib.progressBar({
+    local ok = RSGCore.Functions.ProgressBar({
         duration = duration,
         label = label,
         useWhileDead = false,
         canCancel = true,
-        disable = { move = true, car = true, combat = true },
+        disable = { move = true, mount = true, combat = true },
     })
     ClearPedTasks(ped)
     SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
@@ -145,11 +144,11 @@ end
 
 local function StartCarryLoop(ped)
     local dict, clip, flag = Config.Carry.AnimDict, Config.Carry.AnimClip, Config.Carry.AnimFlag
-    lib.requestAnimDict(dict)
+    RSGCore.Functions.RequestAnimDict(dict)
 
     local clipset = Config.Carry.MoveClipset
     if clipset and clipset ~= '' then
-        lib.requestAnimSet(clipset)
+        RSGCore.Functions.RequestAnimSet(clipset)
         SetPedMovementClipset(ped, clipset, 0.0)
     end
 
@@ -250,12 +249,12 @@ local function RunChopFlow(kind, targetId)
     SetBusy(true)
     SetCurrentPedWeapon(PlayerPedId(), `WEAPON_UNARMED`, true) -- avoid a held weapon clipping with the axe prop
     local isLog = kind == 'groundlog'
-    local success = lib.progressBar({
+    local success = RSGCore.Functions.ProgressBar({
         duration = result.duration,
         label = isLog and locale('chop_log_label') or locale('chop_tree_label'),
         useWhileDead = false,
         canCancel = true,
-        disable = { move = true, car = true, combat = true },
+        disable = { move = true, mount = true, combat = true },
         anim = isLog and {
             dict = 'amb_work@prop_human_wood_chop@pre_chop@male_a@trans',
             clip = 'prechop_trans_postchop_07_08_a',
@@ -295,7 +294,7 @@ CreateThread(function()
     end
     if #wildTrees == 0 then return end
 
-    exports.ox_target:addModel(wildTrees, {
+    exports['rsg-target']:addModel(wildTrees, {
         {
             name = 'rsg_lumberjack_chop_wild',
             icon = 'fas fa-tree',
@@ -317,7 +316,7 @@ local function SpawnGroundLog(log)
     PlaceObjectOnGroundProperly(obj)
     FreezeEntityPosition(obj, true)
 
-    exports.ox_target:addLocalEntity(obj, {
+    exports['rsg-target']:addLocalEntity(obj, {
         {
             icon = 'fas fa-hammer',
             label = locale('target_process_log'),
@@ -358,7 +357,7 @@ local function SpawnWood(wood)
     PlaceObjectOnGroundProperly(obj)
     FreezeEntityPosition(obj, true)
 
-    exports.ox_target:addLocalEntity(obj, {
+    exports['rsg-target']:addLocalEntity(obj, {
         {
             icon = 'fas fa-hand-paper',
             label = locale('target_pickup_wood'),
@@ -396,7 +395,7 @@ local function AddWagonLogProp(wagon, entry, posIndex)
     local prop = SpawnLocalProp(Config.Wagon.LogStackModel, 0.0, 0.0, 0.0)
     if not prop then return false end
     AttachEntityToEntity(prop, wagon, 0, pos.x, pos.y, pos.z, pos.rotX, pos.rotY, pos.rotZ, true, true, true, true, 1, true)
-    exports.ox_target:addLocalEntity(prop, {
+    exports['rsg-target']:addLocalEntity(prop, {
         {
             icon = 'fas fa-hand-paper',
             label = locale('target_remove_log'),
@@ -455,7 +454,7 @@ CreateThread(function()
     end
 end)
 
-exports.ox_target:addModel({ Config.Wagon.Model }, {
+exports['rsg-target']:addModel({ Config.Wagon.Model }, {
     {
         name = 'rsg_lumberjack_wagon_load',
         icon = 'fas fa-truck-loading',
@@ -512,7 +511,7 @@ CreateThread(function()
         if nearSell then
             sleep = 0
             if not shown then
-                lib.showTextUI(locale('press_e_sell'))
+                exports['rsg-core']:DrawText(locale('press_e_sell'), 'left')
                 shown = true
             end
             if IsControlJustPressed(0, KEY_E) then
@@ -520,7 +519,7 @@ CreateThread(function()
                 Wait(1000)
             end
         elseif shown then
-            lib.hideTextUI()
+            exports['rsg-core']:HideText()
             shown = false
         end
 
@@ -580,7 +579,7 @@ end)
 -- PLANTED TREES (streamed props)
 -- ============================================================================
 local function RegisterPlantedTreeTarget(ent, tree)
-    exports.ox_target:removeLocalEntity(ent)
+    exports['rsg-target']:removeLocalEntity(ent)
     local options = {}
     if tree.stage == 4 and tree.state == 'ready' then
         options[1] = {
@@ -599,7 +598,7 @@ local function RegisterPlantedTreeTarget(ent, tree)
             onSelect = function() WaterTree(tree.id) end,
         }
     end
-    if #options > 0 then exports.ox_target:addLocalEntity(ent, options) end
+    if #options > 0 then exports['rsg-target']:addLocalEntity(ent, options) end
 end
 
 local function DespawnPlantedTree(id)
@@ -713,7 +712,7 @@ AddEventHandler('onResourceStop', function(resource)
 
     if State.carryingLog then StopCarryingLocal() end
     if State.busy then LocalPlayer.state:set('inv_busy', false, true) end
-    lib.hideTextUI()
+    exports['rsg-core']:HideText()
 
     for serverId in pairs(State.otherPlayersCarrying) do RemoveOtherCarry(serverId) end
     for _, e in pairs(State.groundLogs) do DeleteLocalProp(e) end

@@ -58,7 +58,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-lumberjack](rsg-lumberjack.md) | Lumberjack gameplay: grow, chop, carry, and sell wagon loads of logs | 0 | 26 |
 | [rsg-mapping](rsg-mapping.md) | Mapping tool for RSG Framework | 1 | 5 |
 | [rsg-mdt](rsg-mdt.md) | Mobile Data Terminal for RSG Framework | 39 | 34 |
-| [rsg-medic](rsg-medic.md) | Death system and medic job for RSG Framework | 1 | 22 |
+| [rsg-medic](rsg-medic.md) | Death system and medic job for RSG Framework | 1 | 23 |
 | [rsg-menubase](rsg-menubase.md) | A lightweight menu framework for RedM, built for the RSG-Core ecosystem. It gives other resources a simple exp | 2 | 0 |
 | [rsg-mining](rsg-mining.md) | rsg-mining - mine lease & NPC worker management | 0 | 0 |
 | [rsg-moonshine](rsg-moonshine.md) | Placeable moonshine stills for RedM on the RSG Framework. Players set up a still in the wild, load a m | 0 | 7 |

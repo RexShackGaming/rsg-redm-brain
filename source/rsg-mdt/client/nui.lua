@@ -19,9 +19,46 @@ function NUI.SetVisibility(visible)
     NUI.SendMessage('setVisible', { visible = visible })
 end
 
+local mdtFocus = false
+
 function NUI.SetFocus(hasFocus, hasCursor)
-    SetNuiFocus(hasFocus, hasCursor ~= false and hasFocus)
+    if hasFocus then
+        mdtFocus = true
+        SetNuiFocus(true, hasCursor ~= false)
+        if Config.AllowPushToTalkWhileOpen then
+            SetNuiFocusKeepInput(true)
+        end
+    else
+        mdtFocus = false
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
 end
+
+-- Push-to-talk whitelist while the MDT has focus
+CreateThread(function()
+    while true do
+        if mdtFocus and Config.AllowPushToTalkWhileOpen then
+            Wait(0)
+            DisableAllControlActions(0)
+            DisableAllControlActions(1)
+            DisableAllControlActions(2)
+            for _, c in ipairs(Config.PushToTalkControls or {}) do
+                EnableControlAction(0, c, true)
+                EnableControlAction(1, c, true)
+                EnableControlAction(2, c, true)
+            end
+        else
+            Wait(250)
+        end
+    end
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res == GetCurrentResourceName() and mdtFocus then
+        NUI.SetFocus(false)
+    end
+end)
 
 function NUI.Open(data)
     NUI.SetFocus(true, true)

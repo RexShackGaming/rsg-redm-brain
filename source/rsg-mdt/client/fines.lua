@@ -72,17 +72,138 @@ end)
 
 RegisterNetEvent('rsg-mdt:client:finePaymentResult', function(data)
     if data.success then
-        lib.notify({
+        RSGCore.Functions.Notify({
             title = locale('fines_title'),
             description = data.message,
             type = 'success'
         })
     else
-        lib.notify({
+        RSGCore.Functions.Notify({
             title = locale('fines_title'),
             description = data.message,
             type = 'error'
         })
+    end
+end)
+
+-- ============================================
+-- Fines Clerk NUI (replaces ox_lib context menu / alert dialogs)
+-- ============================================
+local clerkOpen = false
+local clerkName = nil
+
+local function applyNuiFocus(enable)
+    if enable then
+        SetNuiFocus(true, true)
+        if Config.AllowPushToTalkWhileOpen then
+            SetNuiFocusKeepInput(true)
+        end
+    else
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
+end
+
+local clerkLabelKeys = {
+    'fines_title', 'fines_fine_label', 'fines_fine_detail', 'fines_overdue', 'fines_pay_all_total',
+    'fines_pay_all_title', 'fines_pay_header', 'fines_pay_content', 'fines_pay_all_content',
+    'fines_pay_confirm', 'fines_pay_all_confirm', 'fines_cancel', 'notification_no_unpaid_fines_clear',
+}
+
+local function buildClerkPayload()
+    local list = {}
+    for _, fine in ipairs(playerFines) do
+        local timeLeft = formatTimeRemaining(fine.due_timestamp)
+        list[#list + 1] = {
+            id = fine.id,
+            amount = fine.total_amount or 0,
+            timeLeft = timeLeft,
+            overdue = fine.status == 'overdue',
+        }
+    end
+    local labels = {}
+    for _, k in ipairs(clerkLabelKeys) do labels[k] = locale(k) end
+    return {
+        title = locale('fines_unpaid_title', clerkName or locale('system_court_clerk')),
+        fines = list,
+        total = getTotalFinesAmount(),
+        labels = labels,
+    }
+end
+
+local function refreshClerk()
+    local fines = RSGCore.Functions.AwaitCallback('rsg-mdt:server:getPlayerFines')
+    playerFines = fines or {}
+    if clerkOpen then
+        SendNUIMessage({ action = 'updateFinesClerk', data = buildClerkPayload() })
+    end
+end
+
+local function closeFinesClerk()
+    if not clerkOpen then return end
+    clerkOpen = false
+    SendNUIMessage({ action = 'closeFinesClerk' })
+    applyNuiFocus(false)
+end
+
+local function openFinesClerk(name)
+    local fines = RSGCore.Functions.AwaitCallback('rsg-mdt:server:getPlayerFines')
+    playerFines = fines or {}
+    if #playerFines == 0 then
+        RSGCore.Functions.Notify({ title = locale('fines_title'), description = locale('notification_no_unpaid_fines'), type = 'inform' })
+        return
+    end
+    clerkName = name
+    clerkOpen = true
+    SendNUIMessage({ action = 'openFinesClerk', data = buildClerkPayload() })
+    applyNuiFocus(true)
+end
+
+RegisterNuiCallback('finesClerkClose', function(_, cb)
+    closeFinesClerk()
+    cb({ success = true })
+end)
+
+RegisterNuiCallback('finesClerkPay', function(data, cb)
+    local result = RSGCore.Functions.AwaitCallback('rsg-mdt:server:payFine', nil, tonumber(data and data.fineId))
+    refreshClerk()
+    if #playerFines == 0 then closeFinesClerk() end
+    cb(result or { success = false })
+end)
+
+RegisterNuiCallback('finesClerkPayAll', function(_, cb)
+    local ids = {}
+    for _, fine in ipairs(playerFines) do ids[#ids + 1] = fine.id end
+    for _, id in ipairs(ids) do
+        RSGCore.Functions.AwaitCallback('rsg-mdt:server:payFine', nil, id)
+    end
+    refreshClerk()
+    if #playerFines == 0 then closeFinesClerk() end
+    cb({ success = true })
+end)
+
+-- Push-to-talk whitelist while the clerk UI has focus
+CreateThread(function()
+    while true do
+        if clerkOpen and Config.AllowPushToTalkWhileOpen then
+            Wait(0)
+            DisableAllControlActions(0)
+            DisableAllControlActions(1)
+            DisableAllControlActions(2)
+            for _, c in ipairs(Config.PushToTalkControls or {}) do
+                EnableControlAction(0, c, true)
+                EnableControlAction(1, c, true)
+                EnableControlAction(2, c, true)
+            end
+        else
+            Wait(250)
+        end
+    end
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res == GetCurrentResourceName() and clerkOpen then
+        applyNuiFocus(false)
     end
 end)
 
@@ -119,7 +240,7 @@ local function createFinesPaymentTargets()
         SetPedCanPlayAmbientAnims(ped, true)
         SetPedCanRagdoll(ped, false)
         
-        exports.ox_target:addLocalEntity(ped, {
+        exports['rsg-target']:addLocalEntity(ped, {
             {
                 name = 'pay_fines_' .. i,
                 icon = 'fa-solid fa-money-bill',
@@ -129,89 +250,7 @@ local function createFinesPaymentTargets()
                     return hasUnpaidFines()
                 end,
                 onSelect = function()
-                    lib.callback('rsg-mdt:server:getPlayerFines', false, function(fines)
-                        playerFines = fines or {}
-                        
-                        if #playerFines == 0 then
-                            lib.notify({
-                                title = locale('fines_title'),
-                                description = locale('notification_no_unpaid_fines'),
-                                type = 'inform'
-                            })
-                            return
-                        end
-                        
-                        local total = getTotalFinesAmount()
-                        local options = {}
-                        
-                        for _, fine in ipairs(playerFines) do
-                            local timeRemaining, _ = formatTimeRemaining(fine.due_timestamp)
-                            local statusLabel = fine.status == 'overdue' and locale('fines_fine_overdue') or ''
-                            
-                            table.insert(options, {
-                                title = locale('fines_fine_label'):format(fine.id) .. statusLabel,
-                                description = locale('fines_fine_detail', fine.total_amount, timeRemaining),
-                                icon = fine.status == 'overdue' and 'exclamation-triangle' or 'money-bill',
-                                onSelect = function()
-                                    local alert = lib.alertDialog({
-                                        header = locale('fines_pay_header'),
-                                        content = locale('fines_pay_content', fine.id, fine.total_amount),
-                                        centered = true,
-                                        cancel = true,
-                                        labels = {
-                                            confirm = locale('fines_pay_confirm'),
-                                            cancel = locale('fines_cancel')
-                                        }
-                                    })
-                                    
-                                    if alert == 'confirm' then
-                                        local result = lib.callback.await('rsg-mdt:server:payFine', false, fine.id)
-                                        if result and result.success then
-                                            lib.callback('rsg-mdt:server:getPlayerFines', false, function(newFines)
-                                                playerFines = newFines or {}
-                                            end)
-                                        end
-                                    end
-                                end
-                            })
-                        end
-                        
-                        table.insert(options, {
-                            title = locale('fines_pay_all_title'),
-                            description = locale('fines_pay_all_total', total),
-                            icon = 'money-check-dollar',
-                            onSelect = function()
-                                local alert = lib.alertDialog({
-                                    header = locale('fines_pay_all_title'),
-                                    content = locale('fines_pay_all_content', #playerFines, total),
-                                    centered = true,
-                                    cancel = true,
-                                    labels = {
-                                        confirm = locale('fines_pay_all_confirm'),
-                                        cancel = locale('fines_cancel')
-                                    }
-                                })
-                                
-                                if alert == 'confirm' then
-                                    for _, fine in ipairs(playerFines) do
-                                        lib.callback.await('rsg-mdt:server:payFine', false, fine.id)
-                                    end
-                                    
-                                    lib.callback('rsg-mdt:server:getPlayerFines', false, function(newFines)
-                                        playerFines = newFines or {}
-                                    end)
-                                end
-                            end
-                        })
-                        
-                        lib.registerContext({
-                            id = 'fines_payment_menu',
-                            title = locale('fines_unpaid_title', name),
-                            options = options
-                        })
-                        
-                        lib.showContext('fines_payment_menu')
-                    end)
+                    openFinesClerk(name)
                 end
             },
             {
@@ -220,18 +259,18 @@ local function createFinesPaymentTargets()
                 label = locale('fines_check_label'),
                 distance = 2.5,
                 onSelect = function()
-                    lib.callback('rsg-mdt:server:getPlayerFines', false, function(fines)
+                    RSGCore.Functions.TriggerCallback('rsg-mdt:server:getPlayerFines', function(fines)
                         playerFines = fines or {}
                         
                         if #playerFines == 0 then
-                            lib.notify({
+                            RSGCore.Functions.Notify({
                                 title = locale('fines_title'),
                                 description = locale('notification_no_unpaid_fines_clear'),
                                 type = 'success'
                             })
                         else
                             local total = getTotalFinesAmount()
-                            lib.notify({
+                            RSGCore.Functions.Notify({
                                 title = locale('fines_title'),
                                 description = locale('notification_unpaid_fines_count', #playerFines, total),
                                 type = 'warning'
@@ -251,7 +290,7 @@ end
 CreateThread(function()
     Wait(3000)
     
-    lib.callback('rsg-mdt:server:getPlayerFines', false, function(fines)
+    RSGCore.Functions.TriggerCallback('rsg-mdt:server:getPlayerFines', function(fines)
         playerFines = fines or {}
     end)
     
@@ -263,38 +302,38 @@ end)
 RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
     Wait(2000)
     
-    lib.callback('rsg-mdt:server:getPlayerFines', false, function(fines)
+    RSGCore.Functions.TriggerCallback('rsg-mdt:server:getPlayerFines', function(fines)
         playerFines = fines or {}
     end)
 end)
 
 RegisterNuiCallback('getPlayerFines', function(_, cb)
-    local fines = lib.callback.await('rsg-mdt:server:getPlayerFines')
+    local fines = RSGCore.Functions.AwaitCallback('rsg-mdt:server:getPlayerFines')
     cb(fines or {})
 end)
 
 RegisterNuiCallback('payFine', function(data, cb)
-    local result = lib.callback.await('rsg-mdt:server:payFine', false, data.fineId)
+    local result = RSGCore.Functions.AwaitCallback('rsg-mdt:server:payFine', nil, data.fineId)
     cb(result or { success = false, message = locale('notification_unknown_error') })
 end)
 
 RegisterNuiCallback('getUnpaidFinesCount', function(data, cb)
-    local count = lib.callback.await('rsg-mdt:server:getUnpaidFinesCount', false, data.citizenid)
+    local count = RSGCore.Functions.AwaitCallback('rsg-mdt:server:getUnpaidFinesCount', nil, data.citizenid)
     cb(count or 0)
 end)
 
 RegisterNuiCallback('getCitizenFines', function(data, cb)
-    local fines = lib.callback.await('rsg-mdt:server:getCitizenFines', false, data.citizenid)
+    local fines = RSGCore.Functions.AwaitCallback('rsg-mdt:server:getCitizenFines', nil, data.citizenid)
     cb(fines or {})
 end)
 
 RegisterNuiCallback('getAllUnpaidFines', function(_, cb)
-    local fines = lib.callback.await('rsg-mdt:server:getAllUnpaidFines')
+    local fines = RSGCore.Functions.AwaitCallback('rsg-mdt:server:getAllUnpaidFines')
     cb(fines or {})
 end)
 
 RegisterNuiCallback('markFinePaid', function(data, cb)
-    local result = lib.callback.await('rsg-mdt:server:markFinePaid', false, data.fineId)
+    local result = RSGCore.Functions.AwaitCallback('rsg-mdt:server:markFinePaid', nil, data.fineId)
     cb(result or { success = false, message = locale('notification_unknown_error') })
 end)
 

@@ -1,5 +1,4 @@
 -- Discord webhook logging for rsg-loyalty
-lib.locale()
 
 local COLORS = {
     green  = 65280,

@@ -87,7 +87,7 @@ local function broadcastToOfficers(event, data)
     end
 end
 
-lib.callback.register('rsg-mdt:server:getChargeTemplates', function(source)
+RegisterCallback('rsg-mdt:server:getChargeTemplates', function(source)
     local templates = MySQL.query.await(
         "SELECT * FROM mdt_charge_templates ORDER BY category, name"
     )
@@ -95,7 +95,7 @@ lib.callback.register('rsg-mdt:server:getChargeTemplates', function(source)
     return templates or {}
 end)
 
-lib.callback.register('rsg-mdt:server:addChargeTemplate', function(source, data)
+RegisterCallback('rsg-mdt:server:addChargeTemplate', function(source, data)
     if not hasAdminPermission(source) then
         return { success = false, message = locale('notification_charge_permission') }
     end
@@ -140,7 +140,7 @@ lib.callback.register('rsg-mdt:server:addChargeTemplate', function(source, data)
     return { success = false, message = locale('notification_failed_create_charge') }
 end)
 
-lib.callback.register('rsg-mdt:server:updateChargeTemplate', function(source, data)
+RegisterCallback('rsg-mdt:server:updateChargeTemplate', function(source, data)
     if not hasAdminPermission(source) then
         return { success = false, message = locale('notification_charge_permission') }
     end
@@ -185,7 +185,7 @@ lib.callback.register('rsg-mdt:server:updateChargeTemplate', function(source, da
     return { success = false, message = locale('notification_failed_update_charge') }
 end)
 
-lib.callback.register('rsg-mdt:server:deleteChargeTemplate', function(source, id)
+RegisterCallback('rsg-mdt:server:deleteChargeTemplate', function(source, id)
     if not hasAdminPermission(source) then
         return { success = false, message = locale('notification_charge_permission') }
     end
@@ -215,7 +215,7 @@ lib.callback.register('rsg-mdt:server:deleteChargeTemplate', function(source, id
     return { success = false, message = locale('notification_failed_delete_charge') }
 end)
 
-lib.callback.register('rsg-mdt:server:issueCharges', function(source, data)
+RegisterCallback('rsg-mdt:server:issueCharges', function(source, data)
     if not hasCreateRecordsPermission(source) then
         return { success = false, message = locale('notification_issue_permission') }
     end
@@ -324,7 +324,7 @@ lib.callback.register('rsg-mdt:server:issueCharges', function(source, data)
     return { success = false, message = locale('notification_failed_issue_charges') }
 end)
 
-lib.callback.register('rsg-mdt:server:submitCharges', function(source, data)
+RegisterCallback('rsg-mdt:server:submitCharges', function(source, data)
     if not hasCreateRecordsPermission(source) then
         return { success = false, message = locale('notification_issue_permission') }
     end
@@ -493,7 +493,7 @@ lib.callback.register('rsg-mdt:server:submitCharges', function(source, data)
     }
 end)
 
-lib.callback.register('rsg-mdt:server:getIssuedCharges', function(source, citizenid)
+RegisterCallback('rsg-mdt:server:getIssuedCharges', function(source, citizenid)
     if not citizenid then return {} end
     
     local charges = MySQL.query.await(
@@ -543,7 +543,7 @@ exports('getChargeTemplates', function()
     return MySQL.query.await("SELECT * FROM mdt_charge_templates ORDER BY category, name") or {}
 end)
 
-lib.callback.register('rsg-mdt:server:getAllIssuedCharges', function(source, searchQuery)
+RegisterCallback('rsg-mdt:server:getAllIssuedCharges', function(source, searchQuery)
     if not hasCreateRecordsPermission(source) then
         return {}
     end
@@ -589,7 +589,7 @@ lib.callback.register('rsg-mdt:server:getAllIssuedCharges', function(source, sea
     return charges or {}
 end)
 
-lib.callback.register('rsg-mdt:server:getChargeDetails', function(source, chargeId)
+RegisterCallback('rsg-mdt:server:getChargeDetails', function(source, chargeId)
     if not hasCreateRecordsPermission(source) then
         return nil
     end
@@ -611,7 +611,7 @@ lib.callback.register('rsg-mdt:server:getChargeDetails', function(source, charge
     return nil
 end)
 
-lib.callback.register('rsg-mdt:server:jailPlayer', function(source, data)
+RegisterCallback('rsg-mdt:server:jailPlayer', function(source, data)
     if not hasCreateRecordsPermission(source) then
         return { success = false, message = locale('notification_jail_permission') }
     end
@@ -645,7 +645,7 @@ lib.callback.register('rsg-mdt:server:jailPlayer', function(source, data)
     return { success = true, message = locale('notification_player_jailed') }
 end)
 
-lib.callback.register('rsg-mdt:server:getJailConfig', function(source)
+RegisterCallback('rsg-mdt:server:getJailConfig', function(source)
     return {
         delaySeconds = Config.Jail.delaySeconds,
         maxDistance = Config.Jail.maxDistance,
@@ -657,7 +657,7 @@ lib.callback.register('rsg-mdt:server:getJailConfig', function(source)
     }
 end)
 
-lib.callback.register('rsg-mdt:server:getCitizenJailTotals', function(source, citizenid)
+RegisterCallback('rsg-mdt:server:getCitizenJailTotals', function(source, citizenid)
     if not citizenid then return { totalJailtime = 0, totalServed = 0, charges = {} } end
     
     local charges = MySQL.query.await(
@@ -685,7 +685,7 @@ lib.callback.register('rsg-mdt:server:getCitizenJailTotals', function(source, ci
     }
 end)
 
-lib.callback.register('rsg-mdt:server:commitCharges', function(source, data)
+RegisterCallback('rsg-mdt:server:commitCharges', function(source, data)
     if not hasCreateRecordsPermission(source) then
         return { success = false, message = locale('notification_issue_permission') }
     end

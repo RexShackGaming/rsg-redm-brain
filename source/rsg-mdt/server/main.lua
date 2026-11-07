@@ -230,7 +230,7 @@ end)
 -- ============================================
 -- Callbacks: Citizens
 -- ============================================
-lib.callback.register('rsg-mdt:server:getAllCitizens', function(source)
+RegisterCallback('rsg-mdt:server:getAllCitizens', function(source)
     if not hasAccess(source) then return {} end
 
     local results = MySQL.query.await("SELECT citizenid, charinfo, job FROM players")
@@ -274,7 +274,7 @@ lib.callback.register('rsg-mdt:server:getAllCitizens', function(source)
     return citizens
 end)
 
-lib.callback.register('rsg-mdt:server:searchCitizens', function(source, query)
+RegisterCallback('rsg-mdt:server:searchCitizens', function(source, query)
     if not hasAccess(source) then return {} end
 
     query = string.lower(query or '')
@@ -348,7 +348,7 @@ lib.callback.register('rsg-mdt:server:searchCitizens', function(source, query)
     return citizens
 end)
 
-lib.callback.register('rsg-mdt:server:getCitizen', function(source, citizenid)
+RegisterCallback('rsg-mdt:server:getCitizen', function(source, citizenid)
     if not hasAccess(source) then return nil end
 
     local citizen = nil
@@ -405,7 +405,7 @@ lib.callback.register('rsg-mdt:server:getCitizen', function(source, citizenid)
     return citizen
 end)
 
-lib.callback.register('rsg-mdt:server:setProfilePicture', function(source, data)
+RegisterCallback('rsg-mdt:server:setProfilePicture', function(source, data)
     if not hasAccess(source) or not hasPermission(source, 'canCreateRecords') then return false end
 
     local citizenid = data.citizenid
@@ -425,7 +425,7 @@ end)
 -- ============================================
 -- Callbacks: Criminal Records
 -- ============================================
-lib.callback.register('rsg-mdt:server:getRecords', function(source, citizenid)
+RegisterCallback('rsg-mdt:server:getRecords', function(source, citizenid)
     if not hasAccess(source) then return {} end
     
     local query = citizenid 
@@ -437,7 +437,7 @@ lib.callback.register('rsg-mdt:server:getRecords', function(source, citizenid)
     return results or {}
 end)
 
-lib.callback.register('rsg-mdt:server:addRecord', function(source, data)
+RegisterCallback('rsg-mdt:server:addRecord', function(source, data)
     if not hasAccess(source) or not hasPermission(source, 'canCreateRecords') then return false end
     
     local player = RSGCore.Functions.GetPlayer(source)
@@ -454,7 +454,7 @@ lib.callback.register('rsg-mdt:server:addRecord', function(source, data)
     return insertId and true or false
 end)
 
-lib.callback.register('rsg-mdt:server:deleteRecord', function(source, recordId)
+RegisterCallback('rsg-mdt:server:deleteRecord', function(source, recordId)
     if not hasAccess(source) or not hasPermission(source, 'canDeleteRecords') then return false end
     
     local affectedRows = MySQL.query.await('DELETE FROM mdt_records WHERE id = ?', { recordId })
@@ -464,14 +464,14 @@ end)
 -- ============================================
 -- Callbacks: Warrants
 -- ============================================
-lib.callback.register('rsg-mdt:server:getWarrants', function(source)
+RegisterCallback('rsg-mdt:server:getWarrants', function(source)
     if not hasAccess(source) then return {} end
     
     local results = MySQL.query.await('SELECT * FROM mdt_warrants ORDER BY created_at DESC')
     return results or {}
 end)
 
-lib.callback.register('rsg-mdt:server:addWarrant', function(source, data)
+RegisterCallback('rsg-mdt:server:addWarrant', function(source, data)
     if not hasAccess(source) or not hasPermission(source, 'canManageWarrants') then return false end
     
     local player = RSGCore.Functions.GetPlayer(source)
@@ -488,7 +488,7 @@ lib.callback.register('rsg-mdt:server:addWarrant', function(source, data)
     return insertId and true or false
 end)
 
-lib.callback.register('rsg-mdt:server:updateWarrant', function(source, data)
+RegisterCallback('rsg-mdt:server:updateWarrant', function(source, data)
     if not hasAccess(source) or not hasPermission(source, 'canManageWarrants') then return false end
     
     local affectedRows = MySQL.query.await(
@@ -498,7 +498,7 @@ lib.callback.register('rsg-mdt:server:updateWarrant', function(source, data)
     return affectedRows and affectedRows.affectedRows > 0
 end)
 
-lib.callback.register('rsg-mdt:server:deleteWarrant', function(source, warrantId)
+RegisterCallback('rsg-mdt:server:deleteWarrant', function(source, warrantId)
     if not hasAccess(source) or not hasPermission(source, 'canManageWarrants') then return false end
     
     local affectedRows = MySQL.query.await('DELETE FROM mdt_warrants WHERE id = ?', { warrantId })
@@ -508,14 +508,14 @@ end)
 -- ============================================
 -- Callbacks: BOLOs
 -- ============================================
-lib.callback.register('rsg-mdt:server:getBolos', function(source)
+RegisterCallback('rsg-mdt:server:getBolos', function(source)
     if not hasAccess(source) then return {} end
     
     local results = MySQL.query.await('SELECT * FROM mdt_bolos ORDER BY created_at DESC')
     return results or {}
 end)
 
-lib.callback.register('rsg-mdt:server:addBolo', function(source, data)
+RegisterCallback('rsg-mdt:server:addBolo', function(source, data)
     if not hasAccess(source) then return false end
     
     local player = RSGCore.Functions.GetPlayer(source)
@@ -532,7 +532,7 @@ lib.callback.register('rsg-mdt:server:addBolo', function(source, data)
     return insertId and true or false
 end)
 
-lib.callback.register('rsg-mdt:server:deleteBolo', function(source, boloId)
+RegisterCallback('rsg-mdt:server:deleteBolo', function(source, boloId)
     if not hasAccess(source) or not hasPermission(source, 'canDeleteRecords') then return false end
     
     local affectedRows = MySQL.query.await('DELETE FROM mdt_bolos WHERE id = ?', { boloId })
@@ -542,7 +542,7 @@ end)
 -- ============================================
 -- Callbacks: Reports
 -- ============================================
-lib.callback.register('rsg-mdt:server:getReports', function(source)
+RegisterCallback('rsg-mdt:server:getReports', function(source)
     if not hasAccess(source) then return {} end
     
     local results = MySQL.query.await('SELECT * FROM mdt_reports ORDER BY created_at DESC')
@@ -584,7 +584,7 @@ lib.callback.register('rsg-mdt:server:getReports', function(source)
     return results
 end)
 
-lib.callback.register('rsg-mdt:server:getReport', function(source, reportId)
+RegisterCallback('rsg-mdt:server:getReport', function(source, reportId)
     if not hasAccess(source) then return nil end
     
     local results = MySQL.query.await('SELECT * FROM mdt_reports WHERE id = ?', { reportId })
@@ -605,7 +605,7 @@ lib.callback.register('rsg-mdt:server:getReport', function(source, reportId)
     return report
 end)
 
-lib.callback.register('rsg-mdt:server:createReport', function(source, data)
+RegisterCallback('rsg-mdt:server:createReport', function(source, data)
     if not hasAccess(source) or not hasPermission(source, 'canCreateRecords') then return false end
     
     local player = RSGCore.Functions.GetPlayer(source)
@@ -633,7 +633,7 @@ lib.callback.register('rsg-mdt:server:createReport', function(source, data)
     return insertId and true or false
 end)
 
-lib.callback.register('rsg-mdt:server:deleteReport', function(source, reportId)
+RegisterCallback('rsg-mdt:server:deleteReport', function(source, reportId)
     if not hasAccess(source) or not hasPermission(source, 'canDeleteRecords') then return false end
     
     local affectedRows = MySQL.query.await('DELETE FROM mdt_reports WHERE id = ?', { reportId })
@@ -641,14 +641,14 @@ lib.callback.register('rsg-mdt:server:deleteReport', function(source, reportId)
 end)
 
 -- Report Comments
-lib.callback.register('rsg-mdt:server:getReportComments', function(source, reportId)
+RegisterCallback('rsg-mdt:server:getReportComments', function(source, reportId)
     if not hasAccess(source) then return {} end
     
     local results = MySQL.query.await('SELECT * FROM mdt_report_comments WHERE report_id = ? ORDER BY created_at ASC', { reportId })
     return results or {}
 end)
 
-lib.callback.register('rsg-mdt:server:addReportComment', function(source, data)
+RegisterCallback('rsg-mdt:server:addReportComment', function(source, data)
     if not hasAccess(source) or not hasPermission(source, 'canCreateRecords') then return false end
     
     local player = RSGCore.Functions.GetPlayer(source)
@@ -669,7 +669,7 @@ end)
 -- ============================================
 -- Callbacks: Officer Info & Stats
 -- ============================================
-lib.callback.register('rsg-mdt:server:getOfficerInfo', function(source)
+RegisterCallback('rsg-mdt:server:getOfficerInfo', function(source)
     if not hasAccess(source) then return nil end
     
     local player = RSGCore.Functions.GetPlayer(source)
@@ -683,7 +683,7 @@ lib.callback.register('rsg-mdt:server:getOfficerInfo', function(source)
     }
 end)
 
-lib.callback.register('rsg-mdt:server:getStats', function(source)
+RegisterCallback('rsg-mdt:server:getStats', function(source)
     if not hasAccess(source) then return nil end
     
     local recordCount = MySQL.query.await('SELECT COUNT(*) as count FROM mdt_records')
@@ -704,7 +704,7 @@ end)
 -- ============================================
 -- Callbacks: Config Data
 -- ============================================
-lib.callback.register('rsg-mdt:server:getIncidentTypes', function(source)
+RegisterCallback('rsg-mdt:server:getIncidentTypes', function(source)
     if not hasAccess(source) then return {} end
     return Config.IncidentTypes or {}
 end)

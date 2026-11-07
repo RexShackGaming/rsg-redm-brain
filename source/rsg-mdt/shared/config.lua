@@ -53,7 +53,7 @@ Config.LawJobs = {
 -- ============================================
 Config.Settings = {
     command = 'mdt',
-    keybind = nil,
+    keybind = 0x76, -- F7 (virtual-key code), nil to disable
     requireOnDuty = true,
     maxSearchResults = 50,
     recordRetentionDays = 0,
@@ -112,4 +112,13 @@ Config.Jail = {
     jailCoords = vector3(2761.44, -1460.54, 46.54),
     jailHeading = 90.0,
     minutesPerMonth = 1
+}
+
+-- ============================================
+-- NUI Push-to-Talk
+-- ============================================
+-- While NUI is open, block game controls but allow push-to-talk.
+Config.AllowPushToTalkWhileOpen = true
+Config.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK
 }

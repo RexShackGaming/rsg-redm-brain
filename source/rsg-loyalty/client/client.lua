@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 if not Config.Enabled then return end
 
@@ -129,7 +128,7 @@ local function watchDistance(origin)
     local maxDist = Config.Loyalty.MaxRedeemDistance or 5.0
     CreateThread(function()
         while nuiOpen do
-            if #(GetEntityCoords(cache.ped) - origin) > maxDist then
+            if #(GetEntityCoords(PlayerPedId()) - origin) > maxDist then
                 closeLoyaltyNUI()
                 break
             end

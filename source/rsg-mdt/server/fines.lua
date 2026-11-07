@@ -120,7 +120,7 @@ CreateThread(function()
     end
 end)
 
-lib.callback.register('rsg-mdt:server:getCitizenFines', function(source, citizenid)
+RegisterCallback('rsg-mdt:server:getCitizenFines', function(source, citizenid)
     if not hasCreateRecordsPermission(source) then return {} end
     
     local fines = MySQL.query.await(
@@ -137,7 +137,7 @@ lib.callback.register('rsg-mdt:server:getCitizenFines', function(source, citizen
     return fines or {}
 end)
 
-lib.callback.register('rsg-mdt:server:getUnpaidFines', function(source, citizenid)
+RegisterCallback('rsg-mdt:server:getUnpaidFines', function(source, citizenid)
     local fines = MySQL.query.await(
         "SELECT * FROM mdt_fines WHERE citizenid = ? AND status IN ('unpaid', 'overdue') ORDER BY due_date ASC",
         { citizenid }
@@ -152,7 +152,7 @@ lib.callback.register('rsg-mdt:server:getUnpaidFines', function(source, citizeni
     return fines or {}
 end)
 
-lib.callback.register('rsg-mdt:server:payFine', function(source, fineId)
+RegisterCallback('rsg-mdt:server:payFine', function(source, fineId)
     fineId = tonumber(fineId)
     if not fineId then
         return { success = false, message = locale('notification_invalid_fine_id') }
@@ -218,7 +218,7 @@ lib.callback.register('rsg-mdt:server:payFine', function(source, fineId)
     return { success = true, message = locale('notification_fine_paid') }
 end)
 
-lib.callback.register('rsg-mdt:server:getPlayerFines', function(source)
+RegisterCallback('rsg-mdt:server:getPlayerFines', function(source)
     local player = RSGCore.Functions.GetPlayer(source)
     if not player then return {} end
     
@@ -239,7 +239,7 @@ lib.callback.register('rsg-mdt:server:getPlayerFines', function(source)
     return fines or {}
 end)
 
-lib.callback.register('rsg-mdt:server:hasUnpaidFines', function(source)
+RegisterCallback('rsg-mdt:server:hasUnpaidFines', function(source)
     local player = RSGCore.Functions.GetPlayer(source)
     if not player then return false end
     
@@ -251,7 +251,7 @@ lib.callback.register('rsg-mdt:server:hasUnpaidFines', function(source)
     return result and result[1] and result[1].count > 0
 end)
 
-lib.callback.register('rsg-mdt:server:getUnpaidFinesCount', function(source, citizenid)
+RegisterCallback('rsg-mdt:server:getUnpaidFinesCount', function(source, citizenid)
     local query = citizenid 
         and "SELECT COUNT(*) as count FROM mdt_fines WHERE citizenid = ? AND status IN ('unpaid', 'overdue')"
         or "SELECT COUNT(*) as count FROM mdt_fines WHERE status IN ('unpaid', 'overdue')"
@@ -262,7 +262,7 @@ lib.callback.register('rsg-mdt:server:getUnpaidFinesCount', function(source, cit
     return result and result[1] and result[1].count or 0
 end)
 
-lib.callback.register('rsg-mdt:server:getAllUnpaidFines', function(source)
+RegisterCallback('rsg-mdt:server:getAllUnpaidFines', function(source)
     if not hasCreateRecordsPermission(source) then return {} end
     
     local fines = MySQL.query.await(
@@ -278,7 +278,7 @@ lib.callback.register('rsg-mdt:server:getAllUnpaidFines', function(source)
     return fines or {}
 end)
 
-lib.callback.register('rsg-mdt:server:markFineOverdue', function(source, fineId)
+RegisterCallback('rsg-mdt:server:markFineOverdue', function(source, fineId)
     if not hasCreateRecordsPermission(source) then 
         return { success = false, message = locale('notification_no_permission') }
     end
@@ -291,7 +291,7 @@ lib.callback.register('rsg-mdt:server:markFineOverdue', function(source, fineId)
     return { success = true }
 end)
 
-lib.callback.register('rsg-mdt:server:markFinePaid', function(source, fineId)
+RegisterCallback('rsg-mdt:server:markFinePaid', function(source, fineId)
     if not hasCreateRecordsPermission(source) then
         return { success = false, message = locale('notification_no_permission_mark_fines') }
     end

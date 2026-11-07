@@ -112,7 +112,7 @@ local function broadcastToAdmins(event, data)
     end
 end
 
-lib.callback.register('rsg-mdt:server:getStaff', function(source)
+RegisterCallback('rsg-mdt:server:getStaff', function(source)
     if not hasAdminPermission(source) then return {} end
     
     local staff = MySQL.query.await([[
@@ -150,7 +150,7 @@ lib.callback.register('rsg-mdt:server:getStaff', function(source)
     return staff
 end)
 
-lib.callback.register('rsg-mdt:server:getRoles', function(source)
+RegisterCallback('rsg-mdt:server:getRoles', function(source)
     if not hasAdminPermission(source) then return {} end
     
     local roles = MySQL.query.await("SELECT * FROM mdt_roles ORDER BY name")
@@ -166,7 +166,7 @@ lib.callback.register('rsg-mdt:server:getRoles', function(source)
     return roles
 end)
 
-lib.callback.register('rsg-mdt:server:addStaff', function(source, data)
+RegisterCallback('rsg-mdt:server:addStaff', function(source, data)
     if not hasAdminPermission(source) then return { success = false, message = locale('notification_permission_denied') } end
     
     local citizenid = data.citizenid
@@ -212,7 +212,7 @@ lib.callback.register('rsg-mdt:server:addStaff', function(source, data)
     return { success = false, message = locale('notification_failed_add_staff') }
 end)
 
-lib.callback.register('rsg-mdt:server:removeStaff', function(source, citizenid)
+RegisterCallback('rsg-mdt:server:removeStaff', function(source, citizenid)
     if not hasAdminPermission(source) then return { success = false, message = locale('notification_permission_denied') } end
     
     if not citizenid then
@@ -239,7 +239,7 @@ lib.callback.register('rsg-mdt:server:removeStaff', function(source, citizenid)
     return { success = false, message = locale('notification_failed_remove_staff') }
 end)
 
-lib.callback.register('rsg-mdt:server:updateStaffPermissions', function(source, data)
+RegisterCallback('rsg-mdt:server:updateStaffPermissions', function(source, data)
     if not hasAdminPermission(source) then return { success = false, message = locale('notification_permission_denied') } end
     
     local citizenid = data.citizenid
@@ -284,7 +284,7 @@ lib.callback.register('rsg-mdt:server:updateStaffPermissions', function(source, 
     return { success = false, message = locale('notification_failed_update_staff') }
 end)
 
-lib.callback.register('rsg-mdt:server:createRole', function(source, data)
+RegisterCallback('rsg-mdt:server:createRole', function(source, data)
     if not hasAdminPermission(source) then return { success = false, message = locale('notification_permission_denied') } end
     
     local name = data.name
@@ -316,7 +316,7 @@ lib.callback.register('rsg-mdt:server:createRole', function(source, data)
     return { success = false, message = locale('notification_failed_create_role') }
 end)
 
-lib.callback.register('rsg-mdt:server:updateRole', function(source, data)
+RegisterCallback('rsg-mdt:server:updateRole', function(source, data)
     if not hasAdminPermission(source) then return { success = false, message = locale('notification_permission_denied') } end
     
     local name = data.name
@@ -343,7 +343,7 @@ lib.callback.register('rsg-mdt:server:updateRole', function(source, data)
     return { success = false, message = locale('notification_failed_update_role') }
 end)
 
-lib.callback.register('rsg-mdt:server:deleteRole', function(source, roleName)
+RegisterCallback('rsg-mdt:server:deleteRole', function(source, roleName)
     if not hasAdminPermission(source) then return { success = false, message = locale('notification_permission_denied') } end
     
     if roleName == 'admin' or roleName == 'supervisor' or roleName == 'officer' then
@@ -368,7 +368,7 @@ lib.callback.register('rsg-mdt:server:deleteRole', function(source, roleName)
     return { success = false, message = locale('notification_failed_delete_role') }
 end)
 
-lib.callback.register('rsg-mdt:server:getAuditLogs', function(source, data)
+RegisterCallback('rsg-mdt:server:getAuditLogs', function(source, data)
     if not hasAdminPermission(source) then return {} end
     
     local limit = data and data.limit or 100
@@ -403,7 +403,7 @@ lib.callback.register('rsg-mdt:server:getAuditLogs', function(source, data)
     return logs or {}
 end)
 
-lib.callback.register('rsg-mdt:server:searchCitizensForStaff', function(source, query)
+RegisterCallback('rsg-mdt:server:searchCitizensForStaff', function(source, query)
     if not hasAdminPermission(source) then return {} end
     
     query = string.lower(query or '')
@@ -432,7 +432,7 @@ lib.callback.register('rsg-mdt:server:searchCitizensForStaff', function(source, 
     return citizens
 end)
 
-lib.callback.register('rsg-mdt:server:assignLawJob', function(source, data)
+RegisterCallback('rsg-mdt:server:assignLawJob', function(source, data)
     if not hasAdminPermission(source) then
         return { success = false, message = locale('notification_permission_denied') }
     end
@@ -531,7 +531,7 @@ lib.callback.register('rsg-mdt:server:assignLawJob', function(source, data)
     }
 end)
 
-lib.callback.register('rsg-mdt:server:getLawJobs', function(source)
+RegisterCallback('rsg-mdt:server:getLawJobs', function(source)
     if not hasAdminPermission(source) then return {} end
     
     local jobs = {}
@@ -547,7 +547,7 @@ lib.callback.register('rsg-mdt:server:getLawJobs', function(source)
     return jobs
 end)
 
-lib.callback.register('rsg-mdt:server:getJobGrades', function(source, jobName)
+RegisterCallback('rsg-mdt:server:getJobGrades', function(source, jobName)
     if not hasAdminPermission(source) then return {} end
     
     if not jobName or not Config.LawJobs[jobName] then
@@ -570,7 +570,7 @@ lib.callback.register('rsg-mdt:server:getJobGrades', function(source, jobName)
     return grades
 end)
 
-lib.callback.register('rsg-mdt:server:searchPlayersForJob', function(source, query)
+RegisterCallback('rsg-mdt:server:searchPlayersForJob', function(source, query)
     if not hasAdminPermission(source) then return {} end
     
     query = string.lower(query or '')
@@ -607,7 +607,7 @@ lib.callback.register('rsg-mdt:server:searchPlayersForJob', function(source, que
     return players
 end)
 
-lib.callback.register('rsg-mdt:server:updateOfficerDepartment', function(source, data)
+RegisterCallback('rsg-mdt:server:updateOfficerDepartment', function(source, data)
     if not hasAdminPermission(source) then
         return { success = false, message = locale('notification_permission_denied') }
     end
@@ -716,7 +716,7 @@ lib.callback.register('rsg-mdt:server:updateOfficerDepartment', function(source,
     }
 end)
 
-lib.callback.register('rsg-mdt:server:getOfficers', function(source)
+RegisterCallback('rsg-mdt:server:getOfficers', function(source)
     if not hasAdminPermission(source) then return {} end
     
     local staff = MySQL.query.await([[
@@ -776,7 +776,7 @@ lib.callback.register('rsg-mdt:server:getOfficers', function(source)
     return officers
 end)
 
-lib.callback.register('rsg-mdt:server:getJobPlayerCounts', function(source)
+RegisterCallback('rsg-mdt:server:getJobPlayerCounts', function(source)
     if not hasAdminPermission(source) then return {} end
     
     local counts = {}
@@ -817,7 +817,7 @@ lib.callback.register('rsg-mdt:server:getJobPlayerCounts', function(source)
     return countsList
 end)
 
-lib.callback.register('rsg-mdt:server:syncStaffFromJobs', function(source, filterJob)
+RegisterCallback('rsg-mdt:server:syncStaffFromJobs', function(source, filterJob)
     if not hasAdminPermission(source) then
         return { success = false, message = locale('notification_permission_denied'), added = 0 }
     end

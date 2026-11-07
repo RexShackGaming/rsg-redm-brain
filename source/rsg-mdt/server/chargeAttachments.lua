@@ -29,7 +29,7 @@ local function logAttachmentAction(source, action, chargeId, reportId, details)
     )
 end
 
-lib.callback.register('rsg-mdt:server:getAvailableReportsForAttachment', function(source, searchQuery)
+RegisterCallback('rsg-mdt:server:getAvailableReportsForAttachment', function(source, searchQuery)
     if not hasCreateRecordsPermission(source) then return {} end
     
     local query
@@ -59,7 +59,7 @@ lib.callback.register('rsg-mdt:server:getAvailableReportsForAttachment', functio
     return reports or {}
 end)
 
-lib.callback.register('rsg-mdt:server:attachReportsToCharge', function(source, data)
+RegisterCallback('rsg-mdt:server:attachReportsToCharge', function(source, data)
     if not hasCreateRecordsPermission(source) then
         return { success = false, message = locale('notification_attach_permission') }
     end
@@ -143,7 +143,7 @@ lib.callback.register('rsg-mdt:server:attachReportsToCharge', function(source, d
     }
 end)
 
-lib.callback.register('rsg-mdt:server:removeAttachmentFromCharge', function(source, data)
+RegisterCallback('rsg-mdt:server:removeAttachmentFromCharge', function(source, data)
     if not hasCreateRecordsPermission(source) then
         return { success = false, message = locale('notification_remove_attach_permission') }
     end
@@ -168,7 +168,7 @@ lib.callback.register('rsg-mdt:server:removeAttachmentFromCharge', function(sour
     return { success = false, message = locale('notification_attachment_not_found') }
 end)
 
-lib.callback.register('rsg-mdt:server:getChargeAttachments', function(source, chargeId)
+RegisterCallback('rsg-mdt:server:getChargeAttachments', function(source, chargeId)
     chargeId = tonumber(chargeId)
     if not chargeId then return {} end
     
@@ -193,7 +193,7 @@ lib.callback.register('rsg-mdt:server:getChargeAttachments', function(source, ch
     return attachments or {}
 end)
 
-lib.callback.register('rsg-mdt:server:getReportsWithCharges', function(source, reportId)
+RegisterCallback('rsg-mdt:server:getReportsWithCharges', function(source, reportId)
     reportId = tonumber(reportId)
     if not reportId then return {} end
     

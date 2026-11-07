@@ -1,11 +1,11 @@
-lib.locale()
+local RSGCore = exports['rsg-core']:GetCoreObject()
 
 if not Config.Enabled then return end
 
 local spawnDistance = Config.Performance.NpcSpawnDistance or 20.0
 local fadeIn = Config.Performance.NpcFadeIn
 local fadeSpeed = Config.Performance.NpcFadeSpeed or 40
-local points = {}
+local npcPoints = {}
 
 local function setAlphaFade(ped, from, to, step)
     for alpha = from, to, step do
@@ -19,7 +19,7 @@ local blips = {}
 
 local function spawnNpc(loc)
     local model = loc.npcmodel
-    local ok = pcall(lib.requestModel, model, 10000)
+    local ok = pcall(RSGCore.Functions.RequestModel, model, 10000)
     if not ok then
         print(('[rsg-loyalty] Failed to load model for %s'):format(loc.name))
         return nil
@@ -42,7 +42,7 @@ local function spawnNpc(loc)
         Citizen.InvokeNative(0x524B54361229154F, ped, joaat(loc.scenario), -1, true, false, false, false, -1, false) -- TaskStartScenarioInPlaceHash
     end
 
-    exports.ox_target:addLocalEntity(ped, {
+    exports['rsg-target']:addLocalEntity(ped, {
         {
             name = 'npc_loyalty',
             icon = 'far fa-eye',
@@ -63,7 +63,7 @@ end
 
 local function despawnNpc(ped, fade)
     if not ped or not DoesEntityExist(ped) then return end
-    exports.ox_target:removeLocalEntity(ped, 'npc_loyalty')
+    exports['rsg-target']:removeLocalEntity(ped, 'npc_loyalty')
     if fade then setAlphaFade(ped, 255, 0, -51) end
     DeletePed(ped)
 end
@@ -77,11 +77,11 @@ for _, loc in ipairs(Config.LoyaltyLocations) do
         blips[#blips + 1] = blip
     end
 
-    points[#points + 1] = lib.points.new({
+    npcPoints[#npcPoints + 1] = points.new({
         coords = loc.npccoords.xyz,
         distance = spawnDistance,
         -- spawn/despawn in their own threads so model loading and fades
-        -- never stall the shared lib.points loop
+        -- never stall the shared points loop
         onEnter = function(self)
             self.inside = true
             if self.ped or self.spawning then return end
@@ -110,7 +110,7 @@ AddEventHandler('onResourceStop', function(resourceName)
     for _, blip in ipairs(blips) do
         RemoveBlip(blip)
     end
-    for _, point in ipairs(points) do
+    for _, point in ipairs(npcPoints) do
         if point.ped and DoesEntityExist(point.ped) then
             DeletePed(point.ped)
         end

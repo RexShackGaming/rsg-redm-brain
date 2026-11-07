@@ -253,19 +253,19 @@ end)
 -- ============================================
 -- Callbacks
 -- ============================================
-lib.callback.register('rsg-mdt:roleSync:getRoles', function(source)
+RegisterCallback('rsg-mdt:roleSync:getRoles', function(source)
     return getAllPlayerRoles()
 end)
 
-lib.callback.register('rsg-mdt:roleSync:getMyRole', function(source)
+RegisterCallback('rsg-mdt:roleSync:getMyRole', function(source)
     return PlayerRoles[source]
 end)
 
-lib.callback.register('rsg-mdt:roleSync:getConfigVersion', function(source)
+RegisterCallback('rsg-mdt:roleSync:getConfigVersion', function(source)
     return ConfigVersion
 end)
 
-lib.callback.register('rsg-mdt:roleSync:getValidatedJobs', function(source)
+RegisterCallback('rsg-mdt:roleSync:getValidatedJobs', function(source)
     local jobs = {}
     for jobName, jobConfig in pairs(Config.LawJobs) do
         jobs[jobName] = {
@@ -276,7 +276,7 @@ lib.callback.register('rsg-mdt:roleSync:getValidatedJobs', function(source)
     return jobs
 end)
 
-lib.callback.register('rsg-mdt:server:getConfigRoles', function(source)
+RegisterCallback('rsg-mdt:server:getConfigRoles', function(source)
     local roles = {}
     for jobName, jobConfig in pairs(Config.LawJobs) do
         local grades = {}

@@ -1,12 +1,12 @@
 # rsg-loyalty
 
-Version 3.0.0. Loyalty script for RSG Framework
+Version 3.0.1. Loyalty script for RSG Framework
 
 A comprehensive loyalty points system for RedM/RSG Framework servers. Players earn loyalty points through gameplay and redeem them for cash or items at NPC loyalty store locations. - **Automatic Point Earning**: Players earn points passively (configurable per-minute rate) after minimum playtime - **Session Caps & Cooldowns**: Prevents farming with per-session limits and earn cooldowns
 
 Source: https://github.com/Rexshack-RedM/rsg-loyalty
 
-**Dependencies:** `rsg-core`, `ox_lib`, `ox_target`, `rsg-inventory`, `oxmysql`
+**Dependencies:** `rsg-core`, `rsg-target`, `rsg-inventory`, `oxmysql`
 
 Has NUI (`ui_page`).
 
