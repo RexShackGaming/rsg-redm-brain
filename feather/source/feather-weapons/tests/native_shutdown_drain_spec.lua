@@ -1,4 +1,13 @@
 dofile('server/services/native_equipment_transition.lua')
+local normal={NativeAlphaRuntime=true,CharacterAmmunitionEnabled=true,CharacterAmmoTransportEnabled=true,
+ NativeAlphaLifecycleWearEnabled=false,DevMode=false}
+assert(WeaponNativeShutdownDrain.RuntimeAvailable(normal,'missing'),'fresh release can shut down without retired proof or optional wear')
+assert(WeaponNativeShutdownDrain.RuntimeAvailable(normal,'stopped'))
+for _,proof in ipairs({'started','starting','stopping','unknown','uninitialized'}) do
+ assert(not WeaponNativeShutdownDrain.RuntimeAvailable(normal,proof),'competing/uncertain proof must not be treated as inactive')
+end
+normal.CharacterAmmoTransportEnabled=false
+assert(not WeaponNativeShutdownDrain.RuntimeAvailable(normal,'missing'))
 local function fixture()
  local rows={{source=1,characterId='Jane',sessionId='j',epoch='je'},
              {source=2,characterId='John',sessionId='n',epoch='ne'}}

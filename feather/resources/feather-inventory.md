@@ -1,6 +1,6 @@
 # feather-inventory
 
-Version 0.13.0. The Inventory API for the Feather Framework
+Version 0.14.0. The Inventory API for the Feather Framework
 
 Pull requests and pushes to main run the full Lua regression runner and runtime syntax checks, Python collection/equipment tests, UI contract tests, lint/build, and install archive verification. Tests use Lupa 2.8 (Lua 5.4), Node 22 and pnpm
 

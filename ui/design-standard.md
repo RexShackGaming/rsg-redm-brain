@@ -81,3 +81,6 @@ Style this script's NUI (HTML/CSS/JS UI) to match the "RDR2 leather & gold" them
 - Keep interactions snappy: ~0.15s ease transitions on hover states, ~0.25–0.35s on state/content changes.
 
 Apply this exact palette and component styling to the attached script's UI, adapting layout/structure to fit its existing functionality, but keep all visual language (colors, borders, shadows, typography, button/toast/modal treatment) identical to the rules above.
+
+**Push-to-talk (Lua side)**
+- Every NUI that takes focus must still allow push-to-talk. Follow `patterns/nui-push-to-talk.md`.

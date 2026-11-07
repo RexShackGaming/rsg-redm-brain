@@ -119,6 +119,22 @@ function WeaponNativeAttachmentReconstruction.Bind(base,project,manager)
         plans[record]=plan
         return record
     end
+    bound.createPair=function(items,identity)
+        if base.current(identity)~=true or #items~=2 then return nil,'attachment_pair_scope_required' end
+        local private,projected={},{}
+        for index,item in ipairs(items) do
+            local plan,why=project(item,identity)
+            if not plan then return nil,why end
+            projected[index]=plan
+            private[index]={}
+            for key,value in pairs(item) do private[index][key]=value end
+            private[index].attachments={} -- private creation view; saved data stays intact
+        end
+        local records,why,partial=base.createPair(private,identity)
+        if not records then return nil,why,partial end
+        for index,record in ipairs(records) do plans[record]=projected[index] end
+        return records
+    end
     bound.finish=function(records,identity)
         if base.current(identity)~=true or base.finish(records,identity)~=true then return false end
         for _,record in ipairs(records) do

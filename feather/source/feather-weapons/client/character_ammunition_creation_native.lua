@@ -44,10 +44,49 @@ function WeaponCharacterAmmoCreationNative.DecodeDiagnosticGuid(raw)
     return {raw32=prefix:gsub('.',function(byte) return ('%02x'):format(byte:byte()) end),
         packedWords=packed,scriptSlotWords=slots}
 end
-function WeaponCharacterAmmoCreationNative.New(ped,current,prepareDual,applyMaintenance,guidIdentity,savedAttachments)
+function WeaponCharacterAmmoCreationNative.GuidKey(raw)
+    local decoded=WeaponCharacterAmmoCreationNative.DecodeDiagnosticGuid(raw)
+    local words=decoded and decoded.scriptSlotWords
+    return words and ('%08x%08x%08x%08x'):format(words[1],words[2],words[3],words[4]) or nil
+end
+-- Live-verified weapon_locker/options ABI. Never write guessed options fields.
+function WeaponCharacterAmmoCreationNative.PairOptions(guid,hash,point,reason)
+    local key=WeaponCharacterAmmoCreationNative.GuidKey(guid)
+    if not key or key==string.rep('0',32) or (point~=2 and point~=3) then return nil end
+    local function int(v) return string.pack('<I4I4',v & 0xffffffff,0) end
+    return guid:sub(1,32)..int(hash)..int(0)..int(point)..int(reason)
+        ..string.pack('<fI4fI4',0.5,0,1.0,0)..int(0)..int(0)..int(1)
+end
+function WeaponCharacterAmmoCreationNative.PairRecord(raw,guid,hash,permanent)
+    local key=WeaponCharacterAmmoCreationNative.GuidKey(guid)
+    if type(raw)~='string' or #raw~=176 or not key or key==string.rep('0',32)
+        or WeaponCharacterAmmoCreationNative.GuidKey(raw)~=key
+        or string.unpack('<I4',raw,33)~=(hash & 0xffffffff)
+        or type(permanent)~='number' or permanent~=permanent or permanent<0 or permanent>1 then return nil end
+    local flag=string.unpack('<I4',raw,169)
+    local old=string.unpack('<f',raw,137)
+    if (flag~=0 and flag~=1) or old~=old or old<0 or old>1 then return nil end
+    -- Only our just-created GUID entry: preserve unrelated fields and padding.
+    return raw:sub(1,136)..string.pack('<f',permanent+0.0)..raw:sub(141,168)..string.pack('<I4I4',1,0)
+end
+function WeaponCharacterAmmoCreationNative.New(ped,current,prepareDual,applyMaintenance,guidIdentity,savedAttachments,pairNative)
     assert(type(current)=='function' and type(prepareDual)=='function','Local lifecycle callbacks required')
     local function yes(v) return v==true or v==1 end
-    local function buffer() return string.rep('\0',104) end
+    local function buffer() return pairNative and pairNative.buffer and pairNative.buffer() or string.rep('\0',104) end
+    pairNative=pairNative or {
+        read=function(record)
+            local raw=string.rep('\0',72)..string.pack('<I4I4',joaat('SLOTID_NONE') & 0xffffffff,0)..string.rep('\0',96)
+            return yes(Citizen.InvokeNative(0x025A1B1FB03FBF61,1,record.guid,raw,22,1)) and raw or nil
+        end,
+        update=function(record,raw) return yes(Citizen.InvokeNative(0xD80A8854DB5CFBA5,1,record.guid,raw,22)) end,
+        activate=function(record)
+            local input=WeaponCharacterAmmoCreationNative.PairOptions(record.guid,joaat(record.name),record.point,joaat('ADD_REASON_DEFAULT'))
+            if not input then return false end
+            local output=string.rep('\0',192)
+            return yes(Citizen.InvokeNative(0xBE7E42B07FD317AC,ped,input,output))
+                and WeaponCharacterAmmoCreationNative.GuidKey(output)==WeaponCharacterAmmoCreationNative.GuidKey(record.guid)
+        end,
+    }
     local function resolve(parent,item,slot)
         local out=buffer()
         return yes(Citizen.InvokeNative(0x886DFD3E185C8A89,1,parent,joaat(item),slot,out)) and out or nil
@@ -81,6 +120,7 @@ function WeaponCharacterAmmoCreationNative.New(ped,current,prepareDual,applyMain
         return false,'holster_entities_not_settled'
     end
     local function remove(record)
+        if record.pairGrantPending then return false end -- unknown grant/GUID outcome must stay held
         if record.guid then
             return yes(Citizen.InvokeNative(0x3E4E811480B3AE79,1,record.guid,1,joaat('REMOVE_REASON_DEFAULT')))
         end
@@ -100,7 +140,12 @@ function WeaponCharacterAmmoCreationNative.New(ped,current,prepareDual,applyMain
         return false
     end
     local function clean(records)
-        for i=#records,1,-1 do pcall(remove,records[i]) end
+        local retained={}
+        for i=#records,1,-1 do
+            local ok,removed=pcall(remove,records[i])
+            if not ok or removed~=true then retained[#retained+1]=records[i] end
+        end
+        return {handles=retained,cleanupComplete=#retained==0}
     end
     local function empty(item)
         return type(item)=='table' and type(item.nativeWeaponName)=='string'
@@ -178,10 +223,14 @@ function WeaponCharacterAmmoCreationNative.New(ped,current,prepareDual,applyMain
         if not ready(identity) or #items~=2 or items[1].point~=2 or items[2].point~=3
             or items[1].nativeWeaponName~=items[2].nativeWeaponName
             or not empty(items[1]) or not empty(items[2]) then return nil,'pair_creation_precondition' end
+        local worn=false
         for _,item in ipairs(items) do
             local permanent=item.maintenance and item.maintenance.permanentDegradation or 0
-            if permanent~=0 then return nil,'pair_permanent_degradation_restore_not_supported' end
+            if type(permanent)~='number' or permanent~=permanent or permanent<0 or permanent>1 then return nil,'invalid_pair_permanent_degradation' end
+            if permanent~=0 then worn=true end
         end
+        if worn and (not guidIdentity or type(GetWeaponPermanentDegradation)~='function'
+            or type(GetObjectIndexFromEntityIndex)~='function') then return nil,'pair_permanent_guid_readback_required' end
         local character=resolve(nil,'CHARACTER',0xA1212100)
         local parent=character and resolve(character,'CARRIED_WEAPONS',joaat('SLOTID_CARRIED_WEAPONS'))
         if not parent then return nil,'carried_weapon_inventory_unavailable' end
@@ -189,22 +238,44 @@ function WeaponCharacterAmmoCreationNative.New(ped,current,prepareDual,applyMain
         local ok,reason=pcall(function()
             for index=1,2 do
                 local out=buffer()
+                local record={guid=out,pairGrantPending=true,slot=0,name=items[index].nativeWeaponName,point=items[index].point,
+                    itemInstanceId=items[index].itemInstanceId,itemRevision=items[index].itemRevision,serialNumber=items[index].serialNumber}
+                owned[#owned+1]=record -- retain uncertainty if insertion throws or cannot be acknowledged
+                assert(ready(identity),'pair_creation_identity_changed')
                 assert(yes(Citizen.InvokeNative(0xCB5D11F9508A928D,1,out,parent,joaat(items[index].nativeWeaponName),
                     joaat('SLOTID_WEAPON_0'),1,joaat('ADD_REASON_DEFAULT'))),'copy insert failed')
-                local record={guid=out,slot=0,name=items[index].nativeWeaponName,point=items[index].point,
-                    itemInstanceId=items[index].itemInstanceId,itemRevision=items[index].itemRevision,serialNumber=items[index].serialNumber}
-                owned[#owned+1]=record
-                assert(yes(Citizen.InvokeNative(0x734311E2852760D0,1,out,true)),'copy equip failed')
-                Citizen.InvokeNative(0x12FB95FE3D579238,ped,out,true,0,false,false)
+                record.pairGrantPending=nil
+                if not worn then
+                    assert(yes(Citizen.InvokeNative(0x734311E2852760D0,1,out,true)),'copy equip failed')
+                    Citizen.InvokeNative(0x12FB95FE3D579238,ped,out,true,0,false,false)
+                end
                 if index==1 then
                     local moved=buffer()
                     assert(yes(Citizen.InvokeNative(0xDCCAA7C3BFD88862,1,out,parent,joaat('SLOTID_WEAPON_1'),1,moved)),'copy move failed')
                     record.guid,record.slot=moved,1
                 end
             end
-            for _,index in ipairs({2,1}) do
-                local record=owned[index]
-                Citizen.InvokeNative(0x12FB95FE3D579238,ped,record.guid,true,record.slot,false,false)
+            if worn then
+                assert(WeaponCharacterAmmoCreationNative.GuidKey(owned[1].guid)
+                    and WeaponCharacterAmmoCreationNative.GuidKey(owned[1].guid)~=WeaponCharacterAmmoCreationNative.GuidKey(owned[2].guid),'pair_duplicate_inventory_guid')
+                for index,record in ipairs(owned) do
+                    assert(ready(identity),'pair_creation_identity_changed')
+                    local target=items[index].maintenance and items[index].maintenance.permanentDegradation or 0
+                    local raw=pairNative.read(record)
+                    local updated=WeaponCharacterAmmoCreationNative.PairRecord(raw,record.guid,joaat(record.name),target)
+                    assert(updated,'pair_inventory_record_invalid')
+                    assert(pairNative.update(record,updated)==true and ready(identity),'pair_inventory_update_failed')
+                    local checked=pairNative.read(record)
+                    assert(WeaponCharacterAmmoCreationNative.PairRecord(checked,record.guid,joaat(record.name),target)
+                        and string.unpack('<I4',checked,169)==1
+                        and math.abs(string.unpack('<f',checked,137)-target)<=0.0001,'pair_inventory_permanent_readback_mismatch')
+                    assert(pairNative.activate(record)==true and ready(identity),'pair_options_activation_failed')
+                end
+            else
+                for _,index in ipairs({2,1}) do
+                    local record=owned[index]
+                    Citizen.InvokeNative(0x12FB95FE3D579238,ped,record.guid,true,record.slot,false,false)
+                end
             end
             Citizen.InvokeNative(0x94A3C1B804D291EC,ped,true,true,true,true)
             -- The original proof completes GUID activation by selecting unarmed.
@@ -213,6 +284,27 @@ function WeaponCharacterAmmoCreationNative.New(ped,current,prepareDual,applyMain
             SetCurrentPedWeapon(ped,joaat('WEAPON_UNARMED'),true,0,false,false)
             local settled,failure=settle(owned,identity)
             assert(settled,failure)
+            if guidIdentity then
+                for _,record in ipairs(owned) do
+                    local captured,why=guidIdentity.Capture(record,identity)
+                    assert(captured,why)
+                    record.guidIdentity={characterId=identity.characterId,sessionId=identity.sessionId,epoch=identity.epoch}
+                    if worn then
+                        assert(guidIdentity.MatchesCaptured(record,identity,WeaponCharacterAmmoCreationNative.GuidKey(record.guid)),
+                            'pair_created_guid_mismatch')
+                    end
+                end
+            end
+            if worn then
+                for index,record in ipairs(owned) do
+                    assert(ready(identity) and guidIdentity.Resolve(record,identity),'pair_permanent_owner_changed')
+                    local object=GetObjectIndexFromEntityIndex(record.entity)
+                    assert(type(object)=='number' and object>0,'pair_permanent_object_unavailable')
+                    local value=GetWeaponPermanentDegradation(object)
+                    local target=items[index].maintenance and items[index].maintenance.permanentDegradation or 0
+                    assert(type(value)=='number' and value==value and math.abs(value-target)<=0.0001,'pair_permanent_readback_mismatch')
+                end
+            end
             if applyMaintenance then
                 for index,record in ipairs(owned) do
                     local applied,reason=applyMaintenance(record,identity,items[index].maintenance)
@@ -221,7 +313,7 @@ function WeaponCharacterAmmoCreationNative.New(ped,current,prepareDual,applyMain
                 end
             end
         end)
-        if not ok then clean(owned); return nil,tostring(reason) end
+        if not ok then return nil,tostring(reason),clean(owned) end
         return owned
     end
     return {current=ready,prepareDual=function(identity) return ready(identity) and prepareDual(ped)==true end,
@@ -266,7 +358,7 @@ function WeaponCharacterAmmoCreationNative.Scoped(ped,identity,prepareDual,clean
         and WeaponNativeEnrollment.Allows(Config,expected.characterId) and type(GetConvarInt)=='function'
         and GetConvarInt('feather_native_saved_attachments',0)==1
     if Config.NativeAlphaRuntime==true and WeaponNativeEnrollment.Allows(Config,expected.characterId)
-        and type(GetConvarInt)=='function' and GetConvarInt('feather_native_guid_ownership',0)==1 then
+        and type(GetConvarInt)=='function' and GetConvarInt('feather_native_guid_ownership',1)==1 then
         guidIdentity=WeaponNativeGuidIdentity.New({current=current,hash=joaat,
             exists=function(handle) local value=DoesEntityExist(handle); return value==true or value==1 end,
             point=function(point)

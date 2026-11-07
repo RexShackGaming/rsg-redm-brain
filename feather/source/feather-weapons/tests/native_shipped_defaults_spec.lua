@@ -1,0 +1,15 @@
+-- Exercise the real shipped config, rather than a hand-built enabled fixture.
+vector3=function(x,y,z) return {x=x,y=y,z=z} end
+dofile('config.lua')
+dofile('shared/constants.lua')
+assert(Config.NativeAlphaRuntime==true)
+assert(Config.CharacterAmmunitionEnabled==true)
+assert(Config.CharacterAmmoTransportEnabled==true)
+assert(WeaponNativeEnrollment.Validate(Config))
+assert(WeaponNativeEnrollment.Allows(Config,'new-player-character'))
+assert(Config.DevMode==false)
+local file=assert(io.open('fxmanifest.lua','r')); local manifest=file:read('*a'); file:close()
+assert(not manifest:find('native_pair_options_probe',1,true),'temporary pair probe is not a runtime script')
+assert(not manifest:find('tests/',1,true),'test support never enters the resource manifest')
+assert(not io.open('client/native_pair_options_probe.lua','r'),'temporary probe removed from runtime source folder')
+print('Shipped native-only defaults PASS (runtime enabled, all-player admission, development disabled)')

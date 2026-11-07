@@ -1,13 +1,13 @@
 Config = {
-    NativeAlphaRuntime = false, -- native host opt-in; requires canonical Inventory data and runtime gates
+    NativeAlphaRuntime = true, -- required native-only host; canonical ownership/session gates still apply
     NativeAlphaRepairEnabled = false, -- scoped console/Equipment-menu repair; canonical material, opt in only
     NativeAlphaMaintenanceEnabled = false, -- scoped wear checkpoint; no ammo/material economic writes
     NativeAlphaPeriodicWearEnabled = false, -- idle scoped sampler; changed wear uses sealed checkpoint
     NativeAlphaPeriodicWearIntervalMs = 60000, -- one equipped copy per interval; round-robin up to four
     NativeAlphaLifecycleWearEnabled = false, -- final wear on equipment/stop/logout/death; opt in
     -- All current player characters have access; no character allowlist is needed.
-    CharacterAmmunitionEnabled = false, -- alpha native integration gate; real cutover not enabled
-    CharacterAmmoTransportEnabled = false, -- checkpoint routes only; no automatic baseline/grants
+    CharacterAmmunitionEnabled = true, -- required canonical character ammunition integration
+    CharacterAmmoTransportEnabled = true, -- required checkpoint transport; no automatic item/ammo grants
     DevMode = false, -- diagnostics, fixture issuance and fault tests only; gameplay does not require this
     RequiredCoreContract = 1,
     RequiredCharacterContract = 1,

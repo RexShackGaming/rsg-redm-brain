@@ -1,6 +1,6 @@
 # rsg-stores
 
-Version 3.1.0. rsg-stores
+Version 3.1.2. rsg-stores
 
 **Version 3.1.0** · requires rsg-core, rsg-inventory, rsg-target, rsg-gizmo, oxmysql (no ox_lib) Create NPC shopkeepers, **player-owned stores**, shops and map blips in-game for **RSG-Core (RedM)**, all from an admin menu with no config editing. Players buy with a cart or sell straight back to the shop through a themed NUI. Every transaction is checked on the server and can be logged to Discord. F
 

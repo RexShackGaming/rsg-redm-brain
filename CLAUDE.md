@@ -9,6 +9,7 @@ For support/troubleshooting tickets (rather than new code), open `DOCS.md` first
 2. **Never trust the client.** All money and item changes happen on the server, after validation (`conventions/security.md`).
 3. Notifications go through **rsg-core** (`RSGCore.Functions.Notify` / `RSGCore:Client:Notify`), never ox_lib. Player-facing text goes in **locales** (`conventions/notify-locales.md`).
 4. NUI follows the house style (`ui/design-standard.md`, `ui/theme.css`). No vignette.
+4b. **Push-to-talk must keep working while any NUI has focus** (`patterns/nui-push-to-talk.md`): route all focus changes through `applyNuiFocus()`, use `SetNuiFocusKeepInput(true)` plus a per-frame control whitelist, configurable via `Config.AllowPushToTalkWhileOpen` / `Config.PushToTalkControls`.
 5. New resources start from `templates/rsg-template/`.
 6. Give complete, runnable code split by file path. Put coords, timers, prices and text in config or locales.
 7. If sources disagree, follow this precedence: `server/environment.md` > `source/` (real code) > `framework/` > everything else.

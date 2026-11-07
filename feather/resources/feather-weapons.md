@@ -1,8 +1,8 @@
 # feather-weapons
 
-Version 0.20.0. The official weapon system for Feather framework.
+Version 0.21.0. The official weapon system for Feather framework.
 
-Current version: **0.19.0**. Feather's native-only, Inventory-backed firearm system. Weapons are unique item instances; equipped assignments and maintenance persist per character.
+Current version: **0.21.0**. Feather's native-only, Inventory-backed firearm system. Weapons are unique item instances; equipped assignments and maintenance persist per character.
 
 Source: https://github.com/FeatherFramework/feather-weapons
 
@@ -32,6 +32,8 @@ Source: https://github.com/FeatherFramework/feather-weapons
 
 **client:** `/WeaponDualEntitlementRemove`, `/WeaponJaneZeroCleanup`, `/WeaponNativeProbeClear`, `/WeaponNativeProbeCompare`, `/WeaponNativeProbeDualAllow`, `/WeaponNativeProbeDualEntitle`, `/WeaponNativeProbeDualPrepare`, `/WeaponNativeProbeDualStatus`, `/WeaponNativeProbeDualWatch`, `/WeaponNativeProbeHolsterPrepare`, `/WeaponNativeProbeHolsterStatus`, `/WeaponNativeProbeMark`, `/WeaponNativeProbePrepare`, `/WeaponNativeProbeSpecial`, `/WeaponNativeProbeStatus`, `/WeaponNativeProbeWatch`, `/weaponNativeChildComponentProbe`, `/weaponNativeComponentSlotStatus`, `/weaponNativeEntityStatus`, `/weaponNativeGuidComponentProbe`, `/weaponNativeMaintenanceStatus`, `/weaponNativeProjectileSnapshot`, `/weaponNativeStatus`, `/weapondeathaftershots`, `/weaponmaintenance`, `/weaponruntime`, `/weaponstate`, `/weaponthrowablecapacity`, `/weaponthrowablepoolfailure`, `/weaponthrowableselection`
 
+**?:** `/weaponNativePairOptionsProbe`
+
 ## Public (table) functions
 
 **.luals/cfx-runtime.lua:** `Citizen.InvokeNative(hash, ...)`, `Citizen.CreateThread(cb)`, `Citizen.CreateThreadNow(cb)`, `Citizen.Wait(ms)`, `Citizen.Trace(msg)`, `Citizen.Await(value)`, `promise.new()`, `json.encode(value)`, `json.decode(str)`
@@ -46,7 +48,7 @@ Source: https://github.com/FeatherFramework/feather-weapons
 
 **client/character_ammunition_controller.lua:** `WeaponCharacterAmmoController.New(api,pickupAck)`, `T.Begin(value,names,limits)`, `T.Tick()`, `T.Finalize()`, `T.Transfer(ammunitionId,amount,operationId)`, `T.FinalizeDeath()`, `T.Close()`, `T.AllowDeathCleanup()`, `T.ConfirmCleanup()`, `T.Status()`
 
-**client/character_ammunition_creation_native.lua:** `WeaponCharacterAmmoCreationNative.SelectEquippedChild(stock,wide)`, `WeaponCharacterAmmoCreationNative.DecodeEquippedChild(raw,result)`, `WeaponCharacterAmmoCreationNative.DecodeChildEquippedFlag(raw,result)`, `WeaponCharacterAmmoCreationNative.DecodeDiagnosticGuid(raw)`, `WeaponCharacterAmmoCreationNative.New(ped,current,prepareDual,applyMaintenance,guidIdentity,savedAttachments)`, `WeaponCharacterAmmoCreationNative.Scoped(ped,identity,prepareDual,cleanupDual)`
+**client/character_ammunition_creation_native.lua:** `WeaponCharacterAmmoCreationNative.SelectEquippedChild(stock,wide)`, `WeaponCharacterAmmoCreationNative.DecodeEquippedChild(raw,result)`, `WeaponCharacterAmmoCreationNative.DecodeChildEquippedFlag(raw,result)`, `WeaponCharacterAmmoCreationNative.DecodeDiagnosticGuid(raw)`, `WeaponCharacterAmmoCreationNative.GuidKey(raw)`, `WeaponCharacterAmmoCreationNative.PairOptions(guid,hash,point,reason)`, `WeaponCharacterAmmoCreationNative.PairRecord(raw,guid,hash,permanent)`, `WeaponCharacterAmmoCreationNative.New(ped,current,prepareDual,applyMaintenance,guidIdentity,savedAttachments,pairNative)`, `WeaponCharacterAmmoCreationNative.Scoped(ped,identity,prepareDual,cleanupDual)`
 
 **client/character_ammunition_driver.lua:** `WeaponCharacterAmmoDriver.New(host,api)`, `T.Receive(bundle,origin)`, `T.Step()`, `T.Status()`
 
@@ -114,7 +116,7 @@ Source: https://github.com/FeatherFramework/feather-weapons
 
 **server/services/native_acceptance_suite.lua:** `S.New(api)`, `T.Status()`, `T.Run(again)`, `T.Visual(value)`
 
-**server/services/native_equipment_transition.lua:** `WeaponNativeShutdownDrain.New(api)`, `T.IsLatched()`, `T.Status()`, `T.Begin()`, `WeaponNativePeriodicWear.New(api)`, `T.Step(target)`, `T.Complete(target,scope,outcome)`, `T.Forget(target,sessionId)`, `T.Status(target)`, `WeaponNativeEquipmentTransition.ProbeOverlap(coordinator,target,bound)`, `WeaponNativeEquipmentBindings.AcceptanceTransition(target,overlap)`, `WeaponNativeEquipmentBindings.AcceptanceStatus(target)`, `WeaponNativeEquipmentBindings.Attach(source,bundle)`, `WeaponNativeEquipmentBindings.IsStopping(source)`, `WeaponNativeEquipmentBindings.RetireSession(target,sessionId)`, `WeaponNativeEquipmentBindings.ReconcileSession(target,context)`, `WeaponNativeEquipmentTransition.New(api)`, `T.Begin(source,intent)`, `T.Released(source,ticket,hint,wear)`, `T.CanCommit(context,spec)`, `T.Restored(source,ticket,hint)`, `T.Cancel(source,sessionId)`, `T.Status(source)`, `T.Retire(source,sessionId)`
+**server/services/native_equipment_transition.lua:** `WeaponNativeShutdownDrain.RuntimeAvailable(config,proofState)`, `WeaponNativeShutdownDrain.New(api)`, `T.IsLatched()`, `T.Status()`, `T.Begin()`, `WeaponNativePeriodicWear.New(api)`, `T.Step(target)`, `T.Complete(target,scope,outcome)`, `T.Forget(target,sessionId)`, `T.Status(target)`, `WeaponNativeEquipmentTransition.ProbeOverlap(coordinator,target,bound)`, `WeaponNativeEquipmentBindings.AcceptanceTransition(target,overlap)`, `WeaponNativeEquipmentBindings.AcceptanceStatus(target)`, `WeaponNativeEquipmentBindings.Attach(source,bundle)`, `WeaponNativeEquipmentBindings.IsStopping(source)`, `WeaponNativeEquipmentBindings.RetireSession(target,sessionId)`, `WeaponNativeEquipmentBindings.ReconcileSession(target,context)`, `WeaponNativeEquipmentTransition.New(api)`, `T.Begin(source,intent)`, `T.Released(source,ticket,hint,wear)`, `T.CanCommit(context,spec)`, `T.Restored(source,ticket,hint)`, `T.Cancel(source,sessionId)`, `T.Status(source)`, `T.Retire(source,sessionId)`
 
 **server/services/native_throwable_projectile_observer.lua:** `WeaponNativeThrowableProjectileObserver.New(api)`, `O.ProjectileHint(source,data)`, `O.Created(handle)`, `O.Removed(handle)`, `O.Read(handle)`
 
@@ -233,6 +235,8 @@ Source: https://github.com/FeatherFramework/feather-weapons
 **tests/firearm_pool_server.lua:** `TestInventoryAdapter.GetItemForCharacter(_, id)`, `TestInventoryAdapter.MutateWeaponMetadataBatch(_, mutations)`, `TestInventoryAdapter.Transaction(_, callback)`, `tx:GetItemForUpdate(id)`, `tx:GetQuantity(name)`, `tx:RemoveQuantity(name, amount)`, `tx:AddQuantity(name, amount)`, `tx:SetMetadata(id, metadata, revision)`
 
 **tests/native_throwable_pickup_server_spec.lua:** `inventory:GetCharacterFirearmRuntimeSnapshot(context,limits)`, `inventory:ObserveCharacterAmmunition(context,spec)`, `inventory:ReconcileNativeThrowablePickup(context,spec)`, `inventory:ReconcileNativeThrowablePickup(context,spec)`
+
+**tests/support/native_pair_options_probe.lua:** `P.GuidKey(raw)`, `P.Pack(guid,hash,point,reason)`, `P.EnableInventoryRecord(raw,guid,hash)`, `P.WearFields(raw,guid,hash)`, `P.SetTemporaryPermanent(raw,guid,hash,target)`, `P.New(api)`, `T.Status()`, `T.Run()`, `T.Cleanup()`
 
 ## Database tables
 

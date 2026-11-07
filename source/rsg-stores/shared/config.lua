@@ -16,6 +16,12 @@ Config.SellAddsStock = true        -- Items sold to a shop are added back to its
 Config.MaxShopStock = 100          -- Most of any one item a shop will hold from player sales (0 = no cap)
 Config.TargetDistance = 2.5       -- rsg-target range; server allows +5.0 for latency
 
+-- While NUI is open, block game controls but allow push-to-talk.
+Config.AllowPushToTalkWhileOpen = true
+Config.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK
+}
+
 -- Player-owned stores: created by admins in /createshop ("Run by: Player"), no NPC is spawned.
 -- The owner stocks the store from their own inventory, sets prices and collects the till.
 Config.OwnedStores = {

@@ -52,4 +52,12 @@ local attachment=WeaponDefinitionCatalog.attachments.cattleman_wide_sight
 local nativeName=attachment.nativeComponentName; attachment.nativeComponentName='COMPONENT_INJECTED'
 assert(not WeaponNativeAttachmentMappings.Resolve(WeaponDefinitionCatalog.weapons.revolver_cattleman,attachment,true))
 attachment.nativeComponentName=nativeName
+Config.DevMode=false
+GetConvarInt=function(name) return (name=='feather_native_saved_attachments' or name=='feather_native_guid_ownership') and 1 or 0 end
+assert(WeaponNativeAttachmentMappings.CaptureModel('WEAPON_REVOLVER_CATTLEMAN'))
+for _,id in ipairs({'cattleman_wide_sight','cattleman_long_barrel'}) do
+ assert(WeaponNativeAttachmentMappings.Resolve(WeaponDefinitionCatalog.weapons.revolver_cattleman,
+  WeaponDefinitionCatalog.attachments[id],true),'normal Cattleman reconstruction does not require development mode')
+end
+assert(not WeaponNativeAttachmentMappings.CaptureModel('WEAPON_REVOLVER_SCHOFIELD'),'other experimental model gates stay unchanged')
 print('Native mapping registry PASS (38 observed pairs, signed slots, compatibility isolation, private projection, reconstruction gated)')

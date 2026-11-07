@@ -20,8 +20,9 @@ function WeaponCharacterAmmoLoadout.New(api)
             local attempted,retained={},{}
             for i=#owned,1,-1 do
                 local handle=owned[i]
-                if not attempted[handle.entity] then
-                    attempted[handle.entity]=true
+                local key=handle.entity or handle
+                if not attempted[key] then
+                    attempted[key]=true
                     local called,removed=pcall(api.remove,handle)
                     if not called or removed~=true then retained[#retained+1]=handle end
                 else
@@ -54,8 +55,14 @@ function WeaponCharacterAmmoLoadout.New(api)
         if #pair>0 then
             if #pair~=2 then return fail('invalid_pair_plan') end
             if not yes(api.current(plan.identity)) then return fail('stale_materialization') end
-            local ok,handles,detail=pcall(api.createPair,pair,plan.identity)
+            local ok,handles,detail,partial=pcall(api.createPair,pair,plan.identity)
             if not ok or type(handles)~='table' then
+                -- The native adapter may have created resources before failing.
+                -- Preserve even an unidentified pending grant; never acknowledge
+                -- cleanup just because normal handle acceptance was not reached.
+                if ok and type(partial)=='table' and type(partial.handles)=='table' then
+                    for _,handle in ipairs(partial.handles) do owned[#owned+1]=handle end
+                end
                 return fail('pair_creation_failed: '..tostring(ok and detail or handles))
             end
             local valid=true

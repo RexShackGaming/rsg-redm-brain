@@ -11,6 +11,35 @@ local refreshVersion = 0
 
 local currentShop = nil                   -- npc table of the open shop
 local manageShop = nil                    -- npc table of the owned store being managed
+
+local function applyNuiFocus(enable)
+    if enable then
+        SetNuiFocus(true, true)
+        if Config.AllowPushToTalkWhileOpen then
+            SetNuiFocusKeepInput(true)
+        end
+    else
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
+end
+
+local function runPttWhitelist()
+    if not Config.AllowPushToTalkWhileOpen then return end
+    DisableAllControlActions(0)
+    DisableAllControlActions(1)
+    DisableAllControlActions(2)
+    local list = Config.PushToTalkControls
+    if list then
+        for i = 1, #list do
+            local c = list[i]
+            EnableControlAction(0, c, true)
+            EnableControlAction(1, c, true)
+            EnableControlAction(2, c, true)
+        end
+    end
+end
+
 local storeZones = {}                     -- npcId -> rsg-target zone id (player-owned stores)
 local storeZoneLabel = {}                 -- npcId -> label the zone was built with
 local signProps = {}                      -- npcId -> sign object (false while loading)
@@ -164,7 +193,7 @@ local function CloseCustomShop()
     if not currentShop then return end
     if currentShop.kind ~= 'player' then speak(spawnedNpcs[currentShop.id], SPEECH.Goodbye) end
     currentShop = nil
-    SetNuiFocus(false, false)
+    applyNuiFocus(false)
     SendNUIMessage({ action = 'closeShop' })
 end
 
@@ -184,7 +213,7 @@ local function OpenCustomShop(npcData)
     if disc > 0 then
         RSGCore.Functions.Notify({ title = npcData.shop.label, description = locale('cl_discount'):format(math.floor(disc * 100 + 0.5)), type = 'success', icon = 'fa-solid fa-percent' })
     end
-    SetNuiFocus(true, true)
+    applyNuiFocus(true)
 
     local code, strings = GetUiStrings()
     -- NPC shops pay sellers the discounted price too (matches the server)
@@ -596,7 +625,7 @@ local function stopPlacing()
     if not placing then return end
     if placing.mode == 'position' then pcall(function() exports['rsg-gizmo']:Cancel() end) end
     placing = nil
-    SetNuiFocus(false, false)
+    applyNuiFocus(false)
     SendNUIMessage({ action = 'closeSign' })
 end
 
@@ -606,7 +635,7 @@ local function openSignDetails()
     local data = RSGCore.Functions.GetPlayerData()
     local first = data and data.charinfo and data.charinfo.firstname or ''
     local code, strings = GetUiStrings()
-    SetNuiFocus(true, true)
+    applyNuiFocus(true)
     SendNUIMessage({
         action = 'openSign',
         label = placing.label or (first ~= '' and locale('cl_default_store_name'):format(first) or ''),
@@ -631,7 +660,7 @@ end
 -- Step 1: place the sign with rsg-gizmo (standard placement controls / HUD).
 startPositioning = function()
     placing.mode = 'position'
-    SetNuiFocus(false, false)
+    applyNuiFocus(false)
     SendNUIMessage({ action = 'closeSign' })
     CreateThread(function()
         local maxDist = math.min(4.0, tonumber(SIGN.PlaceDistance or 1.5) + 2.5) -- server allows 5 m
@@ -710,7 +739,7 @@ end
 CloseManage = function()
     if not manageShop then return end
     manageShop = nil
-    SetNuiFocus(false, false)
+    applyNuiFocus(false)
     SendNUIMessage({ action = 'closeManage' })
 end
 
@@ -732,7 +761,7 @@ OpenManage = function(npc)
         return RSGCore.Functions.Notify({ title = npc.shop.label, description = locale(state and state.err or 'sv_shop_notfound'), type = 'error' })
     end
     manageShop = npc
-    SetNuiFocus(true, true)
+    applyNuiFocus(true)
     local code, strings = GetUiStrings()
     local payload = managePayload(state)
     payload.action, payload.locale, payload.uiStrings = 'openManage', code, strings
@@ -938,7 +967,7 @@ end
 local function CloseAdmin()
     if not adminOpen then return end
     adminOpen = false
-    SetNuiFocus(false, false)
+    applyNuiFocus(false)
     SendNUIMessage({ action = 'closeAdmin' })
 end
 
@@ -959,7 +988,7 @@ local function OpenAdmin()
         or { model = Config.NpcModels, blip = Config.BlipTypes }
     local opts = presetPayload(presets)
     adminOpen = true
-    SetNuiFocus(true, true)
+    applyNuiFocus(true)
     local code, strings = GetUiStrings()
     SendNUIMessage({
         action    = 'openAdmin',
@@ -1148,9 +1177,21 @@ CreateThread(function() -- resource (re)start while already in-game
     if LocalPlayer.state.isLoggedIn then requestData() end
 end)
 
+CreateThread(function()
+    while true do
+        local focused = currentShop or manageShop or adminOpen or (placing and placing.mode == 'details')
+        if focused and Config.AllowPushToTalkWhileOpen then
+            Wait(0)
+            runPttWhitelist()
+        else
+            Wait(250)
+        end
+    end
+end)
+
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
-    if currentShop or adminOpen or manageShop or placing then SetNuiFocus(false, false) end
+    if currentShop or adminOpen or manageShop or placing then applyNuiFocus(false) end
     for id in pairs(storeZones) do removeStoreZone(id) end
     RemoveAllSigns()
     if placing then stopPlacing() end

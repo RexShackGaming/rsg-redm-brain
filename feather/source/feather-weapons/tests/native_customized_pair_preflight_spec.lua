@@ -21,8 +21,22 @@ assert(WeaponCharacterAmmoMaterialization.Validate(plan,registry,identity),'ordi
 rows.offhand.metadata.attachments={{definitionId='cattleman_wide_sight',slot='sight'}}
 plan=assert(WeaponCharacterAmmoMaterialization.Build(rows,WeaponDefinitionCatalog,registry,identity))
 local valid,why=WeaponCharacterAmmoMaterialization.Validate(plan,registry,identity)
-assert(not valid and why=='pair_attachment_restore_not_supported','client refuses unsupported pair before factory')
+assert(valid,why)
 rows.offhand.metadata.attachments={}
+rows.offhand.metadata.maintenance.permanentDegradation=0.1
+rows.offhand.metadata.maintenance.degradation=0.1
+rows.offhand.metadata.maintenance.damage=0.1
+rows.offhand.metadata.condition=90
+plan=assert(WeaponCharacterAmmoMaterialization.Build(rows,WeaponDefinitionCatalog,registry,identity))
+assert(WeaponCharacterAmmoMaterialization.Validate(plan,registry,identity),'normal worn pair is admitted with exact GUID ownership enabled')
+GetConvarInt=function(_,default) return default end
+assert(WeaponCharacterAmmoMaterialization.Validate(plan,registry,identity),'fresh server defaults admit worn pair without manual GUID switch')
+GetConvarInt=function() return 0 end
+valid,why=WeaponCharacterAmmoMaterialization.Validate(plan,registry,identity)
+assert(not valid and why=='pair_permanent_guid_ownership_required')
+GetConvarInt=function() return 1 end
+rows.offhand.metadata.maintenance={degradation=0,permanentDegradation=0,damage=0,dirt=0,soot=0}
+rows.offhand.metadata.condition=100
 local commands,events,options,releases,materialReads={},{},nil,0,0
 RegisterCommand=function(name,fn) commands[name]=fn end
 RegisterNetEvent=function(name,fn) events[name]=fn end
@@ -46,8 +60,9 @@ dofile('server/services/native_equipment_transition.lua')
 source=2
 events['feather-weapons:server:native-equipment-ui']('options','options',{itemId=902,scope=identity})
 assert(options.ok)
-for _,option in ipairs(options.value.options) do assert(option.kind~='attachment') end
-assert(materialReads==0 and releases==0,'preview hides unsupported mutation without material/release work')
+local attachmentOption=false
+for _,option in ipairs(options.value.options) do if option.kind=='attachment' then attachmentOption=true end end
+assert(attachmentOption and materialReads>0 and releases==0,'preview admits scoped attachments without releasing or writing')
 commands.WeaponNativeAttachmentChange(0,{'2','install','902','cattleman_wide_sight'})
-assert(releases==0,'direct intent must also refuse before release/payment')
-print('Customized pair preflight PASS (ordinary pair retained, UI suppression, direct intent refusal before native retirement/payment)')
+assert(releases==1,'direct intent reaches the normal sealed transition rather than a same-model veto')
+print('Customized pair preflight PASS (canonical pair projection and normal scoped attachment transition)')

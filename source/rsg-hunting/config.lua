@@ -4,6 +4,12 @@ Config = {}
 -- general settings
 Config.DeleteCarcass = false -- this will ensure the carcass is removed if true
 Config.Image = 'rsg-inventory/html/images/' -- location where your item images are stored
+
+-- While NUI is open, block game controls but allow push-to-talk.
+Config.AllowPushToTalkWhileOpen = true
+Config.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK
+}
 Config.BlipSprite = 'blip_shop_animal_trapper'
 Config.BlipScale = 0.2
 Config.StockDecayMinutes = 30 -- trapper stock sells on every X minutes (0 = never, prices stay low once stocked)

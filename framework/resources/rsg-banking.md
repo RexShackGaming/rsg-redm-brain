@@ -1,6 +1,6 @@
 # rsg-banking
 
-Version 3.0.3. rsg-banking - individual branch banks across the frontier
+Version 3.0.4. rsg-banking - individual branch banks across the frontier
 
 Branch banking for RSG-Core (RedM). Every town bank is its own institution: money deposited in Valentine can only be withdrawn in Valentine, unless it is wired to another branch for a fee. - Six branches: Valentine, Rhodes, Saint Denis, Blackwater, Armadillo, Strawberry (configurable) - Players open an account at each branch before using it (optional cash fee)
 

@@ -95,7 +95,7 @@ function WeaponCharacterAmmoMaterialization.Validate(plan,registry,baseline)
         if next(item.attachments) then
             if not Config or Config.NativeAlphaRuntime~=true
                 or not WeaponNativeEnrollment.Allows(Config,plan.identity.characterId) or type(GetConvarInt)~='function'
-                or GetConvarInt('feather_native_saved_attachments',0)~=1 or GetConvarInt('feather_native_guid_ownership',0)~=1 then
+                or GetConvarInt('feather_native_saved_attachments',0)~=1 or GetConvarInt('feather_native_guid_ownership',1)~=1 then
                 return nil,'creation_customization_not_implemented'
             end
             local projected,why=WeaponNativeAttachmentProjection.Build(item,WeaponDefinitionCatalog,plan.identity)
@@ -110,11 +110,9 @@ function WeaponCharacterAmmoMaterialization.Validate(plan,registry,baseline)
     if plan.dual~=(seen.offhand~=nil) or plan.sameModel~=same then return nil,'creation_pair_flags_mismatch' end
     for _,item in ipairs(plan.items) do
         local pair=same and (item.slot=='primary' or item.slot=='offhand')
-        if pair and next(item.attachments) then
-            return nil,'pair_attachment_restore_not_supported'
-        end
         if pair and item.maintenance and item.maintenance.permanentDegradation~=0 then
-            return nil,'pair_permanent_degradation_restore_not_supported'
+            if not Config or Config.NativeAlphaRuntime~=true or type(GetConvarInt)~='function'
+                or GetConvarInt('feather_native_guid_ownership',1)~=1 then return nil,'pair_permanent_guid_ownership_required' end
         end
         if models[item.nativeWeaponName]>1 and not pair then return nil,'unsupported_creation_duplicates' end
         if item.creation~=(pair and 'inventory_guid_pair' or 'native_zero_ammo_grant') then return nil,'invalid_creation_strategy' end

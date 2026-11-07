@@ -6,7 +6,7 @@ local identity={characterId='Jane',sessionId='s',epoch='e'}
 local points,exists={}, {[42]=true}
 local lastPoint,removals=0,0
 local words={1,2,3,4}
-GetConvarInt=function(name) return name=='feather_native_guid_ownership' and 1 or 0 end
+GetConvarInt=function(_,default) return default end -- fresh server: no convars configured
 PlayerPedId=function() return 42 end
 DoesEntityExist=function(handle) return exists[handle] and 1 or 0 end
 IsEntityDead=function() return 0 end

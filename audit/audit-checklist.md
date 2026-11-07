@@ -32,6 +32,7 @@ Run these in order. `audit/ai-procedure.md` describes the report format.
 ## 6. NUI
 - [ ] Matches ui/design-standard.md (Roboto, monochrome palette, no vignette)
 - [ ] `SetNuiFocus(false, false)` on close and on resource stop
+- [ ] Push-to-talk works while the UI is open: focus goes through `applyNuiFocus()` with `SetNuiFocusKeepInput`, a per-frame whitelist of `Config.PushToTalkControls`, and `Config.AllowPushToTalkWhileOpen` (`patterns/nui-push-to-talk.md`). A bare `SetNuiFocus(true, true)` is a finding
 
 ## 7. Documentation (see conventions/documentation.md)
 - [ ] `README.md` exists and is up to date: features, installation, config table, how to use, commands, locales, support footer

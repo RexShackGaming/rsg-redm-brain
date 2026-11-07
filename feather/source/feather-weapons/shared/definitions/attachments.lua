@@ -500,7 +500,13 @@ local modelOverrides={repeater_lancaster='WEAPON_REPEATER_WINCHESTER',
     rifle_rollingblock='WEAPON_SNIPERRIFLE_ROLLINGBLOCK',rifle_carcano='WEAPON_SNIPERRIFLE_CARCANO'}
 local function observedModel(id) return modelOverrides[id] or ('WEAPON_'..id:upper()) end
 local rolloutExcluded={revolver_lemat=true} -- dual-ammo remains a separate policy
+local function cattlemanRuntimeEnabled()
+    return Config and Config.NativeAlphaRuntime==true and WeaponNativeEnrollment.Validate(Config)~=nil
+        and type(GetConvarInt)=='function' and GetConvarInt('feather_native_saved_attachments',0)==1
+        and GetConvarInt('feather_native_guid_ownership',1)==1
+end
 function WeaponNativeAttachmentMappings.CaptureModel(name)
+    if name=='WEAPON_REVOLVER_CATTLEMAN' and cattlemanRuntimeEnabled() then return true end
     if name=='WEAPON_REPEATER_CARBINE' or (representativeEnabled() and name=='WEAPON_REVOLVER_SCHOFIELD') then return true end
     if scopedFlag('feather_native_catalog_attachments') then
         for _,row in pairs(observed) do
@@ -530,7 +536,9 @@ function WeaponNativeAttachmentMappings.Resolve(weapon,attachment,requireReconst
         or (attachment.id=='schofield_short_barrel' and attachment.slot=='barrel'
             and attachment.nativeComponentName=='COMPONENT_REVOLVER_SCHOFIELD_BARREL_SHORT'))
     local rollout=scopedFlag('feather_native_catalog_attachments') and not rolloutExcluded[weapon.id]
-    if requireReconstruction and not proved and not representative and not rollout then return nil,'native_attachment_not_proved' end
+    local cattleman=cattlemanRuntimeEnabled() and weapon.id=='revolver_cattleman'
+        and (attachment.id=='cattleman_long_barrel' or attachment.id=='cattleman_wide_sight')
+    if requireReconstruction and not proved and not representative and not rollout and not cattleman then return nil,'native_attachment_not_proved' end
     return {weaponId=weapon.id,attachmentId=attachment.id,nativeSlot=row[2],slot=attachment.slot,
         nativeWeaponName=weapon.nativeWeaponName,nativeComponentName=attachment.nativeComponentName,
         reconstructionProved=proved,representative=representative==true,catalogRollout=rollout==true,

@@ -1,6 +1,6 @@
 # Feather Weapons
 
-Current version: **0.19.0**.
+Current version: **0.21.0**.
 
 Feather's native-only, Inventory-backed firearm system. Weapons are unique
 item instances; equipped assignments and maintenance persist per character.
@@ -27,10 +27,13 @@ scoped evidence and receipt-backed pristine issuance.
 Live controlled coverage includes two-player isolation, death/doctor recovery,
 prepared resource/server restart, aggregate connected-owner drain, unequipped
 give/return, equipped give refusal feedback, native issuance/replay/reconnect,
-historical replay after transfer, and an uncustomized same-model Cattleman pair.
+historical replay after transfer, and a same-model Cattleman pair with unequal
+permanent wear and separate saved attachments. The pair passed reconnect,
+independent attachment removal/returns, Swap hands, and Primary removal with
+automatic Offhand promotion.
 
-Limits remain: full non-firearm catalog/interaction parity, destruction, customized same-model
-pairs, wider enrollment, automatic shutdown interception, simultaneous SQL
+Limits remain: full non-firearm catalog/interaction parity, destruction, other
+customized firearm pairs, larger multiplayer scale, automatic shutdown interception, simultaneous SQL
 contention and abrupt/in-flight crash outcomes are not generally accepted.
 Admin roles and permissions are not changed by this work.
 
@@ -55,11 +58,31 @@ receiver receipts and provenance are retained; do not purge them as cleanup.
 
 ## Deployment and configuration
 
-Use only the root `fxmanifest.lua`. Keep existing explicit native and feature
-configuration; shipped defaults remain disabled. Required native host gates are
-DevMode, NativeAlphaRuntime, CharacterAmmunitionEnabled,
-CharacterAmmoTransportEnabled and valid explicit enrollment. Missing gates
-refuse startup. Do not replace a customized config wholesale.
+Use with Feather Inventory **0.14.0** for the new sidearm equipment controls;
+deploy the matching updates together. Existing native data is preserved.
+
+See [current equipment installation](docs/equipment-installation.md) for the
+tested pair/controls update and configuration-preserving deployment scope.
+
+Use only the root `fxmanifest.lua`. Shipped defaults enable the required
+NativeAlphaRuntime, CharacterAmmunitionEnabled and CharacterAmmoTransportEnabled
+settings. Inventory must also enable CharacterAmmunitionEnabled (its shipped
+default). All current characters have access, subject to canonical item ownership
+and session checks. No character allowlist or DevMode is required. Development
+mode and optional feature/test gates remain disabled. Preserve customized config
+values when updating; explicitly disabled required runtime settings refuse startup.
+
+Exact GUID ownership defaults on automatically on both server and client. Worn
+same-model pairs need no `setr feather_native_guid_ownership 1` startup command.
+An explicit `setr feather_native_guid_ownership 0` still overrides that default
+and refuses those pairs; remove that old override for normal operation. Existing
+`1` entries are harmless. Optional saved attachments still require their existing
+feature switches and gunsmith/material policy. This change does not enable
+developer grants, fault injection, or optional features.
+
+The temporary pair-options diagnostic is retained only in `tests/support`.
+It is not loaded by the resource; do not deploy test support. After updating the
+manifest, an old server copy of `client/native_pair_options_probe.lua` is unused.
 
 See [native-only cutover](docs/native-only-runtime-cutover.md) for the runtime
 file list, required manifest refresh, and accepted loadout/history gate.

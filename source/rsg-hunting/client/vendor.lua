@@ -76,11 +76,53 @@ end)
 local sellUiOpen = false
 local currentVendor = nil
 
+local function applyNuiFocus(enable)
+    if enable then
+        SetNuiFocus(true, true)
+        if Config.AllowPushToTalkWhileOpen then
+            SetNuiFocusKeepInput(true)
+        end
+    else
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
+end
+
+local function runPttWhitelist()
+    if not Config.AllowPushToTalkWhileOpen then return end
+    DisableAllControlActions(0)
+    DisableAllControlActions(1)
+    DisableAllControlActions(2)
+    local list = Config.PushToTalkControls
+    if list then
+        for i = 1, #list do
+            local c = list[i]
+            EnableControlAction(0, c, true)
+            EnableControlAction(1, c, true)
+            EnableControlAction(2, c, true)
+        end
+    end
+end
+
+    DisableAllControlActions(0)
+    DisableAllControlActions(1)
+    DisableAllControlActions(2)
+    local list = Config.PushToTalkControls
+    if list then
+        for i = 1, #list do
+            local c = list[i]
+            EnableControlAction(0, c, true)
+            EnableControlAction(1, c, true)
+            EnableControlAction(2, c, true)
+        end
+    end
+end
+
 local function closeSellUi()
     if not sellUiOpen then return end
     sellUiOpen = false
     currentVendor = nil
-    SetNuiFocus(false, false)
+    applyNuiFocus(false)
     SendNUIMessage({ action = 'close' })
 end
 
@@ -91,7 +133,7 @@ function OpenSellMenu(vendorIndex)
 
     sellUiOpen = true
     currentVendor = vendorIndex
-    SetNuiFocus(true, true)
+    applyNuiFocus(true)
     SendNUIMessage({
         action = 'open',
         title = data.title,
@@ -159,12 +201,23 @@ CreateThread(function()
     end
 end)
 
+CreateThread(function()
+    while true do
+        if sellUiOpen and Config.AllowPushToTalkWhileOpen then
+            Wait(0)
+            runPttWhitelist()
+        else
+            Wait(250)
+        end
+    end
+end)
+
 AddEventHandler('onResourceStop', function(resourceName)
     if GetCurrentResourceName() == resourceName then
         for _, ped in ipairs(vendorPeds) do
             exports['rsg-target']:removeLocalEntity(ped)
             DeleteEntity(ped)
         end
-        if sellUiOpen then SetNuiFocus(false, false) end
+        if sellUiOpen then applyNuiFocus(false) end
     end
 end)
