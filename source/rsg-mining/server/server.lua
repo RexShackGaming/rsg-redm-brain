@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 local Mines      = {}   -- [mineId] = { citizenid, expires, supplies = {}, storage = {}, workers = {} }
 local Candidates = {}   -- [mineId] = { list = {}, refreshAt = os.time() }
@@ -10,10 +9,15 @@ for _, m in ipairs(Config.Mines) do MineCfg[m.id] = m end
 -- helpers
 ---------------------------------
 local function notify(src, desc, ntype)
-    TriggerClientEvent('ox_lib:notify', src, {
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
         title = locale('mining'), description = desc, type = ntype or 'inform',
         position = Config.NotifyPosition, duration = 5000, icon = 'gem'
     })
+end
+
+-- rsg-core callbacks answer via cb(); handlers below keep the return style
+local function registerCallback(name, fn)
+    RSGCore.Functions.CreateCallback(name, function(src, cb, ...) cb(fn(src, ...)) end)
 end
 
 local function newMine()
@@ -213,7 +217,7 @@ end)
 ---------------------------------
 -- lease
 ---------------------------------
-lib.callback.register('rsg-mining:server:getMineData', function(src, id)
+registerCallback('rsg-mining:server:getMineData', function(src, id)
     if type(id) ~= 'string' or not MineCfg[id] or not Mines[id] then return { error = locale('invalid') } end
     if not isNear(src, id) then return { error = locale('too_far') } end
     if isHolder(src, id) then return { data = buildData(src, id) } end
@@ -222,7 +226,7 @@ lib.callback.register('rsg-mining:server:getMineData', function(src, id)
     return { noLease = true, price = MineCfg[id].leasePrice, hours = Config.LeaseDurationHours, label = MineCfg[id].label }
 end)
 
-lib.callback.register('rsg-mining:server:buyLease', function(src, id)
+registerCallback('rsg-mining:server:buyLease', function(src, id)
     if type(id) ~= 'string' then return false end
     local Player = RSGCore.Functions.GetPlayer(src)
     local m, cfg = Mines[id], MineCfg[id]
@@ -251,7 +255,7 @@ lib.callback.register('rsg-mining:server:buyLease', function(src, id)
     return true
 end)
 
-lib.callback.register('rsg-mining:server:renewLease', function(src, id)
+registerCallback('rsg-mining:server:renewLease', function(src, id)
     if not Config.AllowRenew then return false end
     local ok = guard(src, id)
     if ok ~= true then return ok end
@@ -303,7 +307,7 @@ local NEED = { hungry = true, thirsty = true, no_pickaxe = true }
 ---------------------------------
 -- workers
 ---------------------------------
-lib.callback.register('rsg-mining:server:hire', function(src, id, key)
+registerCallback('rsg-mining:server:hire', function(src, id, key)
     local ok = guard(src, id)
     if ok ~= true then return ok end
     local Player = RSGCore.Functions.GetPlayer(src)
@@ -336,7 +340,7 @@ lib.callback.register('rsg-mining:server:hire', function(src, id, key)
     return buildData(src, id)
 end)
 
-lib.callback.register('rsg-mining:server:fire', function(src, id, wid)
+registerCallback('rsg-mining:server:fire', function(src, id, wid)
     local ok = guard(src, id)
     if ok ~= true then return ok end
     wid = tonumber(wid)
@@ -360,7 +364,7 @@ end)
 ---------------------------------
 -- payroll
 ---------------------------------
-lib.callback.register('rsg-mining:server:addWages', function(src, id, amount)
+registerCallback('rsg-mining:server:addWages', function(src, id, amount)
     local ok = guard(src, id)
     if ok ~= true then return ok end
     local m = Mines[id]
@@ -387,7 +391,7 @@ lib.callback.register('rsg-mining:server:addWages', function(src, id, amount)
     return buildData(src, id)
 end)
 
-lib.callback.register('rsg-mining:server:withdrawWages', function(src, id, amount)
+registerCallback('rsg-mining:server:withdrawWages', function(src, id, amount)
     if not Config.AllowWithdraw then return false end
     local ok = guard(src, id)
     if ok ~= true then return ok end
@@ -409,7 +413,7 @@ end)
 ---------------------------------
 -- supplies & storage
 ---------------------------------
-lib.callback.register('rsg-mining:server:deposit', function(src, id, key, amount)
+registerCallback('rsg-mining:server:deposit', function(src, id, key, amount)
     local ok = guard(src, id)
     if ok ~= true then return ok end
     local s = Config.Supplies[key]
@@ -466,7 +470,7 @@ local function collectItem(src, m, item)
     return amt, left > 0, shared.label
 end
 
-lib.callback.register('rsg-mining:server:collect', function(src, id, item)
+registerCallback('rsg-mining:server:collect', function(src, id, item)
     local ok = guard(src, id)
     if ok ~= true then return ok end
     local m = Mines[id]

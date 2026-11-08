@@ -1,3 +1,4 @@
+local RSGCore = exports['rsg-core']:GetCoreObject()
 local StationPromptGroup = GetRandomIntInRange(0, 0xffffff)
 local StationPrompt = nil
 local stationBlips = {}
@@ -12,9 +13,9 @@ CreateThread(function()
     CreateStationBlips()
     CreateFacilityBlips()
     -- Spawn ambient route trains (server ensures only one client does it)
-    local shouldSpawn = lib.callback.await('rsg-railroad:shouldSpawnAmbient', false)
+    local shouldSpawn = RSGCore.Functions.AwaitCallback('rsg-railroad:shouldSpawnAmbient', nil)
     if shouldSpawn then
-        local ambientActive = lib.callback.await('rsg-railroad:getAmbientState', false)
+        local ambientActive = RSGCore.Functions.AwaitCallback('rsg-railroad:getAmbientState', nil)
         if ambientActive then
             SpawnAmbientRouteTrains()
         end
@@ -143,9 +144,9 @@ function OpenStationHUD(station)
     local companyId = station.company
 
     -- V2: Determine player's role at this station
-    local playerRole = lib.callback.await('rsg-railroad:getPlayerRole', false, companyId)
-    local ownership = lib.callback.await('rsg-railroad:getCompanyOwnership', false, companyId)
-    local canSpawn = lib.callback.await('rsg-railroad:canSpawnTrain', false)
+    local playerRole = RSGCore.Functions.AwaitCallback('rsg-railroad:getPlayerRole', nil, companyId)
+    local ownership = RSGCore.Functions.AwaitCallback('rsg-railroad:getCompanyOwnership', nil, companyId)
+    local canSpawn = RSGCore.Functions.AwaitCallback('rsg-railroad:canSpawnTrain', nil)
 
     -- Build trains list for this company
     local companyTrainConfigs = {}
@@ -170,7 +171,7 @@ function OpenStationHUD(station)
     end
 
     -- Get company trains from DB
-    local companyTrains = lib.callback.await('rsg-railroad:getCompanyTrains', false, companyId) or {}
+    local companyTrains = RSGCore.Functions.AwaitCallback('rsg-railroad:getCompanyTrains', nil, companyId) or {}
 
     -- Get role-specific data
     local employees = nil
@@ -180,17 +181,17 @@ function OpenStationHUD(station)
     local myMembership = nil
     local cashRegister = 0
 
-    myMembership = lib.callback.await('rsg-railroad:getMyCompanyMembership', false, companyId)
-    local companyUpgrades = lib.callback.await('rsg-railroad:getCompanyUpgrades', false, companyId) or {}
+    myMembership = RSGCore.Functions.AwaitCallback('rsg-railroad:getMyCompanyMembership', nil, companyId)
+    local companyUpgrades = RSGCore.Functions.AwaitCallback('rsg-railroad:getCompanyUpgrades', nil, companyId) or {}
 
     if playerRole == 'owner' then
-        employees = lib.callback.await('rsg-railroad:getEmployees', false, companyId)
-        pendingApps = lib.callback.await('rsg-railroad:getPendingApplications', false, companyId)
-        supplies = lib.callback.await('rsg-railroad:getCompanySupplies', false, companyId)
+        employees = RSGCore.Functions.AwaitCallback('rsg-railroad:getEmployees', nil, companyId)
+        pendingApps = RSGCore.Functions.AwaitCallback('rsg-railroad:getPendingApplications', nil, companyId)
+        supplies = RSGCore.Functions.AwaitCallback('rsg-railroad:getCompanySupplies', nil, companyId)
         cashRegister = ownership and ownership.cash_register or 0
     elseif playerRole == 'driver' then
-        myEmployeeData = lib.callback.await('rsg-railroad:getMyEmployeeData', false, companyId)
-        supplies = lib.callback.await('rsg-railroad:getCompanySupplies', false, companyId)
+        myEmployeeData = RSGCore.Functions.AwaitCallback('rsg-railroad:getMyEmployeeData', nil, companyId)
+        supplies = RSGCore.Functions.AwaitCallback('rsg-railroad:getCompanySupplies', nil, companyId)
     end
 
     local companyLabel = Config.Companies[companyId] and Config.Companies[companyId].label or companyId
@@ -227,12 +228,12 @@ function OpenStationHUD(station)
         maintenanceLocations = Config.Missions.maintenance.locations,
         missions = Config.Missions,
         hasPassengerCars = ActiveTrainConfig and ActiveTrainConfig.hasPassengerCars or false,
-        companyStats = lib.callback.await('rsg-railroad:getCompanyStats', false, companyId) or {},
-        allCompanyStats = lib.callback.await('rsg-railroad:getAllCompanyStats', false) or {},
+        companyStats = RSGCore.Functions.AwaitCallback('rsg-railroad:getCompanyStats', nil, companyId) or {},
+        allCompanyStats = RSGCore.Functions.AwaitCallback('rsg-railroad:getAllCompanyStats', nil) or {},
         lang = GetLocaleTable(),
     })
 
-    SetNuiFocus(true, true)
+    ApplyNuiFocus(true)
 end
 
 ---------------------------------------------------------------
@@ -246,7 +247,7 @@ end
 -- NUI CALLBACKS
 ---------------------------------------------------------------
 RegisterNUICallback('closeStation', function(data, cb)
-    SetNuiFocus(false, false)
+    ApplyNuiFocus(false)
     cb({})
 end)
 
@@ -254,7 +255,7 @@ RegisterNUICallback('buyTrain', function(data, cb)
     TriggerServerEvent('rsg-railroad:buyTrain', data.trainIndex, currentStation.id)
     Wait(500)
     -- Refresh data
-    local ownedTrains = lib.callback.await('rsg-railroad:getOwnedTrains', false)
+    local ownedTrains = RSGCore.Functions.AwaitCallback('rsg-railroad:getOwnedTrains', nil)
     cb({ success = true, ownedTrains = ownedTrains or {} })
 end)
 
@@ -266,16 +267,16 @@ RegisterNUICallback('sellTrain', function(data, cb)
     end
     TriggerServerEvent('rsg-railroad:sellTrain', data.trainId)
     Wait(500)
-    local ownedTrains = lib.callback.await('rsg-railroad:getOwnedTrains', false)
+    local ownedTrains = RSGCore.Functions.AwaitCallback('rsg-railroad:getOwnedTrains', nil)
     cb({ success = true, ownedTrains = ownedTrains or {} })
 end)
 
 RegisterNUICallback('spawnTrain', function(data, cb)
     SendNUIMessage({ action = 'closeStation' })
-    SetNuiFocus(false, false)
+    ApplyNuiFocus(false)
     cb({ success = true })
 
-    local canSpawn = lib.callback.await('rsg-railroad:canSpawnTrain', false)
+    local canSpawn = RSGCore.Functions.AwaitCallback('rsg-railroad:canSpawnTrain', nil)
     if not canSpawn then
         Notify(locale('train_already_spawned'), 'error')
         return
@@ -297,7 +298,7 @@ end)
 
 RegisterNUICallback('parkTrain', function(data, cb)
     SendNUIMessage({ action = 'closeStation' })
-    SetNuiFocus(false, false)
+    ApplyNuiFocus(false)
     cb({ success = true })
     -- Deliberate put-away: warn before destroying a loaded train storage.
     if not ConfirmStoragePutAway() then return end
@@ -306,7 +307,7 @@ end)
 
 RegisterNUICallback('despawnTrain', function(data, cb)
     SendNUIMessage({ action = 'closeStation' })
-    SetNuiFocus(false, false)
+    ApplyNuiFocus(false)
     cb({ success = true })
     if not ConfirmStoragePutAway() then return end
     DespawnPlayerTrain()
@@ -315,13 +316,13 @@ end)
 RegisterNUICallback('purchaseUpgrade', function(data, cb)
     TriggerServerEvent('rsg-railroad:purchaseUpgrade', data.companyId, data.trainModel, data.upgradeType)
     Wait(500)
-    local upgrades = lib.callback.await('rsg-railroad:getCompanyUpgrades', false, data.companyId)
+    local upgrades = RSGCore.Functions.AwaitCallback('rsg-railroad:getCompanyUpgrades', nil, data.companyId)
     cb({ success = true, companyUpgrades = upgrades or {} })
 end)
 
 RegisterNUICallback('startMission', function(data, cb)
     SendNUIMessage({ action = 'closeStation' })
-    SetNuiFocus(false, false)
+    ApplyNuiFocus(false)
     cb({ success = true })
     StartMission(data.missionType, currentStation, data.destIndex)
 end)
@@ -350,7 +351,7 @@ end)
 RegisterNUICallback('withdrawFunds', function(data, cb)
     TriggerServerEvent('rsg-railroad:withdrawFunds', data.companyId, data.amount)
     Wait(500)
-    local ownership = lib.callback.await('rsg-railroad:getCompanyOwnership', false, data.companyId)
+    local ownership = RSGCore.Functions.AwaitCallback('rsg-railroad:getCompanyOwnership', nil, data.companyId)
     cb({ success = true, cashRegister = ownership and ownership.cash_register or 0 })
 end)
 
@@ -363,43 +364,43 @@ end)
 RegisterNUICallback('approveDriver', function(data, cb)
     TriggerServerEvent('rsg-railroad:approveDriver', data.companyId, data.employeeId)
     Wait(500)
-    local employees = lib.callback.await('rsg-railroad:getEmployees', false, data.companyId)
-    local pending = lib.callback.await('rsg-railroad:getPendingApplications', false, data.companyId)
+    local employees = RSGCore.Functions.AwaitCallback('rsg-railroad:getEmployees', nil, data.companyId)
+    local pending = RSGCore.Functions.AwaitCallback('rsg-railroad:getPendingApplications', nil, data.companyId)
     cb({ success = true, employees = employees or {}, pendingApps = pending or {} })
 end)
 
 RegisterNUICallback('rejectDriver', function(data, cb)
     TriggerServerEvent('rsg-railroad:rejectDriver', data.companyId, data.employeeId)
     Wait(500)
-    local pending = lib.callback.await('rsg-railroad:getPendingApplications', false, data.companyId)
+    local pending = RSGCore.Functions.AwaitCallback('rsg-railroad:getPendingApplications', nil, data.companyId)
     cb({ success = true, pendingApps = pending or {} })
 end)
 
 RegisterNUICallback('fireDriver', function(data, cb)
     TriggerServerEvent('rsg-railroad:fireDriver', data.companyId, data.employeeId)
     Wait(500)
-    local employees = lib.callback.await('rsg-railroad:getEmployees', false, data.companyId)
+    local employees = RSGCore.Functions.AwaitCallback('rsg-railroad:getEmployees', nil, data.companyId)
     cb({ success = true, employees = employees or {} })
 end)
 
 RegisterNUICallback('addSupply', function(data, cb)
     TriggerServerEvent('rsg-railroad:addSupply', data.companyId, data.itemName, data.quantity)
     Wait(500)
-    local supplies = lib.callback.await('rsg-railroad:getCompanySupplies', false, data.companyId)
+    local supplies = RSGCore.Functions.AwaitCallback('rsg-railroad:getCompanySupplies', nil, data.companyId)
     cb({ success = true, supplies = supplies or {} })
 end)
 
 RegisterNUICallback('takeSupply', function(data, cb)
     TriggerServerEvent('rsg-railroad:takeSupply', data.companyId, data.itemName, data.quantity)
     Wait(500)
-    local supplies = lib.callback.await('rsg-railroad:getCompanySupplies', false, data.companyId)
+    local supplies = RSGCore.Functions.AwaitCallback('rsg-railroad:getCompanySupplies', nil, data.companyId)
     cb({ success = true, supplies = supplies or {} })
 end)
 
 RegisterNUICallback('buyCompanyTrain', function(data, cb)
     TriggerServerEvent('rsg-railroad:buyTrain', data.trainIndex, currentStation.id)
     Wait(500)
-    local trains = lib.callback.await('rsg-railroad:getCompanyTrains', false, currentStation.company)
+    local trains = RSGCore.Functions.AwaitCallback('rsg-railroad:getCompanyTrains', nil, currentStation.company)
     cb({ success = true, companyTrains = trains or {} })
 end)
 
@@ -416,7 +417,7 @@ end)
 ---------------------------------------------------------------
 AddEventHandler('onResourceStop', function(resource)
     if resource == GetCurrentResourceName() then
-        SetNuiFocus(false, false)
+        ApplyNuiFocus(false)
         DespawnPlayerTrain()
         DespawnAmbientRouteTrains()
         for _, blip in ipairs(stationBlips) do

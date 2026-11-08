@@ -1,6 +1,5 @@
 -- Discord webhook logging for rsg-mining (server only)
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 Webhook = {}
 

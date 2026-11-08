@@ -1,12 +1,12 @@
 # rsg-telegram
 
-Version 3.1.0. rsg-telegram
+Version 3.1.1. rsg-telegram
 
 Telegram system for RSG Framework (RedM). Send and receive telegrams at any post office, with an address book, a player directory search and an RDR2-styled NUI. - Post offices with blips and a `[J]` prompt (configurable) - Inbox with unread markers, read, reply, save sender and destroy
 
 Source: https://github.com/Rexshack-RedM/rsg-telegram
 
-**Dependencies:** `rsg-core`, `ox_lib`, `oxmysql`
+**Dependencies:** `rsg-core`, `oxmysql`
 
 Has NUI (`ui_page`).
 

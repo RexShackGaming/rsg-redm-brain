@@ -113,5 +113,7 @@
     "wh_license": "Άδεια",
     "wh_offline": "%s (εκτός σύνδεσης)",
     "wh_test_title": "Δοκιμή webhook",
-    "wh_test_desc": "Το webhook του rsg-mining λειτουργεί (πρώτο συμβάν: `%s`)."
+    "wh_test_desc": "Το webhook του rsg-mining λειτουργεί (πρώτο συμβάν: `%s`).",
+    "ui_confirm_buy": "Αγορά",
+    "ui_cancel": "Ακύρωση"
 }

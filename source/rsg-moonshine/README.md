@@ -22,17 +22,18 @@ Brewing runs on the server in real time, so stills keep cooking while the owner 
 - **Brewing effects:** smoke and fire appear on the still while it is brewing.
 - **In-game menu:** a dark leather-and-gold menu with live timers, progress bars and quantity pickers.
 - **Discord webhooks:** detailed logs for every action, with a separate URL per event, rate-limit handling and a channel for suspicious activity.
-- **10 languages:** en, de, el, es, fr, ja, nl, pl, pt-br and ro, using ox_lib locales.
+- **10 languages:** en, de, el, es, fr, ja, nl, pl, pt-br and ro, using rsg-core locales.
 - **Security:** every action is checked on the server (distance, ownership, job, amounts), with per-player rate limits on actions, menu refreshes and raids. Stills only spawn near the player.
 
 ---
 
 ## Dependencies
 
+> No ox_lib required — locales, notifications, callbacks, progress bars and text UI all come from rsg-core.
+
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
-- [ox_lib](https://github.com/overextended/ox_lib)
-- [ox_target](https://github.com/overextended/ox_target)
+- [rsg-target](https://github.com/Rexshack-RedM/rsg-target)
 - [oxmysql](https://github.com/overextended/oxmysql)
 
 ---
@@ -51,17 +52,16 @@ Brewing runs on the server in real time, so stills keep cooking while the owner 
 
 5. **server.cfg.** Make sure the dependencies start before this resource:
    ```cfg
-   ensure ox_lib
    ensure oxmysql
    ensure rsg-core
    ensure rsg-inventory
-   ensure ox_target
+   ensure rsg-target
    ensure rsg-moonshine
    ```
 
 6. **Language (optional):**
    ```cfg
-   setr ox:locale "en"   # en, de, el, es, fr, ja, nl, pl, pt-br, ro
+   setr rsg:locale "en"   # en, de, el, es, fr, ja, nl, pl, pt-br, ro
    ```
 
 7. **Discord logs (optional).** Add your webhook URL in `server/sv_config.lua` (see below).
@@ -79,7 +79,7 @@ Restart the server, or run `refresh` and then `ensure rsg-moonshine`.
 4. Stay still through the progress bar and the still is set up.
 
 ### Brewing
-1. Look at the still (ox_target) and choose **Check Still** to open the menu.
+1. Look at the still (rsg-target) and choose **Check Still** to open the menu.
 2. **Pick a recipe.** Locked recipes show the level they need.
 3. **Load ingredients** into the hopper. Use −/+ (steps of one batch), **Max**, then **Load**.
 4. **Add fuel** (wood or coal) to the firebox. Use **Max** to fill it with as much as you're carrying.

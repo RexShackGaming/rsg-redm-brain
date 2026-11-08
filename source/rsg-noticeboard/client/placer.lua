@@ -18,7 +18,7 @@ end
 local function raycast(dist)
     local camPos = GetGameplayCamCoord()
     local dest = camPos + rotToDir(GetGameplayCamRot(2)) * dist
-    local ray = StartShapeTestRay(camPos.x, camPos.y, camPos.z, dest.x, dest.y, dest.z, 1 | 16, cache.ped, 0)
+    local ray = StartShapeTestRay(camPos.x, camPos.y, camPos.z, dest.x, dest.y, dest.z, 1 | 16, PlayerPedId(), 0)
     local _, hit, coords = GetShapeTestResult(ray)
     return hit == 1, coords
 end
@@ -26,14 +26,14 @@ end
 function Placer.Start(model, cb)
     if ghost then return end
     local hash = joaat(model)
-    lib.requestModel(hash, 10000)
-    local pc = GetEntityCoords(cache.ped)
+    RSGCore.Functions.RequestModel(hash)
+    local pc = GetEntityCoords(PlayerPedId())
     local help = helpText() -- built once, not every frame
     ghost = CreateObject(hash, pc.x, pc.y, pc.z, false, false, false)
     SetEntityAlpha(ghost, 170, false)
     SetEntityCollision(ghost, false, false)
     FreezeEntityPosition(ghost, true)
-    local heading, zOff = GetEntityHeading(cache.ped), 0.0
+    local heading, zOff = GetEntityHeading(PlayerPedId()), 0.0
     local coords = pc
 
     CreateThread(function()

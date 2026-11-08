@@ -24,4 +24,4 @@
 `server/doors.lua` inserts four rows into `rsg_doorlocks` once rsg-doorlock has seeded its table; existing names are skipped.
 
 ## Dependencies
-rsg-core, ox_lib (locales only), rsg-target, oxmysql, rsg-doorlock.
+rsg-core, rsg-target, oxmysql, rsg-doorlock.

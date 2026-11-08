@@ -5,12 +5,12 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 -- script.js localizes its own UI text from a full key->string
 -- dictionary rather than one key at a time, so we hand it the
 -- active locales/<lang>.json file directly (falling back to
--- en.json), matching lib.locale()'s own language resolution.
+-- en.json), matching rsg-core's locale resolution (rsg:locale > ox:locale > en).
 ---------------------------------------------------------------
 local cachedLocaleTable = nil
 function GetLocaleTable()
     if cachedLocaleTable then return cachedLocaleTable end
-    local lang = GetConvar('ox:locale', 'en')
+    local lang = GetConvar('rsg:locale', GetConvar('ox:locale', 'en'))
     local raw = LoadResourceFile(GetCurrentResourceName(), ('locales/%s.json'):format(lang))
     if not raw then
         raw = LoadResourceFile(GetCurrentResourceName(), 'locales/en.json')
@@ -20,10 +20,10 @@ function GetLocaleTable()
 end
 
 ---------------------------------------------------------------
--- NOTIFICATIONS (ox_lib wrapper)
+-- NOTIFICATIONS (rsg-core)
 ---------------------------------------------------------------
 function Notify(msg, nType, duration)
-    lib.notify({
+    RSGCore.Functions.Notify({
         title = locale('notify_title'),
         description = msg,
         type = nType or 'inform',
@@ -31,7 +31,7 @@ function Notify(msg, nType, duration)
     })
 end
 
--- NOTE: server-side notifications must use TriggerClientEvent('ox_lib:notify', ...)
+-- NOTE: server-side notifications must use TriggerClientEvent('RSGCore:Client:Notify', ...)
 -- from a server file so locale() resolves on the server. Do NOT call
 -- TriggerClientEvent from the client (it silently does nothing, which looks
 -- like "notifications not working").
@@ -120,3 +120,92 @@ end
 function GetRSGCore()
     return RSGCore
 end
+
+---------------------------------------------------------------
+-- NUI FOCUS (push-to-talk stays usable while the UI is open)
+---------------------------------------------------------------
+local uiFocus = false
+
+function ApplyNuiFocus(enable)
+    uiFocus = enable and true or false
+    if enable then
+        SetNuiFocus(true, true)
+        if Config.AllowPushToTalkWhileOpen then
+            SetNuiFocusKeepInput(true)
+        end
+    else
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
+end
+
+CreateThread(function()
+    while true do
+        if uiFocus and Config.AllowPushToTalkWhileOpen then
+            Wait(0)
+            DisableAllControlActions(0)
+            DisableAllControlActions(1)
+            DisableAllControlActions(2)
+            local list = Config.PushToTalkControls
+            if list then
+                for i = 1, #list do
+                    EnableControlAction(0, list[i], true)
+                    EnableControlAction(1, list[i], true)
+                    EnableControlAction(2, list[i], true)
+                end
+            end
+        else
+            Wait(250)
+        end
+    end
+end)
+
+---------------------------------------------------------------
+-- NUI INFO MENU (replaces lib.registerContext / lib.showContext)
+-- options = { { title = '', description = '' }, ... }
+---------------------------------------------------------------
+function ShowInfoMenu(title, options)
+    SendNUIMessage({ action = 'openInfoMenu', title = title, options = options, lang = GetLocaleTable() })
+    ApplyNuiFocus(true)
+end
+
+RegisterNUICallback('closeInfoMenu', function(_, cb)
+    ApplyNuiFocus(false)
+    cb({})
+end)
+
+---------------------------------------------------------------
+-- NUI CONFIRM DIALOG (replaces lib.alertDialog) -> true / false
+---------------------------------------------------------------
+local pendingDialog = nil
+
+function ConfirmDialog(data)
+    if pendingDialog then pendingDialog:resolve(false) end
+    local p = promise.new()
+    pendingDialog = p
+    SendNUIMessage({
+        action  = 'openDialog',
+        title   = data.header,
+        body    = data.content,
+        confirm = data.labels and data.labels.confirm,
+        cancel  = data.labels and data.labels.cancel,
+    })
+    ApplyNuiFocus(true)
+    return Citizen.Await(p)
+end
+
+RegisterNUICallback('dialogResult', function(data, cb)
+    ApplyNuiFocus(false)
+    if pendingDialog then
+        local p = pendingDialog
+        pendingDialog = nil
+        p:resolve(data and data.confirmed == true)
+    end
+    cb({})
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    if pendingDialog then pendingDialog:resolve(false) pendingDialog = nil end
+    if uiFocus then ApplyNuiFocus(false) end
+end)

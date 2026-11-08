@@ -5,18 +5,18 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 ---------------------------------------------------------------
 
 -- Get ownership data for a specific company
-lib.callback.register('rsg-railroad:getCompanyOwnership', function(source, companyId)
+RegisterCallback('rsg-railroad:getCompanyOwnership', function(source, companyId)
     return DB.GetCompanyOwnership(companyId)
 end)
 
 -- Get ALL owned companies
-lib.callback.register('rsg-railroad:getAllOwnedCompanies', function(source)
+RegisterCallback('rsg-railroad:getAllOwnedCompanies', function(source)
     return DB.GetAllOwnedCompanies()
 end)
 
 -- Determine player's role at a station's company
 -- Returns: 'owner', 'driver', 'pending', 'visitor', 'unowned'
-lib.callback.register('rsg-railroad:getPlayerRole', function(source, companyId)
+RegisterCallback('rsg-railroad:getPlayerRole', function(source, companyId)
     local Player = RSGCore.Functions.GetPlayer(source)
     if not Player then return 'visitor' end
     local citizenid = Player.PlayerData.citizenid
@@ -39,7 +39,7 @@ lib.callback.register('rsg-railroad:getPlayerRole', function(source, companyId)
 end)
 
 -- Get player's employee record for a company
-lib.callback.register('rsg-railroad:getMyEmployeeData', function(source, companyId)
+RegisterCallback('rsg-railroad:getMyEmployeeData', function(source, companyId)
     local Player = RSGCore.Functions.GetPlayer(source)
     if not Player then return nil end
     return DB.GetEmployeeByIds(companyId, Player.PlayerData.citizenid)
@@ -206,7 +206,7 @@ end)
 ---------------------------------------------------------------
 -- COMPANY STATS (for Records tab)
 ---------------------------------------------------------------
-lib.callback.register('rsg-railroad:getCompanyStats', function(source, companyId)
+RegisterCallback('rsg-railroad:getCompanyStats', function(source, companyId)
     local Player = RSGCore.Functions.GetPlayer(source)
     if not Player or GetCompanyRole(companyId, Player.PlayerData.citizenid) ~= 'owner' then return {} end
     local employees = DB.GetEmployeesByCompany(companyId) or {}
@@ -261,7 +261,7 @@ end)
 ---------------------------------------------------------------
 -- ALL COMPANY STATS (for leaderboard comparison)
 ---------------------------------------------------------------
-lib.callback.register('rsg-railroad:getAllCompanyStats', function(source)
+RegisterCallback('rsg-railroad:getAllCompanyStats', function(source)
     local allOwned = DB.GetAllOwnedCompanies() or {}
     local results = {}
 
@@ -300,6 +300,6 @@ end)
 ---------------------------------------------------------------
 -- GET COMPANY TRAINS (for station UI)
 ---------------------------------------------------------------
-lib.callback.register('rsg-railroad:getCompanyTrains', function(source, companyId)
+RegisterCallback('rsg-railroad:getCompanyTrains', function(source, companyId)
     return DB.GetCompanyTrains(companyId)
 end)

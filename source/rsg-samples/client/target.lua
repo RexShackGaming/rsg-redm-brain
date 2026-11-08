@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------------------------
--- RSG SAMPLES — Client: ox_target leaderboard zone + map blip
+-- RSG SAMPLES — Client: rsg-target leaderboard zone + map blip
 --------------------------------------------------------------------------------------------
 
 local blip
@@ -7,7 +7,7 @@ local blip
 CreateThread(function()
     local loc = Config.LeaderboardLocation
 
-    exports.ox_target:addSphereZone({
+    exports['rsg-target']:addSphereZone({
         coords  = loc.coords,
         radius  = loc.radius,
         debug   = Config.DebugClient,

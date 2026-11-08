@@ -1,4 +1,4 @@
-lib.locale()
+local RSGCore = exports['rsg-core']:GetCoreObject()
 
 local poisoned = false
 local antidoteUsed = false
@@ -53,7 +53,7 @@ local function startPoison(resumed, cause)
         TriggerServerEvent('rsg-poison:server:setPoisoned', true, cause)
     end
 
-    lib.notify({
+    RSGCore.Functions.Notify({
         title = locale(resumed and 'cl_still_poisoned_title' or 'cl_poisoned_title'),
         description = locale(resumed and 'cl_still_poisoned_desc' or 'cl_poisoned_desc'),
         type = 'error',
@@ -66,7 +66,7 @@ local function startPoison(resumed, cause)
             Wait(DEATH_CHECK_MS)
             sinceDrain = sinceDrain + DEATH_CHECK_MS
 
-            local ped = cache.ped
+            local ped = PlayerPedId()
             if antidoteUsed or IsPedDeadOrDying(ped, true) then
                 resetPoisonState()
                 return
@@ -81,7 +81,7 @@ local function startPoison(resumed, cause)
 end
 
 local function resumeFromServer()
-    if lib.callback.await('rsg-poison:server:getPoisonState', false) then
+    if RSGCore.Functions.AwaitCallback('rsg-poison:server:getPoisonState') then
         startPoison(true)
     end
 end
@@ -93,8 +93,8 @@ RegisterNetEvent('rsg-poison:client:useAntidote', function()
     if not poisoned then startPoison(true) end
     drinking = true
 
-    local ped = cache.ped
-    lib.requestModel(ANTIDOTE_PROP)
+    local ped = PlayerPedId()
+    RSGCore.Functions.RequestModel(ANTIDOTE_PROP)
     local coords = GetEntityCoords(ped)
     local prop = CreateObject(ANTIDOTE_PROP, coords.x, coords.y, coords.z, true, false, false)
     SetModelAsNoLongerNeeded(ANTIDOTE_PROP)
@@ -120,7 +120,7 @@ RegisterNetEvent('rsg-poison:client:useAntidote', function()
     if interrupted then return end
 
     antidoteUsed = true
-    lib.notify({
+    RSGCore.Functions.Notify({
         title = locale('cl_antidote_used_title'),
         description = locale('cl_antidote_used_desc'),
         type = 'success',
@@ -134,7 +134,7 @@ RegisterNetEvent('rsg-poison:client:cured', function()
     poisoned = false
     antidoteUsed = false
     setIndicator(false)
-    lib.notify({
+    RSGCore.Functions.Notify({
         title = locale('cl_cured_title'),
         description = locale('cl_cured_desc'),
         type = 'success',
@@ -182,7 +182,7 @@ CreateThread(function()
                 if GetEventAtIndex(0, i) == EVENT_ENTITY_DAMAGED then
                     local data = DataView.ArrayBuffer(128)
                     -- GetEventData: 0 = victim, 8 = attacker, 16 = weapon hash, 24 = ammo hash
-                    if Citizen.InvokeNative(0x57EC5FA4D4D6AFCA, 0, i, data:Buffer(), 9) and data:GetInt32(0) == cache.ped then
+                    if Citizen.InvokeNative(0x57EC5FA4D4D6AFCA, 0, i, data:Buffer(), 9) and data:GetInt32(0) == PlayerPedId() then
                         local attacker = data:GetInt32(8)
                         local cause
                         if poisonAmmoHashes[data:GetInt32(24)] then

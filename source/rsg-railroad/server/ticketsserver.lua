@@ -31,7 +31,7 @@ local function CheckTicket(src, Player, companyId)
     return 'no_ticket'
 end
 
-lib.callback.register('rsg-railroad:server:useTicket', function(source, companyId)
+RegisterCallback('rsg-railroad:server:useTicket', function(source, companyId)
     local src = source
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return 'no_ticket' end

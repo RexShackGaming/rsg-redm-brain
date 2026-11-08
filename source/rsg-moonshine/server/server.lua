@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 -- [id] = { id, citizenid, coords, heading, recipe, hopper = {item=count}, output, fuel, batch_left, last_tick }
 local Stills = {}
@@ -12,7 +11,7 @@ for _, f in ipairs(Config.Fuels) do Fuels[f.item] = f end
 -- helpers
 ---------------------------------
 local function notify(src, desc, ntype)
-    TriggerClientEvent('ox_lib:notify', src, { title = locale('cl_still'), description = desc, type = ntype or 'inform', duration = 5000 })
+    TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('cl_still'), description = desc, type = ntype or 'inform', duration = 5000 })
 end
 
 local function isBrewing(s) return s.batch_left ~= nil and s.fuel > 0 end
@@ -303,16 +302,16 @@ AddEventHandler('onResourceStop', function(res)
     for _, s in pairs(Stills) do processStill(s, now) saveStill(s) end
 end)
 
-lib.callback.register('rsg-moonshine:server:getStills', function()
+RSGCore.Functions.CreateCallback('rsg-moonshine:server:getStills', function(source, cb)
     local list = {}
     for _, s in pairs(Stills) do list[#list + 1] = publicStill(s) end
-    return list
+    return cb(list)
 end)
 
-lib.callback.register('rsg-moonshine:server:getState', function(src, id)
+RSGCore.Functions.CreateCallback('rsg-moonshine:server:getState', function(src, cb, id)
     local s = Stills[id]
-    if not s or throttled('state', src, 250) or not isNear(src, s.coords) then return nil end
-    return buildState(src, s)
+    if not s or throttled('state', src, 250) or not isNear(src, s.coords) then return cb(nil) end
+    return cb(buildState(src, s))
 end)
 
 ---------------------------------
@@ -445,40 +444,40 @@ Actions.pickup = function(src, Player, s)
     return 'closed'
 end
 
-lib.callback.register('rsg-moonshine:server:action', function(src, id, action, data)
+RSGCore.Functions.CreateCallback('rsg-moonshine:server:action', function(src, cb, id, action, data)
     local Player = RSGCore.Functions.GetPlayer(src)
     local s = Stills[id]
-    if not Player or not s or type(action) ~= 'string' or not Actions[action] then return nil end
+    if not Player or not s or type(action) ~= 'string' or not Actions[action] then return cb(nil) end
     if not isNear(src, s.coords) then
         notify(src, locale('sv_too_far'), 'error')
         WebhookLog('suspicious', src, locale('wh_range_title'), locale('wh_range_desc'):format(action, s.id), { CoordsField(s.coords) })
-        return nil
+        return cb(nil)
     end
-    if throttled('action', src, 300) then return buildState(src, s) end
+    if throttled('action', src, 300) then return cb(buildState(src, s)) end
     processStill(s, os.time())
-    if Actions[action](src, Player, s, type(data) == 'table' and data or {}) == 'closed' then return nil end
-    return buildState(src, s)
+    if Actions[action](src, Player, s, type(data) == 'table' and data or {}) == 'closed' then return cb(nil) end
+    return cb(buildState(src, s))
 end)
 
 ---------------------------------
 -- static world stills (map props) - find or create the saved still for a prop
 ---------------------------------
 local creatingWorld = false
-lib.callback.register('rsg-moonshine:server:getWorldStill', function(src, coords)
-    if not Config.WorldStills.enabled or type(coords) ~= 'vector3' then return nil end
-    if not RSGCore.Functions.GetPlayer(src) or not isNear(src, coords) then return nil end
+RSGCore.Functions.CreateCallback('rsg-moonshine:server:getWorldStill', function(src, cb, coords)
+    if not Config.WorldStills.enabled or type(coords) ~= 'vector3' then return cb(nil) end
+    if not RSGCore.Functions.GetPlayer(src) or not isNear(src, coords) then return cb(nil) end
     for _, s in pairs(Stills) do
-        if s.citizenid == WORLD and #(s.coords - coords) < 1.5 then return publicStill(s) end
+        if s.citizenid == WORLD and #(s.coords - coords) < 1.5 then return cb(publicStill(s)) end
     end
-    if creatingWorld or throttled('world', src, 1000) then return nil end
+    if creatingWorld or throttled('world', src, 1000) then return cb(nil) end
     creatingWorld = true
     local id = MySQL.insert.await('INSERT INTO rsg_moonshine_stills (citizenid, x, y, z, heading, hopper, output) VALUES (?, ?, ?, ?, ?, ?, 0)',
         { WORLD, coords.x, coords.y, coords.z, 0.0, '{}' })
     creatingWorld = false
-    if not id then return nil end
+    if not id then return cb(nil) end
     Stills[id] = { id = id, citizenid = WORLD, coords = coords, heading = 0.0, hopper = {}, output = 0, fuel = 0, last_tick = os.time() }
     TriggerClientEvent('rsg-moonshine:client:syncStill', -1, publicStill(Stills[id]))
-    return publicStill(Stills[id])
+    return cb(publicStill(Stills[id]))
 end)
 
 ---------------------------------

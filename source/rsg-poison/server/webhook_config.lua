@@ -74,6 +74,6 @@ WebhookConfig = {
     MaxQueue       = 100, -- per URL; newest logs are dropped past this
     MaxRetries     = 3,   -- retries on 429 / 5xx
 
-    -- Who can run /poisonwebhooktest (ox_lib restricted value, e.g. 'group.admin')
-    TestCommandAce = 'group.admin',
+    -- Who can run /poisonwebhooktest (rsg-core permission, e.g. 'admin' or 'god')
+    TestCommandPermission = 'admin',
 }

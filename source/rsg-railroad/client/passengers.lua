@@ -249,7 +249,7 @@ function TriggerAllAboard()
     end)
 end
 
--- ── Set up ox_target on the deployed train ────────────────
+-- ── Set up rsg-target on the deployed train ────────────────
 -- Called from SetupTrainTarget() in train_spawn.lua
 function SetupPassengerTarget()
     if not ActiveTrain or not DoesEntityExist(ActiveTrain) then
@@ -262,7 +262,7 @@ function SetupPassengerTarget()
     DebugPrint('[Passengers] SetupPassengerTarget: hasPassengerCars=' .. tostring(hasPassengerCars))
 
     -- Always register the target; canInteract controls visibility at runtime
-    exports.ox_target:addLocalEntity(ActiveTrain, {
+    exports['rsg-target']:addLocalEntity(ActiveTrain, {
         {
             name     = 'railroad_all_aboard',
             label    = locale('passengers_all_aboard'),
@@ -286,7 +286,7 @@ end
 -- Called from CleanupActiveTrain() in train_spawn.lua
 function CleanupPassengerTarget()
     if ActiveTrain and DoesEntityExist(ActiveTrain) and passengerTargetAdded then
-        exports.ox_target:removeLocalEntity(ActiveTrain, { 'railroad_all_aboard' })
+        exports['rsg-target']:removeLocalEntity(ActiveTrain, { 'railroad_all_aboard' })
     end
     passengerTargetAdded = false
     boardingInProgress   = false

@@ -1,3 +1,4 @@
+local RSGCore = exports['rsg-core']:GetCoreObject()
 -- ============================================================
 --  rsg-railroad  |  train_robbery.lua
 --  Self-contained train robbery system.
@@ -107,7 +108,7 @@ end
 
 -- ── Robbery-specific notification ───────────────────────
 local function RobberyNotify(msg, nType, duration)
-    lib.notify({
+    RSGCore.Functions.Notify({
         title       = locale('robbery_title'),
         description = msg,
         type        = nType   or 'error',
@@ -205,14 +206,14 @@ local function HasOutlawNearby(radius)
     return false
 end
 
--- ── Player repairs engine pressure via ox_target ────────────
+-- ── Player repairs engine pressure via rsg-target ────────────
 function FixEnginePressure()
     if not (Robbery.active or PressureRecovering) then return end
     local cfg = Config.TrainRobbery
     local ped = PlayerPedId()
     FreezeEntityPosition(ped, true)
     TaskStartScenarioInPlace(ped, joaat('WORLD_HUMAN_CROUCH_INSPECT'), 0, true, false, false, false)
-    if lib.progressBar({
+    if RSGCore.Functions.ProgressBar({
         duration     = cfg.PressureRepairTime or 8000,
         label        = locale('progress_repairing_engine_pressure'),
         useWhileDead = false,

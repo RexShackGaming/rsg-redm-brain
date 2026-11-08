@@ -7,14 +7,10 @@
 Config = {}
 
 --------------------------------------------------------------------------------------------
--- Locale — loads locales/<lang>.json via ox_lib and exposes the global locale(key, ...)
--- function (ox_lib falls back to 'en' automatically, and locale() just returns the key
--- itself if it's missing, so this is safe to call before every language file exists).
--- Server owners can pick a language with `setr ox:locale "fr"` etc. in server.cfg; add more
--- languages by dropping a locales/<code>.json next to locales/en.json with the same keys.
--- Supports string.format-style params, same as before: locale('key', param1, param2)
+-- Locale — handled by rsg-core (@rsg-core/shared/locale.lua). Loads locales/<lang>.json and
+-- exposes locale(key, ...). Pick a language with `setr rsg:locale "fr"` in server.cfg
+-- (falls back to ox:locale, then 'en'). Supports string.format params: locale('key', p1, p2)
 --------------------------------------------------------------------------------------------
-lib.locale()
 
 --------------------------------------------------------------------------------------------
 -- Debug
@@ -36,7 +32,7 @@ Config.AnimalCleanupTime = 90000  -- ms — how long before a sedated animal rec
 Config.SampleCooldown    = 3000   -- ms — server-side minimum gap between a player's sample submissions (anti-spam/exploit)
 
 --------------------------------------------------------------------------------------------
--- Leaderboard ox_target Location
+-- Leaderboard rsg-target Location
 -- Place this sphere at a naturalist camp, doctor's office, or any RP-fitting location.
 -- Adjust coords and heading to match your map layout.
 --------------------------------------------------------------------------------------------

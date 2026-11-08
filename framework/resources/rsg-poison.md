@@ -1,12 +1,12 @@
 # rsg-poison
 
-Version 3.0.1. Poison script for RSG Framework
+Version 3.0.2. Poison script for RSG Framework
 
 A poison / antidote system for **RSG-Core** RedM servers. Players can be poisoned by poison ammo (throwing knives, arrows) or venomous snake bites, take ongoing health drain until cured, and are cured with a consumable `tonic_antidote` item. Poison state persists across logout, disconnect, and server restarts, and every meaningful event can be logged to Discord. - **Poison sources** — poison-tippe
 
 Source: https://github.com/Rexshack-RedM/rsg-poison
 
-**Dependencies:** `rsg-core`, `rsg-inventory`, `ox_lib`, `/assetpacks`
+**Dependencies:** `rsg-core`, `rsg-inventory`, `/assetpacks`
 
 Has NUI (`ui_page`).
 
@@ -24,9 +24,13 @@ Has NUI (`ui_page`).
 
 **client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`
 
-## Callbacks (lib.callback)
+## Callbacks (RSGCore.Functions.CreateCallback)
 
 **server:** `rsg-poison:server:getPoisonState`
+
+## Commands (RSGCore.Commands.Add)
+
+**server:** `/poisonwebhooktest`
 
 ## Public (table) functions
 

@@ -113,5 +113,7 @@
     "wh_license": "ライセンス",
     "wh_offline": "%s (オフライン)",
     "wh_test_title": "Webhookテスト",
-    "wh_test_desc": "rsg-mining のWebhookは動作しています（最初のイベント: `%s`）。"
+    "wh_test_desc": "rsg-mining のWebhookは動作しています（最初のイベント: `%s`）。",
+    "ui_confirm_buy": "購入する",
+    "ui_cancel": "キャンセル"
 }

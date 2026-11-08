@@ -10,23 +10,21 @@ A poison / antidote system for **RSG-Core** RedM servers. Players can be poisone
 - **Persistent state** — poison status is saved to the player's metadata, so it survives logoff, disconnects, kicks, and server restarts. On reconnect, a still-poisoned player automatically resumes the effect (with a quieter "still poisoned" notice instead of the initial alert).
 - **Server-authoritative cure validation** — the server does not blindly trust a client claiming "I'm cured." A cure is only accepted when it comes from a validated antidote use or an actual (server-checked) death, and only once the antidote's drink animation could genuinely have finished. Anything else is rejected and logged as a possible exploit attempt.
 - **NUI status indicator** — an on-screen "POISONED" indicator fades in/out, with its label driven from the locale file rather than hardcoded HTML.
-- **Full localization** — all client and server user-facing strings live in `locales/*.json` via `ox_lib`'s `lib.locale()`/`locale()`, so adding another language is just adding another locale file.
+- **Full localization** — all client and server user-facing strings live in `locales/*.json` via rsg-core's built-in locale system (`locale()`), so adding another language is just adding another locale file.
 - **Discord webhook logging** — optional, fully configurable per-event webhook logging (poisoned, resumed, antidote used, died while poisoned, rejected/exploit cure attempts), with its own rate-limited send queue so you never get Discord 429s.
 - **Version checker** — checks a GitHub-hosted `version.txt` on resource start and warns in the server console if you're running an outdated build.
 
 ## Requirements
 
 - [RSG-Core](https://github.com/Rexshack-RedM/rsg-core) framework
-- [ox_lib](https://github.com/Rexshack-RedM/ox_lib)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
 - RedM / FiveM server with `lua54` and the standard `rdr3` game build
 
 ## Installation
 
 1. Download/clone this resource into your server's resources folder, e.g. `resources/[rsg]/rsg-poison`.
-2. Make sure `ox_lib` and `rsg-core` are started **before** this resource in your `server.cfg`:
+2. Make sure `rsg-core` is started **before** this resource in your `server.cfg`:
    ```cfg
-   ensure ox_lib
    ensure rsg-core
    ensure rsg-poison
    ```
@@ -55,11 +53,11 @@ General gameplay tuning, shared to both client and server:
 
 ### Languages (`locales/*.json`)
 
-Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language in `server.cfg` with `setr ox:locale de` (ox_lib). Covers notifications, the NUI indicator, the test command and Discord log text.
+Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language in `server.cfg` with `setr rsg:locale de` (rsg-core; falls back to `ox:locale`). Covers notifications, the NUI indicator, the test command and Discord log text.
 
 ### `locales/en.json`
 
-All player-facing text (notification titles/descriptions, the NUI indicator label) lives here as key/value pairs, loaded via `ox_lib`'s `lib.locale()`. To add another language, copy this file to e.g. `locales/fr.json`, translate the values, and set `ox_lib`'s locale convar/config to that language — keys must stay identical.
+All player-facing text (notification titles/descriptions, the NUI indicator label) lives here as key/value pairs, loaded via rsg-core's locale system. To add another language, copy this file to e.g. `locales/fr.json`, translate the values, and set `setr rsg:locale <lang>` — keys must stay identical.
 
 ### `server/webhook_config.lua` — Discord logging
 
@@ -75,7 +73,7 @@ Server-only (webhook URLs are never sent to clients).
 | `Include.*` | Which player info goes in embeds: character, citizen ID, job, Discord mention, license, Steam, health, coords. |
 | `Colors.*` | Embed colour per event. |
 | `SendIntervalMs`, `MaxQueue`, `MaxRetries` | Queue tuning. Discord 429s are retried after `retry_after`. |
-| `TestCommandAce` | Who may run `/poisonwebhooktest`. |
+| `TestCommandPermission` | rsg-core permission allowed to run `/poisonwebhooktest` (default `admin`). |
 
 **Logged events:** `cured` (via export), `poisoned` (with cause: snake / poison ammo / poison weapon), `resumed`, `antidoteUsed` (with time spent poisoned), `antidoteWasted`, `antidoteDenied`, `death`, `exploitAttempt` (forged cures, invalid data, throttled to one per player per 30s), `system` (resource start, test command).
 

@@ -4,10 +4,10 @@ game 'rdr3'
 
 name 'rsg-poison'
 description 'Poison script for RSG Framework'
-version '3.0.1'
+version '3.0.2'
 
 shared_scripts {
-    '@ox_lib/init.lua',
+    '@rsg-core/shared/locale.lua',
     'shared/config.lua'
 }
 
@@ -37,6 +37,5 @@ lua54 'yes'
 dependencies {
     'rsg-core',
     'rsg-inventory',
-    'ox_lib',
     '/assetpacks',
 }

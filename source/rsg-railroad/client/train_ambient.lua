@@ -48,7 +48,7 @@ end
 
 RegisterNetEvent('rsg-railroad:setAmbientState', function(active)
     if active and not ambientSpawned then
-        local shouldSpawn = lib.callback.await('rsg-railroad:shouldSpawnAmbient', false)
+        local shouldSpawn = RSGCore.Functions.AwaitCallback('rsg-railroad:shouldSpawnAmbient', nil)
         if shouldSpawn then
             SpawnAmbientRouteTrains()
         end
@@ -213,8 +213,7 @@ RegisterNetEvent('rsg-railroad:client:trainpos', function()
         return
     end
 
-    lib.registerContext({ id = 'trainpos_menu', title = locale('menu_train_locations'), options = options })
-    lib.showContext('trainpos_menu')
+    ShowInfoMenu(locale('menu_train_locations'), options)
 end)
 
 RegisterNetEvent('rsg-railroad:client:setjunction', function(args)

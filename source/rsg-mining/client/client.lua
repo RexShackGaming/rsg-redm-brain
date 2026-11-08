@@ -1,4 +1,4 @@
-lib.locale()
+local RSGCore = exports['rsg-core']:GetCoreObject()
 
 local peds, blips, nearby = {}, {}, {}
 local currentMine = nil
@@ -7,19 +7,18 @@ local MineCfg = {}
 for _, m in ipairs(Config.Mines) do MineCfg[m.id] = m end
 
 local function notify(desc, ntype)
-    lib.notify({ title = locale('mining'), description = desc, type = ntype or 'inform', position = Config.NotifyPosition, duration = 5000, icon = 'gem' })
+    RSGCore.Functions.Notify({ title = locale('mining'), description = desc, type = ntype or 'inform', position = Config.NotifyPosition, duration = 5000, icon = 'gem' })
 end
 
 ---------------------------------
 -- UI
 ---------------------------------
--- every ui_/status_ key from the active ox_lib locale, sent to the NUI once
+-- every ui_/status_ key from the active rsg-core locale, sent to the NUI once
 local uiLocales
 local function getUiLocales()
     if uiLocales then return uiLocales end
     uiLocales = {}
-    local ok, all = pcall(lib.getLocales)
-    for k, v in pairs(ok and all or {}) do
+    for k, v in pairs(locale() or {}) do
         if k:find('^ui_') or k:find('^status_') then uiLocales[k] = v end
     end
     return uiLocales
@@ -33,7 +32,7 @@ local function watchDistance(id)
         local c = MineCfg[id].foreman
         local pos = vec3(c.x, c.y, c.z)
         while currentMine == id do
-            if #(GetEntityCoords(cache.ped) - pos) > Config.ManageDistance then closeUI() break end
+            if #(GetEntityCoords(PlayerPedId()) - pos) > Config.ManageDistance then closeUI() break end
             Wait(500)
         end
     end)
@@ -59,25 +58,37 @@ local function updateUI(data)
     SendNUIMessage({ action = 'update', data = data })
 end
 
+-- lease confirmation shown in our own NUI (replaces ox_lib alertDialog)
+local confirmPromise
+local function askConfirm(title, text)
+    confirmPromise = promise.new()
+    SetNuiFocus(true, true)
+    SendNUIMessage({ action = 'confirm', title = title, text = text, locales = getUiLocales() })
+    local answer = Citizen.Await(confirmPromise)
+    confirmPromise = nil
+    if not answer then SetNuiFocus(false, false) end
+    return answer
+end
+
+RegisterNUICallback('confirmAnswer', function(d, cb)
+    if confirmPromise then confirmPromise:resolve(d and d.ok == true) end
+    cb('ok')
+end)
+
 local function fetchForeman(mineId)
-    local res = lib.callback.await('rsg-mining:server:getMineData', false, mineId)
+    local res = RSGCore.Functions.AwaitCallback('rsg-mining:server:getMineData', nil, mineId)
     if not res then return end
     if res.error then return notify(res.error, 'error') end
     if res.noLease then
-        local confirm = lib.alertDialog({
-            header = locale('no_lease_title'),
-            content = locale('no_lease_desc', res.label, res.hours, res.price),
-            centered = true, cancel = true,
-        })
-        if confirm ~= 'confirm' then return end
-        if not lib.callback.await('rsg-mining:server:buyLease', false, mineId) then return end
-        res = lib.callback.await('rsg-mining:server:getMineData', false, mineId)
+        if not askConfirm(locale('no_lease_title'), locale('no_lease_desc', res.label, res.hours, res.price)) then return end
+        if not RSGCore.Functions.AwaitCallback('rsg-mining:server:buyLease', nil, mineId) then return end
+        res = RSGCore.Functions.AwaitCallback('rsg-mining:server:getMineData', nil, mineId)
         if not res or not res.data then return end
     end
     openUI(res.data)
 end
 
--- one ledger request at a time (stops double ox_target selects stacking dialogs)
+-- one ledger request at a time (stops double rsg-target selects stacking dialogs)
 local function openForeman(mineId)
     if opening or currentMine then return end
     opening = true
@@ -93,7 +104,7 @@ end)
 -- generic NUI -> server action bridge; args are re-validated server-side
 local function action(name, ...)
     if not currentMine then return end
-    updateUI(lib.callback.await('rsg-mining:server:' .. name, false, currentMine, ...))
+    updateUI(RSGCore.Functions.AwaitCallback('rsg-mining:server:' .. name, nil, currentMine, ...))
 end
 
 RegisterNUICallback('hire', function(d, cb) action('hire', d.key); cb('ok') end)
@@ -112,7 +123,7 @@ RegisterNUICallback('renew', function(d, cb) action('renewLease'); cb('ok') end)
 
 RegisterNUICallback('refresh', function(_, cb)
     if currentMine then
-        local res = lib.callback.await('rsg-mining:server:getMineData', false, currentMine)
+        local res = RSGCore.Functions.AwaitCallback('rsg-mining:server:getMineData', nil, currentMine)
         updateUI(res and res.data or nil)
     end
     cb('ok')
@@ -124,7 +135,7 @@ end)
 local function spawnForeman(mine)
     if peds[mine.id] then return end
     local model = joaat(Config.ForemanModel)
-    if not pcall(lib.requestModel, model, 10000) then return end
+    if not pcall(RSGCore.Functions.RequestModel, model, 10000) then return end
     -- player may have left the area while the model streamed in
     if not nearby[mine.id] or peds[mine.id] then SetModelAsNoLongerNeeded(model) return end
     local c = mine.foreman
@@ -139,7 +150,7 @@ local function spawnForeman(mine)
     SetBlockingOfNonTemporaryEvents(ped, true)
     SetModelAsNoLongerNeeded(model)
 
-    exports.ox_target:addLocalEntity(ped, {
+    exports['rsg-target']:addLocalEntity(ped, {
         {
             name = 'rsg_mining_foreman_' .. mine.id,
             icon = 'fa-solid fa-helmet-safety',
@@ -155,7 +166,7 @@ local function removeForeman(id)
     if currentMine == id then closeUI() end
     local ped = peds[id]
     if ped and DoesEntityExist(ped) then
-        exports.ox_target:removeLocalEntity(ped)
+        exports['rsg-target']:removeLocalEntity(ped)
         DeleteEntity(ped)
     end
     peds[id] = nil
@@ -171,7 +182,7 @@ CreateThread(function()
             SetBlipName(blip, mine.blip.name)
             blips[#blips + 1] = blip
         end
-        lib.points.new({
+        points.new({
             coords = vec3(c.x, c.y, c.z),
             distance = Config.SpawnDistance,
             onEnter = function() nearby[mine.id] = true spawnForeman(mine) end,
@@ -184,5 +195,6 @@ AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     for id in pairs(peds) do removeForeman(id) end
     for _, b in ipairs(blips) do RemoveBlip(b) end
+    if confirmPromise then confirmPromise:resolve(false) end
     SetNuiFocus(false, false)
 end)

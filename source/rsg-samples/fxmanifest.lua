@@ -4,18 +4,17 @@ game 'rdr3'
 
 author 'Mack'
 description 'rsg-samples'
-version '2.1.0'
+version '3.0.0'
 
 dependencies {
     '/onesync',
     'oxmysql',
-    'ox_lib',
-    'ox_target',
+    'rsg-target',
     'rsg-core',
 }
 
 shared_scripts {
-    '@ox_lib/init.lua',
+    '@rsg-core/shared/locale.lua',
     'shared/config.lua',
 }
 

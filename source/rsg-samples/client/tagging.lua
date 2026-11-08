@@ -101,7 +101,7 @@ CreateThread(function()
         if next(tracked) == nil then
             Wait(500)
         else
-            local playerCoords = GetEntityCoords(cache.ped)
+            local playerCoords = GetEntityCoords(PlayerPedId())
 
             for ped, entry in pairs(tracked) do
                 if DoesEntityExist(ped) then

@@ -12,7 +12,6 @@ A fast, themed radial menu with nested submenus, job-specific actions, synced wa
 
 ## 🛠️ Dependencies
 - [**rsg-core**](https://github.com/Rexshack-RedM/rsg-core)
-- [**ox_lib**](https://github.com/overextended/ox_lib) – notifications & locales
 - *(optional)* **rsg-essentials**, **rsg-horses**, **rsg-lawman**, **rsg-medic**, **rsg-telegram**, **rsg-appearance** – for the default menu entries
 
 ---
@@ -32,15 +31,14 @@ A fast, themed radial menu with nested submenus, job-specific actions, synced wa
 
 ## 📥 Installation
 1. Place `rsg-radialmenu` in your `resources/[rsg]` folder.
-2. Add to `server.cfg` **after** `rsg-core` and `ox_lib`:
+2. Add to `server.cfg` **after** `rsg-core`:
    ```cfg
-   ensure ox_lib
    ensure rsg-core
    ensure rsg-radialmenu
    ```
 3. *(optional)* Set the language:
    ```cfg
-   setr ox:locale "en"
+   setr rsg:locale "en"
    ```
 4. Restart the server.
 
@@ -124,7 +122,7 @@ Walk styles are stored in the player state bag `walkstyle` and in character meta
 ---
 
 ## 🌍 Locales
-Files live in `locales/*.json`. Copy `en.json`, translate the values and set `setr ox:locale "<file name>"`.
+Files live in `locales/*.json`. Copy `en.json`, translate the values and set `setr rsg:locale "<file name>"`.
 
 ---
 

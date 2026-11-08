@@ -1,3 +1,4 @@
+local RSGCore = exports['rsg-core']:GetCoreObject()
 local activeMission = nil
 local missionBlip = nil
 
@@ -76,7 +77,7 @@ function StartDeliveryMission(station, destIndex)
                 return
             end
 
-            local canSpawn = lib.callback.await('rsg-railroad:canSpawnTrain', false)
+            local canSpawn = RSGCore.Functions.AwaitCallback('rsg-railroad:canSpawnTrain', nil)
             if not canSpawn then
                 Notify(locale('train_already_spawned'), 'error')
                 return
@@ -239,7 +240,7 @@ function BeginMaintenanceLeg(loc)
                 local ped = PlayerPedId()
                 FreezeEntityPosition(ped, true)
                 TaskStartScenarioInPlace(ped, joaat('WORLD_HUMAN_CROUCH_INSPECT'), 0, true, false, false, false)
-                if lib.progressBar({
+                if RSGCore.Functions.ProgressBar({
                     duration = cfg.repairTime,
                     label = locale('mission_repair_start'),
                     useWhileDead = false,

@@ -1,12 +1,12 @@
 # rsg-railroad
 
-Version 3.1.3. rsg-railroad
+Version 3.2.0. rsg-railroad
 
 Advanced train management system for RedM (rsg-core). Buy railroad companies, hire drivers, manage trains, run missions, and build a railroad empire. - **Buy a Railroad Company** — 4 companies available across the map ($50,000 each, configurable) - **Rename Your Company** — Custom company names shown on UI
 
 Source: https://github.com/Rexshack-RedM/rsg-railroad
 
-**Dependencies:** `rsg-core`, `ox_lib`, `ox_target`, `oxmysql`, `rsg-inventory`
+**Dependencies:** `rsg-core`, `rsg-target`, `oxmysql`, `rsg-inventory`
 
 Has NUI (`ui_page`).
 
@@ -15,10 +15,6 @@ Has NUI (`ui_page`).
 **server:** `rsg-railroad:addMiles`, `rsg-railroad:addSupply`, `rsg-railroad:ambientDespawned`, `rsg-railroad:applyAsDriver`, `rsg-railroad:approveDriver`, `rsg-railroad:buyCompany`, `rsg-railroad:buyTrain`, `rsg-railroad:completeMission`, `rsg-railroad:fireDriver`, `rsg-railroad:openTrainStorage`, `rsg-railroad:parkTrain`, `rsg-railroad:purchaseUpgrade`, `rsg-railroad:rejectDriver`, `rsg-railroad:renameCompany`, `rsg-railroad:robberyDefeated`, `rsg-railroad:robberyOccurred`, `rsg-railroad:sellCompany`, `rsg-railroad:sellTrain`, `rsg-railroad:setTrainSpawned`, `rsg-railroad:takeSupply`, `rsg-railroad:ticketRevenue`, `rsg-railroad:updateCondition`, `rsg-railroad:updateFuel`, `rsg-railroad:updateTrainState`, `rsg-railroad:updateWater`, `rsg-railroad:useMaintenanceItem`, `rsg-railroad:withdrawFunds`
 
 **client:** `rsg-railroad:client:setjunction`, `rsg-railroad:client:trainpos`, `rsg-railroad:maintenanceResult`, `rsg-railroad:refreshStationData`, `rsg-railroad:setAmbientState`
-
-## Callbacks (lib.callback)
-
-**server:** `rsg-railroad:canSpawnTrain`, `rsg-railroad:getAllCompanyStats`, `rsg-railroad:getAllOwnedCompanies`, `rsg-railroad:getAmbientState`, `rsg-railroad:getCompanyOwnership`, `rsg-railroad:getCompanyStats`, `rsg-railroad:getCompanySupplies`, `rsg-railroad:getCompanyTrains`, `rsg-railroad:getCompanyUpgrades`, `rsg-railroad:getEmployees`, `rsg-railroad:getMyCompanyMembership`, `rsg-railroad:getMyEmployeeData`, `rsg-railroad:getMyEmployment`, `rsg-railroad:getOwnedTrains`, `rsg-railroad:getPendingApplications`, `rsg-railroad:getPlayerRole`, `rsg-railroad:getTrainById`, `rsg-railroad:getTrainModelUpgrade`, `rsg-railroad:getTrainStorageState`, `rsg-railroad:server:useTicket`, `rsg-railroad:shouldSpawnAmbient`
 
 ## Commands (RSGCore.Commands.Add)
 

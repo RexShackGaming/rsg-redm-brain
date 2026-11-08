@@ -4,10 +4,10 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-noticeboard - player notice boards with NUI, fees, expiry/renewal and admin management'
-version '3.0.0'
+version '3.1.0'
 
 shared_scripts {
-    '@ox_lib/init.lua',
+    '@rsg-core/shared/locale.lua',
     'shared/config.lua',
 }
 
@@ -35,7 +35,6 @@ files {
 
 dependencies {
     'rsg-core',
-    'ox_lib',
-    'ox_target',
+    'rsg-target',
     'oxmysql',
 }

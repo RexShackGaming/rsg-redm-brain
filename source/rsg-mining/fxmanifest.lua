@@ -3,10 +3,10 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 
 description 'rsg-mining - mine lease & NPC worker management'
-version '3.0.1'
+version '3.0.2'
 
 shared_scripts {
-    '@ox_lib/init.lua',
+    '@rsg-core/shared/locale.lua',
     'shared/config.lua',
 }
 
@@ -19,6 +19,7 @@ server_scripts {
 }
 
 client_scripts {
+    '@rsg-core/client/points.lua',
     'client/client.lua'
 }
 
@@ -33,8 +34,7 @@ files {
 
 dependencies {
     'rsg-core',
-    'ox_lib',
-    'ox_target',
+    'rsg-target',
     'oxmysql',
     'rsg-inventory',
 }

@@ -10,11 +10,11 @@ local upgradeColumns = {
 ---------------------------------------------------------------
 -- CALLBACKS
 ---------------------------------------------------------------
-lib.callback.register('rsg-railroad:getCompanyUpgrades', function(source, companyId)
+RegisterCallback('rsg-railroad:getCompanyUpgrades', function(source, companyId)
     return DB.GetCompanyUpgrades(companyId)
 end)
 
-lib.callback.register('rsg-railroad:getTrainModelUpgrade', function(source, companyId, trainModel)
+RegisterCallback('rsg-railroad:getTrainModelUpgrade', function(source, companyId, trainModel)
     return DB.GetCompanyTrainUpgrade(companyId, trainModel)
 end)
 
@@ -36,7 +36,7 @@ RegisterNetEvent('rsg-railroad:purchaseUpgrade', function(companyId, trainModel,
     if not isOwner then
         local employee = DB.GetEmployeeByIds(companyId, citizenid)
         if not employee or employee.status ~= 'approved' or (employee.rank or 1) < 3 then
-            TriggerClientEvent('ox_lib:notify', src, {
+            TriggerClientEvent('RSGCore:Client:Notify', src, {
                 title = locale('notify_title'),
                 description = locale('upgrade_owner_engineer_required'),
                 type = 'error', duration = 6000,

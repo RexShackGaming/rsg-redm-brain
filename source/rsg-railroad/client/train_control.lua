@@ -95,7 +95,7 @@ CreateThread(function()
         if InDriverSeat and ActiveTrain and DoesEntityExist(ActiveTrain) then
 
             -- E key removed: conflicts with enter/exit vehicle
-            -- Use ox_target 'Start / Stop Engine' instead
+            -- Use rsg-target 'Start / Stop Engine' instead
 
             -- [ = Toggle HUD
             if IsControlJustPressed(0, 0x430593AA) then -- LEFTBRACKET key

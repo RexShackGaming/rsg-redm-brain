@@ -50,6 +50,7 @@ window.addEventListener('message', (e) => {
     if (locale) { LOCALE = locale; applyLocale(); }
     if (action === 'openBoard') { setBoardData(data); show('board'); }
     if (action === 'openAdmin') { setAdminData(data); show('admin'); }
+    if (action === 'expiryRenew') openExpiryRenew(data);
 });
 
 function show(which) {
@@ -275,6 +276,17 @@ document.querySelectorAll('#durationModal [data-close-modal], #confirmModal [dat
 $('btnDurationOk').addEventListener('click', () => { cancelHandlers.durationModal = null; closeModals(); durationCb && durationCb(); });
 $('btnInputOk').addEventListener('click', () => { const v = $('inputValue').value.trim(); closeModals(); inputCb && inputCb(v); });
 $('btnConfirmOk').addEventListener('click', () => { cancelHandlers.confirmModal = null; closeModals(); confirmCb && confirmCb(); });
+
+/* ---------- expiry renew prompt (opened from the client warning) ---------- */
+function openExpiryRenew(d) {
+    show('none');
+    askConfirm(d.text, () => {
+        askDuration(d.chooseTitle, d.durations || [], async (dur) => {
+            await post('renewNotice', { id: d.id, duration: dur });
+            closeAll();
+        }, closeAll);
+    }, closeAll);
+}
 
 /* ---------- admin ---------- */
 let adminTab = 'boards';

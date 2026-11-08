@@ -1,9 +1,9 @@
 # rsg-noticeboard
 
-Town notice boards for the RSG Framework (RedM). Players use ox_target on a bounty board to read notices and pin their own: events, wanted posters, items for sale and more.
+Town notice boards for the RSG Framework (RedM). Players use rsg-target on a bounty board to read notices and pin their own: events, wanted posters, items for sale and more.
 
 ## Features
-- **ox_target** on `mp005_p_mp_bountyboard01x` and `mp005_p_mp_bountyboard02x`, covering the game's own boards and admin-placed ones
+- **rsg-target** on `mp005_p_mp_bountyboard01x` and `mp005_p_mp_bountyboard02x`, covering the game's own boards and admin-placed ones
 - **Separate boards per town**: every board, including ones out in the wilds, shows the notices of its nearest town (`Config.Towns`)
 - **Full NUI**: category tabs, a tile grid (poster image and title), and a parchment poster view
 - **Posting**: title, body text, https image link with live preview, category and display period
@@ -13,11 +13,11 @@ Town notice boards for the RSG Framework (RedM). Players use ox_target on a boun
 - **Blips** for placed boards, and boards only spawn when players are within range
 
 ## Requirements
-`rsg-core`, `ox_lib`, `ox_target`, `oxmysql`
+`rsg-core`, `rsg-target`, `oxmysql` (no ox_lib needed)
 
 ## Installation
 1. Put `rsg-noticeboard` in your resources folder.
-2. Add `ensure rsg-noticeboard` after rsg-core, ox_lib, ox_target and oxmysql.
+2. Add `ensure rsg-noticeboard` after rsg-core, rsg-target and oxmysql.
 3. The database tables are created and upgraded automatically on start. `install.sql` is included if you prefer to run it yourself.
 4. Adjust `shared/config.lua` to suit your server.
 
@@ -51,9 +51,9 @@ Town notice boards for the RSG Framework (RedM). Players use ox_target on a boun
 ## Languages
 Includes translations for **en, de, el, es, fr, ja, nl, pl, pt-br, ro**. Every player message, the whole NUI, category and duration names, the placement help text and the Discord webhook embeds come from `locales/<lang>.json`.
 
-Set the language with the ox_lib convar in `server.cfg`:
+Set the language with the rsg-core locale convar in `server.cfg` (falls back to `ox:locale`, then `en`):
 ```
-setr ox:locale "de"
+setr rsg:locale "de"
 ```
 Missing keys fall back to English. To add a language, copy `locales/en.json` to `locales/<code>.json` and translate the values. Keep the `%s`, `%d` and `%.2f` placeholders and the `~e~`/`~q~` colour codes as they are.
 

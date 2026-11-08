@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 local function notify(desc, type)
     RSGCore.Functions.Notify({ title = locale('cl_title'), description = desc, type = type, duration = 5000 })

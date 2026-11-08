@@ -20,7 +20,7 @@ end
 local function teleport(dest)
     if busy then return end
     busy = true
-    local ped = cache.ped
+    local ped = PlayerPedId()
     DoScreenFadeOut(cfg.fadeTime)
     while not IsScreenFadedOut() do Wait(0) end
 
@@ -56,7 +56,7 @@ CreateThread(function()
     createPrompt()
     while true do
         local sleep = 1000
-        local ped = cache.ped
+        local ped = PlayerPedId()
         if not busy and not IsPedInAnyVehicle(ped, false) and not IsPedOnMount(ped) and not IsEntityDead(ped) then
             local pos = GetEntityCoords(ped)
             for _, loc in ipairs(cfg.locations) do

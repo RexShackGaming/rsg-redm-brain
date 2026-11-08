@@ -1,3 +1,16 @@
+local RSGCore = exports['rsg-core']:GetCoreObject()
+
+---------------------------------------------------------------
+-- CALLBACK HELPER (rsg-core callbacks, return-value style)
+-- Handlers keep the old `return value` style; this wraps them for
+-- RSGCore.Functions.CreateCallback, which answers with cb(...).
+---------------------------------------------------------------
+function RegisterCallback(name, handler)
+    RSGCore.Functions.CreateCallback(name, function(source, cb, ...)
+        cb(handler(source, ...))
+    end)
+end
+
 DB = {}
 
 ---------------------------------------------------------------

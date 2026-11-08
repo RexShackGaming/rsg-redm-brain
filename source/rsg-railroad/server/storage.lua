@@ -111,7 +111,7 @@ function TrainStorage.OnPutAway(src, silent)
     TrainStashes[src] = nil
 
     if stacks > 0 and not silent then
-        TriggerClientEvent('ox_lib:notify', src, {
+        TriggerClientEvent('RSGCore:Client:Notify', src, {
             title = locale('notify_title'),
             description = locale('storage_wiped', stacks),
             type = 'error',
@@ -134,7 +134,7 @@ RegisterNetEvent('rsg-railroad:openTrainStorage', function()
     if not Player then return end
 
     if not Config.TrainStorage or not Config.TrainStorage.Enabled then
-        TriggerClientEvent('ox_lib:notify', src, {
+        TriggerClientEvent('RSGCore:Client:Notify', src, {
             title = locale('notify_title'), description = locale('storage_disabled'),
             type = 'error', duration = 5000,
         })
@@ -143,7 +143,7 @@ RegisterNetEvent('rsg-railroad:openTrainStorage', function()
 
     local entry = TrainStashes[src]
     if not entry then
-        TriggerClientEvent('ox_lib:notify', src, {
+        TriggerClientEvent('RSGCore:Client:Notify', src, {
             title = locale('notify_title'), description = locale('storage_no_train'),
             type = 'error', duration = 5000,
         })
@@ -161,7 +161,7 @@ RegisterNetEvent('rsg-railroad:openTrainStorage', function()
     -- Warn once per deployment that this storage is temporary.
     if Config.TrainStorage.WarnOnFirstOpen and not entry.warned then
         entry.warned = true
-        TriggerClientEvent('ox_lib:notify', src, {
+        TriggerClientEvent('RSGCore:Client:Notify', src, {
             title = locale('notify_title'),
             description = locale('storage_temp_warning'),
             type = 'warning',
@@ -173,7 +173,7 @@ end)
 ---------------------------------------------------------------
 -- STATE QUERY (for client-side confirm dialogs and distance warnings)
 ---------------------------------------------------------------
-lib.callback.register('rsg-railroad:getTrainStorageState', function(source)
+RegisterCallback('rsg-railroad:getTrainStorageState', function(source)
     local entry = TrainStashes[source]
     if not entry then return { active = false, stacks = 0 } end
     return { active = true, stacks = CountStacks(entry.stashId) }

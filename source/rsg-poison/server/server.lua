@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 local ANTIDOTE_ITEM = 'tonic_antidote'
 local ANTIDOTE_MIN_MS = 3000       -- antidote cure only honoured after the drink animation could have finished
@@ -21,7 +20,7 @@ local function isPoisoned(Player)
 end
 
 local function notify(src, key, nType)
-    TriggerClientEvent('ox_lib:notify', src, {
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
         title = locale('sv_antidote_title'),
         description = locale(key),
         type = nType,
@@ -179,9 +178,9 @@ RegisterNetEvent('rsg-poison:server:setPoisoned', function(state, cause)
 end)
 
 -- Client pulls its saved state on load / resource restart
-lib.callback.register('rsg-poison:server:getPoisonState', function(source)
+RSGCore.Functions.CreateCallback('rsg-poison:server:getPoisonState', function(source, cb)
     local Player = RSGCore.Functions.GetPlayer(source)
-    if not Player or not isPoisoned(Player) then return false end
+    if not Player or not isPoisoned(Player) then return cb(false) end
 
     poisonedAt[source] = poisonedAt[source] or os.time()
     SendPoisonLog('resumed', {
@@ -189,7 +188,7 @@ lib.callback.register('rsg-poison:server:getPoisonState', function(source)
         description = locale('wh_resumed_desc'),
         src = source,
     })
-    return true
+    cb(true)
 end)
 
 AddEventHandler('playerDropped', function()

@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 local tickets = {}      -- [citizenid] = true (valid for the next show)
 local cooldowns = {}    -- [src] = os.time()

@@ -111,7 +111,7 @@ local function notify(src, description, nType, extra)
     if extra then
         for k, v in pairs(extra) do data[k] = v end
     end
-    TriggerClientEvent('ox_lib:notify', src, data)
+    TriggerClientEvent('RSGCore:Client:Notify', src, data)
 end
 
 local function debugPrint(...)

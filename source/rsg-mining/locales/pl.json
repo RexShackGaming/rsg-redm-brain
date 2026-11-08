@@ -113,5 +113,7 @@
     "wh_license": "Licencja",
     "wh_offline": "%s (offline)",
     "wh_test_title": "Test webhooka",
-    "wh_test_desc": "Webhook rsg-mining działa (pierwsze zdarzenie: `%s`)."
+    "wh_test_desc": "Webhook rsg-mining działa (pierwsze zdarzenie: `%s`).",
+    "ui_confirm_buy": "Kup",
+    "ui_cancel": "Anuluj"
 }

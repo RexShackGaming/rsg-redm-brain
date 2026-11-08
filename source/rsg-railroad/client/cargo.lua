@@ -3,7 +3,7 @@
 --
 -- Ported from mack-oilcompany's proven wagon-loading workflow
 -- (client/barrel.lua): barrels are NEVER targeted directly while
--- attached to the train -- ox_target/collision on props attached
+-- attached to the train -- rsg-target/collision on props attached
 -- to a moving train proved unreliable in testing. Instead:
 --   1. Barrels spawn loose at Config.CargoDelivery.PlatformSpawnCoords
 --      at job start.
@@ -107,7 +107,7 @@ end
 -- LOOSE PLATFORM BARREL TARGET (pickup)
 ---------------------------------------------------------------
 local function AddLooseBarrelTarget(barrel)
-    exports.ox_target:addLocalEntity(barrel, {
+    exports['rsg-target']:addLocalEntity(barrel, {
         {
             name = 'railroad_cargo_platform_' .. barrel,
             label = locale('menu_pickup_barrel'),
@@ -127,7 +127,7 @@ function PickupLooseBarrel(barrel)
     if carryState then return end
     if not DoesEntityExist(barrel) then return end
 
-    exports.ox_target:removeLocalEntity(barrel, 'railroad_cargo_platform_' .. barrel)
+    exports['rsg-target']:removeLocalEntity(barrel, 'railroad_cargo_platform_' .. barrel)
     for idx, b in ipairs(looseBarrels) do
         if b == barrel then table.remove(looseBarrels, idx) break end
     end
@@ -146,7 +146,7 @@ local function AddTrainCargoTarget()
     if trainTargetAdded or not flatbedEntity or not DoesEntityExist(flatbedEntity) then return end
     trainTargetAdded = true
 
-    exports.ox_target:addLocalEntity(flatbedEntity, {
+    exports['rsg-target']:addLocalEntity(flatbedEntity, {
         {
             name = 'railroad_cargo_load',
             label = locale('menu_load_barrel'),
@@ -244,13 +244,13 @@ function UnloadBarrelFromTrain()
             local ped2 = PlayerPedId()
 
             if IsEntityDead(ped2) or not DoesEntityExist(myCarry.entity) then
-                if promptShown then lib.hideTextUI() end
+                if promptShown then exports['rsg-core']:HideText() end
                 FailCargoCarry()
                 break
             end
 
             if IsPedInAnyVehicle(ped2, false) then
-                if promptShown then lib.hideTextUI() end
+                if promptShown then exports['rsg-core']:HideText() end
                 FailCargoCarry()
                 break
             end
@@ -262,7 +262,7 @@ function UnloadBarrelFromTrain()
                 inDropRange = distToDest < Config.CargoDelivery.DropRadius
 
                 if not inDropRange and distToDest > Config.CargoDelivery.AbandonDistance then
-                    if promptShown then lib.hideTextUI() end
+                    if promptShown then exports['rsg-core']:HideText() end
                     FailCargoCarry()
                     break
                 end
@@ -270,16 +270,16 @@ function UnloadBarrelFromTrain()
 
             if inDropRange then
                 if not promptShown then
-                    lib.showTextUI(locale('cargo_drop_prompt'))
+                    exports['rsg-core']:DrawText(locale('cargo_drop_prompt'))
                     promptShown = true
                 end
                 if IsControlJustPressed(0, 0xCEFD9220) then -- INPUT_CONTEXT (E)
-                    lib.hideTextUI()
+                    exports['rsg-core']:HideText()
                     DeliverCargo(myCarry)
                     break
                 end
             elseif promptShown then
-                lib.hideTextUI()
+                exports['rsg-core']:HideText()
                 promptShown = false
             end
 
@@ -352,7 +352,7 @@ end
 function DeliverCargo(carry)
     if not carry or carry ~= carryState then return end
 
-    lib.hideTextUI()
+    exports['rsg-core']:HideText()
     ReleaseCarryAnim()
     if carry.entity and DoesEntityExist(carry.entity) then
         DeleteEntity(carry.entity)
@@ -371,7 +371,7 @@ end
 function FailCargoCarry()
     if not carryState then return end
 
-    lib.hideTextUI()
+    exports['rsg-core']:HideText()
     ReleaseCarryAnim()
     if carryState.entity and DoesEntityExist(carryState.entity) then
         DeleteEntity(carryState.entity)
@@ -390,7 +390,7 @@ end
 ---------------------------------------------------------------
 function CleanupDeliveryCargo()
     if carryState then
-        lib.hideTextUI()
+        exports['rsg-core']:HideText()
         ReleaseCarryAnim()
         if carryState.entity and DoesEntityExist(carryState.entity) then
             DeleteEntity(carryState.entity)
@@ -401,7 +401,7 @@ function CleanupDeliveryCargo()
 
     for _, barrel in ipairs(looseBarrels) do
         if DoesEntityExist(barrel) then
-            exports.ox_target:removeLocalEntity(barrel, 'railroad_cargo_platform_' .. barrel)
+            exports['rsg-target']:removeLocalEntity(barrel, 'railroad_cargo_platform_' .. barrel)
             DeleteEntity(barrel)
         end
     end
@@ -413,8 +413,8 @@ function CleanupDeliveryCargo()
     loadedBarrels = {}
 
     if trainTargetAdded and flatbedEntity and DoesEntityExist(flatbedEntity) then
-        exports.ox_target:removeLocalEntity(flatbedEntity, 'railroad_cargo_load')
-        exports.ox_target:removeLocalEntity(flatbedEntity, 'railroad_cargo_unload')
+        exports['rsg-target']:removeLocalEntity(flatbedEntity, 'railroad_cargo_load')
+        exports['rsg-target']:removeLocalEntity(flatbedEntity, 'railroad_cargo_unload')
     end
     trainTargetAdded = false
     flatbedEntity = nil

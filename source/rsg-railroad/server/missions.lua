@@ -145,7 +145,7 @@ function CheckRailwaymanRewards(src, citizenid, companyId)
                 if companyId and reward.xpReward > 0 then
                     DB.AddCompanyXP(citizenid, companyId, reward.xpReward)
                 end
-                TriggerClientEvent('ox_lib:notify', src, {
+                TriggerClientEvent('RSGCore:Client:Notify', src, {
                     title = locale('notify_title'),
                     description = reward.label .. ' - ' .. locale('reward_claimed', reward.cashReward),
                     type = 'success',

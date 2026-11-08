@@ -22,7 +22,7 @@ Config.ImagePath      = 'nui://rsg-inventory/html/images/'
 Config.WorldStills = {
     enabled = true,
     models  = { -2094919100, 866531020, 524438086, -736911484 },
-    distance = 2.5, -- ox_target distance
+    distance = 2.5, -- rsg-target distance
 }
 
 -- fuel for the firebox: burnTime = seconds of brewing one item provides

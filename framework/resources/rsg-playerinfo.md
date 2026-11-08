@@ -1,12 +1,14 @@
 # rsg-playerinfo
 
-Version 2.0.1. rsg-playerinfo
+Version 3.0.0. rsg-playerinfo
 
-**Player information / quick stats display for RedM (RSG Core).** > Shows a small context menu with the player's name and configurable stats (outlaw status, job, cash, banks, IDs, etc.). > Triggered via the `/info` command and built with lib contexts (ox_lib).
+**Player information / quick stats display for RedM (RSG Core).** > Shows a small context menu with the player's name and configurable stats (outlaw status, job, cash, banks, IDs, etc.). > Triggered via the `/info` command and shown in a custom NUI panel (RDR2 leather & gold style).
 
 Source: https://github.com/Rexshack-RedM/rsg-playerinfo
 
-**Dependencies:** `rsg-core`, `ox_lib`
+**Dependencies:** `rsg-core`
+
+Has NUI (`ui_page`).
 
 ## Net events registered
 

@@ -1,5 +1,11 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
+
+-- rsg-core callbacks answer with cb(...); keep the handlers' return style
+local function registerCallback(name, fn)
+    RSGCore.Functions.CreateCallback(name, function(source, cb, ...)
+        cb(fn(source, ...))
+    end)
+end
 
 local Boards = {}
 local Sessions = {} -- [src] = { pos, time } set when a player opens a board
@@ -29,7 +35,7 @@ local function isAdmin(src)
 end
 
 local function notify(src, desc, ntype)
-    TriggerClientEvent('ox_lib:notify', src, { title = locale('title'), description = desc, type = ntype or 'inform', duration = 7000 })
+    TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('title'), description = desc, type = ntype or 'inform', duration = 7000 })
 end
 
 -- add a duration to a timestamp, calendar month aware
@@ -131,14 +137,14 @@ CreateThread(function()
     loadBoards()
 end)
 
-lib.callback.register('rsg-noticeboard:server:getBoards', function()
+registerCallback('rsg-noticeboard:server:getBoards', function()
     return Boards
 end)
 
 ---------------------------------
 -- player data
 ---------------------------------
-lib.callback.register('rsg-noticeboard:server:getBoardData', function(source)
+registerCallback('rsg-noticeboard:server:getBoardData', function(source)
     local Player = RSGCore.Functions.GetPlayer(source)
     if not Player then return nil end
     -- throttle: this runs a DB query, ignore spam faster than twice a second
@@ -181,7 +187,7 @@ lib.callback.register('rsg-noticeboard:server:getBoardData', function(source)
     }
 end)
 
-lib.callback.register('rsg-noticeboard:server:createNotice', function(source, data)
+registerCallback('rsg-noticeboard:server:createNotice', function(source, data)
     local Player = RSGCore.Functions.GetPlayer(source)
     if not Player or type(data) ~= 'table' or Busy[source] then return false end
     if not atBoard(source) then
@@ -267,7 +273,7 @@ local function renewNotice(source, noticeId, durationId)
 end
 
 -- renewing is allowed anywhere (e.g. from the expiry popup), it only extends the player's own notice
-lib.callback.register('rsg-noticeboard:server:renewNotice', function(source, noticeId, durationId)
+registerCallback('rsg-noticeboard:server:renewNotice', function(source, noticeId, durationId)
     if Busy[source] then return false end
     Busy[source] = true
     local ok, res = pcall(renewNotice, source, noticeId, durationId)
@@ -275,7 +281,7 @@ lib.callback.register('rsg-noticeboard:server:renewNotice', function(source, not
     return ok and res
 end)
 
-lib.callback.register('rsg-noticeboard:server:deleteOwnNotice', function(source, noticeId)
+registerCallback('rsg-noticeboard:server:deleteOwnNotice', function(source, noticeId)
     local Player = RSGCore.Functions.GetPlayer(source)
     if not Player or not tonumber(noticeId) then return false end
     local row = MySQL.single.await('SELECT id, title, body, category, town FROM rsg_noticeboard_notices WHERE id = ? AND citizenid = ?',
@@ -362,7 +368,7 @@ RSGCore.Commands.Add(Config.AdminCommand, locale('sv_cmd_help'), {}, false, func
     TriggerClientEvent('rsg-noticeboard:client:openAdmin', source)
 end, Config.AdminPermission)
 
-lib.callback.register('rsg-noticeboard:server:getAdminData', function(source)
+registerCallback('rsg-noticeboard:server:getAdminData', function(source)
     if not isAdmin(source) then return nil end
     local notices = MySQL.query.await('SELECT id, citizenid, author, title, body, image, category, town, duration, created_at, expires_at FROM rsg_noticeboard_notices ORDER BY expires_at ASC') or {}
     local towns, boards = {}, {}
@@ -375,7 +381,7 @@ lib.callback.register('rsg-noticeboard:server:getAdminData', function(source)
         config = { durations = DurList, categories = CatList, towns = towns } }
 end)
 
-lib.callback.register('rsg-noticeboard:server:saveBoard', function(source, data)
+registerCallback('rsg-noticeboard:server:saveBoard', function(source, data)
     if not isAdmin(source) then notify(source, locale('sv_no_permission'), 'error') return false end
     if type(data) ~= 'table' or not tonumber(data.x) or not tonumber(data.y) or not tonumber(data.z) then return false end
     local Player = RSGCore.Functions.GetPlayer(source)
@@ -394,7 +400,7 @@ lib.callback.register('rsg-noticeboard:server:saveBoard', function(source, data)
     return true
 end)
 
-lib.callback.register('rsg-noticeboard:server:renameBoard', function(source, id, label)
+registerCallback('rsg-noticeboard:server:renameBoard', function(source, id, label)
     if not isAdmin(source) or not tonumber(id) then return false end
     label = trim(label); if label == '' then return false end
     local oldLabel = MySQL.scalar.await('SELECT label FROM rsg_noticeboard_boards WHERE id = ?', { tonumber(id) })
@@ -408,7 +414,7 @@ lib.callback.register('rsg-noticeboard:server:renameBoard', function(source, id,
     return true
 end)
 
-lib.callback.register('rsg-noticeboard:server:deleteBoard', function(source, id)
+registerCallback('rsg-noticeboard:server:deleteBoard', function(source, id)
     if not isAdmin(source) or not tonumber(id) then return false end
     local board = MySQL.single.await('SELECT * FROM rsg_noticeboard_boards WHERE id = ?', { tonumber(id) })
     if not board then return false end
@@ -422,7 +428,7 @@ lib.callback.register('rsg-noticeboard:server:deleteBoard', function(source, id)
     return true
 end)
 
-lib.callback.register('rsg-noticeboard:server:adminDeleteNotice', function(source, id)
+registerCallback('rsg-noticeboard:server:adminDeleteNotice', function(source, id)
     if not isAdmin(source) or not tonumber(id) then return false end
     local row = MySQL.single.await('SELECT * FROM rsg_noticeboard_notices WHERE id = ?', { tonumber(id) })
     if not row then return false end
@@ -435,7 +441,7 @@ lib.callback.register('rsg-noticeboard:server:adminDeleteNotice', function(sourc
     return true
 end)
 
-lib.callback.register('rsg-noticeboard:server:adminExtendNotice', function(source, id, durationId)
+registerCallback('rsg-noticeboard:server:adminExtendNotice', function(source, id, durationId)
     if not isAdmin(source) or not tonumber(id) then return false end
     local dur = getDuration(durationId)
     local row = MySQL.single.await('SELECT id, title, author, citizenid, category, town, expires_at FROM rsg_noticeboard_notices WHERE id = ?', { tonumber(id) })

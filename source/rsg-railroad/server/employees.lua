@@ -9,17 +9,17 @@ local function IsOwner(source, companyId)
     return Player and GetCompanyRole(companyId, Player.PlayerData.citizenid) == 'owner', Player
 end
 
-lib.callback.register('rsg-railroad:getEmployees', function(source, companyId)
+RegisterCallback('rsg-railroad:getEmployees', function(source, companyId)
     if not IsOwner(source, companyId) then return {} end
     return DB.GetEmployeesByCompany(companyId)
 end)
 
-lib.callback.register('rsg-railroad:getPendingApplications', function(source, companyId)
+RegisterCallback('rsg-railroad:getPendingApplications', function(source, companyId)
     if not IsOwner(source, companyId) then return {} end
     return DB.GetPendingApplications(companyId)
 end)
 
-lib.callback.register('rsg-railroad:getMyEmployment', function(source)
+RegisterCallback('rsg-railroad:getMyEmployment', function(source)
     local Player = RSGCore.Functions.GetPlayer(source)
     if not Player then return {} end
     return DB.GetPlayerEmployment(Player.PlayerData.citizenid)
@@ -75,7 +75,7 @@ RegisterNetEvent('rsg-railroad:applyAsDriver', function(companyId)
     if ownerPlayer then
         local applicantName = (charinfo.firstname or '') .. ' ' .. (charinfo.lastname or '')
         local companyLabel = CompanyLabel(companyId)
-        TriggerClientEvent('ox_lib:notify', ownerPlayer.PlayerData.source, {
+        TriggerClientEvent('RSGCore:Client:Notify', ownerPlayer.PlayerData.source, {
             title = companyLabel,
             description = locale('driver_applied_notify', applicantName),
             type = 'inform',
@@ -90,7 +90,7 @@ end)
 local function NotifyCitizen(citizenid, companyId, description, nType)
     local target = citizenid and RSGCore.Functions.GetPlayerByCitizenId(citizenid)
     if not target then return end
-    TriggerClientEvent('ox_lib:notify', target.PlayerData.source, {
+    TriggerClientEvent('RSGCore:Client:Notify', target.PlayerData.source, {
         title = CompanyLabel(companyId),
         description = description,
         type = nType,

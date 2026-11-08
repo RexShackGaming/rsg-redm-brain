@@ -6,7 +6,7 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 ---------------------------------------------------------------
 local ambientOwner = nil
 
-lib.callback.register('rsg-railroad:shouldSpawnAmbient', function(source)
+RegisterCallback('rsg-railroad:shouldSpawnAmbient', function(source)
     if ambientOwner and GetPlayerName(ambientOwner) then return false end
     ambientOwner = source
     return true

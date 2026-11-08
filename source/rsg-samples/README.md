@@ -12,15 +12,14 @@ Animal sample collector for RedM (best version) with leaderboard, certificate, a
 - Milestone rewards at 5 / 10 / 25 / 50 samples
 - NUI collector menu (My Samples, Leaderboard, Global Stats tabs)
 - Field Research Certificate overlay with completion stats (open from the menu header or `/samplecert`)
-- ox_target leaderboard zone + optional map blip
-- ox_lib notify + JSON locales (10 languages)
+- rsg-target leaderboard zone + optional map blip
+- rsg-core notify + JSON locales (10 languages)
 - Server-side validation: the server resolves the sampled animal itself and checks model, health and distance before paying out
 
 ## Requirements
 
 - RSG Core (`rsg-core`)
-- ox_lib
-- ox_target
+- rsg-target
 - oxmysql
 - onesync
 
@@ -34,7 +33,7 @@ Animal sample collector for RedM (best version) with leaderboard, certificate, a
 
 ### Where to place the leaderboard
 
-Edit `Config.LeaderboardLocation` in `shared/config.lua` to set the ox_target interaction point (default: Valentine).
+Edit `Config.LeaderboardLocation` in `shared/config.lua` to set the rsg-target interaction point (default: Valentine).
 
 ## Setup SQL
 
@@ -74,14 +73,14 @@ rsg-samples/
 ├── client/
 │   ├── main.lua                # NUI open/close, revive notify
 │   ├── tagging.lua             # Sedation detection, prompts, sampling threads
-│   ├── target.lua              # ox_target leaderboard zone + map blip
+│   ├── target.lua              # rsg-target leaderboard zone + map blip
 │   └── taglistener.js          # AI tag event listener (revive data feed)
 ├── server/
 │   ├── database.lua            # Auto-creates the player_samples table
 │   ├── main.lua                # Animal map, sample validation, rewards, leaderboard, commands
 │   └── versionchecker.lua      # GitHub version check
 ├── locales/
-│   ├── en.json                 # All translatable strings (ox_lib locale)
+│   ├── en.json                 # All translatable strings (rsg-core locale)
 │   ├── de.json, el.json, es.json, fr.json, ja.json,
 │   └── nl.json, pl.json, pt-br.json, ro.json
 ├── html/
@@ -104,7 +103,7 @@ rsg-samples/
 | `Config.SampleHoldTime` | `4000` | Hold time (ms) for the sampling prompt |
 | `Config.SampleCooldown` | `3000` | Server-side minimum gap (ms) between a player's sample submissions |
 | `Config.AnimalCleanupTime` | `90000` | ms before a sedated animal recovers |
-| `Config.LeaderboardLocation` | Valentine | ox_target sphere coords / radius |
+| `Config.LeaderboardLocation` | Valentine | rsg-target sphere coords / radius |
 | `Config.ShowBlip` | `true` | Show map blip at the leaderboard location |
 | `Config.BlipSprite` | `'blip_shop_trapper'` | Blip sprite name or hash |
 | `Config.BlipColor` | `'BLIP_MODIFIER_MP_COLOR_8'` | Blip colour modifier (`''` = default) |
@@ -135,7 +134,7 @@ Animal names, rewards and categories live in `hashToAnimalMap` at the top of `se
 
 ## Locales
 
-All strings live in `locales/*.json` and are loaded through ox_lib's locale module. Out of the box this resource ships with:
+All strings live in `locales/*.json` and are loaded through rsg-core's locale module. Out of the box this resource ships with:
 
 | Code    | Language              |
 |---------|------------------------|
@@ -156,6 +155,9 @@ All strings live in `locales/*.json` and are loaded through ox_lib's locale modu
 setr ox:locale "de"
 ```
 
-**Adding another language:** copy `locales/en.json` to `locales/<code>.json` (e.g. `locales/it.json`) and translate the values — keep every `%s` placeholder in the same order, since those get filled in with things like animal names and dollar amounts at runtime. No code changes required; ox_lib picks the file up automatically once `ox:locale` is set to match.
+**Adding another language:** copy `locales/en.json` to `locales/<code>.json` (e.g. `locales/it.json`) and translate the values — keep every `%s` placeholder in the same order, since those get filled in with things like animal names and dollar amounts at runtime. No code changes required; rsg-core picks the file up automatically once `rsg:locale` is set to match.
 
 **Editing existing text:** just edit the value for a key in the matching `locales/<code>.json` file — the key names (left side) must stay the same since the code looks strings up by key.
+## Changelog
+
+- **2.1.1** — Removed ox_lib dependency: locales, notify and cache now come from rsg-core; ox_target replaced with rsg-target.

@@ -6,7 +6,7 @@ local nuiOpen = false
 
 -- taglistener.js fires this locally when the game reports an animal revive event
 AddEventHandler('rsg-samples:ReviveData', function(reviveData)
-    lib.notify({ title = locale('ui_title'), description = locale('revived'), type = 'success' })
+    exports['rsg-core']:Notify({ title = locale('ui_title'), description = locale('revived'), type = 'success' })
     if Config.DebugClient then print('[rsg-samples] Revive event:', reviveData) end
 end)
 

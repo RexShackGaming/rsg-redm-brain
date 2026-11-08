@@ -1,12 +1,12 @@
 # rsg-theatre
 
-Version 3.0.1. Theatre Raleur (Saint Denis) stage shows
+Version 3.0.2. Theatre Raleur (Saint Denis) stage shows
 
 Theatre Raleur (Saint Denis) stage shows for RSG Framework, rebuilt from Rockstar's `show_nbx_*` scripts. - Ticket seller NPC at the theatre ticket fence (rsg-target) with a playbill NUI - Server-scheduled shows (rotation or random) every `Config.ShowInterval` minutes
 
 Source: https://github.com/Rexshack-RedM/rsg-theatre
 
-**Dependencies:** `rsg-core`, `ox_lib`, `rsg-target`, `oxmysql`, `rsg-doorlock`
+**Dependencies:** `rsg-core`, `rsg-target`, `oxmysql`, `rsg-doorlock`
 
 Has NUI (`ui_page`).
 

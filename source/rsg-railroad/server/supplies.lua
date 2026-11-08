@@ -22,7 +22,7 @@ end
 ---------------------------------------------------------------
 -- CALLBACKS (owner / approved drivers only)
 ---------------------------------------------------------------
-lib.callback.register('rsg-railroad:getCompanySupplies', function(source, companyId)
+RegisterCallback('rsg-railroad:getCompanySupplies', function(source, companyId)
     local Player = RSGCore.Functions.GetPlayer(source)
     if not Player or not GetCompanyRole(companyId, Player.PlayerData.citizenid) then return {} end
     return DB.GetCompanySupplies(companyId)

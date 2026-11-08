@@ -570,6 +570,11 @@ html, body {
 .modal-body { font-size: 12px; line-height: 1.55; color: var(--rdr-text); }
 .modal-actions { display: flex; gap: 8px; justify-content: center; }
 .modal-divider { width: 70%; margin: 0 auto; }
+.info-card { width: 420px; }
+.info-list { display: flex; flex-direction: column; gap: 6px; max-height: 60vh; overflow-y: auto; }
+.info-item { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border-left: 2px solid var(--rdr-gold-dim); background: rgba(255,255,255,0.03); }
+.info-item-title { font-size: 12px; font-weight: 600; color: var(--rdr-text); }
+.info-item-desc { font-size: 11px; color: var(--rdr-muted); font-family: 'Roboto Mono', monospace, 'Roboto'; white-space: pre-wrap; }
 .modal-root { animation: fadeIn .2s ease; }
 .modal-card { animation: modalIn .25s ease; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

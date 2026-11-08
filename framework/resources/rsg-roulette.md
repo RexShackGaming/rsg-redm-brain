@@ -1,12 +1,12 @@
 # rsg-roulette
 
-Version 3.0.0. Multiplayer roulette tables for RSG Framework
+Version 3.0.1. Multiplayer roulette tables for RSG Framework
 
 Multiplayer European roulette tables for **RSG Framework** (RedM). Players share a table, place chips on a full betting layout during a timed round, and winnings are paid in cash server side. - Shared, server-authoritative rounds (betting → spin → result) per table - Straight, split, corner, red/black, odd/even, 1-18/19-36, dozens and columns
 
 Source: https://github.com/Rexshack-RedM/rsg-roulette
 
-**Dependencies:** `rsg-core`, `oxmysql`, `ox_lib`, `ox_target`
+**Dependencies:** `rsg-core`, `oxmysql`, `rsg-target`
 
 Has NUI (`ui_page`).
 
@@ -20,9 +20,13 @@ Has NUI (`ui_page`).
 
 **client:** `rsg-roulette:client:addTable`, `rsg-roulette:client:forceClose`, `rsg-roulette:client:removeTable`, `rsg-roulette:client:startPlacement`, `rsg-roulette:client:syncState`
 
-## Callbacks (lib.callback)
+## Callbacks (RSGCore.Functions.CreateCallback)
 
 **server:** `rsg-roulette:server:getTables`
+
+## Commands (RSGCore.Commands.Add)
+
+**server:** `/placeroulette`, `/removeroulette`
 
 ## Public (table) functions
 

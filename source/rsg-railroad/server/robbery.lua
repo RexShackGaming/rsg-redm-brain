@@ -49,7 +49,7 @@ RegisterNetEvent('rsg-railroad:robberyOccurred', function(companyId)
     local ownerPlayer = RSGCore.Functions.GetPlayerByCitizenId(ownership.owner_citizenid)
     if ownerPlayer then
         local companyLabel = CompanyLabel(companyId)
-        TriggerClientEvent('ox_lib:notify', ownerPlayer.PlayerData.source, {
+        TriggerClientEvent('RSGCore:Client:Notify', ownerPlayer.PlayerData.source, {
             title       = companyLabel,
             description = locale('robbery_taken_notify', take),
             type        = 'error',

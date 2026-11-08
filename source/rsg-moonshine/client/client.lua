@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 local Stills  = {}   -- [id] = data
 local Objects = {}   -- [id] = entity
@@ -30,9 +29,9 @@ local function loadModel(model)
 end
 
 local function progress(label, duration, dict, clip)
-    return lib.progressBar({
+    return RSGCore.Functions.ProgressBar({
         duration = duration, label = label, useWhileDead = false, canCancel = true,
-        disable = { move = true, combat = true, car = true },
+        disable = { move = true, combat = true, mount = true },
         anim = dict and { dict = dict, clip = clip, flag = 1 } or nil,
     })
 end
@@ -80,7 +79,7 @@ local function despawnStill(id)
     stopFx(id)
     local obj = Objects[id]
     if obj and DoesEntityExist(obj) then
-        exports.ox_target:removeLocalEntity(obj)
+        exports['rsg-target']:removeLocalEntity(obj)
         DeleteObject(obj)
     end
     Objects[id] = nil
@@ -96,7 +95,7 @@ local function spawnStill(s)
     SetEntityInvincible(obj, true)
     Objects[s.id] = obj
 
-    exports.ox_target:addLocalEntity(obj, {
+    exports['rsg-target']:addLocalEntity(obj, {
         {
             name = 'moonshine_check_' .. s.id,
             icon = 'fa-solid fa-whiskey-glass',
@@ -159,7 +158,7 @@ local function startStreaming()
 end
 
 local function loadStills()
-    local list = lib.callback.await('rsg-moonshine:server:getStills', false)
+    local list = RSGCore.Functions.AwaitCallback('rsg-moonshine:server:getStills', nil)
     for id in pairs(Objects) do despawnStill(id) end
     for id in pairs(WorldObj) do stopFx(id) end
     WorldObj = {}
@@ -187,7 +186,7 @@ AddEventHandler('onResourceStop', function(res)
     closeUi()
     for id in pairs(Objects) do despawnStill(id) end
     for id in pairs(WorldObj) do stopFx(id) end
-    if Config.WorldStills and Config.WorldStills.enabled then exports.ox_target:removeModel(Config.WorldStills.models, 'moonshine_world_still') end
+    if Config.WorldStills and Config.WorldStills.enabled then exports['rsg-target']:removeModel(Config.WorldStills.models, 'moonshine_world_still') end
 end)
 
 RegisterNetEvent('rsg-moonshine:client:syncStill', function(s)
@@ -230,13 +229,13 @@ end
 
 openStillMenu = function(id)
     if uiOpen then return end
-    local state = lib.callback.await('rsg-moonshine:server:getState', false, id)
+    local state = RSGCore.Functions.AwaitCallback('rsg-moonshine:server:getState', nil, id)
     if not state then return end
     uiOpen = id
 
     local strings = {}
     for _, k in ipairs(UiLocale) do strings[k] = locale(k) end
-    Wait(150) -- let ox_target finish closing and release its own focus first
+    Wait(150) -- let rsg-target finish closing and release its own focus first
     if uiOpen ~= id then return end
     -- focus is only given once the page confirms it rendered (see 'opened' callback)
     SendNUIMessage({ action = 'open', state = state, locale = strings, imagePath = Config.ImagePath })
@@ -261,7 +260,7 @@ openStillMenu = function(id)
                 break
             end
             if ticks % 6 == 0 then -- every 3 seconds
-                local st = lib.callback.await('rsg-moonshine:server:getState', false, id)
+                local st = RSGCore.Functions.AwaitCallback('rsg-moonshine:server:getState', nil, id)
                 if uiOpen == id and st then SendNUIMessage({ action = 'update', state = st }) end
             end
         end
@@ -299,7 +298,7 @@ end)
 RegisterNUICallback('action', function(data, cb)
     if not uiOpen then return cb('ok') end
     local id = uiOpen
-    local state = lib.callback.await('rsg-moonshine:server:action', false, id, data.action, data.data)
+    local state = RSGCore.Functions.AwaitCallback('rsg-moonshine:server:action', nil, id, data.action, data.data)
     if state then
         SendNUIMessage({ action = 'update', state = state })
     elseif data.action == 'pickup' then
@@ -317,7 +316,7 @@ local function isPlacedStill(entity)
 end
 
 if Config.WorldStills and Config.WorldStills.enabled then
-    exports.ox_target:addModel(Config.WorldStills.models, {
+    exports['rsg-target']:addModel(Config.WorldStills.models, {
         {
             name = 'moonshine_world_still',
             icon = 'fa-solid fa-whiskey-glass',
@@ -325,7 +324,7 @@ if Config.WorldStills and Config.WorldStills.enabled then
             distance = Config.WorldStills.distance or 2.5,
             canInteract = function(entity) return not isPlacedStill(entity) end,
             onSelect = function(data)
-                local s = lib.callback.await('rsg-moonshine:server:getWorldStill', false, GetEntityCoords(data.entity))
+                local s = RSGCore.Functions.AwaitCallback('rsg-moonshine:server:getWorldStill', nil, GetEntityCoords(data.entity))
                 if not s then return end
                 Stills[s.id] = s
                 WorldObj[s.id] = data.entity
@@ -350,7 +349,7 @@ RegisterNetEvent('rsg-moonshine:client:placeStill', function()
     SetEntityAlpha(ghost, 170, false)
     SetEntityCollision(ghost, false, false)
     FreezeEntityPosition(ghost, true)
-    lib.showTextUI(locale('cl_place_help'))
+    exports['rsg-core']:DrawText(locale('cl_place_help'))
 
     CreateThread(function()
         local result
@@ -376,19 +375,19 @@ RegisterNetEvent('rsg-moonshine:client:placeStill', function()
         end
 
         DeleteObject(ghost)
-        lib.hideTextUI()
+        exports['rsg-core']:HideText()
         if not result then
-            return lib.notify({ title = locale('cl_still'), description = locale('cl_place_cancel'), type = 'inform' })
+            return RSGCore.Functions.Notify({ title = locale('cl_still'), description = locale('cl_place_cancel'), type = 'inform' })
         end
         -- quick client pre-check so players aren't made to sit through the progress bar for a placement the server will refuse
         for _, z in ipairs(Config.BlockedZones) do
             if #(result.coords - z.coords) < z.radius then
-                return lib.notify({ title = locale('cl_still'), description = locale('sv_blocked'):format(z.name), type = 'error' })
+                return RSGCore.Functions.Notify({ title = locale('cl_still'), description = locale('sv_blocked'):format(z.name), type = 'error' })
             end
         end
         for _, st in pairs(Stills) do
             if #(result.coords - st.coords) < Config.MinStillDist then
-                return lib.notify({ title = locale('cl_still'), description = locale('sv_too_close'), type = 'error' })
+                return RSGCore.Functions.Notify({ title = locale('cl_still'), description = locale('sv_too_close'), type = 'error' })
             end
         end
         TaskTurnPedToFaceCoord(ped, result.coords.x, result.coords.y, result.coords.z, 1000)

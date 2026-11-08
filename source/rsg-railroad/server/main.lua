@@ -57,7 +57,7 @@ function CompanyLabel(companyId)
 end
 
 function NotifyPlayer(src, description, nType, duration)
-    TriggerClientEvent('ox_lib:notify', src, {
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
         title = locale('notify_title'),
         description = description,
         type = nType or 'inform',
@@ -86,14 +86,14 @@ end
 ---------------------------------------------------------------
 -- CALLBACKS
 ---------------------------------------------------------------
-lib.callback.register('rsg-railroad:getOwnedTrains', function(source)
+RegisterCallback('rsg-railroad:getOwnedTrains', function(source)
     local Player = RSGCore.Functions.GetPlayer(source)
     if not Player then return {} end
     return DB.GetOwnedTrains(Player.PlayerData.citizenid) or {}
 end)
 
 -- Only returns the row when the caller owns it.
-lib.callback.register('rsg-railroad:getTrainById', function(source, trainId)
+RegisterCallback('rsg-railroad:getTrainById', function(source, trainId)
     local Player = RSGCore.Functions.GetPlayer(source)
     trainId = tonumber(trainId)
     if not Player or not trainId then return nil end
@@ -102,15 +102,15 @@ lib.callback.register('rsg-railroad:getTrainById', function(source, trainId)
     return train
 end)
 
-lib.callback.register('rsg-railroad:canSpawnTrain', function(source)
+RegisterCallback('rsg-railroad:canSpawnTrain', function(source)
     return ActiveTrains[source] == nil
 end)
 
-lib.callback.register('rsg-railroad:getAmbientState', function()
+RegisterCallback('rsg-railroad:getAmbientState', function()
     return DB.GetOwnedCompanyCount() == 0
 end)
 
-lib.callback.register('rsg-railroad:getMyCompanyMembership', function(source, companyId)
+RegisterCallback('rsg-railroad:getMyCompanyMembership', function(source, companyId)
     local Player = RSGCore.Functions.GetPlayer(source)
     if not Player then return nil end
     return DB.GetCompanyMembership(Player.PlayerData.citizenid, companyId)

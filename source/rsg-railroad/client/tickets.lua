@@ -1,3 +1,4 @@
+local RSGCore = exports['rsg-core']:GetCoreObject()
 ---------------------------------------------------------------
 -- TRAIN TICKETS (passenger side)
 -- When the player boards a train they are NOT driving, the server
@@ -12,7 +13,7 @@ local function GetTicketCompany(train)
         return ActiveTrainConfig.company
     end
 
-    local pcoords = GetEntityCoords(cache.ped)
+    local pcoords = GetEntityCoords(PlayerPedId())
     local nearestDist, nearestCompany = math.huge, nil
     for _, station in ipairs(Config.Stations) do
         local dist = #(pcoords - station.coords)
@@ -25,7 +26,7 @@ end
 
 local function KickOffTrain()
     SetTimeout(2000, function()
-        local ped = cache.ped
+        local ped = PlayerPedId()
         local coords = GetEntityCoords(ped)
         ClearPedTasksImmediately(ped)
         SetEntityCoords(ped, coords.x + 10.0, coords.y + 10.0, coords.z, false, false, false, false)
@@ -35,19 +36,19 @@ local function KickOffTrain()
 end
 
 local function CheckTicket(train)
-    local result = lib.callback.await('rsg-railroad:server:useTicket', false, GetTicketCompany(train))
+    local result = RSGCore.Functions.AwaitCallback('rsg-railroad:server:useTicket', nil, GetTicketCompany(train))
 
     ticketed = result == 'has_ticket' or result == 'bought_ticket'
     if result == 'has_ticket' then
-        lib.notify({ title = locale('ticket_valid_title'), description = locale('ticket_valid_desc'), type = 'success', position = 'top-right', duration = 5000 })
+        RSGCore.Functions.Notify({ title = locale('ticket_valid_title'), description = locale('ticket_valid_desc'), type = 'success', position = 'top-right', duration = 5000 })
     elseif result == 'bought_ticket' then
-        lib.notify({
+        RSGCore.Functions.Notify({
             title = locale('ticket_purchased_title'),
             description = locale('ticket_purchased_desc', string.format('%.2f', Config.MarkupPrice), string.format('%.2f', Config.TicketPrice)),
             type = 'warning', position = 'top-right', duration = 7000,
         })
     else
-        lib.notify({
+        RSGCore.Functions.Notify({
             title = locale('no_ticket_title'),
             description = locale('no_ticket_desc', string.format('%.2f', Config.MarkupPrice)),
             type = 'error', position = 'top-right', duration = 5000,
@@ -89,7 +90,7 @@ end
 
 CreateThread(function()
     while true do
-        local ped = cache.ped
+        local ped = PlayerPedId()
         local inTrain = IsPedInAnyTrain(ped)
 
         if inTrain and not onTrain then
@@ -103,7 +104,7 @@ CreateThread(function()
             onTrain = false
             if ticketed then
                 ticketed = false
-                lib.notify({ title = locale('journey_complete_title'), description = locale('journey_complete_desc'), type = 'success', position = 'top-right', duration = 5000 })
+                RSGCore.Functions.Notify({ title = locale('journey_complete_title'), description = locale('journey_complete_desc'), type = 'success', position = 'top-right', duration = 5000 })
             end
         end
 

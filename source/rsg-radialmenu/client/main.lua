@@ -170,7 +170,7 @@ end)
 ---------------------------------------------------------------------
 
 RegisterNetEvent('rsg-radialmenu:client:noPlayers', function()
-    lib.notify({ title = locale('notify_title'), description = locale('no_one_nearby'), type = 'error', duration = 5000 })
+    RSGCore.Functions.Notify({ title = locale('notify_title'), description = locale('no_one_nearby'), type = 'error', duration = 5000 })
 end)
 
 local function sendEmergency(allowedJobs, prefix)
@@ -179,7 +179,7 @@ local function sendEmergency(allowedJobs, prefix)
 
     local now = GetGameTimer()
     if now - lastEmergency < Config.EmergencyCooldown * 1000 then
-        lib.notify({ title = locale('notify_title'), description = locale('emergency_cooldown'), type = 'error', duration = 5000 })
+        RSGCore.Functions.Notify({ title = locale('notify_title'), description = locale('emergency_cooldown'), type = 'error', duration = 5000 })
         return
     end
     lastEmergency = now
@@ -187,7 +187,7 @@ local function sendEmergency(allowedJobs, prefix)
     local msg = locale('emergency_alert', locale(prefix), pd.charinfo.firstname, pd.charinfo.lastname)
     TriggerServerEvent('rsg-lawman:server:lawmanAlert', msg)
     TriggerServerEvent('rsg-medic:server:medicAlert', msg)
-    lib.notify({ title = locale('notify_title'), description = locale('emergency_sent'), type = 'success', duration = 5000 })
+    RSGCore.Functions.Notify({ title = locale('notify_title'), description = locale('emergency_sent'), type = 'success', duration = 5000 })
 end
 
 RegisterNetEvent('rsg-radialmenu:client:SendLawmanEmergencyAlert', function()

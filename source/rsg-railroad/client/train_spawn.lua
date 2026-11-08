@@ -1,3 +1,4 @@
+local RSGCore = exports['rsg-core']:GetCoreObject()
 ActiveTrain = nil           -- entity handle
 ActiveTrainBlip = nil
 ActiveTrainData = nil       -- DB row data
@@ -46,7 +47,7 @@ function SpawnPlayerTrain(trainDbId, directionReverse, station)
     end
 
     -- Get train data from server
-    local trainData = lib.callback.await('rsg-railroad:getTrainById', false, trainDbId)
+    local trainData = RSGCore.Functions.AwaitCallback('rsg-railroad:getTrainById', nil, trainDbId)
     if not trainData then
         Notify(locale('train_not_found'), 'error')
         return
@@ -89,7 +90,7 @@ function SpawnPlayerTrain(trainDbId, directionReverse, station)
     Notify(locale('train_spawned'), 'success')
     DebugPrint('Train spawned: ' .. trainConfig.label)
 
-    -- Setup ox_target on the train
+    -- Setup rsg-target on the train
     SetupTrainTarget()
     SetupPassengerTarget()  -- passenger boarding option (passenger trains only)
 
@@ -128,7 +129,7 @@ function SpawnConfigTrain(trainConfig, directionReverse, station)
     Citizen.InvokeNative(0x9CB1A1623062F402, ActiveTrainBlip, trainConfig.label)
 
     -- Fetch company upgrade for this train model (if any)
-    local compUpgrade = lib.callback.await('rsg-railroad:getTrainModelUpgrade', false, trainConfig.company, trainConfig.model)
+    local compUpgrade = RSGCore.Functions.AwaitCallback('rsg-railroad:getTrainModelUpgrade', nil, trainConfig.company, trainConfig.model)
 
     -- Store state (no DB data, use config + company upgrades)
     ActiveTrainData = {
@@ -181,20 +182,17 @@ function ConfirmStoragePutAway()
     local cfg = Config.TrainStorage
     if not cfg or not cfg.Enabled or not cfg.ConfirmOnPutAway then return true end
 
-    local state = lib.callback.await('rsg-railroad:getTrainStorageState', false)
+    local state = RSGCore.Functions.AwaitCallback('rsg-railroad:getTrainStorageState', nil)
     if not state or not state.active or (state.stacks or 0) <= 0 then return true end
 
-    local answer = lib.alertDialog({
-        header   = locale('storage_confirm_title'),
-        content  = locale('storage_confirm_body', state.stacks),
-        centered = true,
-        cancel   = true,
-        labels   = {
+    return ConfirmDialog({
+        header  = locale('storage_confirm_title'),
+        content = locale('storage_confirm_body', state.stacks),
+        labels  = {
             confirm = locale('storage_confirm_yes'),
             cancel  = locale('storage_confirm_no'),
         },
     })
-    return answer == 'confirm'
 end
 
 ---------------------------------------------------------------
@@ -243,21 +241,21 @@ end
 -- CLEANUP
 ---------------------------------------------------------------
 function CleanupActiveTrain()
-    -- Remove ox_target
+    -- Remove rsg-target
     if ActiveTrain and DoesEntityExist(ActiveTrain) then
-        exports.ox_target:removeLocalEntity(ActiveTrain, 'railroad_refuel')
-        exports.ox_target:removeLocalEntity(ActiveTrain, 'railroad_water')
-        exports.ox_target:removeLocalEntity(ActiveTrain, 'railroad_repair')
-        exports.ox_target:removeLocalEntity(ActiveTrain, 'railroad_engine')
-        exports.ox_target:removeLocalEntity(ActiveTrain, 'railroad_reverse')
-        exports.ox_target:removeLocalEntity(ActiveTrain, 'railroad_switch')
-        exports.ox_target:removeLocalEntity(ActiveTrain, 'railroad_check')
-        exports.ox_target:removeLocalEntity(ActiveTrain, 'railroad_sendyard')
-        exports.ox_target:removeLocalEntity(ActiveTrain, 'railroad_water_item')
-        exports.ox_target:removeLocalEntity(ActiveTrain, 'railroad_repair_item')
-        exports.ox_target:removeLocalEntity(ActiveTrain, 'railroad_board')
-        exports.ox_target:removeLocalEntity(ActiveTrain, 'railroad_unboard')
-        exports.ox_target:removeLocalEntity(ActiveTrain, 'railroad_storage')
+        exports['rsg-target']:removeLocalEntity(ActiveTrain, 'railroad_refuel')
+        exports['rsg-target']:removeLocalEntity(ActiveTrain, 'railroad_water')
+        exports['rsg-target']:removeLocalEntity(ActiveTrain, 'railroad_repair')
+        exports['rsg-target']:removeLocalEntity(ActiveTrain, 'railroad_engine')
+        exports['rsg-target']:removeLocalEntity(ActiveTrain, 'railroad_reverse')
+        exports['rsg-target']:removeLocalEntity(ActiveTrain, 'railroad_switch')
+        exports['rsg-target']:removeLocalEntity(ActiveTrain, 'railroad_check')
+        exports['rsg-target']:removeLocalEntity(ActiveTrain, 'railroad_sendyard')
+        exports['rsg-target']:removeLocalEntity(ActiveTrain, 'railroad_water_item')
+        exports['rsg-target']:removeLocalEntity(ActiveTrain, 'railroad_repair_item')
+        exports['rsg-target']:removeLocalEntity(ActiveTrain, 'railroad_board')
+        exports['rsg-target']:removeLocalEntity(ActiveTrain, 'railroad_unboard')
+        exports['rsg-target']:removeLocalEntity(ActiveTrain, 'railroad_storage')
     end
 
     if ActiveTrainBlip then
@@ -390,7 +388,7 @@ function StartDistanceMonitor()
                 local now = GetGameTimer()
                 if now - lastWarn > warnInterval then
                     lastWarn = now
-                    local state = lib.callback.await('rsg-railroad:getTrainStorageState', false)
+                    local state = RSGCore.Functions.AwaitCallback('rsg-railroad:getTrainStorageState', nil)
                     if state and state.active and (state.stacks or 0) > 0 then
                         Notify(locale('storage_distance_warning'), 'warning', 8000)
                     end
@@ -438,7 +436,7 @@ function SetupTrainTarget()
     local shovelAnim = { dict = "amb_work@world_human_gravedig@working@male_b@idle_a", name = "idle_a" }
     local shovelBone = "skel_r_hand"
 
-    exports.ox_target:addLocalEntity(ActiveTrain, {
+    exports['rsg-target']:addLocalEntity(ActiveTrain, {
         -- 1. Start / Stop Engine
         {
             name = 'railroad_engine',
@@ -490,7 +488,7 @@ function SetupTrainTarget()
                 TaskPlayAnim(ped, shovelAnim.dict, shovelAnim.name, 8.0, -8.0, -1, 1, 0, false, false, false)
 
                 -- Progress bar
-                if lib.progressBar({
+                if RSGCore.Functions.ProgressBar({
                     duration = 5000,
                     label = locale('progress_shoveling_coal'),
                     useWhileDead = false,
@@ -559,7 +557,7 @@ function SetupTrainTarget()
                 local ped = PlayerPedId()
                 FreezeEntityPosition(ped, true)
                 TaskStartScenarioInPlace(ped, joaat('WORLD_HUMAN_BUCKET_POUR_LOW'), 0, true, false, false, false)
-                if lib.progressBar({ duration = 8000, label = locale('progress_filling_water_tower'), useWhileDead = false, canCancel = true, disable = { move = true, combat = true } }) then
+                if RSGCore.Functions.ProgressBar({ duration = 8000, label = locale('progress_filling_water_tower'), useWhileDead = false, canCancel = true, disable = { move = true, combat = true } }) then
                     TrainWater = ActiveTrainConfig.maxWater
                     Notify(locale('water_tank_filled_full'), 'success')
                 end
@@ -587,7 +585,7 @@ function SetupTrainTarget()
                 local ped = PlayerPedId()
                 FreezeEntityPosition(ped, true)
                 TaskStartScenarioInPlace(ped, joaat('WORLD_HUMAN_CROUCH_INSPECT'), 0, true, false, false, false)
-                if lib.progressBar({ duration = 10000, label = locale('progress_full_maintenance_repair'), useWhileDead = false, canCancel = true, disable = { move = true, combat = true } }) then
+                if RSGCore.Functions.ProgressBar({ duration = 10000, label = locale('progress_full_maintenance_repair'), useWhileDead = false, canCancel = true, disable = { move = true, combat = true } }) then
                     TrainCondition = ActiveTrainConfig.maxCondition
                     Notify(locale('train_fully_repaired_full'), 'success')
                 end
@@ -612,7 +610,7 @@ function SetupTrainTarget()
                 local ped = PlayerPedId()
                 FreezeEntityPosition(ped, true)
                 TaskStartScenarioInPlace(ped, joaat('WORLD_HUMAN_BUCKET_POUR_LOW'), 0, true, false, false, false)
-                if lib.progressBar({ duration = 4000, label = locale('progress_emergency_water'), useWhileDead = false, canCancel = true, disable = { move = true, combat = true } }) then
+                if RSGCore.Functions.ProgressBar({ duration = 4000, label = locale('progress_emergency_water'), useWhileDead = false, canCancel = true, disable = { move = true, combat = true } }) then
                     TriggerServerEvent('rsg-railroad:useMaintenanceItem', 'water', ActiveTrainData and ActiveTrainData.id or 0)
                 end
                 ClearPedTasks(ped)
@@ -637,14 +635,14 @@ function SetupTrainTarget()
                 local ped = PlayerPedId()
                 FreezeEntityPosition(ped, true)
                 TaskStartScenarioInPlace(ped, joaat('WORLD_HUMAN_CROUCH_INSPECT'), 0, true, false, false, false)
-                if lib.progressBar({ duration = 4000, label = locale('progress_emergency_repair'), useWhileDead = false, canCancel = true, disable = { move = true, combat = true } }) then
+                if RSGCore.Functions.ProgressBar({ duration = 4000, label = locale('progress_emergency_repair'), useWhileDead = false, canCancel = true, disable = { move = true, combat = true } }) then
                     TriggerServerEvent('rsg-railroad:useMaintenanceItem', 'condition', ActiveTrainData and ActiveTrainData.id or 0)
                 end
                 ClearPedTasks(ped)
                 FreezeEntityPosition(ped, false)
             end,
         },
-        -- (Passenger boarding/unboarding via ox_target removed - now handled by the
+        -- (Passenger boarding/unboarding via rsg-target removed - now handled by the
         --  continuous passenger system in passengers.lua via 'All Aboard' option)
         -- 11. Reverse Direction
         {
@@ -776,10 +774,7 @@ function OpenConditionMenu()
     local waterBar = GetBarDisplay(waterPct)
     local condBar = GetBarDisplay(condPct)
 
-    lib.registerContext({
-        id = 'railroad_condition_menu',
-        title = locale('report_condition_title'),
-        options = {
+    ShowInfoMenu(locale('report_condition_title'), {
             { title = locale('report_fuel_title'), description = fuelBar .. '  ' .. TrainFuel .. '/' .. maxFuel .. ' (' .. fuelPct .. '%)',  icon = 'fire' },
             { title = locale('report_water_title'), description = waterBar .. '  ' .. TrainWater .. '/' .. maxWater .. ' (' .. waterPct .. '%)', icon = 'tint' },
             { title = locale('report_condition_row_title'), description = condBar .. '  ' .. TrainCondition .. '/' .. maxCond .. ' (' .. condPct .. '%)',  icon = 'wrench' },
@@ -787,9 +782,7 @@ function OpenConditionMenu()
             { title = locale('report_speed_title'), description = GetCurrentSpeed() .. ' / ' .. GetMaxTrainSpeed() .. ' max', icon = 'tachometer-alt' },
             { title = locale('report_miles_title'), description = string.format('%.1f', ActiveTrainData.total_miles or 0), icon = 'road' },
             { title = locale('report_company_title'), description = Config.Companies[ActiveTrainConfig.company] and Config.Companies[ActiveTrainConfig.company].label or locale('report_company_unknown'), icon = 'building' },
-        },
     })
-    lib.showContext('railroad_condition_menu')
 end
 
 ---------------------------------------------------------------

@@ -15,10 +15,10 @@ Theatre Raleur (Saint Denis) stage shows for RSG Framework, rebuilt from Rocksta
 - Theatre door locks added to rsg-doorlock automatically on first start (main doors open, side doors locked)
 
 ## Languages
-All player-facing text (notifications, playbill UI, blip, show names and descriptions) is in `locales/`: en, de, el, es, fr, ja, nl, pl, pt-br, ro. Set the language with ox_lib's `ox:locale` convar, e.g. `setr ox:locale "de"`.
+All player-facing text (notifications, playbill UI, blip, show names and descriptions) is in `locales/`: en, de, el, es, fr, ja, nl, pl, pt-br, ro. Set the language with rsg-core's `rsg:locale` convar, e.g. `setr rsg:locale "de"` (falls back to `ox:locale`, then `en`).
 
 ## Install
-1. Drop `rsg-theatre` into your resources and `ensure rsg-theatre` after rsg-core, ox_lib, rsg-target, oxmysql and rsg-doorlock.
+1. Drop `rsg-theatre` into your resources and `ensure rsg-theatre` after rsg-core, rsg-target, oxmysql and rsg-doorlock.
 2. No items needed. Tickets are held server-side (per character) until the holder watches a show.
 3. On first start the four theatre door locks are inserted into `rsg_doorlocks` (skipped if a door with the same name already exists). Restart rsg-doorlock once afterwards to load them. To add them by hand instead, insert the rows listed in `server/doors.lua` into `rsg_doorlocks` yourself.
 
@@ -33,7 +33,7 @@ All player-facing text (notifications, playbill UI, blip, show names and descrip
 - `Config.AdminCommand`, `Config.AdminPermission`
 
 ## Notes
-- ox_lib is only used for locales now; notifications, callbacks and the admin command use rsg-core.
+- No ox_lib dependency: locales, notifications, callbacks and the admin command all use rsg-core.
 - Forcing the next scheduled show with `/theatre` advances the rotation and resets the timer, so it isn't replayed straight after.
 - If an admin forces a show, the next scheduled show waits until it has finished instead of being skipped.
 - Performers, props and the NPC audience are spawned locally on each viewer's client, so nothing is networked.

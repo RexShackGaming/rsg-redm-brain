@@ -1,8 +1,14 @@
--- Loads locales/<lang>.json (falls back to en.json) and exposes the
--- global locale(key, ...) function used throughout this resource.
-lib.locale()
+-- Locales are loaded by @rsg-core/shared/locale.lua (see fxmanifest),
+-- which exposes the global locale(key, ...) function. Language comes from
+-- the rsg:locale convar (falls back to ox:locale, then en).
 
 Config = {}
+
+-- While the NUI is open, block game controls but allow push-to-talk.
+Config.AllowPushToTalkWhileOpen = true
+Config.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK
+}
 
 ---------------------------------------------------------------
 -- GENERAL SETTINGS
@@ -504,7 +510,7 @@ Config.DeliveryDestinations = {
 --
 -- Ported from mack-oilcompany's proven wagon-loading workflow
 -- (client/barrel.lua): barrels are NEVER targeted directly while
--- attached to the train -- ox_target/collision on props attached
+-- attached to the train -- rsg-target/collision on props attached
 -- to a moving train proved unreliable in testing. Instead:
 --   1. Barrels spawn loose at PlatformSpawnCoords at job start.
 --   2. Player targets a loose barrel to pick it up and carry it.
@@ -604,7 +610,7 @@ Config.CargoDelivery = {
 -- TRAIN STORAGE (per-deployment cargo hold)
 --
 -- Each DEPLOYED train gets its own rsg-inventory stash, opened from an
--- ox_target option on the train itself.
+-- rsg-target option on the train itself.
 --
 -- IMPORTANT -- STRICT WIPE POLICY:
 -- The stash is destroyed whenever the train leaves the world, by ANY

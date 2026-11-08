@@ -20,8 +20,7 @@ Lease a mine from its foreman, hire a crew of miners, keep them fed, watered, eq
 
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
-- [ox_lib](https://github.com/overextended/ox_lib)
-- [ox_target](https://github.com/overextended/ox_target)
+- [rsg-target](https://github.com/Rexshack-RedM/rsg-target)
 - [oxmysql](https://github.com/overextended/oxmysql)
 
 ## Installation
@@ -97,14 +96,14 @@ Posts are queued per webhook and sent no faster than one every `SendInterval` (2
 
 ## Locales
 
-All the text players and staff see is in `locales/*.json`, using the ox_lib locale system. That covers notifications, the foreman ledger window and the Discord webhook posts.
+All the text players and staff see is in `locales/*.json`, using the rsg-core locale system (no ox_lib needed). That covers notifications, the foreman ledger window and the Discord webhook posts.
 
 The included languages are: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br` and `ro`.
 
 To choose a language, set it in your server.cfg:
 
 ```
-setr ox:locale de
+setr rsg:locale de
 ```
 
 How the keys are grouped:

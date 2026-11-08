@@ -1,12 +1,12 @@
 # rsg-ranch
 
-Version 3.1.4. rsg-ranch
+Version 3.2.0. rsg-ranch
 
 A complete livestock ranching system for **RedM** servers running the **RSG Framework**. Buy a ranch, hire staff, raise cattle, pigs, sheep and chickens, keep them fed and watered, breed them, collect their produce, and sell or slaughter them for profit, all managed from an in-game ranch menu. - Six purchasable ranches out of the box (Macfarlane, Emerald, Pronghorn, Downes, Hill Haven, Hanging Dog
 
 Source: https://github.com/Rexshack-RedM/rsg-ranch
 
-**Dependencies:** `rsg-core`, `rsg-inventory`, `rsg-multijob`, `ox_lib`, `ox_target`, `oxmysql`
+**Dependencies:** `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
 
 Has NUI (`ui_page`).
 
@@ -25,12 +25,6 @@ Has NUI (`ui_page`).
 ## Callbacks (RSGCore.Functions.CreateCallback)
 
 **server:** `rsg-ranch:server:countanimals`, `rsg-ranch:server:getAnimalOverview`, `rsg-ranch:server:getAnimalProductionStatus`, `rsg-ranch:server:getAvailableAnimalsForBreeding`, `rsg-ranch:server:getBreedingStatus`, `rsg-ranch:server:getChickenCoopStatus`, `rsg-ranch:server:getNearbyAnimalsForSale`, `rsg-ranch:server:getNearbyPlayers`, `rsg-ranch:server:getPregnancyProgress`, `rsg-ranch:server:getRanchMarket`, `rsg-ranch:server:getRanchSellQuote`, `rsg-ranch:server:getStaffList`, `rsg-ranch:server:getSupplyOrders`, `rsg-ranch:server:getranchowner`, `rsg-ranch:server:getranchstorages`
-
-## Callbacks (lib.callback)
-
-**server:** `rsg-ranch:admin:action`, `rsg-ranch:admin:createRanch`, `rsg-ranch:admin:getOverview`, `rsg-ranch:admin:getRanch`, `rsg-ranch:admin:searchPlayers`, `rsg-ranch:server:fillBucket`, `rsg-ranch:server:getPumps`, `rsg-ranch:server:getRanchSettings`, `rsg-ranch:server:packPump`, `rsg-ranch:server:placePump`, `rsg-ranch:server:pumpPrecheck`
-
-**client:** `rsg-ranch:client:requestConsent`
 
 ## Commands (RegisterCommand)
 

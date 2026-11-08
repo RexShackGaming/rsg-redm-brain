@@ -720,13 +720,62 @@ window.addEventListener('message', (event) => {
     else if (action === 'openTrainHUD')   openTrainHUD(event.data);
     else if (action === 'closeTrainHUD')  closeTrainHUD();
     else if (action === 'updateHUD')      updateHUD(event.data);
+    else if (action === 'openInfoMenu')   openInfoMenu(event.data);
+    else if (action === 'openDialog')     openLuaDialog(event.data);
 });
+
+// ========== INFO MENU (Lua: ShowInfoMenu) ==========
+function openInfoMenu(data) {
+    if (data.lang) lang = data.lang;
+    document.getElementById('infoTitle').textContent = data.title || '';
+    document.getElementById('infoClose').textContent = t('nui_close', 'Close');
+    const list = document.getElementById('infoList');
+    list.innerHTML = '';
+    (data.options || []).forEach(o => {
+        const item = el('div', 'info-item');
+        item.appendChild(el('span', 'info-item-title', o.title || ''));
+        if (o.description) item.appendChild(el('span', 'info-item-desc', o.description));
+        list.appendChild(item);
+    });
+    document.getElementById('infoModal').classList.remove('hidden');
+}
+function closeInfoMenu() {
+    const m = document.getElementById('infoModal');
+    if (m.classList.contains('hidden')) return false;
+    m.classList.add('hidden');
+    nuiFetch('closeInfoMenu');
+    return true;
+}
+
+// ========== CONFIRM DIALOG (Lua: ConfirmDialog) ==========
+let luaDialogOpen = false;
+function openLuaDialog(data) {
+    luaDialogOpen = true;
+    const modal = document.getElementById('confirmModal');
+    document.getElementById('confirmTitle').textContent = data.title || t('nui_confirm_title', 'Are you sure?');
+    document.getElementById('confirmBody').textContent = data.body || '';
+    document.getElementById('confirmCancel').textContent = data.cancel || t('nui_cancel', 'Cancel');
+    document.getElementById('confirmOk').textContent = data.confirm || t('nui_confirm', 'Confirm');
+    document.getElementById('confirmCancel').onclick = () => finishLuaDialog(false);
+    document.getElementById('confirmOk').onclick = () => finishLuaDialog(true);
+    modal.classList.remove('hidden');
+}
+function finishLuaDialog(confirmed) {
+    if (!luaDialogOpen) return false;
+    luaDialogOpen = false;
+    document.getElementById('confirmModal').classList.add('hidden');
+    nuiFetch('dialogResult', { confirmed });
+    return true;
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('closeStationBtn').addEventListener('click', closeStation);
+    document.getElementById('infoClose').addEventListener('click', closeInfoMenu);
     document.getElementById('stationBackBtn').addEventListener('click', closeStation);
     document.addEventListener('keydown', (e) => {
         if (e.key !== 'Escape') return;
+        if (finishLuaDialog(false)) return;
+        if (closeInfoMenu()) return;
         const modal = document.getElementById('confirmModal');
         if (!modal.classList.contains('hidden')) { modal.classList.add('hidden'); return; }
         closeStation();

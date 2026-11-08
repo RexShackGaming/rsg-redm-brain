@@ -2,7 +2,6 @@
 -- Logging only: it never blocks or changes gameplay, and every failure is contained.
 
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 local cfg = WebhookConfig
 local resourceName = GetCurrentResourceName()
 
@@ -194,10 +193,7 @@ exports('SendPoisonLog', SendPoisonLog)
 -- Test command & lifecycle logs
 -------------------------------------------------------------------------------
 
-lib.addCommand('poisonwebhooktest', {
-    help = locale('cmd_webhooktest_help'),
-    restricted = cfg.TestCommandAce,
-}, function(source)
+RSGCore.Commands.Add('poisonwebhooktest', locale('cmd_webhooktest_help'), {}, false, function(source)
     local sent = {}
     for eventName in pairs(cfg.Urls) do
         local url = resolveUrl(eventName)
@@ -218,11 +214,11 @@ lib.addCommand('poisonwebhooktest', {
     end
     local msg = next(sent) and locale('cmd_webhooktest_sent') or locale('cmd_webhooktest_none')
     if source > 0 then
-        TriggerClientEvent('ox_lib:notify', source, { title = locale('cmd_webhooktest_title'), description = msg, type = 'inform', duration = 5000 })
+        TriggerClientEvent('RSGCore:Client:Notify', source, { title = locale('cmd_webhooktest_title'), description = msg, type = 'inform', duration = 5000 })
     else
         print(('[%s] %s'):format(resourceName, msg))
     end
-end)
+end, cfg.TestCommandPermission)
 
 CreateThread(function()
     SendPoisonLog('system', { title = locale('wh_started_title'), description = locale('wh_started_desc', resourceName) })

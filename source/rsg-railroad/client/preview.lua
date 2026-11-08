@@ -100,7 +100,7 @@ function EndTrainPreview()
     if not previewActive then return end
     previewActive = false
 
-    lib.hideTextUI()
+    exports['rsg-core']:HideText()
 
     RenderScriptCams(false, false, 0, true, true)
     if previewCam then
@@ -197,7 +197,7 @@ function StartTrainPreview(trainConfig)
     DisplayRadar(false)
 
     previewActive = true
-    lib.showTextUI(locale('preview_hint'))
+    exports['rsg-core']:DrawText(locale('preview_hint'))
 
     DebugPrint(('[preview] %s: %d car(s), %.1fm long, orbit radius %.1f')
         :format(trainConfig.label or trainConfig.model, #previewEntities, total, radius))
@@ -243,7 +243,7 @@ RegisterNUICallback('previewTrain', function(data, cb)
     end
 
     SendNUIMessage({ action = 'closeStation' })
-    SetNuiFocus(false, false)
+    ApplyNuiFocus(false)
     Wait(150) -- let the NUI actually hide before the camera takes over
 
     StartTrainPreview(trainConfig)

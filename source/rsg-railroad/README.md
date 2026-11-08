@@ -32,7 +32,7 @@ Advanced train management system for RedM (rsg-core). Buy railroad companies, hi
 - **Cruise Continues When Leaving Seat** — Set cruise and walk around while the train moves
 - **Emergency Brake** — X key for gradual stop
 - **Track Switching** — Q key toggles between main and alternate routes
-- **Engine Toggle** — via ox_target menu on the train
+- **Engine Toggle** — via rsg-target menu on the train
 
 ### 📋 Train HUD
 - **Mini Clipboard UI** — Matches the station menu style, positioned top-left
@@ -41,11 +41,11 @@ Advanced train management system for RedM (rsg-core). Buy railroad companies, hi
 - **Mission Tracker** — Shows active mission type and destination
 - **Toggle with [ key** — Hide/show the HUD while driving
 
-### 🔧 Train Maintenance (ox_target)
+### 🔧 Train Maintenance (rsg-target)
 - **Add Coal** (+10% fuel per `resource_coal`, with shoveling animation)
 - **Fill Water** (+10% per `fullbucket`, with pouring animation)
 - **Oil & Repair** (+10% condition per oilcan item, with repair animation)
-- **Check Condition** — ox_lib context menu showing all stats with visual bars
+- **Check Condition** — NUI panel showing all stats with visual bars
 - **Start/Stop Engine** — Toggle engine from outside the train
 - **Send to Yard** — Despawn train, saves state
 
@@ -77,7 +77,7 @@ Advanced train management system for RedM (rsg-core). Buy railroad companies, hi
 - No ticket? You're charged the on-board markup (`Config.MarkupPrice`); no cash = thrown off the train
 - Company owners ride free, drivers are never charged on their own train
 
-### 🔔 All Notifications via ox_lib
+### 🔔 All Notifications via rsg-core
 - Consistent notification style across all actions
 
 ### 🔒 Server-Side Validation
@@ -99,8 +99,7 @@ Advanced train management system for RedM (rsg-core). Buy railroad companies, hi
 
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
-- [ox_lib](https://github.com/overextended/ox_lib)
-- [ox_target](https://github.com/overextended/ox_target)
+- [rsg-target](https://github.com/Rexshack-RedM/rsg-target)
 - [oxmysql](https://github.com/overextended/oxmysql)
 
 ---
@@ -114,7 +113,7 @@ Advanced train management system for RedM (rsg-core). Buy railroad companies, hi
    ```
    ensure rsg-railroad
    ```
-   (After rsg-core, rsg-inventory, ox_lib, ox_target, oxmysql). OneSync must be enabled (RedM default) — the server reads player positions to validate payouts.
+   (After rsg-core, rsg-inventory, rsg-target, oxmysql). OneSync must be enabled (RedM default) — the server reads player positions to validate payouts.
 5. **Restart** your server
 
 **Database:** No manual step needed. The resource automatically creates/verifies all of its MySQL tables (from `install/rsg_railroad_full.sql`) the first time it starts, and every restart after that — it's safe to run repeatedly since it only creates tables that don't already exist. Watch your server console on first boot for:
@@ -166,7 +165,7 @@ All settings are in `shared/config.lua`:
 
 ## Languages
 
-This resource uses ox_lib's locale system. Translations are provided for:
+This resource uses rsg-core's locale system (`@rsg-core/shared/locale.lua`) — ox_lib is not required. Translations are provided for:
 
 | Code | Language |
 |------|----------|
@@ -181,17 +180,30 @@ This resource uses ox_lib's locale system. Translations are provided for:
 | pt-br | Portuguese (Brazil) |
 | ro | Romanian |
 
-To change the language, set the `ox:locale` convar in your `server.cfg` (read by both ox_lib and this resource's NUI) before this resource starts, e.g.:
+To change the language, set the `rsg:locale` convar in your `server.cfg` (falls back to `ox:locale`, then `en`; read by rsg-core and this resource's NUI) before this resource starts, e.g.:
 
 ```
-setr ox:locale de
+setr rsg:locale de
 ```
 
 If the selected language's file is missing, or a key hasn't been translated, the resource automatically falls back to `locales/en.json`. To add or edit a language, copy `locales/en.json`, translate the values (never the keys), and save it as `locales/<code>.json`.
 
 ---
 
+## Push-to-Talk While UI Is Open
+
+`Config.AllowPushToTalkWhileOpen = true` (default) keeps rsg-voice push-to-talk working while any rsg-railroad NUI is open; all other game controls are blocked. Extra controls can be whitelisted in `Config.PushToTalkControls`.
+
+---
+
 ## Changelog
+
+### 3.2.0
+- Removed the ox_lib dependency: callbacks, notifications, progress bars, text UI and locales now use rsg-core
+- Train condition report, train locations and storage put-away confirm now use the resource's own NUI (replaced ox_lib context menu / alert dialog)
+- Switched ox_target to rsg-target
+- Language convar is now `rsg:locale` (still reads `ox:locale` as a fallback)
+- Push-to-talk works while the NUI is open (`Config.AllowPushToTalkWhileOpen`)
 
 ### 2.1.0
 - **Security:** ticket check no longer pays the company register on every call (ticket is now consumed on boarding); mission completion checks server-side position and an active train; passenger revenue checks station proximity, a 30 s cooldown and a new station each stop; robbery-defeat XP is rate-limited and role-checked

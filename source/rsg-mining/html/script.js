@@ -6,7 +6,7 @@ const post = (name, data = {}) => fetch(`https://${RES}/${name}`, {
   method: 'POST', headers: { 'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(data)
 }).catch(() => {});
 
-// ---- locales (sent from ox_lib on open; %s placeholders filled in order) ----
+// ---- locales (sent from rsg-core locale on open; %s placeholders filled in order) ----
 let LOC = {};
 const t = (key, ...args) => {
   let i = 0;
@@ -159,7 +159,17 @@ refreshBtn.addEventListener('click', () => {
   setTimeout(() => { refreshBtn.disabled = false; }, 1500);
   post('refresh');
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+const confirmEl = document.getElementById('confirm');
+function answerConfirm(ok) {
+  if (confirmEl.classList.contains('hidden')) return;
+  confirmEl.classList.add('hidden'); post('confirmAnswer', { ok });
+}
+document.getElementById('confirmYes').addEventListener('click', () => answerConfirm(true));
+document.getElementById('confirmNo').addEventListener('click', () => answerConfirm(false));
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!confirmEl.classList.contains('hidden')) answerConfirm(false); else close();
+});
 
 document.querySelector('.content').addEventListener('click', e => {
   const b = e.target.closest('[data-act]');
@@ -238,5 +248,11 @@ window.addEventListener('message', e => {
     app.classList.remove('hidden'); loadPos();
   }
   else if (m.action === 'update') { state = m.data; render(); setTab(tab); }
-  else if (m.action === 'close') { app.classList.add('hidden'); }
+  else if (m.action === 'confirm') {
+    if (m.locales) { LOC = m.locales; applyStaticLocales(); }
+    document.getElementById('confirmTitle').textContent = m.title || '';
+    document.getElementById('confirmText').textContent = m.text || '';
+    confirmEl.classList.remove('hidden');
+  }
+  else if (m.action === 'close') { app.classList.add('hidden'); confirmEl.classList.add('hidden'); }
 });
