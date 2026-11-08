@@ -45,6 +45,7 @@ Config.HideHorseCourageNative = true
 ----------------------------------
 Config.ShowDeadEye = true      -- deadeye core circle
 Config.ShowHorseBonding = true -- horse bonding level circle
+Config.ShowHorseNeeds = true   -- horse hunger + thirst circles (needs rsg-stables, own active horse only)
 
 ----------------------------------
 -- bank balance command (uses rsg-banking v3 total balance when started)
@@ -56,12 +57,26 @@ Config.BankCommand = 'bank'
 ----------------------------------
 Config.ShowVoice = false          -- true = show the voice icon on the HUD, false = voice icon disabled
 Config.VoiceAlwaysVisible = true  -- true = always visible, false = only when talking
-Config.ShowPercentages = false    -- default for the % under circle icons (players can toggle with /togglehudpct, saved per player)
+Config.ShowPercentages = false    -- default for the % under circle icons (players change it in /hudsettings or /togglehudpct, saved per player)
 
 ----------------------------------
--- hud layout presets (players change with /hudpreset, saved per player)
+-- hud settings panel (players change with /hudsettings, saved per player in client KVP)
 ----------------------------------
-Config.PresetCommand = 'hudpreset'
+Config.SettingsCommand = 'hudsettings' -- opens the HUD settings window
+Config.PresetCommand = 'hudpreset'     -- old command name, opens the same window
+Config.AllowPlayerMinimap = true       -- let players choose minimap / compass / off (on foot + mounted); false = server Config only
+Config.AllowPlayerColors = true        -- let players recolour icons + rings with the colour picker; false = Config.IconColors only
+Config.SettingsLimits = {
+    minOpacity = 30, -- lowest HUD opacity a player may pick (%)
+    minScale = 70,   -- smallest icon scale (%)
+    maxScale = 140,  -- biggest icon scale (%)
+}
+
+-- While NUI is open, block game controls but allow push-to-talk.
+Config.AllowPushToTalkWhileOpen = true
+Config.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK
+}
 Config.DefaultPreset = {
     size = 'medium',          -- 'small' | 'medium' | 'large'
     align = 'bottom-center',  -- 'bottom-left' | 'bottom-center' | 'bottom-right' | 'top-left' | 'top-center' | 'top-right'
@@ -69,7 +84,7 @@ Config.DefaultPreset = {
 }
 
 ----------------------------------
--- minimap / compass settings
+-- minimap / compass settings (server defaults; players can override when Config.AllowPlayerMinimap = true)
 ----------------------------------
 Config.OnFootMinimap = true -- set to true/false to disable/enable minimap when on foot
 Config.OnFootCompass = false -- true = have the minimap set to a compass instead of off or normal minimap
@@ -272,5 +287,13 @@ Config.IconColors = {
     ['horse_clean'] = {
         normal = '#f2f2f2',      -- Soft white for horse cleanliness
         low = '#e0554f'          -- Red when dirty
+    },
+    ['horse_hunger'] = {
+        normal = '#f2f2f2',      -- Soft white for horse hunger
+        low = '#e0554f'          -- Red when hungry
+    },
+    ['horse_thirst'] = {
+        normal = '#f2f2f2',      -- Soft white for horse thirst
+        low = '#e0554f'          -- Red when thirsty
     }
 }

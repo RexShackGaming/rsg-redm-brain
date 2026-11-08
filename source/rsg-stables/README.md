@@ -277,3 +277,7 @@ Ride an unowned (wild or stolen) horse to a fence NPC from `Config.HorseFence.lo
 Issues and updates: [Rexshack-RedM on GitHub](https://github.com/Rexshack-RedM/rsg-stables)
 
 If you find this useful, you can support development here: [Buy Me a Coffee](https://buymeacoffee.com/rexshack)
+
+## Client exports
+- `exports['rsg-stables']:GetActiveHorseNeeds()` → `{ entity, hunger, thirst }` (0–100) for your active horse, or `nil`. Used by rsg-hud to show horse hunger/thirst.
+- `exports['rsg-stables']:GetHorseBonusInfo()` → horse training bonus info.

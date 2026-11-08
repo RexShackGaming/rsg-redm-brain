@@ -15,6 +15,12 @@ function GetActiveHorseName()
     local snap = activeHorse and activeHorse.snapshot
     return (snap and snap.name) or locale('your_horse')
 end
+
+-- live hunger/thirst of the player's active horse (used by rsg-hud)
+exports('GetActiveHorseNeeds', function()
+    if not activeHorse or not activeHorse.entity or not DoesEntityExist(activeHorse.entity) then return nil end
+    return { entity = activeHorse.entity, hunger = activeHorse.hunger or 100, thirst = activeHorse.thirst or 100 }
+end)
 local horseBlip = nil
 local pendingHorse = nil -- horse that is 'out' in the DB but has no entity (fled, or restored after relog); whistle recalls it
 local recallPendingHorse

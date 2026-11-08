@@ -4,7 +4,7 @@ game 'rdr3'
 
 name 'rsg-stables'
 description 'Horse and stables script for RSG Framework'
-version '3.4.0'
+version '3.4.1'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
