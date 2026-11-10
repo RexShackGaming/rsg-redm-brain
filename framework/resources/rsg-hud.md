@@ -1,6 +1,6 @@
 # rsg-hud
 
-Version 3.2.0. rsg-hud
+Version 3.2.1. rsg-hud
 
 Player and horse HUD for RSG-Core (RedM): health, stamina, dead eye, hunger, thirst, cleanliness, stress, temperature, voice, mail and outlaw badges, horse health/stamina/cleanliness/bonding/hunger/thirst, a money pop-up, and a drag-and-resize edit mode. - **Server-owned needs** (`Config.ServerNeeds`): the server decays hunger, thirst and stress and reverts state bag tampering. Clients can still a
 
@@ -22,7 +22,7 @@ Has NUI (`ui_page`).
 
 ## Event handlers
 
-**server:** `RSGCore:Server:OnPlayerUnload`
+**server:** `RSGCore:Server:OnPlayerUnload`, `RSGCore:Server:PlayerLoaded`
 
 ## Callbacks (RSGCore.Functions.CreateCallback)
 
@@ -30,4 +30,4 @@ Has NUI (`ui_page`).
 
 ## Commands (RegisterCommand)
 
-**client:** `/edithud`, `/hudhorseneeds`, `/resethud`, `/togglehudpct`
+**client:** `/edithud`, `/resethud`, `/togglehudpct`

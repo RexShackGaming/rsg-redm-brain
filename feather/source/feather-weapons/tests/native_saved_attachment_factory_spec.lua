@@ -1,4 +1,4 @@
-Config={DevMode=true,NativeAlphaRuntime=true,NativeAlphaCharacterId='Jane',CharacterAmmunitionEnabled=true,CharacterAmmoTransportEnabled=true}
+Config={DevMode=false,NativeAlphaRuntime=true,NativeAlphaCharacterId='Jane',CharacterAmmunitionEnabled=true,CharacterAmmoTransportEnabled=true}
 for _,file in ipairs({'shared/constants.lua','shared/definitions/ammunition.lua','shared/definitions/attachments.lua',
     'shared/definitions/weapons.lua','shared/character_ammunition_materialization.lua',
     'client/character_maintenance_native.lua','client/character_ammunition_creation_native.lua','client/character_ammunition_loadout.lua'}) do dofile(file) end
@@ -22,14 +22,16 @@ local function key(words) return string.format('%08x%08x%08x%08x',words[1],words
 local function write(raw,words,hash,flag)
     buffers[raw]={words[1],words[2],words[3],words[4],hash or 0,0,0,0,0,0,flag or 0}
 end
+local decode=WeaponCharacterAmmoCreationNative.DecodeDiagnosticGuid
 WeaponCharacterAmmoCreationNative.DecodeDiagnosticGuid=function(raw)
-    local words=buffers[raw]; if not words or not words[1] then return nil end
+    local words=buffers[raw]; if not words or not words[1] then return decode(raw) end
     return {scriptSlotWords={words[1],words[2],words[3],words[4]},raw32=key(words)}
 end
 local savedFlag,epoch=1,'e1'
-GetConvarInt=function(name) return name=='feather_native_guid_ownership' and 1 or name=='feather_native_saved_attachments' and savedFlag
-    or name=='feather_native_representative_attachments' and epoch:match('^schofield') and 1
-    or name=='feather_native_catalog_attachments' and epoch:match('^catalog:') and 1 or 0 end
+GetConvarInt=function(name,default)
+    if name=='feather_native_saved_attachments' then return savedFlag end
+    return default
+end
 PlayerPedId=function() return 42 end
 WeaponCharacterAmmoWorldContext={Read=function() return {ok=true,value={characterId='Jane',sessionId='s',ped=42}} end}
 local entity,parent,children,issued=0,nil,{},500
@@ -42,14 +44,16 @@ IsEntityDead=function() return false end
 GetCurrentPedWeapon=function(_,_,point) return entity>0 and point==currentPoint,entity>0 and point==currentPoint and weaponHash or 0 end
 GetCurrentPedWeaponEntityIndex=function(_,point) return entity>0 and point==currentPoint and entity or 0 end
 HasPedGotWeapon=function() return entity>0 end
-GiveWeaponToPed=function(_,hash,ammo)
-    assert(hash==weaponHash and ammo==0 and entity==0)
-    issued=issued+10; parent=guid(issued); entity=issued+1000
-    children={[stockHash]={words=guid(issued+1),flag=1}}
-end
-RemoveWeaponFromPed=function()
-    assert(children[wideHash]==nil and children[stockHash].flag==1,'children cleaned before weapon')
-    entity=0; children={}
+GiveWeaponToPed=function() error('model grant forbidden') end
+RemoveWeaponFromPed=function() error('model removal forbidden') end
+local inventoryRecord
+local new=WeaponCharacterAmmoCreationNative.New
+WeaponCharacterAmmoCreationNative.New=function(ped,current,prepare,apply,guidIdentity,saved)
+ return new(ped,current,prepare,apply,guidIdentity,{
+  read=function() return inventoryRecord end,
+  update=function(_,raw) inventoryRecord=raw;return true end,
+  pointGuid=function() return parent and key(parent) end,
+  activate=function() entity=issued+1000;children={[stockHash]={words=guid(issued+1),flag=1}};return true end})
 end
 GetGameTimer=function() return 1 end
 Wait=function() error('unexpected native factory yield') end
@@ -59,7 +63,9 @@ for _,name in ipairs({'GetWeaponDegradation','GetWeaponPermanentDegradation','Ge
 for _,name in ipairs({'SetWeaponDegradation','SetWeaponDamage','SetWeaponDirt','SetWeaponSoot'}) do _G[name]=function() end end
 Citizen={ResultAsInteger=function() return 'integer' end,InvokeNative=function(hash,a,b,c,d,e,f)
     if hash==0x6929E22158E52265 then assert(b==currentPoint); write(c,parent); return 1 end
+    if hash==0x94A3C1B804D291EC then return true end
     if hash==0x886DFD3E185C8A89 then
+        if c==joaat('CHARACTER') or c==joaat('CARRIED_WEAPONS') then write(e,guid(1));return true end
         assert(key(buffers[b])==key(parent) and d==currentSlot)
         local child=children[c]; if not child then return false end; write(e,child.words); return true
     end
@@ -70,6 +76,12 @@ Citizen={ResultAsInteger=function() return 'integer' end,InvokeNative=function(h
         return false
     end
     if hash==0xCB5D11F9508A928D then
+        if d==weaponHash then
+            assert(entity==0);issued=issued+10;parent=guid(issued);write(b,parent)
+            inventoryRecord=string.pack('<I4I4I4I4I4I4I4I4',parent[1],0,parent[2],0,parent[3],0,parent[4],0)
+                ..string.pack('<I4I4',weaponHash,0)..originalRep('\0',136)
+            return true
+        end
         assert(d==wideHash and e==currentSlot and f==1 and not children[wideHash])
         children[wideHash]={words=guid(issued+2),flag=0}; write(b,children[wideHash].words); return true
     end
@@ -78,6 +90,10 @@ Citizen={ResultAsInteger=function() return 'integer' end,InvokeNative=function(h
         return true
     end
     if hash==0x3E4E811480B3AE79 then
+        if parent and key(buffers[b])==key(parent) then
+            assert(children[wideHash]==nil and children[stockHash].flag==1,'children cleaned before parent GUID')
+            entity=0;children={};inventoryRecord=nil;return true
+        end
         assert(children[wideHash] and key(buffers[b])==key(children[wideHash].words) and children[stockHash].flag==1)
         children[wideHash]=nil; return true
     end
@@ -86,7 +102,7 @@ end}
 local item={slot='shoulder',point=10,itemInstanceId=901,itemRevision=1,definitionId='repeater_carbine',
     serialNumber='ORDINARY-CARBINE-901',nativeWeaponName='WEAPON_REPEATER_CARBINE',
     attachments={{definitionId='carbine_wide_sight',slot='sight'}},cosmetics={},preferredAmmoType='regular',
-    maintenance={degradation=0,permanentDegradation=0,damage=0,dirt=0,soot=0},copyKey='shoulder:901:1',creation='native_zero_ammo_grant'}
+    maintenance={degradation=0,permanentDegradation=0,damage=0,dirt=0,soot=0},copyKey='shoulder:901:1',creation='native_inventory_guid'}
 local registry={weapons={repeater_carbine={nativeWeaponName=item.nativeWeaponName,family='repeater',compatible={regular=true}}}}
 local previousWide
 local resolveMapping=WeaponNativeAttachmentMappings.Resolve
@@ -98,7 +114,7 @@ end
 local cases={'e1','e2','dynamic-stock','schofield-sight','schofield-barrel'}
 local catalogCases={}
 for _,weapon in pairs(WeaponDefinitionCatalog.weapons) do
- if weapon.id~='revolver_lemat' then
+ do
   for _,ids in pairs(weapon.attachmentSlots or {}) do
    for _,id in ipairs(ids) do
     local case='catalog:'..id; cases[#cases+1]=case; catalogCases[case]={weapon=weapon,attachment=WeaponDefinitionCatalog.attachments[id]}

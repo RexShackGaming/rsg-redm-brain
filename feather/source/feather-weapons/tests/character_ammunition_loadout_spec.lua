@@ -1,9 +1,9 @@
 dofile('client/character_ammunition_loadout.lua')
 local identity={characterId='c',sessionId='s',epoch='e'}
 local function plan(pair)
-    return {identity=identity,dual=true,items={
-        {copyKey='primary:1:2',point=2,creation=pair and 'inventory_guid_pair' or 'native_zero_ammo_grant'},
-        {copyKey='offhand:2:2',point=3,creation=pair and 'inventory_guid_pair' or 'native_zero_ammo_grant'}}}
+    return {identity=identity,dual=true,sameModel=pair,items={
+        {copyKey='primary:1:2',point=2,creation='native_inventory_guid'},
+        {copyKey='offhand:2:2',point=3,creation='native_inventory_guid'}}}
 end
 local removed,grants={},0
 local api={current=function() return true end,prepareDual=function() return true end,

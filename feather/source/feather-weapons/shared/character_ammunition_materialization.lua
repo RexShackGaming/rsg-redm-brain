@@ -67,6 +67,7 @@ function WeaponCharacterAmmoMaterialization.Validate(plan,registry,baseline)
     for _,key in ipairs({'characterId','sessionId','epoch'}) do
         if plan.identity[key]~=baseline[key] then return nil,'creation_identity_mismatch' end
     end
+    if next(plan.items) and type(GetConvarInt)=='function' and GetConvarInt('feather_native_guid_ownership',1)~=1 then return nil,'guid_ownership_required' end
     local slots={primary=2,offhand=3,shoulder=10,back=9}
     local seen,ids,models={},{},{}
     local count=0
@@ -95,7 +96,7 @@ function WeaponCharacterAmmoMaterialization.Validate(plan,registry,baseline)
         if next(item.attachments) then
             if not Config or Config.NativeAlphaRuntime~=true
                 or not WeaponNativeEnrollment.Allows(Config,plan.identity.characterId) or type(GetConvarInt)~='function'
-                or GetConvarInt('feather_native_saved_attachments',0)~=1 or GetConvarInt('feather_native_guid_ownership',1)~=1 then
+                or GetConvarInt('feather_native_saved_attachments',1)~=1 or GetConvarInt('feather_native_guid_ownership',1)~=1 then
                 return nil,'creation_customization_not_implemented'
             end
             local projected,why=WeaponNativeAttachmentProjection.Build(item,WeaponDefinitionCatalog,plan.identity)
@@ -110,12 +111,8 @@ function WeaponCharacterAmmoMaterialization.Validate(plan,registry,baseline)
     if plan.dual~=(seen.offhand~=nil) or plan.sameModel~=same then return nil,'creation_pair_flags_mismatch' end
     for _,item in ipairs(plan.items) do
         local pair=same and (item.slot=='primary' or item.slot=='offhand')
-        if pair and item.maintenance and item.maintenance.permanentDegradation~=0 then
-            if not Config or Config.NativeAlphaRuntime~=true or type(GetConvarInt)~='function'
-                or GetConvarInt('feather_native_guid_ownership',1)~=1 then return nil,'pair_permanent_guid_ownership_required' end
-        end
         if models[item.nativeWeaponName]>1 and not pair then return nil,'unsupported_creation_duplicates' end
-        if item.creation~=(pair and 'inventory_guid_pair' or 'native_zero_ammo_grant') then return nil,'invalid_creation_strategy' end
+        if item.creation~='native_inventory_guid' then return nil,'invalid_creation_strategy' end
     end
     return true
 end
@@ -142,8 +139,7 @@ function WeaponCharacterAmmoMaterialization.Build(rows,catalog,registry,identity
             -- Never use the model hash as copy identity. Native GUID/entity
             -- creation must return a distinct handle for each entry at execution.
             entry.copyKey=('%s:%s:%s'):format(slot,item.itemInstanceId,item.itemRevision)
-            entry.creation=loadout.sameModel and (slot=='primary' or slot=='offhand')
-                and 'inventory_guid_pair' or 'native_zero_ammo_grant'
+            entry.creation='native_inventory_guid'
             plan.items[#plan.items+1]=entry
         end
     end

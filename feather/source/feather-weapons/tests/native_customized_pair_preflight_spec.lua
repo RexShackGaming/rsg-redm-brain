@@ -33,7 +33,7 @@ GetConvarInt=function(_,default) return default end
 assert(WeaponCharacterAmmoMaterialization.Validate(plan,registry,identity),'fresh server defaults admit worn pair without manual GUID switch')
 GetConvarInt=function() return 0 end
 valid,why=WeaponCharacterAmmoMaterialization.Validate(plan,registry,identity)
-assert(not valid and why=='pair_permanent_guid_ownership_required')
+assert(not valid and why=='guid_ownership_required')
 GetConvarInt=function() return 1 end
 rows.offhand.metadata.maintenance={degradation=0,permanentDegradation=0,damage=0,dirt=0,soot=0}
 rows.offhand.metadata.condition=100

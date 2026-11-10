@@ -7,7 +7,7 @@ local function fixture(failCleanup)
     local identity={characterId='c',sessionId='s',epoch='e'}
     local item={itemInstanceId=135,itemRevision=1,serialNumber='serial',definitionId='repeater_carbine',
         nativeWeaponName='WEAPON_REPEATER_CARBINE',attachments={{definitionId='carbine_wide_sight',slot='sight'}},cosmetics={},
-        creation='native_zero_ammo_grant',copyKey='shoulder:135:1',point=10}
+        creation='native_inventory_guid',copyKey='shoulder:135:1',point=10}
     local base={current=function() return s.current end,prepareDual=function() return true end,
         createPair=function() error('unproved customized pairs forbidden upstream') end,
         createSingle=function(private,ammo)

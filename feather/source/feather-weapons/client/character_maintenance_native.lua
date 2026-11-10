@@ -114,8 +114,8 @@ function WeaponNativeAttachmentReconstruction.Bind(base,project,manager)
         local private={}
         for key,value in pairs(item) do private[key]=value end
         private.attachments={} -- projection, NOT saved metadata rewrite
-        local record,reason=base.createSingle(private,ammo,identity)
-        if not record then return nil,reason end
+        local record,reason,partial=base.createSingle(private,ammo,identity)
+        if not record then return nil,reason,partial end
         plans[record]=plan
         return record
     end

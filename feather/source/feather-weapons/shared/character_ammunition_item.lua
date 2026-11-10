@@ -7,8 +7,7 @@ end
 local function finite(v) return type(v)=='number' and v==v and math.abs(v)<math.huge end
 function WeaponCharacterAmmoItem.Validate(metadata,definition)
     local families={pistol=true,revolver=true,repeater=true,rifle=true,shotgun=true}
-    if type(definition)~='table' or not families[definition.family]
-        or definition.nativeWeaponName=='WEAPON_REVOLVER_LEMAT' then return nil,'unsupported_native_firearm' end
+    if type(definition)~='table' or not families[definition.family] then return nil,'unsupported_native_firearm' end
     if type(metadata)~='table' or type(metadata.ammo)~='table'
         or metadata.ammo.ownership~='character' then return nil,'character_ammo_ownership_required' end
     for key in pairs(metadata.ammo) do

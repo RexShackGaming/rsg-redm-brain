@@ -1,33 +1,18 @@
+dofile('client/character_maintenance_native.lua')
 dofile('client/character_ammunition_creation_native.lua')
-local held,model,point=false,nil,nil
-local grants,captures=0,0
-PlayerPedId=function() return 42 end
-DoesEntityExist=function(id) return id==42 or held and id==50 end
-IsEntityDead=function() return false end
-joaat=function(v) return v end
-HasPedGotWeapon=function() return held end
-GetCurrentPedWeapon=function(_,_,p) return held and p==point,held and p==point and model or 0 end
-GetCurrentPedWeaponEntityIndex=function(_,p) return held and p==point and 50 or 0 end
-GiveWeaponToPed=function(_,hash,ammo,_,_,p) assert(ammo==0); held=true; model=hash; point=p; grants=grants+1 end
-RemoveWeaponFromPed=function() held=false end
-GetGameTimer=function() return 0 end
-Wait=function() error('unexpected yield') end
-local guid={Capture=function(record) captures=captures+1; assert(record.name=='WEAPON_REPEATER_CARBINE'); return true end,
- Has=function() return false end}
-local adapter=WeaponCharacterAmmoCreationNative.New(42,function() return true end,function() return true end,nil,guid,true)
-local function item(id,name,serial,revision)
-    return {itemInstanceId=id,itemRevision=revision,serialNumber=serial,nativeWeaponName=name,
-        point=name=='WEAPON_REPEATER_CARBINE' and 10 or 2,attachments={},cosmetics={}}
-end
+local fixture=dofile('tests/support/guid_creation_fixture.lua')
 local identity={characterId='c',sessionId='s',epoch='e'}
-local record=assert(adapter.createSingle(item(135,'WEAPON_REVOLVER_CATTLEMAN','ordinary-cattleman',7),0,identity))
-assert(captures==0 and grants==1,'item135 no longer reserves a Carbine identity in normal saved mode')
-assert(adapter.remove(record))
-record=assert(adapter.createSingle(item(901,'WEAPON_REPEATER_CARBINE','ordinary-carbine',3),0,identity))
-assert(captures==1 and grants==2 and record.guidIdentity,'arbitrary canonical Carbine copy captures exact GUID')
-assert(adapter.remove(record))
-for _,value in ipairs({item(0,'WEAPON_REPEATER_CARBINE','x',0),item(902,'WEAPON_REPEATER_CARBINE','',0),
-    item(902,'WEAPON_REPEATER_CARBINE','x',-1),item(902,'WEAPON_REPEATER_CARBINE','x',0/0)}) do
-    assert(not adapter.createSingle(value,0,identity) and grants==2,'bad copy identity refuses before native grant')
+for _,spec in ipairs({{135,'WEAPON_REVOLVER_CATTLEMAN',2},{901,'WEAPON_REPEATER_CARBINE',10},
+ {902,'WEAPON_RIFLE_BOLTACTION',9}}) do
+ local adapter,items,state=fixture(nil,{0,0},spec[2]);local item=items[1]
+ item.itemInstanceId=spec[1];item.serialNumber='ordinary-'..spec[1];item.itemRevision=7;item.point=spec[3]
+ local record=assert(adapter.createSingle(item,0,identity))
+ assert(record.guidIdentity and record.itemInstanceId==spec[1] and record.serialNumber==item.serialNumber)
+ assert(adapter.remove(record));local _,grants=state();assert(grants==0)
 end
-print('Carbine identity policy PASS (nonfixture IDs/serials/revisions, unrelated item135 unaffected, malformed identity veto before native writes)')
+for _,change in ipairs({function(i) i.itemInstanceId=0 end,function(i) i.serialNumber='' end,
+ function(i) i.itemRevision=-1 end,function(i) i.itemRevision=0/0 end}) do
+ local adapter,items,state=fixture(nil,{0,0},'WEAPON_REPEATER_CARBINE');change(items[1])
+ assert(not adapter.createSingle(items[1],0,identity) and #adapter.creationAttemptHandles()==0)
+end
+print('canonical GUID identity PASS (all firearms capture exact GUIDs, no reserved fixture ID, malformed identities refused before insertion)')

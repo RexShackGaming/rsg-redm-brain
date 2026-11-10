@@ -9,7 +9,7 @@ local function bundle(epoch)
         creation={identity={characterId='c',sessionId='s',epoch=epoch},dual=false,sameModel=false,
             items={{slot='primary',point=2,itemInstanceId=1,itemRevision=2,definitionId='gun',
                 nativeWeaponName='WEAPON_PISTOL_M1899',preferredAmmoType='regular',copyKey='primary:1:2',
-                creation='native_zero_ammo_grant',attachments={},cosmetics={}}}}}
+                creation='native_inventory_guid',attachments={},cosmetics={}}}}}
 end
 local pools={AMMO_PISTOL=0}
 local blocked,created,writes,removed=true,0,0,0

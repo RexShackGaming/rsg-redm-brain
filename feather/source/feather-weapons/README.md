@@ -1,6 +1,6 @@
 # Feather Weapons
 
-Current version: **0.21.0**.
+Current version: **0.22.0**.
 
 Feather's native-only, Inventory-backed firearm system. Weapons are unique
 item instances; equipped assignments and maintenance persist per character.
@@ -69,16 +69,32 @@ NativeAlphaRuntime, CharacterAmmunitionEnabled and CharacterAmmoTransportEnabled
 settings. Inventory must also enable CharacterAmmunitionEnabled (its shipped
 default). All current characters have access, subject to canonical item ownership
 and session checks. No character allowlist or DevMode is required. Development
-mode and optional feature/test gates remain disabled. Preserve customized config
+mode and experimental feature/test gates remain disabled. Preserve customized config
 values when updating; explicitly disabled required runtime settings refuse startup.
+
+Lifecycle wear saving also defaults on (`NativeAlphaLifecycleWearEnabled=true`).
+It saves each firearm's observed wear before equipment changes, orderly shutdown,
+character logout and supported death recovery. An existing config with this set
+to `false` must be updated to retain newly acquired wear across those rebuilds.
+Gun-oil cleaning also defaults on (`NativeAlphaRepairEnabled=true`). Periodic
+sampling remains opt-in; development mode is not required for these gameplay paths.
 
 Exact GUID ownership defaults on automatically on both server and client. Worn
 same-model pairs need no `setr feather_native_guid_ownership 1` startup command.
 An explicit `setr feather_native_guid_ownership 0` still overrides that default
-and refuses those pairs; remove that old override for normal operation. Existing
-`1` entries are harmless. Optional saved attachments still require their existing
-feature switches and gunsmith/material policy. This change does not enable
-developer grants, fault injection, or optional features.
+and refuses firearm creation; remove that old override for normal operation. Existing
+`1` entries are harmless. Saved attachment reconstruction and attachment
+transactions also default on; manual startup commands are unnecessary. This
+admits the recorded sight/barrel mappings across the tested firearm catalog.
+LeMat mode switching, separate revolver/shotgun expenditure and per-copy wear passed focused live checks. The unified production GUID acceptance run passed all 1,800 cases, full report delivery, original-loadout restoration and the final visual check. Gunsmith location, configured
+permissions, material costs, ownership and current-session checks still apply.
+
+Server owners can explicitly disable attachment changes with replicated
+`feather_native_attachment_transactions=0`, saved reconstruction with replicated
+`feather_native_saved_attachments=0`, or cleaning with
+`NativeAlphaRepairEnabled=false`. Disabling reconstruction while customized guns
+are equipped refuses their restoration; it never silently strips components.
+Existing `1` convar entries are harmless. Grants and fault injection remain off.
 
 The temporary pair-options diagnostic is retained only in `tests/support`.
 It is not loaded by the resource; do not deploy test support. After updating the
@@ -124,3 +140,6 @@ from the active manifest. Historical tests reproduce old evidence with mocks;
 they do not establish current native parity or backward compatibility.
 
 The former README is retained there as historical documentation only.
+
+
+Firearm creation uses the same GUID inventory insertion/activation and exact-copy cleanup for singles, mixed loadouts and matching pairs, including independently worn/customized copies. The opt-in [GUID acceptance suite](docs/guid-creation-validation.md) exercises this production implementation with a temporary native-only matrix; it does not issue Inventory weapons or repair saved data.

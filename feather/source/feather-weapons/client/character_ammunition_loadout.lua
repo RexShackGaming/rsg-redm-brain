@@ -13,6 +13,9 @@ function WeaponCharacterAmmoLoadout.New(api)
         if state~='idle' then return nil,'creation_already_attempted' end
         if type(plan)~='table' or type(plan.items)~='table' or type(plan.identity)~='table' then return nil,'invalid_plan' end
         if not yes(api.current(plan.identity)) then return nil,'stale_materialization' end
+        for _,item in ipairs(plan.items) do
+            if item.creation~='native_inventory_guid' then return nil,'unsupported_creation' end
+        end
         state='creating'
         local owned,entities={},{}
         local function fail(reason)
@@ -50,7 +53,7 @@ function WeaponCharacterAmmoLoadout.New(api)
         end
         local pair={}
         for _,item in ipairs(plan.items) do
-            if item.creation=='inventory_guid_pair' then pair[#pair+1]=item end
+            if plan.sameModel==true and (item.point==2 or item.point==3) then pair[#pair+1]=item end
         end
         if #pair>0 then
             if #pair~=2 then return fail('invalid_pair_plan') end
@@ -70,14 +73,16 @@ function WeaponCharacterAmmoLoadout.New(api)
             if not valid then return fail('pair_entities_not_distinct') end
         end
         for _,item in ipairs(plan.items) do
-            if item.creation~='inventory_guid_pair' then
-                if item.creation~='native_zero_ammo_grant' then return fail('unsupported_creation') end
+            if not (plan.sameModel==true and (item.point==2 or item.point==3)) then
                 if not yes(api.current(plan.identity)) then return fail('stale_materialization') end
                 -- Zero ammunition is mandatory at this boundary. Ammo restore
                 -- is a later, separately authorized controller operation.
-                local ok,handle,detail=pcall(api.createSingle,item,0,plan.identity)
+                local ok,handle,detail,partial=pcall(api.createSingle,item,0,plan.identity)
                 if not ok then return fail('single_creation_failed: adapter_exception: '..tostring(handle)) end
                 if not validHandle(handle) then
+                    if type(partial)=='table' and type(partial.handles)=='table' then
+                        for _,record in ipairs(partial.handles) do owned[#owned+1]=record end
+                    end
                     return fail('single_creation_failed: invalid_handle: '..tostring(detail or type(handle)))
                 end
                 if not accept(handle,item) then return fail('single_creation_failed: duplicate_entity') end

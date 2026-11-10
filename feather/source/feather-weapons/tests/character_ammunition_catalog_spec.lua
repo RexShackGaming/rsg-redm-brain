@@ -9,7 +9,7 @@ for _,w in pairs(WeaponDefinitionCatalog.weapons) do
     end
 end
 local catalog=assert(WeaponCharacterAmmoCatalog.Build(WeaponDefinitionCatalog,policy))
-assert(catalog.blocked.revolver_lemat and not catalog.weapons.revolver_lemat)
+assert(not catalog.blocked.revolver_lemat and catalog.weapons.revolver_lemat.compatible.ammo_shotgun_regular)
 assert(catalog.weapons.pistol_m1899 and catalog.weapons.rifle_varmint and catalog.weapons.rifle_elephant)
 assert(catalog.excluded.bow and not catalog.names.ammo_arrow_regular)
 assert(catalog.names.ammo_pistol_express=='AMMO_PISTOL_EXPRESS')

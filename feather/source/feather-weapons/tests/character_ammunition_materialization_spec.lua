@@ -20,7 +20,7 @@ local identity={characterId='character',sessionId='session',epoch='epoch'}
 local plan=assert(WeaponCharacterAmmoMaterialization.Build(rows,catalog,registry,identity))
 assert(plan.dual and plan.sameModel and #plan.items==2)
 assert(plan.items[1].copyKey~=plan.items[2].copyKey and plan.items[1].point==2 and plan.items[2].point==3)
-assert(plan.items[1].creation=='inventory_guid_pair' and plan.items[1].ammo==nil and plan.items[1].loaded==nil)
+assert(plan.items[1].creation=='native_inventory_guid' and plan.items[1].ammo==nil and plan.items[1].loaded==nil)
 plan.items[1].maintenance.dirt=1; plan.identity.epoch='changed'
 assert(rows.primary.metadata.maintenance.dirt==0 and identity.epoch=='epoch')
 assert(not WeaponCharacterAmmoMaterialization.Build(rows,catalog,registry,{}))

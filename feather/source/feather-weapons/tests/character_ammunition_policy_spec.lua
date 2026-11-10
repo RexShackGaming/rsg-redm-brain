@@ -16,7 +16,7 @@ assert(policy.ammo_pistol_explosive==10 and policy.ammo_shotgun_buckshot_incendi
 policy.ammo_pistol_regular=999
 assert(WeaponCharacterAmmoPolicy.Limits().ammo_pistol_regular==100,'caller cannot change canonical policy')
 local registry=assert(WeaponCharacterAmmoPolicy.Build(WeaponDefinitionCatalog))
-assert(registry.limits.ammo_revolver_regular==200 and registry.blocked.revolver_lemat)
+assert(registry.limits.ammo_revolver_regular==200 and registry.weapons.revolver_lemat.compatible.ammo_shotgun_regular)
 assert(registry.names.ammo_arrow_regular==nil and registry.names.ammo_tomahawk_regular==nil)
 registry.limits.ammo_pistol_regular=999
 assert(WeaponCharacterAmmoPolicy.Build(WeaponDefinitionCatalog).limits.ammo_pistol_regular==100)

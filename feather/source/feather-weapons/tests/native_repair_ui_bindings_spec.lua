@@ -10,7 +10,7 @@ RegisterCommand=function(name,fn) commands[name]=fn end; RegisterNetEvent=functi
 local statusOutput
 json={encode=function(value) statusOutput=value; return 'snapshot' end}
 AddEventHandler=function() end; SetTimeout=function() end; GetGameTimer=function() return 1 end
-GetConvarInt=function() return 0 end; GetResourceState=function() return 'stopped' end
+GetConvarInt=function(name) return name=='feather_native_guid_ownership' and 1 or 0 end; GetResourceState=function() return 'stopped' end
 GetInvokingResource=function() return 'feather-inventory' end
 local identity={characterId='Jane',sessionId='s',epoch='e'}
 local state={phase='active',identity=identity}

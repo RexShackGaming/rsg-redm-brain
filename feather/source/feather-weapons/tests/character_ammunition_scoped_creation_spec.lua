@@ -1,5 +1,8 @@
 dofile('client/character_ammunition_creation_native.lua')
-Config={CharacterAmmunitionEnabled=true,CharacterAmmoTransportEnabled=true}
+dofile('shared/constants.lua')
+GetConvarInt=function(name,default) return name=='feather_native_saved_attachments' and 0 or default end
+WeaponNativeGuidIdentity={New=function() return {} end}
+Config={NativeAlphaRuntime=true,CharacterAmmunitionEnabled=true,CharacterAmmoTransportEnabled=true}
 local identity={characterId='c',sessionId='s',epoch='e'}
 local context={characterId='c',sessionId='s',ped=42}
 PlayerPedId=function() return 42 end

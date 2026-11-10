@@ -14,7 +14,7 @@ local function bundle()
  return {runtime={characterId='c',sessionId='s',epoch='e',revision=4,phase='restoring',pools={regular=8}},
  knife=approved,creation={identity=id,dual=false,sameModel=false,items={{slot='primary',point=2,
  itemInstanceId=1,itemRevision=0,definitionId='gun',nativeWeaponName='WEAPON_PISTOL_M1899',preferredAmmoType='regular',
- copyKey='primary:1:0',creation='native_zero_ammo_grant',attachments={},cosmetics={}}}}}
+ copyKey='primary:1:0',creation='native_inventory_guid',attachments={},cosmetics={}}}}}
 end
 local function setup(change)
  local pool,queue,exists,entity,blocked=0,{},false,70,true

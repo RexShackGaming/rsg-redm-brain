@@ -3,7 +3,10 @@ local decoded=assert(WeaponCharacterAmmoCreationNative.DecodeDiagnosticGuid(stri
 assert(decoded.packedWords[4]==4 and decoded.scriptSlotWords[4]==7 and #decoded.raw32==64)
 assert(not WeaponCharacterAmmoCreationNative.DecodeDiagnosticGuid(string.rep('\0',104)))
 assert(not WeaponCharacterAmmoCreationNative.DecodeDiagnosticGuid('short'))
-Config={CharacterAmmunitionEnabled=true,CharacterAmmoTransportEnabled=true}
+dofile('shared/constants.lua')
+GetConvarInt=function(name,default) return name=='feather_native_saved_attachments' and 0 or default end
+WeaponNativeGuidIdentity={New=function() return {Has=function() return false end} end}
+Config={NativeAlphaRuntime=true,CharacterAmmunitionEnabled=true,CharacterAmmoTransportEnabled=true}
 local identity={characterId='Jane',sessionId='s',epoch='e'}
 local current,entity=true,50
 PlayerPedId=function() return 42 end

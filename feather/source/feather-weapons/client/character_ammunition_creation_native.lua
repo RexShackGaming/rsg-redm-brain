@@ -50,12 +50,17 @@ function WeaponCharacterAmmoCreationNative.GuidKey(raw)
     return words and ('%08x%08x%08x%08x'):format(words[1],words[2],words[3],words[4]) or nil
 end
 -- Live-verified weapon_locker/options ABI. Never write guessed options fields.
-function WeaponCharacterAmmoCreationNative.PairOptions(guid,hash,point,reason)
+function WeaponCharacterAmmoCreationNative.GuidOptions(guid,hash,point,reason)
     local key=WeaponCharacterAmmoCreationNative.GuidKey(guid)
-    if not key or key==string.rep('0',32) or (point~=2 and point~=3) then return nil end
+    if not key or key==string.rep('0',32) or not ({[2]=true,[3]=true,[9]=true,[10]=true})[point] then return nil end
     local function int(v) return string.pack('<I4I4',v & 0xffffffff,0) end
     return guid:sub(1,32)..int(hash)..int(0)..int(point)..int(reason)
         ..string.pack('<fI4fI4',0.5,0,1.0,0)..int(0)..int(0)..int(1)
+end
+-- Hand-point wrapper retained for diagnostic ABI comparison; production uses GuidOptions.
+function WeaponCharacterAmmoCreationNative.PairOptions(guid,hash,point,reason)
+    if point~=2 and point~=3 then return nil end
+    return WeaponCharacterAmmoCreationNative.GuidOptions(guid,hash,point,reason)
 end
 function WeaponCharacterAmmoCreationNative.PairRecord(raw,guid,hash,permanent)
     local key=WeaponCharacterAmmoCreationNative.GuidKey(guid)
@@ -69,32 +74,37 @@ function WeaponCharacterAmmoCreationNative.PairRecord(raw,guid,hash,permanent)
     -- Only our just-created GUID entry: preserve unrelated fields and padding.
     return raw:sub(1,136)..string.pack('<f',permanent+0.0)..raw:sub(141,168)..string.pack('<I4I4',1,0)
 end
-function WeaponCharacterAmmoCreationNative.New(ped,current,prepareDual,applyMaintenance,guidIdentity,savedAttachments,pairNative)
+function WeaponCharacterAmmoCreationNative.New(ped,current,prepareDual,applyMaintenance,guidIdentity,inventory)
     assert(type(current)=='function' and type(prepareDual)=='function','Local lifecycle callbacks required')
+    local attempts,owned,creationFailure={},{},nil
     local function yes(v) return v==true or v==1 end
-    local function buffer() return pairNative and pairNative.buffer and pairNative.buffer() or string.rep('\0',104) end
-    pairNative=pairNative or {
+    local function buffer() return inventory and inventory.buffer and inventory.buffer() or string.rep('\0',104) end
+    inventory=inventory or {
         read=function(record)
             local raw=string.rep('\0',72)..string.pack('<I4I4',joaat('SLOTID_NONE') & 0xffffffff,0)..string.rep('\0',96)
             return yes(Citizen.InvokeNative(0x025A1B1FB03FBF61,1,record.guid,raw,22,1)) and raw or nil
         end,
         update=function(record,raw) return yes(Citizen.InvokeNative(0xD80A8854DB5CFBA5,1,record.guid,raw,22)) end,
+        pointGuid=function(point)
+            local raw=string.rep('\0',104)
+            if not yes(Citizen.InvokeNative(0x6929E22158E52265,ped,point,raw)) then return nil end
+            return WeaponCharacterAmmoCreationNative.GuidKey(raw)
+        end,
         activate=function(record)
-            local input=WeaponCharacterAmmoCreationNative.PairOptions(record.guid,joaat(record.name),record.point,joaat('ADD_REASON_DEFAULT'))
+            local input=WeaponCharacterAmmoCreationNative.GuidOptions(record.guid,joaat(record.name),record.point,joaat('ADD_REASON_DEFAULT'))
             if not input then return false end
             local output=string.rep('\0',192)
-            return yes(Citizen.InvokeNative(0xBE7E42B07FD317AC,ped,input,output))
-                and WeaponCharacterAmmoCreationNative.GuidKey(output)==WeaponCharacterAmmoCreationNative.GuidKey(record.guid)
+            record.guidActivationEvidence={point=record.point,expectedGuid=WeaponCharacterAmmoCreationNative.GuidKey(record.guid),callCompleted=false}
+            local returned=Citizen.InvokeNative(0xBE7E42B07FD317AC,ped,input,output)
+            record.guidActivationEvidence.callCompleted=true
+            record.guidActivationEvidence.nativeReturn=tostring(returned):sub(1,80)
+            record.guidActivationEvidence.outputGuid=WeaponCharacterAmmoCreationNative.GuidKey(output)
+            return yes(returned) and WeaponCharacterAmmoCreationNative.GuidKey(output)==WeaponCharacterAmmoCreationNative.GuidKey(record.guid)
         end,
     }
-    local function resolve(parent,item,slot)
-        local out=buffer()
-        return yes(Citizen.InvokeNative(0x886DFD3E185C8A89,1,parent,joaat(item),slot,out)) and out or nil
-    end
     local function ready(identity)
-        local ok,valid=pcall(current,identity)
-        return ok and valid==true and PlayerPedId()==ped
-            and yes(DoesEntityExist(ped)) and not yes(IsEntityDead(ped))
+        local ok,value=pcall(current,identity)
+        return ok and value==true and PlayerPedId()==ped and yes(DoesEntityExist(ped)) and not yes(IsEntityDead(ped))
     end
     local function entity(point,name)
         local present,hash=GetCurrentPedWeapon(ped,true,point,true)
@@ -102,226 +112,142 @@ function WeaponCharacterAmmoCreationNative.New(ped,current,prepareDual,applyMain
         return yes(present) and hash==joaat(name) and type(handle)=='number' and handle>0 and handle or nil
     end
     local function settle(records,identity)
-        -- Native inventory activation/holstering can finish on later frames.
-        -- Validate the identity on every yield; never accept an unbounded wait.
         local started=GetGameTimer()
         for frame=1,120 do
             if not ready(identity) then return false,'creation_identity_changed' end
             local complete,seen=true,{}
             for _,record in ipairs(records) do
-                record.entity=entity(record.point,record.name)
-                if not record.entity or seen[record.entity] then complete=false end
-                if record.entity then seen[record.entity]=true end
+                local handle=entity(record.point,record.name)
+                if not handle or seen[handle] or inventory.pointGuid(record.point)~=WeaponCharacterAmmoCreationNative.GuidKey(record.guid) then complete=false end
+                if handle then seen[handle]=true;record.entity=handle end
             end
             if complete then return true end
-            if GetGameTimer()-started>=1500 then break end
+            if (GetGameTimer()-started)%4294967296>=1500 then break end
             Wait(0)
         end
-        return false,'holster_entities_not_settled'
+        return false,'guid_entities_not_settled'
     end
     local function remove(record)
-        if record.pairGrantPending then return false end -- unknown grant/GUID outcome must stay held
-        if record.guid then
-            return yes(Citizen.InvokeNative(0x3E4E811480B3AE79,1,record.guid,1,joaat('REMOVE_REASON_DEFAULT')))
-        end
-        if guidIdentity and guidIdentity.Has(record) then
-            if not guidIdentity.Resolve(record,record.guidIdentity,true) then return false end
-        end
-        -- Single creation refused preexisting ownership; do not remove a later
-        -- replacement model/entity that no longer belongs to this attempt.
-        if yes(DoesEntityExist(ped)) then
-            for _,point in ipairs({0,1,2,3,9,10}) do
-                if entity(point,record.name)==record.entity then
-                    RemoveWeaponFromPed(ped,joaat(record.name))
-                    return not yes(HasPedGotWeapon(ped,joaat(record.name),false))
-                end
-            end
-        end
-        return false
+        local key=owned[record]
+        if not key or record.pairGrantPending or WeaponCharacterAmmoCreationNative.GuidKey(record.guid)~=key then return false end
+        -- Exact issued GUID only. Never delete by weapon model, including when
+        -- a different copy of the same model has appeared on the ped.
+        local removed=yes(Citizen.InvokeNative(0x3E4E811480B3AE79,1,record.guid,1,joaat('REMOVE_REASON_DEFAULT')))
+        if removed then owned[record]=nil end
+        return removed
     end
     local function clean(records)
-        local retained={}
+        local retained={};creationFailure={}
+        for _,record in ipairs(records) do
+            creationFailure[#creationFailure+1]={point=record.point,name=record.name,entity=record.entity,
+                guid=record.guid and WeaponCharacterAmmoCreationNative.GuidKey(record.guid),grantPending=record.pairGrantPending==true,
+                activation=record.guidActivationEvidence}
+        end
         for i=#records,1,-1 do
-            local ok,removed=pcall(remove,records[i])
-            if not ok or removed~=true then retained[#retained+1]=records[i] end
+            local ok,result=pcall(remove,records[i]);if not ok or result~=true then retained[#retained+1]=records[i] end
         end
         return {handles=retained,cleanupComplete=#retained==0}
     end
-    local function empty(item)
-        return type(item)=='table' and type(item.nativeWeaponName)=='string'
-            and type(item.attachments)=='table' and next(item.attachments)==nil
-            and type(item.cosmetics)=='table' and next(item.cosmetics)==nil
-            and not yes(HasPedGotWeapon(ped,joaat(item.nativeWeaponName),false))
+    local function valid(item)
+        local function integer(n) return type(n)=='number' and n==n and n>=0 and n%1==0 and n<math.huge end
+        return type(item)=='table' and type(item.nativeWeaponName)=='string' and item.nativeWeaponName:match('^WEAPON_[A-Z0-9_]+$')
+            and ({[2]=true,[3]=true,[9]=true,[10]=true})[item.point] and integer(item.itemInstanceId) and item.itemInstanceId>0
+            and integer(item.itemRevision) and type(item.serialNumber)=='string' and #item.serialNumber>0
+            and type(item.attachments)=='table' and next(item.attachments)==nil and type(item.cosmetics)=='table' and next(item.cosmetics)==nil
+            and type(item.maintenance)=='table' and type(item.maintenance.permanentDegradation)=='number'
+            and item.maintenance.permanentDegradation>=0 and item.maintenance.permanentDegradation<=1
     end
-    local function single(item,ammo,identity)
-        if ammo~=0 then return nil,'single_creation_precondition: nonzero_ammo' end
-        if not ready(identity) then return nil,'single_creation_precondition: lifecycle_not_ready' end
-        if not empty(item) then
-            local existing=type(item)=='table' and type(item.nativeWeaponName)=='string'
-                and yes(HasPedGotWeapon(ped,joaat(item.nativeWeaponName),false))
-            return nil,'single_creation_precondition: '..(existing and 'preexisting_weapon' or 'unsupported_item_state')
-        end
-        local mappedModel=item.nativeWeaponName=='WEAPON_REPEATER_CARBINE' or (WeaponNativeAttachmentMappings
-            and WeaponNativeAttachmentMappings.CaptureModel(item.nativeWeaponName)==true)
-        local capturedCarbine=guidIdentity and ((savedAttachments==true and mappedModel)
-            or (savedAttachments~=true and item.itemInstanceId==135))
-        if capturedCarbine then
-            if not mappedModel or type(item.itemInstanceId)~='number' or item.itemInstanceId<1
-                or item.itemInstanceId%1~=0 or item.itemInstanceId==math.huge or type(item.itemRevision)~='number'
-                or item.itemRevision<0 or item.itemRevision%1~=0 or item.itemRevision==math.huge
-                or type(item.serialNumber)~='string' or item.serialNumber=='' then return nil,'guid_owned_carbine_identity_required' end
-            if savedAttachments~=true and (item.itemRevision~=0 or item.serialNumber~='FW-ALPHA-MIXED-JANE-V1-repeater_carbine') then
-                return nil,'guid_owned_fixture_scope_required'
-            end
-        end
-        if not ({[2]=true,[3]=true,[9]=true,[10]=true})[item.point] then
-            return nil,'single_creation_precondition: unsupported_point'
-        end
-        local permanent=item.maintenance and item.maintenance.permanentDegradation or 0
-        if type(permanent)~='number' or permanent~=permanent or permanent<0 or permanent>1 then
-            return nil,'single_creation_precondition: invalid_permanent_degradation'
-        end
-        if permanent>0 and (type(GetWeaponPermanentDegradation)~='function'
-            or type(GetObjectIndexFromEntityIndex)~='function') then
-            return nil,'single_creation_precondition: permanent_readback_unavailable'
-        end
-        local record={name=item.nativeWeaponName,point=item.point,itemInstanceId=item.itemInstanceId,itemRevision=item.itemRevision,
-            serialNumber=item.serialNumber}
-        local ok,failure=pcall(function()
-            GiveWeaponToPed(ped,joaat(item.nativeWeaponName),0,false,true,item.point,false,
-                0.5,1.0,joaat('ADD_REASON_DEFAULT'),true,permanent,false)
-            local settled,reason=settle({record},identity)
-            assert(settled,reason)
-            if capturedCarbine then
-                local captured,why=guidIdentity.Capture(record,identity)
-                assert(captured,why)
-                record.guidIdentity={characterId=identity.characterId,sessionId=identity.sessionId,epoch=identity.epoch}
-            end
-            if permanent>0 then
-                local object=GetObjectIndexFromEntityIndex(record.entity)
-                assert(type(object)=='number' and object>0,'permanent_object_unavailable')
-                local read=GetWeaponPermanentDegradation(object)
-                assert(type(read)=='number' and read==read and math.abs(read-permanent)<=0.0001,
-                    'permanent_creation_readback_mismatch')
-                assert(ready(identity) and entity(record.point,record.name)==record.entity,'permanent_creation_owner_changed')
-            end
-            if applyMaintenance then
-                local applied,reason=applyMaintenance(record,identity,item.maintenance)
-                assert(applied==true,reason or 'maintenance_creation_restore_failed')
-                assert(ready(identity),'maintenance_creation_owner_changed')
-            end
-        end)
-        if not ok or not record.entity then
-            -- Preserve the existing compensation policy; report the swallowed
-            -- native/settlement error instead of masking it at the caller.
-            RemoveWeaponFromPed(ped,joaat(item.nativeWeaponName))
-            return nil,'single_creation_or_settlement_failed: '..tostring(failure or 'missing_entity')
+    local function resolve(parent,name,slot)
+        local out=buffer()
+        return yes(Citizen.InvokeNative(0x886DFD3E185C8A89,1,parent,joaat(name),slot,out)) and out or nil
+    end
+    local function insert(item,parent,records,separate)
+        local record={guid=buffer(),pairGrantPending=true,name=item.nativeWeaponName,point=item.point,
+            itemInstanceId=item.itemInstanceId,itemRevision=item.itemRevision,serialNumber=item.serialNumber}
+        attempts[#attempts+1]=record;records[#records+1]=record
+        assert(yes(Citizen.InvokeNative(0xCB5D11F9508A928D,1,record.guid,parent,joaat(record.name),joaat('SLOTID_WEAPON_0'),1,joaat('ADD_REASON_DEFAULT'))),'guid_insert_unconfirmed')
+        local key=WeaponCharacterAmmoCreationNative.GuidKey(record.guid);assert(key,'guid_insert_identity_unreadable')
+        record.pairGrantPending=nil;owned[record]=key
+        if separate then
+            local moved=buffer();record.pairGrantPending=true
+            assert(yes(Citizen.InvokeNative(0xDCCAA7C3BFD88862,1,record.guid,parent,joaat('SLOTID_WEAPON_1'),1,moved)),'guid_move_unconfirmed')
+            local nextKey=WeaponCharacterAmmoCreationNative.GuidKey(moved);assert(nextKey,'guid_move_identity_unreadable')
+            record.guid=moved;owned[record]=nextKey;record.pairGrantPending=nil
         end
         return record
     end
-    local function pair(items,identity)
-        if not ready(identity) or #items~=2 or items[1].point~=2 or items[2].point~=3
-            or items[1].nativeWeaponName~=items[2].nativeWeaponName
-            or not empty(items[1]) or not empty(items[2]) then return nil,'pair_creation_precondition' end
-        local worn=false
-        for _,item in ipairs(items) do
-            local permanent=item.maintenance and item.maintenance.permanentDegradation or 0
-            if type(permanent)~='number' or permanent~=permanent or permanent<0 or permanent>1 then return nil,'invalid_pair_permanent_degradation' end
-            if permanent~=0 then worn=true end
+    local function activate(record,identity,target)
+        assert(ready(identity),'guid_creation_identity_changed')
+        local updated=WeaponCharacterAmmoCreationNative.PairRecord(inventory.read(record),record.guid,joaat(record.name),target)
+        assert(updated,'guid_inventory_record_invalid')
+        assert(inventory.update(record,updated)==true and ready(identity),'guid_inventory_update_failed')
+        local read=inventory.read(record)
+        assert(WeaponCharacterAmmoCreationNative.PairRecord(read,record.guid,joaat(record.name),target)
+            and string.unpack('<I4',read,169)==1 and math.abs(string.unpack('<f',read,137)-target)<=0.0001,'guid_inventory_readback_mismatch')
+        local accepted=inventory.activate(record);local detail=record.guidActivationEvidence or {}
+        assert(accepted==true and ready(identity),('guid_options_activation_failed point=%s return=%s expected=%s output=%s')
+            :format(record.point,tostring(detail.nativeReturn),tostring(detail.expectedGuid),tostring(detail.outputGuid)))
+    end
+    local function create(items,identity)
+        if not ready(identity) then return nil,'guid_creation_lifecycle_not_ready' end
+        if not guidIdentity or type(GetWeaponPermanentDegradation)~='function' or type(GetObjectIndexFromEntityIndex)~='function' then
+            return nil,'guid_creation_readback_required'
         end
-        if worn and (not guidIdentity or type(GetWeaponPermanentDegradation)~='function'
-            or type(GetObjectIndexFromEntityIndex)~='function') then return nil,'pair_permanent_guid_readback_required' end
-        local character=resolve(nil,'CHARACTER',0xA1212100)
-        local parent=character and resolve(character,'CARRIED_WEAPONS',joaat('SLOTID_CARRIED_WEAPONS'))
-        if not parent then return nil,'carried_weapon_inventory_unavailable' end
-        local owned={}
-        local ok,reason=pcall(function()
-            for index=1,2 do
-                local out=buffer()
-                local record={guid=out,pairGrantPending=true,slot=0,name=items[index].nativeWeaponName,point=items[index].point,
-                    itemInstanceId=items[index].itemInstanceId,itemRevision=items[index].itemRevision,serialNumber=items[index].serialNumber}
-                owned[#owned+1]=record -- retain uncertainty if insertion throws or cannot be acknowledged
-                assert(ready(identity),'pair_creation_identity_changed')
-                assert(yes(Citizen.InvokeNative(0xCB5D11F9508A928D,1,out,parent,joaat(items[index].nativeWeaponName),
-                    joaat('SLOTID_WEAPON_0'),1,joaat('ADD_REASON_DEFAULT'))),'copy insert failed')
-                record.pairGrantPending=nil
-                if not worn then
-                    assert(yes(Citizen.InvokeNative(0x734311E2852760D0,1,out,true)),'copy equip failed')
-                    Citizen.InvokeNative(0x12FB95FE3D579238,ped,out,true,0,false,false)
-                end
-                if index==1 then
-                    local moved=buffer()
-                    assert(yes(Citizen.InvokeNative(0xDCCAA7C3BFD88862,1,out,parent,joaat('SLOTID_WEAPON_1'),1,moved)),'copy move failed')
-                    record.guid,record.slot=moved,1
-                end
+        for _,item in ipairs(items) do
+            if not valid(item) then return nil,'guid_creation_identity_or_state_invalid' end
+            if yes(HasPedGotWeapon(ped,joaat(item.nativeWeaponName),false)) then return nil,'guid_creation_preexisting_weapon' end
+        end
+        local records={}
+        local ok,why=pcall(function()
+            local character=resolve(nil,'CHARACTER',0xA1212100)
+            local parent=character and resolve(character,'CARRIED_WEAPONS',joaat('SLOTID_CARRIED_WEAPONS'))
+            assert(parent,'carried_weapon_inventory_unavailable')
+            for index,item in ipairs(items) do
+                assert(ready(identity),'guid_creation_identity_changed')
+                insert(item,parent,records,#items==2 and index==1)
             end
-            if worn then
-                assert(WeaponCharacterAmmoCreationNative.GuidKey(owned[1].guid)
-                    and WeaponCharacterAmmoCreationNative.GuidKey(owned[1].guid)~=WeaponCharacterAmmoCreationNative.GuidKey(owned[2].guid),'pair_duplicate_inventory_guid')
-                for index,record in ipairs(owned) do
-                    assert(ready(identity),'pair_creation_identity_changed')
-                    local target=items[index].maintenance and items[index].maintenance.permanentDegradation or 0
-                    local raw=pairNative.read(record)
-                    local updated=WeaponCharacterAmmoCreationNative.PairRecord(raw,record.guid,joaat(record.name),target)
-                    assert(updated,'pair_inventory_record_invalid')
-                    assert(pairNative.update(record,updated)==true and ready(identity),'pair_inventory_update_failed')
-                    local checked=pairNative.read(record)
-                    assert(WeaponCharacterAmmoCreationNative.PairRecord(checked,record.guid,joaat(record.name),target)
-                        and string.unpack('<I4',checked,169)==1
-                        and math.abs(string.unpack('<f',checked,137)-target)<=0.0001,'pair_inventory_permanent_readback_mismatch')
-                    assert(pairNative.activate(record)==true and ready(identity),'pair_options_activation_failed')
-                end
-            else
-                for _,index in ipairs({2,1}) do
-                    local record=owned[index]
-                    Citizen.InvokeNative(0x12FB95FE3D579238,ped,record.guid,true,record.slot,false,false)
-                end
+            local guids={}
+            for index,record in ipairs(records) do
+                local key=WeaponCharacterAmmoCreationNative.GuidKey(record.guid)
+                assert(not guids[key],'duplicate_inserted_guid');guids[key]=true
+                activate(record,identity,items[index].maintenance.permanentDegradation)
+                SetCurrentPedWeapon(ped,joaat('WEAPON_UNARMED'),true,0,false,false)
+                local settled,reason=settle({record},identity);assert(settled,reason)
             end
             Citizen.InvokeNative(0x94A3C1B804D291EC,ped,true,true,true,true)
-            -- The original proof completes GUID activation by selecting unarmed.
-            -- Request that transition BEFORE waiting for carried points2/3;
-            -- otherwise the copies can remain at hand points0/1 throughout.
             SetCurrentPedWeapon(ped,joaat('WEAPON_UNARMED'),true,0,false,false)
-            local settled,failure=settle(owned,identity)
-            assert(settled,failure)
-            if guidIdentity then
-                for _,record in ipairs(owned) do
-                    local captured,why=guidIdentity.Capture(record,identity)
-                    assert(captured,why)
-                    record.guidIdentity={characterId=identity.characterId,sessionId=identity.sessionId,epoch=identity.epoch}
-                    if worn then
-                        assert(guidIdentity.MatchesCaptured(record,identity,WeaponCharacterAmmoCreationNative.GuidKey(record.guid)),
-                            'pair_created_guid_mismatch')
-                    end
-                end
-            end
-            if worn then
-                for index,record in ipairs(owned) do
-                    assert(ready(identity) and guidIdentity.Resolve(record,identity),'pair_permanent_owner_changed')
-                    local object=GetObjectIndexFromEntityIndex(record.entity)
-                    assert(type(object)=='number' and object>0,'pair_permanent_object_unavailable')
-                    local value=GetWeaponPermanentDegradation(object)
-                    local target=items[index].maintenance and items[index].maintenance.permanentDegradation or 0
-                    assert(type(value)=='number' and value==value and math.abs(value-target)<=0.0001,'pair_permanent_readback_mismatch')
-                end
-            end
-            if applyMaintenance then
-                for index,record in ipairs(owned) do
-                    local applied,reason=applyMaintenance(record,identity,items[index].maintenance)
-                    assert(applied==true,reason or 'maintenance_pair_restore_failed')
-                    assert(ready(identity),'maintenance_pair_owner_changed')
-                end
+            local settled,reason=settle(records,identity);assert(settled,reason)
+            for index,record in ipairs(records) do
+                local captured,reason=guidIdentity.Capture(record,identity);assert(captured,reason)
+                record.guidIdentity={characterId=identity.characterId,sessionId=identity.sessionId,epoch=identity.epoch}
+                assert(guidIdentity.MatchesCaptured(record,identity,WeaponCharacterAmmoCreationNative.GuidKey(record.guid)),'guid_created_identity_mismatch')
+                local object=GetObjectIndexFromEntityIndex(record.entity)
+                assert(type(object)=='number' and object>0,'guid_permanent_object_unavailable')
+                local value=GetWeaponPermanentDegradation(object)
+                assert(type(value)=='number' and value==value and math.abs(value-items[index].maintenance.permanentDegradation)<=0.0001,'guid_permanent_readback_mismatch')
+                if applyMaintenance then local applied,reason=applyMaintenance(record,identity,items[index].maintenance);assert(applied==true,reason) end
             end
         end)
-        if not ok then return nil,tostring(reason),clean(owned) end
-        return owned
+        if not ok then return nil,tostring(why),clean(records) end
+        return records
     end
     return {current=ready,prepareDual=function(identity) return ready(identity) and prepareDual(ped)==true end,
-        createSingle=single,createPair=pair,remove=remove,finish=function(records,identity)
+        createSingle=function(item,ammo,identity)
+            if ammo~=0 then return nil,'guid_creation_nonzero_ammo' end
+            local records,reason,partial=create({item},identity)
+            return records and records[1] or nil,reason,partial
+        end,
+        createPair=function(items,identity)
+            if type(items)~='table' or #items~=2 or items[1].point~=2 or items[2].point~=3
+                or items[1].nativeWeaponName~=items[2].nativeWeaponName then return nil,'guid_pair_layout_invalid' end
+            return create(items,identity)
+        end,remove=remove,creationFailureEvidence=function() return creationFailure end,
+        creationAttemptHandles=function() return attempts end,
+        finish=function(records,identity)
             if not ready(identity) then return false end
             SetCurrentPedWeapon(ped,joaat('WEAPON_UNARMED'),true,0,false,false)
             for _,record in ipairs(records) do
-                if entity(record.point,record.name)~=record.entity then return false end
+                if entity(record.point,record.name)~=record.entity or inventory.pointGuid(record.point)~=owned[record] then return false end
             end
             return true
         end}
@@ -329,7 +255,7 @@ end
 
 -- Lifecycle-bound factory only. Never assumes entitlement/appearance ownership;
 -- caller supplies both preparation and cleanup for the same scoped setup.
-function WeaponCharacterAmmoCreationNative.Scoped(ped,identity,prepareDual,cleanupDual)
+function WeaponCharacterAmmoCreationNative.Scoped(ped,identity,prepareDual,cleanupDual,validationGuard)
     if type(identity)~='table' or type(identity.characterId)~='string'
         or type(identity.sessionId)~='string' or type(identity.epoch)~='string'
         or identity.characterId=='' or identity.sessionId=='' or identity.epoch==''
@@ -338,6 +264,7 @@ function WeaponCharacterAmmoCreationNative.Scoped(ped,identity,prepareDual,clean
     end
     local expected={characterId=identity.characterId,sessionId=identity.sessionId,epoch=identity.epoch}
     local function current(check)
+        if validationGuard and validationGuard()~=true then return false end
         if Config.CharacterAmmunitionEnabled~=true or Config.CharacterAmmoTransportEnabled~=true
             or type(check)~='table' then return false end
         for key,value in pairs(expected) do if check[key]~=value then return false end end
@@ -356,7 +283,7 @@ function WeaponCharacterAmmoCreationNative.Scoped(ped,identity,prepareDual,clean
     local guidIdentity
     local savedAttachments=Config.NativeAlphaRuntime==true
         and WeaponNativeEnrollment.Allows(Config,expected.characterId) and type(GetConvarInt)=='function'
-        and GetConvarInt('feather_native_saved_attachments',0)==1
+        and GetConvarInt('feather_native_saved_attachments',1)==1
     if Config.NativeAlphaRuntime==true and WeaponNativeEnrollment.Allows(Config,expected.characterId)
         and type(GetConvarInt)=='function' and GetConvarInt('feather_native_guid_ownership',1)==1 then
         guidIdentity=WeaponNativeGuidIdentity.New({current=current,hash=joaat,
@@ -379,6 +306,7 @@ function WeaponCharacterAmmoCreationNative.Scoped(ped,identity,prepareDual,clean
                 return {entity=handle,hash=hash,guid=key}
             end})
     end
+    if not guidIdentity then return nil,'guid_ownership_required' end
     local function resolveOwned(record,identity)
         if guidIdentity and guidIdentity.Has(record) then return guidIdentity.Resolve(record,identity) end
         return record.entity
@@ -386,7 +314,7 @@ function WeaponCharacterAmmoCreationNative.Scoped(ped,identity,prepareDual,clean
     local maintenance=WeaponCharacterMaintenanceNative.Scoped(ped,current,resolveOwned)
     local adapter=WeaponCharacterAmmoCreationNative.New(ped,current,prepareDual,function(record,check,values)
         return maintenance.Apply(record,check,values)
-    end,guidIdentity,savedAttachments)
+    end,guidIdentity)
     adapter.readMaintenance=function(record,check) return maintenance.Read(record,check) end
     local diagnosticGuids=setmetatable({},{__mode='k'})
     local guidProbeUsed=setmetatable({},{__mode='k'})

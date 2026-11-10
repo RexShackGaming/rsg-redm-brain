@@ -6,7 +6,6 @@
     "emergency_alert": "%s %s %s pressed their emergency button!",
     "prefix_officer": "Officer",
     "prefix_medic": "Medic",
-
     "menu_close": "Close",
     "menu_back": "Back",
     "menu_work": "Work",
@@ -16,13 +15,11 @@
     "menu_user": "User",
     "menu_walkstyles": "Walk Styles",
     "menu_jobs": "Jobs",
-    "menu_pvp": "Toggle PVP",
     "menu_addressbook": "Address Book",
     "menu_searchplayer": "Search Player",
     "menu_clothing": "Clothing",
     "menu_fix_character": "Fix Character",
     "menu_your_info": "Your Info",
-
     "walk_normal": "Normal",
     "walk_angry": "Angry",
     "walk_veteran": "Veteran",
@@ -30,7 +27,6 @@
     "walk_lost": "Lost",
     "walk_murfree": "Murfree",
     "walk_primate": "Primate",
-
     "cloth_dress": "Dress",
     "cloth_undress": "Undress",
     "cloth_hat": "Hat",
@@ -42,7 +38,6 @@
     "cloth_mask": "Mask",
     "cloth_coat": "Coat",
     "cloth_closed_coat": "Closed Coat",
-
     "job_emergency": "Emergency Button",
     "law_cuff": "Cuff",
     "law_escort": "Escort",

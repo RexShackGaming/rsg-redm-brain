@@ -27,6 +27,6 @@ assert(not build({offhand=sawedoff},catalog,registry,identity),'primary required
 assert(not build({primary=row(903,'shotgun_pump')},catalog,registry,identity),'not all shotguns are sidearms')
 plan.items[1].slot='shoulder'; plan.items[1].point=10; plan.items[1].copyKey='shoulder:901:0'
 assert(not validate(plan,registry,identity),'forged carry category refused independently')
-assert(not build({primary=row(904,'revolver_lemat')},catalog,registry,identity),'LeMat exclusion unchanged')
+assert(build({primary=row(904,'revolver_lemat')},catalog,registry,identity),'LeMat remains a sidearm')
 assert(sawedoff.metadata.ammo.ownership=='character' and sawedoff.metadata.ammo.loaded==nil)
-print('Sawed-off category PASS (catalog primary/offhand, shotgun pool retained, wrong slots/pump/LeMat refusal, no economy/native writes)')
+print('Sawed-off category PASS (catalog primary/offhand, shotgun pool retained, wrong slots/pump refusal, LeMat sidearm, no economy/native writes)')

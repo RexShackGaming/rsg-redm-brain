@@ -19,12 +19,6 @@ for _,weapon in pairs(WeaponDefinitionCatalog.weapons) do
   for _,id in ipairs(ids) do
    local attachment=WeaponDefinitionCatalog.attachments[id]
    local before=metadata(weapon)
-   if weapon.id=='revolver_lemat' then
-    assert(not WeaponCharacterAttachments.PlanCatalog(before,weapon,attachment,'attachment-install'),
-     'existing LeMat dual-ammo exclusion must not be relaxed by attachment planning')
-    before.attachments={{definitionId=id,slot=attachment.slot}}
-    assert(WeaponNativeAttachmentProjection.BuildCatalog(item(weapon,before),WeaponDefinitionCatalog,identity))
-   else
    local install=assert(WeaponCharacterAttachments.PlanCatalog(before,weapon,attachment,'attachment-install'))
    assert(#before.attachments==0 and install.material.quantity==1 and install.material.itemName==attachment.itemName)
    local projection=assert(WeaponNativeAttachmentProjection.BuildCatalog(item(weapon,install.after),WeaponDefinitionCatalog,identity))
@@ -35,7 +29,6 @@ for _,weapon in pairs(WeaponDefinitionCatalog.weapons) do
     assert(not WeaponCharacterAttachments.Plan(before,weapon,attachment,'attachment-install'))
     assert(not WeaponNativeAttachmentProjection.Build(item(weapon,install.after),WeaponDefinitionCatalog,identity),
      'catalog planning cannot bypass live reconstruction gate')
-   end
    end
    count=count+1
   end
@@ -70,4 +63,4 @@ sight.prerequisites={}; sight.conflicts={barrel.id}
 assert(not WeaponCharacterAttachments.PlanCatalog(barrelFirst.after,weapon,sight,'attachment-install'))
 assert(not WeaponCharacterAttachments.PlanCatalog(first.after,weapon,barrel,'attachment-install'),'reverse conflict checked across complete set')
 sight.prerequisites=originalPrerequisites; sight.conflicts=originalConflicts
-print('Catalog planning PASS (38 projections, 36 pure install/remove pairs, LeMat exclusion retained, multislot/dependency/conflict policy, live gates unchanged)')
+print('Catalog planning PASS (38 projections, 38 pure install/remove pairs, character-owned LeMat pools, multislot/dependency/conflict policy, live gates unchanged)')

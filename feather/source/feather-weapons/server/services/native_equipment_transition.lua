@@ -187,8 +187,8 @@ local drain
 local attachmentDisconnect={}
 local function attachmentEnabled()
     return enabled() and Config.NativeAlphaLifecycleWearEnabled==true and type(GetConvarInt)=='function'
-        and GetConvarInt('feather_native_attachment_transactions',0)==1
-        and GetConvarInt('feather_native_saved_attachments',0)==1 and GetConvarInt('feather_native_guid_ownership',1)==1
+        and GetConvarInt('feather_native_attachment_transactions',1)==1
+        and GetConvarInt('feather_native_saved_attachments',1)==1 and GetConvarInt('feather_native_guid_ownership',1)==1
 end
 local uiPending={}
 local wearPending={}
@@ -708,7 +708,8 @@ local adapters={
         pending[source]=copy(request)
         if periodicIntent[source] and same(periodicIntent[source],request.identity) then pending[source].periodic=true end
         TriggerClientEvent('feather-weapons:client:native-equipment-release',source,request)
-        SetTimeout(45000,function()
+        local deadline=WeaponGuidAcceptanceServer and WeaponGuidAcceptanceServer.Timeout(source) or 45000
+        SetTimeout(deadline,function()
             if pending[source] and pending[source].ticket==request.ticket then
                 local state=coordinator.Status(source)
                 if state and state.phase~='active' then coordinator.Cancel(source,request.identity.sessionId) end
@@ -847,6 +848,8 @@ local adapters={
         return exports['feather-inventory']:CommitNativeEquipmentTransition(context,spec)
     end,
     rebuild=function(source)
+        if WeaponGuidAcceptanceServer and WeaponGuidAcceptanceServer.Reserved(source)
+            and WeaponGuidAcceptanceServer.BeforeRebuild(source)~=true then return denied('guid_suite_cleanup_unconfirmed') end
         local request=pending[source]
         local spec=request and request.repairSpec
         if spec then
@@ -914,6 +917,12 @@ function WeaponNativeEquipmentBindings.AcceptanceTransition(target,overlap)
     if not state or state.phase~='active' or state.busy or not identity(state.identity) then return denied('active_owner_required') end
     return overlap and WeaponNativeEquipmentTransition.ProbeOverlap(coordinator,target,copy(state.identity))
         or coordinator.Begin(target,{action='dry-run'})
+end
+function WeaponNativeEquipmentBindings.GuidValidationTransition(target)
+    if not WeaponGuidAcceptanceServer or not WeaponGuidAcceptanceServer.Reserved(target)
+        or GetConvarInt('feather_native_guid_suite',0)~=1 or not enabled()
+        or GetResourceState('feather-weapons-native-proof')~='stopped' then return denied('guid_suite_not_reserved') end
+    return coordinator.Begin(target,{action='dry-run'})
 end
 function WeaponNativeEquipmentBindings.AcceptanceStatus(target) return coordinator.Status(target) end
 exports('ReadNativeMaintenanceAuditSpec',function(target,itemId)

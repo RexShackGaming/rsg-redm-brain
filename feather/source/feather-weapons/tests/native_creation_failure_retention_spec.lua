@@ -5,7 +5,7 @@ for _,file in ipairs({'shared/character_ammunition.lua','shared/character_ammuni
 local identity={characterId='c',sessionId='s',epoch='e'}
 local plan={identity=identity,dual=false,sameModel=false,items={{slot='primary',point=2,
     itemInstanceId=1,itemRevision=2,definitionId='gun',nativeWeaponName='WEAPON_PISTOL_M1899',
-    preferredAmmoType='regular',copyKey='primary:1:2',creation='native_zero_ammo_grant',attachments={},cosmetics={}}}}
+    preferredAmmoType='regular',copyKey='primary:1:2',creation='native_inventory_guid',attachments={},cosmetics={}}}}
 local record={entity=100,itemInstanceId=1,itemRevision=2}
 local outcome=false
 local adapter={current=function() return true end,prepareDual=function() return true end,

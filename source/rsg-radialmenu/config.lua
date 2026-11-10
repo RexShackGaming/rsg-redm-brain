@@ -67,7 +67,6 @@ Config.MenuItems = {
                 },
             },
             cmd('jobs',         locale('menu_jobs'),         'circle-user',       'myjobs'),
-            cl('pvptoggle',     locale('menu_pvp'),          'hand-holding-hand', 'rsg-essentials:client:pvpToggle'),
             cl('addressbook',   locale('menu_addressbook'),  'address-book',      'rsg-telegram:client:OpenAddressbook'),
             cmd('searchplayer', locale('menu_searchplayer'), 'magnifying-glass',  'searchplayer'),
         },
