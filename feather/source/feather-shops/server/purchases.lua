@@ -14,7 +14,7 @@ end
 local function Order(id)
     if not ShopService.Uuid(id) then return nil end
     local order=DB.one("SELECT * FROM shop_orders WHERE order_id=? AND source_resource='feather-shops'",id)
-    if order then for _,key in ipairs({'quantity','definition_id','unit_price','total_amount'}) do order[key]=tonumber(order[key]) end end
+    if order then for _,key in ipairs({'quantity','definition_id','unit_price','total_amount','pack_size'}) do order[key]=tonumber(order[key]) end end
     return order
 end
 function ShopPurchases.Start()
@@ -27,6 +27,13 @@ function ShopPurchases.Start()
     if type(contract)~='table' or contract.contractVersion~=1 or not contract.ready
         or not contract.atomicPaymentDelivery or not contract.recoveryFence then
         return Err('dependency_unavailable','Atomic Inventory checkout contract required.')
+    end
+    for _,shop in ipairs(Config.Shops) do
+        for _,offer in ipairs(shop.offers) do
+            if (offer.packSize or 1)>1 and (contract.packageDelivery~=1 or contract.maximumDeliveredItems~=100) then
+                return Err('dependency_unavailable','Inventory package-delivery contract required for boxed offers.')
+            end
+        end
     end
     local tables=DB.query([[SELECT table_name AS name FROM information_schema.tables
         WHERE table_schema=DATABASE() AND table_name IN ('shop_order_executions','shop_order_compensations')]]) or {}
@@ -154,8 +161,13 @@ local function Current(permit,order)
     if not permit or not ShopService.IsReady() then return false end
     for _,key in ipairs({'order_id','source_resource','quote_id','buyer_account_id','buyer_character_id',
         'buyer_session_id','shop_id','offer_id','item_name','definition_id','quantity','currency_code',
-        'unit_price','total_amount','catalog_revision'}) do
+        'unit_price','total_amount','catalog_revision','pack_size'}) do
         if order[key]~=permit.order[key] then return false end
+    end
+    if (order.pack_size or 1)~=(permit.quote.packSize or 1) then return false end
+    for orderKey,quoteKey in pairs({quantity='quantity',unit_price='unitPrice',total_amount='total',
+        item_name='itemName',definition_id='definitionId',currency_code='currency'}) do
+        if order[orderKey]~=permit.quote[quoteKey] then return false end
     end
     return ShopQuotes.Current(order.quote_id,permit.source,permit.quote)==true
 end

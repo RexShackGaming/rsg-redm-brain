@@ -1,6 +1,8 @@
 # rsg-fishing
 
-Fishing for **RSG-Core** (RedM). Players equip a fishing rod, bait it with an item from their inventory, cast, hook and reel in fish. Caught fish go into the inventory with their weight. An on-screen HUD guides the player through each step.
+Fishing for **RSG-Core** (RedM), version 3.0.4. Full technical reference: [DOCS.md](DOCS.md).
+
+ Players equip a fishing rod, bait it with an item from their inventory, cast, hook and reel in fish. Caught fish go into the inventory with their weight. An on-screen HUD guides the player through each step.
 
 ## Features
 
@@ -43,15 +45,16 @@ Fishing for **RSG-Core** (RedM). Players equip a fishing rod, bait it with an it
 1. Take out your fishing rod.
 2. Use a bait item from your inventory.
 3. Follow the HUD: prepare the rod, then cast.
-4. Watch the float. When it turns into a fish, hook it and reel it in.
+4. Watch the float. When it turns into a fish, hook it, then **hold** the reel key (SPACE) to bring it in. When the fish struggles (splashing, tension bar rising), let go until it calms down, then hold again.
 5. Keep the fish or throw it back.
 
 ## Configuration (`shared/config.lua`)
 
 | Option | Description |
 |---|---|
-| `Config.Difficulty` | How hard fish pull back while reeling |
-| `Config.ReelSpeed` | How fast the hook reels towards the player |
+| `Config.Difficulty` | How long (ms) each reel pull lasts. It is repeated while the reel key is held, so this mostly sets how quickly the fish stops when you let go |
+| `Config.ReelInSpeed` | How fast a hooked fish swims towards you while you reel (default `1.5`) |
+| `Config.ReelSpeed` | How fast an empty hook/lure reels towards the player (CTRL, before a fish bites) |
 | `Config.StruggleChance` | Chance per tick that a hooked fish struggles (0.0–1.0) |
 | `Config.FishWeightMultiplier` | Converts game weight units to the KG shown to players |
 | `Config.CatchCooldown` | Minimum ms between accepted catches |
@@ -93,6 +96,13 @@ shared/config.lua     Settings
 - `rsg-fishing:server:catchFish` (renamed from `rsg-fishing:FishToInventory`; update any script that triggered the old name)
 
 ## Changelog
+
+**3.0.4**
+- Fixed reeling: holding the reel key now keeps pulling the fish in. Before, each key press only pulled for half a second, and a key held through a struggle did nothing afterwards.
+- The reel key is read even when the fishing task disables the control.
+- The client now takes network control of the hooked fish, so reeling works on fish spawned by another player.
+- New `Config.ReelInSpeed`.
+- Added `DOCS.md`.
 
 **3.0.3**
 - Line tension and snapping, with a tension bar in the HUD.

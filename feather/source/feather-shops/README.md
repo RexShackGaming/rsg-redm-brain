@@ -1,5 +1,39 @@
 # Feather Shops
 
+Current version: **0.4.0**.
+
+## Weapons-owned gun stores and ammunition boxes
+
+`Config.WeaponStoresEnabled=true` imports locations and offers from Weapons'
+`shop_config.lua`. Set it false only for an intentional standalone Shops install
+without Weapons. Ordinary offers remain in Shops config. The default old $25
+Cattleman test offer has been removed; edit gun-store prices in Weapons instead.
+The store menu groups firearms, ammunition, attachments and maintenance supplies.
+
+Offer `packSize` is the number of Inventory items in one purchased unit. Quantity
+on the quote/order is boxes; `unitPrice` is integer minor units per box and total
+remains quantity times unitPrice. The quote and confirmation also report exact
+delivered item quantity. Box size is server-owned and is saved on the immutable
+order as `pack_size`; clients cannot supply it. Item delivery is capped at 100 per
+order, while firearms remain exactly one canonical item per purchase.
+
+Startup adds `shop_orders.pack_size INT UNSIGNED NOT NULL DEFAULT 1` when missing,
+checks compatible storage, and preserves original migration checksums and old
+orders/receipts. The old total-price constraint remains intact. Existing orders
+retain one delivered item per purchased unit. Inventory must advertise package
+delivery support before boxed offers can be admitted. No Economy code change is
+needed. Upgrade these three resources together during a coordinated stop.
+
+Prices and source catalog are captured at startup; a Weapons stop closes Shops
+admission until Shops is restarted after Weapons. Changing config does not mutate
+accepted orders. Catalog labels use the requesting player's feather-settings/Core
+language and are refreshed when the menu opens; unavailable translations fall
+back to the configured English label.
+
+Offline checks: `tests/run_checkout.py --lupa-dir <local Lupa installation>` runs
+the actual transaction composition plus catalog/source/schema and menu tests.
+These model SQL/CFX and do not replace the focused live store purchase check.
+
 Native Feather commerce. Shops owns catalogs, quotes and immutable orders;
 Economy owns money, Inventory owns capacity/items, and Weapons owns canonical
 firearm metadata and provenance. There is one atomic purchase path.
@@ -92,3 +126,5 @@ code in separate caller-bound environments. SQL, networking and engine authority
 are modeled. Passing this suite establishes component composition, not live CFX
 callback transport, MariaDB contention, migration execution or RedM acceptance.
 Those checks remain required before release.
+
+The menu is pinned 3% from the top and left. Ammunition is grouped by family; offers use two lines for name and quantity/price, and dollars display with $. Transaction busy feedback remains active until asynchronous work completes. Requires the companion Menu v2 button-description update (2.0.0-alpha.10).

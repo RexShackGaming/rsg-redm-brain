@@ -1,7 +1,8 @@
 Config = {}
 
 -- settings
-Config.Difficulty = 500 -- how hard the fish pulls back while reeling
+Config.Difficulty = 500 -- ms each reel pull lasts; re-issued while the reel key is held (lower = fish stops sooner when you let go)
+Config.ReelInSpeed = 1.5 -- how fast a hooked fish swims towards you while reeling (higher = quicker catch)
 Config.ReelSpeed = 0.025 -- how fast the hook reels in towards the player
 Config.Debug = false
 Config.StruggleChance = 0.3 -- chance (0.0-1.0) per tick that a hooked fish struggles

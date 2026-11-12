@@ -4,6 +4,8 @@ A wagon delivery system for RedM using the RSG Framework. Players pick up goods 
 
 Talking to a foreman opens a NUI contract board listing every destination from that hub. Selecting a route shows its distance, time limit, wagon, difficulty rating, a route-length bar, and the cash and item rewards (with item images when configured).
 
+Version 3.1.1. Full technical reference (events, security model, troubleshooting): [DOCS.md](DOCS.md)
+
 ## Dependencies
 
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
@@ -52,7 +54,7 @@ All options are in `shared/config.lua`.
 | `Config.MaxAverageSpeed` | float | `25.0` | Deliveries finished faster than `distance / speed` seconds are rejected (teleport check) |
 | `Config.RequireWagonAtDestination` | bool | `true` | Server checks the delivery wagon is at the drop-off (needs OneSync) |
 
-Other server-side protections: only hub/route indexes come from the client, the start is distance-checked against the hub, the registered wagon must match the contract's model, the completion event is consumed on first use, and delivery wagons are deleted on cancel, fail, completion, disconnect and resource stop.
+Other server-side protections: only hub/route indexes come from the client, the start is distance-checked against the hub, the registered wagon must match the contract's model (the server waits up to 10 seconds for a newly spawned wagon to sync, and re-validates the wagon's model, creator and position on arrival if it was never registered), the completion event is consumed on first use, and delivery wagons are deleted on cancel, fail, completion, disconnect and resource stop.
 
 ### Discord Webhook (`SvConfig.Webhook` in `server/sv_config.lua`)
 
@@ -148,6 +150,12 @@ Player-facing text, including the contract board UI, ships in en, de, el, es, fr
 ## Adding New Deliveries
 
 Add a new entry to `Config.DeliveryLocations` following the existing structure, or add a new route to an existing hub's `deliveries` array. Wagon models and prop sets can be referenced from [rdr3_discoveries](https://github.com/femga/rdr3_discoveries).
+
+## Changelog
+
+### 3.1.1
+- Fixed deliveries being rejected with "You need to bring the wagon to the drop-off" (and no reward) while the player was in the delivery wagon. The wagon was reported to the server before it had synced, so it was never registered. The server now waits for the wagon to sync, and can validate it again on arrival.
+- The server console now prints the reason whenever the wagon check rejects a delivery.
 
 ## Support
 

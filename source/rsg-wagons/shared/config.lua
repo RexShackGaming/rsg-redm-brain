@@ -93,8 +93,8 @@ Config.Stores = {
     blackwater = {
         label   = 'Blackwater Wagon Yard',
         npcModel = 's_m_m_cghworker_01',
-        npc     = vector4(-870.62, -1370.70, 43.62, 40.36),
-        preview = vector4(-865.77, -1366.23, 43.49, 88.50),
+        npc     = vector4(-870.58, -1359.47, 43.54, 2.99),
+        preview = vector4(-870.88, -1352.38, 43.40, 87.74),
         showBlip = true,
     },
     tumbleweed = {

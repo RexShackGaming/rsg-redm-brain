@@ -58,7 +58,7 @@ return function(h)
         if sql:find('INSERT IGNORE INTO `shop_orders`',1,true) then
             for _,row in pairs(sqlState.orders) do if row.request_id==p[3] then return {affectedRows=0} end end
             local fields={'order_id','source_resource','request_id','quote_id','buyer_account_id','buyer_character_id',
-                'buyer_session_id','shop_id','offer_id','item_name','definition_id','quantity','currency_code','unit_price','total_amount','catalog_revision'}
+                'buyer_session_id','shop_id','offer_id','item_name','definition_id','quantity','currency_code','unit_price','total_amount','catalog_revision','pack_size'}
             local row={status='prepared'};for i,key in ipairs(fields) do row[key]=p[i] end
             sqlState.orders[row.order_id]=row;h.setOrder(copy(row));return {affectedRows=1}
         end
@@ -167,7 +167,7 @@ return function(h)
         envs[owner]=e;return e
     end
     local function Load(e,root,path) assert(loadfile(root..'/'..path,'t',e))() end
-    local function Setup(weapon)
+    local function Setup(weapon,package)
         h.setup(weapon)
         registry={['feather-core']={},['feather-inventory']={},['feather-economy']={},['feather-weapons']={},['feather-shops']={}}
         caller=nil;threads={};handlers={};envs={};now=os.time();fault=nil;offline=false;translations={};languages={}
@@ -231,6 +231,10 @@ return function(h)
         local shop=Env('feather-shops');Load(shop,shopRoot,'config.lua')
         local catalog={id=o.shop_id,organizationId=sqlState.organization,position={x=0,y=0,z=0},offers={
             {id=o.offer_id,itemName=h.definitions()[1].name,currency='dollars',unitPrice=25,maximumQuantity=10}}}
+        if package then
+            catalog.offers[1].packSize=package.size;catalog.offers[1].unitPrice=package.price
+            catalog.offers[1].maximumQuantity=math.floor(100/package.size)
+        end
         shop.ShopService={Ok=function(v) return {ok=true,value=v} end,Err=function(c,m,d) return {ok=false,code=c,message=m,details=d} end,
             Copy=copy,IsReady=function() return true end,GetCatalog=function() return {ok=true,value=copy(catalog)} end,
             RegisterDevCommand=function() end,Uuid=function(v) return type(v)=='string' and #v==36 end,
@@ -244,7 +248,8 @@ return function(h)
         Load(shop,shopRoot,'server/purchases.lua');Load(shop,shopRoot,'server/player_routes.lua')
         assert(shop.ShopPurchases.Start().ok)
         assert(shop.ShopPlayerRoutes.Start().ok)
-        local quoted=shop.ShopQuotes.Create({shopId=catalog.id,offerId=catalog.offers[1].id,quantity=weapon and 1 or 3},source)
+        local quoted=shop.ShopQuotes.Create({shopId=catalog.id,offerId=catalog.offers[1].id,
+            quantity=package and (package.boxes or 1) or (weapon and 1 or 3)},source)
         assert(quoted.ok,quoted.message)
         quote={quoteId=quoted.value.id,requestId='ui:'..quoted.value.id}
         return shop,catalog
@@ -430,16 +435,126 @@ return function(h)
         local shop=Setup(false);sqlState.legacyMissingTables=true
         assert(shop.ShopPurchases.Start().code=='legacy_orders_need_review' and sqlState.debits==0)
     end)
-    test('selected live-test Cattleman catalog price is exactly 2500 minor units',function()
+    test('general store no longer maintains a duplicate firearm price',function()
         local shop,catalog=Setup(true)
         local offers=shop.Config.Shops[1].offers
-        assert(offers[1].unitPrice==100 and offers[2].unitPrice==2500 and offers[2].maximumQuantity==1)
-        assert(offers[2].itemName=='weapon_revolver_cattleman')
-        catalog.offers[1].unitPrice=offers[2].unitPrice;catalog.offers[1].maximumQuantity=1
-        local q=shop.ShopQuotes.Create({shopId=catalog.id,offerId=catalog.offers[1].id,quantity=1},source);assert(q.ok)
-        quote={quoteId=q.value.id,requestId='ui:'..q.value.id};sqlState.accounts[sqlState.wallet].posted_amount=10000
-        local bought=Purchase();assert(bought.ok and bought.value.total==2500)
-        assert(sqlState.accounts[sqlState.wallet].posted_amount==7500 and sqlState.provenance==1)
+        assert(#offers==1 and offers[1].unitPrice==100 and offers[1].itemName=='consumable_apple')
+        assert(shop.Config.WeaponStoresEnabled==true)
+    end)
+    test('50-round box charges exact 62 cents and replay conserves all 50 rounds',function()
+        Setup(false,{size=50,price=62})
+        local result=Purchase();assert(result.ok,result.message)
+        assert(result.value.quantity==1 and result.value.packSize==50 and result.value.itemQuantity==50)
+        assert(#h.rows()==51 and sqlState.accounts[sqlState.wallet].posted_amount==938)
+        assert(Status().ok and Purchase().ok and #h.rows()==51 and sqlState.debits==2)
+    end)
+    test('two boxes deliver 100 rounds at exact box prices within the same SQL budget',function()
+        Setup(false,{size=50,price=62});assert(Purchase().ok);local small=sqlState.economicSqlCalls
+        Setup(false,{size=50,price=62,boxes=2})
+        local result=Purchase();assert(result.ok,result.message)
+        assert(#h.rows()==101 and result.value.itemQuantity==100 and result.value.total==124)
+        assert(sqlState.accounts[sqlState.wallet].posted_amount==876 and sqlState.debits==2)
+        assert(sqlState.economicSqlCalls==small and small<=35 and sqlState.economicTransactions==1)
+    end)
+    test('persisted package quantity cannot diverge from its authorized quote',function()
+        local shop=Setup(false,{size=50,price=62})
+        local prepared=shop.ShopOrders.Prepare(copy(quote),source,'feather-shops');assert(prepared.ok)
+        sqlState.orders[prepared.value.id].pack_size=1
+        local result=Purchase();assert(not result.ok and #h.rows()==1 and sqlState.debits==0)
+    end)
+    test('boxed insufficient funds rolls back payment and every round',function()
+        Setup(false,{size=25,price=50});sqlState.accounts[sqlState.wallet].posted_amount=49
+        local result=Purchase();assert(not result.ok and result.code=='insufficient_funds')
+        assert(#h.rows()==1 and sqlState.debits==0 and Status().details.safeToClear)
+    end)
+    test('lost boxed checkout reply recovers original delivery without replaying mutation',function()
+        Setup(false,{size=20,price=45});fault='offline_after_commit'
+        assert(not Purchase().ok and #h.rows()==21 and sqlState.debits==2)
+        offline=false;local result=Status();assert(result.ok and result.value.itemQuantity==20)
+        assert(#h.rows()==21 and sqlState.accounts[sqlState.wallet].posted_amount==955 and sqlState.debits==2)
+    end)
+    test('changed pack size invalidates quote and excessive boxes or client pack fields are refused',function()
+        local shop,catalog=Setup(false,{size=50,price=62})
+        assert(not shop.ShopQuotes.Create({shopId=catalog.id,offerId=catalog.offers[1].id,quantity=3},source).ok)
+        assert(not shop.ShopQuotes.Create({shopId=catalog.id,offerId=catalog.offers[1].id,quantity=1,packSize=1},source).ok)
+        catalog.offers[1].packSize=25
+        assert(not Purchase().ok and #h.rows()==1 and sqlState.debits==0)
+    end)
+    test('catalog label resolver selects each locale with English fallback and leaves canonical data intact',function()
+        local shop,catalog=Setup(false,{size=50,price=62})
+        catalog.label='Gun Store';catalog.offers[1].label='Regular cartridges'
+        shop.ShopService.ListShops=function() return {ok=true,value={{id=catalog.id}}} end
+        languages[source]='es'
+        translations.es={['ui_shops_store_'..catalog.id]='Armeria',
+            ['ui_shops_item_'..catalog.offers[1].itemName]='Cartuchos'}
+        assert(shop.ShopCatalogText(source,'ui_shops_store_'..catalog.id,catalog.label)=='Armeria')
+        assert(shop.ShopCatalogText(source,'ui_shops_item_'..catalog.offers[1].itemName,catalog.offers[1].label)=='Cartuchos')
+        languages[source]='missing'
+        local result=handlers['shops.catalog.v1']({},source)
+        assert(result.value[1].label=='Gun Store' and result.value[1].offers[1].label=='Regular cartridges')
+        assert(shop.ShopCatalogText(source,'ui_shops_store_'..catalog.id,catalog.label)=='Gun Store')
+        assert(catalog.label=='Gun Store' and catalog.offers[1].label=='Regular cartridges')
+    end)
+    test('actual store client groups offers and reviews boxes plus exact delivered rounds',function()
+        local shop,catalog=Setup(false,{size=50,price=62})
+        catalog.label='Gun Store';catalog.offers[1].label='Regular cartridges';catalog.offers[1].category='ammunition'
+        shop.ShopService.ListShops=function() return {ok=true,value={{id=catalog.id}}} end
+        registry['shops-client']={};registry['feather-menu-v2']={};registry['feather-toolkit']={}
+        local client=Env('shops-client');client.GlobalState={['feather-shops:ready']=true}
+        client.joaat=function() return 1 end;client.GetResourceKvpString=function() end
+        client.Wait=function(ms) return coroutine.yield(ms) end
+        client.PlayerPedId=function() return 1 end;client.IsEntityDead=function() return false end
+        local vectorMT={__sub=function() return setmetatable({}, {__len=function() return 0 end}) end}
+        client.vector3=function() return setmetatable({},vectorMT) end
+        client.GetEntityCoords=function() return client.vector3() end
+        registry['feather-core'].AwaitReady=function() return {ok=true} end
+        registry['feather-core'].CallRPCAsync=function(route,request)
+            if route=='shops.wallets.v1' then return {ok=true,value={}} end
+            return handlers[route](request,source)
+        end
+        local menu,toolkit=registry['feather-menu-v2'],registry['feather-toolkit']
+        local pages,current,lifecycle={},nil,nil
+        menu.CreateMenu=function(options) assert(options.position.x=='3%' and options.position.y=='3%' and options.position.anchor=='top-left' and options.draggable==false);return {ok=true,value={menuId='test'}} end
+        menu.CreatePage=function() local id=#pages+1;pages[id]={};return {ok=true,value={pageId=id}} end
+        menu.DestroyPage=function() return {ok=true} end
+        menu.AddElement=function(_,page,kind,settings,callback)
+            pages[page][#pages[page]+1]={kind=kind,settings=settings,callback=callback};return {ok=true,value={elementId=#pages[page]}}
+        end
+        menu.UpdateElement=function(_,page,id,changes) pages[page][id].settings.busy=changes.busy;return {ok=true} end
+        menu.RegisterMenuLifecycle=function(_,callback) lifecycle=callback;return {ok=true} end
+        menu.OpenMenu=function(_,options) current=options.pageId;lifecycle({event='opened'});return {ok=true} end
+        menu.CloseMenu=function() return {ok=true} end
+        toolkit.ResolveControl=function() return {ok=true,value=1} end
+        toolkit.CreatePrompt=function() return {ok=true,value={id=1}} end
+        toolkit.ShowPromptGroup=function() end
+        toolkit.IsPromptCompleted=function() return {ok=true,value={completed=true}} end
+        Load(client,shopRoot,'shared/localization.lua')
+        local first=#threads;Load(client,shopRoot,'client/shop.lua')
+        local startup=coroutine.create(threads[first+2].fn);assert(coroutine.resume(startup))
+        threads[#threads].fn()
+        local function click(label)
+            for _,element in ipairs(pages[current]) do
+                if element.settings.label==label then element.callback();return end
+            end
+            error('missing button '..label)
+        end
+        click('Ammunition');threads[#threads].fn()
+        click('Other ammunition');threads[#threads].fn()
+        local offerButton
+        for _,element in ipairs(pages[current]) do if element.settings.label=='Regular cartridges' then offerButton=element end end
+        assert(offerButton.settings.description=='50 rounds / $0.62' and offerButton.settings.busy==false)
+        click('Regular cartridges')
+        local found=false
+        for _,element in ipairs(pages[current]) do
+            if element.kind=='number' then assert(element.settings.label=='Boxes' and element.settings.max==2);found=true end
+        end
+        assert(found)
+        click('Review price')
+        for _,element in ipairs(pages[current]) do if element.kind=='button' then assert(element.settings.busy==true) end end
+        threads[#threads].fn()
+        found=false
+        for _,element in ipairs(pages[current]) do if element.settings.value=='Rounds delivered: 50' then found=true end end
+        assert(found and sqlState.debits==0 and #h.rows()==1,'review must not mutate payment or delivery')
     end)
     test('closed business refuses a fresh quote',function()
         local shop,catalog=Setup(false);sqlState.businessActive=false

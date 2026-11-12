@@ -407,7 +407,7 @@ end
 
 local elementFields = {
     header = 'value', subheader = 'value', textdisplay = 'value', line = '', bottomline = '',
-    button = 'value sound busy busyLabel confirm', input = 'value placeholder maxLength error', textarea = 'value placeholder maxLength rows error',
+    button = 'value sound busy busyLabel description confirm', input = 'value placeholder maxLength error', textarea = 'value placeholder maxLength rows error',
     number = 'value min max step placeholder error', slider = 'value min max step', progress = 'value min max step text',
     toggle = 'value onLabel offLabel sound', checkbox = 'value onLabel offLabel sound',
     arrows = 'value options sound', dropdown = 'value options placeholder emptyText maxVisibleOptions sound',
@@ -459,7 +459,7 @@ function MenuValidation.Element(elementType, spec, path)
         end
     end
     if elementType == 'button' then
-        problem = OptionalBoolean(spec, 'busy', path) or OptionalString(spec, 'busyLabel', path, 256)
+        problem = OptionalBoolean(spec, 'busy', path) or OptionalString(spec, 'busyLabel', path, 256) or OptionalString(spec, 'description', path, 512)
         if problem then return problem end
         if spec.confirm ~= nil then
             problem = Fields(spec.confirm, 'title message confirmLabel cancelLabel', path .. '.confirm'); if problem then return problem end

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+    <div class="panel">
+        <div class="header">
+            <span class="hbtn ghost"></span>
+            <div class="htext">
+                <div class="title" id="title">Drilling</div>
+                <div class="subtitle" id="subtitle">Mining Camp</div>
+            </div>
+            <button class="hbtn" id="closeBtn" title="Close">✕</button>
+        </div>
+        <div class="divider"><span>✦</span></div>
+        <div id="rocks" class="rocks"></div>
+    </div>
+</div>
+<div id="hatPanel" class="hat-panel hidden">
+    <div class="hat-head" id="hatHead">
+        <span class="hat-title" id="hatTitle">Miner's Lamp</span>
+        <button class="hat-toggle" id="hatToggle">ON</button>
+    </div>
+    <div class="hat-body">
+        <div class="hat-label" id="hatColorLbl">Colour</div>
+        <div class="swatches" id="swatches"></div>
+        <div class="hat-label"><span id="hatBrightLbl">Brightness</span><span id="hatBrightVal"></span></div>
+        <input type="range" id="hatBright" min="0" max="100" step="1">
+        <div class="hat-label"><span id="hatSpreadLbl">Spread</span><span id="hatSpreadVal"></span></div>
+        <input type="range" id="hatSpread" min="2" max="20" step="0.5">
+        <div class="hat-hint" id="hatHint"></div>
+        <button class="wood-btn hat-done hidden" id="hatDone">Done</button>
+    </div>
+</div>
+<script src="script.js"></script>
+<script src="hatlight.js"></script>
+</body>
+</html>

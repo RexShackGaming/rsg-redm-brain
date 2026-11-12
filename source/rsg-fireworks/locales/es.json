@@ -1,0 +1,14 @@
+{
+    "display_not_found": "Espectáculo no encontrado: ",
+    "command_failed": "¡Comando fallido!",
+    "no_permission": "No tienes permiso para usar este comando",
+    "display_cooldown": "Espera antes de iniciar otro espectáculo",
+    "firework_in_progress_title": "Fuegos artificiales",
+    "firework_in_progress": "Espera a que termine tu fuego artificial actual",
+    "firework_cooldown": "Espera antes de colocar otro fuego artificial",
+    "firework_missing": "Ya no tienes ese fuego artificial",
+    "place_firework": "Colocar fuego artificial",
+    "placement_cancelled": "Colocación del fuego artificial cancelada",
+    "placement_failed": "No puedes colocar el fuego artificial aquí",
+    "placement_indoor": "Debes estar al aire libre para colocar un fuego artificial"
+}

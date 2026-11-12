@@ -36,6 +36,6 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [feather-shops](feather-shops.md) | Authoritative commerce workflows for the Feather Framework | 9 | 0 |
 | [feather-toolkit](feather-toolkit.md) | Owned, reusable client utility contracts for Feather Framework | 22 | 0 |
 | [feather-versioner](feather-versioner.md) | Optional, operator-owned GitHub release notification service for Feather Framework | 0 | 0 |
-| [feather-weapons](feather-weapons.md) | The official weapon system for Feather framework. | 29 | 47 |
+| [feather-weapons](feather-weapons.md) | The official weapon system for Feather framework. | 30 | 47 |
 | [feather-weather](feather-weather.md) | World time, weather, and climate synchronization for RedM | 7 | 4 |
 | [feather-world](feather-world.md) | World population and map compatibility runtime for Feather Framework | 6 | 0 |

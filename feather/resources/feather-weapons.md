@@ -1,8 +1,8 @@
 # feather-weapons
 
-Version 0.22.0. The official weapon system for Feather framework.
+Version 0.23.0. The official weapon system for Feather framework.
 
-Current version: **0.22.0**. Feather's native-only, Inventory-backed firearm system. Weapons are unique item instances; equipped assignments and maintenance persist per character.
+`shop_config.lua` owns gun-store locations and all firearm, ammunition, attachment and gun-oil prices. Shops imports this server-only catalog; checkout/payment and recovery still use the existing Inventory-owned atomic transaction. Requires the
 
 Source: https://github.com/FeatherFramework/feather-weapons
 
@@ -10,7 +10,7 @@ Source: https://github.com/FeatherFramework/feather-weapons
 
 ## Exports (call as exports['feather-weapons']:Name)
 
-**server:** `ApplyInventoryMoveDelivery(id,raw)`, `AuditInventoryMoveDelivery(id,raw)`, `DestroyWeapon(request, context)`, `GetShopWeaponDefinition(itemName)`, `HoldWeaponEvidence(request, context)`, `InspectWeaponHistory(request, context)`, `IsShopCheckoutWeaponCurrent(id,order)`, `IssueWeapon(request, context)`, `PrepareShopCheckoutWeapon(source,order)`, `ReadNativeEvidenceStatus(target,itemId)`, `ReadNativeMaintenanceAuditSpec(target,itemId)`, `ReadNativeRepairAuditSpec(target,itemId)`, `ReleaseShopCheckoutWeapon(id)`, `ReleaseWeaponEvidence(request, context)`, `StageShopCheckoutProvenance(query,id,order,inventoryId,itemId)`, `ValidateCharacterAmmoRuntimeOperation(context,operation,spec)`, `ValidateNativeEquipmentCommit(context,spec)`, `ValidateNativeEvidenceCommit(context,spec)`, `ValidateNativeIssuance(context,spec)`, `initiate()`
+**server:** `ApplyInventoryMoveDelivery(id,raw)`, `AuditInventoryMoveDelivery(id,raw)`, `DestroyWeapon(request, context)`, `GetGunStoreCatalog()`, `GetShopWeaponDefinition(itemName)`, `HoldWeaponEvidence(request, context)`, `InspectWeaponHistory(request, context)`, `IsShopCheckoutWeaponCurrent(id,order)`, `IssueWeapon(request, context)`, `PrepareShopCheckoutWeapon(source,order)`, `ReadNativeEvidenceStatus(target,itemId)`, `ReadNativeMaintenanceAuditSpec(target,itemId)`, `ReadNativeRepairAuditSpec(target,itemId)`, `ReleaseShopCheckoutWeapon(id)`, `ReleaseWeaponEvidence(request, context)`, `StageShopCheckoutProvenance(query,id,order,inventoryId,itemId)`, `ValidateCharacterAmmoRuntimeOperation(context,operation,spec)`, `ValidateNativeEquipmentCommit(context,spec)`, `ValidateNativeEvidenceCommit(context,spec)`, `ValidateNativeIssuance(context,spec)`, `initiate()`
 
 **client:** `ChangeNativeAttachment(itemId,action,scope,attachmentId)`, `ChangeNativeEquipment(itemId,action,slot,scope)`, `CheckpointBeforeLogout()`, `CheckpointCharacterAmmunitionBeforeLogout(context)`, `CheckpointJanePrimaryLogout(context)`, `GetNativeAmmunitionControls(itemName)`, `GetNativeEquipmentControls(itemId)`, `RepairNativeEquipment(itemId,scope)`, `TransferNativeAmmunition(id,quantity,direction,scope)`, `initiate()`
 
@@ -107,6 +107,8 @@ Source: https://github.com/FeatherFramework/feather-weapons
 **server/services/definition_registry.lua:** `DefinitionRegistry.Start()`, `DefinitionRegistry.ValidateAttachmentSet(weaponId, installed)`, `DefinitionRegistry.IsAttachmentCompatible(weaponId, attachmentId)`, `DefinitionRegistry.ListCompatibleAttachments(weaponId)`, `DefinitionRegistry.IsReady()`, `DefinitionRegistry.Get(kind, id)`, `DefinitionRegistry.List(kind)`, `DefinitionRegistry.Counts()`
 
 **server/services/evidence.lua:** `WeaponEvidenceService.SetHold(context, request, invokingResource, held)`, `WeaponEvidenceService.NativeAvailable()`, `WeaponEvidenceService.ValidateNativeCommit(context,spec)`, `WeaponEvidenceService.NativeChange(context,request,resource,held)`, `WeaponEvidenceService.NativeStatus(target,itemId)`, `WeaponEvidenceService.Hold(context, request, resource)`, `WeaponEvidenceService.Release(context, request, resource)`, `WeaponEvidenceService.CheckContract()`
+
+**server/services/gun_store_catalog.lua:** `WeaponGunStore.Build(config,definitions)`
 
 **server/services/issuance.lua:** `IssuanceService.NativeAvailable()`, `IssuanceService.PurchaseAvailable()`, `IssuanceService.PurchaseDefinition(itemName)`, `IssuanceService.PreparePurchase(context,request)`, `IssuanceService.Issue(context, request, invokingResource)`, `IssuanceService.CheckContract()`
 

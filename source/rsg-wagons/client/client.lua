@@ -10,6 +10,7 @@ local previewCamActive = false
 local previewRotateDir = nil
 local previewZoomDelta = 0.0
 local previewToken = 0
+local previewModel, previewTint = nil, -1 -- what the preview wagon is showing (a tint can only be removed by respawning)
 
 local myWagon = nil -- { id, entity, netId, name, model, condition, destroyed }
 local spawnOwnedWagon -- defined further down; used by the call (J) feature
@@ -36,8 +37,11 @@ end
 
 local function applyTint(veh, tint)
     tint = tonumber(tint)
-    if veh and DoesEntityExist(veh) and tint and tint >= -1 then
-        Citizen.InvokeNative(0x8268B098F6FCA4E2, veh, math.floor(tint)) -- _SET_VEHICLE_TINT (-1 = default)
+    -- Only real tints (0+) are sent. _SET_VEHICLE_TINT(-1) does NOT restore the default paint: it strips the
+    -- tint and leaves the lime green "no tint" texture (femga vehicle_tints.lua: "Vehicle turns default green").
+    -- "Default colour" therefore means: leave the freshly spawned wagon alone.
+    if veh and DoesEntityExist(veh) and tint and tint >= 0 then
+        Citizen.InvokeNative(0x8268B098F6FCA4E2, veh, math.floor(tint)) -- _SET_VEHICLE_TINT
     end
 end
 
@@ -90,6 +94,11 @@ local function loadPropset(hash)
 end
 
 local propToken = {}
+local propState = {} -- [veh] = signature of the propsets currently fitted, so a tarp height change doesn't refit them
+
+-- The hunting cart's pelt tarp goes on with _ADD_ADDITIONAL_PROP_SET_FOR_VEHICLE, exactly as in femga
+-- vehicle_propsets.lua (Huntercart01 example): _SET_BATCH_TARP_HEIGHT only moves a tarp fitted that way.
+-- The tarp is fitted once; after that only its height is changed as the cart fills.
 local function applyProps(veh, propset, lantern, tarp)
     if not veh or not DoesEntityExist(veh) then return end
     propToken[veh] = (propToken[veh] or 0) + 1
@@ -97,15 +106,35 @@ local function applyProps(veh, propset, lantern, tarp)
     CreateThread(function()
         local pHash = (type(propset) == 'string' and propset ~= '') and joaat(propset) or nil
         local lHash = (type(lantern) == 'string' and lantern ~= '') and joaat(lantern) or nil
-        if pHash then loadPropset(pHash) end
-        if lHash then loadPropset(lHash) end
-        if propToken[veh] ~= token or not DoesEntityExist(veh) then return end -- a newer change came in
-        Citizen.InvokeNative(0x3BCF32FF37EA9F1D, veh)                          -- _REMOVE_VEHICLE_PROP_SETS
-        if pHash then Citizen.InvokeNative(0xD80FAF919A2E56EA, veh, pHash) end -- _ADD_PROP_SET_FOR_VEHICLE
-        Citizen.InvokeNative(0xE31C0CB1C3186D40, veh)                          -- _REMOVE_VEHICLE_LIGHT_PROP_SETS
-        if lHash then Citizen.InvokeNative(0xC0F0417A90402742, veh, lHash) end -- _ADD_LIGHT_PROP_SET_TO_VEHICLE
-        if tarp then
-            Wait(250)
+        local sig = ('%s|%s|%s'):format(pHash or 0, lHash or 0, tarp and 'tarp' or '')
+        if propState[veh] ~= sig then
+            if pHash then loadPropset(pHash) end
+            if lHash then loadPropset(lHash) end
+            if propToken[veh] ~= token or not DoesEntityExist(veh) then return end -- a newer change came in
+            Citizen.InvokeNative(0x3BCF32FF37EA9F1D, veh)                          -- _REMOVE_VEHICLE_PROP_SETS
+            Citizen.InvokeNative(0x75F90E4051CC084C, veh, 0)                       -- clear the additional (tarp) propset
+            if pHash then
+                if tarp then
+                    Citizen.InvokeNative(0x75F90E4051CC084C, veh, pHash)           -- _ADD_ADDITIONAL_PROP_SET_FOR_VEHICLE (tarp)
+                else
+                    Citizen.InvokeNative(0xD80FAF919A2E56EA, veh, pHash)           -- _ADD_PROP_SET_FOR_VEHICLE (cargo)
+                end
+            end
+            Citizen.InvokeNative(0xE31C0CB1C3186D40, veh)                          -- _REMOVE_VEHICLE_LIGHT_PROP_SETS
+            if lHash then Citizen.InvokeNative(0xC0F0417A90402742, veh, lHash) end -- _ADD_LIGHT_PROP_SET_TO_VEHICLE
+            propState[veh] = sig
+            if tarp then
+                -- the tarp has to exist on the cart before its height can be set
+                local timeout = GetGameTimer() + 3000
+                while not Citizen.InvokeNative(0x7264F9CA87A9830B, veh) do          -- _IS_VEHICLE_PROP_SET_LOADED_ADDITIONAL
+                    if GetGameTimer() > timeout then break end
+                    Wait(50)
+                    if propToken[veh] ~= token or not DoesEntityExist(veh) then return end
+                end
+                Wait(100)
+            end
+        end
+        if tarp and propToken[veh] == token and DoesEntityExist(veh) then
             Citizen.InvokeNative(0x31F343383F19C987, veh, tarp + 0.0, true) -- _SET_BATCH_TARP_HEIGHT (hunting cart load)
         end
     end)
@@ -246,6 +275,7 @@ local function showPreview(model, livery, tint)
     SetVehicleDoorsLocked(veh, 2)
     applyPaint(veh, livery, tint)
     previewVeh = veh
+    previewModel, previewTint = model, tonumber(tint) or -1
 
     startPreviewCam(vector3(p.x, p.y, p.z), p.w)
 end
@@ -288,10 +318,18 @@ RegisterNUICallback('preview', function(data, cb)
     if data and type(data.model) == 'string' then showPreview(data.model, data.livery, data.tint) end
 end)
 
--- change the livery on the current preview wagon without respawning it
+-- change the paint on the current preview wagon. Going back to "Default" colour from a tint needs a fresh
+-- wagon, because a tint can't be removed cleanly (see applyTint); everything else repaints in place.
 RegisterNUICallback('previewLivery', function(data, cb)
     cb('ok')
-    if data then applyPaint(previewVeh, data.livery, data.tint) end
+    if not data then return end
+    local tint = tonumber(data.tint) or -1
+    if tint < 0 and previewTint >= 0 and previewModel then
+        showPreview(previewModel, data.livery, -1)
+    else
+        applyPaint(previewVeh, data.livery, tint)
+        previewTint = tint
+    end
 end)
 
 RegisterNUICallback('clearPreview', function(_, cb) endPreview() cb('ok') end)
@@ -732,6 +770,7 @@ spawnOwnedWagon = function(info, c, fadeIn)
     end
     local veh = CreateVehicle(hash, c.x, c.y, c.z, c.w, true, false, false, false)
     SetModelAsNoLongerNeeded(hash)
+    propState[veh] = nil -- entity handles get reused
     applyPaint(veh, info.livery, info.tint)
     local timeout = GetGameTimer() + 3000
     while not NetworkGetEntityIsNetworked(veh) and GetGameTimer() < timeout do Wait(10) end
@@ -854,7 +893,7 @@ CreateThread(function()
             end
         end
         for veh in pairs(applied) do
-            if not seen[veh] then applied[veh], paintToken[veh], propToken[veh] = nil, nil, nil end
+            if not seen[veh] then applied[veh], paintToken[veh], propToken[veh], propState[veh] = nil, nil, nil, nil end
         end
     end
 end)

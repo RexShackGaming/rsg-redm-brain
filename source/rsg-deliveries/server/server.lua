@@ -5,6 +5,7 @@ local LastDelivery = {}
 
 local START_RADIUS = 30.0       -- player must be this close to the hub's cart spawn to start
 local COMPLETE_RADIUS = 20.0    -- server-side tolerance for player / wagon at the drop-off
+local WAGON_REGISTER_TIMEOUT = 10000 -- ms the server waits for a freshly spawned wagon to sync before giving up
 local FAIL_REASONS = { timeout = 'Timeout', damaged_wagon = 'Damaged Wagon', wagon_lost = 'Wagon Lost', player_died = 'Player Died' }
 
 local function Notify(src, title, description, ntype)
@@ -98,18 +99,49 @@ local function DeleteDeliveryWagon(delivery)
     if wagon ~= 0 and DoesEntityExist(wagon) then DeleteEntity(wagon) end
 end
 
+---Resolves a net id to the contract's wagon. Returns the entity, or nil plus the reason it was rejected.
+---The wagon must exist on the server and match the contract's model; with checkCreator it must also
+---have been created by this player (used when the net id was not registered at the start).
+local function GetContractWagon(src, delivery, netId, checkCreator)
+    if type(netId) ~= 'number' then return nil, 'no net id' end
+    local wagon = NetworkGetEntityFromNetworkId(netId)
+    if not wagon or wagon == 0 or not DoesEntityExist(wagon) then return nil, 'not synced to the server' end
+    if (GetEntityModel(wagon) & 0xFFFFFFFF) ~= (joaat(delivery.destination.wagonModel) & 0xFFFFFFFF) then
+        return nil, 'wrong model'
+    end
+    if checkCreator and NetworkGetFirstEntityOwner and NetworkGetFirstEntityOwner(wagon) ~= src then
+        return nil, 'not spawned by this player'
+    end
+    return wagon
+end
+
 RegisterNetEvent('rsg-deliveries:server:setwagon', function(netId)
     local src = source
     local delivery = ActiveDeliveries[src]
-    if not delivery or delivery.netId or type(netId) ~= 'number' then return end
-    -- only accept the wagon model this contract spawned, near the player
-    local wagon = NetworkGetEntityFromNetworkId(netId)
-    if wagon == 0 or not DoesEntityExist(wagon) then return end
-    if (GetEntityModel(wagon) & 0xFFFFFFFF) ~= (joaat(delivery.destination.wagonModel) & 0xFFFFFFFF) then
-        Log('Player %s registered a wagon with the wrong model', src)
+    if not delivery or delivery.netId or delivery.registering or type(netId) ~= 'number' then return end
+    delivery.registering = true
+
+    -- the client sends this right after CreateVehicle, usually before the entity has
+    -- reached the server, so keep trying for a few seconds instead of giving up
+    local wagon, reason
+    local deadline = GetGameTimer() + WAGON_REGISTER_TIMEOUT
+    repeat
+        wagon, reason = GetContractWagon(src, delivery, netId)
+        if wagon or reason ~= 'not synced to the server' then break end
+        Wait(250)
+    until GetGameTimer() > deadline or ActiveDeliveries[src] ~= delivery
+
+    delivery.registering = nil
+    if ActiveDeliveries[src] ~= delivery then return end -- cancelled / failed while waiting
+
+    if not wagon then
+        Log('Player %s: delivery wagon (net id %s) was not registered: %s', src, netId, reason)
         return
     end
-    if #(GetEntityCoords(wagon) - GetEntityCoords(GetPlayerPed(src))) > START_RADIUS then return end
+    if #(GetEntityCoords(wagon) - GetEntityCoords(GetPlayerPed(src))) > START_RADIUS then
+        Log('Player %s: delivery wagon was not registered: too far from the player', src)
+        return
+    end
     delivery.netId = netId
 end)
 
@@ -131,7 +163,7 @@ local function RollItemReward(itemreward)
     return { name = itemreward.itemname, amount = amount }
 end
 
-RegisterNetEvent('rsg-deliveries:server:completedelivery', function()
+RegisterNetEvent('rsg-deliveries:server:completedelivery', function(clientNetId)
     local src = source
     local delivery = ActiveDeliveries[src]
     if not delivery then return end
@@ -160,12 +192,20 @@ RegisterNetEvent('rsg-deliveries:server:completedelivery', function()
     end
 
     if Config.RequireWagonAtDestination then
-        local wagon = delivery.netId and NetworkGetEntityFromNetworkId(delivery.netId) or 0
-        if wagon == 0 or not DoesEntityExist(wagon) or #(GetEntityCoords(wagon) - endCoord) > COMPLETE_RADIUS then
+        -- normally the wagon registered at the start; if that never landed, fall back to the
+        -- net id sent with the completion (still validated: model, creator and position)
+        local netId = delivery.netId or clientNetId
+        local wagon, reason = GetContractWagon(src, delivery, netId, not delivery.netId)
+        if wagon and #(GetEntityCoords(wagon) - endCoord) > COMPLETE_RADIUS then
+            wagon, reason = nil, ('%.0fm from the drop-off'):format(#(GetEntityCoords(wagon) - endCoord))
+        end
+        if not wagon then
+            Log('Player %s: delivery rejected, wagon check failed (%s)', src, reason)
             Notify(src, locale('delivery_failed_title'), locale('delivery_failed_no_wagon'), 'error')
             LastDelivery[src] = now
             return
         end
+        delivery.netId = netId
     end
 
     LastDelivery[src] = now

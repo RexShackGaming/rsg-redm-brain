@@ -85,7 +85,7 @@ local function RunDelivery()
 
             local wagonDist = #(GetEntityCoords(wagon) - endCoords)
             if wagonDist < Config.CompleteDistance and playerDist < Config.CompleteDistance + 5.0 then
-                TriggerServerEvent('rsg-deliveries:server:completedelivery')
+                TriggerServerEvent('rsg-deliveries:server:completedelivery', NetworkGetNetworkIdFromEntity(wagon))
                 EndDelivery(3000) -- leave the wagon briefly so the server can verify it
                 return
             end
@@ -143,6 +143,10 @@ function StartDelivery(hubIndex, destIndex)
     if lightHash then AddLightPropSetToVehicle(vehicle, lightHash) end
 
     SetVehicleOnGroundProperly(vehicle)
+
+    -- give the wagon a moment to get its network id before telling the server about it
+    local netTimeout = GetGameTimer() + 5000
+    while not NetworkGetEntityIsNetworked(vehicle) and GetGameTimer() < netTimeout do Wait(50) end
     TriggerServerEvent('rsg-deliveries:server:setwagon', NetworkGetNetworkIdFromEntity(vehicle))
 
     Delivery = {

@@ -104,3 +104,5 @@ button.control:active:not(:disabled), .arrow-control button:active:not(:disabled
 
 .selection-marker:first-child { margin-right: .25em; }
 .selection-marker:last-child { margin-left: .25em; }
+
+.button-description { display: block; margin-top: .25rem; font-size: .82em; line-height: 1.35; opacity: .75; font-weight: normal; }

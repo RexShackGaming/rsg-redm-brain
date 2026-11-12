@@ -1,8 +1,8 @@
 # feather-inventory
 
-Version 0.14.2. The Inventory API for the Feather Framework
+Version 0.15.0. The Inventory API for the Feather Framework
 
-Pull requests and pushes to main run the full Lua regression runner and runtime syntax checks, Python collection/equipment tests, UI contract tests, lint/build, and install archive verification. Tests use Lupa 2.8 (Lua 5.4), Node 22 and pnpm
+Boxed shop offers use the immutable Shops order's `pack_size` (default 1 for historical orders). Inventory atomically delivers `quantity * pack_size` existing items and stages the unchanged whole-order Economy payment. Package size and
 
 Source: https://github.com/FeatherFramework/feather-inventory
 
@@ -87,6 +87,8 @@ Has NUI (`ui_page`).
 **server/services/character_ammunition_preview.lua:** `CharacterAmmoCutoverPreview.LoadRuntime()`, `CharacterAmmoCutoverPreview.Load()`
 
 **server/services/character_ammunition_replay_test.lua:** `fixture.query(sql, params)`, `fixture:RequireAccess()`, `fixture:RemoveQuantity(inventoryId, definitionId, amount)`, `fixture:AddQuantity(inventoryId, definitionId, amount)`
+
+**server/services/character_ammunition_schema.lua:** `S.Start()`
 
 **server/services/character_collections.lua:** `C.Start()`, `C.Allowed(p,row)`, `C.Resolve(tx,p)`, `C.Get(request,resource)`, `C.Item(request,resource)`, `C.Batch(request,resource)`, `C.Retire(request,resource)`, `C.Transfer(request,resource)`
 
@@ -187,3 +189,7 @@ Has NUI (`ui_page`).
 **tests/lua/native_throwable_recovery_claim_spec.lua:** `tx.query(sql,p)`, `tx:AddQuantity(inv,id,qty)`
 
 **tests/lua/unique_grants_spec.lua:** `tx:CreateInstance(inv,id,metadata)`
+
+## Database tables
+
+`feather_ammunition_operations`, `feather_character_ammunition`

@@ -1,0 +1,14 @@
+{
+    "display_not_found": "Anzeige nicht gefunden: ",
+    "command_failed": "Befehl fehlgeschlagen!",
+    "no_permission": "Du hast keine Berechtigung, diesen Befehl zu verwenden",
+    "display_cooldown": "Bitte warte, bevor du eine weitere Anzeige startest",
+    "firework_in_progress_title": "Feuerwerk",
+    "firework_in_progress": "Bitte warte, bis dein aktuelles Feuerwerk beendet ist",
+    "firework_cooldown": "Bitte warte, bevor du ein weiteres Feuerwerk platzierst",
+    "firework_missing": "Du hast dieses Feuerwerk nicht mehr",
+    "place_firework": "Feuerwerk platzieren",
+    "placement_cancelled": "Platzierung des Feuerwerks abgebrochen",
+    "placement_failed": "Du kannst das Feuerwerk hier nicht platzieren",
+    "placement_indoor": "Du musst draußen sein, um ein Feuerwerk zu platzieren"
+}

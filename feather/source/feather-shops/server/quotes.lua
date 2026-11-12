@@ -10,7 +10,7 @@ local function Revision(shop, offer)
     local material = table.concat({ shop.id, tostring(shop.organizationId), tostring(shop.position.x),
         tostring(shop.position.y), tostring(shop.position.z), offer.id,
         offer.itemName, offer.currency, tostring(offer.unitPrice),
-        tostring(offer.maximumQuantity) }, '|')
+        tostring(offer.maximumQuantity),tostring(offer.packSize or 1) }, '|')
     local hash = 2166136261
     for index = 1, #material do hash = ((hash ~ material:byte(index)) * 16777619) & 0xffffffff end
     return ('catalog:%08x'):format(hash)
@@ -35,6 +35,10 @@ local function Terms(request)
     if not offer then return Err('offer_not_found', 'Offer does not belong to this shop.') end
     if request.quantity > offer.maximumQuantity then
         return Err('invalid_quantity', 'Offer quantity limit exceeded.')
+    end
+    if not ShopService.Integer(offer.packSize or 1,1,100)
+        or request.quantity*(offer.packSize or 1)>100 then
+        return Err('invalid_quantity','Purchase exceeds the package delivery limit.')
     end
     return Ok({ shop = shop, offer = offer, quantity = request.quantity,
         total = offer.unitPrice * request.quantity, revision = Revision(shop, offer) })
@@ -85,7 +89,8 @@ local function CreateQuote(request, source)
     end
     local definition = Definition(terms.value.offer.itemName)
     if not definition.ok then return definition end
-    if definition.value.weapon and request.quantity~=1 then return Err('invalid_quantity','Purchase one canonical weapon at a time.') end
+    if definition.value.weapon and (request.quantity~=1 or (terms.value.offer.packSize or 1)~=1) then
+        return Err('invalid_quantity','Purchase one canonical weapon at a time.') end
     local currency = exports['feather-economy']:GetCurrency(terms.value.offer.currency)
     if type(currency) ~= 'table' or not currency.ok or not currency.value.enabled then
         return Err('currency_unavailable', 'Offer currency is unavailable.')
@@ -94,7 +99,8 @@ local function CreateQuote(request, source)
         sessionId = session.value.sessionId, characterId = session.value.characterId,
         accountId = session.value.accountId, shopId = request.shopId, offerId = request.offerId,
         itemName = terms.value.offer.itemName, definitionId = definition.value.id,
-        quantity = request.quantity, currency = terms.value.offer.currency,
+        quantity = request.quantity, packSize=terms.value.offer.packSize or 1,
+        itemQuantity=request.quantity*(terms.value.offer.packSize or 1), currency = terms.value.offer.currency,
         unitPrice = terms.value.offer.unitPrice, total = terms.value.total, currencyPrecision=currency.value.precision,
         catalogRevision = terms.value.revision, expiresAt = os.time() + Config.Quotes.lifetimeSeconds }
     -- Definition and UUID lookups may yield: re-check identity and position last.
@@ -146,7 +152,7 @@ local function CurrentQuote(quoteId,source,expected)
     local quote=quotes[source]
     if not quote or quote.id~=quoteId or type(expected)~='table' then return false end
     for _,key in ipairs({'id','sessionId','characterId','accountId','shopId','offerId',
-        'itemName','definitionId','quantity','currency','unitPrice','total','catalogRevision','expiresAt'}) do
+        'itemName','definitionId','quantity','packSize','itemQuantity','currency','unitPrice','total','catalogRevision','expiresAt'}) do
         if quote[key]~=expected[key] then return false end
     end
     if quote.expiresAt<=os.time() or not BindingCurrent(source,quote) then return false end

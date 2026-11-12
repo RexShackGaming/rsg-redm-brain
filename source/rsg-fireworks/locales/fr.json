@@ -1,0 +1,14 @@
+{
+    "display_not_found": "Spectacle introuvable : ",
+    "command_failed": "Échec de la commande !",
+    "no_permission": "Tu n'as pas la permission d'utiliser cette commande",
+    "display_cooldown": "Veuillez patienter avant de lancer un autre spectacle",
+    "firework_in_progress_title": "Feux d'artifice",
+    "firework_in_progress": "Veuillez attendre la fin de votre feu d'artifice actuel",
+    "firework_cooldown": "Veuillez patienter avant de placer un autre feu d'artifice",
+    "firework_missing": "Vous ne possédez plus ce feu d'artifice",
+    "place_firework": "Placer un feu d'artifice",
+    "placement_cancelled": "Placement du feu d'artifice annulé",
+    "placement_failed": "Vous ne pouvez pas placer le feu d'artifice ici",
+    "placement_indoor": "Vous devez être à l'extérieur pour placer un feu d'artifice"
+}

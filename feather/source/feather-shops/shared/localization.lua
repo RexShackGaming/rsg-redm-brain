@@ -1,6 +1,14 @@
 -- feather-settings owns selection through Core. Dictionaries are resource-owned;
 -- missing selected-language keys always fall back to these English strings.
 local english={
+ browse='Browse shop',boxes='Boxes',box_of='Box of %d',contents='%d rounds per box.',
+ delivered='Rounds delivered: %d',item_count='%d item(s)',round_count='%d rounds',
+ ammo_revolver='Revolver cartridges',ammo_pistol='Pistol cartridges',ammo_repeater='Repeater cartridges',
+ ammo_rifle='Rifle cartridges',ammo_shotgun='Shotgun shells',ammo_varmint='Varmint cartridges',
+ ammo_arrow='Arrows',ammo_other_ammo='Other ammunition',
+ category_revolver='Revolvers',category_pistol='Pistols',category_repeater='Repeaters',
+ category_rifle='Rifles',category_shotgun='Shotguns',category_ammunition='Ammunition',
+ category_attachments='Attachments',category_maintenance='Maintenance',category_goods='Goods',
  error_generic='Purchase unavailable. Please review the shop again.',
  error_checkout_pending='Your purchase is being checked automatically. Please wait.',
  error_checkout_not_accepted='This purchase request is closed. You can review a new price.',
@@ -40,4 +48,13 @@ function ShopText(source,key,...)
     if called and type(result)=='table' and result.ok and type(result.value)=='string'
         and not result.value:match('^Translation %[') and not result.value:match('^Locale %[') then return result.value end
     return string.format(fallback,...)
+end
+
+-- Catalog labels can be translated by item/store key. The provider's English
+-- label is the fallback; selection remains feather-settings' Core account locale.
+function ShopCatalogText(source,key,fallback)
+    local called,result=pcall(function() return exports['feather-core']:TranslateLocale(source,key) end)
+    if called and type(result)=='table' and result.ok and type(result.value)=='string'
+        and not result.value:match('^Translation %[') and not result.value:match('^Locale %[') then return result.value end
+    return fallback
 end

@@ -417,6 +417,18 @@ Config.Liveries = {
         { id = 14, label = "Tapered Cream Orange" },
         { id = 15, label = "Flourish Gold Brown" },
     },
+    cart05 = {
+        { id = 0, label = "Line Blue" },
+        { id = 1, label = "Double Line Yellow" },
+        { id = 2, label = "Line Thick Green" },
+        { id = 3, label = "Flourish Red" },
+        { id = 4, label = "Simple Red" },
+        { id = 5, label = "Simple White" },
+        { id = 6, label = "Line Thick Yellow Orange" },
+        { id = 7, label = "Line Thick Red Blue" },
+        { id = 8, label = "Flourish Yellow White" },
+        { id = 9, label = "Double Line Orange" },
+    },
     oilwagon01x = {
         { id = 0, label = "Cornwall Red Cream" },
         { id = 1, label = "Cornwall Red Black" },
@@ -428,7 +440,7 @@ Config.Liveries = {
 }
 
 -- Number of colour tints per wagon model (tint ids 0..count-1, passed to _SET_VEHICLE_TINT 0x8268B098F6FCA4E2).
--- -1 = the model's default colour. Source: femga/rdr3_discoveries vehicles/vehicle_modding/vehicle_tints.lua
+-- -1 = the model's default colour (nothing is applied: the wagon keeps the paint it spawns with). Source: femga/rdr3_discoveries vehicles/vehicle_modding/vehicle_tints.lua
 -- Set a model to 0 (or remove it) to hide the colour picker for it.
 Config.Tints = {
     cart01 = 27, cart02 = 24, cart03 = 25, cart04 = 19, cart06 = 25, cart07 = 24, cart08 = 20,
@@ -437,6 +449,6 @@ Config.Tints = {
     utilliwag = 17, chuckwagon000x = 15, chuckwagon002x = 15, wagondairy01x = 2,
     coach2 = 5, coach3 = 20, coach4 = 20, coach5 = 20, coach6 = 20,
     stagecoach001x = 4, stagecoach002x = 4, stagecoach003x = 4, stagecoach005x = 4, stagecoach006x = 7,
-    supplywagon = 16, oilwagon01x = 14,
+    supplywagon = 16, oilwagon01x = 14, logwagon = 5, cart05 = 24,
     huntercart01 = 6,
 }

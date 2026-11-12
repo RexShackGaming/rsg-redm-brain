@@ -51,6 +51,45 @@ After changing `fxmanifest.lua` always run `refresh` before `ensure rsg-weather`
 
 Admin = any RSG permission level in `Config.AdminPermissions` (default `god`, `admin`).
 
+## Timescale examples
+The timescale is **how many in-game seconds pass per real second**. Set it in the admin panel: `/weatherui` → **Time** tab → **Timescale (0 = real clock)** → **Set Timescale**. It applies to everyone instantly.
+
+Quick maths: `real minutes per in-game day = 1440 / timescale`, so `timescale = 1440 / the day length you want in minutes`.
+
+| Timescale | In-game day lasts | In-game hour lasts | Weather changes every* | Good for |
+|---|---|---|---|---|
+| `0` | 24 h | 60 min | 60 min | Real clock: in-game time and weekday follow the server machine's clock (shift it with `Config.RealTimeOffset`) |
+| `1` | 24 h | 60 min | 60 min | Real speed, but you choose the starting time (not tied to the real clock) |
+| `2` | 12 h | 30 min | 30 min | Slow, immersive RP: a long session sees one sunrise or sunset |
+| `4` | 6 h | 15 min | 15 min | **Default.** Four in-game days per real day |
+| `6` | 4 h | 10 min | 10 min | A full day/night cycle in one evening session |
+| `8` | 3 h | 7 min 30 s | 7 min 30 s | Shorter sessions, still relaxed |
+| `12` | 2 h | 5 min | 5 min | Busy servers where everyone should see day and night |
+| `24` | 1 h | 2 min 30 s | 2 min 30 s | One in-game day per real hour |
+| `30` | 48 min | 2 min | 2 min | Same speed as RDR2 story mode |
+| `60` | 24 min | 1 min | 1 min | Events, quick showcase of day/night |
+| `360` | 4 min | 10 s | 10 s | Testing night-only features, seasons, blood moon |
+| `1000` | ~1 min 26 s | 3.6 s | 3.6 s | Maximum. Stress testing only |
+
+\* With the default `Config.WeatherInterval` of 1 in-game hour. Weather follows in-game time, so a faster clock also means faster weather changes. To keep slow weather on a fast clock, raise `WeatherInterval` (e.g. `DHMSToTime(0, 6, 0, 0)` at timescale `24` = a change every 15 real minutes).
+
+### Other ways to set it
+```
+/timescale 30                                  -- command (admin)
+/timescale                                     -- show the current value
+```
+```lua
+Config.Timescale = 30                          -- shared/config.lua (value used on every restart)
+exports['rsg-weather']:setTimescale(30)        -- from another server script
+exports['rsg-weather']:resetTimescale()        -- back to Config.Timescale
+```
+
+### Good to know
+- A timescale set in the panel, by command or by export **lasts until the resource restarts**. For a permanent change, edit `Config.Timescale`.
+- Allowed range is `0`–`1000`. To stop the clock completely, tick **Freeze time** instead (timescale `0` means real clock, not paused).
+- At timescale `0` the Day / Hour / Minute fields are overwritten by the real clock on the next sync, unless time is frozen.
+- Time only moves in whole in-game seconds per sync, so `timescale × sync delay (in seconds)` should be a whole number. At the default 5000 ms sync delay, whole numbers are always fine; `0.5` actually runs at `0.4` and anything below `0.2` stops the clock.
+
 ## Configuration
 ### `shared/config.lua`
 | Option | Default | Description |

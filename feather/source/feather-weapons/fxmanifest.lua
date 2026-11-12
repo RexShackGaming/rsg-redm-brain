@@ -6,7 +6,7 @@ lua54 'yes'
 description 'The official weapon system for Feather framework.'
 author 'Feather Framework'
 name 'feather-weapons'
-version '0.22.0'
+version '0.23.0'
 
 shared_scripts {
     'config.lua',
@@ -54,6 +54,7 @@ shared_scripts {
 
 server_scripts {
     '@feather-mysql/lib/DB.lua',
+    'shop_config.lua',
     '/server/adapters/core.lua',
     '/server/services/character_ammunition_runtime.lua',
     '/server/adapters/character_ammunition_inventory.lua',
@@ -69,6 +70,7 @@ server_scripts {
     '/server/services/ownership.lua',
     '/server/services/issuance.lua',
     '/server/services/shop_purchases.lua',
+    '/server/services/gun_store_catalog.lua',
     '/server/services/native_throwable_projectile_probe.lua',
     '/server/services/native_acceptance_suite.lua',
     '/server/services/native_guid_acceptance.lua',

@@ -5,7 +5,7 @@ lua54 'yes'
 
 author 'RexShack'
 description 'rsg-wagons - wagon store with full NUI catalogue, 3D preview and wagon ownership'
-version '3.0.0'
+version '3.0.1'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',

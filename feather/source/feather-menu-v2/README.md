@@ -885,3 +885,5 @@ consumers still enforce permissions, revisions and transaction rules on the serv
 No destructive behavior is attached automatically to existing resource buttons.
 
 Accordion `selected = true` adds separate muted-color `< >` markers around the plain text label and sets `aria-current`. It does not expand the section or allow HTML in labels. Marker color follows `theme.muted`, matching subheadings.
+
+Buttons accept an optional plain-text `description` (up to 512 characters), displayed below the label in smaller, subdued text. Use `UpdateElement` with `busy=true` for asynchronous work that outlives its activation callback, then clear busy when that work finishes.

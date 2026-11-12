@@ -19,6 +19,8 @@ local tension        = 0       -- line tension 0..1 (line snaps at 1)
 local fishSize       = 0.2     -- 0..1, feeds the FishSize audio variable and tension gain
 local lastTensionSent = -1
 local nextRumble     = 0
+local wasReeling     = false   -- reel key state last frame (own edge detection, survives struggle/relax changes)
+local nextReelTask   = 0       -- next time the "swim to player" task is re-issued while reeling
 
 local PTFX_DICT  = 'scr_mg_fishing'        -- rdr3_discoveries/graphics/ptfx/ptfx_assets_non_looped.lua
 local PTFX_NAME  = 'scr_mg_fish_struggle'
@@ -75,6 +77,11 @@ end
 
 local function notify(desc, ntype)
     RSGCore.Functions.Notify({ title = locale('cl_error'), description = desc, type = ntype or 'error', duration = 5000 })
+end
+
+-- the fishing task can disable the control, so read it either way
+local function reelHeld()
+    return IsControlPressed(0, INPUT_REEL) or IsDisabledControlPressed(0, INPUT_REEL)
 end
 
 local function holdingRod(ped)
@@ -176,6 +183,7 @@ local function setHookedFish(entity)
     setRodWeight(2)
     fishSize = band.size or 0.2
     tension = 0
+    wasReeling, nextReelTask = false, 0
 end
 
 local function getNearbyFish(coords, radius)
@@ -311,14 +319,23 @@ local function handleHooked(ped) -- state 7: fish on the line
         end
     end
 
+    -- reel key: held = reeling. Rod weight follows the key, whatever the fish is doing
+    local reeling = reelHeld()
+    if reeling ~= wasReeling then
+        wasReeling = reeling
+        nextReelTask = 0
+        setRodWeight(reeling and 4 or 2)
+    end
+
+    -- tasks only apply to a fish this client owns
+    local hasFish = fish and fish ~= 0 and DoesEntityExist(fish)
+    if hasFish and not NetworkHasControlOfEntity(fish) then
+        NetworkRequestControlOfEntity(fish)
+    end
+
     if fishStatus == 1 then
-        if IsControlPressed(0, INPUT_REEL) then
-            setRodWeight(4)
-            fishForce = fishForce + 0.005
-        else
-            fishForce = fishForce - 0.005
-        end
-        if IsControlJustReleased(0, INPUT_REEL) then setRodWeight(2) end
+        nextReelTask = 0 -- pull again as soon as the fish relaxes
+        fishForce = fishForce + (reeling and 0.005 or -0.005)
 
         if fishForce >= 1.0 then
             setTransition(11)
@@ -330,18 +347,16 @@ local function handleHooked(ped) -- state 7: fish on the line
             TaskSmartFleeCoord(fish, GetEntityCoords(ped), 40.0, 50, 8, 1077936128)
         end
         splash(fish)
-    else
-        if IsControlJustPressed(0, INPUT_REEL) then
-            setRodWeight(4)
-            TaskGoToEntity(fish, ped, Config.Difficulty, 1.0, 1.5, 0.0, 0)
-        end
-        if IsControlJustReleased(0, INPUT_REEL) then setRodWeight(2) end
+    elseif reeling and hasFish and now >= nextReelTask then
+        -- keep the fish swimming to the player for as long as the key is held
+        -- (the task only lasts Config.Difficulty ms, so it is re-issued before it runs out)
+        nextReelTask = now + math.max(100, math.floor(Config.Difficulty * 0.8))
+        TaskGoToEntity(fish, ped, Config.Difficulty, 1.0, Config.ReelInSpeed or 1.5, 0.0, 0)
     end
 
     -- line tension: reeling against a struggling fish strains the line, everything else lets it recover
     local snap = Config.LineSnap
     if snap.Enabled then
-        local reeling = IsControlPressed(0, INPUT_REEL)
         if fishStatus == 1 and reeling then
             tension = tension + snap.Gain * (0.5 + fishSize)
             if now >= nextRumble then

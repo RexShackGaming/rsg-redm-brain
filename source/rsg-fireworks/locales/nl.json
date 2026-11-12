@@ -1,0 +1,14 @@
+{
+    "display_not_found": "Show niet gevonden: ",
+    "command_failed": "Opdracht mislukt!",
+    "no_permission": "Je hebt geen toestemming om dit commando te gebruiken",
+    "display_cooldown": "Wacht even voordat je een nieuwe show start",
+    "firework_in_progress_title": "Vuurwerk",
+    "firework_in_progress": "Wacht tot je huidige vuurwerk klaar is",
+    "firework_cooldown": "Wacht even voordat je nog een vuurwerk plaatst",
+    "firework_missing": "Je hebt dat vuurwerk niet meer",
+    "place_firework": "Vuurwerk plaatsen",
+    "placement_cancelled": "Plaatsen van vuurwerk geannuleerd",
+    "placement_failed": "Je kunt het vuurwerk hier niet plaatsen",
+    "placement_indoor": "Je moet buiten zijn om een vuurwerk te plaatsen"
+}

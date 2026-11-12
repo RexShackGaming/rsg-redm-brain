@@ -1,0 +1,14 @@
+{
+    "display_not_found": "ディスプレイが見つかりません: ",
+    "command_failed": "コマンドに失敗しました！",
+    "no_permission": "このコマンドを使用する権限がありません",
+    "display_cooldown": "別のディスプレイを開始する前にお待ちください",
+    "firework_in_progress_title": "花火",
+    "firework_in_progress": "現在の花火が終了するまでお待ちください",
+    "firework_cooldown": "別の花火を設置する前にお待ちください",
+    "firework_missing": "その花火はもう所持していません",
+    "place_firework": "花火を設置",
+    "placement_cancelled": "花火の設置をキャンセルしました",
+    "placement_failed": "ここに花火を設置することはできません",
+    "placement_indoor": "花火を設置するには屋外にいる必要があります"
+}

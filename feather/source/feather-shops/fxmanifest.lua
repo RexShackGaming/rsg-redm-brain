@@ -6,7 +6,7 @@ lua54 'yes'
 name 'feather-shops'
 description 'Authoritative commerce workflows for the Feather Framework'
 author 'Feather Framework'
-version '0.3.0'
+version '0.4.0'
 
 shared_script 'shared/localization.lua'
 
@@ -15,6 +15,7 @@ client_script 'client/shop.lua'
 server_scripts {
     '@feather-mysql/lib/DB.lua',
     'config.lua',
+    'server/catalog_sources.lua',
     'server/main.lua',
     'server/organizations.lua',
     'server/quotes.lua',

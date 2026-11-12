@@ -1,0 +1,14 @@
+{
+    "display_not_found": "Display not found: ",
+    "command_failed": "Command Failed!",
+    "no_permission": "You do not have permission to use this command",
+    "display_cooldown": "Please wait before starting another display",
+    "firework_in_progress_title": "Fireworks",
+    "firework_in_progress": "Please wait for your current firework to finish",
+    "firework_cooldown": "Please wait before placing another firework",
+    "firework_missing": "You no longer have that firework",
+    "place_firework": "Place Firework",
+    "placement_cancelled": "Firework placement cancelled",
+    "placement_failed": "You cannot place the firework here",
+    "placement_indoor": "You must be outside to place a firework"
+}

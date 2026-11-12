@@ -1,6 +1,34 @@
 # Feather Weapons
 
-Current version: **0.22.0**.
+## Gun-store configuration
+
+`shop_config.lua` owns gun-store locations and all firearm, ammunition, attachment
+and gun-oil prices. Shops imports this server-only catalog; checkout/payment and
+recovery still use the existing Inventory-owned atomic transaction. Requires the
+matching Shops package-order and Inventory package-delivery changes together.
+
+Prices are dollar amounts (`12.00`, not `1200`). Ammunition prices apply to one
+box: `ammo_revolver_regular = { price=0.80, rounds=50 }`. Set an entry to `false`
+to hide it; an ammunition table may also use `price=false`. Box purchases deliver
+the exact existing loose-round items, with no additional box item or unpack step.
+Pistol/revolver and repeater defaults are 50 rounds, rifle 20, varmint 50 and
+shotgun 25. Specialty quantities/prices are editable gameplay estimates. Defaults
+are historical-based, not a claim of exact historical prices for every item.
+
+The initial Valentine store has 24 firearms, 43 ammunition offers, 38 components
+and gun oil. The other 25 weapon entries stay explicitly disabled until their
+canonical shop issuance is supported. Adding a price cannot bypass that boundary.
+One order delivers at most 100 items; the box selector is capped automatically.
+Store position is configurable and still needs a live access check.
+
+Use the existing framework safe-stop/deployment flow before changing running
+resources. Restart Shops after a changed Weapons catalog is loaded; stopping the
+catalog owner closes Shops admission until it is restarted. No automatic purchase
+replay or catalog change rewrites historical orders. Each player's language is
+resolved through feather-settings/Core, with English fallback. Store/item label
+translation keys are `ui_shops_store_<store UUID>` and `ui_shops_item_<item name>`.
+
+Current version: **0.23.0**.
 
 Feather's native-only, Inventory-backed firearm system. Weapons are unique
 item instances; equipped assignments and maintenance persist per character.

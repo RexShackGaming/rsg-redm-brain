@@ -1,0 +1,14 @@
+{
+    "display_not_found": "Spectacolul nu a fost găsit: ",
+    "command_failed": "Comanda a eșuat!",
+    "no_permission": "Nu ai permisiunea de a folosi această comandă",
+    "display_cooldown": "Așteaptă înainte de a începe alt spectacol",
+    "firework_in_progress_title": "Artificii",
+    "firework_in_progress": "Așteaptă să se termine artificiul curent",
+    "firework_cooldown": "Așteaptă înainte de a plasa alt artificiu",
+    "firework_missing": "Nu mai ai acel artificiu",
+    "place_firework": "Plasează artificiu",
+    "placement_cancelled": "Plasarea artificiului a fost anulată",
+    "placement_failed": "Nu poți plasa artificiul aici",
+    "placement_indoor": "Trebuie să fii în exterior pentru a plasa un artificiu"
+}

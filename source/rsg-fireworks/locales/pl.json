@@ -1,0 +1,14 @@
+{
+    "display_not_found": "Nie znaleziono pokazu: ",
+    "command_failed": "Polecenie nie powiodło się!",
+    "no_permission": "Nie masz uprawnień do użycia tego polecenia",
+    "display_cooldown": "Poczekaj przed rozpoczęciem kolejnego pokazu",
+    "firework_in_progress_title": "Fajerwerki",
+    "firework_in_progress": "Poczekaj, aż obecny fajerwerk się zakończy",
+    "firework_cooldown": "Poczekaj przed umieszczeniem kolejnego fajerwerku",
+    "firework_missing": "Nie masz już tego fajerwerku",
+    "place_firework": "Umieść fajerwerk",
+    "placement_cancelled": "Anulowano umieszczanie fajerwerku",
+    "placement_failed": "Nie możesz tutaj umieścić fajerwerku",
+    "placement_indoor": "Musisz być na zewnątrz, aby umieścić fajerwerk"
+}

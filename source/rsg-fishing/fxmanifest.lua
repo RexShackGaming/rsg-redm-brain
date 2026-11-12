@@ -3,7 +3,7 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 
 description 'rsg-fishing'
-version '3.0.3'
+version '3.0.4'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',

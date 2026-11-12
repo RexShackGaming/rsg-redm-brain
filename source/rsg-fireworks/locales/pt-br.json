@@ -1,0 +1,14 @@
+{
+    "display_not_found": "Apresentação não encontrada: ",
+    "command_failed": "Comando falhou!",
+    "no_permission": "Você não tem permissão para usar este comando",
+    "display_cooldown": "Aguarde antes de iniciar outra apresentação",
+    "firework_in_progress_title": "Fogos de artifício",
+    "firework_in_progress": "Aguarde o seu fogo de artifício atual terminar",
+    "firework_cooldown": "Aguarde antes de posicionar outro fogo de artifício",
+    "firework_missing": "Você não possui mais esse fogo de artifício",
+    "place_firework": "Posicionar fogo de artifício",
+    "placement_cancelled": "Posicionamento do fogo de artifício cancelado",
+    "placement_failed": "Você não pode posicionar o fogo de artifício aqui",
+    "placement_indoor": "Você precisa estar ao ar livre para posicionar um fogo de artifício"
+}

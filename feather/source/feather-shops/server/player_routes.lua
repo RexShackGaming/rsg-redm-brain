@@ -20,7 +20,8 @@ end
 -- details, buyer identifiers, ledger accounts, or transaction IDs to clients.
 local function PublicQuote(quote)
     return { id = quote.id, shopId = quote.shopId, offerId = quote.offerId,
-        itemName = quote.itemName, quantity = quote.quantity, currency = quote.currency,
+        itemName = quote.itemName, quantity = quote.quantity, packSize=quote.packSize,
+        itemQuantity=quote.itemQuantity, currency = quote.currency,
         unitPrice = quote.unitPrice, total = quote.total, currencyPrecision=quote.currencyPrecision,
         catalogRevision = quote.catalogRevision, expiresAt = quote.expiresAt }
 end
@@ -37,6 +38,7 @@ end
 local function PublicPurchase(result,order)
     if not result.ok then return result end
     return Ok({orderId=result.value.orderId,state=result.value.state,quantity=order.quantity,
+        packSize=order.packSize or 1,itemQuantity=order.itemQuantity or order.quantity,
         currency=order.currency,total=order.total,replayed=result.value.replayed})
 end
 local function PurchaseInner(request,source)
@@ -100,7 +102,7 @@ function ShopPlayerRoutes.Start()
             end },
         { name = 'shops.catalog.v1', calls = 2, requireCharacter = false,
             validate = function(request) return type(request) == 'table' and next(request) == nil end,
-            handler = function()
+            handler = function(_,source)
                 local listed = ShopService.ListShops()
                 if not listed.ok then return PublicError(listed) end
                 local shops,precisions = {},{}

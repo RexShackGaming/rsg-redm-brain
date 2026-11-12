@@ -58,7 +58,24 @@ function ShopOrders.Start()
         DB.exec(fences)
         DB.insert('INSERT INTO shop_schema_migrations (id,checksum) VALUES (?,?)','007_checkout_request_fences',fenceChecksum)
     end
-    return Ok({applied=(stored and 0 or 1)+(fenceStored and 0 or 1)})
+    -- Additive upgrade: existing orders remain one item per purchased unit.
+    -- Do not change the checksummed original CREATE or reinterpret old receipts.
+    local function PackageColumn()
+        return DB.one([[SELECT data_type AS kind,column_type AS storage,is_nullable AS nullable,
+            column_default AS initial FROM information_schema.columns
+            WHERE table_schema=DATABASE() AND table_name='shop_orders' AND column_name='pack_size']])
+    end
+    local packageColumn=PackageColumn()
+    local added=0
+    if not packageColumn then
+        DB.exec('ALTER TABLE shop_orders ADD COLUMN pack_size INT UNSIGNED NOT NULL DEFAULT 1')
+        packageColumn=PackageColumn();added=1
+    end
+    if not packageColumn or packageColumn.kind~='int' or packageColumn.nullable~='NO'
+        or not tostring(packageColumn.storage):find('unsigned',1,true) or tonumber(packageColumn.initial)~=1 then
+        return Err('incompatible_schema','Shop order package column is incompatible; existing orders retained.')
+    end
+    return Ok({applied=(stored and 0 or 1)+(fenceStored and 0 or 1)+added})
 end
 local function RequestId(value)
     return type(value) == 'string' and #value <= 128
@@ -69,7 +86,8 @@ local function Snapshot(row, replayed)
         characterId = row.buyer_character_id, accountId = row.buyer_account_id,
         sessionId = row.buyer_session_id, shopId = row.shop_id, offerId = row.offer_id,
         itemName = row.item_name, definitionId = tonumber(row.definition_id),
-        quantity = tonumber(row.quantity), currency = row.currency_code,
+        quantity = tonumber(row.quantity), packSize=tonumber(row.pack_size) or 1,
+        itemQuantity=tonumber(row.quantity)*(tonumber(row.pack_size) or 1), currency = row.currency_code,
         unitPrice = tonumber(row.unit_price), total = tonumber(row.total_amount),
         catalogRevision = row.catalog_revision, status = row.status, replayed = replayed }
 end
@@ -178,11 +196,11 @@ local function Prepare(request, source, resource)
         tx.exec([[INSERT IGNORE INTO `shop_orders`
             (`order_id`,`source_resource`,`request_id`,`quote_id`,`buyer_account_id`,
              `buyer_character_id`,`buyer_session_id`,`shop_id`,`offer_id`,`item_name`,
-             `definition_id`,`quantity`,`currency_code`,`unit_price`,`total_amount`,`catalog_revision`)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)]],
+             `definition_id`,`quantity`,`currency_code`,`unit_price`,`total_amount`,`catalog_revision`,`pack_size`)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)]],
             orderId, resource, request.requestId, quote.id, quote.accountId, quote.characterId,
                 quote.sessionId, quote.shopId, quote.offerId, quote.itemName, quote.definitionId,
-                quote.quantity, quote.currency, quote.unitPrice, quote.total, quote.catalogRevision)
+                quote.quantity, quote.currency, quote.unitPrice, quote.total, quote.catalogRevision,quote.packSize or 1)
         local rows = tx.query([[SELECT * FROM `shop_orders` WHERE `source_resource`=?
             AND `request_id`=? FOR UPDATE]], resource, request.requestId) or {}
         local row = rows[1]

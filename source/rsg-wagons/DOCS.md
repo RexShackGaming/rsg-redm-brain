@@ -67,10 +67,11 @@ Entity state bags on a spawned owned wagon: `rsgWagonId` (DB id) and `rsgWagonOw
 - Applied with `_SET_VEHICLE_LIVERY` (`0xF89D82A0582E46ED`) on the preview wagon and on the networked wagon when it's taken out.
 - Saved in the `livery` column of `player_wagons` (`-1` = none). Older tables get the column added automatically on start when `AutoDatabase = true`; otherwise run the `ALTER TABLE` line at the bottom of `install.sql`.
 - Paint (livery + colour) is chosen **only when buying**, is free, and can't be changed afterwards. The details panel hides the pickers for owned wagons; their preview still shows the saved paint. The chosen livery is sent with `rsg-wagons:server:buy` and validated server side (an unknown id falls back to the model's first livery).
-- NUI callback: `previewLivery { livery, tint }` repaints the preview without respawning.
+- NUI callback: `previewLivery { livery, tint }` repaints the preview without respawning (except when going back to the **Default** colour from a tint, which respawns the preview wagon).
+- `logwagon` has no liveries in the game (colours only); `cart05` has 10.
 
 ## Colours (tints)
-- The base colour is a separate layer from the livery. `Config.Tints[model] = count` in `shared/liveries.lua` (from femga/rdr3_discoveries `vehicle_tints.lua`); tint ids run `0..count-1`, `-1` = the model's default colour. Tints have no names in the game, so the UI shows "Default", "Colour 1", "Colour 2"…
+- The base colour is a separate layer from the livery. `Config.Tints[model] = count` in `shared/liveries.lua` (from femga/rdr3_discoveries `vehicle_tints.lua`); tint ids run `0..count-1`, `-1` = the model's default colour. For `-1` the script applies **nothing** and the wagon keeps the paint it spawns with: `_SET_VEHICLE_TINT(veh, -1)` does not restore the default, it strips the paint and leaves a lime green texture (femga: "Vehicle turns default green"), which is what untinted wagons used to show. Tints have no names in the game, so the UI shows "Default", "Colour 1", "Colour 2"…
 - RDR2 itself has no player colour shop: the decompiled scripts (build 1436) only call `_SET_VEHICLE_TINT` (`0x8268B098F6FCA4E2`) from missions/ambient events (e.g. `braithwaites1.c`, `av_wagon_music.c`) to colour scripted wagons; `generic_wagon_fence_core.c` has no paint option.
 - Applied **tint first, then livery** (livery re-applied 150 ms later), on the preview and on take-out. In RDR2 a tint is a full paint scheme that also sets its own livery (tested in-game: tint 5 on a cart forces livery 2), so the chosen livery must go on after it; tint 5 then livery 7 keeps both. Rockstar's missions set the tint straight after `CREATE_VEHICLE` (e.g. `rcm_dutch11.c` three `WAGON04X` with tints 11/9/10).
 - Horse-coat style recolouring (metaped shop components) does not apply: wagons are vehicles, not metapeds, so tint + livery are the only paint controls.
@@ -118,6 +119,7 @@ Client-reported values and how they're limited:
 - **Carcass quality** (poor/good/perfect, read with `GetPedQuality` on the client): trusted the same way rsg-hunting's butcher trusts it; there's no server-side native to read it.
 
 ## Changelog
+- **3.0.1**: player-reported fixes. Wagons left on the **Default** colour no longer turn lime green (the script was sending tint `-1`, which strips the paint; most visible on `logwagon` and `cart05`, which had no paint options to cover it). `cart05` now has its 10 liveries and 24 colours, `logwagon` its 5 colours. Hunting cart tarp now rises as the cart fills (fitted once as an additional propset, then only the height changes).
 - **2.1.0**: audit. Condition reports can only lower a wagon's condition; rename is rate limited; calling a wrecked wagon is refused before anything changes; paint now applies per wagon (several wagons in view no longer cancel each other's livery); hunting cart carcass lookup cached (it ran every frame while aiming at the cart); field repair checks you can pay before the animation; shop can't be opened twice by double-clicking; customise panel closes on logout. Removed: `/wagonpaint` debug command and `Config.Debug`, unused `rsg-wagons:client:openShop` event, unused `rsgWagonOwner` state bag, 5 unused UI text keys; database upgrades merged into one helper.
 
 ## Database schema
@@ -162,6 +164,7 @@ From `generic_wagon_fence_core.c` (build 1436):
 ## Hunting cart (huntercart01)
 - RDR2 story scripts (decompile builds 1355 / 1436) have nothing on `huntercart01`: it's a Red Dead Online vehicle. What's known comes from femga/rdr3_discoveries: tarp propset `pg_mp005_huntingWagonTarp01`, `_SET_BATCH_TARP_HEIGHT` (`0x31F343383F19C987`, height = cargo + pelt ratio), 6 liveries (Hunt0–5), 6 tints, cart06's lantern sets.
 - Sold in the shop as **Hunting Cart** (`Config.Wagons.huntercart01`, carts). The tarp is always fitted; its height is `tarpMin..tarpMax` scaled by load / `capacity` and synced to everyone through the `rsgWagonLook` state bag (`look.tarp`, `look.cargo`).
+- The tarp is fitted once with `_ADD_ADDITIONAL_PROP_SET_FOR_VEHICLE` (`0x75F90E4051CC084C`, as in femga's `Huntercart01` example), the client waits for `_IS_VEHICLE_PROP_SET_LOADED_ADDITIONAL` (`0x7264F9CA87A9830B`), then sets the height. Later loads only change the height; the tarp is not refitted. Ordinary cargo sets still use `_ADD_PROP_SET_FOR_VEHICLE`.
 - **Stow Carcass** (target on your own cart): takes the dead animal you're carrying, or one strapped to your horse within `horseRange` (same itemset lookup as rsg-hunting's butcher). Server `rsg-wagons:server:stowCarcass(netId, quality)` checks it's a dead, non-player animal in `Config.HuntingCart.animals`, close to you, cart within reach and not full; deletes the carcass and saves `{ model, quality }` to the wagon's `cargo` column (JSON, auto-added on start). Quality = `GetPedQuality` 0/1/2 → poor/good/perfect.
 - **Sell Cart Load** (shown when the cart is within `sellRange` of a butcher in `Config.HuntingCart.butchers`): progress bar, then `rsg-wagons:server:sellCargo` pays `money x qualityMultiplier` per carcass, gives `items x itemQuantity`, and awards hunting XP through rsg-hunting's `AwardHuntingXP` export (`xpPerCarcass x quality`, skipped if rsg-hunting isn't running). Items are checked with `CanAddItem` first; if they don't fit, nothing is sold.
 - Prices, items and butcher locations are a copy of rsg-hunting's `Config.Animal` / `Config.ButcherLocations` — keep them in step if you change rsg-hunting.
@@ -204,6 +207,8 @@ The prompt and target both call `rsg-wagons:server:storeNearest`, which stores a
 | `database setup failed` in console | Check oxmysql connection, or set `AutoDatabase = false` and import `install.sql` |
 | No keeper / no target | Make sure `rsg-target` starts before rsg-wagons |
 | Preview doesn't appear | Check the yard's `preview` coords are on open ground; look for `Could not load the wagon preview` (bad model name) |
+| Wagon wood looks lime green | Fixed in 3.0.1 (tint `-1` is no longer sent). Wagons already out need storing and taking out again |
+| Hunting cart tarp doesn't rise | Fixed in 3.0.1. Check `Config.HuntingCart.tarpMin` / `tarpMax` (0.0 to 1.0) and that the cart was taken out after the update |
 | Camera clips into buildings | Lower `Config.Preview.radiusMax` or move `preview` to a more open spot |
 | "You already have a wagon out" | Your wagon is still out (also after a restart): press **J** to call it, or go to any yard → My Wagons → **Return Wagon** (needed if it was wrecked) |
 | Can't store the wagon | You and the wagon must both be within `StoreRadius` of a yard's keeper or preview spot; raise it if your yards are spread out |

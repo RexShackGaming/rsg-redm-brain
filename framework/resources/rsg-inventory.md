@@ -1,8 +1,8 @@
 # rsg-inventory
 
-Version 3.1.1. rsg-inventory
+Version 3.2.0. rsg-inventory
 
-Slot/weight inventory for the RSG Framework (rsg-core) with a hotbar, persistent stashes, ground drops, shops with persistent stock, category filters, automatic coin exchange and a legacy-compatible API so existing RSG scripts keep working. **Version:** 3.1.0 · **Requires:** `rsg-core`, `oxmysql` · **ox_lib:** not required > Developers: see **[DOCS.md](DOCS.md)** for the full API, data formats and
+Slot/weight inventory for the RSG Framework (rsg-core) with a hotbar, persistent stashes, ground drops, shops with persistent stock, category filters, automatic coin exchange and a legacy-compatible API so existing RSG scripts keep working. **Version:** 3.2.0 · **Requires:** `rsg-core`, `oxmysql` · **ox_lib:** not required > Developers: see **[DOCS.md](DOCS.md)** for the full API, data formats and
 
 Source: https://github.com/Rexshack-RedM/rsg-inventory
 
@@ -18,13 +18,13 @@ Has NUI (`ui_page`).
 
 ## Net events registered
 
-**server:** `rsg-inventory:server:close`, `rsg-inventory:server:drop`, `rsg-inventory:server:give`, `rsg-inventory:server:move`, `rsg-inventory:server:open`, `rsg-inventory:server:useItem`
+**server:** `rsg-inventory:server:close`, `rsg-inventory:server:drop`, `rsg-inventory:server:give`, `rsg-inventory:server:move`, `rsg-inventory:server:open`, `rsg-inventory:server:stashAction`, `rsg-inventory:server:useItem`
 
 **client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `rsg-inventory:client:ItemBox`, `rsg-inventory:client:addDrop`, `rsg-inventory:client:checkWeapon`, `rsg-inventory:client:close`, `rsg-inventory:client:giveAnim`, `rsg-inventory:client:open`, `rsg-inventory:client:refresh`, `rsg-inventory:client:removeDrop`
 
 ## Event handlers
 
-**server:** `RSGCore:Server:PlayerLoaded`, `txAdmin:events:serverShuttingDown`
+**server:** `RSGCore:Server:PlayerLoaded`, `rsg-inventory:stashAction`, `txAdmin:events:serverShuttingDown`
 
 ## Callbacks (RSGCore.Functions.CreateCallback)
 

@@ -16,6 +16,13 @@ const mountElement = (type, data, elementId = type) => mount(ElementRenderer, {
 describe('ElementRenderer interactions', () => {
   beforeEach(() => vi.clearAllMocks())
 
+  it('renders an optional subdued second line as plain text', () => {
+    const wrapper=mountElement('button',{label:'Cartridges',description:'50 rounds / $0.80 <b>text</b>'})
+    expect(wrapper.get('.button-description').text()).toBe('50 rounds / $0.80 <b>text</b>')
+    expect(wrapper.find('b').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
   it('shows busy feedback and refuses duplicate activation until acknowledgement', async () => {
     let complete
     post.mockImplementationOnce(() => new Promise((resolve) => { complete = resolve }))

@@ -1,8 +1,8 @@
 # feather-shops
 
-Version 0.3.0. Authoritative commerce workflows for the Feather Framework
+Version 0.4.0. Authoritative commerce workflows for the Feather Framework
 
-Native Feather commerce. Shops owns catalogs, quotes and immutable orders; Economy owns money, Inventory owns capacity/items, and Weapons owns canonical firearm metadata and provenance. There is one atomic purchase path.
+Current version: **0.4.0**. `Config.WeaponStoresEnabled=true` imports locations and offers from Weapons' `shop_config.lua`. Set it false only for an intentional standalone Shops install
 
 Source: https://github.com/FeatherFramework/feather-shops
 
@@ -21,6 +21,8 @@ Source: https://github.com/FeatherFramework/feather-shops
 **server:** `/ShopPurchaseState`, `/ShopReconciliationState`, `/ShopReleaseContractSmokeTest`
 
 ## Public (table) functions
+
+**server/catalog_sources.lua:** `ShopCatalogSources.IsCurrent()`, `ShopCatalogSources.Load()`, `ShopCatalogSources.Owns(resource)`
 
 **server/main.lua:** `ShopService.RegisterDevCommand(name,handler,restricted)`
 

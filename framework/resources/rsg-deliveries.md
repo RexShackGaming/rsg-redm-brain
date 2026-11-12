@@ -1,6 +1,6 @@
 # rsg-deliveries
 
-Version 3.1.0. Wagon delivery system RSG Framework
+Version 3.1.1. Wagon delivery system RSG Framework
 
 A wagon delivery system for RedM using the RSG Framework. Players pick up goods from NPC foremen at various towns and deliver them by wagon to destinations across the map for cash and item rewards. Talking to a foreman opens a NUI contract board listing every destination from that hub. Selecting a route shows its distance, time limit, wagon, difficulty rating, a route-length bar, and the cash and 
 

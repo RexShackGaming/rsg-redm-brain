@@ -5,11 +5,32 @@ local groupId = joaat('feather-shops:interact')
 local pendingKey = 'shops:ui:pending-purchase'
 local pending
 local currentShop
-local function T(key) return ShopText(0,key) end
+local promptLabels={}
+local buttons={}
+local function SetBusy(value)
+    for _,button in ipairs(buttons) do
+        pcall(function() Menu:UpdateElement(menuId,pageId,button,{busy=value}) end)
+    end
+end
+local function T(key,...) return ShopText(0,key,...) end
+local function Label(offer) return ShopCatalogText(0,'ui_shops_item_'..offer.itemName,offer.label) end
+local function PromptLabel(shop)
+    if not promptLabels[shop.id] then promptLabels[shop.id]=ShopCatalogText(0,'ui_shops_store_'..shop.id,shop.label) end
+    return promptLabels[shop.id]
+end
 local function Amount(value,precision)
     precision=tonumber(precision) or 2
     if precision%1~=0 or precision<0 or precision>6 then precision=2 end
     return string.format('%.'..precision..'f',value/(10^precision))
+end
+local function Price(value,currency,precision)
+    return (currency=='dollars' and '$' or (currency..' '))..Amount(value,precision)
+end
+local function AmmoGroup(offer)
+    for _,family in ipairs({'revolver','pistol','repeater','rifle','shotgun','varmint','arrow'}) do
+        if offer.itemName:match('^ammo_'..family) then return family end
+    end
+    return 'other_ammo'
 end
 local saved = GetResourceKvpString(pendingKey)
 if saved then
@@ -31,14 +52,17 @@ end
 local function Async(work)
     if busy then return end
     busy = true
+    SetBusy(true)
     CreateThread(function()
         local called, failure = xpcall(work, debug.traceback)
         busy = false
+        SetBusy(false)
         if not called then Message(T(type(pending)=='table' and 'error_checkout_pending' or 'error_generic')) end
     end)
 end
 local function Page(title)
     generation = generation + 1
+    buttons={}
     local previous = pageId
     pageId = Require(Menu:CreatePage(menuId, { key = 'shop-' .. generation })).pageId
     if previous then Require(Menu:DestroyPage(menuId, previous, pageId)) end
@@ -48,7 +72,10 @@ end
 local function Add(page, kind, settings, callback)
     elementSequence = elementSequence + 1
     settings.key = 'element-' .. elementSequence
-    return Require(Menu:AddElement(menuId, page, kind, settings, callback))
+    if kind=='button' then settings.busy=busy end
+    local result=Require(Menu:AddElement(menuId, page, kind, settings, callback))
+    if kind=='button' and result and result.elementId then buttons[#buttons+1]=result.elementId end
+    return result
 end
 local function Show(page)
     Require(Menu:OpenMenu(menuId, { pageId = page, replace = false }))
@@ -60,8 +87,7 @@ local function AddBalances(page)
         for _, wallet in ipairs(result.value) do
             local precision = tonumber(wallet.precision)
             if type(wallet.balance) == 'number' and precision and precision % 1 == 0 and precision >= 0 and precision <= 6 then
-                lines[#lines + 1] = (wallet.label or wallet.currency) .. ': '
-                    .. string.format('%.' .. precision .. 'f', wallet.balance / (10 ^ precision))
+                lines[#lines + 1] = Price(wallet.balance,wallet.currency,precision)
             end
         end
     end
@@ -107,9 +133,9 @@ CreateThread(function()
         end
     end
 end)
-Catalog = function(shop, notice)
+Catalog = function(shop, notice, category, ammoGroup)
     currentShop=shop
-    local page = Page(shop.label)
+    local page = Page(ShopCatalogText(0,'ui_shops_store_'..shop.id,shop.label))
     AddBalances(page)
     if notice then Add(page, 'textdisplay', { value = notice, slot = 'content' }) end
     if pending ~= nil then
@@ -118,12 +144,37 @@ Catalog = function(shop, notice)
             Add(page, 'button', { label = T('check_status'), slot = 'content' }, function() Async(function() CheckStatus(shop) end) end)
         end
     else
+        local grouped=false
+        for _,offer in ipairs(shop.offers) do if offer.category then grouped=true;break end end
+        if grouped and not category then
+            for _,key in ipairs({'revolver','pistol','repeater','rifle','shotgun','ammunition','attachments','maintenance','goods'}) do
+                local present=false
+                for _,offer in ipairs(shop.offers) do if (offer.category or 'goods')==key then present=true;break end end
+                if present then
+                    local selected=key
+                    Add(page,'button',{label=T('category_'..key),slot='content'},function() Async(function() Catalog(shop,nil,selected) end) end)
+                end
+            end
+        elseif category=='ammunition' and not ammoGroup then
+            for _,family in ipairs({'revolver','pistol','repeater','rifle','shotgun','varmint','arrow','other_ammo'}) do
+                local present=false
+                for _,offer in ipairs(shop.offers) do if offer.category=='ammunition' and AmmoGroup(offer)==family then present=true;break end end
+                if present then
+                    local selected=family
+                    Add(page,'button',{label=T('ammo_'..family),slot='content'},function() Async(function() Catalog(shop,nil,category,selected) end) end)
+                end
+            end
+        else
         for _, offer in ipairs(shop.offers) do
-            Add(page, 'button', { label = offer.label .. ' — ' .. offer.currency .. ' ' .. Amount(offer.unitPrice,offer.currencyPrecision), slot = 'content' }, function()
+            if (not category or (offer.category or 'goods')==category) and (not ammoGroup or AmmoGroup(offer)==ammoGroup) then
+            local label=Label(offer)
+            local quantityLabel=T(offer.category=='ammunition' and 'round_count' or 'item_count',offer.packSize or 1)
+            Add(page, 'button', {label=label,description=quantityLabel..' / '..Price(offer.unitPrice,offer.currency,offer.currencyPrecision),slot='content'}, function()
                 if busy then return end
-                local detail = Page(offer.label)
+                local detail = Page(Label(offer))
                 local quantity = 1
-                Add(detail, 'number', { label = T('quantity'), value = 1, min = 1, max = offer.maximumQuantity, step = 1, slot = 'content' }, function(event)
+                if (offer.packSize or 1)>1 then Add(detail,'textdisplay',{value=T('contents',offer.packSize),slot='content'}) end
+                Add(detail, 'number', { label = T((offer.packSize or 1)>1 and 'boxes' or 'quantity'), value = 1, min = 1, max = offer.maximumQuantity, step = 1, slot = 'content' }, function(event)
                     quantity = tonumber(event.value) or 1
                 end)
                 Add(detail, 'button', { label = T('review'), slot = 'content' }, function()
@@ -136,30 +187,44 @@ Catalog = function(shop, notice)
                         local quote = result.value
                         local review = Page(T('confirm'))
                         AddBalances(review)
-                        Add(review, 'textdisplay', { value = offer.label .. ' × ' .. quote.quantity .. '\n'..T('total')
-                            .. quote.currency .. ' ' .. Amount(quote.total,quote.currencyPrecision) .. '\n'..T('expires'), slot = 'content' })
+                        Add(review, 'textdisplay', { value = Label(offer) .. ' × ' .. quote.quantity .. '\n'..T('total')
+                            .. Price(quote.total,quote.currency,quote.currencyPrecision) .. '\n'..T('expires'), slot = 'content' })
+                        if (quote.packSize or 1)>1 then Add(review,'textdisplay',{value=T('delivered',quote.itemQuantity),slot='content'}) end
                         Add(review, 'button', { label = T('pay'), slot = 'content' }, function()
                             if busy or pending ~= nil then return end
                             pending = { quoteId = quote.id, requestId = 'ui:' .. quote.id }
                             SetResourceKvp(pendingKey, json.encode(pending))
                             Purchase(shop)
                         end)
-                        Add(review, 'button', { label = T('cancel'), slot = 'footer' }, function() Async(function() Catalog(shop) end) end)
+                        Add(review, 'button', { label = T('cancel'), slot = 'footer' }, function() Async(function() Catalog(shop,nil,category,ammoGroup) end) end)
                         Show(review)
                     end)
                 end)
-                Add(detail, 'button', { label = T('back'), slot = 'footer' }, function() Async(function() Catalog(shop) end) end)
+                Add(detail, 'button', { label = T('back'), slot = 'footer' }, function() Async(function() Catalog(shop,nil,category,ammoGroup) end) end)
                 Show(detail)
             end)
+            end
         end
+        end
+        if category then Add(page,'button',{label=T('back'),slot='footer'},function() Async(function() Catalog(shop,nil,ammoGroup and category or nil) end) end) end
     end
     Add(page, 'button', { label = T('close'), slot = 'footer' }, function() Menu:CloseMenu(menuId) end)
     Show(page)
 end
 local function Open(shop)
     Async(function()
+        -- Refresh translated labels and current prices on each open. Saved
+        -- purchase identities remain untouched by a catalog/language refresh.
+        local fresh=Call('shops.catalog.v1',{})
+        if type(fresh)~='table' or not fresh.ok then Message(T('catalog_unavailable'));return end
+        shops=fresh.value
+        local current
+        for _,candidate in ipairs(shops) do if candidate.id==shop.id then current=candidate;break end end
+        if not current then Message(T('catalog_unavailable'));return end
+        shop=current
         if not menuId then
             menuId = Require(Menu:CreateMenu({ key = 'shops', closable = true,
+                position={x='3%',y='3%',anchor='top-left'}, draggable=false, persistPosition=false,
                 theme = { preset = 'redemption' }, focus = { keyboard = true, cursor = true } })).menuId
             Require(Menu:RegisterMenuLifecycle(menuId, function(event)
                 if event.event == 'closed' then opened = false
@@ -181,7 +246,7 @@ CreateThread(function()
     if type(snapshot) ~= 'table' or not snapshot.ok then Message(T('catalog_unavailable')); return end
     shops = snapshot.value
     local control = Require(exports['feather-toolkit']:ResolveControl('B'))
-    promptId = Require(exports['feather-toolkit']:CreatePrompt({ control = control, label = 'Browse shop', groupId = groupId, mode = 'hold' })).id
+    promptId = Require(exports['feather-toolkit']:CreatePrompt({ control = control, label = T('browse'), groupId = groupId, mode = 'hold' })).id
     while true do
         local delay = 750
         if not opened and not busy and not IsEntityDead(PlayerPedId()) then
@@ -192,7 +257,7 @@ CreateThread(function()
             end
             if nearest then
                 delay = 0
-                exports['feather-toolkit']:ShowPromptGroup(groupId, nearest.label)
+                exports['feather-toolkit']:ShowPromptGroup(groupId, PromptLabel(nearest))
                 local result = exports['feather-toolkit']:IsPromptCompleted(promptId)
                 if result.ok and result.value.completed then Open(nearest) end
             end
@@ -207,7 +272,13 @@ AddEventHandler('onResourceStop', function(resource)
 end)
 
 AddEventHandler('feather-core:locale:changed',function()
+    promptLabels={}
     -- Visible labels are rebuilt in the selected language on the next open;
     -- saved purchase identity and automatic readback are retained.
     if opened and menuId then Menu:CloseMenu(menuId);opened=false end
+    if promptId then
+        exports['feather-toolkit']:RemovePrompt(promptId)
+        local control=Require(exports['feather-toolkit']:ResolveControl('B'))
+        promptId=Require(exports['feather-toolkit']:CreatePrompt({control=control,label=T('browse'),groupId=groupId,mode='hold'})).id
+    end
 end)

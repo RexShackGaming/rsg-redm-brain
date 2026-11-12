@@ -34,7 +34,7 @@ local function Finite(value)
 end
 local function Validate()
     if Config.Contract ~= 1 or not Integer(Config.ReadinessTimeoutMs, 0, 60000)
-        or not Integer(Config.MaximumOffersPerShop, 1, 100)
+        or not Integer(Config.MaximumOffersPerShop, 1, 200)
         or type(Config.Shops) ~= 'table' or #Config.Shops > 100 then
         return Err('invalid_config', 'Shop service configuration is invalid.')
     end
@@ -75,7 +75,9 @@ local function Validate()
                 or not Text(offer.itemName, 100) or not offer.itemName:match('^[a-z0-9_]+$')
                 or not Text(offer.currency, 32)
                 or not Integer(offer.unitPrice, 1, 1000000000000)
-                or not Integer(offer.maximumQuantity, 1, 100) then
+                or not Integer(offer.packSize or 1,1,100)
+                or not Integer(offer.maximumQuantity, 1, 100)
+                or offer.maximumQuantity*(offer.packSize or 1)>100 then
                 return Err('invalid_config', 'A configured offer is invalid.')
             end
             offerIds[offer.id] = true
@@ -203,6 +205,9 @@ end)
 
 CreateThread(function()
     local called, result = xpcall(function()
+        health.phase='external_catalogs'
+        local external=ShopCatalogSources.Load()
+        if not external.ok then return external end
         local configured = Validate()
         if not configured.ok then return configured end
         health.checks.configuration = true
@@ -224,11 +229,19 @@ CreateThread(function()
             end
             health.checks[dependency] = true
         end
+        local currencies={}
         for _, shop in ipairs(Config.Shops) do
             for _, offer in ipairs(shop.offers) do
-                local currency = exports['feather-economy']:GetCurrency(offer.currency)
+                local currency = currencies[offer.currency]
+                if not currency then
+                    currency=exports['feather-economy']:GetCurrency(offer.currency)
+                    currencies[offer.currency]=currency
+                end
                 if type(currency) ~= 'table' or not currency.ok or not currency.value.enabled then
                     return Err('invalid_config', 'Offer currency is missing or disabled.', { offerId = offer.id })
+                end
+                if shop.catalogResource=='feather-weapons' and currency.value.precision~=2 then
+                    return Err('invalid_config','Weapons dollar prices require a two-decimal currency.')
                 end
             end
         end
@@ -272,6 +285,7 @@ CreateThread(function()
         if not ShopPlayerRoutes then return Err('startup_failed', 'Player route service did not load.') end
         local routes = ShopPlayerRoutes.Start()
         if routes.ok then health.checks.playerRoutes = true end
+        if not ShopCatalogSources.IsCurrent() then return Err('dependency_unavailable','Catalog owner stopped during startup.') end
         return routes
     end, debug.traceback)
     if not called then result = Err('startup_failed', 'Shop startup failed.', { reason = tostring(result) }) end
@@ -283,6 +297,14 @@ CreateThread(function()
     health.state, health.phase = 'ready', 'ready'
     GlobalState['feather-shops:ready']=true
     Log('startup.ready', { shops = #Config.Shops, migrationsApplied = health.checks.migrations.applied })
+end)
+
+AddEventHandler('onResourceStop',function(resource)
+    if ShopCatalogSources.Owns(resource) then
+        health.state='failed';health.phase='catalog_owner_stopped'
+        GlobalState['feather-shops:ready']=false
+        print('[feather-shops] Weapons catalog owner stopped; restart Shops after Weapons is ready.')
+    end
 end)
 
 ShopService.RegisterDevCommand('ShopFoundationSmokeTest', function(source)
