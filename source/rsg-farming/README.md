@@ -272,4 +272,4 @@ rsg-farming/
 
 Rexshack-RedM: RSG Framework (RexShack)
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

@@ -198,7 +198,7 @@ Created automatically (or `install/rsg-stores.sql`):
 
 ---
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/
 
 ## Dependencies
 `rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-gizmo` (shop sign placement), `oxmysql`. Ensure `rsg-gizmo` before `rsg-stores`.

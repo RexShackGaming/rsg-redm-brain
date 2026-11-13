@@ -166,7 +166,7 @@ To add another language, copy `locales/en.json` to `locales/<code>.json`, transl
 
 ## Support
 
-- Support: https://buymeacoffee.com/rexshack
+- Support the Project : https://rexshack.tebex.store/
 
 ## License
 

@@ -111,4 +111,4 @@ Cures done through `CurePlayer` are logged under the `cured` webhook event.
 
 This resource includes an automatic version checker (`server/versionchecker.lua`) that compares your installed version against the latest release on startup and prints a warning to the server console if you're out of date.
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

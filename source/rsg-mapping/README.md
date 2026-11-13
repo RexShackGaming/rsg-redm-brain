@@ -141,4 +141,4 @@ local list = exports['rsg-mapping']:GetNearbyImaps(50.0)
 
 ---
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

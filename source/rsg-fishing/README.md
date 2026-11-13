@@ -122,4 +122,4 @@ shared/config.lua     Settings
 
 See [LICENSE](LICENSE).
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

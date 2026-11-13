@@ -75,4 +75,4 @@ All exports are listed in [DOCS.md](DOCS.md).
 ## Credits
 - Zone data and banner code: freedy69 / Bytesized
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

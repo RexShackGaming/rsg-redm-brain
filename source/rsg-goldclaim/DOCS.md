@@ -108,4 +108,4 @@ Created automatically when `Config.AutoDatabase = true`; identical to `installat
 | Shovel/bucket says "not in water" | Stand in shallow river/lake water |
 
 ---
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

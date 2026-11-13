@@ -89,4 +89,4 @@ local wagons = exports['rsg-wagons']:GetPlayerWagons(Player.PlayerData.citizenid
 ## Locales
 `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale de`.
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

@@ -60,4 +60,4 @@ Included: en, de, el, es, fr, ja, nl, pl, pt-br, ro.
 Set language with `setr rsg:locale <lang>` in `server.cfg` (for example `setr rsg:locale de`).
 
 ## Support
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

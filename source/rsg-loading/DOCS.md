@@ -82,4 +82,4 @@ The loading screen handles no money, items or player data. All text is inserted 
 | Music silent | Check the `music` path (inside `html/`), `music_volume` > 0, and that the file is `.ogg`/`.mp3`. SPACE toggles it; key input may not reach the screen on every client build. |
 | Slow first paint | Compress backgrounds (~200–400 KB JPEG at 1920×1080). |
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

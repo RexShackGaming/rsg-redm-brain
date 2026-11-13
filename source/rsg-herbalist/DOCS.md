@@ -92,4 +92,4 @@ Nothing is stored in the database. Picked nodes, plant rotation and the box loca
 | Webhooks silent | Set `Config.Webhook.enabled`, the category `enabled` and its `url` |
 | Mystery box never appears | `Config.MysteryBox.enabled` and at least one entry in `coords` |
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

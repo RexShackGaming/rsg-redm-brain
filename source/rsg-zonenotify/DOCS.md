@@ -124,4 +124,4 @@ Discoveries are cosmetic (no money or items). The server still checks: player ex
 | Custom sound silent | File must be in `html/sounds/` and the path in config must start with `sounds/` |
 | Locale keys shown as text | Start rsg-core first; add new `ZoneMessages` keys to every locale file |
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

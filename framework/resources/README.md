@@ -21,6 +21,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-bossmenu](rsg-bossmenu.md) | Boss management menu for RSG Framework (RedM). Job bosses can manage employees, hire nearby players, open  | 0 | 10 |
 | [rsg-bountyhunter](rsg-bountyhunter.md) | rsg-bountyhunter - hunt wanted outlaws and bring them in dead or alive | 0 | 4 |
 | [rsg-canteen](rsg-canteen.md) | Fill a canteen at water pumps with rsg-target, or straight from rivers and lakes, and drink from it to res | 0 | 4 |
+| [rsg-cards](rsg-cards.md) | Collectable cigarette cards for the RSG Framework | 0 | 9 |
 | [rsg-character](rsg-character.md) | Character selection, character creation, clothing stores, wardrobe and spawn selection for RSG-Core (RedM) | 14 | 19 |
 | [rsg-chat](rsg-chat.md) | A chat resource for RedM servers running RSG-Core. It replaces the default chat with channels that adm | 2 | 19 |
 | [rsg-cinema](rsg-cinema.md) | rsg-cinema - moving picture shows rebuilt from RDR2 show_movie_magic_lantern | 0 | 8 |

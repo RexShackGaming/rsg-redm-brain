@@ -92,4 +92,4 @@ Nothing is saved. Sessions, cooldowns and spot memory are in memory and cleared 
 
 ---
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

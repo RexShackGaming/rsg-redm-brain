@@ -78,4 +78,4 @@ Tier labels, crimes and office names in `shared/config.lua` are locale keys (`ti
 ## Dependencies
 rsg-core, rsg-target, oxmysql
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

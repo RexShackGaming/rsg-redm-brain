@@ -40,4 +40,4 @@ en, de, el, es, fr, ja, nl, pl, pt-br, ro. rsg-core picks the language from the 
 
 Wearable state, category and animation hashes come from the RDR3 decompiled scripts and femga/rdr3_discoveries; don't change them.
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

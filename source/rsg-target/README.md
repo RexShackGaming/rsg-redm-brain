@@ -64,4 +64,4 @@ locales/  *.json
 ## Credits
 Based on [ox_target](https://github.com/overextended/ox_target) by Overextended (MIT).
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

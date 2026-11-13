@@ -39,4 +39,4 @@ Permission: `Config.AdminPermission` (rsg-core permission, default `admin`).
 
 See `DOCS.md` for configuration and internals.
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

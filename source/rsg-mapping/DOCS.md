@@ -84,4 +84,4 @@ Created automatically when `Config.AutoDatabase = true`; same schema is in `inst
 | Saved state not applied | Check the server console for `database tables ready` and the loaded entry count. |
 | Waypoint/View greyed out | That IMAP has no known coordinates in the data. |
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

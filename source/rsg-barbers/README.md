@@ -96,4 +96,4 @@ Add an entry to `Config.BarberLocations`:
 
 **License:** GPL-3.0
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

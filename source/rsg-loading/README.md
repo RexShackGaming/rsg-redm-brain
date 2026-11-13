@@ -221,4 +221,4 @@ rsg-loading/
 
 Created by **RexShack** for the RSG Framework.
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

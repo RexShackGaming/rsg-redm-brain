@@ -216,4 +216,4 @@ The prompt and target both call `rsg-wagons:server:storeNearest`, which stores a
 | Storage won't open | Only the owner can open it, within `UseDistance` |
 | Storage does nothing right after taking a wagon out | Fixed: the server now waits up to 5s for the spawned wagon to replicate before linking it, and falls back to its own active-wagon record. If it still fails, look for `entity never reached the server` in the server console |
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

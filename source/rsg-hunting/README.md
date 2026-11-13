@@ -169,4 +169,4 @@ Level titles (`Config.HuntingXP.Levels[].label`), vendor/butcher names and butch
 - If the leaderboard stays empty after players earn XP, check that your rsg-core stores rep in `players.metadata` under `rep`.
 
 ---
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

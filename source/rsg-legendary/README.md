@@ -89,4 +89,4 @@ Everything that matters runs on the server: trapper distance checks for buying a
 - rsg-hunting listens for the same skinning event. If any legendary model is in rsg-hunting's skin lookup, players will get that reward too, so keep them out of it.
 - If a player disconnects or a hunt expires, the spawned legendary is removed from the world.
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

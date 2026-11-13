@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>rsg-cards</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app" class="hidden">
+        <div id="panel" class="panel">
+            <div class="panel-header">
+                <span class="circle-btn spacer"></span>
+                <div>
+                    <div class="title" id="title"></div>
+                    <div class="subtitle" id="subtitle"></div>
+                </div>
+                <button class="circle-btn" id="close" type="button">&#10005;</button>
+            </div>
+            <div class="divider">&#10022;</div>
+
+            <!-- pack opening / single card found -->
+            <div id="view-cards" class="view hidden">
+                <div class="cards" id="cards"></div>
+                <div class="hint" id="cards-hint"></div>
+                <div class="actions">
+                    <button class="wood-btn" id="cards-close" type="button"></button>
+                </div>
+            </div>
+
+            <!-- vendor: sell cards -->
+            <div id="view-vendor" class="view hidden">
+                <div class="scroll" id="vendor-scroll">
+                    <div class="section-title hidden" id="sets-title"></div>
+                    <div class="list" id="sets-list"></div>
+                    <div class="section-title hidden" id="sell-title"></div>
+                    <div class="list" id="vendor-list"></div>
+                    <div class="empty hidden" id="vendor-empty"></div>
+                </div>
+                <div class="actions">
+                    <button class="wood-btn" id="sell-all" type="button"></button>
+                    <button class="wood-btn muted" id="buy" type="button"></button>
+                </div>
+            </div>
+
+            <!-- collector: trade cards for a complete set -->
+            <div id="view-trade" class="view hidden">
+                <div class="list" id="trade-list"></div>
+                <div class="empty hidden" id="trade-empty"></div>
+                <div class="hint" id="trade-refresh"></div>
+            </div>
+        </div>
+
+        <div id="modal-wrap" class="modal-wrap hidden">
+            <div class="modal">
+                <div class="modal-title" id="modal-title"></div>
+                <div class="ink-divider"></div>
+                <div class="modal-text" id="modal-text"></div>
+                <div class="modal-actions">
+                    <button class="wood-btn" id="modal-confirm" type="button"></button>
+                    <button class="wood-btn muted" id="modal-cancel" type="button"></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="toasts" id="toasts"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

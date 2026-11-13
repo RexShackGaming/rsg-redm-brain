@@ -58,4 +58,4 @@ Messages are queued and sent about once a second, with a retry when Discord rate
 - Fixed: searching several bodies at once; registering non-gang peds
 - Cleanup state is cleared before the server is told the ambush ended
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

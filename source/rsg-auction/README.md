@@ -258,4 +258,4 @@ The server keeps live state in memory and writes every change to the database in
 
 Created by **RexShack** for the RSG Framework community.
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

@@ -82,4 +82,4 @@ Calling scripts that teleport players to Guarma do not need extra checks for the
 | NUI fonts missing | Google Fonts blocked offline; UI still works with system fallback |
 
 ## Support
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

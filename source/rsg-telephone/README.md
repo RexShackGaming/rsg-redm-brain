@@ -226,4 +226,4 @@ To add another language, copy `en.json` to `locales/<code>.json` and translate t
 
 ---
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

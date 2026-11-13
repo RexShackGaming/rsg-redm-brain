@@ -136,4 +136,4 @@ None. The script stores nothing of its own.
 | Fish never bite | The bait must be in `Config.BaitsPerFish` for fish in that water, and a fish has to be within 1.6 of the hook |
 | Fish not added to inventory | Missing fish item in shared items, full inventory, or more than 5 minutes since the bait was used |
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

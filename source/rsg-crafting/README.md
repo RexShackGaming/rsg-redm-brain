@@ -108,4 +108,4 @@ Set the language in server.cfg, e.g. `setr rsg:locale de` (falls back to `ox:loc
 - Closing the book no longer cancels a craft; it finishes in the background and reopening the book shows its progress
 - The NUI now closes cleanly if the resource stops while it is open
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

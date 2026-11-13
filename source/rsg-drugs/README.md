@@ -128,4 +128,4 @@ exports['rsg-drugs']:IsInRehab(src)
 - `playerdrugshalluc01`: rdr3_discoveries `graphics/animpostfx` · `PlayerHealthPoorCS`: rsg-consume config
 - Scenarios `WORLD_HUMAN_SMOKE`, `WORLD_HUMAN_DRINKING`, `WORLD_HUMAN_DRUNK_BRACE_WALL_NO_VOMIT`: rdr3_discoveries `animations/scenarios`
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

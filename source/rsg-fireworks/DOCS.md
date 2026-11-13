@@ -257,4 +257,4 @@ Enable client/server console output and check the server console for `[rsg-firew
 
 ## Support
 
-- Support: https://buymeacoffee.com/rexshack
+- Support the Project : https://rexshack.tebex.store/

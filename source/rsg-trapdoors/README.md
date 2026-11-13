@@ -268,4 +268,4 @@ Original script by **RMS and Phil Mcracken**.
 
 ---
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

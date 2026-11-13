@@ -127,7 +127,7 @@ Maintenance state is stored in resource KVP (`maintenance`), not the database.
 | No logs | Start rsg-log and add the `Config.Log.channel` channel to its config |
 | Another resource also defers connections | Fine, but start rsg-queue early so the queue card shows first |
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/
 
 ## Changelog
 

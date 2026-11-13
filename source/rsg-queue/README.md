@@ -108,4 +108,4 @@ if exports['rsg-queue']:IsMaintenance() then print('maintenance on') end
 ## Locales
 `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro` (set with `setr rsg:locale de`).
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

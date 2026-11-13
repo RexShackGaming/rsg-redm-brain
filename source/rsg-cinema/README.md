@@ -52,4 +52,4 @@ and `theatre_ticket_taker.c` (func_13).
 ## Troubleshooting
 Set `Config.Debug = true` to print render target, projector and house light setup to the F8 console.
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

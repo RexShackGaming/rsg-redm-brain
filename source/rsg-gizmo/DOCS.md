@@ -128,7 +128,7 @@ No tables.
 | Edit returns nil on a networked prop | Network control wasn't granted within 1s; spawn it client-side or move it server-side from the result |
 | rsg-gizmo restarted mid-placement | The ghost is deleted and an edited entity is put back where it was automatically |
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/
 
 ## Blocking other resources while placing
 

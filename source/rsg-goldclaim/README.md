@@ -205,4 +205,4 @@ Any key missing from a translation falls back to `en`. To add a language, copy `
 - Originally two scripts: `mack-goldclaim` and `mack-smelter`.
 
 ---
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

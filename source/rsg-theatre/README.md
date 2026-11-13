@@ -40,4 +40,4 @@ All player-facing text (notifications, playbill UI, blip, show names and descrip
 - Only the first Can-Can sets its scene origin in the decompiled scripts; every other act uses the origin baked into its scene. If an act stands off-mark, set its `origin = nil`.
 - Bullet Catcher and Flex Fight aren't included: both need a volunteer from the crowd interacting with the performer.
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

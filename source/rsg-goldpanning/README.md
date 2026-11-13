@@ -60,4 +60,4 @@ Set the language in `server.cfg`, e.g. `setr rsg:locale de`. To add another, cop
 
 ---
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

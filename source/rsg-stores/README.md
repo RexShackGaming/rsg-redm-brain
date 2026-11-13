@@ -426,4 +426,4 @@ Original script by **Phil**. Security rewrite, webhooks, localisation, auto-inst
 
 ---
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

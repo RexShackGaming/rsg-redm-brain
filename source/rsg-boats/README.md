@@ -87,4 +87,4 @@ Set these in `server/sv_config.lua`. It is server only, so webhook URLs are neve
 - `_UI_PROMPT_SET_PRIORITY` (0xCA24F528D0D16289) / `PP_High`: brain natives/db and rdr3-native-enums
 - Draw marker cylinder (0x94FDAE17) / `DRAW_MARKER` (0x2A32FAA57B937173): femga graphics / natives db
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

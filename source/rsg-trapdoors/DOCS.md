@@ -105,4 +105,4 @@ Built automatically when `DatabaseConfig.AutoInstall = true` (default). Set it t
 
 ---
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/

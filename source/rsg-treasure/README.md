@@ -41,4 +41,4 @@ Other resources can log through it too: `exports['rsg-treasure']:SendLog('Reward
 - Reward items missing from your shared items are skipped and a warning is printed in the server console on start.
 - Set `Config.RequiredItem = 'shovel'` (or your tool's item name) to make players carry a digging tool.
 
-Support: https://buymeacoffee.com/rexshack
+Support the Project : https://rexshack.tebex.store/
