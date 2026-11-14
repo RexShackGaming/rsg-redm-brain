@@ -130,27 +130,25 @@ findstr /s /i "a_c_horse_arabian" data\rdr3_discoveries\peds\*
 
 ## Using it with different AI tools
 
-### Claude Code (best experience)
-Open the `rsg-redm-brain` folder as the project, or add it as an extra directory alongside the folder you're building in:
+The full walkthrough is in **[`INTEGRATION.md`](INTEGRATION.md)**. The short version: run the installer.
+
 ```bash
-cd rsg-redm-brain && claude
-# or, from your resource folder:
-claude --add-dir ../rsg-redm-brain
+python install.py              # interactive menu
+python install.py --check      # health check
+python install.py --claude-code                       # Claude Code skill, works in every project
+python install.py --bundle                            # upload files for ChatGPT + Claude.ai (./dist)
+python install.py --project <script folder> --claude-project --cursor --codex --copilot --windsurf
 ```
-`CLAUDE.md` loads automatically. Claude can grep `natives/db/INDEX.tsv`, `data/rdr3_discoveries/`, `data/rdr3-native-enums/` and `source/` itself, so it looks values up instead of guessing.
 
-### Cursor / Windsurf / VS Code Copilot
-- Add the brain folder to the workspace.
-- Reference `CLAUDE.md` in your rules file (e.g. `.cursorrules` or `.github/copilot-instructions.md`): *"Before writing RedM code, follow rsg-redm-brain/CLAUDE.md."*
-- Mention files with `@` (e.g. `@server/environment.md @framework/resources/rsg-stables.md`) when the task needs them.
+| Tool | How the brain reaches it |
+|---|---|
+| Claude Code | `--claude-code` (user-level skill) or `--claude-project` (per folder). Or `claude --add-dir ../rsg-redm-brain` |
+| Claude desktop app | Connect the brain folder; `CLAUDE.md` loads automatically |
+| Claude.ai Project | `--bundle`, upload `dist/` files as project knowledge, paste `INSTRUCTIONS-claude-project.txt` |
+| ChatGPT Custom GPT / Project | `--bundle`, upload `dist/` files as knowledge, paste `INSTRUCTIONS-chatgpt-custom-gpt.txt` (under the 8,000 character limit) |
+| Codex, Cursor, Copilot, Windsurf | `--project <folder>` with `--codex`, `--cursor`, `--copilot` or `--windsurf` |
 
-### ChatGPT / Claude.ai / other chat tools (no file access)
-These can't search the folder, so you feed them the right files:
-1. Paste or attach `CLAUDE.md`, `server/environment.md`, `conventions/coding-rules.md` and `conventions/security.md`.
-2. Add task-specific files: the relevant `framework/resources/<resource>.md`, `natives/*.md`, `ui/design-standard.md` + `ui/theme.css` for NUI.
-3. For data values, search the files yourself (see [Looking things up](#looking-things-up)) and paste the matching lines. **Never attach big data files whole.**
-
-A Claude.ai Project works well: add the core files above as project knowledge so every chat starts with them.
+Tools that read your disk get the whole brain and search it themselves. Chat tools get a condensed bundle and are told to ask you to grep the big data folders rather than guess. See [Looking things up](#looking-things-up).
 
 ---
 

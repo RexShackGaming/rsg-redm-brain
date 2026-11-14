@@ -29,6 +29,7 @@ For support/troubleshooting tickets (rather than new code), open `DOCS.md` first
 | `framework/resources/` | **Generated** API reference for ~70 RSG resources: exports with params, net events, callbacks, usable items, commands, DB tables |
 | `source/` | Code-only mirror of the Rexshack-RedM repos (filled by `tools/refresh.sh`). Search it for real examples |
 | `tools/` | Refresh scripts that re-pull the repos and regenerate the reference |
+| `INTEGRATION.md` / `install.py` | How to hook the brain into Claude, ChatGPT, Codex, Cursor, Copilot and Windsurf; the installer automates it |
 | `natives/` | RedM natives guides: ped AI/combat, game events, prompts, blips, entities |
 | `natives/db/` | **Full natives database** (~8k, hash + signature + notes). Grep `INDEX.tsv` first |
 | `data/rdr3-decompiled-scripts.md` | **RDR3 decompiled SP scripts** (Halen84, build 1491.50): how Rockstar calls natives in real gameplay. Grep `data/rdr3-decompiled/1491.50/` if cloned |

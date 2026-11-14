@@ -9,3 +9,4 @@
 - `extra-repos.txt`: add repo names that aren't in the txAdmin recipe.
 - `build_docs.py`: builds the public docs site (MkDocs) from the brain. See `docs-site/README.md`.
 - `update-docs.ps1`: one-click refresh + rebuild + preview/publish of the docs site on Windows.
+- `../install.py`: installer that hooks the brain into AI tools (Claude Code skill, upload bundle for ChatGPT/Claude.ai, Cursor/Codex/Copilot/Windsurf project files). `--pull --refresh` also updates the brain. See `INTEGRATION.md`.
