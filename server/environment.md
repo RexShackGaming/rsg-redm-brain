@@ -43,4 +43,4 @@ TriggerEvent('hud:client:UpdateThirst', math.max(0, math.min(100, (LocalPlayer.s
 rsg-housing (monthly rent at the property, eviction for unpaid rent, no estate agents), rsg-drugs (cannabis: drying, pressing bricks via NUI, deliveries/bags), rsg-lawman (with an NUI MDT modelled on rsg-mdt), rex-spawner (admin ped spawner NUI), rsg-noticeboard (paid, timed notices on bounty boards), rsg-bankrobbery (safe cracking via ox_target plus an NUI minigame).
 
 ## README footer for released scripts
-`Support: https://buymeacoffee.com/rexshack`
+`Support: https://rexshack.tebex.store`

@@ -392,4 +392,4 @@ This project is unofficial and not affiliated with Rockstar Games, Take-Two Inte
 
 ---
 
-Support: https://buymeacoffee.com/rexshack
+Support: https://rexshack.tebex.store

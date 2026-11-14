@@ -66,7 +66,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-moonshine](rsg-moonshine.md) | Placeable moonshine stills for RedM on the RSG Framework. Players set up a still in the wild, load a m | 0 | 7 |
 | [rsg-noticeboard](rsg-noticeboard.md) | rsg-noticeboard - player notice boards with NUI, fees, expiry/renewal and admin management | 0 | 3 |
 | [rsg-npcs](rsg-npcs.md) | Lightweight, distance-based ambient NPC spawner with optional blips, scenarios and proximity audio for RedM. | 0 | 0 |
-| [rsg-playerinfo](rsg-playerinfo.md) | Player information / quick stats display for RedM (RSG Core). > Shows a small context menu with the player | 0 | 1 |
+| [rsg-playerinfo](rsg-playerinfo.md) | Full-screen player information dashboard for RedM (RSG Core). > `/info` opens a dashboard that fills 80% o | 19 | 13 |
 | [rsg-poison](rsg-poison.md) | Poison script for RSG Framework | 3 | 4 |
 | [rsg-prison](rsg-prison.md) | Prison system for RedM servers using RSG Core. - [rsg-core](https://github.com/Rexshack-RedM/rsg-core) - [ | 1 | 12 |
 | [rsg-queue](rsg-queue.md) | rsg-queue - connect queue with VIP priority, reserved slots and crash grace | 7 | 1 |

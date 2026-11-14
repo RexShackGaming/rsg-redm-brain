@@ -27,4 +27,4 @@ Guide for server owners and developers. For features and installation see [READM
 
 ---
 
-Support: https://buymeacoffee.com/rexshack
+Support: https://rexshack.tebex.store

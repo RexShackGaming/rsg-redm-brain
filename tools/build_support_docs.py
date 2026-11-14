@@ -26,7 +26,7 @@ ENV = ROOT / "server" / "environment.md"
 
 HEADING = re.compile(r"^(#{1,6})\s+(.*)$")
 TABLE_SEPARATOR = re.compile(r"^:?-{2,}:?$")
-SUPPORT = re.compile(r"buymeacoffee|^support\b", re.I)
+SUPPORT = re.compile(r"buymeacoffee|tebex|^support\b", re.I)
 EMOJI = re.compile(r"^[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F\s]+")
 
 

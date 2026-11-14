@@ -10,7 +10,7 @@ Every session that creates or changes a resource must create `README.md` and `DO
 5. How to use: controls, player flow, commands with permissions
 6. Short developer examples
 7. Locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro
-8. Footer: `Support: https://buymeacoffee.com/rexshack`
+8. Footer: `Support: https://rexshack.tebex.store`
 
 ## DOCS.md (for server owners and developers)
 1. Contents list
