@@ -12,7 +12,7 @@ Has NUI (`ui_page`).
 
 **server:** `RemoveTemporayDensityMultipliers(source, name)`, `SetDefaultDensityMultipliers(source, name, value, enable)`, `SetTemporaryDensityMultipliers(source, name, value, timer)`
 
-**client:** `GetAllEntities()`, `GetAllObjects()`, `GetAllPeds()`, `GetAllVehicles()`, `GetDensityMultipliers(name)`, `Select(options)`, `StartGizmo(handle, alpha, placeOnGround, deleteOnStop, createCam, data)`, `StopGizmo()`, `TrackEntity(entity)`, `UntrackEntity(entity)`, `copyToClipBoard(text, cb)`, `progressCancel()`, `progressStart(data, onComplete)`
+**client:** `GetAllEntities()`, `GetAllObjects()`, `GetAllPeds()`, `GetAllVehicles()`, `GetDensityMultipliers(name)`, `Select(options)`, `StartGizmo(handle, alpha, placeOnGround, deleteOnStop, createCam, data)`, `StopGizmo()`, `TrackEntity(entity)`, `UntrackEntity(entity)`, `copyToClipBoard(text, cb)`, `progressCancel()`, `progressStart(data, onComplete)`, `skillbarCancel()`, `skillbarStart(data, onComplete)`
 
 ## Net events registered
 
@@ -28,7 +28,7 @@ Has NUI (`ui_page`).
 
 ## Commands (RegisterCommand)
 
-**client:** `/cancel`, `/select`
+**client:** `/cancel`, `/cancelskill`, `/select`, `/skill`
 
 ## Public (table) functions
 

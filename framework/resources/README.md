@@ -13,7 +13,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-auction](rsg-auction.md) | Real-time auction system for RSG Framework | 0 | 18 |
 | [rsg-backpacks](rsg-backpacks.md) | RSG Backpacks: wearable backpacks with stashes and belt/back attachments (lanterns, lasso, machete, quiver) | 1 | 4 |
 | [rsg-bandana](rsg-bandana.md) | rsg-bandana - raise / lower your bandana (male & female) | 1 | 3 |
-| [rsg-banking](rsg-banking.md) | rsg-banking - individual branch banks across the frontier | 11 | 1 |
+| [rsg-banking](rsg-banking.md) | rsg-banking - individual branch banks across the frontier | 15 | 3 |
 | [rsg-barbers](rsg-barbers.md) | Barbershops for RedM (RSG Framework): hair, beard and makeup with a live preview. - Barber NPCs that spawn | 0 | 1 |
 | [rsg-bathing](rsg-bathing.md) | Interactive bathhouse system for RedM servers running the RSG Framework. Players pay for a bath, scrub themsel | 1 | 10 |
 | [rsg-beekeeper](rsg-beekeeper.md) | Beekeeper script for RSG Framework | 0 | 23 |
@@ -81,9 +81,10 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-stores](rsg-stores.md) | Version 3.1.0 · requires rsg-core, rsg-inventory, rsg-target, rsg-gizmo, oxmysql (no ox_lib) Create NPC sh | 1 | 21 |
 | [rsg-target](rsg-target.md) | targeting system for RSG RedM Framework | 0 | 5 |
 | [rsg-targetpractise](rsg-targetpractise.md) | Placeable archery and throwing-knife practice targets for RSG Framework | 0 | 18 |
-| [rsg-telegram](rsg-telegram.md) | Telegram system for RSG Framework (RedM). Send and receive telegrams at any post office, with an address book, | 0 | 2 |
+| [rsg-telegram](rsg-telegram.md) | Telegram system for RSG Framework (RedM). Send and receive telegrams at any post office, with an address book, | 17 | 4 |
 | [rsg-telephone](rsg-telephone.md) | rsg-telephone - persistent telephone props with private voice calls | 0 | 16 |
 | [rsg-theatre](rsg-theatre.md) | Theatre Raleur (Saint Denis) stage shows | 0 | 4 |
+| [rsg-townhall](rsg-townhall.md) | rsg-townhall - Town Hall job vacancies, applications and approvals | 0 | 2 |
 | [rsg-trader](rsg-trader.md) | Dynamic-price NPC traders for RSG-Core (RedM). Players buy and sell items at prices that move with stock l | 1 | 1 |
 | [rsg-trams](rsg-trams.md) | rsg-trams - Saint Denis trolley network (one trolley per track) | 0 | 3 |
 | [rsg-trapdoors](rsg-trapdoors.md) | Version 2.1.0 · Full developer reference: [DOCS.md](DOCS.md) Synced, animated trapdoors for RSG-Core (Re | 1 | 1 |

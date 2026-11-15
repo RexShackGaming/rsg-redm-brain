@@ -136,7 +136,7 @@ RegisterServerEvent("vorpcharacter:deleteCharacter", function(selectedChar)
 	if user then
 		local charid = selectedChar.charIdentifier
 		local SteamName = GetPlayerName(_source)
-		local SteamId = GetPlayerIdentifiers(_source)[1]
+		local SteamId = GetPlayerIdentifierByType(_source, 'steam')
 		local description = "SteamID : " .. SteamId .. "\n" .. "Steam Name : " .. SteamName .. "\n" ..
 			"Playername : " .. selectedChar.firstname .. " " .. selectedChar.lastname .. "\n" .. "Character Description : " ..
 			selectedChar.charDesc

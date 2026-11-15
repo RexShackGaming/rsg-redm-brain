@@ -23,7 +23,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [vorp_imapviewtool](vorp_imapviewtool.md) | A developer tool to easily find, view, and toggle IPLs (Interior Proxy Lists) for RedM vorp_core. ⚠️ WARNING | 0 | 0 |
 | [vorp_inputs-lua](vorp_inputs-lua.md) | An Input tool to use in your scripts for vorp core framework | 1 | 3 |
 | [vorp_inventory-v2](vorp_inventory-v2.md) | Inventory System for vorp core framework | 86 | 64 |
-| [vorp_lib](vorp_lib.md) | A library to use for RedM scripts | 16 | 7 |
+| [vorp_lib](vorp_lib.md) | A library to use for RedM scripts | 18 | 7 |
 | [vorp_lootnpcs](vorp_lootnpcs.md) | A npc looting script for vorp core framework | 0 | 3 |
 | [vorp_lumberjack](vorp_lumberjack.md) | A lumberjack script for vorp core framework | 0 | 3 |
 | [vorp_mailbox](vorp_mailbox.md) | A mailbox script for vorp core framework | 0 | 4 |
