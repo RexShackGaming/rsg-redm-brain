@@ -4,11 +4,10 @@ local Locations = {}      -- [id] = { id, label, x, y, z, h }
 local ManagerCache = {}   -- [citizenid] = { ['*'] = true, police = true }
 local LastAction = {}
 
-local BlockedJobs, PostableJobs, PrereqItems, ExpiryOk = {}, {}, {}, {}
+local BlockedJobs, PostableJobs, PrereqItems = {}, {}, {}
 for _, j in ipairs(Config.BlockedJobs or {}) do BlockedJobs[j] = true end
 for _, j in ipairs(Config.PostableJobs or {}) do PostableJobs[j] = true end
 for _, i in ipairs(Config.PrerequisiteItems or {}) do PrereqItems[i] = true end
-for _, d in ipairs(Config.ExpiryOptions or { 0 }) do ExpiryOk[d] = true end
 local HasPostableFilter = next(PostableJobs) ~= nil
 
 -- application states that still need a decision
@@ -28,6 +27,10 @@ local MIGRATIONS = {
     { 'townhall_postings', 'req_job_grade', 'INT NOT NULL DEFAULT 0' },
     { 'townhall_applications', 'interview_note', 'TEXT NULL' },
     { 'townhall_applications', 'granted', 'TINYINT(1) NOT NULL DEFAULT 1' },
+    { 'townhall_applications', 'notified', 'TINYINT(1) NOT NULL DEFAULT 1' },
+    { 'townhall_postings', 'warned', 'TINYINT(1) NOT NULL DEFAULT 0' },
+    { 'townhall_applications', 'fee', 'INT NOT NULL DEFAULT 0' },
+    { 'townhall_applications', 'refund', 'INT NOT NULL DEFAULT 0' },
 }
 
 local function ensureDatabase()
@@ -126,6 +129,7 @@ local function rsgLog(title, color, message)
     if SvConfig and SvConfig.Webhook and SvConfig.Webhook ~= '' then
         PerformHttpRequest(SvConfig.Webhook, function() end, 'POST', json.encode({
             username = SvConfig.Username or 'Town Hall',
+            allowed_mentions = { parse = {} }, -- player text must never ping anyone
             embeds = { {
                 title = title,
                 description = message,
@@ -150,9 +154,11 @@ local function nearestLocation(src)
 end
 
 -- Returns Player, nil, locationId  or  nil, localeKey
-local function ctx(src)
+local function ctx(src, readKey)
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return nil, 'err_generic' end
+    -- read callbacks hit the database: stop a modified client from spamming them
+    if readKey and not throttle(src, 'r:' .. readKey, 300) then return nil, 'err_slow_down' end
     local locId = nearestLocation(src)
     if not locId then return nil, 'err_too_far' end
     return Player, nil, locId
@@ -175,17 +181,24 @@ local function loadManagers()
     end
 end
 
+-- Manager entries only count while the player holds Config.ManagerJob (when set)
+local function managerActive(src)
+    local mj = Config.ManagerJob
+    if not mj or mj == '' then return true end
+    return exports['rsg-core']:HasPlayerJob(src, mj) and true or false
+end
+
 local function getScope(src, Player)
-    local scope = { admin = false, all = false, jobs = {}, any = false }
+    local scope = { admin = false, all = false, jobs = {}, any = false, manager = false, managerAll = false, managerJobs = {} }
     if RSGCore.Functions.HasPermission(src, Config.AdminPermission) then
         scope.admin, scope.all, scope.any = true, true, true
         return scope
     end
     local m = ManagerCache[Player.PlayerData.citizenid]
-    if m then
+    if m and managerActive(src) then
         for job in pairs(m) do
-            if job == '*' then scope.all = true else scope.jobs[job] = true end
-            scope.any = true
+            if job == '*' then scope.all, scope.managerAll = true, true else scope.jobs[job], scope.managerJobs[job] = true, true end
+            scope.any, scope.manager = true, true
         end
     end
     if Config.AllowBossManagement then
@@ -196,6 +209,33 @@ local function getScope(src, Player)
         end
     end
     return scope
+end
+
+-- Expiry choices (days) the caller may use; job = the vacancy's job (nil = general)
+local function expiryFor(scope, job)
+    local cfg = Config.ExpiryOptions
+    if type(cfg) ~= 'table' then cfg = { 0 } end
+    if cfg[1] ~= nil then return cfg end -- legacy flat list
+    local list
+    if scope.admin then list = cfg.admin
+    elseif job and cfg.jobs and cfg.jobs[job] then list = cfg.jobs[job]
+    elseif scope.manager and (job == nil or scope.managerAll or scope.managerJobs[job]) then list = cfg.manager
+    else list = cfg.boss end
+    if type(list) ~= 'table' or #list == 0 then list = cfg.default end
+    if type(list) ~= 'table' or #list == 0 then list = { Config.DefaultExpiryDays or 14 } end
+    return list
+end
+
+local function expiryAllowed(list, n)
+    for _, d in ipairs(list) do if d == n then return true end end
+    return false
+end
+
+-- default for reopen/repost: Config.DefaultExpiryDays when allowed, else the first timed option
+local function defaultExpiry(list)
+    if expiryAllowed(list, Config.DefaultExpiryDays) then return Config.DefaultExpiryDays end
+    for _, d in ipairs(list) do if d > 0 then return d end end
+    return list[1] or 0
 end
 
 local function scopeAllows(scope, job)
@@ -259,7 +299,7 @@ local function listJobs(scope)
                 end
                 table.sort(grades, function(a, b) return a.level < b.level end)
                 if #grades > 0 then
-                    out[#out + 1] = { name = name, label = def.label or name, grades = grades }
+                    out[#out + 1] = { name = name, label = def.label or name, grades = grades, expiry = expiryFor(scope, name) }
                 end
             end
         end
@@ -340,16 +380,40 @@ end
 
 local function notifyCitizen(citizenid, text, ntype)
     local P = RSGCore.Functions.GetPlayerByCitizenId(citizenid)
-    if P then notify(P.PlayerData.source, text, ntype) end
+    if P then
+        notify(P.PlayerData.source, text, ntype)
+        return true
+    end
+    return false
+end
+
+-- the applicant was told live, so no login reminder is needed for this update
+local function markNotified(appId)
+    MySQL.update.await('UPDATE townhall_applications SET notified = 1 WHERE id = ?', { appId })
+end
+
+-- Pay out application fees owed to this player (vacancy closed before a decision)
+local function payRefunds(Player)
+    local rows = MySQL.query.await('SELECT id, refund FROM townhall_applications WHERE citizenid = ? AND refund > 0', { Player.PlayerData.citizenid }) or {}
+    for _, r in ipairs(rows) do
+        -- claim first so a refund can never be paid twice
+        if MySQL.update.await('UPDATE townhall_applications SET refund = 0 WHERE id = ? AND refund = ?', { r.id, r.refund }) == 1 then
+            Player.Functions.AddMoney(Config.ApplicationFeeAccount or 'cash', r.refund, 'townhall-application-fee-refund')
+            notify(Player.PlayerData.source, locale('notify_fee_refunded', r.refund), 'success')
+        end
+    end
 end
 
 -- Close every undecided application of a posting (filled / closed / expired)
 local function closePending(postingId, title)
     local rows = MySQL.query.await(("SELECT id, citizenid FROM townhall_applications WHERE posting_id = ? AND status IN %s"):format(ACTIVE), { postingId }) or {}
     if #rows == 0 then return end
-    MySQL.update.await(("UPDATE townhall_applications SET status = 'closed', seen = 0, reviewed_at = NOW() WHERE posting_id = ? AND status IN %s"):format(ACTIVE), { postingId })
+    local refund = Config.RefundFeeWhenClosed and ', refund = fee' or ''
+    MySQL.update.await(("UPDATE townhall_applications SET status = 'closed', seen = 0, notified = 0, reviewed_at = NOW()%s WHERE posting_id = ? AND status IN %s"):format(refund, ACTIVE), { postingId })
     for _, r in ipairs(rows) do
-        notifyCitizen(r.citizenid, locale('notify_app_closed', title), 'warning')
+        if notifyCitizen(r.citizenid, locale('notify_app_closed', title), 'warning') then markNotified(r.id) end
+        local P = Config.RefundFeeWhenClosed and RSGCore.Functions.GetPlayerByCitizenId(r.citizenid)
+        if P then payRefunds(P) end
     end
 end
 
@@ -432,7 +496,7 @@ local function grantPending(Player)
             else
                 local ok, reason = exports['rsg-core']:AddPlayerJob(src, r.job, tonumber(r.grade), Config.BypassMaxJobs)
                 if ok then
-                    MySQL.update.await('UPDATE townhall_applications SET granted = 1, seen = 0 WHERE id = ?', { r.id })
+                    MySQL.update.await('UPDATE townhall_applications SET granted = 1, seen = 0, notified = 1 WHERE id = ?', { r.id })
                     if Config.SetActiveJobOnApproval then Player.Functions.SetJob(r.job, tonumber(r.grade)) end
                     notify(src, locale('notify_app_approved', r.title), 'success')
                     rsgLog('Queued job granted', 'green', ('%s received %s grade %s (application #%s)'):format(cid, r.job, r.grade, r.id))
@@ -448,20 +512,23 @@ local function grantPending(Player)
     end
 end
 
+-- Undecided applications the caller is allowed to review
+local function pendingReviewCount(scope)
+    if not scope.any then return 0 end
+    local clause, params = scopeClause(scope, 'p.job')
+    return MySQL.scalar.await(("SELECT COUNT(*) FROM townhall_applications a JOIN townhall_postings p ON p.id = a.posting_id WHERE %s AND a.status IN %s"):format(clause, ACTIVE), params) or 0
+end
+
 ---------------------------------------------------------------------------
 -- Permissions callback
 ---------------------------------------------------------------------------
 RSGCore.Functions.CreateCallback('rsg-townhall:server:getPerms', function(source, cb)
-    local Player, err = ctx(source)
+    local Player, err = ctx(source, 'perms')
     if not Player then cb(fail(err)) return end
     local scope = getScope(source, Player)
     grantPending(Player)
-    local unseen = MySQL.scalar.await("SELECT COUNT(*) FROM townhall_applications WHERE citizenid = ? AND seen = 0", { Player.PlayerData.citizenid }) or 0
-    local pendingReview = 0
-    if scope.any then
-        local clause, params = scopeClause(scope, 'p.job')
-        pendingReview = MySQL.scalar.await(("SELECT COUNT(*) FROM townhall_applications a JOIN townhall_postings p ON p.id = a.posting_id WHERE %s AND a.status IN %s"):format(clause, ACTIVE), params) or 0
-    end
+    local unseen = MySQL.scalar.await("SELECT COUNT(*) FROM townhall_applications a JOIN townhall_postings p ON p.id = a.posting_id WHERE a.citizenid = ? AND a.seen = 0", { Player.PlayerData.citizenid }) or 0
+    local pendingReview = pendingReviewCount(scope)
     local loc = Locations[nearestLocation(source)]
     cb({
         ok = true, admin = scope.admin, manage = scope.any, unseen = unseen, pending = pendingReview,
@@ -469,8 +536,9 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:getPerms', function(source
         maxCustom = Config.MaxCustomQuestions, limits = Config.Limits,
         minFeedback = Config.RequireFeedback and Config.MinFeedbackLength or 0,
         offlineApproval = Config.AllowOfflineApproval, interviews = Config.AllowInterviews,
+        messages = Config.AllowMessages, editApps = Config.AllowEditApplication,
         allowResign = Config.AllowResign, maxSlots = Config.MaxSlots,
-        expiryOptions = Config.ExpiryOptions, defaultExpiry = Config.DefaultExpiryDays, maxPrereqItems = Config.MaxPrerequisiteItems,
+        expiryOptions = expiryFor(scope), defaultExpiry = defaultExpiry(expiryFor(scope)), maxPrereqItems = Config.MaxPrerequisiteItems,
     })
 end)
 
@@ -478,7 +546,7 @@ end)
 -- Vacancies + applying
 ---------------------------------------------------------------------------
 RSGCore.Functions.CreateCallback('rsg-townhall:server:getVacancies', function(source, cb)
-    local Player, err, locId = ctx(source)
+    local Player, err, locId = ctx(source, 'vac')
     if not Player then cb(fail(err)) return end
     local cid = Player.PlayerData.citizenid
 
@@ -507,6 +575,13 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:getVacancies', function(so
     end
     for _, r in ipairs(resigned) do resignWait[r.job] = tonumber(r.wait) or 0 end
 
+    local blockedAll, blockedJobs = false, {}
+    if Config.AllowBlacklist then
+        for _, b in ipairs(MySQL.query.await('SELECT job FROM townhall_blacklist WHERE citizenid = ?', { cid }) or {}) do
+            if b.job == '*' then blockedAll = true else blockedJobs[b.job] = true end
+        end
+    end
+
     local heldJobs = {}
     for _, pj in ipairs(exports['rsg-core']:GetPlayerJobs(source) or {}) do heldJobs[pj.job] = true end
 
@@ -518,6 +593,7 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:getVacancies', function(so
         local w = math.max(wait[r.id] or 0, resignWait[r.job] or 0)
         local state = 'open'
         if heldJobs[r.job] then state = 'holds'
+        elseif blockedAll or blockedJobs[r.job] then state = 'blocked'
         elseif pending[r.id] then state = 'applied'
         elseif w > 0 then state = 'cooldown'
         elseif not met then state = 'locked' end
@@ -527,7 +603,7 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:getVacancies', function(so
             description = r.description, requirements = r.requirements,
             postedBy = r.posted_by_name, created = r.created,
             openings = r.slots - r.filled_count, slots = r.slots, expiresIn = r.expires_in,
-            prereqs = prereqs, questions = buildQuestions(r), state = state, wait = w,
+            prereqs = prereqs, questions = buildQuestions(r), state = state, wait = w, fee = Config.ApplicationFee or 0,
         }
     end
     cb({ ok = true, vacancies = out })
@@ -553,6 +629,9 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:apply', function(source, c
     end
     if posting.location_id ~= 0 and posting.location_id ~= locId then cb(fail('err_posting_closed')) return end
     if exports['rsg-core']:HasPlayerJob(src, posting.job) then cb(fail('err_has_job')) return end
+    if Config.AllowBlacklist and MySQL.scalar.await("SELECT 1 FROM townhall_blacklist WHERE citizenid = ? AND (job = ? OR job = '*') LIMIT 1", { cid, posting.job }) then
+        cb(fail('err_blacklisted')) return
+    end
 
     local activeCount = MySQL.scalar.await(("SELECT COUNT(*) FROM townhall_applications WHERE citizenid = ? AND status IN %s"):format(ACTIVE), { cid }) or 0
     if activeCount >= Config.MaxActiveApplications then cb(fail('err_max_apps')) return end
@@ -578,10 +657,20 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:apply', function(source, c
         stored[#stored + 1] = { q = q.label, a = a }
     end
 
+    local fee, account = math.floor(tonumber(Config.ApplicationFee) or 0), Config.ApplicationFeeAccount or 'cash'
+    if fee > 0 then
+        if Player.Functions.GetMoney(account) < fee or not Player.Functions.RemoveMoney(account, fee, 'townhall-application-fee') then
+            cb(fail('err_no_fee', fee)) return
+        end
+    end
+
     local id = MySQL.insert.await(
-        "INSERT INTO townhall_applications (posting_id, citizenid, applicant_name, answers) SELECT ?, ?, ?, ? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM townhall_applications WHERE posting_id = ? AND citizenid = ? AND (status IN ('pending', 'interview') OR (status = 'approved' AND granted <> 1)))",
-        { postingId, cid, playerName(Player), json.encode(stored), postingId, cid })
-    if not id or id == 0 then cb(fail('err_already_applied')) return end
+        "INSERT INTO townhall_applications (posting_id, citizenid, applicant_name, answers, fee) SELECT ?, ?, ?, ?, ? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM townhall_applications WHERE posting_id = ? AND citizenid = ? AND (status IN ('pending', 'interview') OR (status = 'approved' AND granted <> 1)))",
+        { postingId, cid, playerName(Player), json.encode(stored), fee, postingId, cid })
+    if not id or id == 0 then
+        if fee > 0 then Player.Functions.AddMoney(account, fee, 'townhall-application-fee-refund') end
+        cb(fail('err_already_applied')) return
+    end
 
     notifyManagers(posting.job, locale('notify_new_application', playerName(Player), posting.title))
     rsgLog('Job application', 'blue', ('%s applied for #%s (%s)'):format(cid, postingId, posting.title))
@@ -589,7 +678,7 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:apply', function(source, c
 end)
 
 RSGCore.Functions.CreateCallback('rsg-townhall:server:getMyApplications', function(source, cb)
-    local Player, err = ctx(source)
+    local Player, err = ctx(source, 'apps')
     if not Player then cb(fail(err)) return end
     local rows = MySQL.query.await([[
         SELECT a.id, a.status, a.feedback, a.interview_note, a.granted, a.seen, a.reviewed_by_name, a.answers,
@@ -633,7 +722,7 @@ end)
 -- My jobs + resigning
 ---------------------------------------------------------------------------
 RSGCore.Functions.CreateCallback('rsg-townhall:server:getMyJobs', function(source, cb)
-    local Player, err = ctx(source)
+    local Player, err = ctx(source, 'jobs')
     if not Player then cb(fail(err)) return end
     local out = {}
     for _, pj in ipairs(exports['rsg-core']:GetPlayerJobs(source) or {}) do
@@ -681,7 +770,7 @@ end
 
 RSGCore.Functions.CreateCallback('rsg-townhall:server:getManageData', function(source, cb)
     local src = source
-    local Player, err = ctx(src)
+    local Player, err = ctx(src, 'manage')
     if not Player then cb(fail(err)) return end
     local scope = getScope(src, Player)
     if not scope.any then cb(fail('err_no_permission')) return end
@@ -691,7 +780,11 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:getManageData', function(s
     local postings = {}
     local prows = MySQL.query.await(([[
         SELECT p.id, p.job, p.grade, p.title, p.description, p.requirements, p.questions, p.status, p.slots, p.filled_count, p.location_id,
-               p.posted_by_name, UNIX_TIMESTAMP(p.created_at) AS created,
+               p.posted_by_name, p.req_items, p.req_job, p.req_job_grade, UNIX_TIMESTAMP(p.created_at) AS created,
+               (SELECT COUNT(*) FROM townhall_applications a WHERE a.posting_id = p.id) AS total,
+               (SELECT COUNT(*) FROM townhall_applications a WHERE a.posting_id = p.id AND a.status = 'approved') AS approved,
+               (SELECT COUNT(*) FROM townhall_applications a WHERE a.posting_id = p.id AND a.status = 'rejected') AS rejected,
+               (SELECT AVG(TIMESTAMPDIFF(MINUTE, a.created_at, a.reviewed_at)) FROM townhall_applications a WHERE a.posting_id = p.id AND a.status IN ('approved', 'rejected') AND a.reviewed_at IS NOT NULL) AS avg_min,
                IF(p.expires_at IS NULL, NULL, GREATEST(0, UNIX_TIMESTAMP(p.expires_at) - UNIX_TIMESTAMP())) AS expires_in,
                (SELECT COUNT(*) FROM townhall_applications a WHERE a.posting_id = p.id AND a.status IN %s) AS pending
         FROM townhall_postings p WHERE %s ORDER BY (p.status = 'open') DESC, p.id DESC LIMIT 200]]):format(ACTIVE, clause), params) or {}
@@ -700,11 +793,14 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:getManageData', function(s
         local g = gradeOf(d, r.grade)
         local loc = Locations[r.location_id]
         postings[#postings + 1] = {
-            id = r.id, title = r.title, status = r.status, jobLabel = jobLabel(d, r.job),
+            id = r.id, title = r.title, status = r.status, jobLabel = jobLabel(d, r.job), expiry = expiryFor(scope, r.job),
             gradeLabel = g and g.name or tostring(r.grade), postedBy = r.posted_by_name,
             slots = r.slots, filledCount = r.filled_count, expiresIn = r.expires_in,
             location = loc and loc.label or '', created = r.created, pending = r.pending,
             description = r.description, requirements = r.requirements, custom = decode(r.questions) or {},
+            job = r.job, grade = tonumber(r.grade), locationId = r.location_id,
+            reqItems = decode(r.req_items) or {}, reqJob = r.req_job, reqJobGrade = r.req_job_grade,
+            stats = { total = r.total, approved = r.approved, rejected = r.rejected, avgMin = r.avg_min and math.floor(tonumber(r.avg_min)) or nil },
         }
     end
 
@@ -724,6 +820,15 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:getManageData', function(s
         end
     end
 
+    local blacklist = {}
+    if Config.AllowBlacklist then
+        local bclause, bparams = scopeClause(scope, 'job')
+        for _, b in ipairs(MySQL.query.await(("SELECT id, citizenid, name, job, reason, added_by_name FROM townhall_blacklist WHERE %s ORDER BY id DESC LIMIT 200"):format(bclause), bparams) or {}) do
+            blacklist[#blacklist + 1] = { id = b.id, citizenid = b.citizenid, name = b.name, reason = b.reason, addedBy = b.added_by_name,
+                jobLabel = b.job == '*' and '*' or jobLabel(defOf(b.job), b.job) }
+        end
+    end
+
     local locs = {}
     for _, l in pairs(Locations) do locs[#locs + 1] = { id = l.id, label = l.label } end
     table.sort(locs, function(a, b) return a.label < b.label end)
@@ -732,8 +837,8 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:getManageData', function(s
     table.sort(items, function(a, b) return a.label < b.label end)
 
     cb({
-        ok = true, admin = scope.admin, jobs = listJobs(scope), postings = postings,
-        pending = mapApps(pendingRows), reviewed = mapApps(doneRows), managers = managers,
+        ok = true, admin = scope.admin, allScope = scope.all, jobs = listJobs(scope), postings = postings,
+        pending = mapApps(pendingRows), reviewed = mapApps(doneRows), managers = managers, blacklist = blacklist, blacklistEnabled = Config.AllowBlacklist,
         locations = locs, prereqItems = items, allJobs = Config.AllowJobPrerequisites and listAllJobs() or {},
     })
 end)
@@ -766,10 +871,10 @@ local function readSlots(v)
     return n
 end
 
-local function readExpiry(v, optional)
-    if v == nil then return optional and false or Config.DefaultExpiryDays end
+local function readExpiry(v, optional, list)
+    if v == nil then return optional and false or defaultExpiry(list) end
     local n = math.tointeger(tonumber(v))
-    if not n or not ExpiryOk[n] then return nil end
+    if not n or not expiryAllowed(list, n) then return nil end
     return n
 end
 
@@ -799,7 +904,7 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:postJob', function(source,
     local texts, terr = readTexts(payload)
     if not texts then cb(fail(terr)) return end
     local slots = readSlots(payload.slots)
-    local days = readExpiry(payload.expiryDays)
+    local days = readExpiry(payload.expiryDays, false, expiryFor(scope, job))
     if not slots or not days then cb(fail('err_invalid')) return end
 
     local locId = payload.locationId == nil and 0 or math.tointeger(tonumber(payload.locationId))
@@ -846,20 +951,21 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:editPosting', function(sou
     if not id then cb(fail('err_invalid')) return end
     local posting = MySQL.single.await('SELECT id, job, status, filled_count FROM townhall_postings WHERE id = ?', { id })
     if not posting then cb(fail('err_not_found')) return end
-    if not scopeAllows(getScope(src, Player), posting.job) then cb(fail('err_no_permission')) return end
+    local scope = getScope(src, Player)
+    if not scopeAllows(scope, posting.job) then cb(fail('err_no_permission')) return end
     if posting.status ~= 'open' then cb(fail('err_posting_closed')) return end
 
     local texts, terr = readTexts(payload)
     if not texts then cb(fail(terr)) return end
     local slots = readSlots(payload.slots)
     if not slots or slots <= posting.filled_count then cb(fail('err_invalid')) return end
-    local days = readExpiry(payload.expiryDays, true)  -- false = leave unchanged
+    local days = readExpiry(payload.expiryDays, true, expiryFor(scope, posting.job))  -- false = leave unchanged
     if days == nil then cb(fail('err_invalid')) return end
 
     MySQL.update.await("UPDATE townhall_postings SET title = ?, description = ?, requirements = ?, questions = ?, slots = ? WHERE id = ? AND status = 'open'",
         { texts.title, texts.desc, texts.reqs, json.encode(texts.custom), slots, id })
     if days ~= false then
-        MySQL.update.await("UPDATE townhall_postings SET expires_at = IF(? > 0, DATE_ADD(NOW(), INTERVAL ? DAY), NULL) WHERE id = ? AND status = 'open'", { days, days, id })
+        MySQL.update.await("UPDATE townhall_postings SET warned = 0, expires_at = IF(? > 0, DATE_ADD(NOW(), INTERVAL ? DAY), NULL) WHERE id = ? AND status = 'open'", { days, days, id })
     end
     rsgLog('Vacancy edited', 'blue', ('%s edited #%s'):format(Player.PlayerData.citizenid, id))
     cb(success('ok_edited'))
@@ -889,16 +995,19 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:reopenPosting', function(s
     if not throttle(src, 'post', 1500) then cb(fail('err_slow_down')) return end
     local id = type(payload) == 'table' and math.tointeger(tonumber(payload.postingId))
     if not id then cb(fail('err_invalid')) return end
-    local p = MySQL.single.await('SELECT id, job, status, slots, filled_count FROM townhall_postings WHERE id = ?', { id })
+    local p = MySQL.single.await('SELECT id, job, grade, status, slots, filled_count FROM townhall_postings WHERE id = ?', { id })
     if not p then cb(fail('err_not_found')) return end
-    if not scopeAllows(getScope(src, Player), p.job) then cb(fail('err_no_permission')) return end
+    local scope = getScope(src, Player)
+    if not scopeAllows(scope, p.job) then cb(fail('err_no_permission')) return end
+    local pg = gradeOf(getJobDef(p.job), p.grade)
+    if pg and pg.isboss and Config.RestrictBossGrades and not scope.admin then cb(fail('err_no_permission')) return end
     if p.status == 'open' then cb(fail('err_invalid')) return end
     if not jobAllowed(p.job) or not getJobDef(p.job) then cb(fail('err_job_invalid')) return end
     if countOpen(p.job) >= Config.MaxOpenPostingsPerJob then cb(fail('err_max_postings')) return end
 
-    local days = Config.DefaultExpiryDays
+    local days = defaultExpiry(expiryFor(scope, p.job))
     if (p.status == 'closed' or p.status == 'expired') and p.filled_count < p.slots then
-        local n = MySQL.update.await("UPDATE townhall_postings SET status = 'open', closed_at = NULL, expires_at = IF(? > 0, DATE_ADD(NOW(), INTERVAL ? DAY), NULL) WHERE id = ? AND status IN ('closed', 'expired')", { days, days, id })
+        local n = MySQL.update.await("UPDATE townhall_postings SET status = 'open', closed_at = NULL, warned = 0, expires_at = IF(? > 0, DATE_ADD(NOW(), INTERVAL ? DAY), NULL) WHERE id = ? AND status IN ('closed', 'expired')", { days, days, id })
         if n ~= 1 then cb(fail('err_generic')) return end
         rsgLog('Vacancy reopened', 'green', ('%s reopened #%s'):format(Player.PlayerData.citizenid, id))
     else
@@ -962,11 +1071,12 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:requestInterview', functio
     if not note then cb(fail(nerr, minLen)) return end
     if note == '' then cb(fail('err_required')) return end
 
-    local n = MySQL.update.await("UPDATE townhall_applications SET status = 'interview', interview_note = ?, reviewed_by = ?, reviewed_by_name = ?, seen = 0 WHERE id = ? AND status = 'pending'",
+    local n = MySQL.update.await("UPDATE townhall_applications SET status = 'interview', interview_note = ?, reviewed_by = ?, reviewed_by_name = ?, seen = 0, notified = 0 WHERE id = ? AND status = 'pending'",
         { note, Player.PlayerData.citizenid, playerName(Player), appId })
     if n ~= 1 then cb(fail('err_already_reviewed')) return end
     if applicantPlayer then
         notify(applicantPlayer.PlayerData.source, locale('notify_interview', playerName(Player), app.title), 'inform')
+        markNotified(appId)
     end
     rsgLog('Interview requested', 'blue', ('%s requested an interview for application #%s (%s)'):format(Player.PlayerData.citizenid, appId, app.title))
     cb(success('ok_interview'))
@@ -1011,10 +1121,11 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:review', function(source, 
     local reviewerCid, reviewerName = Player.PlayerData.citizenid, playerName(Player)
 
     if decision == 'reject' then
-        local n = MySQL.update.await(("UPDATE townhall_applications SET status = 'rejected', feedback = ?, reviewed_by = ?, reviewed_by_name = ?, reviewed_at = NOW(), seen = 0 WHERE id = ? AND status IN %s"):format(ACTIVE),
+        local n = MySQL.update.await(("UPDATE townhall_applications SET status = 'rejected', feedback = ?, reviewed_by = ?, reviewed_by_name = ?, reviewed_at = NOW(), seen = 0, notified = 0 WHERE id = ? AND status IN %s"):format(ACTIVE),
             { feedback, reviewerCid, reviewerName, appId })
         if n ~= 1 then cb(fail('err_already_reviewed')) return end
-        notifyCitizen(app.citizenid, locale('notify_app_rejected', app.title), 'error')
+        if notifyCitizen(app.citizenid, locale('notify_app_rejected', app.title), 'error') then markNotified(appId) end
+        TriggerEvent('rsg-townhall:server:applicationDecided', { id = appId, citizenid = app.citizenid, job = app.job, grade = tonumber(app.grade), decision = 'rejected' })
         rsgLog('Application rejected', 'red', ('%s rejected application #%s (%s)'):format(reviewerCid, appId, app.title))
         cb(success('ok_rejected'))
         return
@@ -1025,7 +1136,7 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:review', function(source, 
     if not target and not Config.AllowOfflineApproval then cb(fail('err_applicant_offline')) return end
     if target and exports['rsg-core']:HasPlayerJob(target.PlayerData.source, app.job) then cb(fail('err_applicant_has_job')) return end
 
-    local claimed = MySQL.update.await(("UPDATE townhall_applications SET status = 'approved', granted = ?, feedback = ?, reviewed_by = ?, reviewed_by_name = ?, reviewed_at = NOW(), seen = 0 WHERE id = ? AND status IN %s"):format(ACTIVE),
+    local claimed = MySQL.update.await(("UPDATE townhall_applications SET status = 'approved', granted = ?, feedback = ?, reviewed_by = ?, reviewed_by_name = ?, reviewed_at = NOW(), seen = 0, notified = 0 WHERE id = ? AND status IN %s"):format(ACTIVE),
         { target and 1 or 0, feedback, reviewerCid, reviewerName, appId })
     if claimed ~= 1 then cb(fail('err_already_reviewed')) return end
 
@@ -1052,15 +1163,30 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:review', function(source, 
         end
         if Config.SetActiveJobOnApproval then target.Functions.SetJob(app.job, tonumber(app.grade)) end
         notify(target.PlayerData.source, locale('notify_app_approved', app.title), 'success')
+        markNotified(appId)
     end
 
     local postingStatus = MySQL.scalar.await('SELECT status FROM townhall_postings WHERE id = ?', { app.posting_id })
     if postingStatus == 'filled' then closePending(app.posting_id, app.title) end
 
+    TriggerEvent('rsg-townhall:server:applicationDecided', { id = appId, citizenid = app.citizenid, job = app.job, grade = tonumber(app.grade), decision = 'approved', queued = target == nil })
     rsgLog('Application approved', 'green', ('%s approved application #%s: %s -> %s grade %s%s'):format(
         reviewerCid, appId, app.citizenid, app.job, app.grade, target and '' or ' (queued, applicant offline)'))
     cb(success(target and 'ok_approved' or 'ok_approved_queued'))
 end)
+
+-- Find a character by server id or citizenid: cid, name, onlinePlayer  or  nil, errKey
+local function resolvePlayer(input)
+    local target
+    local asId = math.tointeger(tonumber(input))
+    if asId then target = RSGCore.Functions.GetPlayer(asId) end
+    if not target then target = RSGCore.Functions.GetPlayerByCitizenId(input) end
+    if target then return target.PlayerData.citizenid, playerName(target), target end
+    local row = MySQL.single.await('SELECT citizenid, charinfo FROM players WHERE citizenid = ?', { input })
+    if not row then return nil, 'err_player_not_found' end
+    local ci = decode(row.charinfo) or {}
+    return row.citizenid, ('%s %s'):format(ci.firstname or '?', ci.lastname or '')
+end
 
 ---------------------------------------------------------------------------
 -- Manager list (admin only)
@@ -1078,19 +1204,11 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:addManager', function(sour
     local job = payload.job
     if job ~= '*' and not getJobDef(job) then cb(fail('err_job_invalid')) return end
 
-    local target
-    local asId = math.tointeger(tonumber(input))
-    if asId then target = RSGCore.Functions.GetPlayer(asId) end
-    if not target then target = RSGCore.Functions.GetPlayerByCitizenId(input) end
-
-    local cid, name
-    if target then
-        cid, name = target.PlayerData.citizenid, playerName(target)
-    else
-        local row = MySQL.single.await('SELECT citizenid, charinfo FROM players WHERE citizenid = ?', { input })
-        if not row then cb(fail('err_player_not_found')) return end
-        local ci = decode(row.charinfo) or {}
-        cid, name = row.citizenid, ('%s %s'):format(ci.firstname or '?', ci.lastname or '')
+    local cid, name, target = resolvePlayer(input)
+    if not cid then cb(fail(name)) return end
+    if target and Config.ManagerJob and Config.ManagerJob ~= '' and not exports['rsg-core']:HasPlayerJob(target.PlayerData.source, Config.ManagerJob) then
+        cb(fail('err_manager_needs_job', jobLabel(defOf(Config.ManagerJob), Config.ManagerJob)))
+        return
     end
 
     local id = MySQL.insert.await('INSERT IGNORE INTO townhall_managers (citizenid, name, job, added_by) VALUES (?, ?, ?, ?)',
@@ -1116,6 +1234,227 @@ RSGCore.Functions.CreateCallback('rsg-townhall:server:removeManager', function(s
 end)
 
 ---------------------------------------------------------------------------
+-- Messages between applicant and reviewers
+---------------------------------------------------------------------------
+-- Returns app, role ('applicant' | 'reviewer')  or  nil, errKey
+local function loadAppForMessages(src, Player, payload)
+    if not Config.AllowMessages then return nil, 'err_messages_disabled' end
+    if type(payload) ~= 'table' then return nil, 'err_invalid' end
+    local appId = math.tointeger(tonumber(payload.applicationId))
+    if not appId then return nil, 'err_invalid' end
+    local app = MySQL.single.await(APP_SELECT, { appId })
+    if not app then return nil, 'err_not_found' end
+    if app.citizenid == Player.PlayerData.citizenid then return app, 'applicant' end
+    if not scopeAllows(getScope(src, Player), app.job) then return nil, 'err_no_permission' end
+    return app, 'reviewer'
+end
+
+RSGCore.Functions.CreateCallback('rsg-townhall:server:getMessages', function(source, cb, payload)
+    local Player, err = ctx(source, 'msgs')
+    if not Player then cb(fail(err)) return end
+    local app, role = loadAppForMessages(source, Player, payload)
+    if not app then cb(fail(role)) return end
+    local rows = MySQL.query.await('SELECT sender_cid, sender_name, from_reviewer, body, UNIX_TIMESTAMP(created_at) AS created FROM townhall_messages WHERE application_id = ? ORDER BY id ASC LIMIT ?',
+        { app.id, Config.MaxMessages or 30 }) or {}
+    local out = {}
+    for _, r in ipairs(rows) do
+        out[#out + 1] = { body = r.body, name = r.sender_name, reviewer = r.from_reviewer == 1, mine = r.sender_cid == Player.PlayerData.citizenid, created = r.created }
+    end
+    cb({ ok = true, messages = out, canSend = app.status == 'pending' or app.status == 'interview' })
+end)
+
+RSGCore.Functions.CreateCallback('rsg-townhall:server:sendMessage', function(source, cb, payload)
+    local src = source
+    local Player, err = ctx(src)
+    if not Player then cb(fail(err)) return end
+    if not throttle(src, 'msg', 1500) then cb(fail('err_slow_down')) return end
+    local app, role = loadAppForMessages(src, Player, payload)
+    if not app then cb(fail(role)) return end
+    if app.status ~= 'pending' and app.status ~= 'interview' then cb(fail('err_already_reviewed')) return end
+    if role == 'reviewer' and isSelfReview(Player, app, RSGCore.Functions.GetPlayerByCitizenId(app.citizenid)) then cb(fail('err_self_review')) return end
+
+    local text, terr = cleanText(payload.message, Config.Limits.message or 300)
+    if not text then cb(fail(terr)) return end
+    local count = MySQL.scalar.await('SELECT COUNT(*) FROM townhall_messages WHERE application_id = ?', { app.id }) or 0
+    if count >= (Config.MaxMessages or 30) then cb(fail('err_too_many_messages')) return end
+
+    MySQL.insert.await('INSERT INTO townhall_messages (application_id, sender_cid, sender_name, from_reviewer, body) VALUES (?, ?, ?, ?, ?)',
+        { app.id, Player.PlayerData.citizenid, playerName(Player), role == 'reviewer' and 1 or 0, text })
+    if role == 'reviewer' then
+        MySQL.update.await('UPDATE townhall_applications SET seen = 0, notified = 0 WHERE id = ?', { app.id })
+        if notifyCitizen(app.citizenid, locale('notify_reviewer_message', app.title), 'inform') then markNotified(app.id) end
+    else
+        notifyManagers(app.job, locale('notify_new_message', playerName(Player), app.title))
+    end
+    cb(success('ok_message_sent'))
+end)
+
+---------------------------------------------------------------------------
+-- Applicants: edit answers while the application is open
+---------------------------------------------------------------------------
+RSGCore.Functions.CreateCallback('rsg-townhall:server:editApplication', function(source, cb, payload)
+    local src = source
+    local Player, err = ctx(src)
+    if not Player then cb(fail(err)) return end
+    if not Config.AllowEditApplication then cb(fail('err_edit_disabled')) return end
+    if type(payload) ~= 'table' or type(payload.answers) ~= 'table' then cb(fail('err_invalid')) return end
+    if not throttle(src, 'editapp', 2000) then cb(fail('err_slow_down')) return end
+    local appId = math.tointeger(tonumber(payload.applicationId))
+    if not appId then cb(fail('err_invalid')) return end
+
+    local row = MySQL.single.await('SELECT a.id, a.status, p.questions FROM townhall_applications a JOIN townhall_postings p ON p.id = a.posting_id WHERE a.id = ? AND a.citizenid = ?',
+        { appId, Player.PlayerData.citizenid })
+    if not row then cb(fail('err_not_found')) return end
+    if row.status ~= 'pending' and row.status ~= 'interview' then cb(fail('err_already_reviewed')) return end
+
+    local questions = buildQuestions(row)
+    if #payload.answers ~= #questions then cb(fail('err_invalid')) return end
+    local stored = {}
+    for i, q in ipairs(questions) do
+        local a, aerr = cleanText(payload.answers[i], q.max, true)
+        if not a then cb(fail(aerr)) return end
+        if q.required and a == '' then cb(fail('err_answers_required')) return end
+        stored[#stored + 1] = { q = q.label, a = a }
+    end
+    local n = MySQL.update.await(("UPDATE townhall_applications SET answers = ? WHERE id = ? AND status IN %s"):format(ACTIVE), { json.encode(stored), appId })
+    if n ~= 1 then cb(fail('err_already_reviewed')) return end
+    cb(success('ok_answers_saved'))
+end)
+
+---------------------------------------------------------------------------
+-- Vacancy templates (per poster)
+---------------------------------------------------------------------------
+local function cleanTemplate(d)
+    if type(d) ~= 'table' then return nil, 'err_invalid' end
+    local texts, e = readTexts(d)
+    if not texts then return nil, e end
+    local out = {
+        job = (type(d.job) == 'string' and #d.job <= 50) and d.job or '',
+        grade = math.tointeger(tonumber(d.grade)),
+        title = texts.title, description = texts.desc, requirements = texts.reqs, questions = texts.custom,
+        slots = readSlots(d.slots) or 1,
+        expiryDays = math.tointeger(tonumber(d.expiryDays)),
+        reqItems = {}, reqJob = '', reqJobGrade = 0,
+    }
+    if type(d.reqItems) == 'table' then
+        for _, item in ipairs(d.reqItems) do
+            if #out.reqItems >= Config.MaxPrerequisiteItems then break end
+            if type(item) == 'string' and PrereqItems[item] then out.reqItems[#out.reqItems + 1] = item end
+        end
+    end
+    if Config.AllowJobPrerequisites and type(d.reqJob) == 'string' and d.reqJob ~= '' and not BlockedJobs[d.reqJob] and getJobDef(d.reqJob) then
+        out.reqJob = d.reqJob
+        out.reqJobGrade = math.max(0, math.tointeger(tonumber(d.reqJobGrade)) or 0)
+    end
+    return out
+end
+
+RSGCore.Functions.CreateCallback('rsg-townhall:server:getTemplates', function(source, cb)
+    local Player, err = ctx(source, 'tpl')
+    if not Player then cb(fail(err)) return end
+    if not getScope(source, Player).any then cb(fail('err_no_permission')) return end
+    local rows = MySQL.query.await('SELECT id, name, data FROM townhall_templates WHERE citizenid = ? ORDER BY name ASC LIMIT 50', { Player.PlayerData.citizenid }) or {}
+    local out = {}
+    for _, r in ipairs(rows) do
+        local data = decode(r.data)
+        if data then out[#out + 1] = { id = r.id, name = r.name, data = data } end
+    end
+    cb({ ok = true, templates = out })
+end)
+
+RSGCore.Functions.CreateCallback('rsg-townhall:server:saveTemplate', function(source, cb, payload)
+    local src = source
+    local Player, err = ctx(src)
+    if not Player then cb(fail(err)) return end
+    if not getScope(src, Player).any then cb(fail('err_no_permission')) return end
+    if type(payload) ~= 'table' then cb(fail('err_invalid')) return end
+    if not throttle(src, 'tpl', 1500) then cb(fail('err_slow_down')) return end
+    local name, nerr = cleanText(payload.name, Config.Limits.label)
+    if not name then cb(fail(nerr)) return end
+    local data, derr = cleanTemplate(payload.data)
+    if not data then cb(fail(derr)) return end
+    local cid = Player.PlayerData.citizenid
+    local count = MySQL.scalar.await('SELECT COUNT(*) FROM townhall_templates WHERE citizenid = ?', { cid }) or 0
+    if count >= (Config.MaxTemplates or 10) then cb(fail('err_template_limit', Config.MaxTemplates or 10)) return end
+    MySQL.insert.await('INSERT INTO townhall_templates (citizenid, name, data) VALUES (?, ?, ?)', { cid, name, json.encode(data) })
+    cb(success('ok_template_saved'))
+end)
+
+RSGCore.Functions.CreateCallback('rsg-townhall:server:deleteTemplate', function(source, cb, payload)
+    local Player, err = ctx(source)
+    if not Player then cb(fail(err)) return end
+    local id = type(payload) == 'table' and math.tointeger(tonumber(payload.id))
+    if not id then cb(fail('err_invalid')) return end
+    local n = MySQL.update.await('DELETE FROM townhall_templates WHERE id = ? AND citizenid = ?', { id, Player.PlayerData.citizenid })
+    if n ~= 1 then cb(fail('err_not_found')) return end
+    cb(success('ok_template_deleted'))
+end)
+
+---------------------------------------------------------------------------
+-- Blacklist (a citizen barred from applying for one job, or all jobs)
+---------------------------------------------------------------------------
+RSGCore.Functions.CreateCallback('rsg-townhall:server:addBlacklist', function(source, cb, payload)
+    local src = source
+    local Player, err = ctx(src)
+    if not Player then cb(fail(err)) return end
+    if not Config.AllowBlacklist then cb(fail('err_generic')) return end
+    local scope = getScope(src, Player)
+    if not scope.any then cb(fail('err_no_permission')) return end
+    if type(payload) ~= 'table' then cb(fail('err_invalid')) return end
+    if not throttle(src, 'blacklist', 1000) then cb(fail('err_slow_down')) return end
+
+    local input, ierr = cleanText(payload.player, 50)
+    if not input then cb(fail(ierr)) return end
+    local reason, rerr = cleanText(payload.reason, Config.Limits.feedback, true)
+    if not reason then cb(fail(rerr)) return end
+    local job = payload.job
+    if type(job) ~= 'string' or (job ~= '*' and not getJobDef(job)) then cb(fail('err_job_invalid')) return end
+    if not scopeAllows(scope, job) then cb(fail('err_no_permission')) return end
+
+    local cid, name = resolvePlayer(input)
+    if not cid then cb(fail(name)) return end
+    local id = MySQL.insert.await('INSERT IGNORE INTO townhall_blacklist (citizenid, name, job, reason, added_by, added_by_name) VALUES (?, ?, ?, ?, ?, ?)',
+        { cid, name, job, reason, Player.PlayerData.citizenid, playerName(Player) })
+    if not id or id == 0 then cb(fail('err_already_blacklisted')) return end
+    rsgLog('Blacklist added', 'red', ('%s barred %s from %s'):format(Player.PlayerData.citizenid, cid, job))
+    cb(success('ok_blacklisted'))
+end)
+
+RSGCore.Functions.CreateCallback('rsg-townhall:server:removeBlacklist', function(source, cb, payload)
+    local src = source
+    local Player, err = ctx(src)
+    if not Player then cb(fail(err)) return end
+    local id = type(payload) == 'table' and math.tointeger(tonumber(payload.id))
+    if not id then cb(fail('err_invalid')) return end
+    local row = MySQL.single.await('SELECT id, citizenid, job FROM townhall_blacklist WHERE id = ?', { id })
+    if not row then cb(fail('err_not_found')) return end
+    if not scopeAllows(getScope(src, Player), row.job) then cb(fail('err_no_permission')) return end
+    MySQL.update.await('DELETE FROM townhall_blacklist WHERE id = ?', { id })
+    rsgLog('Blacklist removed', 'green', ('%s lifted the bar on %s (%s)'):format(Player.PlayerData.citizenid, row.citizenid, row.job))
+    cb(success('ok_unblacklisted'))
+end)
+
+---------------------------------------------------------------------------
+-- Exports for other resources
+---------------------------------------------------------------------------
+exports('HasPendingApplication', function(citizenid, job)
+    if type(citizenid) ~= 'string' then return false end
+    local sql = ("SELECT 1 FROM townhall_applications a JOIN townhall_postings p ON p.id = a.posting_id WHERE a.citizenid = ? AND a.status IN %s"):format(ACTIVE)
+    local params = { citizenid }
+    if type(job) == 'string' then sql, params[2] = sql .. ' AND p.job = ?', job end
+    return MySQL.scalar.await(sql .. ' LIMIT 1', params) ~= nil
+end)
+
+exports('GetOpenVacancyCount', function(job)
+    return type(job) == 'string' and countOpen(job) or 0
+end)
+
+exports('IsBlacklisted', function(citizenid, job)
+    if type(citizenid) ~= 'string' then return false end
+    return MySQL.scalar.await("SELECT 1 FROM townhall_blacklist WHERE citizenid = ? AND (job = ? OR job = '*') LIMIT 1", { citizenid, tostring(job) }) ~= nil
+end)
+
+---------------------------------------------------------------------------
 -- Expiry, login reminder and startup
 ---------------------------------------------------------------------------
 local function expireVacancies()
@@ -1127,6 +1466,17 @@ local function expireVacancies()
             rsgLog('Vacancy expired', 'amber', ('vacancy #%s (%s) expired'):format(r.id, r.title))
         end
     end
+
+    local warnH = tonumber(Config.ExpiryWarnHours) or 0
+    if warnH > 0 then
+        local soon = MySQL.query.await("SELECT id, title, posted_by FROM townhall_postings WHERE status = 'open' AND warned = 0 AND expires_at IS NOT NULL AND expires_at > NOW() AND expires_at <= DATE_ADD(NOW(), INTERVAL ? HOUR)", { warnH }) or {}
+        for _, r in ipairs(soon) do
+            -- only marked as warned once the poster actually received it
+            if notifyCitizen(r.posted_by, locale('notify_expiring', r.title, warnH), 'warning') then
+                MySQL.update.await('UPDATE townhall_postings SET warned = 1 WHERE id = ?', { r.id })
+            end
+        end
+    end
 end
 
 AddEventHandler('RSGCore:Server:PlayerLoaded', function(Player)
@@ -1136,8 +1486,14 @@ AddEventHandler('RSGCore:Server:PlayerLoaded', function(Player)
         local P = RSGCore.Functions.GetPlayer(src)
         if not P or P.PlayerData.citizenid ~= cid then return end
         grantPending(P)
-        local n = MySQL.scalar.await('SELECT COUNT(*) FROM townhall_applications WHERE citizenid = ? AND seen = 0', { cid }) or 0
-        if n > 0 then notify(src, locale('notify_unseen', n), 'inform') end
+        payRefunds(P)
+        local n = MySQL.scalar.await('SELECT COUNT(*) FROM townhall_applications WHERE citizenid = ? AND seen = 0 AND notified = 0', { cid }) or 0
+        local pc = pendingReviewCount(getScope(src, P))
+        if pc > 0 then notify(src, locale('notify_pending_reviews', pc), 'inform') end
+        if n > 0 then
+            notify(src, locale('notify_unseen', n), 'inform')
+            MySQL.update.await('UPDATE townhall_applications SET notified = 1 WHERE citizenid = ? AND notified = 0', { cid })
+        end
     end)
 end)
 

@@ -5,14 +5,21 @@ local Pumps    = {}   -- [id] = { id, citizenid, x, y, z, h }
 local Reserved = {}   -- [src] = vector3 while a placement insert is awaiting the DB
 local Loaded   = false
 
-local function list()
+-- what clients may see: no citizenid (ownership is sent separately per player)
+local function publicList()
     local out = {}
-    for _, p in pairs(Pumps) do out[#out + 1] = p end
+    for _, p in pairs(Pumps) do out[#out + 1] = { id = p.id, x = p.x, y = p.y, z = p.z, h = p.h } end
     return out
 end
 
+local function ownerMap()
+    local m = {}
+    for id, p in pairs(Pumps) do m[id] = p.citizenid end
+    return m
+end
+
 local function syncAll()
-    TriggerClientEvent('rsg-farming:client:syncPumps', -1, list())
+    Utils.broadcastOwned('rsg-farming:client:syncPumps', publicList(), ownerMap())
 end
 
 local function countPumps(cid)
@@ -58,31 +65,31 @@ local function checkAction(src, action, pumpId)
 end
 
 ---------------------------------
--- database
+-- load from database
 ---------------------------------
 CreateThread(function()
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `rsg_farming_wellpumps` (
-            `id` INT(11) NOT NULL AUTO_INCREMENT,
-            `citizenid` VARCHAR(50) NOT NULL,
-            `x` FLOAT NOT NULL, `y` FLOAT NOT NULL, `z` FLOAT NOT NULL, `h` FLOAT NOT NULL DEFAULT 0,
-            `placed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (`id`),
-            KEY `citizenid` (`citizenid`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]])
-    local rows = MySQL.query.await('SELECT * FROM rsg_farming_wellpumps') or {}
-    for _, r in ipairs(rows) do
-        Pumps[r.id] = { id = r.id, citizenid = r.citizenid, x = r.x, y = r.y, z = r.z, h = r.h }
+    while Utils.DBReady == nil do Wait(100) end
+
+    local count = 0
+    if Utils.DBReady then
+        local ok, rows = pcall(MySQL.query.await, 'SELECT * FROM rsg_farming_wellpumps')
+        if ok then
+            for _, r in ipairs(rows or {}) do
+                Pumps[r.id] = { id = r.id, citizenid = r.citizenid, x = r.x, y = r.y, z = r.z, h = r.h }
+                count = count + 1
+            end
+        else
+            print(('^1[rsg-farming] could not load well pumps: %s^7'):format(tostring(rows)))
+        end
     end
     Loaded = true
-    print(('[rsg-farming] loaded %d well pumps'):format(#rows))
+    print(('[rsg-farming] loaded %d well pumps'):format(count))
     syncAll()
 end)
 
 Utils.callback('rsg-farming:server:getPumps', function(source)
     while not Loaded do Wait(100) end
-    return list()
+    return publicList(), Utils.idsOwnedBy(source, ownerMap())
 end)
 
 ---------------------------------
@@ -107,7 +114,7 @@ Utils.callback('rsg-farming:server:placePump', function(source, coords, heading)
     if not Player or not coords then return false, locale('pump_place_invalid') end
     if Reserved[src] then return false, locale('action_invalid') end
 
-    if Utils.distanceTo(src, coords.x, coords.y, coords.z) > Config.PlaceMaxDistance + 2.0 then
+    if not exports['rsg-gizmo']:IsPlacementValid(src, coords, Config.PlaceMaxDistance) then
         return false, locale('place_too_far')
     end
     local cid = Player.PlayerData.citizenid
@@ -122,12 +129,12 @@ Utils.callback('rsg-farming:server:placePump', function(source, coords, heading)
 
     local h = Utils.toHeading(heading)
     Reserved[src] = coords
-    local id = MySQL.insert.await('INSERT INTO rsg_farming_wellpumps (citizenid, x, y, z, h) VALUES (?, ?, ?, ?, ?)',
+    local ok, id = pcall(MySQL.insert.await, 'INSERT INTO rsg_farming_wellpumps (citizenid, x, y, z, h) VALUES (?, ?, ?, ?, ?)',
         { cid, coords.x, coords.y, coords.z, h })
     Reserved[src] = nil
 
-    if not id then
-        Utils.addItem(src, WP.item, 1, nil, 'rsg-farming:pump-refund')
+    if not ok or not id then
+        Utils.giveOrDrop(src, WP.item, 1, nil, 'rsg-farming:pump-refund')
         return false, locale('pump_place_invalid')
     end
     Pumps[id] = { id = id, citizenid = cid, x = coords.x, y = coords.y, z = coords.z, h = h }
@@ -139,7 +146,7 @@ end)
 -- pre-check (starts the action timer)
 ---------------------------------
 Utils.callback('rsg-farming:server:pumpPrecheck', function(source, action, pumpId)
-    if not Rules[action] then return false, locale('action_invalid') end
+    if type(action) ~= 'string' or not Rules[action] then return false, locale('action_invalid') end
     local Player, pump, err = validate(source, pumpId)
     if not Player then return false, err end
     err = Rules[action](source, Player, pump)
@@ -158,7 +165,7 @@ Utils.callback('rsg-farming:server:fillBucket', function(source, pumpId)
 
     local uses = WP.bucketUses or 5
     if not Utils.addItem(source, WP.fullItem, 1, { uses = uses, description = locale('bucket_uses', uses, uses) }, 'rsg-farming:fill') then
-        Utils.addItem(source, WP.emptyItem, 1, nil, 'rsg-farming:fill-refund')
+        Utils.giveOrDrop(source, WP.emptyItem, 1, nil, 'rsg-farming:fill-refund')
         return false, locale('inv_full')
     end
     return true, locale('pump_filled')
@@ -173,7 +180,7 @@ Utils.callback('rsg-farming:server:packPump', function(source, pumpId)
 
     Pumps[pump.id] = nil
     MySQL.query('DELETE FROM rsg_farming_wellpumps WHERE id = ?', { pump.id })
-    Utils.addItem(source, WP.item, 1, nil, 'rsg-farming:pump-pack')
+    Utils.giveOrDrop(source, WP.item, 1, nil, 'rsg-farming:pump-pack') -- never lose the pump item
     syncAll()
     return true, locale('pump_packed')
 end)

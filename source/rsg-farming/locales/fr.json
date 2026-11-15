@@ -1,5 +1,4 @@
 {
-    "place_help": "[LMB] Placer   [Q / E] Tourner   [Haut / Bas] Hauteur   [RMB] Annuler",
     "place_invalid": "Tu ne peux pas planter ici",
     "place_too_far": "Trop loin",
     "place_too_close": "Trop près d'une autre plante",
@@ -76,5 +75,17 @@
     "ui_not_yours": " - Ce n'est pas ta culture.",
     "ui_empty": "Tu n'as rien de planté.",
     "ui_away": "à %sm",
-    "no_player": "Joueur introuvable"
+    "no_player": "Joueur introuvable",
+    "place_blocked_zone": "Vous ne pouvez pas planter dans cette zone",
+    "level_up": "Niveau d'agriculture supérieur ! Nouveau rang : %s",
+    "level_info": "Niveau d'agriculture %s (%s) - %s XP",
+    "level_info_next": "Niveau d'agriculture %s (%s) - %s / %s XP",
+    "harvested_bonus": "Récolte terminée - rendement exceptionnel !",
+    "ui_btn_treat": "Traiter",
+    "ui_pests": "Parasites",
+    "ui_note_pests": "Des parasites dévorent la culture. Traitez-la avant qu'elle ne se fane.",
+    "no_pesticide": "Il vous faut du pesticide",
+    "treated": "Parasites éliminés",
+    "no_pests": "Cette plante n'a pas de parasites",
+    "treating": "Traitement des parasites..."
 }

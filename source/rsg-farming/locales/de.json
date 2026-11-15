@@ -1,5 +1,4 @@
 {
-    "place_help": "[LMB] Platzieren   [Q / E] Drehen   [Hoch / Runter] Höhe   [RMB] Abbrechen",
     "place_invalid": "Hier kannst du nicht pflanzen",
     "place_too_far": "Zu weit entfernt",
     "place_too_close": "Zu nah an einer anderen Pflanze",
@@ -76,5 +75,17 @@
     "ui_not_yours": " - Nicht deine Pflanze.",
     "ui_empty": "Du hast nichts im Boden.",
     "ui_away": "%sm entfernt",
-    "no_player": "Spieler nicht gefunden"
+    "no_player": "Spieler nicht gefunden",
+    "place_blocked_zone": "Hier darfst du nichts anpflanzen",
+    "level_up": "Farming-Stufe gestiegen! Neuer Rang: %s",
+    "level_info": "Farming-Stufe %s (%s) - %s XP",
+    "level_info_next": "Farming-Stufe %s (%s) - %s / %s XP",
+    "harvested_bonus": "Ernte eingebracht - Rekordertrag!",
+    "ui_btn_treat": "Behandeln",
+    "ui_pests": "Schädlinge",
+    "ui_note_pests": "Schädlinge fressen die Pflanze. Behandle sie, bevor sie eingeht.",
+    "no_pesticide": "Du brauchst Pestizid",
+    "treated": "Schädlinge bekämpft",
+    "no_pests": "Diese Pflanze hat keine Schädlinge",
+    "treating": "Schädlinge werden bekämpft..."
 }

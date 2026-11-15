@@ -6,7 +6,7 @@ Plant, water, fertilise and harvest crops anywhere in the world, with portable w
 
 ## Features
 
-- **Plant anywhere**: use a seed item to place a ghost crop with a placement gizmo (rotate, raise or lower, valid/invalid ring).
+- **Plant anywhere**: use a seed item to place a ghost crop with the standard **rsg-gizmo** placement tool.
 - **Live growth simulation on the server**: water and fertiliser drain over time, health drops when the plant is dry, and plants die if neglected.
 - **Growth stages**: props change as the crop grows (configurable model and height offset per stage).
 - **Fertiliser boost**: fertilised plants grow faster.
@@ -19,7 +19,15 @@ Plant, water, fertilise and harvest crops anywhere in the world, with portable w
 - **rsg-target or key prompt**: tend plants through rsg-target zones or a `[G]` prompt.
 - **Fully localised**: every player-facing string, including the UI, ships in 10 languages (en, de, el, es, fr, ja, nl, pl, pt-br, ro).
 - **Exploit-hardened**: all item changes happen on the server with distance, ownership and inventory-space checks, plus server-side action timers that stop players skipping animations.
-- **Optimised**: props are streamed by distance, and the database saves in batches.
+- **Optimised**: props are streamed by distance, the database saves in batches (and retries on failure), and player actions send single-plant updates instead of the whole list.
+- **Farming XP and levels**: every character earns XP for planting, tending and harvesting. Higher levels bring a bonus-yield chance and more plant slots. Check progress with `/farmlevel`.
+- **Harvest quality**: plants harvested at high health give extra produce (seeds are never boosted).
+- **Seasons**: growth speed follows the server's real calendar month (slow winters, fast summers), configurable per month.
+- **Rain**: while rsg-weather reports drizzle, rain, showers or storms, every plant is watered automatically.
+- **Pests (optional)**: infestations slow growth and drain health until treated with pesticide. Disabled by default.
+- **Private ownership**: citizenids are never sent to clients; each player only receives the ids of the plants they own.
+- **Push-to-talk friendly**: voice keeps working while the tending UI is open.
+- **No-plant zones**: optionally block planting in areas such as towns (`Config.NoPlantZones`).
 
 ---
 
@@ -30,6 +38,7 @@ Plant, water, fertilise and harvest crops anywhere in the world, with portable w
 | [rsg-core](https://github.com/Rexshack-RedM/rsg-core) | framework |
 | [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory) | item handling |
 | [rsg-target](https://github.com/Rexshack-RedM/rsg-target) | interaction (plant zones + well pumps) |
+| [rsg-gizmo](https://github.com/Rexshack-RedM/rsg-gizmo) | prop placement (crops + well pumps) |
 | [oxmysql](https://github.com/Rexshack-RedM/oxmysql) | database |
 
 ---
@@ -43,9 +52,10 @@ Plant, water, fertilise and harvest crops anywhere in the world, with portable w
    ensure rsg-core
    ensure rsg-inventory
    ensure rsg-target
+   ensure rsg-gizmo
    ensure rsg-farming
    ```
-3. **Database**: nothing to import. The tables `rsg_farming_plants` and `rsg_farming_wellpumps` are created automatically on first start.
+3. **Database**: nothing to import. The tables `rsg_farming_plants` and `rsg_farming_wellpumps` are created automatically on first start. To install manually, set `Config.AutoDatabase = false` and import `install.sql`.
 4. **Items**: add the items below to `rsg-core/shared/items.lua`. Skip any you already have.
 5. Add the item images (`seedcorn.png`, `fullbucket.png` and so on) to `rsg-inventory/html/images/`.
 6. Restart the server.
@@ -90,16 +100,8 @@ tool_wellpump = { name = 'tool_wellpump', label = 'Well Pump',   weight = 5000, 
 
 ### Planting
 1. Use a seed item from your satchel.
-2. Aim where you want the crop. The ring is **green** when the spot is valid and **red** when it isn't (too far, or too close to another plant).
-3. Controls while placing:
-
-| Key | Action |
-|---|---|
-| Left mouse | Place |
-| Q / E | Rotate |
-| Arrow Up / Down | Raise / lower |
-| Right mouse / Backspace | Cancel |
-
+2. Aim where you want the crop. The box is **green** when the spot is valid and **red** when it isn't (too far, too close to another plant, in water, or inside a no-plant zone).
+3. Placement uses the standard rsg-gizmo controls (left mouse / Enter to place, right mouse / Backspace to cancel, R to switch mode, mouse wheel / arrows to rotate). See the [rsg-gizmo](https://github.com/Rexshack-RedM/rsg-gizmo) README for the full key list.
 4. Your character plants the seeds and one seed is used.
 
 ### Tending
@@ -121,6 +123,7 @@ A plant only grows while it has water. When it runs dry, it loses health and eve
 
 | Command | Description |
 |---|---|
+| `/farmlevel` | Shows your farming level, rank and XP. |
 | `/myplants` | Opens the overview of all your crops (not while mounted, in a vehicle or busy). Click a nearby plant to tend it, or a far one to set a map route. |
 
 ---
@@ -134,9 +137,20 @@ All settings are in `shared/config.lua`.
 | Option | Default | Description |
 |---|---|---|
 | `Config.Debug` | `false` | Shows target zone debug spheres |
+| `Config.Seasons` | enabled | Growth multiplier per real calendar month (`months[1..12]`, 1.0 = normal) |
+| `Config.RainWater` | see config | Water per minute added to every plant per rsg-weather weather name; `{}` disables |
+| `Config.Pests` | disabled | `enabled`, `item` (`pesticide`), `chancePerTick`, `healthLoss`, `growthPenalty` |
+| `Config.TreatTime` | `5000` | Duration of treating pests (ms) |
+| `Config.Harvest` | `90` / `1` | `qualityHealth` needed for bonus produce, `qualityBonus` extra amount |
+| `Config.XP` | enabled | XP per action: `plant`, `water`, `fertilize`, `treat`, `harvest` (own plants only) |
+| `Config.Levels` | 6 ranks | `xp` needed, `label`, `bonusYieldChance` (%), `extraPlants` |
+| `Config.AutoDatabase` | `true` | Create the tables on start. Set `false` and import `install.sql` to install manually |
 | `Config.MaxPlantsPerPlayer` | `20` | Maximum active plants per character |
 | `Config.MinPlantDistance` | `1.2` | Minimum distance between plants (m) |
 | `Config.PlaceMaxDistance` | `6.0` | How far from the player you can place (m) |
+| `Config.NoPlantZones` | `{}` | Areas where planting is blocked: `{ coords = vector3(...), radius = 150.0 }` (checked on the server too) |
+| `Config.AllowPushToTalkWhileOpen` | `true` | Keep push-to-talk working while the tending UI is open (other game controls are blocked) |
+| `Config.PushToTalkControls` | `{ 0x4BC9DABB }` | Controls left enabled while the UI is open |
 | `Config.InteractDistance` | `1.6` | Distance needed to tend a plant (m) |
 | `Config.RenderDistance` | `60.0` | Distance at which props spawn and despawn (m) |
 | `Config.OwnerOnlyHarvest` | `true` | Only the planter can harvest |
@@ -236,7 +250,6 @@ The `stream/` folder contains custom weed models (`prop_weed_01`–`06`), loaded
 ```
 rsg-farming/
 ├── client/
-│   ├── placement.lua   -- placement gizmo
 │   ├── utils.lua       -- shared client helpers (notify, scenarios, props)
 │   ├── client.lua      -- plants, UI, tending
 │   └── wellpump.lua    -- well pumps
@@ -246,6 +259,7 @@ rsg-farming/
 │   ├── wellpump.lua    -- well pumps
 │   └── versionchecker.lua
 ├── shared/config.lua
+├── install.sql         -- manual database install (when AutoDatabase = false)
 ├── locales/           -- en, de, el, es, fr, ja, nl, pl, pt-br, ro
 ├── html/               -- NUI (index.html, style.css, script.js)
 ├── stream/             -- custom weed props
@@ -255,6 +269,16 @@ rsg-farming/
 ---
 
 ## Changelog
+
+### 3.1.0
+- New: farming XP and levels (`/farmlevel`), harvest quality bonus, seasonal growth, rain auto-watering (rsg-weather), optional pests with a Treat button (needs a `pesticide` item).
+- The "time to harvest" estimate is now worked out by the server so it includes season, fertiliser and pests.
+- Placement now uses **rsg-gizmo** (new dependency); the built-in placement code was removed.
+- Security: citizenids are no longer broadcast to every client (ownership is sent per player); server checks placement with `IsPlacementValid`; plant / pump inserts are guarded so a database error can no longer lock a player out or lose a seed; the pump item and empty buckets are dropped at your feet instead of being lost if your satchel is full.
+- Performance: watering, fertilising, planting and removing now send a single-plant update instead of re-sending every plant to every player; unchanged plants are no longer re-saved; failed saves are retried.
+- UX/stability: the busy state can no longer get stuck after an error; the NUI cursor can no longer get stuck when a listed plant disappears; push-to-talk works while the tending UI is open.
+- Added `Config.AutoDatabase` with `install.sql`, `Config.NoPlantZones`, `Config.AllowPushToTalkWhileOpen` / `Config.PushToTalkControls`, and a start-up warning for items missing from rsg-core.
+- Removed the unused `place_help` locale key and added `place_blocked_zone` in all 10 languages.
 
 ### 3.0.4
 - Removed the ox_lib dependency: locales, notify, callbacks, progress bars and text UI now use rsg-core.

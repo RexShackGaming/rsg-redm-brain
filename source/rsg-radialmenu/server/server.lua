@@ -1,10 +1,10 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 local cooldowns = {}
 
+-- Unknown or missing keys clear the state, so a character without a saved style never inherits the previous character's
 local function setWalkstyleState(src, key)
-    if key and Config.Walkstyles[key] then
-        Player(src).state:set('walkstyle', key, true)
-    end
+    if key and not Config.Walkstyles[key] then key = nil end
+    Player(src).state:set('walkstyle', key, true)
 end
 
 RegisterNetEvent('rsg-radialmenu:server:setWalkstyle', function(key)
@@ -33,7 +33,7 @@ AddEventHandler('onResourceStart', function(res)
     if res ~= GetCurrentResourceName() then return end
     for _, src in ipairs(GetPlayers()) do
         local ply = RSGCore.Functions.GetPlayer(tonumber(src))
-        if ply then setWalkstyleState(ply.PlayerData.source, ply.PlayerData.metadata.walkstyle) end
+        if ply then setWalkstyleState(ply.PlayerData.source, ply.PlayerData.metadata and ply.PlayerData.metadata.walkstyle) end
     end
 end)
 

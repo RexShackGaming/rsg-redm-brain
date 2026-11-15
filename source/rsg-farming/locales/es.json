@@ -1,5 +1,4 @@
 {
-    "place_help": "[LMB] Colocar   [Q / E] Girar   [Arriba / Abajo] Altura   [RMB] Cancelar",
     "place_invalid": "No puedes plantar ahí",
     "place_too_far": "Demasiado lejos",
     "place_too_close": "Demasiado cerca de otra planta",
@@ -76,5 +75,17 @@
     "ui_not_yours": " - No es tu cultivo.",
     "ui_empty": "No tienes nada plantado.",
     "ui_away": "a %sm",
-    "no_player": "Jugador no encontrado"
+    "no_player": "Jugador no encontrado",
+    "place_blocked_zone": "No puedes plantar en esta zona",
+    "level_up": "¡Subes de nivel de cultivo! Nuevo rango: %s",
+    "level_info": "Nivel de cultivo %s (%s) - %s XP",
+    "level_info_next": "Nivel de cultivo %s (%s) - %s / %s XP",
+    "harvested_bonus": "Cosecha recogida - ¡rendimiento extra!",
+    "ui_btn_treat": "Tratar",
+    "ui_pests": "Plagas",
+    "ui_note_pests": "Las plagas se comen el cultivo. Trátalo antes de que se marchite.",
+    "no_pesticide": "Necesitas pesticida",
+    "treated": "Plagas eliminadas",
+    "no_pests": "Esta planta no tiene plagas",
+    "treating": "Eliminando plagas..."
 }

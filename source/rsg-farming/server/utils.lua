@@ -41,13 +41,24 @@ function Utils.toHeading(h)
     return h % 360
 end
 
+-- true when coords sit inside a Config.NoPlantZones entry
+function Utils.inBlockedZone(coords)
+    for _, z in ipairs(Config.NoPlantZones or {}) do
+        if #(coords - z.coords) <= z.radius then return true end
+    end
+    return false
+end
+
+---------------------------------
+-- items
+---------------------------------
 function Utils.hasItem(src, item)
     return (exports['rsg-inventory']:GetItemCount(src, item) or 0) > 0
 end
 
 function Utils.canAdd(src, item, amount)
     if not RSGCore.Shared.Items[item] then return false end
-    local ok, res = pcall(exports['rsg-inventory'].CanAddItem, exports['rsg-inventory'], src, item, amount or 1)
+    local ok, res = pcall(function() return exports['rsg-inventory']:CanAddItem(src, item, amount or 1) end)
     return ok and res ~= false
 end
 
@@ -83,6 +94,43 @@ function Utils.addItem(src, item, amount, info, reason, slot)
     return exports['rsg-inventory']:AddItem(src, item, amount, info, slot, reason) and true or false
 end
 
+-- gives the item, or drops it at the player's feet if it no longer fits (never silently lost)
+function Utils.giveOrDrop(src, item, amount, info, reason, slot)
+    if Utils.addItem(src, item, amount, info, reason, slot) then return true end
+    exports['rsg-inventory']:ForceDropItem(src, item, amount, nil, reason)
+    return false
+end
+
+---------------------------------
+-- ownership sync: clients never receive citizenids.
+-- Each player gets the shared list plus the ids THEY own.
+---------------------------------
+function Utils.idsOwnedBy(src, ownerOf)
+    local Player = Utils.getPlayer(src)
+    local out = {}
+    if not Player then return out end
+    local cid = Player.PlayerData.citizenid
+    for id, owner in pairs(ownerOf) do
+        if owner == cid then out[#out + 1] = id end
+    end
+    return out
+end
+
+function Utils.broadcastOwned(event, items, ownerOf)
+    local byOwner = {}
+    for id, cid in pairs(ownerOf) do
+        local t = byOwner[cid]
+        if not t then t = {}; byOwner[cid] = t end
+        t[#t + 1] = id
+    end
+    for _, sid in ipairs(GetPlayers()) do
+        local src = tonumber(sid)
+        local Player = src and Utils.getPlayer(src)
+        local cid = Player and Player.PlayerData.citizenid
+        TriggerClientEvent(event, src, items, cid and byOwner[cid] or {})
+    end
+end
+
 ---------------------------------
 -- action tokens: the server starts a timer at the pre-check and only
 -- accepts the action once the progress bar could really have finished.
@@ -102,4 +150,79 @@ end
 
 AddEventHandler('playerDropped', function()
     Pending[source] = nil
+end)
+
+---------------------------------
+-- database (Config.AutoDatabase = false -> import install.sql manually)
+---------------------------------
+local SCHEMA = {
+    [[CREATE TABLE IF NOT EXISTS `rsg_farming_plants` (
+        `id` INT(11) NOT NULL AUTO_INCREMENT,
+        `citizenid` VARCHAR(50) NOT NULL,
+        `crop` VARCHAR(50) NOT NULL,
+        `x` FLOAT NOT NULL, `y` FLOAT NOT NULL, `z` FLOAT NOT NULL, `h` FLOAT NOT NULL DEFAULT 0,
+        `growth` FLOAT NOT NULL DEFAULT 0,
+        `water` FLOAT NOT NULL DEFAULT 0,
+        `fertilizer` FLOAT NOT NULL DEFAULT 0,
+        `health` FLOAT NOT NULL DEFAULT 100,
+        `dead` TINYINT(1) NOT NULL DEFAULT 0,
+        `dead_time` INT(11) NOT NULL DEFAULT 0,
+        `planted_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `citizenid` (`citizenid`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]],
+    [[CREATE TABLE IF NOT EXISTS `rsg_farming_wellpumps` (
+        `id` INT(11) NOT NULL AUTO_INCREMENT,
+        `citizenid` VARCHAR(50) NOT NULL,
+        `x` FLOAT NOT NULL, `y` FLOAT NOT NULL, `z` FLOAT NOT NULL, `h` FLOAT NOT NULL DEFAULT 0,
+        `placed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `citizenid` (`citizenid`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]],
+}
+
+local function ensureDatabase()
+    for _, sql in ipairs(SCHEMA) do
+        local ok, err = pcall(MySQL.query.await, sql)
+        if not ok then
+            print(('^1[rsg-farming] database setup failed: %s^7'):format(tostring(err)))
+            return false
+        end
+    end
+    print('^2[rsg-farming] database tables ready^7')
+    return true
+end
+
+-- nil = still starting, true = ready, false = failed (server.lua / wellpump.lua wait on this)
+CreateThread(function()
+    if Config.AutoDatabase then
+        Utils.DBReady = ensureDatabase()
+    else
+        Utils.DBReady = true
+    end
+end)
+
+---------------------------------
+-- config sanity check: warn about items that don't exist in rsg-core
+---------------------------------
+CreateThread(function()
+    Wait(3000)
+    local missing = {}
+    local function chk(name)
+        if name and not RSGCore.Shared.Items[name] then missing[name] = true end
+    end
+    for _, crop in pairs(Config.Crops) do
+        chk(crop.seed)
+        for _, r in ipairs(crop.harvest) do chk(r.item) end
+    end
+    chk(Config.WaterItem); chk(Config.WaterReturnItem); chk(Config.FertilizerItem)
+    if Config.Pests.enabled then chk(Config.Pests.item) end
+    chk(Config.WellPump.item); chk(Config.WellPump.emptyItem); chk(Config.WellPump.fullItem)
+
+    local names = {}
+    for name in pairs(missing) do names[#names + 1] = name end
+    table.sort(names)
+    if #names > 0 then
+        print(('^3[rsg-farming] items missing from rsg-core shared items: %s^7'):format(table.concat(names, ', ')))
+    end
 end)

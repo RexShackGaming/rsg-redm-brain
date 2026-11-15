@@ -1,13 +1,9 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
 local WP      = Config.WellPump
-local Pumps   = {}   -- [id] = data
+local Pumps   = {}   -- [id] = data (no citizenid)
+local Mine    = {}   -- [id] = true for pumps this character placed (sent by the server)
 local Spawned = {}   -- [id] = entity
-
-local function getCid()
-    local pd = RSGCore.Functions.GetPlayerData()
-    return pd and pd.citizenid
-end
 
 ---------------------------------
 -- actions
@@ -16,21 +12,21 @@ end
 local function pumpAction(action, id, cb, scenario, duration, label)
     local p = Pumps[id]
     if not p or not Utils.canAct() then return end
-    Utils.busy = true
-    local can, reason = RSGCore.Functions.AwaitCallback('rsg-farming:server:pumpPrecheck', nil, action, id)
-    if not can then
-        Utils.notify(reason, 'error')
-        Utils.busy = false
-        return
-    end
-    Utils.face(p.x, p.y)
-    if Utils.playScenario(scenario, duration, label) then
-        local ok, msg = RSGCore.Functions.AwaitCallback(cb, nil, id)
-        Utils.notify(msg, ok and 'success' or 'error')
-    else
-        Utils.notify(locale('cancelled'), 'error')
-    end
-    Utils.busy = false
+
+    Utils.guard(function()
+        local can, reason = RSGCore.Functions.AwaitCallback('rsg-farming:server:pumpPrecheck', nil, action, id)
+        if not can then
+            Utils.notify(reason, 'error')
+            return
+        end
+        Utils.face(p.x, p.y)
+        if Utils.playScenario(scenario, duration, label) then
+            local ok, msg = RSGCore.Functions.AwaitCallback(cb, nil, id)
+            Utils.notify(msg, ok and 'success' or 'error')
+        else
+            Utils.notify(locale('cancelled'), 'error')
+        end
+    end)
 end
 
 ---------------------------------
@@ -67,7 +63,7 @@ local function spawn(p)
             icon = 'fa-solid fa-box',
             distance = WP.interactDist,
             canInteract = function()
-                return not Utils.busy and (not WP.ownerOnlyPackup or (Pumps[p.id] and Pumps[p.id].citizenid == getCid()))
+                return not Utils.busy and (not WP.ownerOnlyPackup or Mine[p.id] == true)
             end,
             onSelect = function()
                 pumpAction('pack', p.id, 'rsg-farming:server:packPump', WP.packScenario, WP.packTime, locale('pump_packing'))
@@ -76,29 +72,34 @@ local function spawn(p)
     })
 end
 
-local function applySync(list)
+local function applySync(list, mine)
     local fresh = {}
     for _, p in ipairs(list or {}) do fresh[p.id] = p end
     for id in pairs(Spawned) do
         if not fresh[id] then despawn(id) end
     end
     Pumps = fresh
+    Mine = {}
+    for _, id in ipairs(mine or {}) do Mine[id] = true end
+end
+
+local function loadPumps()
+    local list, mine = RSGCore.Functions.AwaitCallback('rsg-farming:server:getPumps', nil)
+    applySync(list, mine)
 end
 
 RegisterNetEvent('rsg-farming:client:syncPumps', applySync)
 
 RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
     for id in pairs(Spawned) do despawn(id) end
-    Pumps = {}
+    Pumps, Mine = {}, {}
 end)
 
-RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
-    applySync(RSGCore.Functions.AwaitCallback('rsg-farming:server:getPumps', nil))
-end)
+RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', loadPumps)
 
 CreateThread(function()
     Wait(1000)
-    applySync(RSGCore.Functions.AwaitCallback('rsg-farming:server:getPumps', nil))
+    loadPumps()
 end)
 
 AddEventHandler('onResourceStop', function(res)
@@ -120,20 +121,24 @@ CreateThread(function()
 end)
 
 ---------------------------------
--- placement (same gizmo as crops)
+-- placement (rsg-gizmo, same as crops)
 ---------------------------------
 RegisterNetEvent('rsg-farming:client:placePump', function()
     if not Utils.canAct() then return end
-    Utils.busy = true
-    local coords, heading = Placement.Start(WP.prop, function(pos)
-        for _, p in pairs(Pumps) do
-            if #(vector3(p.x, p.y, p.z) - pos) < WP.minDistance then
-                return false, locale('pump_too_close')
+
+    Utils.guard(function()
+        local coords, heading = Utils.place(WP.prop, function(pos)
+            local minSq = WP.minDistance * WP.minDistance
+            for _, p in pairs(Pumps) do
+                local dx, dy, dz = p.x - pos.x, p.y - pos.y, p.z - pos.z
+                if dx * dx + dy * dy + dz * dz < minSq then
+                    return false, locale('pump_too_close')
+                end
             end
-        end
-        return true
-    end, locale('pump_place_invalid'))
-    if coords then
+            return true
+        end)
+        if not coords then return end
+
         Utils.face(coords.x, coords.y)
         if Utils.playScenario(WP.packScenario, WP.packTime, locale('pump_placing')) then
             local ok, msg = RSGCore.Functions.AwaitCallback('rsg-farming:server:placePump', nil, coords, heading)
@@ -141,6 +146,5 @@ RegisterNetEvent('rsg-farming:client:placePump', function()
         else
             Utils.notify(locale('cancelled'), 'error')
         end
-    end
-    Utils.busy = false
+    end)
 end)

@@ -3,7 +3,7 @@
 # 🧭 rsg-radialmenu
 **Radial interaction menu for RedM using RSG Core.**
 
-![Version](https://img.shields.io/badge/version-1.2.0-red)
+![Version](https://img.shields.io/badge/version-3.2.0-red)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 
 A fast, themed radial menu with nested submenus, job-specific actions, synced walk styles and an export API so other resources can add their own options.
@@ -12,7 +12,7 @@ A fast, themed radial menu with nested submenus, job-specific actions, synced wa
 
 ## 🛠️ Dependencies
 - [**rsg-core**](https://github.com/Rexshack-RedM/rsg-core)
-- *(optional)* **rsg-essentials**, **rsg-horses**, **rsg-lawman**, **rsg-medic**, **rsg-telegram**, **rsg-appearance** – for the default menu entries
+- *(optional)* **rsg-stables**, **rsg-lawman**, **rsg-medic**, **rsg-telegram**, **rsg-wardrobe** – for the default menu entries
 
 ---
 
@@ -24,6 +24,8 @@ A fast, themed radial menu with nested submenus, job-specific actions, synced wa
 - 🧩 `AddOption` / `RemoveOption` exports with `canOpen` and `action` support
 - 🎨 RDR2 monochrome leather theme, Font Awesome 6 icons
 - ⌨️ Mouse, scroll wheel, number keys `1–9`, `Enter`, `Esc` / `Backspace` (back)
+- 🛡️ Menu closes itself if you die, get cuffed or open the pause menu
+- 📌 Options added by other resources keep a stable slot (insertion order)
 - 🌍 Locales: `en, de, el, es, fr, ja, nl, pl, pt-br, ro`
 - 🔒 NUI never decides what runs – selections are matched against the client's own menu tree
 
@@ -49,19 +51,22 @@ A fast, themed radial menu with nested submenus, job-specific actions, synced wa
 | Option | Default | Description |
 |---|---|---|
 | `Config.Keybind` | `'F6'` | Key from `RSGCore.Shared.Keybinds` |
-| `Config.HoldToOpen` | `true` | `true` = hold key, release to close · `false` = tap to open |
+| `Config.HoldToOpen` | `true` | `true` = hold key, release the keybind to close · `false` = tap to open, close with `Esc` / centre button |
 | `Config.EmergencyCooldown` | `60` | Seconds between emergency button presses |
 | `Config.WalkstyleCooldown` | `2` | Seconds between walk style changes (server enforced) |
 | `Config.LawJobs` | `vallaw, rholaw, blklaw, strlaw, stdenlaw` | Jobs that get the law menu |
 | `Config.MedicJobs` | `medic` | Jobs that get the medic menu |
 | `Config.Walkstyles` | 7 styles | `key = { clipset, motionType }` – server only accepts these keys |
 
+### Clothing menu
+Runs rsg-wardrobe commands: Dress, Undress, Hat, Vest, Boots, Pants, Gun Belt, Mask, plus two submenus – **Shirt** (on/off, `/sleeve`, `/collar1`, `/collar2`) and **Coats** (Coat, Closed Coat).
+
 ### Menu items
 Use the helper builders at the top of `config.lua`:
 
 ```lua
 cmd('dress', locale('cloth_dress'), 'person-dress', 'dress')            -- runs /dress
-cl('horselantern', locale('menu_horse_lantern'), 'lightbulb', 'rsg-horses:client:equipHorseLantern') -- client event
+cl('horselantern', locale('menu_horse_lantern'), 'lightbulb', 'rsg-stables:client:useLantern') -- client event
 walk('angry', locale('walk_angry'))                                     -- walk style
 ```
 
@@ -136,3 +141,7 @@ Icons load from cdnjs by default. To host locally, download Font Awesome Free in
 - Radial menu originally based on work by **zfbx**
 - Icons by [Font Awesome](https://fontawesome.com) (CC BY 4.0)
 - License: GPL‑3.0
+
+---
+
+Support: https://rexshack.tebex.store

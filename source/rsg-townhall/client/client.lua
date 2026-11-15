@@ -127,6 +127,27 @@ local UI_KEYS = {
     'ui_withdraw',
     'ui_yes',
     'ui_your_answers',
+    'ui_messages',
+    'ui_msg_ph',
+    'ui_send',
+    'ui_msg_none',
+    'ui_edit_answers',
+    'ui_save_answers',
+    'ui_manage_blacklist',
+    'ui_bl_add',
+    'ui_bl_reason',
+    'ui_bl_none',
+    'ui_state_blocked',
+    'ui_state_blocked_note',
+    'ui_fee',
+    'ui_stats',
+    'ui_duplicate',
+    'ui_template_load',
+    'ui_template_save',
+    'ui_template_name',
+    'ui_sort_new',
+    'ui_sort_pay_high',
+    'ui_sort_pay_low',
 }
 
 local RPC = {
@@ -134,6 +155,9 @@ local RPC = {
     withdraw = true, getManageData = true, postJob = true, closePosting = true, review = true,
     addManager = true, removeManager = true, getMyJobs = true, resign = true, editPosting = true,
     reopenPosting = true, requestInterview = true,
+    getMessages = true, sendMessage = true, editApplication = true,
+    getTemplates = true, saveTemplate = true, deleteTemplate = true,
+    addBlacklist = true, removeBlacklist = true,
 }
 
 ---------------------------------------------------------------------------

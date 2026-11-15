@@ -1,9 +1,9 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
-local Plants = {}   -- [id] = plant
-local Dirty  = {}   -- [id] = true when needs saving
-local Loaded = false
-local Reserved = {} -- [src] = vector3, spots held while a plant insert is awaiting the DB
+local Plants   = {}   -- [id] = plant
+local Dirty    = {}   -- [id] = true when needs saving
+local Loaded   = false
+local Reserved = {}   -- [src] = vector3, spots held while a plant insert is awaiting the DB
 
 ---------------------------------
 -- helpers
@@ -11,22 +11,61 @@ local Reserved = {} -- [src] = vector3, spots held while a plant insert is await
 local function clamp(v, mn, mx) return math.max(mn, math.min(mx, v)) end
 local function round(v) return math.floor(v * 10 + 0.5) / 10 end
 
+---------------------------------
+-- seasons / growth rate
+---------------------------------
+local function seasonMult()
+    local s = Config.Seasons
+    if not s or not s.enabled then return 1.0 end
+    return s.months[tonumber(os.date('%m'))] or 1.0
+end
+
+local SeasonNow = seasonMult() -- refreshed every growth tick
+
+-- growth in % per minute for a plant right now (season, fertiliser and pests included)
+local function growthRate(p, crop)
+    local rate = (100 / crop.growTime) * SeasonNow
+    if p.fertilizer > 0 then rate = rate * Config.FertilizerBoost end
+    if p.pest then rate = rate * (Config.Pests.growthPenalty or 0.5) end
+    return rate
+end
+
+local function etaMinutes(p)
+    if p.dead or p.growth >= 100 then return 0 end
+    local rate = growthRate(p, Config.Crops[p.crop])
+    if rate <= 0 then return 0 end
+    return math.ceil((100 - p.growth) / rate)
+end
+
+-- what clients may see: no citizenid (ownership is sent separately per player)
+local function publicPlant(p)
+    return {
+        id = p.id, crop = p.crop,
+        x = p.x, y = p.y, z = p.z, h = p.h,
+        growth = round(p.growth), water = round(p.water), fertilizer = round(p.fertilizer),
+        health = round(p.health), dead = p.dead, pest = p.pest == true, eta = etaMinutes(p),
+    }
+end
+
 local function buildSync()
     local out = {}
-    for _, p in pairs(Plants) do
-        out[#out + 1] = {
-            id = p.id, crop = p.crop, owner = p.citizenid,
-            x = p.x, y = p.y, z = p.z, h = p.h,
-            growth = round(p.growth), water = round(p.water), fertilizer = round(p.fertilizer),
-            health = round(p.health), dead = p.dead,
-        }
-    end
+    for _, p in pairs(Plants) do out[#out + 1] = publicPlant(p) end
     return out
 end
 
-local function syncAll()
-    TriggerClientEvent('rsg-farming:client:sync', -1, buildSync())
+local function ownerMap()
+    local m = {}
+    for id, p in pairs(Plants) do m[id] = p.citizenid end
+    return m
 end
+
+local function syncAll()
+    Utils.broadcastOwned('rsg-farming:client:sync', buildSync(), ownerMap())
+end
+
+-- single-plant deltas: cheap, used after player actions
+local function pushPlant(p) TriggerClientEvent('rsg-farming:client:plantUpdate', -1, publicPlant(p)) end
+local function pushRemove(id) TriggerClientEvent('rsg-farming:client:plantRemove', -1, id) end
 
 local function countPlants(citizenid)
     local n = 0
@@ -52,7 +91,56 @@ local function deletePlant(id)
     Plants[id] = nil
     Dirty[id] = nil
     MySQL.query('DELETE FROM rsg_farming_plants WHERE id = ?', { id })
+    pushRemove(id)
 end
+
+---------------------------------
+-- farming xp / levels (stored in player metadata)
+---------------------------------
+local function xpOf(Player)
+    local v = Player.Functions.GetMetaData('farmingxp')
+    return tonumber(v) or 0
+end
+
+local function levelOf(xp)
+    local lvl = 1
+    for i, l in ipairs(Config.Levels) do
+        if xp >= l.xp then lvl = i end
+    end
+    return lvl
+end
+
+local function perkOf(Player)
+    if not Config.XP.enabled then return Config.Levels[1] end
+    return Config.Levels[levelOf(xpOf(Player))]
+end
+
+local function maxPlantsFor(Player)
+    return Config.MaxPlantsPerPlayer + (perkOf(Player).extraPlants or 0)
+end
+
+local function addXP(src, Player, amount)
+    if not Config.XP.enabled or not amount or amount <= 0 then return end
+    local old = xpOf(Player)
+    local new = old + amount
+    Player.Functions.SetMetaData('farmingxp', new)
+    local newLevel = levelOf(new)
+    if newLevel > levelOf(old) then
+        Utils.notify(src, locale('level_up', Config.Levels[newLevel].label), 'success')
+    end
+end
+
+RSGCore.Commands.Add('farmlevel', 'Show your farming level', {}, false, function(source)
+    local Player = Utils.getPlayer(source)
+    if not Player then return end
+    local xp = xpOf(Player)
+    local lvl = levelOf(xp)
+    local nextLevel = Config.Levels[lvl + 1]
+    local msg = nextLevel
+        and locale('level_info_next', lvl, Config.Levels[lvl].label, xp, nextLevel.xp)
+        or locale('level_info', lvl, Config.Levels[lvl].label, xp)
+    Utils.notify(source, msg, 'inform')
+end)
 
 ---------------------------------
 -- rules per action (shared by pre-check and the action itself)
@@ -69,6 +157,11 @@ local Rules = {
         if plant.fertilizer >= 95 then return locale('already_full') end
         if not Utils.hasItem(Player.PlayerData.source, Config.FertilizerItem) then return locale('no_fertilizer') end
     end,
+    treat = function(Player, plant)
+        if plant.dead then return locale('plant_dead') end
+        if not plant.pest then return locale('no_pests') end
+        if not Utils.hasItem(Player.PlayerData.source, Config.Pests.item) then return locale('no_pesticide') end
+    end,
     harvest = function(Player, plant)
         if Config.OwnerOnlyHarvest and plant.citizenid ~= Player.PlayerData.citizenid then return locale('not_owner') end
         if plant.dead then return locale('plant_dead') end
@@ -76,7 +169,7 @@ local Rules = {
     end,
 }
 
-local Durations = { water = Config.WaterTime, fertilize = Config.FertilizeTime, harvest = Config.HarvestTime }
+local Durations = { water = Config.WaterTime, fertilize = Config.FertilizeTime, treat = Config.TreatTime, harvest = Config.HarvestTime }
 
 -- full validation for a timed action, consumes the action token
 local function checkAction(src, action, plantId)
@@ -89,37 +182,28 @@ local function checkAction(src, action, plantId)
 end
 
 ---------------------------------
--- database
+-- load from database
 ---------------------------------
 CreateThread(function()
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `rsg_farming_plants` (
-            `id` INT(11) NOT NULL AUTO_INCREMENT,
-            `citizenid` VARCHAR(50) NOT NULL,
-            `crop` VARCHAR(50) NOT NULL,
-            `x` FLOAT NOT NULL, `y` FLOAT NOT NULL, `z` FLOAT NOT NULL, `h` FLOAT NOT NULL DEFAULT 0,
-            `growth` FLOAT NOT NULL DEFAULT 0,
-            `water` FLOAT NOT NULL DEFAULT 0,
-            `fertilizer` FLOAT NOT NULL DEFAULT 0,
-            `health` FLOAT NOT NULL DEFAULT 100,
-            `dead` TINYINT(1) NOT NULL DEFAULT 0,
-            `dead_time` INT(11) NOT NULL DEFAULT 0,
-            `planted_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (`id`),
-            KEY `citizenid` (`citizenid`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]])
+    while Utils.DBReady == nil do Wait(100) end
 
     local count = 0
-    for _, r in ipairs(MySQL.query.await('SELECT * FROM rsg_farming_plants') or {}) do
-        if Config.Crops[r.crop] then
-            Plants[r.id] = {
-                id = r.id, citizenid = r.citizenid, crop = r.crop,
-                x = r.x, y = r.y, z = r.z, h = r.h,
-                growth = r.growth, water = r.water, fertilizer = r.fertilizer,
-                health = r.health, dead = r.dead == 1 or r.dead == true, deadTime = r.dead_time or 0,
-            }
-            count = count + 1
+    if Utils.DBReady then
+        local ok, rows = pcall(MySQL.query.await, 'SELECT * FROM rsg_farming_plants')
+        if ok then
+            for _, r in ipairs(rows or {}) do
+                if Config.Crops[r.crop] then
+                    Plants[r.id] = {
+                        id = r.id, citizenid = r.citizenid, crop = r.crop,
+                        x = r.x, y = r.y, z = r.z, h = r.h,
+                        growth = r.growth, water = r.water, fertilizer = r.fertilizer,
+                        health = r.health, dead = r.dead == 1 or r.dead == true, deadTime = r.dead_time or 0,
+                    }
+                    count = count + 1
+                end
+            end
+        else
+            print(('^1[rsg-farming] could not load plants: %s^7'):format(tostring(rows)))
         end
     end
     Loaded = true
@@ -127,8 +211,9 @@ CreateThread(function()
     syncAll()
 end)
 
+-- writes changed plants; on failure they stay dirty and are retried next save
 local function saveDirty()
-    local queries = {}
+    local queries, ids = {}, {}
     for id in pairs(Dirty) do
         local p = Plants[id]
         if p then
@@ -136,10 +221,17 @@ local function saveDirty()
                 query = 'UPDATE rsg_farming_plants SET growth = ?, water = ?, fertilizer = ?, health = ?, dead = ?, dead_time = ? WHERE id = ?',
                 values = { p.growth, p.water, p.fertilizer, p.health, p.dead and 1 or 0, p.deadTime or 0, id },
             }
+            ids[#ids + 1] = id
         end
     end
     Dirty = {}
-    if #queries > 0 then MySQL.transaction(queries) end
+    if #queries == 0 then return end
+
+    local ok, res = pcall(MySQL.transaction.await, queries)
+    if not ok or res == false then
+        for _, id in ipairs(ids) do Dirty[id] = true end
+        print('^1[rsg-farming] saving plants failed, will retry^7')
+    end
 end
 
 ---------------------------------
@@ -152,6 +244,11 @@ CreateThread(function()
     while true do
         Wait(Config.TickInterval * 1000)
         local now = os.time()
+        SeasonNow = seasonMult()
+
+        -- rain from rsg-weather waters every plant (GlobalState.rsgWeather.weather is a lowercase weather name)
+        local weather = GlobalState.rsgWeather
+        local rain = (Config.RainWater and weather and Config.RainWater[weather.weather]) or 0
 
         for id, p in pairs(Plants) do
             local crop = Config.Crops[p.crop]
@@ -160,28 +257,41 @@ CreateThread(function()
                     deletePlant(id)
                 end
             elseif crop then
-                p.water      = clamp(p.water - Config.WaterDecay * mins, 0, 100)
+                local w, f, h, g = p.water, p.fertilizer, p.health, p.growth
+
+                p.water      = clamp(p.water - Config.WaterDecay * mins + rain * mins, 0, 100)
                 p.fertilizer = clamp(p.fertilizer - Config.FertilizerDecay * mins, 0, 100)
+
+                if Config.Pests.enabled and not p.pest and math.random() < (Config.Pests.chancePerTick or 0.02) then
+                    p.pest = true
+                end
 
                 if p.water > Config.MinWaterToGrow then
                     p.health = clamp(p.health + Config.HealthRegen * mins, 0, 100)
                     if p.growth < 100 then
-                        local rate = 100 / crop.growTime -- % per minute
-                        if p.fertilizer > 0 then rate = rate * Config.FertilizerBoost end
-                        p.growth = clamp(p.growth + rate * mins, 0, 100)
+                        p.growth = clamp(p.growth + growthRate(p, crop) * mins, 0, 100)
                     end
                 else
                     p.health = clamp(p.health - Config.DryDamage * mins, 0, 100)
-                    if p.health <= 0 then
-                        p.dead = true
-                        p.deadTime = now
-                    end
                 end
-                Dirty[id] = true
+
+                if p.pest then
+                    p.health = clamp(p.health - (Config.Pests.healthLoss or 3) * mins, 0, 100)
+                end
+
+                if p.health <= 0 then
+                    p.dead = true
+                    p.deadTime = now
+                    p.pest = false
+                end
+
+                if p.dead or p.pest or p.water ~= w or p.fertilizer ~= f or p.health ~= h or p.growth ~= g then
+                    Dirty[id] = true
+                end
             end
         end
 
-        syncAll()
+        if next(Plants) then syncAll() end
 
         if now - lastSave >= Config.SaveInterval then
             saveDirty()
@@ -203,8 +313,9 @@ for cropKey, crop in pairs(Config.Crops) do
     RSGCore.Functions.CreateUseableItem(crop.seed, function(source)
         local Player = Utils.getPlayer(source)
         if not Player then return end
-        if countPlants(Player.PlayerData.citizenid) >= Config.MaxPlantsPerPlayer then
-            return Utils.notify(source, locale('max_plants', Config.MaxPlantsPerPlayer), 'error')
+        local limit = maxPlantsFor(Player)
+        if countPlants(Player.PlayerData.citizenid) >= limit then
+            return Utils.notify(source, locale('max_plants', limit), 'error')
         end
         TriggerClientEvent('rsg-farming:client:startPlacing', source, cropKey)
     end)
@@ -215,23 +326,25 @@ end
 ---------------------------------
 Utils.callback('rsg-farming:server:getPlants', function(source)
     while not Loaded do Wait(100) end
-    return buildSync()
+    return buildSync(), Utils.idsOwnedBy(source, ownerMap())
 end)
 
 Utils.callback('rsg-farming:server:plant', function(source, cropKey, coords, heading)
     local src = source
     local Player = Utils.getPlayer(src)
-    local crop = Config.Crops[cropKey]
+    local crop = type(cropKey) == 'string' and Config.Crops[cropKey]
     coords = Utils.toCoords(coords)
     if not Player or not crop or not coords then return false, locale('place_invalid') end
 
-    if Utils.distanceTo(src, coords.x, coords.y, coords.z) > Config.PlaceMaxDistance + 2.0 then
+    if not exports['rsg-gizmo']:IsPlacementValid(src, coords, Config.PlaceMaxDistance) then
         return false, locale('place_too_far')
     end
+    if Utils.inBlockedZone(coords) then return false, locale('place_blocked_zone') end
 
     local cid = Player.PlayerData.citizenid
-    if countPlants(cid) >= Config.MaxPlantsPerPlayer then
-        return false, locale('max_plants', Config.MaxPlantsPerPlayer)
+    local limit = maxPlantsFor(Player)
+    if countPlants(cid) >= limit then
+        return false, locale('max_plants', limit)
     end
     if Reserved[src] then return false, locale('action_invalid') end
     for _, p in pairs(Plants) do
@@ -246,13 +359,13 @@ Utils.callback('rsg-farming:server:plant', function(source, cropKey, coords, hea
 
     local h = Utils.toHeading(heading)
     Reserved[src] = coords -- hold the spot while we wait on the DB
-    local id = MySQL.insert.await(
+    local ok, id = pcall(MySQL.insert.await,
         'INSERT INTO rsg_farming_plants (citizenid, crop, x, y, z, h, growth, water, fertilizer, health) VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 100)',
         { cid, cropKey, coords.x, coords.y, coords.z, h })
     Reserved[src] = nil
 
-    if not id then
-        Utils.addItem(src, crop.seed, 1, nil, 'rsg-farming:plant-refund')
+    if not ok or not id then
+        Utils.giveOrDrop(src, crop.seed, 1, nil, 'rsg-farming:plant-refund')
         return false, locale('place_invalid')
     end
 
@@ -261,13 +374,15 @@ Utils.callback('rsg-farming:server:plant', function(source, cropKey, coords, hea
         x = coords.x, y = coords.y, z = coords.z, h = h,
         growth = 0, water = 0, fertilizer = 0, health = 100, dead = false, deadTime = 0,
     }
-    syncAll()
+    pushPlant(Plants[id])
+    TriggerClientEvent('rsg-farming:client:plantMine', src, id)
+    addXP(src, Player, Config.XP.plant)
     return true, locale('planted')
 end)
 
 -- pre-check: runs before the client plays the animation and starts the action timer
 Utils.callback('rsg-farming:server:precheck', function(source, action, plantId)
-    if not Rules[action] then return false, locale('action_invalid') end
+    if type(action) ~= 'string' or not Rules[action] then return false, locale('action_invalid') end
     local Player, plant, err = validate(source, plantId)
     if not Player then return false, err end
     err = Rules[action](Player, plant)
@@ -291,20 +406,21 @@ Utils.callback('rsg-farming:server:water', function(source, plantId)
         return false, locale('no_water')
     end
     if uses <= 1 then
-        if Config.WaterReturnItem and not Utils.addItem(source, Config.WaterReturnItem, 1, nil, 'rsg-farming:water-empty') then
-            exports['rsg-inventory']:ForceDropItem(source, Config.WaterReturnItem, 1, nil, 'rsg-farming:water-empty')
+        if Config.WaterReturnItem then
+            Utils.giveOrDrop(source, Config.WaterReturnItem, 1, nil, 'rsg-farming:water-empty')
         end
     else
         local newInfo = {}
         for k, v in pairs(info) do newInfo[k] = v end
         newInfo.uses = uses - 1
         newInfo.description = locale('bucket_uses', newInfo.uses, maxUses)
-        Utils.addItem(source, Config.WaterItem, 1, newInfo, 'rsg-farming:water-use', bucket.slot)
+        Utils.giveOrDrop(source, Config.WaterItem, 1, newInfo, 'rsg-farming:water-use', bucket.slot)
     end
 
     plant.water = clamp(plant.water + Config.WaterAmount, 0, 100)
     Dirty[plant.id] = true
-    syncAll()
+    pushPlant(plant)
+    if plant.citizenid == Player.PlayerData.citizenid then addXP(source, Player, Config.XP.water) end
     return true, locale('watered')
 end)
 
@@ -317,8 +433,22 @@ Utils.callback('rsg-farming:server:fertilize', function(source, plantId)
 
     plant.fertilizer = clamp(plant.fertilizer + Config.FertilizerAmount, 0, 100)
     Dirty[plant.id] = true
-    syncAll()
+    pushPlant(plant)
+    if plant.citizenid == Player.PlayerData.citizenid then addXP(source, Player, Config.XP.fertilize) end
     return true, locale('fertilized')
+end)
+
+Utils.callback('rsg-farming:server:treat', function(source, plantId)
+    local Player, plant, err = checkAction(source, 'treat', plantId)
+    if not Player then return false, err end
+    if not Utils.removeItem(source, Config.Pests.item, 1, nil, 'rsg-farming:treat') then
+        return false, locale('no_pesticide')
+    end
+
+    plant.pest = false
+    pushPlant(plant)
+    if plant.citizenid == Player.PlayerData.citizenid then addXP(source, Player, Config.XP.treat) end
+    return true, locale('treated')
 end)
 
 Utils.callback('rsg-farming:server:harvest', function(source, plantId)
@@ -326,22 +456,28 @@ Utils.callback('rsg-farming:server:harvest', function(source, plantId)
     if not Player then return false, err end
 
     -- roll rewards and make sure they all fit BEFORE removing the plant
+    -- bonus produce (never extra seeds): healthy plant and/or farming level perk
+    local crop = Config.Crops[plant.crop]
+    local quality = plant.health >= (Config.Harvest.qualityHealth or 90)
+    local skilled = math.random(100) <= (perkOf(Player).bonusYieldChance or 0)
     local rewards = {}
-    for _, r in ipairs(Config.Crops[plant.crop].harvest) do
+    for _, r in ipairs(crop.harvest) do
         local amount = math.random(r.min, r.max)
+        if amount > 0 and r.item ~= crop.seed then
+            if quality then amount = amount + (Config.Harvest.qualityBonus or 1) end
+            if skilled then amount = amount + 1 end
+        end
         if amount > 0 then rewards[#rewards + 1] = { item = r.item, amount = amount } end
     end
     if not Utils.canAddAll(source, rewards) then return false, locale('inv_full') end
 
     deletePlant(plant.id) -- remove first to stop double-harvest
-    syncAll()
     for _, r in ipairs(rewards) do
-        if not Utils.addItem(source, r.item, r.amount, nil, 'rsg-farming:harvest') then
-            -- satchel filled up between the check and now: drop it at their feet instead of losing it
-            exports['rsg-inventory']:ForceDropItem(source, r.item, r.amount, nil, 'rsg-farming:harvest-overflow')
-        end
+        -- satchel filled up between the check and now: drop it at their feet instead of losing it
+        Utils.giveOrDrop(source, r.item, r.amount, nil, 'rsg-farming:harvest')
     end
-    return true, locale('harvested')
+    if plant.citizenid == Player.PlayerData.citizenid then addXP(source, Player, Config.XP.harvest) end
+    return true, locale((quality or skilled) and 'harvested_bonus' or 'harvested')
 end)
 
 Utils.callback('rsg-farming:server:destroy', function(source, plantId)
@@ -351,6 +487,5 @@ Utils.callback('rsg-farming:server:destroy', function(source, plantId)
         return false, locale('not_owner')
     end
     deletePlant(plant.id)
-    syncAll()
     return true, locale('destroyed')
 end)

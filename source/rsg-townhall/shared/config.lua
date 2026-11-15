@@ -27,6 +27,12 @@ Config.AdminPermission = 'admin'
 Config.AllowBossManagement = true
 -- Only admins may post vacancies for boss grades (isboss) when true.
 Config.RestrictBossGrades = true
+-- Managers (the list admins maintain in the Manage tab) are an add-on for a government job.
+-- Set to a job name (e.g. 'government'): manager entries only work while the player holds that job,
+-- so a manager can post for every job (scope '*') or a single job without being its boss.
+-- Set to false/nil: manager entries work for anyone on the list.
+-- Bosses never need to be on the list: with AllowBossManagement they can post for their own job by default.
+Config.ManagerJob = 'government'
 -- A reviewer may never approve/reject their own application when false.
 Config.AllowSelfReview = false
 
@@ -51,9 +57,33 @@ Config.SetActiveJobOnApproval = false -- also switch the applicant's active job 
 
 -- Vacancies -----------------------------------------------------------------
 Config.MaxSlots = 10                  -- seats per vacancy
-Config.ExpiryOptions = { 0, 3, 7, 14, 30 } -- days a poster can pick (0 = never expires)
+-- Days a poster can pick (0 = never expires), per role. First match wins:
+--   admin   : players with Config.AdminPermission
+--   jobs    : per vacancy job, e.g. jobs = { police = { 7, 14 } }
+--   manager : players on the manager list (Config.ManagerJob)
+--   boss    : bosses posting for their own job
+--   default : used when the role has no list
+-- A plain list such as { 0, 3, 7, 14, 30 } is still accepted and applies to everyone.
+Config.ExpiryOptions = {
+    admin   = { 0, 3, 7, 14, 30, 60 },
+    manager = { 3, 7, 14, 30, 60 },
+    boss    = { 3, 7, 14, 30 },
+    jobs    = {},
+    default = { 3, 7, 14, 30 },
+}
 Config.DefaultExpiryDays = 14         -- used when reopening a vacancy
 Config.ExpiryCheckMinutes = 5         -- how often expired vacancies are closed
+
+-- Messages, editing, fees, blacklist, templates ---------------------------------
+Config.AllowMessages = true           -- applicant and reviewers can exchange short messages while an application is open
+Config.MaxMessages = 30               -- per application
+Config.AllowEditApplication = true    -- applicants can change their answers while the application is still open
+Config.ApplicationFee = 0             -- money taken when applying (0 = free)
+Config.RefundFeeWhenClosed = true     -- refund the fee if the vacancy closes, fills or expires before a decision
+Config.ApplicationFeeAccount = 'cash' -- 'cash' or 'bank'
+Config.AllowBlacklist = true          -- reviewers can bar a citizen from one job (or all jobs, admins/all-job managers)
+Config.MaxTemplates = 10              -- saved vacancy templates per poster
+Config.ExpiryWarnHours = 24           -- warn the poster this long before a vacancy closes (0 = off)
 
 -- Applications: extra steps ---------------------------------------------------
 Config.AllowOfflineApproval = true    -- approve offline applicants; the job is granted on their next login
@@ -78,6 +108,7 @@ Config.Limits = {
     answer = 1000,
     feedback = 600,
     label = 60,
+    message = 300,
 }
 
 -- Standard application questions ------------------------------------------------

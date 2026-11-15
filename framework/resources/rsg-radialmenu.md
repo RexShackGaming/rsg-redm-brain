@@ -1,6 +1,6 @@
 # rsg-radialmenu
 
-Version 3.1.1. rsg-radialmenu
+Version 3.2.1. rsg-radialmenu
 
 **Radial interaction menu for RedM using RSG Core.** A fast, themed radial menu with nested submenus, job-specific actions, synced walk styles and an export API so other resources can add their own options. - [**rsg-core**](https://github.com/Rexshack-RedM/rsg-core)
 
@@ -26,4 +26,4 @@ Has NUI (`ui_page`).
 
 ## Server events it triggers in other resources
 
-**client:** `RSGCore:CallCommand`, `rsg-lawman:server:lawmanAlert`, `rsg-medic:server:medicAlert`
+**client:** `RSGCore:CallCommand`, `rsg-lawman:server:lawmanAlert`

@@ -1,5 +1,4 @@
 {
-    "place_help": "[LMB] Plasează   [Q / E] Rotește   [Sus / Jos] Înălțime   [RMB] Anulează",
     "place_invalid": "Nu poți planta acolo",
     "place_too_far": "Prea departe",
     "place_too_close": "Prea aproape de altă plantă",
@@ -76,5 +75,17 @@
     "ui_not_yours": " - Nu este cultura ta.",
     "ui_empty": "Nu ai nimic plantat.",
     "ui_away": "la %sm",
-    "no_player": "Jucătorul nu a fost găsit"
+    "no_player": "Jucătorul nu a fost găsit",
+    "place_blocked_zone": "Nu poți planta în această zonă",
+    "level_up": "Nivel de agricultură crescut! Noul rang: %s",
+    "level_info": "Nivel de agricultură %s (%s) - %s XP",
+    "level_info_next": "Nivel de agricultură %s (%s) - %s / %s XP",
+    "harvested_bonus": "Recoltă adunată - randament sporit!",
+    "ui_btn_treat": "Tratează",
+    "ui_pests": "Dăunători",
+    "ui_note_pests": "Dăunătorii consumă cultura. Tratează-o înainte să se ofilească.",
+    "no_pesticide": "Ai nevoie de pesticid",
+    "treated": "Dăunători eliminați",
+    "no_pests": "Planta nu are dăunători",
+    "treating": "Se tratează dăunătorii..."
 }

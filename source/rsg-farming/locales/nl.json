@@ -1,5 +1,4 @@
 {
-    "place_help": "[LMB] Plaatsen   [Q / E] Draaien   [Omhoog / Omlaag] Hoogte   [RMB] Annuleren",
     "place_invalid": "Je kunt hier niet planten",
     "place_too_far": "Te ver weg",
     "place_too_close": "Te dicht bij een andere plant",
@@ -76,5 +75,17 @@
     "ui_not_yours": " - Niet jouw gewas.",
     "ui_empty": "Je hebt niets in de grond.",
     "ui_away": "%sm verderop",
-    "no_player": "Speler niet gevonden"
+    "no_player": "Speler niet gevonden",
+    "place_blocked_zone": "Je kunt in dit gebied niet planten",
+    "level_up": "Landbouwniveau omhoog! Nieuwe rang: %s",
+    "level_info": "Landbouwniveau %s (%s) - %s XP",
+    "level_info_next": "Landbouwniveau %s (%s) - %s / %s XP",
+    "harvested_bonus": "Oogst binnengehaald - extra opbrengst!",
+    "ui_btn_treat": "Behandelen",
+    "ui_pests": "Ongedierte",
+    "ui_note_pests": "Ongedierte vreet aan het gewas. Behandel het voordat het verdort.",
+    "no_pesticide": "Je hebt pesticide nodig",
+    "treated": "Ongedierte bestreden",
+    "no_pests": "Deze plant heeft geen ongedierte",
+    "treating": "Ongedierte bestrijden..."
 }

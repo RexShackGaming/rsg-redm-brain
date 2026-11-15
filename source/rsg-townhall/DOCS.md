@@ -43,7 +43,9 @@ All are `RSGCore.Functions.CreateCallback('rsg-townhall:server:<name>')`, answer
 |---|---|---|---|
 | `getLocations` | client | – | Clerk list (no distance check) |
 | `getPerms` | any | – | `admin`, `manage`, `unseen`, `pending` (reviews waiting for the caller), limits |
-| `getVacancies` | any | – | Open postings with questions, slots, expiry, prerequisites and the caller's state (`open`, `applied`, `cooldown`, `holds`, `locked`) |
+
+Tab badges: **My applications** shows `unseen` (decisions not yet viewed, counted only for applications whose posting still exists) and clears as soon as the tab is opened (`markSeen`). **Manage** shows `pending` and refreshes from the live pending list each time the tab loads, so it drops after a review.
+| `getVacancies` | any | – | Open postings with questions, slots, expiry, prerequisites and the caller's state (`open`, `applied`, `cooldown`, `holds`, `blocked`, `locked`) and the application `fee` |
 | `apply` | any | `postingId`, `answers[]` | Submit an application |
 | `getMyApplications` | any | – | Caller's last 50 applications |
 | `markSeen` | any | – | Clears unread decision flags |
@@ -58,18 +60,31 @@ All are `RSGCore.Functions.CreateCallback('rsg-townhall:server:<name>')`, answer
 | `closePosting` | manager | `postingId` | Close a vacancy (pending applications are closed) |
 | `review` | manager | `applicationId`, `decision` (`approve`/`reject`), `feedback` | Decide a pending or interview application |
 | `addManager` / `removeManager` | admin | `player`, `job` / `id` | Manage the manager list |
+| `getMessages` | applicant / reviewer | `applicationId` | Message thread of an application and whether sending is still possible |
+| `sendMessage` | applicant / reviewer | `applicationId`, `message` | Add a message (open applications only, capped by `Config.MaxMessages`) |
+| `editApplication` | applicant | `applicationId`, `answers[]` | Replace the answers of an open application |
+| `getTemplates` / `saveTemplate` / `deleteTemplate` | manager | - / `name`, `data` / `id` | Per-poster vacancy templates |
+| `addBlacklist` / `removeBlacklist` | manager (scope) | `player`, `job` (`*` = all jobs), `reason` / `id` | Bar a citizen from applying; `*` needs an all-jobs scope |
 
 ## Events
 | Event | Direction | Description |
 |---|---|---|
 | `rsg-townhall:client:syncLocations` | server -> client | Replaces the client's clerk list |
-| `RSGCore:Server:PlayerLoaded` (listened) | core -> server | Grants queued approvals and reminds about unread updates |
+| `RSGCore:Server:PlayerLoaded` (listened) | core -> server | Grants queued approvals, reminds applicants about unread updates and managers about waiting reviews |
+| `rsg-townhall:server:applicationDecided` | server (local) | Fired after a decision: `{ id, citizenid, job, grade, decision = 'approved'/'rejected', queued? }` |
+
+### Exports (server)
+| Export | Returns |
+|---|---|
+| `exports['rsg-townhall']:HasPendingApplication(citizenid, job?)` | `true` if the citizen has an open application (optionally for one job) |
+| `exports['rsg-townhall']:GetOpenVacancyCount(job)` | Number of open vacancies for the job |
+| `exports['rsg-townhall']:IsBlacklisted(citizenid, job)` | `true` if barred from that job or from all jobs |
 
 Log channel: `rsg-log:server:CreateLog` with channel `townhall` (ignored if rsg-log is not running).
 
 ## Permissions
 - **Admin**: `RSGCore.Functions.HasPermission(src, Config.AdminPermission)`; any job, manager list.
-- **Manager**: row in `townhall_managers`; `*` = all jobs, otherwise one job.
+- **Manager**: row in `townhall_managers`; `*` = all jobs, otherwise one job. If `Config.ManagerJob` is set, entries are ignored while the player does not hold that job, and `addManager` rejects an online target without it (offline targets are checked when they act).
 - **Boss**: `Config.AllowBossManagement` and the player's *active* job is a boss grade (`isboss`); only for that job.
 - Non-admins cannot post boss grades while `Config.RestrictBossGrades` is true.
 - Reviewers cannot review their own application unless `Config.AllowSelfReview`.
@@ -94,7 +109,7 @@ Rejection sets `rejected` and leaves the vacancy `open`. Interviews set `intervi
 - The client NUI bridge only forwards a fixed list of callback names.
 
 ## Database schema
-See `install.sql`: `townhall_locations`, `townhall_managers`, `townhall_postings`, `townhall_applications`, `townhall_resignations`. Existing installs are migrated automatically (missing columns are added from an `INFORMATION_SCHEMA` check). With `Config.AutoDatabase = true` they are created on start (`CREATE TABLE IF NOT EXISTS`).
+See `install.sql`: `townhall_locations`, `townhall_managers`, `townhall_postings`, `townhall_applications`, `townhall_resignations`, `townhall_messages`, `townhall_templates`, `townhall_blacklist`. Existing installs are migrated automatically (missing columns are added from an `INFORMATION_SCHEMA` check). With `Config.AutoDatabase = true` they are created on start (`CREATE TABLE IF NOT EXISTS`).
 
 ## Server owner how-tos
 - **Add a clerk**: stand at the spot, `/createtownhall <name>`. Remove with `/removetownhall` next to it.
@@ -119,3 +134,31 @@ While the UI is open, `SetNuiFocusKeepInput(true)` is used and every game contro
 | Database errors on start | Set `Config.AutoDatabase = false` and import `install.sql` |
 
 Support: https://rexshack.tebex.store
+
+
+## Applicant notifications
+
+Each applicant update (interview, approval, rejection, vacancy closed/filled/expired) sets `seen = 0` (unread dot in the My Applications tab, cleared when the tab is opened) and `notified = 0` (login reminder not yet sent). The login reminder only counts rows with `seen = 0 AND notified = 0` and then sets `notified = 1`, so each update produces at most one reminder. Updates delivered live to an online applicant are marked `notified = 1` immediately. The `notified` column is added automatically to existing databases (existing rows default to `1`, so old updates stop reminding); manual installs can run `ALTER TABLE townhall_applications ADD COLUMN notified TINYINT(1) NOT NULL DEFAULT 1;`.
+
+
+## Expiry options per role
+
+`Config.ExpiryOptions` can be a table keyed by role. The first match wins: `admin` (Config.AdminPermission) > `jobs[<vacancy job>]` > `manager` (manager list) > `boss` > `default`. A role without a list falls back to `default`. A plain list (`{ 0, 3, 7 }`) still works and applies to everyone. `0` means never expires, so leave it out of the non-admin lists to forbid permanent vacancies. The server validates `postJob` and `editPosting` against the list for the vacancy's job; reopen/repost uses `Config.DefaultExpiryDays` if allowed, otherwise the first timed option. The UI receives the list per job (`getManageData.jobs[].expiry`, `postings[].expiry`).
+
+## Security notes
+
+- Every callback re-checks the player, the nearest clerk (`Config.ServerDistance`), scope (admin / manager / boss) and ownership on the server; the NUI only sends ids and text.
+- Read callbacks (`getPerms`, `getVacancies`, `getMyApplications`, `getMyJobs`, `getManageData`) are rate limited to one call per 300 ms per player; writes use their own throttles.
+- Reopening/reposting a boss-grade vacancy is admin-only while `Config.RestrictBossGrades` is on, the same as posting one.
+- Discord webhook embeds disable mention parsing, so player-written text cannot ping roles or @everyone.
+
+## Application fee, templates and blacklist
+
+- **Fee**: with `Config.ApplicationFee > 0` the fee is removed from `Config.ApplicationFeeAccount` on the server just before the application is stored and refunded if storing fails. If the vacancy closes, fills or expires before the application is decided and `Config.RefundFeeWhenClosed` is on, the fee is stored in `townhall_applications.refund` and paid out once (immediately if the applicant is online, otherwise at next login); a decision or withdrawal gives no refund. Applicants see the fee in the application window.
+- **Templates**: stored per citizen in `townhall_templates` as validated JSON (texts, job, rank, slots, expiry, prerequisites). Loading a template only fills the form; the vacancy is checked again when posted, so a template can never exceed the poster's current permissions.
+- **Blacklist**: `townhall_blacklist` has one row per citizen and job (`*` = every job). It is checked in `apply` and shown to the applicant as *Barred*. Reviewers see and lift entries inside their scope only.
+- **Messages**: `townhall_messages`, only while an application is `pending` or `interview`. A reviewer message re-flags the application as unread; an applicant message notifies the managers who are online.
+
+## Upgrading to 3.1.0 manually
+
+With `Config.AutoDatabase = true` everything is added on start. For a manual install run the new tables from `install.sql` plus: `ALTER TABLE townhall_postings ADD COLUMN warned TINYINT(1) NOT NULL DEFAULT 0;` and `ALTER TABLE townhall_applications ADD COLUMN fee INT NOT NULL DEFAULT 0, ADD COLUMN refund INT NOT NULL DEFAULT 0;` (and the `notified` column from 3.0.1 if you have not added it).

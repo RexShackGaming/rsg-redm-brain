@@ -1,5 +1,4 @@
 {
-    "place_help": "[LMB] Colocar   [Q / E] Girar   [Cima / Baixo] Altura   [RMB] Cancelar",
     "place_invalid": "Você não pode plantar aí",
     "place_too_far": "Muito longe",
     "place_too_close": "Muito perto de outra planta",
@@ -76,5 +75,17 @@
     "ui_not_yours": " - Não é sua plantação.",
     "ui_empty": "Você não tem nada plantado.",
     "ui_away": "a %sm",
-    "no_player": "Jogador não encontrado"
+    "no_player": "Jogador não encontrado",
+    "place_blocked_zone": "Você não pode plantar nesta área",
+    "level_up": "Nível de agricultura subiu! Novo título: %s",
+    "level_info": "Nível de agricultura %s (%s) - %s XP",
+    "level_info_next": "Nível de agricultura %s (%s) - %s / %s XP",
+    "harvested_bonus": "Colheita feita - rendimento extra!",
+    "ui_btn_treat": "Tratar",
+    "ui_pests": "Pragas",
+    "ui_note_pests": "Pragas estão devorando a plantação. Trate antes que murche.",
+    "no_pesticide": "Você precisa de pesticida",
+    "treated": "Pragas eliminadas",
+    "no_pests": "Esta planta não tem pragas",
+    "treating": "Tratando pragas..."
 }

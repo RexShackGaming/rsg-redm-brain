@@ -17,10 +17,16 @@ local function syncPlayer(serverId, force)
     if ply == -1 then applied[serverId] = nil return end
 
     local key = Player(serverId).state.walkstyle
-    if not key then return end
-
     local ped = GetPlayerPed(ply)
     local cache = applied[serverId]
+
+    if not key then
+        -- style was cleared (e.g. a character with no saved style): back to the default walk
+        if cache and Config.Walkstyles.normal then applyWalkstyle(ped, 'normal') end
+        applied[serverId] = nil
+        return
+    end
+
     if force or not cache or cache.ped ~= ped or cache.key ~= key then
         if applyWalkstyle(ped, key) then
             applied[serverId] = { ped = ped, key = key }
@@ -28,10 +34,17 @@ local function syncPlayer(serverId, force)
     end
 end
 
--- Selected from the radial menu
+-- Selected from the radial menu (same cooldown as the server, so the local ped never drifts from the synced style)
+local lastChange = nil
+
 RegisterNetEvent('rsg-radialmenu:client:setWalkstyle', function(data)
     local key = type(data) == 'table' and data.walkstyle or data
-    if not Config.Walkstyles[key] then return end
+    if type(key) ~= 'string' or not Config.Walkstyles[key] then return end
+
+    local now = GetGameTimer()
+    if lastChange and now - lastChange < Config.WalkstyleCooldown * 1000 then return end
+    lastChange = now
+
     applyWalkstyle(PlayerPedId(), key) -- instant local feedback
     TriggerServerEvent('rsg-radialmenu:server:setWalkstyle', key)
 end)
@@ -41,7 +54,6 @@ AddStateBagChangeHandler('walkstyle', nil, function(bagName, _, value)
     local ply = GetPlayerFromStateBagName(bagName)
     if ply == 0 then return end
     local serverId = GetPlayerServerId(ply)
-    applied[serverId] = nil
     SetTimeout(0, function() syncPlayer(serverId, true) end) -- state is readable next tick
 end)
 

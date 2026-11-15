@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS `townhall_postings` (
     `filled_by_name` VARCHAR(100) NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `closed_at` TIMESTAMP NULL DEFAULT NULL,
+    `warned` TINYINT(1) NOT NULL DEFAULT 0,
     PRIMARY KEY (`id`),
     KEY `idx_status` (`status`),
     KEY `idx_job` (`job`)
@@ -62,6 +63,9 @@ CREATE TABLE IF NOT EXISTS `townhall_applications` (
     `reviewed_by_name` VARCHAR(100) NULL,
     `reviewed_at` TIMESTAMP NULL DEFAULT NULL,
     `seen` TINYINT(1) NOT NULL DEFAULT 1,
+    `notified` TINYINT(1) NOT NULL DEFAULT 1,
+    `fee` INT NOT NULL DEFAULT 0,
+    `refund` INT NOT NULL DEFAULT 0,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `idx_posting` (`posting_id`),
@@ -76,4 +80,39 @@ CREATE TABLE IF NOT EXISTS `townhall_resignations` (
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `idx_citizen_job` (`citizenid`, `job`)
+);
+
+CREATE TABLE IF NOT EXISTS `townhall_messages` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `application_id` INT NOT NULL,
+    `sender_cid` VARCHAR(50) NOT NULL,
+    `sender_name` VARCHAR(100) NULL,
+    `from_reviewer` TINYINT(1) NOT NULL DEFAULT 0,
+    `body` TEXT NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_application` (`application_id`)
+);
+
+CREATE TABLE IF NOT EXISTS `townhall_templates` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `citizenid` VARCHAR(50) NOT NULL,
+    `name` VARCHAR(60) NOT NULL,
+    `data` LONGTEXT NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_citizen` (`citizenid`)
+);
+
+CREATE TABLE IF NOT EXISTS `townhall_blacklist` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `citizenid` VARCHAR(50) NOT NULL,
+    `name` VARCHAR(100) NULL,
+    `job` VARCHAR(50) NOT NULL DEFAULT '*',
+    `reason` TEXT NULL,
+    `added_by` VARCHAR(50) NULL,
+    `added_by_name` VARCHAR(100) NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uniq_block` (`citizenid`, `job`)
 );

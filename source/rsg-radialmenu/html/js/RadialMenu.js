@@ -136,7 +136,8 @@ class RadialMenu {
             if (g) this.setSelectedIndex(parseInt(g.dataset.index, 10));
         });
         svg.addEventListener('click', (e) => {
-            if (e.target.closest('g.sector')) this.handleClick();
+            const g = e.target.closest('g.sector');
+            if (g) this.handleClick(parseInt(g.dataset.index, 10)); // the sector that was clicked, not just the hovered one
             else if (e.target.closest('g.center')) this.handleCenterClick();
         });
         return svg;

@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS `rsg_stables_horses` (
   `alive` TINYINT(1) NOT NULL DEFAULT 1,
   `insured` TINYINT(1) NOT NULL DEFAULT 0,
   `active` TINYINT(1) NOT NULL DEFAULT 0,
+  `born` TINYINT(1) NOT NULL DEFAULT 0,
   `pos_x` FLOAT DEFAULT NULL,
   `pos_y` FLOAT DEFAULT NULL,
   `pos_z` FLOAT DEFAULT NULL,
@@ -125,6 +126,9 @@ local function ensureDatabase()
     end
     if not existing.shoe_wear then
         pcall(MySQL.query.await, 'ALTER TABLE `rsg_stables_horses` ADD COLUMN `shoe_wear` FLOAT NOT NULL DEFAULT 0 AFTER `tack`')
+    end
+    if not existing.born then
+        pcall(MySQL.query.await, 'ALTER TABLE `rsg_stables_horses` ADD COLUMN `born` TINYINT(1) NOT NULL DEFAULT 0 AFTER `active`')
     end
     -- horses bought before genders existed get a random one
     pcall(MySQL.query.await, "UPDATE `rsg_stables_horses` SET `gender` = IF(RAND() < 0.5, 'male', 'female') WHERE `gender` IS NULL")
@@ -220,7 +224,7 @@ local function horseStage(ageDays)
     return 'adult'
 end
 
-local AGE_SQL = 'DATEDIFF(NOW(), created_at) AS age_days'
+local AGE_SQL = 'DATEDIFF(NOW(), created_at) AS age_days, TIMESTAMPDIFF(SECOND, created_at, NOW()) AS age_seconds'
 
 -- Config.Breeds stores signed backtick hashes while the server can return unsigned ones: compare unsigned
 local function getBreedConfig(model)
@@ -1744,8 +1748,8 @@ registerCallback('rsg-stables:server:collectFoal', function(source, breedingId)
         local ok, insertId = pcall(function()
             return MySQL.insert.await([[
                 INSERT INTO rsg_stables_horses
-                    (citizenid, stable, model, breed_label, gender, name, outfit, tack, health, stamina, speed, accel, handling, maxhealth, alive, insured, active)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 100, 100, ?, ?, ?, ?, 1, 0, 0)
+                    (citizenid, stable, model, breed_label, gender, name, outfit, tack, health, stamina, speed, accel, handling, maxhealth, alive, insured, active, born)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 100, 100, ?, ?, ?, ?, 1, 0, 0, 1)
             ]], {
                 Player.PlayerData.citizenid, job.stable, foalParent.model, foalParent.breed_label, randomGender(), locale('unnamed_foal'), foalParent.outfit or 0, newHorseTack(),
                 inherit(parentA.speed, parentB.speed, 1, statMax, v),
@@ -2052,6 +2056,10 @@ registerCallback('rsg-stables:server:startRace', function(source, raceId, horseN
     local session = activeSessions[cid]
     -- must be sitting on (right next to) their own active horse
     if not activeHorseNear(source, session, horseNetId, 4.0) then return false, locale('race_need_horse') end
+    if session and Config.FoalGrowth and Config.FoalGrowth.blockRiding then
+        local row = MySQL.single.await('SELECT born, ' .. AGE_SQL .. ' FROM rsg_stables_horses WHERE id = ?', { session.horseId })
+        if row and GetFoalState(row) then return false, locale('foal_cannot_ride') end
+    end
     local key = cid .. ':' .. race.id
     local now = os.time()
     if now < (raceNextAt[key] or 0) then
@@ -2140,3 +2148,11 @@ if RACES and RACES.enabled and RACES.routeCommand then
     end, 'admin')
 end
 
+-- ===================== HELPERS SHARED WITH server/admin.lua =====================
+-- server.lua keeps its helpers local; the admin panel (loaded after this file) reaches them through this table.
+StablesAPI = {
+    getBreedConfig = getBreedConfig, getStableConfig = getStableConfig, breedHandlingValue = breedHandlingValue,
+    toId = toId, isTrue = isTrue, horseStage = horseStage, withLock = withLock, sanitizeName = sanitizeName,
+    newHorseTack = newHorseTack, deleteSaddlebags = deleteSaddlebags, randomGender = randomGender,
+    endSession = endSession, activeSessions = activeSessions, applyDecay = applyDecay, AGE_SQL = AGE_SQL,
+}

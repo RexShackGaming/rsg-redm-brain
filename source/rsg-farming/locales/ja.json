@@ -1,5 +1,4 @@
 {
-    "place_help": "[LMB] 設置   [Q / E] 回転   [上 / 下] 高さ   [RMB] キャンセル",
     "place_invalid": "そこには植えられません",
     "place_too_far": "遠すぎます",
     "place_too_close": "他の植物に近すぎます",
@@ -76,5 +75,17 @@
     "ui_not_yours": " - あなたの作物ではありません。",
     "ui_empty": "何も植えていません。",
     "ui_away": "%sm先",
-    "no_player": "プレイヤーが見つかりません"
+    "no_player": "プレイヤーが見つかりません",
+    "place_blocked_zone": "このエリアには植えられません",
+    "level_up": "農業レベルアップ！新しい称号：%s",
+    "level_info": "農業レベル %s（%s）- %s XP",
+    "level_info_next": "農業レベル %s（%s）- %s / %s XP",
+    "harvested_bonus": "収穫しました - 大豊作です！",
+    "ui_btn_treat": "駆除",
+    "ui_pests": "害虫",
+    "ui_note_pests": "害虫が作物を食べています。枯れる前に駆除しましょう。",
+    "no_pesticide": "殺虫剤が必要です",
+    "treated": "害虫を駆除しました",
+    "no_pests": "この植物に害虫はいません",
+    "treating": "害虫を駆除中..."
 }

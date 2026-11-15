@@ -3,9 +3,10 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 local inRadialMenu = false
 local jobOptionId = nil
 local nextOptionId = 0
-local DynamicMenuItems = {}
+local DynamicMenuItems = {}   -- [id] = option data added through the AddOption export
+local DynamicOrder = {}       -- ids in the order they were added, so slots never shuffle between opens
 local MenuItems = {}          -- live tree (keeps action/canOpen functions) used for lookups
-local lastEmergency = 0
+local lastEmergency = nil
 
 ---------------------------------------------------------------------
 -- Helpers
@@ -48,6 +49,16 @@ local function toNui(items)
     return out
 end
 
+-- Plain data only (strings, numbers, booleans): functions and nested tables cannot travel to the server
+local function toPayload(item)
+    local out = {}
+    for k, v in pairs(item) do
+        local t = type(v)
+        if t == 'string' or t == 'number' or t == 'boolean' then out[k] = v end
+    end
+    return out
+end
+
 local function findItem(items, id, event)
     for _, v in ipairs(items) do
         if v.items then
@@ -65,16 +76,21 @@ end
 
 local function AddOption(data, id)
     if type(data) ~= 'table' then return end
-    if not id then
+    if id == nil then
         nextOptionId = nextOptionId + 1
         id = nextOptionId
     end
+    if DynamicMenuItems[id] == nil then DynamicOrder[#DynamicOrder + 1] = id end
     DynamicMenuItems[id] = data
     return id
 end
 
 local function RemoveOption(id)
-    if id then DynamicMenuItems[id] = nil end
+    if id == nil or DynamicMenuItems[id] == nil then return end
+    DynamicMenuItems[id] = nil
+    for i = #DynamicOrder, 1, -1 do
+        if DynamicOrder[i] == id then table.remove(DynamicOrder, i) break end
+    end
 end
 
 local function SetupJobMenu()
@@ -93,7 +109,7 @@ local function BuildMenu()
     SetupJobMenu()
     local all = {}
     for _, v in ipairs(Config.MenuItems) do all[#all + 1] = v end
-    for _, v in pairs(DynamicMenuItems) do all[#all + 1] = v end
+    for _, id in ipairs(DynamicOrder) do all[#all + 1] = DynamicMenuItems[id] end
     MenuItems = filterItems(all)
 end
 
@@ -110,21 +126,38 @@ local function setRadialState(open)
     if open then
         BuildMenu()
         TriggerEvent('rsg-radialmenu:client:onRadialmenuOpen')
-        SendNUIMessage({ action = 'ui', radial = true, items = toNui(MenuItems) })
+        SendNUIMessage({ action = 'ui', radial = true, items = toNui(MenuItems), hold = Config.HoldToOpen, key = Config.Keybind })
         SetCursorLocation(0.5, 0.5)
     else
         TriggerEvent('rsg-radialmenu:client:onRadialmenuClose')
     end
     SetNuiFocus(open, open)
     inRadialMenu = open
+
+    -- close the menu if the player dies, gets cuffed or opens the pause menu while it is up
+    if open then
+        CreateThread(function()
+            while inRadialMenu do
+                Wait(250)
+                if inRadialMenu and not canUseMenu() then
+                    setRadialState(false)
+                    SendNUIMessage({ action = 'ui', radial = false })
+                end
+            end
+        end)
+    end
 end
 
 CreateThread(function()
     local key = RSGCore.Shared.Keybinds[Config.Keybind]
+    if not key then
+        print(('^1[%s] Config.Keybind "%s" is not a key in RSGCore.Shared.Keybinds, the menu cannot be opened^7'):format(GetCurrentResourceName(), tostring(Config.Keybind)))
+        return
+    end
     local activated = Config.HoldToOpen and IsControlJustPressed or IsControlJustReleased
 
     while true do
-        Wait(0)
+        Wait(inRadialMenu and 100 or 0)
         if not inRadialMenu and activated(0, key) and LocalPlayer.state.isLoggedIn and canUseMenu() then
             setRadialState(true)
         end
@@ -157,11 +190,11 @@ RegisterNUICallback('selectItem', function(inData, cb)
     elseif item.type == 'client' then
         TriggerEvent(item.event, item)
     elseif item.type == 'server' then
-        TriggerServerEvent(item.event, item)
+        TriggerServerEvent(item.event, toPayload(item))
     elseif item.type == 'command' then
         ExecuteCommand(item.event)
     elseif item.type == 'rsgcommand' then
-        TriggerServerEvent('RSGCore:CallCommand', item.event, item)
+        TriggerServerEvent('RSGCore:CallCommand', item.event, toPayload(item))
     end
 end)
 
@@ -178,7 +211,7 @@ local function sendEmergency(allowedJobs, prefix)
     if not pd.job or not allowedJobs[pd.job.name] then return end
 
     local now = GetGameTimer()
-    if now - lastEmergency < Config.EmergencyCooldown * 1000 then
+    if lastEmergency and now - lastEmergency < Config.EmergencyCooldown * 1000 then
         RSGCore.Functions.Notify({ title = locale('notify_title'), description = locale('emergency_cooldown'), type = 'error', duration = 5000 })
         return
     end
@@ -186,7 +219,6 @@ local function sendEmergency(allowedJobs, prefix)
 
     local msg = locale('emergency_alert', locale(prefix), pd.charinfo.firstname, pd.charinfo.lastname)
     TriggerServerEvent('rsg-lawman:server:lawmanAlert', msg)
-    TriggerServerEvent('rsg-medic:server:medicAlert', msg)
     RSGCore.Functions.Notify({ title = locale('notify_title'), description = locale('emergency_sent'), type = 'success', duration = 5000 })
 end
 

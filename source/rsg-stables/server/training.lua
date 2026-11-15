@@ -53,7 +53,7 @@ local function summary(data)
 end
 
 local function getActiveHorse(citizenid)
-    return MySQL.single.await('SELECT id, name, model, training FROM rsg_stables_horses WHERE citizenid = ? AND active = 1 AND alive = 1 LIMIT 1', { citizenid })
+    return MySQL.single.await('SELECT id, name, model, training, born, TIMESTAMPDIFF(SECOND, created_at, NOW()) AS age_seconds FROM rsg_stables_horses WHERE citizenid = ? AND active = 1 AND alive = 1 LIMIT 1', { citizenid })
 end
 
 -- adds xp per stat, saves, returns the level-ups
@@ -188,6 +188,7 @@ RegisterNetEvent('rsg-stables:server:trainingRideTick', function(horseNetId)
 
     local horse = getActiveHorse(Player.PlayerData.citizenid)
     if not horse then return end
+    if Config.FoalGrowth and Config.FoalGrowth.blockRiding and GetFoalState(horse) then return end -- foals can't be ridden
 
     -- distance is measured on the horse entity itself, so walking, trains or wagons earn nothing
     local ent = NetworkGetEntityFromNetworkId(math.floor(tonumber(horseNetId) or 0))

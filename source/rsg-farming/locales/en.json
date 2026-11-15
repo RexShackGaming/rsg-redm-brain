@@ -1,5 +1,4 @@
 {
-    "place_help": "[LMB] Place   [Q / E] Rotate   [Up / Down] Height   [RMB] Cancel",
     "place_invalid": "You can't plant there",
     "place_too_far": "Too far away",
     "place_too_close": "Too close to another plant",
@@ -76,5 +75,17 @@
     "ui_not_yours": " - Not your crop.",
     "ui_empty": "You have nothing in the ground.",
     "ui_away": "%sm away",
-    "no_player": "Player not found"
+    "no_player": "Player not found",
+    "place_blocked_zone": "You can't plant in this area",
+    "level_up": "Farming level up! New rank: %s",
+    "level_info": "Farming level %s (%s) - %s XP",
+    "level_info_next": "Farming level %s (%s) - %s / %s XP",
+    "harvested_bonus": "Crop harvested - bumper yield!",
+    "ui_btn_treat": "Treat",
+    "ui_pests": "Pests",
+    "ui_note_pests": "Pests are eating this crop. Treat it before it withers.",
+    "no_pesticide": "You need pesticide",
+    "treated": "Pests treated",
+    "no_pests": "There are no pests on this plant",
+    "treating": "Treating pests..."
 }

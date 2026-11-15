@@ -1,22 +1,14 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
-local Plants   = {}   -- [id] = plant data from server
+local Plants   = {}   -- [id] = plant data from server (no citizenid)
+local Mine     = {}   -- [id] = true for plants this character owns (sent by the server)
 local Spawned  = {}   -- [id] = { entity, stage, dead, zone }
 local UIPlant  = nil  -- id of plant open in the UI
-local MyCid    = nil
 local GpsPlant = nil  -- id of plant we are routing to
 
 ---------------------------------
 -- helpers
 ---------------------------------
-local function getCid()
-    if not MyCid then
-        local pd = RSGCore.Functions.GetPlayerData()
-        MyCid = pd and pd.citizenid
-    end
-    return MyCid
-end
-
 local function plantPos(p) return vector3(p.x, p.y, p.z) end
 
 local function getStage(crop, growth)
@@ -36,7 +28,7 @@ end
 
 local function closeUI()
     UIPlant = nil
-    SetNuiFocus(false, false)
+    Utils.setNuiFocus(false)
     SendNUIMessage({ action = 'close' })
 end
 
@@ -46,7 +38,7 @@ end
 local UI_KEYS = {
     'ui_my_plants', 'ui_close', 'ui_back', 'ui_growth', 'ui_water', 'ui_fertiliser', 'ui_health',
     'ui_stage', 'ui_withered', 'ui_dead', 'ui_ready', 'ui_needs_water', 'ui_thirsty', 'ui_growing',
-    'ui_btn_water', 'ui_btn_fertilise', 'ui_btn_harvest', 'ui_btn_remove', 'ui_my_crops',
+    'ui_btn_water', 'ui_btn_fertilise', 'ui_btn_harvest', 'ui_btn_remove', 'ui_btn_treat', 'ui_pests', 'ui_note_pests', 'ui_my_crops',
     'ui_plant_count', 'ui_plants_count', 'ui_note_dead', 'ui_note_ready', 'ui_note_dry',
     'ui_note_minute', 'ui_note_minutes', 'ui_note_fertilised', 'ui_not_yours', 'ui_empty', 'ui_away',
 }
@@ -60,13 +52,6 @@ end)
 ---------------------------------
 -- ui payloads
 ---------------------------------
-local function remainingMinutes(p, crop)
-    if p.growth >= 100 then return 0 end
-    local rate = 100 / crop.growTime
-    if p.fertilizer > 0 then rate = rate * Config.FertilizerBoost end
-    return math.ceil((100 - p.growth) / rate)
-end
-
 local function uiPayload(p, pedPos)
     local crop = Config.Crops[p.crop]
     return {
@@ -76,19 +61,21 @@ local function uiPayload(p, pedPos)
         dead = p.dead,
         stage = getStage(crop, p.growth), stages = #crop.stages,
         ready = p.growth >= 100 and not p.dead,
-        isOwner = p.owner == getCid(),
+        isOwner = Mine[p.id] == true,
         ownerOnly = Config.OwnerOnlyHarvest,
-        remaining = remainingMinutes(p, crop),
+        remaining = p.eta or 0, -- worked out by the server (season, fertiliser and pests included)
+        pest = p.pest == true,
+        pestsEnabled = Config.Pests.enabled,
         thirsty = p.water <= Config.MinWaterToGrow,
         distance = math.floor(#((pedPos or GetEntityCoords(PlayerPedId())) - plantPos(p))),
     }
 end
 
 local function myPlantsPayload()
-    local list, cid = {}, getCid()
+    local list = {}
     local pedPos = GetEntityCoords(PlayerPedId())
-    for _, p in pairs(Plants) do
-        if p.owner == cid then list[#list + 1] = uiPayload(p, pedPos) end
+    for id, p in pairs(Plants) do
+        if Mine[id] and Config.Crops[p.crop] then list[#list + 1] = uiPayload(p, pedPos) end
     end
     table.sort(list, function(a, b) return a.distance < b.distance end)
     return list
@@ -98,7 +85,7 @@ local function openUI(id)
     local p = Plants[id]
     if not p or Utils.busy then return end
     UIPlant = id
-    SetNuiFocus(true, true)
+    Utils.setNuiFocus(true)
     SendNUIMessage({ action = 'open', plant = uiPayload(p) })
 end
 
@@ -147,41 +134,69 @@ end
 ---------------------------------
 -- sync
 ---------------------------------
-local function applySync(list)
+local function refreshUI()
+    if not UIPlant then return end
+    if Plants[UIPlant] then
+        SendNUIMessage({ action = 'update', plant = uiPayload(Plants[UIPlant]) })
+    else
+        closeUI()
+    end
+end
+
+-- full list (every tick / login): list = plants, mine = ids this character owns
+local function applySync(list, mine)
     local new = {}
     for _, p in ipairs(list or {}) do new[p.id] = p end
     for id in pairs(Spawned) do
         if not new[id] then despawn(id) end
     end
     Plants = new
+    Mine = {}
+    for _, id in ipairs(mine or {}) do Mine[id] = true end
     if GpsPlant and not Plants[GpsPlant] then clearGps() end
-    if UIPlant then
-        if Plants[UIPlant] then
-            SendNUIMessage({ action = 'update', plant = uiPayload(Plants[UIPlant]) })
-        else
-            closeUI()
-        end
-    end
+    refreshUI()
 end
 
 RegisterNetEvent('rsg-farming:client:sync', applySync)
 
-RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
-    MyCid = nil
-    applySync(RSGCore.Functions.AwaitCallback('rsg-farming:server:getPlants', nil))
+-- single plant changed (water / fertilise / planted)
+RegisterNetEvent('rsg-farming:client:plantUpdate', function(p)
+    if type(p) ~= 'table' or not p.id then return end
+    Plants[p.id] = p
+    if UIPlant == p.id then
+        SendNUIMessage({ action = 'update', plant = uiPayload(p) })
+    end
 end)
 
+RegisterNetEvent('rsg-farming:client:plantRemove', function(id)
+    Plants[id] = nil
+    Mine[id] = nil
+    despawn(id)
+    if GpsPlant == id then clearGps() end
+    if UIPlant == id then closeUI() end
+end)
+
+RegisterNetEvent('rsg-farming:client:plantMine', function(id)
+    Mine[id] = true
+end)
+
+local function loadPlants()
+    local list, mine = RSGCore.Functions.AwaitCallback('rsg-farming:server:getPlants', nil)
+    applySync(list, mine)
+end
+
+RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', loadPlants)
+
 RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
-    MyCid = nil
     closeUI()
     clearGps()
     for id in pairs(Spawned) do despawn(id) end
-    Plants = {}
+    Plants, Mine = {}, {}
 end)
 
 CreateThread(function()
     Wait(1000)
-    applySync(RSGCore.Functions.AwaitCallback('rsg-farming:server:getPlants', nil))
+    loadPlants()
 end)
 
 ---------------------------------
@@ -218,8 +233,7 @@ if not Config.UseTarget then
         local shown = false
         while true do
             local sleep = 750
-            local ped = PlayerPedId()
-            local pos = GetEntityCoords(ped)
+            local pos = GetEntityCoords(PlayerPedId())
             local nearest, nearestDist = nil, Config.InteractDistance
 
             if not UIPlant and Utils.canAct() then
@@ -253,6 +267,7 @@ end
 local ACTIONS = {
     water     = { cb = 'rsg-farming:server:water',     scenario = 'water',     time = 'WaterTime',     label = 'watering' },
     fertilize = { cb = 'rsg-farming:server:fertilize', scenario = 'fertilize', time = 'FertilizeTime', label = 'fertilizing' },
+    treat     = { cb = 'rsg-farming:server:treat',     scenario = 'treat',     time = 'TreatTime',     label = 'treating' },
     harvest   = { cb = 'rsg-farming:server:harvest',   scenario = 'harvest',   time = 'HarvestTime',   label = 'harvesting' },
     destroy   = { cb = 'rsg-farming:server:destroy' },
 }
@@ -261,27 +276,26 @@ local function runAction(name, id)
     local act, p = ACTIONS[name], Plants[id]
     closeUI()
     if not act or not p or not Utils.canAct() then return end
-    Utils.busy = true
 
-    local proceed = true
-    if act.scenario then
-        local canDo, reason = RSGCore.Functions.AwaitCallback('rsg-farming:server:precheck', nil, name, id)
-        if not canDo then
-            Utils.notify(reason, 'error')
-            Utils.busy = false
-            return
+    Utils.guard(function()
+        local proceed = true
+        if act.scenario then
+            local canDo, reason = RSGCore.Functions.AwaitCallback('rsg-farming:server:precheck', nil, name, id)
+            if not canDo then
+                Utils.notify(reason, 'error')
+                return
+            end
+            Utils.face(p.x, p.y)
+            proceed = Utils.playScenario(Config.Scenarios[act.scenario], Config[act.time], locale(act.label))
         end
-        Utils.face(p.x, p.y)
-        proceed = Utils.playScenario(Config.Scenarios[act.scenario], Config[act.time], locale(act.label))
-    end
 
-    if proceed then
-        local ok, msg = RSGCore.Functions.AwaitCallback(act.cb, nil, id)
-        Utils.notify(msg, ok and 'success' or 'error')
-    else
-        Utils.notify(locale('cancelled'), 'error')
-    end
-    Utils.busy = false
+        if proceed then
+            local ok, msg = RSGCore.Functions.AwaitCallback(act.cb, nil, id)
+            Utils.notify(msg, ok and 'success' or 'error')
+        else
+            Utils.notify(locale('cancelled'), 'error')
+        end
+    end)
 end
 
 ---------------------------------
@@ -290,18 +304,21 @@ end
 RegisterNetEvent('rsg-farming:client:startPlacing', function(cropKey)
     local crop = Config.Crops[cropKey]
     if not crop or not Utils.canAct() then return end
-    Utils.busy = true
 
-    local coords, heading = Placement.Start(crop.stages[#crop.stages].prop, function(pos)
-        for _, p in pairs(Plants) do
-            if #(plantPos(p) - pos) < Config.MinPlantDistance then
-                return false, locale('place_too_close')
+    Utils.guard(function()
+        local coords, heading = Utils.place(crop.stages[#crop.stages].prop, function(pos)
+            if Utils.inBlockedZone(pos) then return false, locale('place_blocked_zone') end
+            local minSq = Config.MinPlantDistance * Config.MinPlantDistance
+            for _, p in pairs(Plants) do
+                local dx, dy, dz = p.x - pos.x, p.y - pos.y, p.z - pos.z
+                if dx * dx + dy * dy + dz * dz < minSq then
+                    return false, locale('place_too_close')
+                end
             end
-        end
-        return true
-    end)
+            return true
+        end)
+        if not coords then return end
 
-    if coords then
         Utils.face(coords.x, coords.y)
         if Utils.playScenario(Config.Scenarios.plant, Config.PlantTime, locale('planting')) then
             local ok, msg = RSGCore.Functions.AwaitCallback('rsg-farming:server:plant', nil, cropKey, coords, heading)
@@ -309,8 +326,7 @@ RegisterNetEvent('rsg-farming:client:startPlacing', function(cropKey)
         else
             Utils.notify(locale('cancelled'), 'error')
         end
-    end
-    Utils.busy = false
+    end)
 end)
 
 ---------------------------------
@@ -318,7 +334,7 @@ end)
 ---------------------------------
 RegisterNUICallback('close', function(_, cb)
     UIPlant = nil
-    SetNuiFocus(false, false)
+    Utils.setNuiFocus(false)
     cb('ok')
 end)
 
@@ -333,12 +349,15 @@ RegisterNUICallback('openPlant', function(data, cb)
     cb('ok')
     local id = tonumber(data.id)
     local p = id and Plants[id]
-    if not p then return end
+    if not p then
+        Utils.setNuiFocus(false) -- plant vanished while the list was open: don't leave the cursor stuck
+        return
+    end
     if #(GetEntityCoords(PlayerPedId()) - plantPos(p)) <= Config.InteractDistance + 1.0 then
         openUI(id)
     else
         -- too far: route to it on the map instead
-        SetNuiFocus(false, false)
+        Utils.setNuiFocus(false)
         ClearGpsMultiRoute()
         StartGpsMultiRoute(joaat('COLOR_YELLOW'), true, true)
         AddPointToGpsMultiRoute(p.x, p.y, p.z)
@@ -372,14 +391,13 @@ end)
 RegisterCommand('myplants', function()
     if not Utils.canAct() then return end
     UIPlant = nil
-    SetNuiFocus(true, true)
+    Utils.setNuiFocus(true)
     SendNUIMessage({ action = 'list', plants = myPlantsPayload() })
 end, false)
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     for id in pairs(Spawned) do despawn(id) end
-    SetNuiFocus(false, false)
     exports['rsg-core']:HideText()
     ClearGpsMultiRoute()
 end)

@@ -171,6 +171,8 @@ Config.HorseInventory = {
     distance  = 2.5,      -- rsg-target interaction distance
     nativeCargoPrompt = true, -- the game's Horse Cargo prompt (B) beside the horse opens this stash
     requireSaddlebags = true, -- true: the horse stash can only be opened when saddlebags are fitted (tack); false: always accessible
+    openAnim          = true, -- play the game's own saddlebag animation (Interaction_LootSaddleBags) before the stash opens
+    openAnimDelay     = 1500, -- ms to wait for the animation before the stash opens
 }
 
 -- ===================== FLEE =====================
@@ -287,6 +289,40 @@ Config.HorseAging = {
     warnDays       = 7,      -- show "X days left" on old horses within this many days of their lifespan
     oldMinStamina  = 40,     -- stamina core cap (%) an old horse falls to by the end of its life; starts at 100 on the first 'old' day and drops each day
     checkInterval  = 10 * 60 * 1000, -- ms between server checks for horses that have reached their lifespan
+}
+
+-- ===================== FOAL GROWTH =====================
+-- Foals (horses born through Config.Breeding) are smaller and grow a little over time until they reach
+-- adult size. A foal can't be ridden until it is grown. The scale is set with _SET_PED_SCALE and shared
+-- with other players through the `rsgFoalScale` entity state bag.
+Config.FoalGrowth = {
+    enabled          = true,
+    startScale       = 0.5,   -- size of a newborn foal (1.0 = full size)
+    adultScale       = 1.0,   -- size once grown
+    adultAfterDays   = nil,   -- real-life days until adult; nil = Config.HorseAging.youngUntilDays
+    -- Size by day of age, like rsg-ranch's growth table (the highest entry at or below the foal's age in days is used).
+    -- Set to nil for smooth linear growth from startScale to adultScale instead.
+    scaleByDay       = { [0] = 0.50, [1] = 0.58, [2] = 0.66, [3] = 0.74, [4] = 0.82, [5] = 0.90, [6] = 0.95 },
+    updateInterval   = 30000, -- ms between growth updates while the foal is out
+    blockRiding      = true,  -- foals can't be ridden (mount prompt hidden, riders are dismounted, server rejects riding features)
+    applyToPurchased = false, -- true = every bought horse also starts as a foal (age counts from purchase)
+    notifyGrown      = true,  -- tell the player when their foal has grown up
+}
+
+-- ===================== ADMIN PANEL =====================
+-- /horseadmin opens an NUI panel to find a player and manage their horses: edit name / gender / stable / age / stats,
+-- force-store a horse that is out, revive, reset tack / coat / training / shoes, open the saddlebags, give a new horse,
+-- transfer to another player or delete. Every action is checked and logged on the server (rsg-log channel `rsgstables`).
+Config.Admin = {
+    enabled    = true,
+    command    = 'horseadmin',
+    permission = 'admin', -- rsg-core permission level needed for the command and every panel action
+}
+
+-- While a stables NUI that supports it is open, block game controls but still allow push-to-talk.
+Config.AllowPushToTalkWhileOpen = true
+Config.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK
 }
 
 -- ===================== GIVE HORSE TO ANOTHER PLAYER =====================

@@ -26,6 +26,8 @@ Horse and stables system for the **RSG Framework** (RedM). Buy, stable, customis
 - **Natural grazing** – a hungry horse wanders to hay near you (configurable hay props) and eats.
 - **Hitching posts** – a horse tied at a hitching post doesn't wander off to drink or graze (`Config.HorseHitch`).
 - **Horse lantern** – fit or remove a saddle lantern with the `horse_lantern` item; it's saved with the horse's tack.
+- **Foal growth** – foals start at half size (`Config.FoalGrowth.startScale`) and grow day by day, using a size table like rsg-ranch's (`scaleByDay`, or smooth growth if you set it to `nil`), until they reach full size at the end of the Young stage. A foal can't be ridden until it is grown, and you get a notification when it is. Only horses born through breeding grow up this way; set `applyToPurchased = true` to make bought horses start as foals too.
+- **Admin panel** – `/horseadmin` (admins only) opens a panel to find a player (online or offline) and manage their horses: edit name, sex, stable, age and every stat, force-store a horse that is out, revive, reset shoes / coat / tack / training / breeding cooldown, open the saddlebags, give a new horse, transfer to another player or delete. Everything is checked and logged on the server (`Config.Admin`).
 - **Aging & lifespan** – horses are Young, Adult or Old by real-life days owned. Old horses hold less stamina each day and eventually die of natural causes (no revive).
 - **Bonding** – grows when you feed, water and brush your horse.
 - **Horse medicine** – usable item that restores health and refills the health core.
@@ -61,6 +63,8 @@ Horse and stables system for the **RSG Framework** (RedM). Buy, stable, customis
 - [oxmysql](https://github.com/Rexshack-RedM/oxmysql)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory) (saddlebag stashes)
 
+> **Foal growth:** a new `born` column is added automatically to `rsg_stables_horses`. Foals collected before this update aren't flagged as born, so they stay full size (set `Config.FoalGrowth.applyToPurchased = true` if you want every Young horse to be small).
+
 > **Upgrading from 3.0.x:** new columns (`gender`, `breed_cooldown`, `died_of_age`) are added automatically on start and existing horses are given a random gender. Aging counts from each horse's original purchase date, so long-owned horses will be Old (or reach their lifespan) straight away – raise `Config.HorseAging.lifespanDays` first if you don't want that.
 
 ---
@@ -68,7 +72,7 @@ Horse and stables system for the **RSG Framework** (RedM). Buy, stable, customis
 ## Installation
 
 1. Download and place the `rsg-stables` folder in your server's `resources` directory (e.g. `resources/[rsg]/rsg-stables`).
-2. **Database** – the tables `rsg_stables_horses` and `rsg_stables_breeding` are created automatically on first start. If you prefer manual setup, import `installation/install.sql` with HeidiSQL/phpMyAdmin.
+2. **Database** – the tables `rsg_stables_horses`, `rsg_stables_breeding` and `rsg_stables_races` are created automatically on first start. If you prefer manual setup, import `installation/install.sql` with HeidiSQL/phpMyAdmin.
 3. **Items** – make sure the following items exist in `rsg-core/shared/items.lua` (names are configurable):
    - `horse_apple`, `horse_carrot` – feed items (**set `useable = true`**)
    - `fullbucket` – water item
@@ -127,12 +131,15 @@ All settings live in `shared/config.lua`.
 | `Config.HorseHitch` | Stop natural drinking/grazing while hitched, hitch detection radius and hitching post models |
 | `Config.HorseBrushItem` | Item required to brush (also usable from the inventory) |
 | `Config.HorseLantern` | Horse lantern on/off, item name, lantern shop-item hash and how close you must be to your horse |
-| `Config.HorseInventory` | Saddlebag stash on/off, max weight, slots, target distance, `nativeCargoPrompt` (B opens the stash) and `requireSaddlebags` (stash only opens with saddlebags fitted) |
+| `Config.Admin` | Admin panel on/off, command name and the rsg-core permission level required |
+| `Config.AllowPushToTalkWhileOpen` / `Config.PushToTalkControls` | Keep push-to-talk working while the admin panel is open (game controls stay blocked) |
+| `Config.HorseInventory` | Saddlebag stash on/off, max weight, slots, target distance, `nativeCargoPrompt` (B opens the stash) and `requireSaddlebags` (stash only opens with saddlebags fitted), `openAnim` / `openAnimDelay` (native saddlebag animation before the stash opens) |
 | `Config.HorseBonding` | Bonding gained per feed / water / brush |
 | `Config.HorseActions` | Horse actions panel on/off, `/horseaction` command, per-action commands, `/horsestop`, rest/sleep regen, the action list (animations, follow offset/speed) and the rear-up key (`rearKey`) |
 | `Config.HorseFlee` | Flee delay, whether fled horses are stored, respawn distance |
 | `Config.WildHorse` | Wild horse claiming on/off, registration fee, claim window after breaking, max horse distance |
 | `Config.Breeding` | Cost, foal timer, same-stable, stallion + mare requirement, parent lock and cooldown, stat variance, better-parent chance |
+| `Config.FoalGrowth` | Foal growth on/off, newborn and adult scale, per-day size table (`scaleByDay`), days until adult (`adultAfterDays`, default = end of the Young stage), update interval, ride block, `applyToPurchased`, grown-up notification |
 | `Config.HorseAging` | Young/Old thresholds, lifespan, "days left" warning, minimum stamina for the oldest horses |
 | `Config.HorseGive` | Give/sell to player on/off, distance, giver fee, accept timeout, max asking price |
 | `Config.TackSounds` | Frontend sound played while cycling tack styles (`enabled`, `soundset`, `left`, `right`) |
@@ -196,7 +203,7 @@ setr rsg:locale "en"
 ### At the stable
 Walk up to the stablehand and use **rsg-target → Manage Stable** to open the menu, where you can:
 - **Buy** a horse (filter by class, breed and price).
-- **Take out / store** your horses.
+- **Take out / store** your horses. Foals can be taken out, but can't be ridden until they've grown up.
 - **Rename**, **insure**, **revive**, **empty the saddlebags of** or **release** (dead) horses.
 - **Customise tack** and **coat** (including fitting new **horseshoes** after the old ones wear out).
 - **Sell Horse** – sell a stabled horse back to the stablehand.
@@ -205,7 +212,7 @@ Walk up to the stablehand and use **rsg-target → Manage Stable** to open the m
 - **Horse Races** – shown when the stable has races configured: see the leaderboard and your best time, and start a race (you must be riding your own horse).
 - **Claim Wild Horse** – shown when you've just broken a wild horse and it's with you; name it and it's added to that stable.
 
-Each horse in the list shows its gender, stage (Young / Adult / Old, with days left near the end of its life) and health/stamina.
+Each horse in the list shows its gender, stage (Young / Adult / Old, with days left near the end of its life) and health/stamina. The list icon shows the sex (♂ stallion, ♀ mare) and its colour shows the age: green = young, white = adult, amber = old, grey = deceased.
 
 ### With your active horse
 Target your horse (rsg-target) for:
@@ -220,7 +227,7 @@ Target your horse (rsg-target) for:
 
 If your uninsured horse dies in the world, target its body to **Search Saddlebags** before it disappears.
 - **Horse Actions** – opens the actions panel (drag it by its title to move it; double-click the title to reset).
-- **Open Saddlebags** – opens the horse's own stash (you must be standing next to it; with `requireSaddlebags` the horse must have saddlebags fitted).
+- **Open Saddlebags** – opens the horse's own stash with the game's native saddlebag animation (you must be standing next to it; with `requireSaddlebags` the horse must have saddlebags fitted).
 
 ### At a horse fence
 Ride an unowned (wild or stolen) horse to a fence NPC from `Config.HorseFence.locations`, dismount and choose **Sell Horse** to get blood money. Your own stable horses are refused.
@@ -238,6 +245,7 @@ Ride an unowned (wild or stolen) horse to a fence NPC from `Config.HorseFence.lo
 | `/horserest`, `/horsesleep`, `/horsegraze`, `/horsewallow`, `/horserear`, `/horsestay`, `/horsefollow` | Run a horse action directly (on foot, near your horse) |
 | `/horselead` | Lead your horse by the reins |
 | `/horsestop` | Stop the current horse action (or let go of the reins) |
+| `/horseadmin` (`Config.Admin.command`) | Admin: open the horse admin panel |
 | `/raceroute add \| print \| clear` | Admin: build a race route at your position and print it to the F8 console for `Config.HorseRaces.races` |
 
 ### Items
@@ -256,6 +264,11 @@ Ride an unowned (wild or stolen) horse to a fence NPC from `Config.HorseFence.lo
 ## Changelog
 
 ### 3.5.0
+- Admin panel: `/horseadmin` lets admins search players, edit horses (name, sex, stable, age, stats), force-store, revive, reset shoes / coat / tack / training, open saddlebags, give, transfer and delete horses. Server-validated, logged to rsg-log and the owner is notified.
+- Stable menu: each horse's icon shows its sex (♂ / ♀) and is coloured by age (green young, white adult, amber old, grey deceased).
+- The breed menu now tells the player when their horses are too young to breed (and in how many days they'll be ready) or too old, instead of the misleading "need two living horses" message.
+- Opening the horse's saddlebags (target option or the native Cargo prompt) now plays the game's own saddlebag animation first (`Config.HorseInventory.openAnim`).
+- Foal growth: foals from breeding start small and grow over time to full size; they can't be ridden until they are adult (`Config.FoalGrowth`, new `born` column added automatically).
 - Lead your horse by the reins (`lead` horse action, `/horselead`).
 - Spooking: gunfire and explosions can spook your horse; courage lowers the chance; **Calm Horse** target option.
 - Field salvage: search a dead horse's saddlebags at its body.

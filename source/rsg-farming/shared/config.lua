@@ -4,9 +4,20 @@ Config = {}
 -- general
 ---------------------------------
 Config.Debug               = false
+Config.AutoDatabase        = true    -- create the tables on start; set false and import install.sql manually
 Config.MaxPlantsPerPlayer  = 20      -- max active plants per character
 Config.MinPlantDistance    = 1.2     -- min distance between two plants
 Config.PlaceMaxDistance    = 6.0     -- how far from the player the gizmo can place
+
+-- areas where planting is blocked (checked on the server too). radius in metres, e.g.
+-- Config.NoPlantZones = { { coords = vector3(0.0, 0.0, 0.0), radius = 150.0 } }
+Config.NoPlantZones = {}
+
+-- while the tending UI is open, block game controls but keep push-to-talk working
+Config.AllowPushToTalkWhileOpen = true
+Config.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK
+}
 
 -- custom props with no collision: an invisible blocker is spawned with them (and removed with them)
 Config.CollisionModel = 'p_emrfencepost02x'
@@ -45,17 +56,69 @@ Config.FertilizerItem      = 'fertilizer'
 Config.FertilizerAmount    = 100
 
 ---------------------------------
+-- seasons: growth speed by real calendar month of the server (1.0 = normal)
+---------------------------------
+Config.Seasons = {
+    enabled = true,
+    months = { [1] = 0.5, [2] = 0.5, [3] = 0.8, [4] = 1.0, [5] = 1.2, [6] = 1.2,
+               [7] = 1.2, [8] = 1.2, [9] = 1.0, [10] = 0.8, [11] = 0.6, [12] = 0.5 },
+}
+
+---------------------------------
+-- rain (rsg-weather): water added per minute to EVERY plant while the server weather is one of these
+-- set Config.RainWater = {} to disable
+---------------------------------
+Config.RainWater = {
+    drizzle = 3.0, shower = 5.0, rain = 6.0, thunder = 4.0, thunderstorm = 8.0, hurricane = 8.0,
+}
+
+---------------------------------
+-- pests (disabled by default: needs the 'pesticide' item in rsg-core shared items)
+---------------------------------
+Config.Pests = {
+    enabled       = false,
+    item          = 'pesticide',
+    chancePerTick = 0.02,   -- chance per plant per growth tick of an infestation
+    healthLoss    = 3,      -- health lost per minute while infested
+    growthPenalty = 0.5,    -- growth speed multiplier while infested
+}
+
+---------------------------------
+-- harvest quality: healthy plants give extra produce (seeds are never boosted)
+---------------------------------
+Config.Harvest = {
+    qualityHealth = 90,     -- plant health needed for the bonus
+    qualityBonus  = 1,      -- extra produce per reward
+}
+
+---------------------------------
+-- farming xp and levels (stored per character in player metadata)
+-- extraPlants adds to Config.MaxPlantsPerPlayer; bonusYieldChance = % chance of +1 produce on harvest
+---------------------------------
+Config.XP = { enabled = true, plant = 2, water = 1, fertilize = 1, treat = 1, harvest = 10 }
+Config.Levels = {
+    { xp = 0,    label = 'Greenhorn',      bonusYieldChance = 0,  extraPlants = 0 },
+    { xp = 100,  label = 'Sodbuster',      bonusYieldChance = 5,  extraPlants = 2 },
+    { xp = 300,  label = 'Farmhand',       bonusYieldChance = 10, extraPlants = 4 },
+    { xp = 700,  label = 'Homesteader',    bonusYieldChance = 15, extraPlants = 6 },
+    { xp = 1500, label = 'Cattleman',      bonusYieldChance = 20, extraPlants = 8 },
+    { xp = 3000, label = 'Master Farmer',  bonusYieldChance = 25, extraPlants = 10 },
+}
+
+---------------------------------
 -- action durations (ms)
 ---------------------------------
 Config.PlantTime           = 6000
 Config.WaterTime           = 5000
 Config.FertilizeTime       = 5000
+Config.TreatTime           = 5000
 Config.HarvestTime         = 7000
 
 Config.Scenarios = {
     plant     = 'WORLD_HUMAN_FARMER_WEEDING',
     water     = 'WORLD_HUMAN_BUCKET_POUR_LOW',
     fertilize = 'WORLD_HUMAN_FEED_CHICKEN',
+    treat     = 'WORLD_HUMAN_FEED_CHICKEN',
     harvest   = 'WORLD_HUMAN_CROUCH_INSPECT',
 }
 
@@ -112,7 +175,7 @@ Config.Crops = {
             { from = 50,  prop = 'crp_tobaccoplant_ac_sim', zOffset = -0.5 },
             { from = 100, prop = 'crp_tobaccoplant_ac_sim', zOffset = 0.0 },
         },
-        harvest = { { item = 'tobacco', min = 2, max = 4 }, { item = 'seedtobacco', min = 0, max = 1 } },
+        harvest = { { item = 'tobacco_leaf', min = 2, max = 4 }, { item = 'seedtobacco', min = 0, max = 1 } },
     },
     cotton = {
         label = 'Cotton', seed = 'seedcotton', growTime = 60,

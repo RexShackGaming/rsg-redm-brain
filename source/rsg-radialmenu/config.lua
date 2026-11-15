@@ -48,7 +48,6 @@ Config.MenuItems = {
         id = 'horse', title = locale('menu_horse'), icon = 'horse-head',
         items = {
             cl('horselantern', locale('menu_horse_lantern'), 'lightbulb', 'rsg-stables:client:useLantern'),
-            cmd('sethorsename', locale('menu_horse_name'), 'signature', 'sethorsename'),
         },
     },
     {
@@ -74,17 +73,30 @@ Config.MenuItems = {
     {
         id = 'clothing', title = locale('menu_clothing'), icon = 'shirt',
         items = {
-            cmd('dress',           locale('cloth_dress'),       'person-dress',      'dress'),
-            cmd('undress',         locale('cloth_undress'),     'person-half-dress', 'undress'),
-            cmd('onoffhat',        locale('cloth_hat'),         'hat-cowboy',        'hat'),
-            cmd('onoffvest',       locale('cloth_vest'),        'vest',              'vest'),
-            cmd('onoffboots',      locale('cloth_boots'),       'shoe-prints',       'boots'),
-            cmd('onoffpants',      locale('cloth_pants'),       'socks',             'pants'),
-            cmd('onoffshirt',      locale('cloth_shirt'),       'shirt',             'shirt'),
-            cmd('onoffgunbelt',    locale('cloth_gunbelt'),     'gun',               'gunbelt'),
-            cmd('onoffmask',       locale('cloth_mask'),        'masks-theater',     'mask'),
-            cmd('onoffcoat',       locale('cloth_coat'),        'vest-patches',      'coat'),
-            cmd('onoffclosedcoat', locale('cloth_closed_coat'), 'vest-patches',      'closedcoat'),
+            cmd('dress',        locale('cloth_dress'),   'person-dress',      'dress'),
+            cmd('undress',      locale('cloth_undress'), 'person-half-dress', 'undress'),
+            cmd('onoffhat',     locale('cloth_hat'),     'hat-cowboy',        'hat'),
+            cmd('onoffvest',    locale('cloth_vest'),    'vest',              'vest'),
+            cmd('onoffboots',   locale('cloth_boots'),   'shoe-prints',       'boots'),
+            cmd('onoffpants',   locale('cloth_pants'),   'socks',             'pants'),
+            cmd('onoffgunbelt', locale('cloth_gunbelt'), 'gun',               'gunbelt'),
+            cmd('onoffmask',    locale('cloth_mask'),    'masks-theater',     'mask'),
+            {
+                id = 'shirt', title = locale('cloth_shirt'), icon = 'shirt',
+                items = {
+                    cmd('onoffshirt', locale('cloth_toggle'),  'power-off', 'shirt'),
+                    cmd('sleeve',     locale('cloth_sleeve'),  'hands',     'sleeve'),
+                    cmd('collar1',    locale('cloth_collar1'), 'shirt',     'collar1'),
+                    cmd('collar2',    locale('cloth_collar2'), 'shirt',     'collar2'),
+                },
+            },
+            {
+                id = 'coats', title = locale('cloth_coats'), icon = 'vest-patches',
+                items = {
+                    cmd('onoffcoat',       locale('cloth_coat'),        'vest-patches', 'coat'),
+                    cmd('onoffclosedcoat', locale('cloth_closed_coat'), 'vest-patches', 'closedcoat'),
+                },
+            },
         },
     },
     cmd('loadskin',   locale('menu_fix_character'), 'recycle', 'loadskin'),
@@ -105,9 +117,8 @@ local LawItems = {
 
 Config.JobInteractions = {
     medic = {
-        cl('medicbutton', locale('job_emergency'),     'exclamation', 'rsg-radialmenu:client:SendMedicEmergencyAlert'),
-        cl('revivep',     locale('medic_revive'),      'user-doctor', 'rsg-medic:client:RevivePlayer'),
-        cl('treatwounds', locale('medic_treat'),       'bandage',     'rsg-medic:client:TreatWounds'),
+        cl('medicbutton', locale('job_emergency'), 'exclamation', 'rsg-radialmenu:client:SendMedicEmergencyAlert'),
+        cmd('medicfield', locale('medic_field'),   'user-doctor', 'medic'), -- rsg-medic field menu (Config.FieldCommand): revive / treat
     },
 }
 

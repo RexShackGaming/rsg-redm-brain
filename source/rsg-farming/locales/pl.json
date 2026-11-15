@@ -1,5 +1,4 @@
 {
-    "place_help": "[LMB] Postaw   [Q / E] Obróć   [Góra / Dół] Wysokość   [RMB] Anuluj",
     "place_invalid": "Nie możesz tu sadzić",
     "place_too_far": "Za daleko",
     "place_too_close": "Za blisko innej rośliny",
@@ -76,5 +75,17 @@
     "ui_not_yours": " - To nie twoja uprawa.",
     "ui_empty": "Nic nie masz w ziemi.",
     "ui_away": "%sm stąd",
-    "no_player": "Nie znaleziono gracza"
+    "no_player": "Nie znaleziono gracza",
+    "place_blocked_zone": "Nie możesz tu sadzić",
+    "level_up": "Poziom rolnictwa wzrósł! Nowa ranga: %s",
+    "level_info": "Poziom rolnictwa %s (%s) - %s XP",
+    "level_info_next": "Poziom rolnictwa %s (%s) - %s / %s XP",
+    "harvested_bonus": "Zbiór zakończony - obfity plon!",
+    "ui_btn_treat": "Opryskaj",
+    "ui_pests": "Szkodniki",
+    "ui_note_pests": "Szkodniki zjadają uprawę. Opryskaj ją, zanim uschnie.",
+    "no_pesticide": "Potrzebujesz środka na szkodniki",
+    "treated": "Szkodniki zwalczone",
+    "no_pests": "Ta roślina nie ma szkodników",
+    "treating": "Zwalczanie szkodników..."
 }

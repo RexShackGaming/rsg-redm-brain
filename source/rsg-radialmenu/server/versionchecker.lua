@@ -5,8 +5,8 @@
 local resourceName = GetCurrentResourceName()
 local githubRawBase = 'https://raw.githubusercontent.com/Rexshack-RedM/rsg-versioncheckers/main/'
 
-local function printLog(type, message)
-    local color = (type == 'success' and '^2') or (type == 'warning' and '^3') or '^1'
+local function printLog(level, message)
+    local color = (level == 'success' and '^2') or (level == 'warning' and '^3') or '^1'
     print(('[%s]%s %s^7'):format(resourceName, color, message))
 end
 
@@ -40,7 +40,7 @@ local function CheckVersion()
 
     local versionUrl = githubRawBase .. resourceName .. '/version.txt'
 
-    PerformHttpRequest(versionUrl, function(statusCode, remoteVersion, headers)
+    PerformHttpRequest(versionUrl, function(statusCode, remoteVersion)
         if statusCode ~= 200 then
             printLog('error', ('Version check failed (HTTP %s). Check your internet or the GitHub URL.'):format(statusCode))
             return
@@ -52,7 +52,7 @@ local function CheckVersion()
         end
 
         -- Trim whitespace/newlines
-        remoteVersion = remoteVersion:gsub('%s+$', '')
+        remoteVersion = remoteVersion:gsub('%s+$', '') -- trim
 
         if currentVersion == remoteVersion then
             printLog('success', 'You are running the latest version!')
@@ -61,7 +61,7 @@ local function CheckVersion()
 
         if isVersionOutdated(currentVersion, remoteVersion) then
             printLog('error', ('OUTDATED! Please update to version %s'):format(remoteVersion))
-            printLog('error', 'Download from: https://github.com/Rexshack-RedM/'..GetCurrentResourceName()..'')
+            printLog('error', 'Download from: https://github.com/Rexshack-RedM/' .. resourceName)
         else
             printLog('warning', ('You are running a newer version (%s) than the remote (%s). Possible dev build?'):format(currentVersion, remoteVersion))
         end

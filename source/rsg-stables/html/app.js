@@ -165,7 +165,7 @@
       row.className = 'option-row' + (opt.disabled ? ' disabled' : '') + (opt.variant ? ' variant-' + opt.variant : '');
 
       const icon = document.createElement('div');
-      icon.className = 'option-icon';
+      icon.className = 'option-icon' + (opt.iconTone ? ' tone-' + String(opt.iconTone).replace(/[^a-z]/g, '') : '');
       icon.textContent = iconGlyph(opt.icon);
       row.appendChild(icon);
 

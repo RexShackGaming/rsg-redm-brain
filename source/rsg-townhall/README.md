@@ -11,13 +11,23 @@ Full developer / server-owner documentation: [DOCS.md](DOCS.md)
 - Full NUI covering 80% of the screen (house "leather & gold" style, pure HTML dropdowns)
 - **Vacancies** tab: job tiles with title, job, rank, pay, description and requirements
 - **Application form**: standard questions (configurable) plus extra questions added by the poster
-- **My Applications** tab: status, your answers and the reviewer's feedback (unread dot + login reminder)
+- **My Applications** tab: status, your answers and the reviewer's feedback (unread dot + a one-time login reminder per update)
 - **Manage** tab (admins, approved managers, optionally job bosses): review queue, post a job, close vacancies, manager list (admin only)
 - Review modal shows whether the applicant is online; the Manage tab shows a badge with applications waiting
 - **Offline approval**: approving an offline applicant queues the job and it is granted on their next login (`Config.AllowOfflineApproval`)
 - **Interview step**: reviewers can invite an applicant to an interview (message + in-game notification) before deciding (`Config.AllowInterviews`)
 - **Edit / reopen / repost** vacancies from the Vacancies sub-tab (closed and expired ones can be reopened)
 - **Multiple slots and expiry**: one vacancy can fill several seats and can auto-close after 3/7/14/30 days (`Config.MaxSlots`, `Config.ExpiryOptions`)
+- **Messages**: applicant and reviewers can exchange short messages while an application is open (`Config.AllowMessages`, `MaxMessages`)
+- **Edit answers**: applicants can change their answers until a decision is made (`Config.AllowEditApplication`)
+- **Application fee**: optional fee taken on the server when applying, refunded if the application cannot be stored or the vacancy closes, fills or expires before a decision (`Config.ApplicationFee`, `Config.RefundFeeWhenClosed`)
+- **Blacklist**: reviewers can bar a citizen from one job (or all jobs for admins/all-job managers) with a reason (`Config.AllowBlacklist`)
+- **Templates and copy**: save a vacancy as a template and reuse it, or copy any vacancy into the post form (`Config.MaxTemplates`)
+- **Vacancy stats**: applicants, approvals, rejections and average decision time per vacancy in the Vacancies sub-tab
+- **Expiry warning**: the poster is warned before a vacancy closes (`Config.ExpiryWarnHours`)
+- **Reminders for reviewers**: managers see how many applications are waiting when they log in
+- **Search and sort** vacancies by text, job, newest or pay
+- **Exports/events** for other scripts (see DOCS.md)
 - **Resign** from the **My Jobs** tab, with a re-apply cooldown (`Config.AllowResign`, `Config.ResignCooldownHours`)
 - **Prerequisites**: required items (`Config.PrerequisiteItems`) and/or a minimum rank in another job; applicants see which they meet
 - **Per-clerk boards**: a vacancy can be tied to one clerk location or shown at all clerks
@@ -42,7 +52,8 @@ Full developer / server-owner documentation: [DOCS.md](DOCS.md)
 
 ## Staff flow
 - **Admin** (`Config.AdminPermission`, default `admin`): post and review any job, manage the manager list.
-- **Manager**: added by an admin with a citizen ID or server ID, scoped to all jobs or a single job.
+- **Manager**: added by an admin with a citizen ID or server ID, scoped to all jobs or a single job. With `Config.ManagerJob` set (default `government`) the entry only works while the player holds that job.
+- **Boss**: can post for their own job by default (`Config.AllowBossManagement`), no manager entry needed.
 - **Boss** (optional): a player whose active job is a boss grade manages their own job.
 - Manage tab: *Applications* (review), *Vacancies* (close), *Post a job*, *Managers* (admin only).
 - Online applicants get the job immediately; offline applicants are queued and granted on login (if disabled, approval needs them online).
@@ -64,7 +75,8 @@ Full developer / server-owner documentation: [DOCS.md](DOCS.md)
 | `CloseDistance` | `8.0` | UI closes when the player walks this far away |
 | `Commands` | see file | Command names |
 | `AdminPermission` | `admin` | rsg-core permission level for full access |
-| `AllowBossManagement` | `true` | Boss-grade players manage their own job |
+| `AllowBossManagement` | `true` | Boss-grade players post/review for their own job by default (no manager entry needed) |
+| `ManagerJob` | `'government'` | Manager-list entries only work while the player holds this job (`false` = anyone on the list) |
 | `RestrictBossGrades` | `true` | Only admins may post boss grades |
 | `AllowSelfReview` | `false` | Reviewers may review their own application |
 | `PostableJobs` / `BlockedJobs` | `{}` / `{ 'unemployed' }` | Allow / deny lists (empty allow list = any job) |
@@ -76,14 +88,21 @@ Full developer / server-owner documentation: [DOCS.md](DOCS.md)
 | `BypassMaxJobs` | `false` | Ignore the multi-job maximum on approval |
 | `SetActiveJobOnApproval` | `false` | Also switch the new job to the active job |
 | `MaxSlots` | `10` | Highest number of seats per vacancy |
-| `ExpiryOptions` / `DefaultExpiryDays` | `{0,3,7,14,30}` / `14` | Expiry choices in days (`0` = never) and the default |
+| `ExpiryOptions` / `DefaultExpiryDays` | per role / `14` | Expiry choices in days (`0` = never) per role: `admin`, `jobs[<job>]`, `manager`, `boss`, `default`; a plain list applies to everyone |
 | `ExpiryCheckMinutes` | `5` | How often expired vacancies are closed |
 | `AllowOfflineApproval` | `true` | Queue approval for offline applicants |
 | `AllowInterviews` | `true` | Enable the interview step |
 | `AllowResign` / `ResignCooldownHours` | `true` / `24` | Resign from My Jobs and the wait before re-applying to that job |
 | `PrerequisiteItems` / `MaxPrerequisiteItems` | `{}` / `3` | Items a poster may require (rsg-inventory names) and the cap per vacancy |
 | `AllowJobPrerequisites` | `true` | Allow "must hold job X at rank Y" |
-| `Limits` | see file | Text length limits |
+| `AllowMessages` / `MaxMessages` | `true` / `30` | Applicant <-> reviewer messages and the cap per application |
+| `AllowEditApplication` | `true` | Applicants can edit answers while the application is open |
+| `ApplicationFee` / `ApplicationFeeAccount` | `0` / `'cash'` | Fee taken when applying (0 = free) and the account used |
+| `RefundFeeWhenClosed` | `true` | Refund the fee when the vacancy closes, fills or expires before a decision |
+| `AllowBlacklist` | `true` | Enable the Blacklist sub-tab and the apply check |
+| `MaxTemplates` | `10` | Saved templates per poster |
+| `ExpiryWarnHours` | `24` | Warn the poster this long before a vacancy closes (0 = off) |
+| `Limits` | see file | Text length limits (incl. `message`) |
 | `Questions` | 4 questions | Standard application questions (locale keys) |
 | `AllowPushToTalkWhileOpen` / `PushToTalkControls` | `true` / PTT control | Block game controls but keep push-to-talk while the UI is open |
 

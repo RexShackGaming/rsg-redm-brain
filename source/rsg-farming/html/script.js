@@ -37,6 +37,7 @@ function setBar(key, value, klass) {
 function statusOf(p) {
     if (p.dead) return { text: t('ui_dead'), cls: 'bad' };
     if (p.ready) return { text: t('ui_ready'), cls: 'good' };
+    if (p.pest) return { text: t('ui_pests'), cls: 'warn' };
     if (p.thirsty) return { text: t('ui_needs_water'), cls: 'bad' };
     if (p.water < 25) return { text: t('ui_thirsty'), cls: 'warn' };
     return { text: t('ui_growing'), cls: '' };
@@ -60,6 +61,7 @@ function renderPlant(p) {
     let note;
     if (p.dead) note = t('ui_note_dead');
     else if (p.ready) note = t('ui_note_ready');
+    else if (p.pest) note = t('ui_note_pests');
     else if (p.thirsty) note = t('ui_note_dry');
     else note = t(p.remaining === 1 ? 'ui_note_minute' : 'ui_note_minutes', p.remaining) + (p.fertilizer > 0 ? t('ui_note_fertilised') : '') + '.';
     if (!p.isOwner) note += t('ui_not_yours');
@@ -70,6 +72,8 @@ function renderPlant(p) {
     btn('fertilize').disabled = p.dead || p.fertilizer >= 95 || p.growth >= 100;
     btn('harvest').disabled = !p.ready || (p.ownerOnly && !p.isOwner);
     btn('destroy').disabled = !p.isOwner && !p.dead;
+    btn('treat').classList.toggle('hidden', !p.pestsEnabled);
+    btn('treat').disabled = p.dead || !p.pest;
 }
 
 function miniBar(label, value, klass) {

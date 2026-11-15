@@ -184,6 +184,33 @@ local function despawnActiveHorseEntity()
     activeHorse = nil
 end
 
+
+-- ===================== OPEN SADDLEBAGS (native animation) =====================
+-- Plays the game's own saddlebag interaction (TASK_ANIMAL_INTERACTION 0xCD181A959CFDD7F4 with
+-- Interaction_LootSaddleBags, rdr3_discoveries tasks/TASK_ANIMAL_INTERACTION) and then asks the server to
+-- open the stash. The server still re-checks distance, ownership and saddlebags.
+local openingSaddlebags = false
+
+local function openActiveHorseInventory()
+    if openingSaddlebags then return end
+    if not (activeHorse and activeHorse.entity and DoesEntityExist(activeHorse.entity)) then return end
+    local horse = activeHorse.entity
+    local horseId = activeHorse.dbId
+    local cfg = Config.HorseInventory or {}
+
+    openingSaddlebags = true
+    local ped = PlayerPedId()
+    if cfg.openAnim ~= false and GetMount(ped) == 0 and not IsPedDeadOrDying(ped, true) then
+        TaskAnimalInteraction(ped, horse, joaat('Interaction_LootSaddleBags'), 0, 0)
+        Wait(tonumber(cfg.openAnimDelay) or 1500)
+    end
+    openingSaddlebags = false
+
+    -- the horse may have been stored, despawned or whistled away while the animation played
+    if not (activeHorse and activeHorse.entity == horse and DoesEntityExist(horse) and activeHorse.dbId == horseId) then return end
+    TriggerServerEvent('rsg-stables:server:openHorseInventory', horseId, NetworkGetNetworkIdFromEntity(horse))
+end
+
 local whistleToken = 0
 local HORSE_NOSE_OFFSET = 1.3 -- approx distance from a horse's centre to its nose
 
@@ -1279,7 +1306,7 @@ CreateThread(function()
                 local ped = PlayerPedId()
                 if not IsPedOnMount(ped) and #(GetEntityCoords(ped) - GetEntityCoords(activeHorse.entity)) < 3.0
                     and IsControlJustReleased(0, 0x5966D52A) then -- INPUT_OPEN_SATCHEL_HORSE_MENU
-                    TriggerServerEvent('rsg-stables:server:openHorseInventory', activeHorse.dbId, NetworkGetNetworkIdFromEntity(activeHorse.entity))
+                    CreateThread(openActiveHorseInventory)
                 end
             end
 
@@ -1471,8 +1498,7 @@ local function spawnHorse(horse, coords)
                     return activeHorse and activeHorse.snapshot and decodeTack(activeHorse.snapshot.tack).saddlebags ~= nil
                 end,
                 onSelect = function()
-                    if not (activeHorse and DoesEntityExist(activeHorse.entity)) then return end
-                    TriggerServerEvent('rsg-stables:server:openHorseInventory', activeHorse.dbId, NetworkGetNetworkIdFromEntity(activeHorse.entity))
+                    CreateThread(openActiveHorseInventory)
                 end,
             },
         })
@@ -1686,6 +1712,7 @@ local function NuiRender(screen)
             disabled = o.disabled or false,
             stats = o.stats,
             variant = o.variant,
+            iconTone = o.iconTone,
         })
     end
 
@@ -1979,10 +2006,14 @@ function OpenStableMenu(stable)
             desc = horse.died_of_age and locale('died_of_old_age') or locale('deceased')
             badge = locale('deceased')
         end
+        -- icon shows the sex (mars / venus) and its colour shows the age stage (young / adult / old / dead)
+        local icon = horse.gender == 'male' and 'mars' or horse.gender == 'female' and 'venus' or 'horse'
+        local tone = (not horse.alive) and 'dead' or horse.stage
         table.insert(options, {
             title = horse.name,
             description = desc,
-            icon = 'horse',
+            icon = icon,
+            iconTone = tone,
             badge = badge,
             onSelect = function()
                 OpenHorseMenu(stable, horse)
@@ -2297,13 +2328,32 @@ function OpenBreedPreviewMenu(stable, breed)
 end
 
 function OpenBreedingMenu(stable, horses)
-    local alive = {}
+    local alive, living = {}, 0
     for _, h in ipairs(horses) do
+        if h.alive then living = living + 1 end
         if h.alive and h.stage ~= 'young' and h.stage ~= 'old' then table.insert(alive, h) end
     end
 
     if #alive < 2 then
-        NuiNotify(locale('breed_need_two'), 'error')
+        if living >= 2 then
+            -- enough horses, but not enough of breeding age (Config.HorseAging): work out whether waiting helps
+            local youngLeft = {}
+            for _, h in ipairs(horses) do
+                if h.alive and h.stage == 'young' then
+                    youngLeft[#youngLeft + 1] = math.max(1, ((Config.HorseAging or {}).youngUntilDays or 7) - (tonumber(h.age_days) or 0))
+                end
+            end
+            table.sort(youngLeft)
+            local needed = 2 - #alive -- adults still missing
+            if #youngLeft >= needed then
+                -- the young horses will be enough once the slowest one we need has grown up
+                NuiNotify(locale('breed_wait_to_grow', youngLeft[needed]), 'error')
+            else
+                NuiNotify(locale('breed_not_enough_breeders'), 'error')
+            end
+        else
+            NuiNotify(locale('breed_need_two'), 'error')
+        end
         return
     end
 
@@ -3399,3 +3449,8 @@ RSGCore.Functions.CreateClientCallback('rsg-stables:client:isHorseDead', functio
     if not ent or ent == 0 or not DoesEntityExist(ent) then return cb(nil) end
     cb(IsEntityDead(ent) or GetEntityHealth(ent) <= 0)
 end)
+
+-- used by client/admin.lua when an admin force-stores this player's horse
+function DespawnActiveHorseForAdmin()
+    if activeHorse then despawnActiveHorseEntity() end
+end

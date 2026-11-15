@@ -230,7 +230,7 @@ function loading(view) {
 
 /* --------------------------------------------------------------- vacancies */
 let vacancies = [];
-let vacFilter = { text: '', job: '' };
+let vacFilter = { text: '', job: '', sort: 'new' };
 
 async function renderVacancies(body) {
     const view = h('div', 'view');
@@ -261,6 +261,8 @@ function drawVacancies(view) {
         const list = vacancies.filter(v =>
             (!vacFilter.job || v.job === vacFilter.job) &&
             (!q || (v.title + ' ' + v.jobLabel + ' ' + v.description).toLowerCase().includes(q)));
+        if (vacFilter.sort === 'payHigh') list.sort((a, b) => b.pay - a.pay);
+        else if (vacFilter.sort === 'payLow') list.sort((a, b) => a.pay - b.pay);
         if (!list.length) { holder.append(h('div', 'empty', t('ui_no_vacancies'))); return; }
         const grid = h('div', 'grid');
         list.forEach(v => {
@@ -274,6 +276,7 @@ function drawVacancies(view) {
             if (v.state === 'locked') foot.append(h('span', 'pill bad', t('ui_state_locked')));
             else if (v.state === 'applied') foot.append(h('span', 'pill warn', t('ui_state_applied')));
             else if (v.state === 'holds') foot.append(h('span', 'pill good', t('ui_state_holds')));
+            else if (v.state === 'blocked') foot.append(h('span', 'pill bad', t('ui_state_blocked')));
             else if (v.state === 'cooldown') foot.append(h('span', 'pill bad', t('ui_state_cooldown', fmtWait(v.wait))));
             else foot.append(h('span', null, v.slots > 1 ? t('ui_openings', v.openings) : fmtDate(v.created)));
             const extras = [];
@@ -288,7 +291,13 @@ function drawVacancies(view) {
         holder.append(grid);
     };
     setupDd(ddEl, jobs, vacFilter.job, val => { vacFilter.job = val; drawList(); });
-    bar.append(search, ddEl);
+    const sortEl = h('div');
+    setupDd(sortEl, [
+        { value: 'new', label: t('ui_sort_new') },
+        { value: 'payHigh', label: t('ui_sort_pay_high') },
+        { value: 'payLow', label: t('ui_sort_pay_low') },
+    ], vacFilter.sort || 'new', val => { vacFilter.sort = val; drawList(); });
+    bar.append(search, ddEl, sortEl);
     view.append(bar, holder);
     search.addEventListener('input', () => { vacFilter.text = search.value; drawList(); });
     drawList();
@@ -301,6 +310,7 @@ function openApply(v) {
         textBlock(t('ui_requirements'), v.requirements),
     ];
     if (v.slots > 1) nodes.push(metaLine([[t('ui_openings_label'), String(v.openings) + ' / ' + v.slots]]));
+    if (v.fee > 0) nodes.push(metaLine([[t('ui_fee'), money(v.fee)]]));
     if (v.prereqs && ((v.prereqs.items && v.prereqs.items.length) || v.prereqs.job)) {
         const box = h('div', 'prereq-box');
         box.append(h('div', 'block-label', t('ui_prereqs')));
@@ -344,11 +354,51 @@ function openApply(v) {
         let msg = '';
         if (v.state === 'applied') msg = t('ui_state_applied');
         else if (v.state === 'holds') msg = t('ui_state_holds');
+        else if (v.state === 'blocked') msg = t('ui_state_blocked_note');
         else if (v.state === 'cooldown') msg = t('ui_state_cooldown', fmtWait(v.wait));
         else if (v.state === 'locked') msg = t('ui_state_locked_note');
         nodes.push(h('div', 'note', msg));
     }
     openModal(v.title, nodes, actions);
+}
+
+/* ----------------------------------------------------------------- messages */
+function threadBox(appId) {
+    const wrap = h('div', 'thread');
+    wrap.append(h('div', 'block-label', t('ui_messages')));
+    const list = h('div', 'thread-list');
+    const form = h('div', 'thread-form');
+    wrap.append(list, form);
+    const load = async () => {
+        const res = await rpc('getMessages', { applicationId: appId });
+        clear(list);
+        clear(form);
+        if (!res.ok) { list.append(h('div', 'thread-empty', res.err)); return; }
+        if (!res.messages.length) list.append(h('div', 'thread-empty', t('ui_msg_none')));
+        res.messages.forEach(m => {
+            const b = h('div', 'msg' + (m.mine ? ' mine' : '') + (m.reviewer ? ' rev' : ''));
+            b.append(h('div', 'msg-head', `${m.name || ''} · ${fmtDate(m.created)}`), h('div', 'msg-body', m.body));
+            list.append(b);
+        });
+        list.scrollTop = list.scrollHeight;
+        if (!res.canSend) return;
+        const inp = h('input', 'input');
+        inp.type = 'text';
+        inp.placeholder = t('ui_msg_ph');
+        inp.maxLength = (perms.limits && perms.limits.message) || 300;
+        const send = async () => {
+            const text = inp.value.trim();
+            if (!text || busy) return;
+            busy = true;
+            const r = await rpc('sendMessage', { applicationId: appId, message: text });
+            busy = false;
+            if (r.ok) load(); else toast('error', r.err);
+        };
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+        form.append(inp, button(t('ui_send'), 'good small', send));
+    };
+    load();
+    return wrap;
 }
 
 /* ---------------------------------------------------------- my applications */
@@ -360,16 +410,16 @@ async function renderMine(body) {
     clear(view);
     if (!res.ok) { view.append(h('div', 'empty', res.err)); return; }
     const apps = res.applications || [];
+    if (perms.unseen > 0) clearUnseen();
     if (!apps.length) { view.append(h('div', 'empty', t('ui_no_apps'))); return; }
 
     const list = h('div', 'list');
-    let hadUnseen = false;
     apps.forEach(a => {
         const row = h('div', 'row click');
         const main = h('div', 'row-main');
         main.append(h('div', 'row-title', a.title), h('div', 'row-sub', `${a.jobLabel} · ${a.gradeLabel} · ${fmtDate(a.created)}`));
         const side = h('div', 'row-side');
-        if (a.unseen) { hadUnseen = true; side.append(h('span', 'dot')); }
+        if (a.unseen) side.append(h('span', 'dot'));
         if (a.queued) side.append(h('span', 'pill warn', t('ui_queued')));
         side.append(pill(a.status));
         row.append(h('div', 'icon-badge', '✦'), main, side);
@@ -378,12 +428,13 @@ async function renderMine(body) {
     });
     view.append(list);
 
-    if (hadUnseen) {
-        rpc('markSeen');
-        perms.unseen = 0;
-        const badge = document.querySelector('#tabs .badge');
-        if (badge) badge.remove();
-    }
+}
+
+// Reviewed: tell the server, then drop the "My applications" tab badge
+function clearUnseen() {
+    rpc('markSeen');
+    perms.unseen = 0;
+    buildTabs();
 }
 
 function openMyApplication(a) {
@@ -402,7 +453,9 @@ function openMyApplication(a) {
             h('div', 'block-text', a.interviewNote && a.interviewNote.length ? a.interviewNote : t('ui_interview_default')));
         nodes.push(ib);
     }
-    nodes.push(h('div', 'block-label', t('ui_your_answers')), qaList(a.answers));
+    const ansWrap = h('div');
+    ansWrap.append(qaList(a.answers));
+    nodes.push(h('div', 'block-label', t('ui_your_answers')), ansWrap);
 
     const actions = [button(t('ui_close'), 'muted', closeModal)];
     if (a.status === 'pending' || a.status === 'interview') {
@@ -410,6 +463,31 @@ function openMyApplication(a) {
             const res = await rpc('withdraw', { applicationId: a.id });
             if (res.ok) { toast('success', res.msg); render(); } else toast('error', res.err);
         }));
+    }
+    if (a.status === 'pending' || a.status === 'interview') {
+        if (perms.messages) nodes.push(threadBox(a.id));
+        if (perms.editApps) {
+            actions.splice(1, 0, button(t('ui_edit_answers'), 'muted', () => {
+                clear(ansWrap);
+                const fields = (a.answers || []).map(x => {
+                    const f = h('div', 'field');
+                    f.append(h('label', null, x.q));
+                    const ta = h('textarea', 'textarea');
+                    ta.value = x.a || '';
+                    ta.maxLength = (perms.limits && perms.limits.answer) || 1000;
+                    f.append(ta);
+                    ansWrap.append(f);
+                    return ta;
+                });
+                ansWrap.append(button(t('ui_save_answers'), 'good', async () => {
+                    if (busy) return;
+                    busy = true;
+                    const res = await rpc('editApplication', { applicationId: a.id, answers: fields.map(f => f.value.trim()) });
+                    busy = false;
+                    if (res.ok) { toast('success', res.msg); closeModal(); render(); } else toast('error', res.err);
+                }));
+            }));
+        }
     }
     openModal(a.title, nodes, actions);
 }
@@ -444,6 +522,7 @@ async function renderJobs(body) {
 
 /* ------------------------------------------------------------------- manage */
 let manage = null;
+let postPrefill = null; // vacancy to copy into the post form
 
 async function renderManage(body) {
     const subs = h('div', 'subtabs');
@@ -453,12 +532,14 @@ async function renderManage(body) {
     const res = await rpc('getManageData');
     if (!res.ok) { clear(view); view.append(h('div', 'empty', res.err)); return; }
     manage = res;
+    if (perms.pending !== manage.pending.length) { perms.pending = manage.pending.length; buildTabs(); }
 
     const defs = [
         { id: 'apps', label: t('ui_manage_apps'), badge: manage.pending.length },
         { id: 'postings', label: t('ui_manage_postings') },
         { id: 'post', label: t('ui_manage_post') },
     ];
+    if (manage.blacklistEnabled) defs.push({ id: 'blacklist', label: t('ui_manage_blacklist') });
     if (manage.admin) defs.push({ id: 'managers', label: t('ui_manage_managers') });
     if (!defs.some(d => d.id === currentSub)) currentSub = 'apps';
 
@@ -478,6 +559,7 @@ async function renderManage(body) {
         if (currentSub === 'apps') drawApps(view);
         else if (currentSub === 'postings') drawPostings(view);
         else if (currentSub === 'post') drawPostForm(view);
+        else if (currentSub === 'blacklist') drawBlacklist(view);
         else drawManagers(view);
     };
     drawSubs();
@@ -559,6 +641,7 @@ function openReview(a) {
         ib.append(h('div', 'block-label', t('ui_interview_note')), h('div', 'block-text', a.interviewNote || ''));
         nodes.push(ib);
     }
+    if (perms.messages) nodes.push(threadBox(a.id));
     const actions = [button(t('ui_cancel'), 'muted', closeModal)];
     if (perms.interviews && a.status === 'pending') {
         actions.push(button(t('ui_interview'), 'muted', async () => {
@@ -586,10 +669,15 @@ function drawPostings(view) {
         if (p.slots > 1) sub += ` · ${t('ui_filled_count', p.filledCount, p.slots)}`;
         if (p.status === 'open' && p.expiresIn !== null && p.expiresIn !== undefined) sub += ` · ${t('ui_closes_in', fmtDur(p.expiresIn))}`;
         if (p.status === 'filled' && p.filledBy) sub += ` · ${t('ui_filled_by')}: ${p.filledBy}`;
+        if (p.stats && p.stats.total > 0) {
+            const avg = (p.stats.avgMin !== null && p.stats.avgMin !== undefined) ? fmtDur(p.stats.avgMin * 60) : '—';
+            sub += ` · ${t('ui_stats', p.stats.total, p.stats.approved, p.stats.rejected, avg)}`;
+        }
         main.append(h('div', 'row-title', p.title), h('div', 'row-sub', sub));
         const side = h('div', 'row-side');
         if (p.status === 'open') side.append(h('span', 'pill', t('ui_pending_count', p.pending)));
         side.append(pill(p.status));
+        side.append(button(t('ui_duplicate'), 'muted small', () => { postPrefill = p; currentSub = 'post'; render(); }));
         if (p.status === 'open') {
             side.append(button(t('ui_edit'), 'muted small', () => openEditPosting(p)));
             side.append(button(t('ui_close_posting'), 'bad small', () => confirmModal(t('ui_confirm_close', p.title), async () => {
@@ -608,8 +696,8 @@ function drawPostings(view) {
     view.append(list);
 }
 
-function expiryOpts() {
-    return (perms.expiryOptions || [0]).map(d => ({ value: d, label: d === 0 ? t('ui_expiry_never') : t('ui_expiry_days', d) }));
+function expiryOpts(list) {
+    return (list || perms.expiryOptions || [0]).map(d => ({ value: d, label: d === 0 ? t('ui_expiry_never') : t('ui_expiry_days', d) }));
 }
 
 function openEditPosting(p) {
@@ -619,7 +707,7 @@ function openEditPosting(p) {
     const reqs = h('textarea', 'textarea'); reqs.maxLength = perms.limits.requirements || 1000; reqs.value = p.requirements || '';
     const slots = h('input', 'input'); slots.type = 'number'; slots.min = String(Math.max(1, p.filledCount || 0)); slots.max = String(perms.maxSlots || 1); slots.value = p.slots;
     const exDd = h('div');
-    setupDd(exDd, [{ value: -1, label: t('ui_expiry_keep') }].concat(expiryOpts()), -1, null);
+    setupDd(exDd, [{ value: -1, label: t('ui_expiry_keep') }].concat(expiryOpts(p.expiry)), -1, null);
     const body = [mk(t('ui_post_title'), title), mk(t('ui_post_desc'), desc), mk(t('ui_post_req'), reqs), mk(t('ui_post_slots'), slots), mk(t('ui_post_expiry'), exDd)];
     openModal(t('ui_edit_title'), body, [
         button(t('ui_cancel'), 'muted', closeModal),
@@ -652,12 +740,15 @@ function drawPostForm(view) {
     const two = h('div', 'two-col');
     two.append(jobField, gradeField);
 
+    let refreshExpiry = null; // set once the expiry dropdown exists
+    let gradeCtl = null;
     const buildGrades = jobName => {
         const j = manage.jobs.find(x => x.name === jobName);
         const opts = j ? j.grades.map(g => ({ value: g.level, label: `${g.label} — ${money(g.payment)}` })) : [];
-        setupDd(gradeDd, opts, '', null, t('ui_select_grade'));
+        gradeCtl = setupDd(gradeDd, opts, '', null, t('ui_select_grade'));
+        if (refreshExpiry) refreshExpiry(j);
     };
-    setupDd(jobDd, manage.jobs.map(j => ({ value: j.name, label: j.label })), '', v => buildGrades(v), t('ui_select_job'));
+    const jobCtl = setupDd(jobDd, manage.jobs.map(j => ({ value: j.name, label: j.label })), '', v => buildGrades(v), t('ui_select_job'));
     buildGrades('');
 
     const mk = (label, el) => { const f = h('div', 'field'); f.append(h('label', null, label), el); return f; };
@@ -667,10 +758,16 @@ function drawPostForm(view) {
 
     const slots = h('input', 'input'); slots.type = 'number'; slots.min = '1'; slots.max = String(perms.maxSlots || 1); slots.value = '1';
     const exDd = h('div');
-    setupDd(exDd, expiryOpts(), perms.defaultExpiry !== undefined ? perms.defaultExpiry : (perms.expiryOptions || [0])[0], null);
+    let exCtl = setupDd(exDd, expiryOpts(), perms.defaultExpiry !== undefined ? perms.defaultExpiry : (perms.expiryOptions || [0])[0], null);
+    // the allowed expiry choices can differ per job: rebuild when the job changes
+    refreshExpiry = j => {
+        if (!j || !j.expiry) return;
+        const cur = Number(exDd.dataset.value);
+        exCtl = setupDd(exDd, expiryOpts(j.expiry), j.expiry.includes(cur) ? cur : (j.expiry.includes(perms.defaultExpiry) ? perms.defaultExpiry : j.expiry[0]), null);
+    };
     const locDd = h('div');
     const locOpts = [{ value: 0, label: t('ui_all_clerks') }].concat((manage.locations || []).map(l => ({ value: l.id, label: l.label })));
-    setupDd(locDd, locOpts, 0, null);
+    const locCtl = setupDd(locDd, locOpts, 0, null);
     const three = h('div', 'two-col');
     three.append(mk(t('ui_post_slots'), slots), mk(t('ui_post_expiry'), exDd));
 
@@ -698,8 +795,9 @@ function drawPostForm(view) {
     const rjDd = h('div');
     const rgInp = h('input', 'input'); rgInp.type = 'number'; rgInp.min = '0'; rgInp.value = '0';
     const hasJobPrereq = (manage.allJobs || []).length > 0;
+    let rjCtl = null;
     if (hasJobPrereq) {
-        setupDd(rjDd, [{ value: '', label: t('ui_none') }].concat(manage.allJobs.map(j => ({ value: j.name, label: j.label }))), '', null);
+        rjCtl = setupDd(rjDd, [{ value: '', label: t('ui_none') }].concat(manage.allJobs.map(j => ({ value: j.name, label: j.label }))), '', null);
         jobWrap.append(mk(t('ui_post_prereq_job'), rjDd), mk(t('ui_post_prereq_grade'), rgInp));
     }
 
@@ -747,7 +845,135 @@ function drawPostForm(view) {
     if (itemWrap.firstChild) form.append(itemWrap);
     if (hasJobPrereq) form.append(jobWrap);
     form.append(qWrap, actions);
+
+    // read the whole form back (used for templates)
+    const collect = () => ({
+        job: jobDd.dataset.value || '', grade: Number(gradeDd.dataset.value),
+        title: title.value.trim(), description: desc.value.trim(), requirements: reqs.value.trim(),
+        questions: qInputs.map(i => i.value.trim()).filter(Boolean),
+        slots: Number(slots.value), expiryDays: Number(exDd.dataset.value),
+        reqItems: reqItems.slice(), reqJob: hasJobPrereq ? (rjDd.dataset.value || '') : '', reqJobGrade: Number(rgInp.value) || 0,
+    });
+
+    // fill the form from a template or a copied vacancy
+    const applyData = d => {
+        const j = manage.jobs.find(x => x.name === d.job);
+        if (j) {
+            jobCtl.set(j.name, false);
+            buildGrades(j.name);
+            if (j.grades.some(g => g.level === Number(d.grade))) gradeCtl.set(String(d.grade), false);
+        }
+        title.value = d.title || '';
+        desc.value = d.description || '';
+        reqs.value = d.requirements || '';
+        slots.value = String(Math.min(Math.max(1, Number(d.slots) || 1), perms.maxSlots || 1));
+        const list = (j && j.expiry) || perms.expiryOptions || [0];
+        if (d.expiryDays !== undefined && d.expiryDays !== null && list.includes(Number(d.expiryDays))) exCtl.set(String(d.expiryDays), false);
+        if (d.locationId !== undefined && (manage.locations || []).some(l => l.id === d.locationId)) locCtl.set(String(d.locationId), false);
+        reqItems.length = 0;
+        (d.reqItems || []).forEach(n => {
+            if ((manage.prereqItems || []).some(i => i.name === n) && reqItems.length < (perms.maxPrereqItems || 0)) reqItems.push(n);
+        });
+        drawChips();
+        if (hasJobPrereq && rjCtl) { rjCtl.set(d.reqJob || '', false); rgInp.value = String(d.reqJobGrade || 0); }
+        clear(qList);
+        qInputs.length = 0;
+        addBtn.disabled = perms.maxCustom <= 0;
+        (d.questions || d.custom || []).slice(0, perms.maxCustom).forEach(q => { addBtn.click(); qInputs[qInputs.length - 1].value = q; });
+    };
+
+    // saved templates
+    const tplWrap = h('div', 'field');
+    const tplChips = h('div', 'chips');
+    tplWrap.append(h('div', 'label', t('ui_template_load')), tplChips);
+    const loadTemplates = async () => {
+        const res = await rpc('getTemplates');
+        clear(tplChips);
+        if (!res.ok || !(res.templates || []).length) { tplWrap.classList.add('hidden'); return; }
+        tplWrap.classList.remove('hidden');
+        res.templates.forEach(tp => {
+            const c = h('span', 'chip', tp.name);
+            c.addEventListener('click', () => applyData(tp.data));
+            const x = h('span', 'chip', '✕');
+            x.addEventListener('click', async () => {
+                const r = await rpc('deleteTemplate', { id: tp.id });
+                if (r.ok) { toast('success', r.msg); loadTemplates(); } else toast('error', r.err);
+            });
+            tplChips.append(c, x);
+        });
+    };
+    tplWrap.classList.add('hidden');
+    const saveTpl = button(t('ui_template_save'), 'muted', () => {
+        const nameInp = h('input', 'input');
+        nameInp.type = 'text';
+        nameInp.maxLength = perms.limits.label || 60;
+        nameInp.placeholder = t('ui_template_name');
+        openModal(t('ui_template_save'), [nameInp], [
+            button(t('ui_cancel'), 'muted', closeModal),
+            button(t('ui_save'), 'good', async () => {
+                if (busy) return;
+                if (!nameInp.value.trim()) { toast('error', t('err_required')); return; }
+                busy = true;
+                const res = await rpc('saveTemplate', { name: nameInp.value.trim(), data: collect() });
+                busy = false;
+                if (res.ok) { toast('success', res.msg); closeModal(); loadTemplates(); } else toast('error', res.err);
+            }),
+        ]);
+    });
+    actions.insertBefore(saveTpl, submit);
+    form.insertBefore(tplWrap, form.firstChild);
+    loadTemplates();
+    if (postPrefill) { applyData(postPrefill); postPrefill = null; }
     view.append(form);
+}
+
+function drawBlacklist(view) {
+    const form = h('div', 'form');
+    const two = h('div', 'two-col');
+    const idField = h('div', 'field');
+    idField.append(h('label', null, t('ui_mgr_id')));
+    const idInput = h('input', 'input'); idInput.type = 'text'; idInput.maxLength = 50;
+    idField.append(idInput);
+    const scopeField = h('div', 'field');
+    scopeField.append(h('div', 'label', t('ui_mgr_scope')));
+    const scopeDd = h('div');
+    scopeField.append(scopeDd);
+    const opts = manage.allScope ? [{ value: '*', label: t('ui_all_jobs_scope') }] : [];
+    manage.jobs.forEach(j => opts.push({ value: j.name, label: j.label }));
+    setupDd(scopeDd, opts, opts.length ? opts[0].value : '', null, '');
+    two.append(idField, scopeField);
+    const reasonField = h('div', 'field');
+    reasonField.append(h('label', null, t('ui_bl_reason')));
+    const reason = h('textarea', 'textarea'); reason.maxLength = perms.limits.feedback || 600;
+    reasonField.append(reason);
+    const add = button(t('ui_bl_add'), 'bad', async () => {
+        if (busy || !idInput.value.trim() || !scopeDd.dataset.value) return;
+        busy = true;
+        const res = await rpc('addBlacklist', { player: idInput.value.trim(), job: scopeDd.dataset.value, reason: reason.value.trim() });
+        busy = false;
+        if (res.ok) { toast('success', res.msg); render(); } else toast('error', res.err);
+    });
+    const actions = h('div', 'actions');
+    actions.append(add);
+    form.append(two, reasonField, actions);
+    view.append(form, h('div', 'section-title', t('ui_manage_blacklist')));
+
+    if (!(manage.blacklist || []).length) { view.append(h('div', 'empty', t('ui_bl_none'))); return; }
+    const list = h('div', 'list');
+    manage.blacklist.forEach(b => {
+        const row = h('div', 'row');
+        const main = h('div', 'row-main');
+        const scopeLabel = b.jobLabel === '*' ? t('ui_all_jobs_scope') : b.jobLabel;
+        main.append(h('div', 'row-title', b.name || b.citizenid), h('div', 'row-sub', `${b.citizenid} · ${scopeLabel}${b.reason ? ' · ' + b.reason : ''}`));
+        const side = h('div', 'row-side');
+        side.append(button(t('ui_remove'), 'bad small', async () => {
+            const res = await rpc('removeBlacklist', { id: b.id });
+            if (res.ok) { toast('success', res.msg); render(); } else toast('error', res.err);
+        }));
+        row.append(h('div', 'icon-badge', '✦'), main, side);
+        list.append(row);
+    });
+    view.append(list);
 }
 
 function drawManagers(view) {
@@ -802,7 +1028,7 @@ async function openUi(strings) {
     $('subtitle').textContent = t('ui_subtitle');
     currentTab = 'vacancies';
     currentSub = 'apps';
-    vacFilter = { text: '', job: '' };
+    vacFilter = { text: '', job: '', sort: 'new' };
     $('app').classList.remove('hidden');
     clear($('tabs'));
     clear($('body'));
