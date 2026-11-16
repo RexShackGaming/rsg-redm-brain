@@ -41,7 +41,56 @@
                 </div>
                 <div class="actions">
                     <button class="wood-btn" id="sell-all" type="button"></button>
+                    <button class="wood-btn hidden" id="sell-dups" type="button"></button>
+                    <button class="wood-btn muted" id="open-collection" type="button"></button>
                     <button class="wood-btn muted" id="buy" type="button"></button>
+                </div>
+            </div>
+
+            <!-- collection and leaderboard -->
+            <div id="view-collection" class="view hidden">
+                <div class="tabs">
+                    <button class="wood-btn small" id="tab-mine" type="button"></button>
+                    <button class="wood-btn small muted" id="tab-board" type="button"></button>
+                </div>
+                <div class="scroll">
+                    <div class="list" id="collection-list"></div>
+                    <div class="list hidden" id="board-list"></div>
+                </div>
+                <div class="hint" id="collection-hint"></div>
+            </div>
+
+            <!-- player to player trade -->
+            <div id="view-ptrade" class="view hidden">
+                <div id="ptrade-invite" class="hidden">
+                    <div class="empty" id="ptrade-invite-text"></div>
+                    <div class="actions">
+                        <button class="wood-btn" id="ptrade-accept" type="button"></button>
+                        <button class="wood-btn muted" id="ptrade-decline" type="button"></button>
+                    </div>
+                </div>
+                <div id="ptrade-board" class="hidden">
+                    <div class="trade-cols">
+                        <div class="trade-col">
+                            <div class="section-title" id="ptrade-me-title"></div>
+                            <div class="chips" id="ptrade-me"></div>
+                            <div class="trade-state" id="ptrade-me-state"></div>
+                        </div>
+                        <div class="trade-col">
+                            <div class="section-title" id="ptrade-them-title"></div>
+                            <div class="chips" id="ptrade-them"></div>
+                            <div class="trade-state" id="ptrade-them-state"></div>
+                        </div>
+                    </div>
+                    <div class="section-title" id="ptrade-cards-title"></div>
+                    <div class="scroll ptrade-scroll">
+                        <div class="chips" id="ptrade-cards"></div>
+                    </div>
+                    <div class="hint" id="ptrade-hint"></div>
+                    <div class="actions">
+                        <button class="wood-btn" id="ptrade-ready" type="button"></button>
+                        <button class="wood-btn muted" id="ptrade-cancel" type="button"></button>
+                    </div>
                 </div>
             </div>
 

@@ -5,6 +5,7 @@ local Inventory = exports['rsg-inventory']
 CardsServer = {}
 
 local dbReady = false
+local readyHooks = {}   -- functions to run once the database is ready (see CardsServer.whenReady)
 local throttles = {}    -- [src] = { [key] = GetGameTimer() }
 local pendingPacks = {} -- [src] = { cards = { itemName, ... }, revealed = { [index] = true }, left = number }
 local pickups = {}      -- [citizenid] = { [itemName] = os.time() of the last pickup }
@@ -55,6 +56,16 @@ end
 function CardsServer.itemImage(name)
     local item = RSGCore.Shared.Items[name]
     return item and item.image or (name .. '.png')
+end
+
+function CardsServer.dbReady()
+    return dbReady
+end
+
+-- runs `fn` once the database tables exist (immediately if they already do)
+function CardsServer.whenReady(fn)
+    if dbReady then return fn() end
+    readyHooks[#readyHooks + 1] = fn
 end
 
 function CardsServer.round(value)
@@ -112,13 +123,15 @@ end
 
 -- Removes `amount` of a card / set, taking from the inventory first and then from the player's
 -- card boxes (scope 'boxes' = card boxes only). All or nothing: if anything fails, what was
--- already taken is handed back.
-function CardsServer.removeCards(src, name, amount, reason, scope)
+-- already taken is handed back. Pass a table as `touched` to collect the box stashes that changed
+-- (saved by the caller with CardsServer.saveStashes) instead of saving after every call.
+function CardsServer.removeCards(src, name, amount, reason, scope, touched)
     amount = math.floor(tonumber(amount) or 0)
     if amount < 1 or not Cards.Info[name] then return false end
 
     local inInventory = scope == 'boxes' and 0 or (CardsServer.countCards(src)[name] or 0)
-    local left, taken, touched = amount, {}, {}
+    local left, taken = amount, {}
+    local changed = touched or {}
 
     local fromInventory = math.min(inInventory, left)
     if fromInventory > 0 then
@@ -138,7 +151,7 @@ function CardsServer.removeCards(src, name, amount, reason, scope)
             if count > 0 then
                 if not Inventory:RemoveItem(stashId, name, count, nil, reason) then break end
                 taken[#taken + 1] = { target = stashId, amount = count }
-                touched[stashId] = true
+                changed[stashId] = true
                 left = left - count
             end
         end
@@ -151,8 +164,21 @@ function CardsServer.removeCards(src, name, amount, reason, scope)
         return false
     end
 
-    for stashId in pairs(touched) do Inventory:SaveStash(stashId) end
+    if not touched then CardsServer.saveStashes(changed) end
     return true
+end
+
+function CardsServer.saveStashes(stashes)
+    for stashId in pairs(stashes) do Inventory:SaveStash(stashId) end
+end
+
+-- the location with this id that the player is standing close enough to, or nil
+function CardsServer.findLocation(src, locations, id, radius)
+    for _, location in ipairs(locations) do
+        if location.id == id then
+            return CardsServer.isNear(src, location.coords, radius) and location or nil
+        end
+    end
 end
 
 local function debugPrint(...)
@@ -197,11 +223,57 @@ local function ensureDatabase()
         ]])
 
         MySQL.query.await([[
+            CREATE TABLE IF NOT EXISTS `rsg_cards_bonuses` (
+                `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `citizenid`    VARCHAR(50) NOT NULL,
+                `set_id`       VARCHAR(20) NOT NULL,
+                `completed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uniq_set` (`citizenid`, `set_id`),
+                INDEX `idx_set` (`set_id`)
+            )
+        ]])
+
+        MySQL.query.await([[
+            CREATE TABLE IF NOT EXISTS `rsg_cards_profiles` (
+                `citizenid` VARCHAR(50) NOT NULL,
+                `name`      VARCHAR(100) NOT NULL,
+                PRIMARY KEY (`citizenid`)
+            )
+        ]])
+
+        MySQL.query.await([[
+            CREATE TABLE IF NOT EXISTS `rsg_cards_unclaimed` (
+                `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `citizenid`  VARCHAR(50) NOT NULL,
+                `card`       VARCHAR(50) NOT NULL,
+                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                INDEX `idx_citizenid` (`citizenid`)
+            )
+        ]])
+
+        MySQL.query.await([[
             CREATE TABLE IF NOT EXISTS `rsg_cards_pickups` (
                 `citizenid` VARCHAR(50) NOT NULL,
                 `card`      VARCHAR(50) NOT NULL,
                 `picked_at` INT UNSIGNED NOT NULL,
                 PRIMARY KEY (`citizenid`, `card`)
+            )
+        ]])
+
+        MySQL.query.await([[
+            CREATE TABLE IF NOT EXISTS `rsg_cards_points` (
+                `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `item`       VARCHAR(50) NOT NULL,
+                `x`          DOUBLE NOT NULL,
+                `y`          DOUBLE NOT NULL,
+                `z`          DOUBLE NOT NULL,
+                `heading`    DOUBLE NOT NULL DEFAULT 0,
+                `exact`      TINYINT(1) NOT NULL DEFAULT 0,
+                `created_by` VARCHAR(50) NOT NULL DEFAULT 'config',
+                PRIMARY KEY (`id`),
+                INDEX `idx_item` (`item`)
             )
         ]])
     end)
@@ -229,10 +301,14 @@ local function checkItems()
 end
 
 CreateThread(function()
-    math.randomseed(os.time())
     checkItems()
     if Config.AutoDatabase and not ensureDatabase() then return end
     dbReady = true
+    for _, fn in ipairs(readyHooks) do
+        local ok, err = pcall(fn)
+        if not ok then print(('^1[rsg-cards] startup task failed: %s^7'):format(err)) end
+    end
+    readyHooks = {}
 end)
 
 ---------------------------------------------------------------------
@@ -257,6 +333,8 @@ local function recordCard(Player, card)
     return isNew, collected
 end
 
+CardsServer.recordCard = recordCard
+
 -- Gives one card (or complete set) and returns the data the UI needs to show it, or false.
 local function grantCard(src, card, reason)
     local Player = RSGCore.Functions.GetPlayer(src)
@@ -272,9 +350,9 @@ local function grantCard(src, card, reason)
         if not dropped then return false end
     end
 
-    local isNew, collected = false, nil
+    local isNew, collected, setComplete = false, nil, false
     if not info.deck then
-        isNew, collected = recordCard(Player, card)
+        isNew, collected, setComplete = CardsServer.markFound(Player, card)
         if isNew and collected and collected >= Cards.Total then
             CardsServer.notify(src, locale('collection_complete'), 'success')
             CardsServer.log(('**Collection complete**\n%s has found all %d cards'):format(CardsServer.playerTag(Player), Cards.Total))
@@ -290,6 +368,7 @@ local function grantCard(src, card, reason)
         isNew = isNew,
         collected = collected,
         total = Cards.Total,
+        setComplete = setComplete == true,
     }
 end
 
@@ -297,15 +376,18 @@ end
 -- CARD PACKS
 ---------------------------------------------------------------------
 local totalWeight = 0
+local chances = {} -- Config.Pack.Chances with whole-number weights
 for _, chance in ipairs(Config.Pack.Chances) do
-    totalWeight = totalWeight + math.max(0, math.floor(chance.weight))
+    local weight = math.max(0, math.floor(chance.weight))
+    chances[#chances + 1] = { tier = chance.tier, weight = weight }
+    totalWeight = totalWeight + weight
 end
 
 local function rollCard()
     if totalWeight > 0 then
         local roll = math.random(totalWeight)
-        for _, chance in ipairs(Config.Pack.Chances) do
-            roll = roll - math.max(0, math.floor(chance.weight))
+        for _, chance in ipairs(chances) do
+            roll = roll - chance.weight
             if roll <= 0 then
                 local pool = chance.tier == 'deck' and Cards.Decks or Cards.ByTier[chance.tier]
                 if pool and #pool > 0 then return pool[math.random(#pool)] end
@@ -316,6 +398,24 @@ local function rollCard()
     return Cards.List[math.random(#Cards.List)]
 end
 
+-- Cards that could not be handed over (player gone, inventory full and nowhere to drop) are kept
+-- here and given on the player's next login instead of being lost.
+local function queueUnclaimed(citizenid, card)
+    if not citizenid or not dbReady then
+        print(('^3[rsg-cards] could not hand over %s to %s and could not store it^7'):format(card, tostring(citizenid)))
+        return
+    end
+    local ok, err = pcall(MySQL.insert.await, 'INSERT INTO `rsg_cards_unclaimed` (`citizenid`, `card`) VALUES (?, ?)', { citizenid, card })
+    if not ok then print(('^1[rsg-cards] could not store unclaimed card %s for %s: %s^7'):format(card, citizenid, err)) end
+end
+
+-- grantCard for a card from a pack: if it can't be given it is queued, never lost
+local function grantPackCard(src, pack, card)
+    local result = grantCard(src, card, 'rsg-cards:pack')
+    if not result then queueUnclaimed(pack.citizenid, card) end
+    return result
+end
+
 -- Gives every card the player has not turned over yet (UI closed early, disconnect, restart)
 local function finishPack(src)
     local pack = pendingPacks[src]
@@ -323,10 +423,36 @@ local function finishPack(src)
     pendingPacks[src] = nil
     for index, card in ipairs(pack.cards) do
         if not pack.revealed[index] then
-            grantCard(src, card, 'rsg-cards:pack')
+            grantPackCard(src, pack, card)
         end
     end
 end
+
+RegisterNetEvent('rsg-cards:server:claimUnclaimed', function()
+    local src = source
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player or not dbReady or not CardsServer.throttle(src, 'claim', 5) then return end
+
+    local citizenid = Player.PlayerData.citizenid
+    CardsServer.saveProfile(Player) -- keeps the leaderboard name up to date
+    local ok, rows = pcall(MySQL.query.await, 'SELECT `id`, `card` FROM `rsg_cards_unclaimed` WHERE `citizenid` = ? ORDER BY `id`', { citizenid })
+    if not ok or not rows or #rows == 0 then return end
+
+    local given = 0
+    for _, row in ipairs(rows) do
+        local info = Cards.Info[row.card]
+        if not info then
+            MySQL.query.await('DELETE FROM `rsg_cards_unclaimed` WHERE `id` = ?', { row.id }) -- card no longer exists
+        elseif Inventory:CanAddItem(src, row.card, 1) and Inventory:AddItem(src, row.card, 1, nil, nil, 'rsg-cards:unclaimed') then
+            MySQL.query.await('DELETE FROM `rsg_cards_unclaimed` WHERE `id` = ?', { row.id })
+            if not info.deck then CardsServer.markFound(Player, row.card) end
+            given = given + 1
+        else
+            break -- no room: the rest stays queued for next time
+        end
+    end
+    if given > 0 then CardsServer.notify(src, locale('unclaimed_given', given), 'success') end
+end)
 
 RSGCore.Functions.CreateUseableItem(Config.Items.Pack, function(source, item)
     local src = source
@@ -342,7 +468,7 @@ RSGCore.Functions.CreateUseableItem(Config.Items.Pack, function(source, item)
 
     local cards = {}
     for i = 1, Config.Pack.Cards do cards[i] = rollCard() end
-    pendingPacks[src] = { cards = cards, revealed = {}, left = #cards }
+    pendingPacks[src] = { cards = cards, revealed = {}, left = #cards, citizenid = Player.PlayerData.citizenid }
 
     debugPrint(('%s opened a pack: %s'):format(Player.PlayerData.citizenid, table.concat(cards, ', ')))
     CardsServer.log(('**Pack opened**\n%s\n%s'):format(CardsServer.playerTag(Player), table.concat(cards, ', ')))
@@ -360,7 +486,7 @@ RSGCore.Functions.CreateCallback('rsg-cards:server:flipCard', function(source, c
     local card = pack.cards[index]
     if pack.left <= 0 then pendingPacks[source] = nil end
 
-    cb(grantCard(source, card, 'rsg-cards:pack'))
+    cb(grantPackCard(source, pack, card))
 end)
 
 RegisterNetEvent('rsg-cards:server:closePack', function()
@@ -402,7 +528,7 @@ end)
 RSGCore.Functions.CreateCallback('rsg-cards:server:pickupCard', function(source, cb, index)
     local src = source
     local Player = RSGCore.Functions.GetPlayer(src)
-    local point = Config.CardPoints[tonumber(index) or 0]
+    local point = CardsServer.points[tonumber(index) or 0]
     if not Player or not point or not Cards.Info[point.item] then return cb(false) end
     if not CardsServer.throttle(src, 'pickup', 2) then return cb(false) end
     if not CardsServer.isNear(src, point.coords, Config.Card.PickupDistance + 3.0) then return cb(false) end
@@ -466,6 +592,7 @@ local function createUniqueSerial()
 end
 
 local openBoxes = {} -- [src] = serial of the box the player has open beside their inventory
+local sweepQueued = {} -- [src] = true while a check after a move is already scheduled
 
 local allowedCategories = {}
 for _, category in ipairs(Config.Storage.AllowedCategories or {}) do allowedCategories[category] = true end
@@ -479,11 +606,11 @@ end
 -- Hands anything that isn't a card, set or pack back to the player (or drops it at their feet).
 local function sweepBox(src, serial)
     local stashId = 'box_' .. serial
-    local ok, stash = pcall(function() return Inventory:GetInventory(stashId) end)
-    if not ok or type(stash) ~= 'table' or type(stash.items) ~= 'table' then return end
+    local stashItems = getStashItems(stashId)
+    if not stashItems then return end
 
     local rejected = {}
-    for _, item in pairs(stash.items) do
+    for _, item in pairs(stashItems) do
         if type(item) == 'table' and item.name and not canStore(item.name) then rejected[#rejected + 1] = item end
     end
     if #rejected == 0 then return end
@@ -512,16 +639,111 @@ local function closeBox(src)
 end
 
 local BUNDLE_ACTION = 'bundle_sets' -- id of the button rsg-inventory shows at the top of the box
+local SORT_ACTION = 'sort_box'      -- id of the "Sort & Stack" button
+
+-- buttons shown at the top of the box (false removes them from a box that was opened before the options were turned off)
+local function boxActions()
+    local actions = {}
+    if Config.Storage.SortButton then actions[#actions + 1] = { id = SORT_ACTION, label = locale('sort_box') } end
+    if Config.Storage.BundleSets then actions[#actions + 1] = { id = BUNDLE_ACTION, label = locale('bundle_sets') } end
+    return #actions > 0 and actions or false
+end
+
+-- Moves an item somewhere safe: back into the box, else to the player, else onto the ground.
+local function returnItem(src, stashId, name, amount, info)
+    if Inventory:AddItem(stashId, name, amount, info, nil, 'rsg-cards:box-sort-refund') then return true end
+    if RSGCore.Functions.GetPlayer(src) and Inventory:CanAddItem(src, name, amount)
+        and Inventory:AddItem(src, name, amount, info, nil, 'rsg-cards:box-sort-refund') then return true end
+    return Inventory:ForceDropItem(src, name, amount, info, 'rsg-cards:box-sort-refund') and true or false
+end
+
+-- card sets first, then single cards (set order, card number), then packs, then anything else
+local function sortRank(name)
+    local info = Cards.Info[name]
+    if info then return 1, info.order end
+    if name == Config.Items.Pack then return 2, 0 end
+    return 3, 0
+end
+
+-- Stacks duplicate cards into one slot each and puts the box in order. Items are taken out of the box and
+-- put back in sorted order (rsg-inventory fills the first free slot), so nothing is ever deleted: if a step
+-- fails, whatever was taken out is returned. Returns 'done', 'none' or false.
+local function sortBox(src, serial)
+    local stashId = 'box_' .. serial
+    local stashItems = getStashItems(stashId)
+    if not stashItems then return false end
+
+    local originals, merged, byKey = {}, {}, {}
+    for _, item in pairs(stashItems) do
+        local amount = type(item) == 'table' and item.name and math.floor(tonumber(item.amount) or 0) or 0
+        if amount > 0 then
+            local info = type(item.info) == 'table' and next(item.info) ~= nil and item.info or nil
+            originals[#originals + 1] = { name = item.name, amount = amount, info = info, slot = item.slot }
+            local shared = RSGCore.Shared.Items[item.name]
+            -- unique items are never merged
+            local key = (shared and shared.unique) and ('u' .. #originals) or (item.name .. '|' .. (info and json.encode(info) or ''))
+            local entry = byKey[key]
+            if entry then
+                entry.amount = entry.amount + amount
+            else
+                entry = { name = item.name, amount = amount, info = info, key = key, slot = tonumber(item.slot) }
+                byKey[key] = entry
+                merged[#merged + 1] = entry
+            end
+        end
+    end
+    if #originals == 0 then return 'none' end
+
+    table.sort(merged, function(a, b)
+        local rankA, orderA = sortRank(a.name)
+        local rankB, orderB = sortRank(b.name)
+        if rankA ~= rankB then return rankA < rankB end
+        if orderA ~= orderB then return orderA < orderB end
+        if a.name ~= b.name then return a.name < b.name end
+        return a.key < b.key
+    end)
+
+    -- already stacked and in order?
+    local ordered = #originals == #merged
+    if ordered then
+        for index, entry in ipairs(merged) do
+            if entry.slot ~= index then ordered = false break end
+        end
+    end
+    if ordered then return 'none' end
+
+    -- take everything out, then put it back in sorted order
+    local removed = {}
+    for _, original in ipairs(originals) do
+        if Inventory:RemoveItem(stashId, original.name, original.amount, original.slot, 'rsg-cards:box-sort') then
+            removed[#removed + 1] = original
+        else
+            for _, taken in ipairs(removed) do returnItem(src, stashId, taken.name, taken.amount, taken.info) end
+            Inventory:SaveStash(stashId)
+            return false
+        end
+    end
+
+    local failed = false
+    for _, entry in ipairs(merged) do
+        if failed or not Inventory:AddItem(stashId, entry.name, entry.amount, entry.info, nil, 'rsg-cards:box-sort') then
+            failed = true
+            returnItem(src, stashId, entry.name, entry.amount, entry.info)
+        end
+    end
+    Inventory:SaveStash(stashId)
+    return not failed and 'done' or false
+end
 
 local function openBox(src, serial)
     if not RSGCore.Functions.GetPlayer(src) then return end
     sweepBox(src, serial) -- clears out anything stored before the card-only rule
+    if Config.Storage.SortOnOpen then pcall(sortBox, src, serial) end
     local opened = Inventory:OpenInventory(src, 'box_' .. serial, {
         label = locale('box_label', serial),
         maxweight = Config.Storage.MaxWeight,
         slots = Config.Storage.MaxSlots,
-        -- false removes the button from a box that was opened before the option was turned off
-        actions = Config.Storage.BundleSets and { { id = BUNDLE_ACTION, label = locale('bundle_sets') } } or false,
+        actions = boxActions(),
     })
     if opened then
         openBoxes[src] = serial
@@ -582,11 +804,11 @@ local function bundleSets(src, serial)
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return end
     local stashId = 'box_' .. serial
-    local ok, stash = pcall(function() return Inventory:GetInventory(stashId) end)
-    if not ok or type(stash) ~= 'table' or type(stash.items) ~= 'table' then return end
+    local stashItems = getStashItems(stashId)
+    if not stashItems then return end
 
     local counts = {}
-    for _, item in pairs(stash.items) do
+    for _, item in pairs(stashItems) do
         local info = type(item) == 'table' and item.name and Cards.Info[item.name]
         if info and not info.deck then
             counts[item.name] = (counts[item.name] or 0) + (tonumber(item.amount) or 0)
@@ -641,15 +863,27 @@ local function bundleSets(src, serial)
     CardsServer.log(('**Sets bundled**\n%s\nBox: %s\n%s'):format(CardsServer.playerTag(Player), serial, table.concat(made, ', ')))
 end
 
--- "Bundle Sets" button on the box (local event from rsg-inventory, which only sends it for a
--- button registered on the stash the player has open)
+-- Buttons on the box (local event from rsg-inventory, which only sends it for a button registered
+-- on the stash the player has open)
 AddEventHandler('rsg-inventory:stashAction', function(src, stashId, actionId)
-    if actionId ~= BUNDLE_ACTION or not Config.Storage.BundleSets then return end
     src = tonumber(src)
     local serial = src and openBoxes[src]
     if not serial or stashId ~= 'box_' .. serial then return end
-    if not CardsServer.throttle(src, 'bundle', 2) then return end
-    bundleSets(src, serial)
+
+    if actionId == BUNDLE_ACTION and Config.Storage.BundleSets then
+        if not CardsServer.throttle(src, 'bundle', 2) then return end
+        bundleSets(src, serial)
+    elseif actionId == SORT_ACTION and Config.Storage.SortButton then
+        if not CardsServer.throttle(src, 'sort', 2) then return end
+        local ok, result = pcall(sortBox, src, serial)
+        if ok and result == 'done' then
+            CardsServer.notify(src, locale('sort_done'), 'success')
+        elseif ok and result == 'none' then
+            CardsServer.notify(src, locale('sort_none'), 'inform')
+        else
+            CardsServer.notify(src, locale('sort_error'), 'error')
+        end
+    end
 end)
 
 -- rsg-inventory has no item filter for stashes, so check the box after every move into it
@@ -660,7 +894,10 @@ RegisterNetEvent('rsg-inventory:server:move', function(data)
     if not serial or type(data) ~= 'table' then return end
     local stashId = 'box_' .. serial
     if data.to ~= stashId and data.from ~= stashId then return end
+    if sweepQueued[src] then return end -- one check covers every move made in the meantime
+    sweepQueued[src] = true
     SetTimeout(150, function()
+        sweepQueued[src] = nil
         if openBoxes[src] == serial then sweepBox(src, serial) end
     end)
 end)
@@ -675,16 +912,11 @@ end)
 ---------------------------------------------------------------------
 AddEventHandler('playerDropped', function()
     local src = source
-    local Player = RSGCore.Functions.GetPlayer(src)
-    closeBox(src)
+    pcall(finishPack, src) -- cards not turned over yet are given, or kept for the next login
+    pcall(closeBox, src)   -- the player may already be gone, so this must never stop the cleanup below
     if pickupOwner[src] then pickups[pickupOwner[src]] = nil end
     pickupOwner[src] = nil
-    if Player then
-        finishPack(src)
-    elseif pendingPacks[src] then
-        print(('^3[rsg-cards] player %s left with unopened pack cards: %s^7'):format(src, table.concat(pendingPacks[src].cards, ', ')))
-        pendingPacks[src] = nil
-    end
+    sweepQueued[src] = nil
     throttles[src] = nil
 end)
 

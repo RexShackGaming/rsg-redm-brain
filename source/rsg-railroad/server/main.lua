@@ -1,5 +1,13 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-local ActiveTrains = {} -- [source] = trainDbId (0 for company/config trains)
+
+-- [source] = { id = trainDbId (0 for company/config trains), model = string, tc = Config.Trains entry }
+-- Filled in once at deploy time (after ownership is verified) so the frequent
+-- state-sync events never have to hit the database to authorise the caller.
+local ActiveTrains = {}
+local lastMilesAt = {} -- [source] = os.time() of the last accepted addMiles
+
+local SERVER_INTERACT_RADIUS = Config.ServerInteractRadius or 25.0 -- metres from a station for menu actions
+local SPAWN_STATION_RADIUS   = 150.0                               -- deploy point is up to ~55 m from the station marker
 
 ---------------------------------------------------------------
 -- SHARED SERVER HELPERS (globals used by the other server files)
@@ -18,6 +26,16 @@ end
 -- true when this player currently has a train out (tracked server-side).
 function HasActiveTrain(src)
     return ActiveTrains[src] ~= nil
+end
+
+-- Releases the player's train: forgets it, wipes its storage and drops any
+-- half-finished mission leg.
+function ClearActiveTrain(src)
+    ActiveTrains[src] = nil
+    lastMilesAt[src] = nil
+    if TrainStorage then TrainStorage.OnPutAway(src) end
+    if ClearMissionSession then ClearMissionSession(src) end
+    if ClearRobberySession then ClearRobberySession(src) end
 end
 
 -- Server-authoritative player position (OneSync).
@@ -39,6 +57,28 @@ function GetNearbyStation(src, radius)
         end
     end
     return best
+end
+
+-- true (plus the station) when the player is standing at a station, optionally
+-- one that belongs to `companyId`. Used to stop menu actions being fired from
+-- anywhere on the map.
+function IsAtStation(src, companyId, radius)
+    local coords = GetPlayerCoordsServer(src)
+    if not coords then return false end
+    radius = radius or SERVER_INTERACT_RADIUS
+    for _, station in ipairs(Config.Stations) do
+        if (not companyId or station.company == companyId) and #(coords - station.coords) <= radius then
+            return true, station
+        end
+    end
+    return false
+end
+
+-- IsAtStation + a player notification on failure.
+function RequireStation(src, companyId)
+    if IsAtStation(src, companyId) then return true end
+    NotifyPlayer(src, locale('not_at_station'), 'error')
+    return false
 end
 
 -- Returns role ('owner' | 'driver' | nil), the ownership row and the employee row.
@@ -72,15 +112,21 @@ local function Clamp(value, max)
     return value
 end
 
--- Verifies the caller owns `trainId` and is the one currently driving it.
+-- Returns the cached deployment when `trainId` is the personal (database) train
+-- this player deployed. Ownership was verified at deploy time. Company trains
+-- (id 0) have no database row, so there is nothing to persist for them.
 local function GetAuthorizedTrain(src, trainId)
-    local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player then return nil end
+    local active = ActiveTrains[src]
     trainId = tonumber(trainId)
-    if not trainId or ActiveTrains[src] ~= trainId then return nil end
-    local train = DB.GetTrainById(trainId)
-    if not train or train.citizenid ~= Player.PlayerData.citizenid then return nil end
-    return train, GetTrainConfig(train)
+    if not active or active.id == 0 or not trainId or active.id ~= trainId then return nil end
+    return active
+end
+
+local function FindConfigTrain(model)
+    for _, tc in ipairs(Config.Trains) do
+        if tc.model == model then return tc end
+    end
+    return nil
 end
 
 ---------------------------------------------------------------
@@ -127,6 +173,7 @@ RegisterNetEvent('rsg-railroad:buyTrain', function(trainIndex)
     local citizenid = Player.PlayerData.citizenid
     local trainConfig = Config.Trains[tonumber(trainIndex) or -1]
     if not trainConfig then return end
+    if not RequireStation(src, trainConfig.company) then return end
 
     if DB.CountTrains(citizenid) >= Config.MaxTrainsPerPlayer then
         NotifyPlayer(src, locale('train_limit_reached', Config.MaxTrainsPerPlayer), 'error')
@@ -172,8 +219,9 @@ RegisterNetEvent('rsg-railroad:sellTrain', function(trainId)
     local citizenid = Player.PlayerData.citizenid
     local train = trainId and DB.GetTrainById(trainId)
     if not train or train.citizenid ~= citizenid then return end
+    if not RequireStation(src) then return end
 
-    if ActiveTrains[src] == trainId then
+    if ActiveTrains[src] and ActiveTrains[src].id == trainId then
         NotifyPlayer(src, locale('park_before_selling'), 'error')
         return
     end
@@ -244,85 +292,120 @@ end)
 -- SPAWN / DESPAWN TRACKING
 ---------------------------------------------------------------
 -- `model` is sent by the client so train storage can size the stash per model.
--- It is optional: older call sites just fall back to the default capacity.
 RegisterNetEvent('rsg-railroad:setTrainSpawned', function(spawned, trainId, model)
     local src = source
     if not spawned then
-        ActiveTrains[src] = nil
-        -- STRICT: the train left the world, so its storage is destroyed.
-        if TrainStorage then TrainStorage.OnPutAway(src) end
+        ClearActiveTrain(src)
         return
     end
 
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return end
-    if ActiveTrains[src] then return end -- already has a train out
+    if ActiveTrains[src] then return end -- already has a train out (also covers 'Reverse Direction')
 
-    -- trainId is 0 for company/config trains (no DB row); only personal
-    -- trains (trainId > 0) need ownership verification.
+    -- A train can only be deployed from a station.
+    if not GetNearbyStation(src, SPAWN_STATION_RADIUS) then return end
+
+    -- trainId is 0 for company/config trains (no DB row); personal trains
+    -- (trainId > 0) need ownership verification.
     trainId = tonumber(trainId) or 0
+    local tc
     if trainId > 0 then
         local train = DB.GetTrainById(trainId)
         if not train or train.citizenid ~= Player.PlayerData.citizenid then return end
         DB.UnparkTrain(trainId)
+        model = train.train_model
+        tc = GetTrainConfig(train)
+    else
+        if type(model) ~= 'string' then return end
+        tc = FindConfigTrain(model)
+        if not tc then return end
     end
-    ActiveTrains[src] = trainId
 
-    -- Fresh deployment, so create a fresh (empty) stash. Note the guard above
-    -- means a 'Reverse Direction' re-spawn returns early and never reaches
-    -- here, which is exactly what preserves the train's load.
+    ActiveTrains[src] = { id = trainId, model = model, tc = tc }
+    lastMilesAt[src] = nil
+
+    -- Fresh deployment, so create a fresh (empty) stash.
     if TrainStorage then TrainStorage.OnSpawn(src, model) end
 end)
 
 ---------------------------------------------------------------
 -- PARK / STATE UPDATES (personal trains only)
 ---------------------------------------------------------------
-RegisterNetEvent('rsg-railroad:parkTrain', function(trainId, stationId, fuel, water, condition)
-    local src = source
-    local train, tc = GetAuthorizedTrain(src, trainId)
-    if not train then return end
+local function Limits(active)
+    local tc = active.tc
+    return tc and tc.maxFuel or 100, tc and tc.maxWater or 100, tc and tc.maxCondition or 100
+end
 
-    DB.ParkTrain(train.id, stationId,
-        Clamp(fuel, tc and tc.maxFuel or 100), Clamp(water, tc and tc.maxWater or 100), Clamp(condition, tc and tc.maxCondition or 100))
-    ActiveTrains[src] = nil
-    -- STRICT: parking destroys anything left in train storage.
-    if TrainStorage then TrainStorage.OnPutAway(src) end
+RegisterNetEvent('rsg-railroad:parkTrain', function(trainId, _, fuel, water, condition)
+    local src = source
+    local active = ActiveTrains[src]
+    if not active then return end
+
+    -- Company trains have no database row: just release the slot.
+    if active.id == 0 then
+        ClearActiveTrain(src)
+        return
+    end
+    if tonumber(trainId) ~= active.id then return end
+
+    -- The parking station comes from the player's real position, never the client.
+    local station = GetNearbyStation(src, 100.0)
+    if not station then return end
+
+    local maxFuel, maxWater, maxCondition = Limits(active)
+    DB.ParkTrain(active.id, station.id, Clamp(fuel, maxFuel), Clamp(water, maxWater), Clamp(condition, maxCondition))
+    ClearActiveTrain(src) -- STRICT: parking destroys anything left in train storage
 end)
 
 RegisterNetEvent('rsg-railroad:updateTrainState', function(trainId, fuel, water, condition)
-    local train, tc = GetAuthorizedTrain(source, trainId)
-    if not train then return end
-    DB.UpdateTrainState(train.id,
-        Clamp(fuel, tc and tc.maxFuel or 100), Clamp(water, tc and tc.maxWater or 100), Clamp(condition, tc and tc.maxCondition or 100))
+    local active = GetAuthorizedTrain(source, trainId)
+    if not active then return end
+    local maxFuel, maxWater, maxCondition = Limits(active)
+    DB.UpdateTrainState(active.id, Clamp(fuel, maxFuel), Clamp(water, maxWater), Clamp(condition, maxCondition))
 end)
 
 RegisterNetEvent('rsg-railroad:updateFuel', function(trainId, fuel)
-    local train, tc = GetAuthorizedTrain(source, trainId)
-    if not train then return end
-    DB.UpdateTrainFuel(train.id, Clamp(fuel, tc and tc.maxFuel or 100))
+    local active = GetAuthorizedTrain(source, trainId)
+    if not active then return end
+    DB.UpdateTrainFuel(active.id, Clamp(fuel, (Limits(active))))
 end)
 
 RegisterNetEvent('rsg-railroad:updateWater', function(trainId, water)
-    local train, tc = GetAuthorizedTrain(source, trainId)
-    if not train then return end
-    DB.UpdateTrainWater(train.id, Clamp(water, tc and tc.maxWater or 100))
+    local active = GetAuthorizedTrain(source, trainId)
+    if not active then return end
+    local _, maxWater = Limits(active)
+    DB.UpdateTrainWater(active.id, Clamp(water, maxWater))
 end)
 
 RegisterNetEvent('rsg-railroad:updateCondition', function(trainId, condition)
-    local train, tc = GetAuthorizedTrain(source, trainId)
-    if not train then return end
-    DB.UpdateTrainCondition(train.id, Clamp(condition, tc and tc.maxCondition or 100))
+    local active = GetAuthorizedTrain(source, trainId)
+    if not active then return end
+    local _, _, maxCondition = Limits(active)
+    DB.UpdateTrainCondition(active.id, Clamp(condition, maxCondition))
 end)
 
--- Sanity cap on miles credited per call (total_miles drives milestone rewards).
-local MAX_MILES_PER_CALL = 25
+-- total_miles drives milestone rewards, so credit is capped by how far the
+-- train could physically have travelled since the last accepted report.
+local MIN_MILES_INTERVAL = 5 -- seconds between accepted reports (client reports every 10 s)
+local MAX_MILES_WINDOW   = 30 -- seconds of travel credited at most per report
 
 RegisterNetEvent('rsg-railroad:addMiles', function(trainId, miles)
-    local train = GetAuthorizedTrain(source, trainId)
-    if not train then return end
-    miles = tonumber(miles) or 0
-    if miles <= 0 then return end
-    DB.AddMiles(train.id, math.min(miles, MAX_MILES_PER_CALL))
+    local src = source
+    local active = GetAuthorizedTrain(src, trainId)
+    if not active then return end
+
+    miles = tonumber(miles)
+    if not miles or miles ~= miles or miles <= 0 then return end
+
+    local now = os.time()
+    local elapsed = math.min(now - (lastMilesAt[src] or (now - 10)), MAX_MILES_WINDOW)
+    if elapsed < MIN_MILES_INTERVAL then return end
+    lastMilesAt[src] = now
+
+    -- Client conversion is metres / 100; allow 1.5x the train's top speed for upgrades.
+    local topSpeed = (active.tc and active.tc.maxSpeed or 30) * 1.5
+    DB.AddMiles(active.id, math.min(miles, topSpeed * elapsed / 100.0))
 end)
 
 ---------------------------------------------------------------
@@ -346,14 +429,12 @@ RegisterNetEvent('rsg-railroad:useMaintenanceItem', function(mType, trainId)
         TriggerClientEvent('rsg-railroad:maintenanceResult', src, mType, false)
     end
 
-    if not HasActiveTrain(src) then return fail() end
+    -- The train is the one this player deployed; the client-sent id is ignored.
+    local active = ActiveTrains[src]
+    if not active then return fail() end
 
-    local train
-    trainId = tonumber(trainId) or 0
-    if trainId > 0 then
-        train = DB.GetTrainById(trainId)
-        if not train or train.citizenid ~= Player.PlayerData.citizenid then return fail() end
-    end
+    local train = active.id > 0 and DB.GetTrainById(active.id) or nil
+    if active.id > 0 and not train then return fail() end
 
     local itemName = Config[m.cfg].item
     if not exports['rsg-inventory']:RemoveItem(src, itemName, 1, nil, 'railroad-maintenance') then
@@ -362,8 +443,7 @@ RegisterNetEvent('rsg-railroad:useMaintenanceItem', function(mType, trainId)
     end
 
     if train then
-        local tc = GetTrainConfig(train)
-        local maxVal = tc and tc[m.max] or 100
+        local maxVal = active.tc and active.tc[m.max] or 100
         DB[m.update](train.id, math.min((train[m.col] or 0) + math.floor(maxVal * 0.10), maxVal))
     end
 
@@ -376,5 +456,7 @@ end)
 AddEventHandler('playerDropped', function()
     local src = source
     ActiveTrains[src] = nil
+    lastMilesAt[src] = nil
     lastTicketRevenue[src] = nil
+    if ClearMissionSession then ClearMissionSession(src) end
 end)

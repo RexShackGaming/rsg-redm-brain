@@ -1,6 +1,6 @@
 # rsg-playerinfo
 
-Version 3.1.0. rsg-playerinfo
+Version 3.1.1. rsg-playerinfo
 
 **Full-screen player information dashboard for RedM (RSG Core).** > `/info` opens a dashboard that fills 80% of the screen (configurable) showing everything about your character: money, identity, job, condition and reputation. RDR2 "leather & gold" house style. Version 3.1.0 · Full technical details in [DOCS.md](DOCS.md)
 

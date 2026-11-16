@@ -66,7 +66,6 @@ local function rotateOffers()
 end
 
 CreateThread(function()
-    Wait(1000) -- let server.lua seed the random generator first
     while true do
         if os.time() >= nextRefresh then rotateOffers() end
         Wait(30000)
@@ -74,11 +73,7 @@ CreateThread(function()
 end)
 
 local function getLocation(src, id)
-    for _, location in ipairs(Config.Trades.Locations) do
-        if location.id == id then
-            return CardsServer.isNear(src, location.coords, Config.Trades.InteractDistance) and location or nil
-        end
-    end
+    return CardsServer.findLocation(src, Config.Trades.Locations, id, Config.Trades.InteractDistance)
 end
 
 local function tradeKey(locationId, offerId)
@@ -91,7 +86,7 @@ end
 
 -- offers of one collector, with how many of each card the player carries
 local function buildOffers(src, locationId)
-    local counts = CardsServer.countCards(src)
+    local counts = CardsServer.countCards(src, true) -- inventory and card boxes
     local Player = RSGCore.Functions.GetPlayer(src)
     local citizenid = Player and Player.PlayerData.citizenid
     local list = {}
@@ -149,7 +144,7 @@ RSGCore.Functions.CreateCallback('rsg-cards:server:trade', function(source, cb, 
     local citizenid = Player.PlayerData.citizenid
     if hasTraded(citizenid, locationId, offer.id) then return reply(locale('trade_done'), 'error') end
 
-    local counts = CardsServer.countCards(src)
+    local counts = CardsServer.countCards(src, true) -- inventory and card boxes
     for _, name in ipairs(offer.cards) do
         if (counts[name] or 0) < 1 then return reply(locale('trade_missing'), 'error') end
     end
@@ -158,26 +153,30 @@ RSGCore.Functions.CreateCallback('rsg-cards:server:trade', function(source, cb, 
         return reply(locale('inventory_full'), 'error')
     end
 
-    local removed = {}
+    local removed, touched = {}, {}
+    local function refund()
+        for _, taken in ipairs(removed) do
+            Inventory:AddItem(src, taken, 1, nil, nil, 'rsg-cards:trade-refund')
+        end
+        CardsServer.saveStashes(touched)
+    end
+
     for _, name in ipairs(offer.cards) do
-        if Inventory:RemoveItem(src, name, 1, nil, 'rsg-cards:trade') then
+        if CardsServer.removeCards(src, name, 1, 'rsg-cards:trade', true, touched) then
             removed[#removed + 1] = name
         else
             -- something changed mid-trade: hand back what was already taken
-            for _, taken in ipairs(removed) do
-                Inventory:AddItem(src, taken, 1, nil, nil, 'rsg-cards:trade-refund')
-            end
+            refund()
             return reply(locale('trade_missing'), 'error')
         end
     end
 
     if not Inventory:AddItem(src, offer.reward, offer.amount, nil, nil, 'rsg-cards:trade') then
         -- could not hand over the reward: give the cards back
-        for _, name in ipairs(removed) do
-            Inventory:AddItem(src, name, 1, nil, nil, 'rsg-cards:trade-refund')
-        end
+        refund()
         return reply(locale('inventory_full'), 'error')
     end
+    CardsServer.saveStashes(touched)
 
     if Config.Trades.OncePerPlayer then
         traded[citizenid] = traded[citizenid] or {}

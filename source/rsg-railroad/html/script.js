@@ -243,6 +243,15 @@ function renderDashboard(content, details) {
         }
     }));
 
+    // Driver wage share
+    const wgInput = el('input', 'field-input');
+    wgInput.type = 'number'; wgInput.min = 0; wgInput.max = stationData.maxWage || 100; wgInput.value = o.wage_percent || 0;
+    details.appendChild(field(t('nui_wage_percent', 'Driver Wage Share (%)'), wgInput));
+    details.appendChild(woodBtn(t('nui_wage_save', 'Set Wage'), () => {
+        nuiFetch('setWagePercent', { companyId: stationData.station.company, percent: parseInt(wgInput.value) || 0 }).catch(() => {});
+        closeStation();
+    }));
+
     // Rename
     const rInput = el('input', 'field-input');
     rInput.type = 'text'; rInput.maxLength = 50; rInput.value = o.company_name || '';
@@ -722,7 +731,20 @@ window.addEventListener('message', (event) => {
     else if (action === 'updateHUD')      updateHUD(event.data);
     else if (action === 'openInfoMenu')   openInfoMenu(event.data);
     else if (action === 'openDialog')     openLuaDialog(event.data);
+    else if (action === 'showPressureHUD' || action === 'updatePressureHUD') updatePressureHUD(event.data);
+    else if (action === 'hidePressureHUD') document.getElementById('pressureHUD').classList.add('hidden');
 });
+
+// ========== ENGINE PRESSURE HUD (train robbery) ==========
+function updatePressureHUD(d) {
+    const p = Math.max(0, Math.min(100, Number(d.pressure) || 0));
+    document.getElementById('pressureHUD').classList.remove('hidden');
+    document.getElementById('pressureLabel').textContent = t('nui_engine_pressure', 'Engine Pressure');
+    document.getElementById('pressureStatus').textContent = d.status || '';
+    const bar = document.getElementById('pressureBar');
+    bar.style.width = p + '%';
+    bar.className = 'bar-fill ' + (d.recovering ? 'stat-warn' : (p <= 30 ? 'stat-bad' : (p <= 60 ? 'stat-warn' : 'stat-good')));
+}
 
 // ========== INFO MENU (Lua: ShowInfoMenu) ==========
 function openInfoMenu(data) {

@@ -6,6 +6,24 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 local MISSION_COOLDOWN_MS = 15000
 local lastMissionAt = {} -- [source] = GetGameTimer() of last payout
 
+-- A payout is only accepted for a leg the server saw start, and only after a
+-- minimum travel time. Without this, anyone with a train out who stood near a
+-- destination could fire completeMission every cooldown for free money/XP.
+local MIN_LEG_SECONDS = (Config.Missions and Config.Missions.MinLegSeconds) or 20
+local legSessions = {} -- [source] = { type, label, startedAt }
+
+function ClearMissionSession(src)
+    legSessions[src] = nil
+end
+
+RegisterNetEvent('rsg-railroad:missionLegStarted', function(missionType, label)
+    local src = source
+    if missionType ~= 'delivery' and missionType ~= 'maintenance' then return end
+    if type(label) ~= 'string' or #label > 100 then return end
+    if not HasActiveTrain(src) then return end
+    legSessions[src] = { type = missionType, label = label, startedAt = os.time() }
+end)
+
 -- Finds the matching delivery destination in Config by label, so pay is
 -- always taken from server config rather than whatever the client sent.
 local function FindDeliveryDestination(label)
@@ -53,6 +71,10 @@ RegisterNetEvent('rsg-railroad:completeMission', function(missionType, destinati
     if type(destination) ~= 'table' or type(destination.label) ~= 'string' then return end
     if not HasActiveTrain(src) then return end
 
+    local session = legSessions[src]
+    if not session or session.type ~= missionType or session.label ~= destination.label then return end
+    if (os.time() - session.startedAt) < MIN_LEG_SECONDS then return end
+
     local citizenid = Player.PlayerData.citizenid
     local role, ownership, employee = GetCompanyRole(companyId, citizenid)
     if not role then return end
@@ -77,9 +99,20 @@ RegisterNetEvent('rsg-railroad:completeMission', function(missionType, destinati
     end
 
     lastMissionAt[src] = now
+    legSessions[src] = nil -- one payout per started leg
 
-    -- All mission money goes to the company cash register
-    DB.AddToCashRegister(companyId, pay)
+    -- Split: driver wage share is paid in cash, the rest goes to the register
+    local wage = 0
+    local wcfg = Config.DriverWages
+    if wcfg and wcfg.Enabled and ownership then
+        local isOwner = ownership.owner_citizenid == citizenid
+        if wcfg.OwnerEarnsWage or not isOwner then
+            local pct = math.min(tonumber(ownership.wage_percent) or wcfg.DefaultPercent or 0, wcfg.MaxPercent or 100)
+            wage = math.floor(pay * pct / 100)
+        end
+    end
+    DB.AddToCashRegister(companyId, pay - wage)
+    if wage > 0 then Player.Functions.AddMoney('cash', wage, 'railroad-driver-wage') end
 
     if Config.Webhooks.LogMissionCompletions then
         Webhook.SendFields('economy', 'Mission Completed', {
@@ -87,6 +120,7 @@ RegisterNetEvent('rsg-railroad:completeMission', function(missionType, destinati
             { 'Company', CompanyLabel(companyId) },
             { 'Type', missionType },
             { 'Pay', '$' .. pay },
+            { 'Driver wage', '$' .. wage },
             { 'XP', xp },
         }, 'success')
     end
@@ -100,7 +134,7 @@ RegisterNetEvent('rsg-railroad:completeMission', function(missionType, destinati
         DB.AddEmployeeEarnings(employee.id, pay)
     end
 
-    NotifyPlayer(src, locale('mission_complete_summary', pay, xp), 'success', 7000)
+    NotifyPlayer(src, wage > 0 and locale('mission_complete_wage', pay, xp, wage) or locale('mission_complete_summary', pay, xp), 'success', 7000)
     TriggerClientEvent('rsg-railroad:refreshStationData', src, companyId)
 
     CheckRailwaymanRewards(src, citizenid, companyId)
@@ -137,8 +171,8 @@ function CheckRailwaymanRewards(src, citizenid, companyId)
                 end
             end
 
-            if met then
-                DB.ClaimReward(citizenid, reward.id)
+            -- ClaimReward is atomic (INSERT IGNORE), so each milestone pays once even under a race.
+            if met and DB.ClaimReward(citizenid, reward.id) then
                 if reward.cashReward > 0 then
                     Player.Functions.AddMoney('cash', reward.cashReward, 'railroad-milestone')
                 end
@@ -158,4 +192,5 @@ end
 
 AddEventHandler('playerDropped', function()
     lastMissionAt[source] = nil
+    legSessions[source] = nil
 end)

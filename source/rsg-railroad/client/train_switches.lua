@@ -39,23 +39,6 @@ function ToggleTrackSwitches()
 end
 
 ---------------------------------------------------------------
----------------------------------------------------------------
--- SILENT TOGGLE (for ambient trains - no notification)
----------------------------------------------------------------
-function ToggleAmbientTrackSwitches()
-    switchState = not switchState
-
-    local counter = 0
-    repeat
-        for _, modelName in ipairs(trackModels) do
-            local trackHash = joaat(modelName)
-            Citizen.InvokeNative(0xE6C5E2125EB210C1, trackHash, counter, switchState)
-            Citizen.InvokeNative(0x3ABFA128F5BF5A70, trackHash, counter, switchState)
-        end
-        counter = counter + 1
-    until counter >= 25
-end
-
 -- GET SWITCH STATE (for HUD)
 ---------------------------------------------------------------
 function GetSwitchState()

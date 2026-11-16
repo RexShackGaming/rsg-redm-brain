@@ -1,6 +1,6 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
-local uiMode = nil -- nil | 'pack' | 'reveal' | 'vendor' | 'trade'
+local uiMode = nil -- nil | 'pack' | 'reveal' | 'vendor' | 'trade' | 'collection' | 'ptrade'
 local uiLocation = nil -- id of the vendor / collector the UI was opened at
 local busy = false
 local inspectProp = nil
@@ -17,7 +17,10 @@ local function playSound(name)
     TriggerServerEvent('InteractSound_SV:PlayOnSource', name, Config.Sounds.volume)
 end
 
-local function loadModel(model)
+-- shared with client/world.lua (this file loads first)
+CardsClient = {}
+
+function CardsClient.loadModel(model)
     local hash = type(model) == 'string' and joaat(model) or model
     if not IsModelValid(hash) then return nil end
     RequestModel(hash)
@@ -37,7 +40,12 @@ local function getStrings()
         'pack_title', 'pack_subtitle', 'pack_hint', 'found_title', 'found_subtitle', 'new_card', 'collection_progress',
         'close', 'tier_basic', 'tier_rare', 'tier_ultra', 'tier_v', 'tier_vmax', 'tier_deck',
         'vendor_title', 'vendor_subtitle', 'vendor_empty', 'vendor_empty_boxes', 'vendor_each', 'vendor_owned', 'sell', 'sell_all', 'buy_supplies',
-        'confirm_title', 'confirm_sell_all', 'confirm', 'cancel',
+        'confirm_title', 'confirm_sell_all', 'confirm', 'cancel', 'action_failed',
+        'sell_duplicates', 'confirm_sell_duplicates', 'collection_btn', 'complete_pill',
+        'collection_title', 'collection_subtitle', 'tab_collection', 'tab_leaderboard', 'first_pill', 'first_by',
+        'board_empty', 'board_row', 'board_rank',
+        'ptrade_title', 'ptrade_subtitle', 'ptrade_invite', 'accept', 'decline', 'ptrade_you', 'ptrade_them',
+        'ptrade_nothing', 'ptrade_your_cards', 'ptrade_ready', 'ptrade_unready', 'ptrade_hint', 'ptrade_hint_dups',
         'sets_title', 'sell_title', 'set_ready', 'make_set', 'set_pill',
         'trade_title', 'trade_subtitle', 'trade_empty', 'trade_button', 'trade_needs', 'trade_refresh', 'trade_completed',
     }) do
@@ -77,9 +85,12 @@ CreateThread(function()
     end
 end)
 
+local uiOrigin = nil -- where the player stood when the UI opened
+
 local function openUI(mode, data, locationId)
     uiMode = mode
     uiLocation = locationId
+    uiOrigin = GetEntityCoords(PlayerPedId())
     applyNuiFocus(true)
     SendNUIMessage({ action = 'open', mode = mode, data = data, strings = getStrings(), imagePath = Config.ImagePath })
 end
@@ -89,12 +100,30 @@ local function closeUI()
     if uiMode == 'pack' then
         -- the server hands over any cards that were not turned over
         TriggerServerEvent('rsg-cards:server:closePack')
+    elseif uiMode == 'ptrade' then
+        TriggerServerEvent('rsg-cards:server:ptradeCancel')
     end
     uiMode = nil
     uiLocation = nil
+    uiOrigin = nil
     applyNuiFocus(false)
     SendNUIMessage({ action = 'close' })
 end
+
+-- closes the UI when the player dies or walks away from the vendor / collector
+CreateThread(function()
+    while true do
+        if uiMode then
+            local ped = PlayerPedId()
+            local away = (uiMode == 'vendor' or uiMode == 'trade' or uiMode == 'ptrade') and uiOrigin
+                and #(GetEntityCoords(ped) - uiOrigin) > Config.CloseDistance
+            if IsEntityDead(ped) or away then closeUI() end
+            Wait(500)
+        else
+            Wait(1000)
+        end
+    end
+end)
 
 RegisterNUICallback('close', function(_, cb)
     closeUI()
@@ -154,6 +183,11 @@ RegisterNUICallback('sellAll', function(_, cb)
     cb(RSGCore.Functions.AwaitCallback('rsg-cards:server:sellAll', 5000, uiLocation) or false)
 end)
 
+RegisterNUICallback('sellDuplicates', function(_, cb)
+    if uiMode ~= 'vendor' then return cb(false) end
+    cb(RSGCore.Functions.AwaitCallback('rsg-cards:server:sellDuplicates', 5000, uiLocation) or false)
+end)
+
 RegisterNUICallback('makeSet', function(body, cb)
     if uiMode ~= 'vendor' then return cb(false) end
     cb(RSGCore.Functions.AwaitCallback('rsg-cards:server:makeSet', 5000, uiLocation, body.id) or false)
@@ -165,6 +199,88 @@ RegisterNUICallback('buy', function(_, cb)
     closeUI()
     if isVendor then TriggerServerEvent('rsg-cards:server:openShop', shopId) end
     cb('ok')
+end)
+
+---------------------------------------------------------------------
+-- COLLECTION AND LEADERBOARD
+---------------------------------------------------------------------
+local function openCollection()
+    if uiMode or busy then return end
+    local data = RSGCore.Functions.AwaitCallback('rsg-cards:server:getCollection', 5000)
+    if not data or uiMode then return end
+    openUI('collection', data)
+end
+
+RegisterNetEvent('rsg-cards:client:openCollection', openCollection)
+
+-- the "Collection" button of the vendor window
+RegisterNUICallback('collection', function(_, cb)
+    closeUI()
+    cb('ok')
+    openCollection()
+end)
+
+---------------------------------------------------------------------
+-- PLAYER TO PLAYER TRADING (the server keeps the trade, the UI only shows it)
+---------------------------------------------------------------------
+RegisterNetEvent('rsg-cards:client:tradeInvite', function(name)
+    if uiMode or busy then return TriggerServerEvent('rsg-cards:server:ptradeRespond', false) end
+    openUI('ptrade', { phase = 'invite', name = name })
+end)
+
+RegisterNetEvent('rsg-cards:client:tradeState', function(state)
+    if uiMode == 'ptrade' then
+        SendNUIMessage({ action = 'update', mode = 'ptrade', data = state })
+        return
+    end
+    if uiMode then closeUI() end
+    openUI('ptrade', state)
+end)
+
+RegisterNetEvent('rsg-cards:client:tradeClosed', function(reason)
+    if uiMode == 'ptrade' then closeUI() end
+    notify(locale('ptrade_' .. tostring(reason)), reason == 'done' and 'success' or 'inform')
+end)
+
+RegisterNUICallback('ptradeRespond', function(body, cb)
+    if uiMode ~= 'ptrade' then return cb(false) end
+    TriggerServerEvent('rsg-cards:server:ptradeRespond', body.accept == true)
+    if body.accept ~= true then closeUI() end
+    cb('ok')
+end)
+
+RegisterNUICallback('ptradeOffer', function(body, cb)
+    if uiMode ~= 'ptrade' then return cb(false) end
+    TriggerServerEvent('rsg-cards:server:ptradeOffer', body.name, tonumber(body.amount))
+    cb('ok')
+end)
+
+RegisterNUICallback('ptradeReady', function(body, cb)
+    if uiMode ~= 'ptrade' then return cb(false) end
+    TriggerServerEvent('rsg-cards:server:ptradeReady', body.ready == true)
+    cb('ok')
+end)
+
+-- "Trade cards" option when looking at another player
+local TRADE_TARGET = 'rsg-cards:ptrade'
+
+CreateThread(function()
+    if not Config.EnableTarget or not Config.PlayerTrade.Enabled then return end
+    exports['rsg-target']:addGlobalPlayer({
+        {
+            name = TRADE_TARGET,
+            icon = 'fa-solid fa-right-left',
+            label = locale('ptrade_target'),
+            distance = 2.5,
+            canInteract = function() return not uiMode and not busy end,
+            onSelect = function(data)
+                local player = NetworkGetPlayerIndexFromPed(data.entity)
+                if player and player ~= -1 then
+                    TriggerServerEvent('rsg-cards:server:ptradeRequest', GetPlayerServerId(player))
+                end
+            end,
+        },
+    })
 end)
 
 ---------------------------------------------------------------------
@@ -214,7 +330,7 @@ RegisterNetEvent('rsg-cards:client:inspectCard', function(card)
         return notify(locale('inspect_dismount'), 'error')
     end
 
-    local hash = loadModel(info.model)
+    local hash = CardsClient.loadModel(info.model)
     if not hash then return end
 
     busy = true
@@ -246,12 +362,25 @@ end)
 ---------------------------------------------------------------------
 -- CLEANUP
 ---------------------------------------------------------------------
+-- cards that could not be handed over earlier (e.g. left with unopened pack cards) are given now
+local function claimUnclaimed()
+    Wait(3000) -- let the inventory finish loading
+    TriggerServerEvent('rsg-cards:server:claimUnclaimed')
+end
+
+RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', claimUnclaimed)
+
+CreateThread(function()
+    if LocalPlayer.state.isLoggedIn then claimUnclaimed() end
+end)
+
 RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
     closeUI()
 end)
 
 AddEventHandler('onResourceStop', function(resourceName)
     if resourceName ~= GetCurrentResourceName() then return end
+    if Config.EnableTarget and Config.PlayerTrade.Enabled then exports['rsg-target']:removeGlobalPlayer(TRADE_TARGET) end
     if uiMode then applyNuiFocus(false) end
     if inspectProp then
         ClearPedTasks(PlayerPedId())

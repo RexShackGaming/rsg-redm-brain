@@ -5,7 +5,7 @@ lua54 'yes'
 
 name 'rsg-cards'
 description 'Collectable cigarette cards for the RSG Framework'
-version '3.0.4'
+version '3.2.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
@@ -22,8 +22,11 @@ client_scripts {
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/server.lua',
+    'server/collection.lua',
+    'server/points.lua',
     'server/vendor.lua',
     'server/trades.lua',
+    'server/ptrade.lua',
     'server/versionchecker.lua',
 }
 
@@ -42,4 +45,5 @@ dependencies {
     'rsg-inventory',
     'oxmysql',
     'rsg-target',
+    'rsg-gizmo',
 }

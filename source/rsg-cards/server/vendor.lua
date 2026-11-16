@@ -9,11 +9,7 @@ local function scope()
 end
 
 local function getLocation(src, id)
-    for _, location in ipairs(Config.Shop.Locations) do
-        if location.id == id then
-            return CardsServer.isNear(src, location.coords, Config.Shop.InteractDistance) and location or nil
-        end
-    end
+    return CardsServer.findLocation(src, Config.Shop.Locations, id, Config.Shop.InteractDistance)
 end
 
 -- everything the player carries (inventory and card boxes) that the vendor buys, in set order
@@ -61,11 +57,26 @@ local function craftableSets(counts)
     return list
 end
 
+-- spare copies: everything beyond the first of each single card (complete sets are never counted)
+local function duplicateTotals(counts)
+    local count, total = 0, 0
+    if not Config.Shop.SellDuplicates then return nil end
+    for name, amount in pairs(counts) do
+        local info = Cards.Info[name]
+        if info and not info.deck and amount > 1 then
+            count = count + (amount - 1)
+            total = total + info.price * (amount - 1)
+        end
+    end
+    return { count = count, total = CardsServer.round(total) }
+end
+
 local function vendorData(src, message, notifyType)
     local counts = CardsServer.countCards(src, scope()) -- read once: inventory and boxes are only scanned one time per update
     return {
         items = sellableItems(counts),
         sets = craftableSets(counts),
+        duplicates = duplicateTotals(counts),
         boxesOnly = Config.Shop.BoxesOnly == true,
         message = message,
         type = notifyType,
@@ -111,13 +122,15 @@ RSGCore.Functions.CreateCallback('rsg-cards:server:sellAll', function(source, cb
     if not Player or not getLocation(src, shopId) then return cb(false) end
     if not CardsServer.throttle(src, 'sell', 1) then return cb(false) end
 
-    local total, sold = 0, 0
+    -- the boxes are saved once at the end, not once per card
+    local total, sold, touched = 0, 0, {}
     for name, amount in pairs(CardsServer.countCards(src, scope())) do
-        if amount > 0 and CardsServer.removeCards(src, name, amount, 'rsg-cards:sell-all', scope()) then
+        if amount > 0 and CardsServer.removeCards(src, name, amount, 'rsg-cards:sell-all', scope(), touched) then
             total = total + Cards.Info[name].price * amount
             sold = sold + amount
         end
     end
+    CardsServer.saveStashes(touched)
 
     if sold == 0 then
         return cb(vendorData(src, locale('sell_nothing'), 'error'))
@@ -128,6 +141,37 @@ RSGCore.Functions.CreateCallback('rsg-cards:server:sellAll', function(source, cb
     CardsServer.log(('**Cards sold (all)**\n%s\n%d items for $%.2f'):format(CardsServer.playerTag(Player), sold, total))
 
     cb(vendorData(src, locale('sell_all_success', sold, ('%.2f'):format(total)), 'success'))
+end)
+
+-- sells every spare copy and keeps one of each single card
+RSGCore.Functions.CreateCallback('rsg-cards:server:sellDuplicates', function(source, cb, shopId)
+    local src = source
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player or not Config.Shop.SellDuplicates or not getLocation(src, shopId) then return cb(false) end
+    if not CardsServer.throttle(src, 'sell', 1) then return cb(false) end
+
+    local total, sold, touched = 0, 0, {}
+    for name, amount in pairs(CardsServer.countCards(src, scope())) do
+        local info = Cards.Info[name]
+        if info and not info.deck and amount > 1 then
+            local extra = amount - 1
+            if CardsServer.removeCards(src, name, extra, 'rsg-cards:sell-duplicates', scope(), touched) then
+                total = total + info.price * extra
+                sold = sold + extra
+            end
+        end
+    end
+    CardsServer.saveStashes(touched)
+
+    if sold == 0 then
+        return cb(vendorData(src, locale('sell_duplicates_none'), 'error'))
+    end
+
+    total = CardsServer.round(total)
+    pay(Player, total, 'rsg-cards:sell-duplicates')
+    CardsServer.log(('**Duplicates sold**\n%s\n%d cards for $%.2f'):format(CardsServer.playerTag(Player), sold, total))
+
+    cb(vendorData(src, locale('sell_duplicates_success', sold, ('%.2f'):format(total)), 'success'))
 end)
 
 ---------------------------------------------------------------------
@@ -155,20 +199,29 @@ RSGCore.Functions.CreateCallback('rsg-cards:server:makeSet', function(source, cb
         return cb(vendorData(src, locale('inventory_full'), 'error'))
     end
 
-    local removed = {}
+    local removed, touched = {}, {}
+    local function refund()
+        for _, taken in ipairs(removed) do
+            Inventory:AddItem(src, taken, 1, nil, nil, 'rsg-cards:make-set-refund')
+        end
+        CardsServer.saveStashes(touched)
+    end
+
     for _, name in ipairs(cards) do
-        if CardsServer.removeCards(src, name, 1, 'rsg-cards:make-set', scope()) then
+        if CardsServer.removeCards(src, name, 1, 'rsg-cards:make-set', scope(), touched) then
             removed[#removed + 1] = name
         else
             -- something changed mid-way: hand back what was already taken
-            for _, taken in ipairs(removed) do
-                Inventory:AddItem(src, taken, 1, nil, nil, 'rsg-cards:make-set-refund')
-            end
+            refund()
             return cb(vendorData(src, locale('set_missing'), 'error'))
         end
     end
 
-    Inventory:AddItem(src, deck, 1, nil, nil, 'rsg-cards:make-set')
+    if not Inventory:AddItem(src, deck, 1, nil, nil, 'rsg-cards:make-set') then
+        refund() -- the set could not be given: the 12 cards must not be lost
+        return cb(vendorData(src, locale('inventory_full'), 'error'))
+    end
+    CardsServer.saveStashes(touched)
     CardsServer.log(('**Set made**\n%s\n%s'):format(CardsServer.playerTag(Player), deck))
     cb(vendorData(src, locale('set_made', CardsServer.itemLabel(deck)), 'success'))
 end)

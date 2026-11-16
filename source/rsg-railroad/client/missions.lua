@@ -131,6 +131,7 @@ function BeginDeliveryLeg(dest)
     local cargo = Config.Missions.delivery.cargoTypes[math.random(1, #Config.Missions.delivery.cargoTypes)]
     activeMission.destination = dest
     activeMission.cargo = cargo
+    TriggerServerEvent('rsg-railroad:missionLegStarted', 'delivery', dest.label) -- server only pays legs it saw start
 
     if missionBlip then RemoveBlip(missionBlip) end
     missionBlip = CreateMissionBlip(dest.coords, dest.label, dest.radius or 25.0, 0xFF0000FF)
@@ -219,6 +220,7 @@ end
 
 function BeginMaintenanceLeg(loc)
     activeMission.location = loc
+    TriggerServerEvent('rsg-railroad:missionLegStarted', 'maintenance', loc.label)
 
     if missionBlip then RemoveBlip(missionBlip) end
     missionBlip = CreateMissionBlip(loc.coords, loc.label, 25.0, 0xFFFF00FF)

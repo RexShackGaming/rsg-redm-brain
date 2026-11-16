@@ -5,13 +5,16 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 ---------------------------------------------------------------
 
 -- Get ownership data for a specific company
+-- The cash register balance and owner citizenid are only returned to the owner.
 RegisterCallback('rsg-railroad:getCompanyOwnership', function(source, companyId)
-    return DB.GetCompanyOwnership(companyId)
-end)
-
--- Get ALL owned companies
-RegisterCallback('rsg-railroad:getAllOwnedCompanies', function(source)
-    return DB.GetAllOwnedCompanies()
+    local ownership = DB.GetCompanyOwnership(companyId)
+    if not ownership then return nil end
+    local Player = RSGCore.Functions.GetPlayer(source)
+    if not Player or ownership.owner_citizenid ~= Player.PlayerData.citizenid then
+        ownership.cash_register = nil
+        ownership.owner_citizenid = nil
+    end
+    return ownership
 end)
 
 -- Determine player's role at a station's company
@@ -42,7 +45,14 @@ end)
 RegisterCallback('rsg-railroad:getMyEmployeeData', function(source, companyId)
     local Player = RSGCore.Functions.GetPlayer(source)
     if not Player then return nil end
-    return DB.GetEmployeeByIds(companyId, Player.PlayerData.citizenid)
+    local employee = DB.GetEmployeeByIds(companyId, Player.PlayerData.citizenid)
+    if employee then
+        -- Rank/XP are tracked in railroad_companies; employees.rank/xp are never updated.
+        local membership = DB.GetCompanyMembership(Player.PlayerData.citizenid, companyId)
+        employee.rank = membership and membership.rank or 1
+        employee.xp = membership and membership.xp or 0
+    end
+    return employee
 end)
 
 ---------------------------------------------------------------
@@ -55,6 +65,7 @@ RegisterNetEvent('rsg-railroad:buyCompany', function(companyId)
 
     local citizenid = Player.PlayerData.citizenid
     if not Config.Companies[companyId] then return end
+    if not RequireStation(src, companyId) then return end
 
     -- Check if already owned
     local existing = DB.GetCompanyOwnership(companyId)
@@ -114,6 +125,7 @@ RegisterNetEvent('rsg-railroad:sellCompany', function(companyId)
         NotifyPlayer(src, locale('not_owner_of_company'), 'error')
         return
     end
+    if not RequireStation(src, companyId) then return end
 
     -- Refund
     local refund = math.floor(Config.CompanyPurchasePrice * Config.CompanySellPercent)
@@ -125,6 +137,7 @@ RegisterNetEvent('rsg-railroad:sellCompany', function(companyId)
     if (DB.SellCompany(companyId, citizenid) or 0) < 1 then return end
     DB.DeleteEmployeesByCompany(companyId)
     DB.DeleteSuppliesByCompany(companyId)
+    DB.DeleteUpgradesByCompany(companyId) -- the next owner must not inherit upgrades the seller paid for
 
     Player.Functions.AddMoney('cash', refund, 'railroad-sell-company')
     NotifyPlayer(src, locale('company_sold', refund), 'success', 7000)
@@ -150,6 +163,7 @@ RegisterNetEvent('rsg-railroad:renameCompany', function(companyId, newName)
     local citizenid = Player.PlayerData.citizenid
     local ownership = DB.GetCompanyOwnership(companyId)
     if not ownership or ownership.owner_citizenid ~= citizenid then return end
+    if not RequireStation(src, companyId) then return end
 
     if type(newName) == 'string' then
         newName = newName:gsub('[%c<>]', ''):gsub('^%s+', ''):gsub('%s+$', '')
@@ -170,6 +184,29 @@ RegisterNetEvent('rsg-railroad:renameCompany', function(companyId, newName)
 end)
 
 ---------------------------------------------------------------
+-- SET DRIVER WAGE PERCENT (owner only)
+---------------------------------------------------------------
+RegisterNetEvent('rsg-railroad:setWagePercent', function(companyId, pct)
+    local src = source
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player then return end
+    if type(companyId) ~= 'string' then return end
+    pct = tonumber(pct)
+    if not pct or pct ~= pct then return end
+    pct = math.floor(pct)
+    local maxPct = (Config.DriverWages and Config.DriverWages.MaxPercent) or 100
+    if pct < 0 or pct > maxPct then
+        NotifyPlayer(src, locale('wage_invalid', maxPct), 'error')
+        return
+    end
+    local ownership = DB.GetCompanyOwnership(companyId)
+    if not ownership or ownership.owner_citizenid ~= Player.PlayerData.citizenid then return end
+    if not RequireStation(src, companyId) then return end
+    DB.SetWagePercent(companyId, pct)
+    NotifyPlayer(src, locale('wage_set', pct), 'success')
+end)
+
+---------------------------------------------------------------
 -- WITHDRAW FROM CASH REGISTER
 ---------------------------------------------------------------
 RegisterNetEvent('rsg-railroad:withdrawFunds', function(companyId, amount)
@@ -183,6 +220,7 @@ RegisterNetEvent('rsg-railroad:withdrawFunds', function(companyId, amount)
         NotifyPlayer(src, locale('not_owner_of_company'), 'error')
         return
     end
+    if not RequireStation(src, companyId) then return end
 
     amount = math.floor(tonumber(amount) or 0)
     if amount <= 0 then return end

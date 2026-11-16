@@ -21,13 +21,13 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-bossmenu](rsg-bossmenu.md) | Boss management menu for RSG Framework (RedM). Job bosses can manage employees, hire nearby players, open  | 0 | 10 |
 | [rsg-bountyhunter](rsg-bountyhunter.md) | rsg-bountyhunter - hunt wanted outlaws and bring them in dead or alive | 0 | 4 |
 | [rsg-canteen](rsg-canteen.md) | Fill a canteen at water pumps with rsg-target, or straight from rivers and lakes, and drink from it to res | 0 | 4 |
-| [rsg-cards](rsg-cards.md) | Collectable cigarette cards for the RSG Framework | 0 | 9 |
+| [rsg-cards](rsg-cards.md) | Collectable cigarette cards for the RSG Framework | 0 | 27 |
 | [rsg-character](rsg-character.md) | Character selection, character creation, clothing stores, wardrobe and spawn selection for RSG-Core (RedM) | 14 | 19 |
 | [rsg-chat](rsg-chat.md) | A chat resource for RedM servers running RSG-Core. It replaces the default chat with channels that adm | 2 | 19 |
 | [rsg-cinema](rsg-cinema.md) | rsg-cinema - moving picture shows rebuilt from RDR2 show_movie_magic_lantern | 0 | 8 |
 | [rsg-consume](rsg-consume.md) | Universal consumption system for RedM using RSG Core. > Immersive eating and drinking system for RedM serv | 0 | 2 |
 | [rsg-cooking](rsg-cooking.md) | A cooking system for RSG-Core (RedM) that works the same way as [rsg-moonshine](https://github.com/Rexshac | 8 | 7 |
-| [rsg-core](rsg-core.md) | The core framework for RSG RedM servers: players, characters, money, jobs (with built-in multi-job), gangs, pe | 35 | 43 |
+| [rsg-core](rsg-core.md) | The core framework for RSG RedM servers: players, characters, money, jobs (with built-in multi-job), gangs, pe | 35 | 42 |
 | [rsg-crafting](rsg-crafting.md) | An XP-based crafting book for RSG-Core (RedM). Players use a crafting book item to open a NUI menu. From t | 5 | 2 |
 | [rsg-deliveries](rsg-deliveries.md) | Wagon delivery system RSG Framework | 0 | 4 |
 | [rsg-doorlock](rsg-doorlock.md) | A database-driven door lock system for RedM using the RSG Framework. Doors are created, edited and del | 0 | 7 |
@@ -71,7 +71,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-prison](rsg-prison.md) | Prison system for RedM servers using RSG Core. - [rsg-core](https://github.com/Rexshack-RedM/rsg-core) - [ | 1 | 12 |
 | [rsg-queue](rsg-queue.md) | rsg-queue - connect queue with VIP priority, reserved slots and crash grace | 7 | 1 |
 | [rsg-radialmenu](rsg-radialmenu.md) | Radial interaction menu for RedM using RSG Core. A fast, themed radial menu with nested submenus, job-spec | 2 | 7 |
-| [rsg-railroad](rsg-railroad.md) | Advanced train management system for RedM (rsg-core). Buy railroad companies, hire drivers, manage trains, run | 0 | 32 |
+| [rsg-railroad](rsg-railroad.md) | Advanced train management system for RedM (rsg-core). Buy railroad companies, hire drivers, manage trains, run | 0 | 35 |
 | [rsg-ranch](rsg-ranch.md) | A complete livestock ranching system for RedM servers running the RSG Framework. Buy a ranch, hire sta | 31 | 102 |
 | [rsg-rocks](rsg-rocks.md) | Mining system for RSG Framework | 0 | 17 |
 | [rsg-roulette](rsg-roulette.md) | Multiplayer roulette tables for RSG Framework | 1 | 11 |

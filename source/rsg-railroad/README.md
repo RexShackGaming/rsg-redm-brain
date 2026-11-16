@@ -85,6 +85,10 @@ Advanced train management system for RedM (rsg-core). Buy railroad companies, hi
 - Mission payouts require a train out and the player's **server-side position** at the destination
 - Passenger revenue requires a train out, a real station nearby, a cooldown and a different station each stop
 - Cash register withdrawals, supply taking, train/company sales are atomic (no double-spend by spamming)
+- Buying/selling trains and companies, renaming, withdrawing, hiring/firing, supplies and upgrades all require the player to be **at a company station** (checked with the server-side position)
+- Mission payouts only count for a leg the server saw start, after a minimum travel time (`Config.Missions.MinLegSeconds`), once per leg
+- Mileage credit is capped by how far the train could physically travel since the last report; the parking station is taken from the player's real position
+- Discord webhook URLs live in `server/sv_config.lua` and are never sent to players; the cash register balance is only returned to the company owner
 - Owners can only approve/reject/fire employees of their own company; employee & supply lists are role-gated
 
 ### 🌍 Full Configuration
@@ -116,6 +120,8 @@ Advanced train management system for RedM (rsg-core). Buy railroad companies, hi
    (After rsg-core, rsg-inventory, rsg-target, oxmysql). OneSync must be enabled (RedM default) — the server reads player positions to validate payouts.
 5. **Restart** your server
 
+**Discord webhooks (optional):** paste your URLs into `server/sv_config.lua` (server-only, never sent to clients). Do not add them to `shared/config.lua`.
+
 **Database:** No manual step needed. The resource automatically creates/verifies all of its MySQL tables (from `install/rsg_railroad_full.sql`) the first time it starts, and every restart after that — it's safe to run repeatedly since it only creates tables that don't already exist. Watch your server console on first boot for:
 
 ```
@@ -138,6 +144,9 @@ All settings are in `shared/config.lua`:
 | PassengerSystem.CompanyShare | 0.50 | Company share of passenger ticket revenue |
 | Fuel / Water / Condition `.item` | resource_coal / fullbucket / oilcan | Maintenance items |
 | MaxTrainsPerPlayer | 5 | Max personally owned trains |
+| ServerInteractRadius | 25.0 | Server-side: how close (m) to a company station a player must be for buy/sell/manage actions |
+| Missions.MinLegSeconds | 20 | Minimum seconds between a mission leg starting and its payout being accepted |
+| TrainRobbery.CompanyCooldown | 600 | Seconds before the same company's register can be robbed again (robbery is off by default) |
 | TrainDespawnDist | 250 | Distance before train auto-recalls |
 | Missions.delivery.jobLegs | 3 | Number of stops chained together in a Delivery Job |
 | Missions.maintenance.jobLegs | 3 | Number of stops chained together in a Maintenance Job |
@@ -197,6 +206,23 @@ If the selected language's file is missing, or a key hasn't been translated, the
 ---
 
 ## Changelog
+
+### 3.3.0
+- **Driver wages:** the owner sets a wage share (0 to `Config.DriverWages.MaxPercent`) in the station owner panel. Drivers receive that share of every mission's pay in cash; the rest goes to the company register. New column `wage_percent` is added automatically to existing databases (or via `install/rsg_railroad_full.sql`).
+- New config block `Config.DriverWages` (`Enabled`, `DefaultPercent`, `MaxPercent`, `OwnerEarnsWage`).
+- **Telegram notices:** the owner gets an rsg-telegram message when a driver applies and when a supply item runs low (`Config.Telegram`). Needs `rsg-telegram` running; skipped silently otherwise.
+- **Weather speed caps:** `Config.WeatherSpeedCaps` multiplies the train's max speed by weather (via rsg-weather `getWeather`). Off if rsg-weather isn't running.
+- **Train robbery now works end to end:** `client/train_robbery.lua` is loaded and `Config.TrainRobbery.Enabled` is on. Outlaw models are real peds from rdr3_discoveries (`g_m_m_unibanditos_01`, `g_m_m_uniduster_01`, `g_m_m_unicriminals_01`). Added the engine-pressure HUD, a "Repair Engine Pressure" train target, the engine start block while pressure recovers, and the robbery speed cap. Outlaws now spawn on the ground, mount properly, and use a hostile relationship group. Ambient robberies only spawn for trains near the player.
+- **Robbery server checks:** a robbery must be announced with `rsg-railroad:robberyStarted` (server checks company role, active train, station safe zone, per-player cooldown) before it can pay out or be defeated, and each announcement resolves once, at least `MinSeconds` later.
+
+### 3.2.1
+- **Security:** mission payouts need a server-tracked leg (`rsg-railroad:missionLegStarted`) and a minimum travel time, so `completeMission` can no longer be replayed from a destination for free pay/XP
+- **Security:** buy/sell train, buy/sell/rename company, withdraw, hire/fire, supplies and upgrades now require the player to be at a station (server-side position); deploying a train requires being at a station with a known train model
+- **Security:** webhook URLs moved to `server/sv_config.lua` (they were in the shared config, which is downloaded by every client); cash register balance only returned to the owner; robbery events ignored while `Config.TrainRobbery.Enabled` is false, with a per-company cooldown when enabled
+- **Security:** mileage credit capped by time and train speed; parking station taken from the player's real position; milestone rewards claimed atomically (`INSERT IGNORE`)
+- **Fixes:** Reverse Direction no longer resets a train to a blank id-0 record (lost company upgrades and, for personal trains, saving/parking); drivers of rank Engineer+ can now buy upgrades (the check read an employee rank column that was never updated); selling a company now also clears its upgrades; company trains no longer send pointless state/mileage syncs
+- **Performance:** train state sync authorises from a cache filled at deploy time instead of a database SELECT per event
+- **Cleanup:** removed unused `GetRSGCore`, `ToggleAmbientTrackSwitches`, the `getAllOwnedCompanies` callback, six dead config options (`HUDKeybind`, `MaxTrainsPerCompany`, `SellBackPercent`, `NotifyRadius`, `StationBlipHash`, `MissionPaySplit`) and 95 unused locale keys; 16 untranslated storage/preview keys added to all languages; new key `not_at_station`
 
 ### 3.2.0
 - Removed the ox_lib dependency: callbacks, notifications, progress bars, text UI and locales now use rsg-core

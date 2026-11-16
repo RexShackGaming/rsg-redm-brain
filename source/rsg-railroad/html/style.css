@@ -582,3 +582,16 @@ html, body {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* ========== ENGINE PRESSURE HUD (train robbery) ========== */
+.pressure-hud {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    width: 320px; padding: 10px 14px;
+    border: 1px solid var(--rdr-gold-dim); outline: 1px solid rgba(0,0,0,0.6); outline-offset: -4px; border-radius: 3px;
+    background: linear-gradient(160deg, var(--rdr-panel-2), var(--rdr-black));
+    box-shadow: 0 10px 30px var(--rdr-shadow);
+    pointer-events: none;
+}
+.pressure-head { display: flex; justify-content: space-between; margin-bottom: 6px;
+    font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--rdr-text); }
+#pressureStatus { color: var(--rdr-muted); font-style: italic; }

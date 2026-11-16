@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS `railroad_companies_owned` (
     `owner_name` VARCHAR(100) NOT NULL DEFAULT '',
     `company_name` VARCHAR(100) DEFAULT NULL,
     `cash_register` FLOAT NOT NULL DEFAULT 0,
+    `wage_percent` TINYINT UNSIGNED NOT NULL DEFAULT 0,
     `purchased_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE INDEX `idx_company` (`company_id`),

@@ -3,7 +3,7 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 
 description 'rsg-railroad'
-version '3.2.0'
+version '3.3.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
@@ -23,11 +23,14 @@ client_scripts {
     'client/missions.lua',
 	'client/tickets.lua',
     'client/passengers.lua',
+    'client/train_robbery.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
+    'server/sv_config.lua',
     'server/db.lua',
+    'server/telegram.lua',
     'server/webhook.lua',
     'server/storage.lua',
     'server/main.lua',

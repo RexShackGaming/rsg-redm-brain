@@ -125,8 +125,10 @@ function DB.HasClaimedReward(citizenid, rewardId)
     return result and #result > 0
 end
 
+-- Returns true only for the call that actually recorded the claim.
 function DB.ClaimReward(citizenid, rewardId)
-    MySQL.insert.await('INSERT INTO railroad_rewards (citizenid, reward_id) VALUES (@cid, @rid)', { ['@cid'] = citizenid, ['@rid'] = rewardId })
+    local affected = MySQL.update.await('INSERT IGNORE INTO railroad_rewards (citizenid, reward_id) VALUES (@cid, @rid)', { ['@cid'] = citizenid, ['@rid'] = rewardId })
+    return (tonumber(affected) or 0) > 0
 end
 
 ---------------------------------------------------------------
@@ -135,6 +137,11 @@ end
 function DB.GetCompanyOwnership(companyId)
     local result = MySQL.query.await('SELECT * FROM railroad_companies_owned WHERE company_id = @comp LIMIT 1', { ['@comp'] = companyId })
     return result and result[1] or nil
+end
+
+function DB.SetWagePercent(companyId, pct)
+    return MySQL.update.await('UPDATE railroad_companies_owned SET wage_percent = @p WHERE company_id = @comp',
+        { ['@comp'] = companyId, ['@p'] = pct })
 end
 
 function DB.GetAllOwnedCompanies()
@@ -199,6 +206,10 @@ function DB.GetCompanyTrainUpgrade(companyId, trainModel)
     return result and result[1] or nil
 end
 
+function DB.DeleteUpgradesByCompany(companyId)
+    MySQL.query.await('DELETE FROM railroad_company_upgrades WHERE company_id = @comp', { ['@comp'] = companyId })
+end
+
 function DB.UpsertCompanyUpgrade(companyId, trainModel, column, level)
     MySQL.query.await(
         'INSERT INTO railroad_company_upgrades (company_id, train_model, `' .. column .. '`) VALUES (@comp, @model, @lvl) ' ..
@@ -218,12 +229,19 @@ function DB.ApplyAsDriver(companyId, citizenid, firstname, lastname)
 end
 
 function DB.GetEmployeesByCompany(companyId)
-    return MySQL.query.await([[
+    local rows = MySQL.query.await([[
         SELECT e.*, COALESCE(m.xp, 0) as company_xp, COALESCE(m.`rank`, 1) as company_rank, COALESCE(m.missions_completed, 0) as company_missions
         FROM railroad_employees e
         LEFT JOIN railroad_companies m ON e.citizenid = m.citizenid AND e.company_id = m.company_id
         WHERE e.company_id = @comp ORDER BY e.status, e.applied_at DESC
     ]], { ['@comp'] = companyId }) or {}
+    -- Rank and XP live in railroad_companies (the employees.rank/xp columns are never
+    -- updated), so expose the real values under the names the UI already reads.
+    for _, row in ipairs(rows) do
+        row.rank = row.company_rank
+        row.xp = row.company_xp
+    end
+    return rows
 end
 
 function DB.GetEmployeeByIds(companyId, citizenid)
@@ -363,6 +381,15 @@ function DB.EnsureTables()
             print(('^1[rsg-railroad]^7 Database setup statement failed: %s'):format(tostring(err)))
         end
     end
+
+    -- v3.3.0: wage_percent column for installs created before driver wages existed
+    local okCol = pcall(function()
+        local has = MySQL.scalar.await("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'railroad_companies_owned' AND COLUMN_NAME = 'wage_percent'")
+        if tonumber(has) == 0 then
+            MySQL.query.await("ALTER TABLE railroad_companies_owned ADD COLUMN wage_percent TINYINT UNSIGNED NOT NULL DEFAULT 0")
+        end
+    end)
+    if not okCol then failed = failed + 1 end
 
     if failed == 0 then
         print('^2[rsg-railroad]^7 Database tables verified/created successfully (' .. #statements .. ' statements).')

@@ -32,10 +32,14 @@ RegisterNetEvent('rsg-railroad:purchaseUpgrade', function(companyId, trainModel,
     local ownership = DB.GetCompanyOwnership(companyId)
     if not ownership then return end
 
+    if not RequireStation(src, companyId) then return end
+
     local isOwner = (ownership.owner_citizenid == citizenid)
     if not isOwner then
+        -- Rank is tracked in railroad_companies (employees.rank is never updated).
         local employee = DB.GetEmployeeByIds(companyId, citizenid)
-        if not employee or employee.status ~= 'approved' or (employee.rank or 1) < 3 then
+        local membership = DB.GetCompanyMembership(citizenid, companyId)
+        if not employee or employee.status ~= 'approved' or (membership and membership.rank or 1) < 3 then
             TriggerClientEvent('RSGCore:Client:Notify', src, {
                 title = locale('notify_title'),
                 description = locale('upgrade_owner_engineer_required'),

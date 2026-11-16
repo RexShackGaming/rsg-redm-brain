@@ -209,6 +209,7 @@ function OpenStationHUD(station)
         },
         playerRole = playerRole,
         ownership = ownership,
+        maxWage = Config.DriverWages and Config.DriverWages.MaxPercent or 100,
         companyTrains = companyTrains,
         companyTrainConfigs = companyTrainConfigs,
         companyUpgrades = companyUpgrades,
@@ -252,7 +253,7 @@ RegisterNUICallback('closeStation', function(data, cb)
 end)
 
 RegisterNUICallback('buyTrain', function(data, cb)
-    TriggerServerEvent('rsg-railroad:buyTrain', data.trainIndex, currentStation.id)
+    TriggerServerEvent('rsg-railroad:buyTrain', data.trainIndex)
     Wait(500)
     -- Refresh data
     local ownedTrains = RSGCore.Functions.AwaitCallback('rsg-railroad:getOwnedTrains', nil)
@@ -348,6 +349,12 @@ RegisterNUICallback('renameCompany', function(data, cb)
     cb({ success = true })
 end)
 
+RegisterNUICallback('setWagePercent', function(data, cb)
+    TriggerServerEvent('rsg-railroad:setWagePercent', data.companyId, data.percent)
+    Wait(300)
+    cb({ success = true })
+end)
+
 RegisterNUICallback('withdrawFunds', function(data, cb)
     TriggerServerEvent('rsg-railroad:withdrawFunds', data.companyId, data.amount)
     Wait(500)
@@ -398,7 +405,7 @@ RegisterNUICallback('takeSupply', function(data, cb)
 end)
 
 RegisterNUICallback('buyCompanyTrain', function(data, cb)
-    TriggerServerEvent('rsg-railroad:buyTrain', data.trainIndex, currentStation.id)
+    TriggerServerEvent('rsg-railroad:buyTrain', data.trainIndex)
     Wait(500)
     local trains = RSGCore.Functions.AwaitCallback('rsg-railroad:getCompanyTrains', nil, currentStation.company)
     cb({ success = true, companyTrains = trains or {} })

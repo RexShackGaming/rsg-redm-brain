@@ -102,7 +102,6 @@ function SpawnPlayerTrain(trainDbId, directionReverse, station)
 end
 
 ---------------------------------------------------------------
--- PARK TRAIN
 -- V2: SPAWN FROM CONFIG (no DB record needed)
 -- Trains belong to the company, not individual players
 ---------------------------------------------------------------
@@ -229,7 +228,9 @@ function DespawnPlayerTrain()
 
     -- Save current fuel/water/condition
     if ActiveTrainData then
-        TriggerServerEvent('rsg-railroad:updateTrainState', ActiveTrainData.id, TrainFuel, TrainWater, TrainCondition)
+        if ActiveTrainData.id > 0 then
+            TriggerServerEvent('rsg-railroad:updateTrainState', ActiveTrainData.id, TrainFuel, TrainWater, TrainCondition)
+        end
         TriggerServerEvent('rsg-railroad:setTrainSpawned', false, ActiveTrainData.id)
     end
 
@@ -293,7 +294,9 @@ function StartFuelDecrease()
             Wait(Config.Fuel.decreaseInterval)
             if EngineRunning and TrainFuel > 0 then
                 TrainFuel = math.max(0, TrainFuel - Config.Fuel.decreaseAmount)
-                TriggerServerEvent('rsg-railroad:updateFuel', ActiveTrainData.id, TrainFuel)
+                if ActiveTrainData and ActiveTrainData.id > 0 then
+                    TriggerServerEvent('rsg-railroad:updateFuel', ActiveTrainData.id, TrainFuel)
+                end
                 if TrainFuel <= 0 then
                     Notify(locale('fuel_empty'), 'error')
                     -- Gradual slowdown when fuel runs out
@@ -331,7 +334,9 @@ function StartWaterDecrease()
             Wait(Config.Water.decreaseInterval)
             if EngineRunning and TrainWater > 0 then
                 TrainWater = math.max(0, TrainWater - Config.Water.decreaseAmount)
-                TriggerServerEvent('rsg-railroad:updateWater', ActiveTrainData.id, TrainWater)
+                if ActiveTrainData and ActiveTrainData.id > 0 then
+                    TriggerServerEvent('rsg-railroad:updateWater', ActiveTrainData.id, TrainWater)
+                end
                 if TrainWater <= 0 then
                     Notify(locale('water_empty'), 'warning')
                 end
@@ -352,7 +357,9 @@ function StartConditionDecrease()
                 -- Degrade faster if no water
                 if TrainWater <= 0 then amount = amount * 2 end
                 TrainCondition = math.max(0, TrainCondition - amount)
-                TriggerServerEvent('rsg-railroad:updateCondition', ActiveTrainData.id, TrainCondition)
+                if ActiveTrainData and ActiveTrainData.id > 0 then
+                    TriggerServerEvent('rsg-railroad:updateCondition', ActiveTrainData.id, TrainCondition)
+                end
                 if TrainCondition <= 0 then
                     Notify(locale('condition_critical'), 'error')
                     -- Cap speed
@@ -417,7 +424,9 @@ function StartMileageTracker()
                 local dist = GetDistanceBetween(lastCoords, curCoords)
                 if dist > 5 then
                     local miles = dist / 100.0 -- rough conversion
-                    TriggerServerEvent('rsg-railroad:addMiles', ActiveTrainData.id, miles)
+                    if ActiveTrainData and ActiveTrainData.id > 0 then
+                        TriggerServerEvent('rsg-railroad:addMiles', ActiveTrainData.id, miles)
+                    end
                 end
                 lastCoords = curCoords
             end
@@ -426,7 +435,7 @@ function StartMileageTracker()
 end
 
 --------------------------------------------------------------
--- OX_TARGET: MAINTENANCE ACTIONS ON TRAIN
+-- RSG-TARGET: MAINTENANCE ACTIONS ON TRAIN
 ---------------------------------------------------------------
 function SetupTrainTarget()
     if not ActiveTrain or not DoesEntityExist(ActiveTrain) then return end
@@ -444,6 +453,16 @@ function SetupTrainTarget()
             icon = 'fas fa-power-off',
             distance = 4.0,
             onSelect = function() ToggleEngine() end,
+        },
+
+        -- 1b. Repair engine pressure (during/after a robbery)
+        {
+            name = 'railroad_fix_pressure',
+            label = locale('menu_repair_pressure'),
+            icon = 'fas fa-wrench',
+            distance = 4.0,
+            canInteract = function() return IsTrainUnderAttackOrRecovering and IsTrainUnderAttackOrRecovering() or false end,
+            onSelect = function() if FixEnginePressure then FixEnginePressure() end end,
         },
 
         -- 2. Add Coal (+10% Fuel)
@@ -668,6 +687,7 @@ function SetupTrainTarget()
                 local savedCond = TrainCondition
                 local savedConfig = ActiveTrainConfig
                 local savedStation = ActiveTrainStation
+                local savedData = ActiveTrainData
                 -- Cleanup current train
                 CleanupActiveTrain()
                 -- Respawn at same location, flipped
@@ -685,18 +705,13 @@ function SetupTrainTarget()
                 -- Restore state
                 ActiveTrainConfig = savedConfig
                 ActiveTrainStation = savedStation
-                ActiveTrainData = {
-                    id = 0,
-                    train_model = savedConfig.model,
-                    company_id = savedConfig.company,
-                    label = savedConfig.label,
-                    fuel = savedFuel,
-                    water = savedWater,
-                    condition = savedCond,
-                    upgrade_speed = 0, upgrade_fuel_cap = 0, upgrade_water_cap = 0, upgrade_durability = 0,
-                    total_miles = 0,
-                    _reversed = newReversed,
-                }
+                -- Keep the original data (database id, upgrades, mileage): rebuilding a blank
+                -- id-0 table here used to drop upgrades and break saving/parking personal trains.
+                ActiveTrainData = savedData
+                ActiveTrainData.fuel = savedFuel
+                ActiveTrainData.water = savedWater
+                ActiveTrainData.condition = savedCond
+                ActiveTrainData._reversed = newReversed
                 TrainFuel = savedFuel
                 TrainWater = savedWater
                 TrainCondition = savedCond
@@ -704,7 +719,7 @@ function SetupTrainTarget()
                 -- Reversing re-fires setTrainSpawned, but the server already has
                 -- this player registered as having a train out, so it returns
                 -- early and the existing stash (and its load) is preserved.
-                TriggerServerEvent('rsg-railroad:setTrainSpawned', true, 0, savedConfig.model)
+                TriggerServerEvent('rsg-railroad:setTrainSpawned', true, ActiveTrainData.id or 0, savedConfig.model)
                 SetupTrainTarget()
                 StartFuelDecrease()
                 StartWaterDecrease()
@@ -795,8 +810,10 @@ function SendTrainToYard()
     end
     if not ActiveTrainData then return end
 
-    -- Save current state to DB
-    TriggerServerEvent('rsg-railroad:updateTrainState', ActiveTrainData.id, TrainFuel, TrainWater, TrainCondition)
+    -- Save current state to DB (personal trains only; company trains have no row)
+    if ActiveTrainData.id > 0 then
+        TriggerServerEvent('rsg-railroad:updateTrainState', ActiveTrainData.id, TrainFuel, TrainWater, TrainCondition)
+    end
     TriggerServerEvent('rsg-railroad:setTrainSpawned', false, ActiveTrainData.id)
 
     CleanupActiveTrain()

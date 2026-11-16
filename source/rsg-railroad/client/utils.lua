@@ -115,13 +115,6 @@ function FindTrainConfig(model, company)
 end
 
 ---------------------------------------------------------------
--- GET RSGCore OBJECT (for client use)
----------------------------------------------------------------
-function GetRSGCore()
-    return RSGCore
-end
-
----------------------------------------------------------------
 -- NUI FOCUS (push-to-talk stays usable while the UI is open)
 ---------------------------------------------------------------
 local uiFocus = false

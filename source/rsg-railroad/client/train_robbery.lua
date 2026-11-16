@@ -47,8 +47,8 @@ CreateThread(function()
     AddRelationshipGroup('MACK_TRAIN_ROBBERS')
     ROBBERY_GROUP = GetHashKey('MACK_TRAIN_ROBBERS')
     local playerGroup = GetPedRelationshipGroupHash(PlayerPedId())
-    SetRelationshipBetweenGroups(4, ROBBERY_GROUP, playerGroup)  -- 4 = HATE (hostile)
-    SetRelationshipBetweenGroups(4, playerGroup,   ROBBERY_GROUP)
+    SetRelationshipBetweenGroups(6, ROBBERY_GROUP, playerGroup)  -- 6 = HATE (hostile)
+    SetRelationshipBetweenGroups(6, playerGroup,   ROBBERY_GROUP)
 end)
 
 -- ── Model loader with 5-second timeout (prevents infinite hang) ──
@@ -70,7 +70,6 @@ local function SpawnRobberyHorse(modelHash, coords)
     end
     local horse = CreatePed(modelHash, coords.x, coords.y, coords.z, math.random(0,359)+0.0, true, true, true, true)
     if not DoesEntityExist(horse) then return nil end
-    Citizen.InvokeNative(0x283978A15512B2FE, horse, true)  -- network flag
     SetEntityAsMissionEntity(horse, true, true)
     SetEntityCanBeDamaged(horse, true)
     return horse
@@ -85,7 +84,6 @@ local function SpawnRobberyNPC(modelHash, coords, weaponHash, accuracy)
     local npc = CreatePed(modelHash, coords.x, coords.y, coords.z, math.random(0,359)+0.0, true, true, true, true)
     if not DoesEntityExist(npc) then return nil end
 
-    Citizen.InvokeNative(0x283978A15512B2FE, npc, true)  -- network flag
     SetEntityAsMissionEntity(npc, true, true)
     SetRandomOutfitVariation(npc, true)
 
@@ -132,7 +130,14 @@ end
 -- ── Spawn one outlaw mounted on horseback ──────────────────
 -- Uses the same pattern as mack-outlaws SpawnNPC / SpawnHorse.
 -- Returns (outlaw, horse) or (nil, nil) on failure.
+local function GroundAt(c)
+    local ok, gz = GetGroundZFor_3dCoord(c.x, c.y, c.z + 50.0, false)
+    if ok then return vector3(c.x, c.y, gz) end
+    return c
+end
+
 local function SpawnOutlawOnHorse(spawnCoords)
+    spawnCoords = GroundAt(spawnCoords)
     local cfg        = Config.TrainRobbery
     local outlawName = cfg.OutlawModels [math.random(#cfg.OutlawModels )]
     local horseName  = cfg.HorseModels  [math.random(#cfg.HorseModels  )]
@@ -150,7 +155,7 @@ local function SpawnOutlawOnHorse(spawnCoords)
     end
 
     -- Mount (mack-outlaws native)
-    Citizen.InvokeNative(0x028F76B6E78246EB, outlaw, horse, -1)
+    SetPedOntoMount(outlaw, horse, -1, true)
 
     -- After brief mount settle, follow the train entity directly (off-road, no pathfinding).
     -- Uses same TaskFollowToOffsetOfEntity pattern as mack-herding for animals.
@@ -322,8 +327,7 @@ local function StartBoardingWatch(outlaw, horse, sideOffset)
             local dist = GetDistanceBetween(GetEntityCoords(outlaw), GetEntityCoords(ActiveTrain))
             if Config.TrainRobbery.BoardTrain and dist < Config.TrainRobbery.BoardDistance then
                 -- Still mounted? Board the train
-                local veh = GetVehiclePedIsIn(outlaw, false)
-                if veh ~= 0 then
+                if IsPedOnMount(outlaw) then
                     BoardTrain(outlaw, horse, sideOffset)
                     break
                 end
@@ -486,6 +490,7 @@ function TriggerTrainRobbery(force)
     Robbery.active    = true
     Robbery.companyId = companyId
     EnginePressure    = 100
+    TriggerServerEvent('rsg-railroad:robberyStarted', companyId)
 
     DebugPrint('[TrainRobbery] Starting pressure robbery — company: ' .. tostring(companyId) .. ', outlaws: ' .. count)
 
@@ -687,27 +692,16 @@ CreateThread(function()
         end
         if AmbientRobberyActive then goto nextCheck end
 
-        -- Scan for a train that isn't the player's
-        local handle, firstVeh = FindFirstVehicle()
-        local found = false
-
-        local function tryVeh(v)
-            if not found and IsThisModelATrain(GetEntityModel(v)) and v ~= ActiveTrain then
+        -- Scan for a train that isn't the player's, close enough to be seen
+        local pcoords = GetEntityCoords(PlayerPedId())
+        local maxDist = Config.TrainRobbery.AmbientMaxPlayerDist or 300.0
+        for _, v in ipairs(GetGamePool('CVehicle')) do
+            if v ~= ActiveTrain and DoesEntityExist(v) and IsThisModelATrain(GetEntityModel(v))
+               and #(GetEntityCoords(v) - pcoords) <= maxDist then
                 TriggerAmbientRobbery(v)
-                found = true
+                break
             end
         end
-
-        tryVeh(firstVeh)
-        if not found then
-            local isExist, nextVeh = FindNextVehicle(handle)
-            while isExist do
-                tryVeh(nextVeh)
-                if found then break end
-                isExist, nextVeh = FindNextVehicle(handle)
-            end
-        end
-        EndFindVehicle(handle)
 
         ::nextCheck::
     end

@@ -35,6 +35,7 @@ RegisterNetEvent('rsg-railroad:applyAsDriver', function(companyId)
 
     local citizenid = Player.PlayerData.citizenid
     local charinfo = Player.PlayerData.charinfo
+    if not RequireStation(src, companyId) then return end
 
     -- Check company is owned
     local ownership = DB.GetCompanyOwnership(companyId)
@@ -70,6 +71,9 @@ RegisterNetEvent('rsg-railroad:applyAsDriver', function(companyId)
         { 'Company', CompanyLabel(companyId) },
     }, 'info')
 
+    SendOwnerTelegram(companyId, locale('tg_subject_application'),
+        locale('tg_body_application', (charinfo.firstname or '') .. ' ' .. (charinfo.lastname or '')))
+
     -- Notify owner if online
     local ownerPlayer = RSGCore.Functions.GetPlayerByCitizenId(ownership.owner_citizenid)
     if ownerPlayer then
@@ -101,7 +105,7 @@ end
 RegisterNetEvent('rsg-railroad:approveDriver', function(companyId, employeeId)
     local src = source
     local ok, Player = IsOwner(src, companyId)
-    if not ok then return end
+    if not ok or not RequireStation(src, companyId) then return end
 
     local emp = DB.GetEmployeeById(companyId, tonumber(employeeId))
     if not emp or (DB.ApproveEmployee(companyId, emp.id) or 0) < 1 then return end
@@ -120,7 +124,7 @@ end)
 RegisterNetEvent('rsg-railroad:rejectDriver', function(companyId, employeeId)
     local src = source
     local ok, Player = IsOwner(src, companyId)
-    if not ok then return end
+    if not ok or not RequireStation(src, companyId) then return end
 
     local emp = DB.GetEmployeeById(companyId, tonumber(employeeId))
     if not emp or (DB.RejectEmployee(companyId, emp.id) or 0) < 1 then return end
@@ -137,7 +141,7 @@ end)
 RegisterNetEvent('rsg-railroad:fireDriver', function(companyId, employeeId)
     local src = source
     local ok, Player = IsOwner(src, companyId)
-    if not ok then return end
+    if not ok or not RequireStation(src, companyId) then return end
 
     local emp = DB.GetEmployeeById(companyId, tonumber(employeeId))
     if not emp or (DB.FireEmployee(companyId, emp.id) or 0) < 1 then return end

@@ -40,6 +40,7 @@ RegisterNetEvent('rsg-railroad:addSupply', function(companyId, itemName, quantit
         NotifyPlayer(src, locale('not_owner_of_company'), 'error')
         return
     end
+    if not RequireStation(src, companyId) then return end
 
     quantity = SanitizeQty(quantity)
     if not quantity or not IsSupplyItem(itemName) then return end
@@ -65,6 +66,7 @@ RegisterNetEvent('rsg-railroad:takeSupply', function(companyId, itemName, quanti
         NotifyPlayer(src, locale('not_authorized'), 'error')
         return
     end
+    if not RequireStation(src, companyId) then return end
 
     quantity = SanitizeQty(quantity)
     if not quantity or not IsSupplyItem(itemName) then return end
@@ -82,4 +84,5 @@ RegisterNetEvent('rsg-railroad:takeSupply', function(companyId, itemName, quanti
 
     exports['rsg-inventory']:AddItem(src, itemName, quantity, nil, nil, 'railroad-supply-take')
     NotifyPlayer(src, locale('supply_taken_notify', quantity, ItemLabel(itemName)), 'success')
+    CheckLowSupply(companyId, itemName, ItemLabel(itemName))
 end)

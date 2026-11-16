@@ -175,6 +175,10 @@ function ToggleEngine()
             Notify(locale('fuel_empty'), 'error')
             return
         end
+        if IsEnginePressureDamaged and IsEnginePressureDamaged() then
+            Notify(locale('engine_pressure_low'), 'error')
+            return
+        end
         EngineRunning = true
         local maxSpd = GetMaxTrainSpeed()
         Citizen.InvokeNative(0x9F29999DFDF2AEB8, ActiveTrain, maxSpd + 0.1)
@@ -289,6 +293,19 @@ function GetMaxTrainSpeed()
     local condPct = math.max(0, math.min(1, (TrainCondition or 0) / maxCond))
     local condMultiplier = Config.Condition.lowConditionSpeedCap + ((1 - Config.Condition.lowConditionSpeedCap) * condPct)
     max = max * condMultiplier
+
+    -- Robbery slow-down while outlaws attack
+    if IsRobberySpeedCapActive and IsRobberySpeedCapActive() then
+        max = math.min(max, (Config.TrainRobbery and Config.TrainRobbery.RobberySlowSpeed) or 8)
+    end
+
+    -- Weather cap (rsg-weather): storms and blizzards slow the train down
+    local wc = Config.WeatherSpeedCaps
+    if wc and wc.Enabled and GetResourceState('rsg-weather') == 'started' then
+        local ok, w = pcall(function() return exports['rsg-weather']:getWeather() end)
+        local mult = ok and type(w) == 'string' and wc.Multipliers[w:lower()] or nil
+        if mult then max = max * mult end
+    end
 
     return math.max(1, math.floor(max + 0.5)) -- minimum speed of 1, rounded
 end

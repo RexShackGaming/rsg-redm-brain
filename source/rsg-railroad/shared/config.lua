@@ -17,48 +17,13 @@ Config.Debug = false
 
 Config.AutoInstallDatabase = true        -- automatically creates/verifies all required MySQL tables on resource start (from install/rsg_railroad_full.sql). Set to false if you prefer to import the .sql file yourself.
 
-Config.MaxTrainsPerCompany = 5           -- max trains a company can own
-Config.MaxTrainsPerPlayer = 5            -- max trains a single player can personally own (bug fix: was referenced but never defined)
-Config.SellBackPercent = 0.60            -- 60% of purchase price on resale
+Config.MaxTrainsPerPlayer = 5            -- max trains a single player can personally own
+Config.ServerInteractRadius = 25.0       -- server-side: how close (m) to a company station a player must be for buy/sell/manage actions
 Config.TrainDespawnDist = 250            -- despawn if player is far from their train
 Config.StationInteractRadius = 3.0       -- how close to station marker to interact
-Config.HUDKeybind = 0x760A9C6F          -- G key (hold) to open HUD while driving
-Config.NotifyRadius = 20.0
 Config.TicketItem = 'trainticket'
 Config.TicketPrice = 20.00
 Config.MarkupPrice = 25.00
-
----------------------------------------------------------------
--- DISCORD WEBHOOK LOGGING
--- Each category can point at a different Discord webhook URL (or share
--- the same one). Leave a URL blank ('') to disable that category.
----------------------------------------------------------------
-Config.Webhooks = {
-    Enabled     = true,
-    BotName     = 'RSG Railroad',
-    BotAvatar   = '', -- optional image URL shown as the webhook's avatar
-
-    -- Per-category webhook URLs. Paste your Discord webhook URLs below.
-    URLs = {
-        economy   = '', -- train/company purchases, sales, withdrawals, upgrades, mission payouts
-        robbery   = '', -- train robbery outcomes
-        employees = '', -- driver applications, approvals, rejections, firings, rank-ups
-        admin     = '', -- fallback / anything not covered above
-    },
-
-    -- Embed colors (decimal, not hex -- e.g. 0x2ECC71 = 3066993)
-    Colors = {
-        success = 3066993,  -- green
-        error   = 15158332, -- red
-        info    = 3447003,  -- blue
-        warn    = 15105570, -- orange
-    },
-
-    -- Mission completions fire very frequently -- off by default so the
-    -- economy channel isn't flooded. Turn on if you want every delivery
-    -- / maintenance job logged too.
-    LogMissionCompletions = false,
-}
 
 ---------------------------------------------------------------
 -- CONTINUOUS PASSENGER SYSTEM
@@ -96,11 +61,6 @@ Config.Ranks = {
 ---------------------------------------------------------------
 Config.CompanyPurchasePrice = 50000
 Config.CompanySellPercent = 0.50
-Config.MissionPaySplit = {
-    driver = 0.50,
-    company = 0.50,
-}
-
 Config.SupplyItems = {
     { item = 'resource_coal',       label = 'Coal',         icon = 'fire' },
     { item = 'fullbucket',          label = 'Full Bucket',  icon = 'tint' },
@@ -239,8 +199,6 @@ Config.Trains = {
 ---------------------------------------------------------------
 -- STATIONS
 ---------------------------------------------------------------
-Config.StationBlipHash = 1258184551
-
 Config.Stations = {
     {
         id = 'valentine',
@@ -456,7 +414,29 @@ Config.TrackModels = {
 ---------------------------------------------------------------
 -- MISSIONS
 ---------------------------------------------------------------
+Config.WeatherSpeedCaps = {
+    Enabled = true,            -- needs rsg-weather; trains are slower in bad weather
+    Multipliers = {            -- weather name (lowercase) = share of normal max speed
+        shower = 0.9, rain = 0.85, thunderstorm = 0.7, hurricane = 0.5,
+        fog = 0.8, snow = 0.8, blizzard = 0.55, whiteout = 0.5, sandstorm = 0.6,
+    },
+}
+
+Config.Telegram = {
+    Enabled = true,            -- telegram the company owner via rsg-telegram (needs rsg-telegram running)
+    LowSupplyThreshold = 5,    -- notify when a supply item drops to this quantity or below (0 = off)
+    LowSupplyCooldown = 3600,  -- seconds between low-stock telegrams per item
+}
+
+Config.DriverWages = {
+    Enabled = true,        -- drivers earn a share of each mission's pay (the rest goes to the company register)
+    DefaultPercent = 0,    -- share given to drivers until the owner sets one
+    MaxPercent = 60,       -- owners cannot set a share above this
+    OwnerEarnsWage = false,-- if true the owner also receives the share when they drive
+}
+
 Config.Missions = {
+    MinLegSeconds = 20,   -- server rejects a payout sooner than this after the leg started (anti-spam)
     delivery = {
         basePay = 15,
         perMilePay = 2,
@@ -763,7 +743,7 @@ Config.Blips = {
 -- Enabled is set to false until you confirm/replace them.
 ---------------------------------------------------------------
 Config.TrainRobbery = {
-    Enabled              = false,   -- flip to true once models below are verified
+    Enabled              = true,    -- set false to turn robberies off completely
     AmbientEnabled       = true,
     AmbientCheckInterval = 300000,  -- 5 min between scans for ambient trains to rob
     AmbientChance        = 25,      -- % chance an ambient train gets robbed per scan
@@ -774,7 +754,7 @@ Config.TrainRobbery = {
     TrainStopSpeed       = 1.5,     -- speed (m/s) below which a manual stop counts as "stopped"
     RobberySlowSpeed     = 8.0,     -- train is forced down to this speed during a robbery
     BoardTrain           = true,
-    BoardDistance        = 4.0,
+    BoardDistance        = 8.0,
     BoardSideOffset      = 1.2,
     EscapeTimeMs         = 15000,
     InitialMessageDelay  = 4000,
@@ -782,8 +762,8 @@ Config.TrainRobbery = {
     SpawnMultiplier      = 3.0,
     OutlawCount          = { min = 2, max = 4 },
     OutlawAccuracy       = 35,
-    -- PLACEHOLDER -- replace with real RDR2 ped model names:
-    OutlawModels         = { 'cs_flaco', 'cs_billwilliamson' },
+    -- Model names checked against rdr3_discoveries peds_list.lua / weapons list:
+    OutlawModels         = { 'g_m_m_unibanditos_01', 'g_m_m_uniduster_01', 'g_m_m_unicriminals_01' },
     HorseModels          = { 'a_c_horse_kentuckysaddle_black' },
     OutlawWeapons        = { 'WEAPON_REPEATER_WINCHESTER', 'WEAPON_REVOLVER_CATTLEMAN' },
     PressureDecayInterval    = 4000,
@@ -797,4 +777,8 @@ Config.TrainRobbery = {
     RobberyTakePercent   = 0.20,    -- 20% of the current cash register
     RobberyTakeMin       = 20,
     RobberyTakeMax       = 500,
+    CompanyCooldown      = 600,     -- seconds before the same company's register can be robbed again
+    StartCooldown        = 120,     -- server: min seconds between robbery starts per player
+    MinSeconds           = 10,      -- server: a robbery cannot resolve sooner than this after it started
+    AmbientMaxPlayerDist = 300.0,   -- ambient outlaws only spawn for trains this close to the player
 }

@@ -15,6 +15,9 @@ Config.PushToTalkControls = {
     0x4BC9DABB, -- INPUT_PUSH_TO_TALK
 }
 
+-- The vendor / collector window closes by itself when the player walks further than this from where it was opened.
+Config.CloseDistance = 6.0
+
 -- Inventory image folder used for item thumbnails in the UI
 Config.ImagePath = 'nui://rsg-inventory/html/images/'
 
@@ -119,6 +122,11 @@ Config.Storage = {
     -- inside the box into the complete-set item (needs rsg-inventory 3.2.0 or newer).
     BundleSets = true,
 
+    -- Shows a "Sort & Stack" button at the top of the box. It merges duplicate cards into a single stack
+    -- and puts the box in order: complete sets, then single cards by set and number, then packs.
+    SortButton = true,
+    SortOnOpen = false, -- true = also sort and stack the box automatically every time it is opened
+
     -- Only these item categories (the `category` field in rsg-core shared items) can be kept in a box.
     -- Every rsg-cards card, set and pack is always allowed, even if its category is missing.
     -- Anything else put in a box is handed straight back to the player.
@@ -142,6 +150,7 @@ Config.Shop = {
     InteractDistance = 5.0,    -- server-side distance check
     PersistStock     = true,   -- keep stock across restarts (rsg-inventory)
     CraftSets        = true,   -- vendors turn all 12 cards of a set into the complete set
+    SellDuplicates   = true,   -- "Sell Duplicates" button: sells every spare copy and keeps one of each card
     BoxesOnly        = true,   -- true = vendors only look in the card boxes the player carries (loose cards in the inventory are ignored)
                                -- false = vendors look in the inventory first, then the card boxes
 
@@ -197,8 +206,49 @@ Config.Trades = {
 }
 
 ---------------------------------------------------------------------
+-- COLLECTION VIEWER, SET BONUS AND LEADERBOARD
+-- Players open the collection with the command below or from the vendor window.
+---------------------------------------------------------------------
+Config.Collection = {
+    Command         = 'cardcollection',
+    LeaderboardSize = 10,   -- collectors shown on the leaderboard
+    CacheSeconds    = 60,   -- how long the leaderboard is kept before it is read from the database again
+    AnnounceFirst   = true, -- tell everyone online when a player is the first to complete a set
+}
+
+-- Reward the first time a character has found all cards of a set.
+Config.SetBonus = {
+    Enabled    = true,
+    Payment    = 'cash', -- 'cash' or 'bloodmoney'
+    Multiplier = 2.0,    -- money = the set's deckPrice x this (0 = no money)
+    Items      = {},     -- extra items, e.g. { { name = 'goldbar', amount = 1 } }
+}
+
+---------------------------------------------------------------------
+-- PLAYER TO PLAYER TRADING
+---------------------------------------------------------------------
+Config.PlayerTrade = {
+    Enabled        = true,
+    Command        = 'cardtrade', -- /cardtrade [server id]. With Config.EnableTarget there is also a "Trade cards" target on players
+    Distance       = 5.0,         -- both players must be this close (checked by the server)
+    InviteSeconds  = 30,          -- how long a request stays open
+    MaxPerSide     = 30,          -- most cards one player can put in a trade
+    DuplicatesOnly = true,        -- true = only spare copies can be offered (one of each card is always kept)
+    CountAsFound   = true,        -- cards received count as found for the collection, set bonus and leaderboard
+}
+
+---------------------------------------------------------------------
 -- LOGGING (rsg-log)
 ---------------------------------------------------------------------
+-- Admin editor: place, move and remove card locations in game with rsg-gizmo.
+-- Locations are stored in the database (rsg_cards_points). shared/cards_points.lua is only used to fill an empty table.
+Config.Editor = {
+    Enabled        = true,
+    Permission     = 'admin', -- /cardplace [card], /cardmove, /cardremove, /cardedit, /cardmissing
+    SeedFromConfig = true,    -- copy Config.CardPoints into the database when the table is empty
+    Distance       = 10.0,    -- the admin must be this close to a location to place, move or remove it (server checked)
+}
+
 Config.Webhook = {
     Name   = 'rsg-cards', -- must match a webhook entry in rsg-log
     Title  = 'CARDS',

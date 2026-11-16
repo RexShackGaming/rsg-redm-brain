@@ -4,7 +4,10 @@ local BLIP_STYLE = 1664425300 -- default coords blip style
 
 local npcs = {}         -- every vendor / collector: { id, coords, npcmodel, npccoords, label, event, key, icon, blip }
 local spawnedPeds = {}  -- [npc index] = ped
-local spawnedCards = {} -- [card point index] = prop
+local spawnedCards = {} -- [card point id] = prop
+local points = {}       -- [card point id] = { id, item, coords = vector4, exact } (from the server database)
+local pointBlips = {}   -- [card point id] = blip
+local editMode = false  -- admin: show every card, ignoring cooldowns
 local cardReadyAt = {}  -- [itemName] = GetGameTimer() value at which the card can be collected again
 local blips = {}
 local fadingOut = {}   -- [entity] = true while an entity fades out before it is deleted
@@ -15,18 +18,6 @@ local loggedIn = false
 ---------------------------------------------------------------------
 -- HELPERS
 ---------------------------------------------------------------------
-local function loadModel(model)
-    local hash = type(model) == 'string' and joaat(model) or model
-    if not IsModelValid(hash) then return nil end
-    RequestModel(hash)
-    local timeout = GetGameTimer() + 5000
-    while not HasModelLoaded(hash) do
-        if GetGameTimer() > timeout then return nil end
-        Wait(10)
-    end
-    return hash
-end
-
 -- fades an entity in or out in its own thread so the spawn loop never stalls; `after` runs when done
 local function fade(entity, fadeIn, after)
     CreateThread(function()
@@ -60,6 +51,7 @@ local function addBlip(coords, sprite, scale, name)
     SetBlipScale(blip, scale)
     SetBlipName(blip, name)
     blips[#blips + 1] = blip
+    return blip
 end
 
 local function addPrompt(name, coords, key, label, event, arg)
@@ -100,7 +92,7 @@ end
 
 local function spawnNpc(index)
     local npc = npcs[index]
-    local hash = loadModel(npc.npcmodel)
+    local hash = CardsClient.loadModel(npc.npcmodel)
     if not hash then return end
 
     local c = npc.npccoords
@@ -153,11 +145,6 @@ CreateThread(function()
         end
     end
 
-    if Config.Blip.showblipCards then
-        for _, point in ipairs(Config.CardPoints) do
-            addBlip(point.coords, Config.Blip.cardSprite, Config.Blip.cardScale, locale('card_blip'))
-        end
-    end
 end)
 
 CreateThread(function()
@@ -178,12 +165,10 @@ end)
 ---------------------------------------------------------------------
 -- CARDS IN THE WORLD
 ---------------------------------------------------------------------
-local cardCoords = {} -- [card point index] = vector3, built once so the distance loop doesn't allocate
-for index, point in ipairs(Config.CardPoints) do
-    cardCoords[index] = vector3(point.coords.x, point.coords.y, point.coords.z)
-end
+local cardCoords = {} -- [card point id] = vector3, built when a point arrives so the distance loop doesn't allocate
 
 local function isCardReady(item)
+    if editMode then return true end
     local readyAt = cardReadyAt[item]
     return not readyAt or GetGameTimer() >= readyAt
 end
@@ -200,7 +185,7 @@ local function removeCard(index, instant)
 end
 
 local function collectCard(index)
-    local point = Config.CardPoints[index]
+    local point = points[index]
     if collecting or not point or not spawnedCards[index] then return end
     collecting = true
 
@@ -233,9 +218,9 @@ AddEventHandler('rsg-cards:client:takecard', function(index)
 end)
 
 local function spawnCard(index)
-    local point = Config.CardPoints[index]
+    local point = points[index]
     local info = Cards.Info[point.item]
-    local hash = info and loadModel(info.model)
+    local hash = info and CardsClient.loadModel(info.model)
     if not hash then return end
 
     local c = point.coords
@@ -245,7 +230,7 @@ local function spawnCard(index)
     spawnedCards[index] = prop
 
     SetEntityHeading(prop, c.w)
-    PlaceEntityOnGroundProperly(prop, true)
+    if not point.exact then PlaceEntityOnGroundProperly(prop, true) end -- placed with the gizmo = exactly where the admin put it
     FreezeEntityPosition(prop, true)
 
     if Config.Card.EagleEye.enabled then
@@ -274,9 +259,108 @@ local function spawnCard(index)
     fade(prop, true)
 end
 
+---------------------------------------------------------------------
+-- CARD LOCATIONS (from the database, kept in sync by the server)
+---------------------------------------------------------------------
+local function applyPoint(id, data)
+    if spawnedCards[id] then removeCard(id, true) end
+    if pointBlips[id] then
+        RemoveBlip(pointBlips[id])
+        pointBlips[id] = nil
+    end
+
+    if not data then
+        points[id], cardCoords[id] = nil, nil
+        return
+    end
+
+    points[id] = { id = id, item = data.item, coords = vector4(data.x, data.y, data.z, data.w), exact = data.exact == true }
+    cardCoords[id] = vector3(data.x, data.y, data.z)
+    if Config.Blip.showblipCards then
+        pointBlips[id] = addBlip(cardCoords[id], Config.Blip.cardSprite, Config.Blip.cardScale, locale('card_blip'))
+    end
+end
+
+local function loadPoints()
+    local list = RSGCore.Functions.AwaitCallback('rsg-cards:server:getPoints', 15000)
+    if not list then return end
+    local known = {}
+    for _, data in ipairs(list) do
+        known[data.id] = true
+        applyPoint(data.id, data)
+    end
+    for id in pairs(points) do
+        if not known[id] then applyPoint(id, nil) end
+    end
+end
+
+RegisterNetEvent('rsg-cards:client:setPoint', function(id, data)
+    applyPoint(id, data)
+end)
+
+---------------------------------------------------------------------
+-- ADMIN EDITOR (rsg-gizmo)
+---------------------------------------------------------------------
+local editing = false
+
+-- the card prop nearest to the player (only cards that are currently spawned)
+local function nearestCard()
+    local playerCoords = GetEntityCoords(PlayerPedId())
+    local bestId, bestDistance
+    for id, prop in pairs(spawnedCards) do
+        if DoesEntityExist(prop) then
+            local distance = #(playerCoords - GetEntityCoords(prop))
+            if distance <= 6.0 and (not bestDistance or distance < bestDistance) then bestId, bestDistance = id, distance end
+        end
+    end
+    return bestId
+end
+
+RegisterNetEvent('rsg-cards:client:editorToggle', function()
+    editMode = not editMode
+    RSGCore.Functions.Notify({ title = locale('title'), description = locale(editMode and 'editor_edit_on' or 'editor_edit_off'), type = 'inform', duration = 4000 })
+end)
+
+RegisterNetEvent('rsg-cards:client:editorPlace', function(item)
+    local info = Cards.Info[item]
+    if editing or not info or info.deck then return end
+    editing = true
+    CreateThread(function()
+        local res = exports['rsg-gizmo']:Place(info.model, { rotation = 'z', maxDistance = 5.0 })
+        editing = false
+        if not res then return end
+        TriggerServerEvent('rsg-cards:server:pointAdd', item, res.coords.x, res.coords.y, res.coords.z, res.heading)
+    end)
+end)
+
+RegisterNetEvent('rsg-cards:client:editorMove', function()
+    if editing then return end
+    local id = nearestCard()
+    if not id then
+        return RSGCore.Functions.Notify({ title = locale('title'), description = locale('editor_no_point'), type = 'error', duration = 5000 })
+    end
+    editing = true
+    CreateThread(function()
+        local prop = spawnedCards[id]
+        local res = prop and DoesEntityExist(prop) and exports['rsg-gizmo']:Edit(prop, { rotation = 'z' })
+        editing = false
+        if not res then return end
+        TriggerServerEvent('rsg-cards:server:pointMove', id, res.coords.x, res.coords.y, res.coords.z, res.heading)
+    end)
+end)
+
+RegisterNetEvent('rsg-cards:client:editorRemove', function()
+    local id = nearestCard()
+    if not id then
+        return RSGCore.Functions.Notify({ title = locale('title'), description = locale('editor_no_point'), type = 'error', duration = 5000 })
+    end
+    TriggerServerEvent('rsg-cards:server:pointRemove', id)
+end)
+
 local function refreshCooldowns()
     local remaining = RSGCore.Functions.AwaitCallback('rsg-cards:server:getPickups', 10000)
     cardReadyAt = {}
+    loadPoints()
     for item, seconds in pairs(remaining or {}) do
         cardReadyAt[item] = GetGameTimer() + math.floor(seconds * 1000)
     end
@@ -291,7 +375,7 @@ CreateThread(function()
             local playerCoords = GetEntityCoords(PlayerPedId())
             local closest = math.huge
 
-            for index, point in ipairs(Config.CardPoints) do
+            for index, point in pairs(points) do
                 local distance = #(playerCoords - cardCoords[index])
                 local ready = isCardReady(point.item)
                 if ready and distance < closest then closest = distance end
@@ -332,6 +416,7 @@ end)
 
 RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
     loggedIn = false
+    editMode = false
     cardReadyAt = {}
     clearCards()
 end)
@@ -348,4 +433,5 @@ AddEventHandler('onResourceStop', function(resourceName)
     for entity in pairs(fadingOut) do if DoesEntityExist(entity) then DeleteEntity(entity) end end
     for name in pairs(prompts) do removePrompt(name) end
     for _, blip in ipairs(blips) do RemoveBlip(blip) end
+    for _, blip in pairs(pointBlips) do RemoveBlip(blip) end
 end)
