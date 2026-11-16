@@ -208,7 +208,7 @@ return function(h)
         registry['feather-economy'].GetCurrency=function() return {ok=true,value={enabled=true,precision=2}} end
         if weapon then
             local w=Env('feather-weapons');w.Config={DevMode=false,NativeAlphaRuntime=true,CharacterAmmunitionEnabled=true,
-                CharacterAmmoTransportEnabled=true,AmmunitionPools={enabled=false},Escrow={maxTotal=200}}
+                CharacterAmmoTransportEnabled=true,NativeAlphaLifecycleWearEnabled=true,AmmunitionPools={enabled=false},Escrow={maxTotal=200}}
             for _,path in ipairs({'shared/constants.lua','shared/definitions/ammunition.lua','shared/definitions/weapons.lua',
                 'shared/validation.lua','shared/character_ammunition_item.lua'}) do Load(w,weaponsRoot,path) end
             w.WeaponResult={Ok=function(v) return {ok=true,value=v} end,Error=function(c,m) return {ok=false,error={code=c,message=m}} end}
@@ -223,10 +223,17 @@ return function(h)
             w.WeaponNativeEquipmentBindings={IsStopping=function() return false end}
             w.DefinitionRegistry={ValidateAttachmentSet=function() return w.WeaponResult.Ok(true) end}
             w.GetResourceState=function() return 'stopped' end
+            w.GetConvarInt=function(_,default) return default end
+            Load(w,weaponsRoot,'shared/native_melee_catalog.lua');Load(w,weaponsRoot,'shared/native_knife.lua')
+            if weapon=='tomahawk' then
+                w.Config.NativeThrowableUnitsEnabled=true
+                Load(w,weaponsRoot,'shared/native_throwable_policy.lua');Load(w,weaponsRoot,'shared/native_throwable_item.lua')
+            end
             Load(w,weaponsRoot,'server/services/metadata.lua');Load(w,weaponsRoot,'server/services/provenance.lua')
             w.WeaponProvenanceService.Start()
             Load(w,weaponsRoot,'server/services/issuance.lua');Load(w,weaponsRoot,'server/services/shop_purchases.lua')
-            h.definitions()[1].name='weapon_revolver_cattleman'
+            h.definitions()[1].name=weapon=='tomahawk' and 'weapon_thrown_tomahawk'
+                or (type(weapon)=='string' and ('weapon_melee_'..weapon) or 'weapon_revolver_cattleman')
         end
         local shop=Env('feather-shops');Load(shop,shopRoot,'config.lua')
         local catalog={id=o.shop_id,organizationId=sqlState.organization,position={x=0,y=0,z=0},offers={
@@ -266,6 +273,28 @@ return function(h)
         Setup(true);local result=Purchase();assert(result.ok,result.message)
         assert(#h.rows()==2 and sqlState.provenance==1 and sqlState.accounts[sqlState.wallet].posted_amount==975)
         assert(Status().ok and sqlState.provenance==1 and sqlState.debits==2)
+    end)
+    for _,model in ipairs({'knife','machete','hammer','cleaver','hatchet'}) do
+        test('canonical melee purchase '..model..' charges once and replays without duplicate delivery',function()
+            Setup(model);local result=Purchase();assert(result.ok,result.message)
+            assert(#h.rows()==2 and sqlState.provenance==1 and sqlState.accounts[sqlState.wallet].posted_amount==975)
+            assert(Purchase().ok and Status().ok and #h.rows()==2 and sqlState.provenance==1 and sqlState.debits==2)
+        end)
+    end
+    test('melee insufficient funds preserves items and provenance',function()
+        Setup('hatchet');sqlState.accounts[sqlState.wallet].posted_amount=0
+        local result=Purchase();assert(not result.ok and result.code=='insufficient_funds')
+        assert(#h.rows()==1 and sqlState.provenance==0 and sqlState.debits==0)
+    end)
+    test('physical Tomahawk purchase creates one paid instance and replays without another unit',function()
+        Setup('tomahawk');local result=Purchase();assert(result.ok,result.message)
+        assert(#h.rows()==2 and sqlState.provenance==1 and sqlState.accounts[sqlState.wallet].posted_amount==975)
+        assert(Purchase().ok and Status().ok and #h.rows()==2 and sqlState.provenance==1 and sqlState.debits==2)
+    end)
+    test('physical Tomahawk insufficient funds rolls back the item and provenance',function()
+        Setup('tomahawk');sqlState.accounts[sqlState.wallet].posted_amount=0
+        local result=Purchase();assert(not result.ok and result.code=='insufficient_funds')
+        assert(#h.rows()==1 and sqlState.provenance==0 and sqlState.debits==0)
     end)
     test('four-resource insufficient funds rolls back firearm provenance and delivery',function()
         Setup(true);sqlState.accounts[sqlState.wallet].posted_amount=0

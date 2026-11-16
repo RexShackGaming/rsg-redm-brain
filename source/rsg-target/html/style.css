@@ -2,7 +2,6 @@
   --rdr-black: #000000;
   --rdr-panel: #0a0a0a;
   --rdr-panel-2: #141414;
-  --rdr-leather: #1c1c1c;
   --rdr-gold: #ffffff;
   --rdr-gold-dim: #5a5a5a;
   --rdr-text: #f2f2f2;
@@ -54,7 +53,12 @@ html, body {
   flex-direction: column;
   gap: 4px;
   pointer-events: auto;
+  max-height: 60vh;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
+
+#options::-webkit-scrollbar { display: none; }
 
 .option {
   display: flex;
@@ -90,6 +94,23 @@ html, body {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.15)),
     linear-gradient(160deg, var(--rdr-panel-2), var(--rdr-panel) 60%, var(--rdr-black));
+}
+
+.option.selected {
+  color: var(--rdr-text);
+  border-color: var(--rdr-gold);
+  transform: translateX(2px);
+}
+
+.option .key {
+  margin-left: auto;
+  padding: 1px 6px;
+  border: 1px solid var(--rdr-gold-dim);
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--rdr-text);
+  font-size: 11px;
+  letter-spacing: 0;
 }
 
 .option .icon {

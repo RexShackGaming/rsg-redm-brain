@@ -4,29 +4,37 @@ const app = document.getElementById("app");
 const eye = document.getElementById("eye");
 const list = document.getElementById("options");
 
-const escapeHtml = (s) =>
-  String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+let rows = [];          // rendered option elements, in display order
+let selected = -1;      // keyboard / gamepad cursor
+let keyboardNav = true;
+let gamepadNav = false;
+let padRaf = null;
 
 function setTargeted(on) {
   eye.src = on ? "assets/target.png" : "assets/untarget.png";
   eye.classList.toggle("active", on);
 }
 
-function onSelect() {
+function activate(el) {
+  if (!el) return;
   // focus is dropped after a click, so the hover never releases - block repeat clicks briefly
-  this.style.pointerEvents = "none";
-  fetchNui("select", [this.targetType, this.targetId, this.zoneId]);
-  setTimeout(() => (this.style.pointerEvents = "auto"), 100);
+  el.style.pointerEvents = "none";
+  fetchNui("select", [el.targetType, el.targetId, el.zoneId]);
+  setTimeout(() => (el.style.pointerEvents = "auto"), 100);
 }
 
-let index = 0;
+function setSelected(i) {
+  if (!rows.length) return;
+  selected = (i + rows.length) % rows.length;
+  rows.forEach((el, n) => el.classList.toggle("selected", n === selected));
+  rows[selected].scrollIntoView({ block: "nearest" });
+}
 
-function addOption(type, data, id, zoneId) {
-  if (data.hide) return;
-
+function buildRow(entry, quickLabel) {
+  const { type, data, id, zoneId } = entry;
   const el = document.createElement("div");
   el.className = "option";
-  el.style.animationDelay = `${index++ * 0.03}s`;
+  el.style.animationDelay = `${rows.length * 0.03}s`;
 
   const icon = document.createElement("span");
   icon.className = "icon";
@@ -37,14 +45,49 @@ function addOption(type, data, id, zoneId) {
 
   const label = document.createElement("span");
   label.className = "label";
-  label.innerHTML = escapeHtml(data.label);
+  label.textContent = data.label ?? "";
 
   el.append(icon, label);
+
+  if (quickLabel && rows.length === 0) {
+    const key = document.createElement("span");
+    key.className = "key";
+    key.textContent = quickLabel;
+    el.appendChild(key);
+  }
+
   el.targetType = type;
   el.targetId = id;
   el.zoneId = zoneId;
-  el.addEventListener("click", onSelect);
-  list.appendChild(el);
+  el.addEventListener("click", () => activate(el));
+  return el;
+}
+
+function renderOptions(data) {
+  const entries = [];
+  const collect = (type, opt, id, zoneId) => {
+    if (!opt.hide) entries.push({ type, data: opt, id, zoneId, order: entries.length });
+  };
+
+  if (data.options) {
+    for (const type in data.options) {
+      data.options[type].forEach((opt, id) => collect(type, opt, id + 1));
+    }
+  }
+  if (data.zones) {
+    data.zones.forEach((zone, z) => zone.forEach((opt, id) => collect("zones", opt, id + 1, z + 1)));
+  }
+
+  // higher priority first, original order otherwise (matches the quick select target in client.lua)
+  entries.sort((a, b) => (b.data.priority || 0) - (a.data.priority || 0) || a.order - b.order);
+
+  rows = [];
+  selected = -1;
+  for (const entry of entries) {
+    const el = buildRow(entry, data.quick);
+    list.appendChild(el);
+    rows.push(el);
+  }
 }
 
 const markerLayer = document.getElementById("markers");
@@ -78,9 +121,43 @@ function renderMarkers(markers, style) {
   });
 }
 
+/* keyboard: only delivered while the menu is focused (Left Mouse) */
 window.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !app.classList.contains("hidden")) fetchNui("close");
+  if (app.classList.contains("hidden")) return;
+
+  if (e.key === "Escape") { fetchNui("close"); return; }
+  if (!keyboardNav || !rows.length) return;
+
+  if (e.key === "ArrowDown") { e.preventDefault(); setSelected(selected + 1); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); setSelected(selected < 0 ? rows.length - 1 : selected - 1); }
+  else if (e.key === "Enter" || e.key === " ") { if (selected >= 0) { e.preventDefault(); activate(rows[selected]); } }
+  else if (/^[1-9]$/.test(e.key)) { activate(rows[Number(e.key) - 1]); }
 });
+
+/* gamepad (experimental): standard mapping, only while the NUI has focus so gameplay buttons never fire */
+const padPrev = {};
+function pollPad() {
+  if (!gamepadNav || app.classList.contains("hidden")) { padRaf = null; return; }
+
+  if (document.hasFocus() && rows.length) {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    for (const pad of pads) {
+      if (!pad) continue;
+      const edge = (b) => {
+        const down = !!(pad.buttons[b] && pad.buttons[b].pressed);
+        const was = padPrev[b];
+        padPrev[b] = down;
+        return down && !was;
+      };
+      if (edge(13)) setSelected(selected + 1);        // d-pad down
+      if (edge(12)) setSelected(selected < 0 ? rows.length - 1 : selected - 1); // d-pad up
+      if (edge(0) && selected >= 0) activate(rows[selected]); // A
+      if (edge(1)) fetchNui("close");                 // B
+    }
+  }
+
+  padRaf = requestAnimationFrame(pollPad);
+}
 
 window.addEventListener("message", ({ data }) => {
   if (data.event === "markers") {
@@ -89,7 +166,8 @@ window.addEventListener("message", ({ data }) => {
   }
 
   list.innerHTML = "";
-  index = 0;
+  rows = [];
+  selected = -1;
 
   switch (data.event) {
     case "visible":
@@ -103,14 +181,10 @@ window.addEventListener("message", ({ data }) => {
 
     case "setTarget":
       setTargeted(true);
-      if (data.options) {
-        for (const type in data.options) {
-          data.options[type].forEach((opt, id) => addOption(type, opt, id + 1));
-        }
-      }
-      if (data.zones) {
-        data.zones.forEach((zone, z) => zone.forEach((opt, id) => addOption("zones", opt, id + 1, z + 1)));
-      }
+      keyboardNav = data.keyboard !== false;
+      gamepadNav = !!data.gamepad;
+      renderOptions(data);
+      if (gamepadNav && padRaf === null) padRaf = requestAnimationFrame(pollPad);
       return;
   }
 });

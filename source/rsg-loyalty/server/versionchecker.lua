@@ -52,7 +52,7 @@ local function CheckVersion()
         end
 
         -- Trim whitespace/newlines
-        remoteVersion = remoteVersion:gsub('%s+$', '')
+        remoteVersion = (remoteVersion:gsub('%s+$', ''))
 
         if currentVersion == remoteVersion then
             printLog('success', 'You are running the latest version!')

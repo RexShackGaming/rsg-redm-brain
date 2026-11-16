@@ -11,12 +11,17 @@ local foundN = 0
 local lastScan = 0
 local GetGameTimer = GetGameTimer
 
+-- per player on/off switch (saved with KVP), the config value is the default
+local KVP_KEY = 'rsg-target:highlight'
+local enabled = cfg.Enabled
+local saved = GetResourceKvpString(KVP_KEY)
+if saved == 'on' then enabled = true elseif saved == 'off' then enabled = false end
+
 
 ---@return boolean
 local function optionUsable(option, entity, distance, coords)
     if option.menuName then return false end -- only show top-level options
-    if option.groups and not utils.hasPlayerGotGroup(option.groups) then return false end
-    if option.items and not utils.hasPlayerGotItems(option.items, option.anyItem) then return false end
+    if not utils.passesFilters(option) then return false end
 
     if option.canInteract then
         local ok, resp = pcall(option.canInteract, entity, distance, coords, option.name)
@@ -76,8 +81,12 @@ local function scanList(list, key, entityType, playerCoords, ped)
     end
 end
 
+function highlight.isEnabled()
+    return enabled
+end
+
 function highlight.scan()
-    if not cfg.Enabled then return end
+    if not enabled then return end
 
     local now = GetGameTimer()
     if now - lastScan < cfg.ScanInterval then return end
@@ -105,7 +114,9 @@ function highlight.scan()
 end
 
 local GetScreenCoordFromWorldCoord = GetScreenCoordFromWorldCoord
+local floor = math.floor
 local markers = {}
+local lastN, lastX, lastY, lastA = 0, {}, {}, {}
 local style = { size = cfg.Size, pulse = cfg.Pulse, colour = cfg.Colour, hover = cfg.HoverColour }
 local sentEmpty = true
 local sentStyle = false
@@ -116,12 +127,24 @@ local function send(list)
     sentStyle = true
 end
 
+---true when the markers differ from the last batch sent (skips NUI traffic while nothing moved)
+local function markersChanged(n)
+    if n ~= lastN then return true end
+
+    for i = 1, n do
+        local m = markers[i]
+        if m.x ~= lastX[i] or m.y ~= lastY[i] or m.a ~= lastA[i] then return true end
+    end
+
+    return false
+end
+
 ---Projects every highlighted target to the screen and sends them to the NUI (eye icons).
 ---@param hovered number? entity aimed at that currently has usable options
 ---@param activeZones table? zones aimed at that currently have usable options
 function highlight.draw(hovered, activeZones)
     if foundN == 0 then
-        if not sentEmpty then send({}); sentEmpty = true end
+        if not sentEmpty then send({}); sentEmpty = true; lastN = 0 end
         return
     end
 
@@ -152,20 +175,38 @@ function highlight.draw(hovered, activeZones)
             local onScreen, sx, sy = GetScreenCoordFromWorldCoord(x, y, z)
             if onScreen then
                 n += 1
-                markers[n] = { x = sx, y = sy, a = active }
+                markers[n] = { x = floor(sx * 10000 + 0.5) / 10000, y = floor(sy * 10000 + 0.5) / 10000, a = active }
             end
         end
     end
 
-    send(markers)
-    sentEmpty = n == 0
+    if markersChanged(n) then
+        send(markers)
+
+        for i = 1, n do
+            local m = markers[i]
+            lastX[i], lastY[i], lastA[i] = m.x, m.y, m.a
+        end
+
+        lastN = n
+    end
+
+    sentEmpty = n == 0 and lastN == 0
 end
 
 function highlight.clear()
     if not sentEmpty then send({}); sentEmpty = true end
+    lastN = 0
     table.wipe(found)
     foundN = 0
     lastScan = 0
+end
+
+---@param value boolean
+function highlight.setEnabled(value)
+    enabled = value and true or false
+    SetResourceKvp(KVP_KEY, enabled and 'on' or 'off')
+    if not enabled then highlight.clear() end
 end
 
 return highlight

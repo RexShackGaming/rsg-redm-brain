@@ -3500,6 +3500,111 @@ Allows you to create a progress bar that will be displayed on screen for a speci
     </Tab>
 </Tabs>
 
+### SkillBar
+
+Allows you to create a skill bar, a needle runs over the bar and the player has to press the key while the needle is inside the zone
+
+<Tabs>
+    <Tab title="Usage">
+
+        <Accordion icon="code" iconType="duotone" title="Start">
+
+            <ParamField body="text" type="string">
+                Text to display above the skill bar, if `amount` is more than 1 the hits are added like `1/3`
+            </ParamField>
+
+            <ParamField body="difficulty" type="string | table">
+                Difficulty of the skill bar `easy` `normal` `medium` `hard` `ultra` `extreme` or a table with `duration` in `milliseconds` the needle takes to cross the bar and `width` the size of the zone in `%`
+            </ParamField>
+
+            <ParamField body="amount" type="integer">
+                How many hits in a row are needed, default is `1`
+            </ParamField>
+
+            <ParamField body="key" type="integer">
+                Key hash to press, default is `SPACE`
+            </ParamField>
+
+            <ParamField body="colors" type="table">
+                Table with the colors for the skill bar `textColor` is the color of the text, `backgroundColor` and `zoneColor` are the colors for the background and the zone of the skill bar image and `needleColor` is the color of the needle
+            </ParamField>
+
+            <ParamField body="position" type="table">
+                Table with the position for the skill bar on screen `top` and `left` are the position in `%` for the skill bar
+            </ParamField>
+
+            <ParamField body="image" type="string">
+                Image for the skill bar only `png` is avaliable for now
+            </ParamField>
+
+            <ParamField body="callback" type="function">
+                Callback function if you want to use it as async
+            </ParamField>
+
+            <ParamField body="return" type="boolean">
+                the result of the skill bar `true` or `false` if `false` the player missed or the skill bar was cancelled
+            </ParamField>
+
+            ```lua
+            local data = {
+                text = 'Press SPACE',
+                difficulty = 'medium',              -- easy, normal, medium, hard, ultra, extreme or { duration = 1500, width = 9 }
+                amount = 3,                         -- how many hits in a row are needed
+                key = 0xD9D0E1C0,                   -- optional default is space
+                colors = {
+                    textColor = 'white',
+                    -- same filters as the progress bar, add deg to the number
+                    -- backgroundColor = '0deg',
+                    -- zoneColor = '120deg',
+                    needleColor = '#b3261e',
+                },
+                position = { top = 90, left = 50 }, -- in % for position on the screen
+                image = 'score_timer_extralong',    -- only png this is optional
+            }
+
+            -- SYNC
+            local result = exports.vorp_lib:skillbarStart(data)
+            if not result then
+                print('failed')
+            else
+                print('success')
+            end
+
+            --OR ASYNC
+            exports.vorp_lib:skillbarStart(data, function(result)
+                if result then
+                    print('Skill bar success')
+                else
+                    print('Skill bar failed')
+                end
+            end)
+            ```
+    </Accordion>
+
+    <Accordion icon="code" iconType="duotone" title="Cancel">
+        cancel the skill bar
+
+        ```lua
+            exports.vorp_lib:skillbarCancel()
+        ```
+    </Accordion>
+
+    <Accordion icon="code" iconType="duotone" title="Events">
+        listen to the start and the end of the skill bar
+
+        ```lua
+            AddEventHandler('vorp_lib:skillbar:start', function()
+                print('skill bar started')
+            end)
+
+            AddEventHandler('vorp_lib:skillbar:end', function(result)
+                print('skill bar ended', result)
+            end)
+        ```
+    </Accordion>
+    </Tab>
+</Tabs>
+
 ### Copy
 
 Allows you to send a clipboard copy request from `vorp_lib` NUI.

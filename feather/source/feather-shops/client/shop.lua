@@ -147,7 +147,7 @@ Catalog = function(shop, notice, category, ammoGroup)
         local grouped=false
         for _,offer in ipairs(shop.offers) do if offer.category then grouped=true;break end end
         if grouped and not category then
-            for _,key in ipairs({'revolver','pistol','repeater','rifle','shotgun','ammunition','attachments','maintenance','goods'}) do
+            for _,key in ipairs({'revolver','pistol','repeater','rifle','shotgun','melee','throwables','ammunition','attachments','maintenance','goods'}) do
                 local present=false
                 for _,offer in ipairs(shop.offers) do if (offer.category or 'goods')==key then present=true;break end end
                 if present then

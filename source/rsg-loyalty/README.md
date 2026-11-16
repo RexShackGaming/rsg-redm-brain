@@ -1,177 +1,104 @@
 # rsg-loyalty
 
-A comprehensive loyalty points system for RedM/RSG Framework servers. Players earn loyalty points through gameplay and redeem them for cash or items at NPC loyalty store locations.
+Loyalty points for RSG Framework (RedM). Players earn points for playing, climb loyalty tiers and spend points at NPC stores on cash, items and weekly specials. Full developer reference: [DOCS.md](DOCS.md).
+
+**Version:** 3.1.0 | **Dependencies:** rsg-core, rsg-target, rsg-inventory, oxmysql (no ox_lib)
 
 ## Features
 
-- **Automatic Point Earning**: Players earn points passively (configurable per-minute rate) after minimum playtime
-- **Session Caps & Cooldowns**: Prevents farming with per-session limits and earn cooldowns
-- **NPC Store Locations**: Redeem points at configurable NPC vendors across the map
-- **Cash & Item Rewards**: Configurable reward catalog with images and pricing
-- **Leaderboard**: NUI-based top players leaderboard (current & lifetime points)
-- **Admin Tools**: Award/remove/check points with rate limiting and player notifications
-- **Export API**: Other resources can read/write loyalty points via secure exports
-- **Discord Logging**: Webhook-based logging for all loyalty events (configurable per event)
-- **Security**: Atomic SQL point operations, inventory re-checks on redemption, export allowlist, rate-limited events
-- **Localization**: Full locale support via rsg-core (en, de, el, es, fr, ja, nl, pl, pt-br, ro)
+- Passive points per minute, awarded entirely on the server (anti-AFK movement check, session cap, minimum playtime)
+- **Tiers** (Bronze, Silver, Gold, Platinum) from lifetime points, with reward discounts and earn multipliers
+- **Daily login bonus** with a streak and milestone bonuses
+- **Admin boost events**: `/loyaltyboost 2 60` doubles earning for an hour
+- **Activity points** for other scripts (hunting, deliveries, bounties...) through one export
+- Reward **stock**, **per-player limits**, **tier** and **job** requirements, per day, week or month
+- **Specials tab** with rotating weekly rewards and custom rewards that call another resource's export
+- **History tab** with your recent point gains and spends
+- "You can now afford: ..." notification when you reach a reward
+- NPC stores with blips; menu closes if you walk away or die
+- Leaderboard (current and lifetime points)
+- Admin commands to award, remove and check points
+- Discord webhook logging (points earned are sent as one summary per batch) and a scheduled leaderboard post
+- Push-to-talk keeps working while the menu is open
+- Locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro
 
 ## Installation
 
-### Prerequisites
-- RSG Framework (rsg-core)
-- rsg-target
-- ox_mysql
-- rsg-inventory (for item images)
-
-### Setup Steps
-
-1. **Extract to Resources**
-   ```
-   Extract rsg-loyalty folder to your resources directory
-   ```
-
-2. **Start Resource**
-   Add to your server.cfg:
+1. Put `rsg-loyalty` in your resources folder.
+2. Add to `server.cfg` after rsg-core, rsg-target, rsg-inventory and oxmysql:
    ```
    ensure rsg-loyalty
    ```
-   The script automatically creates the `rsg_loyalty` table on first start via oxmysql — no manual SQL import is required. The SQL file in `installation/rsg_loyalty.sql` is kept only as a reference/fallback if you prefer to run it manually.
-
-4. **Configure Discord Webhook** (Optional)
-   Set your webhook URL in `server/config.lua`:
+3. Tables are created automatically on first start (and upgraded from 3.0.x). To install by hand, set `Config.AutoDatabase = false` and import `installation/rsg_loyalty.sql`.
+4. Optional: set your Discord webhook in `server/config.lua`:
    ```lua
    Config.Discord.WebhookURL = 'YOUR_WEBHOOK_URL'
    ```
+5. Optional: choose a language with `setr rsg:locale en` in `server.cfg`.
 
-## Configuration
+## Configuration (`shared/config.lua`)
 
-Settings are in `shared/config.lua`. Sensitive values (Discord webhook URL) go in `server/config.lua` (never sent to clients).
+| Option | Default | Description |
+|---|---|---|
+| `Config.Enabled` | `true` | Master switch. Saved points are kept when off. Restart after changing |
+| `Config.AutoDatabase` | `true` | Create/upgrade tables on start. False = import the SQL file yourself |
+| `Config.AllowPushToTalkWhileOpen` | `true` | Keep push-to-talk usable while the menu is open |
+| `Config.PushToTalkControls` | `{ 0x4BC9DABB }` | Controls left enabled while the menu is open |
+| `Config.Loyalty.*` | see file | Earning: `EnableEarning`, `RequireMovement`, `MinMoveDistance`, `MaxRedeemDistance`, `PointsPerMinute`, `MaxPointsPerSession`, `MinPlaytimeBeforeEarning`, `MaxAdminAwardPoints` |
+| `Config.Tiers` | 4 tiers | `key`, `label` (locale key), `minLifetime`, `discount` (% off rewards), `earnMultiplier`. Keep sorted lowest first |
+| `Config.Daily` | enabled | `BasePoints`, `PerStreakDay`, `MaxPoints`, `Milestones = { [day] = bonus }` |
+| `Config.Boost` | 5.0 / 240 | Limits for `/loyaltyboost`: `MaxMultiplier`, `MaxMinutes` |
+| `Config.Activities` | 4 examples | Per activity: `points`, `cooldown` (s), `dailyCap` |
+| `Config.History` | 20 / 30 | `Rows` shown, `KeepDays` before cleanup |
+| `Config.Notify.AffordableReward` | `true` | "You can now afford" notification |
+| `Config.Rotation` | 2 / week | `Count` of rotating specials shown, `Period` = `'day'` or `'week'` |
+| `Config.CashRewards` / `Config.ItemRewards` / `Config.SpecialRewards` | see file | Reward catalogs. `label` is a locale key |
+| `Config.UI.*` | see file | Optional open command, notification length |
+| `Config.Exports.*` | closed | Which resources may use the restricted exports |
+| `Config.Discord.*` | see file | Webhook switches, `PointsBatchMinutes`, leaderboard schedule |
+| `Config.LoyaltyLocations` | 7 towns | NPC model, position, scenario and blip per store |
 
-### Enable / Disable
-```lua
-Config.Enabled = true              -- master switch for the whole resource
-Config.Loyalty.EnableEarning = true -- passive playtime points only
-Config.Loyalty.RequireMovement = true -- anti-AFK: must move between ticks
-Config.Loyalty.MinMoveDistance = 5.0  -- metres per ~1 minute tick
-```
-With `Config.Enabled = false` nothing runs (no NPCs, blips, store, earning, commands, webhooks; mutation exports return false). Saved points are kept. Restart the resource after changing.
+### Reward options
 
-### Loyalty Points Settings
-```lua
-Config.Loyalty = {
-    PointsPerMinute = 1,              -- Points earned per minute
-    MaxPointsPerSession = 500,        -- Max points per session
-    MinPlaytimeBeforeEarning = 60,    -- Seconds before earning starts
-    MaxAdminAwardPoints = 10000,      -- Max points per admin award
-}
-```
+Any reward (cash, item or special) can have:
 
-### Reward Configuration
+| Field | Meaning |
+|---|---|
+| `minTier = 'gold'` | Tier key from `Config.Tiers` required to redeem |
+| `jobs = { 'vallaw' }` | Only players whose active job is listed can redeem |
+| `stock = 10` | Total available to all players |
+| `limit = 1` | Per player |
+| `period = 'week'` | Window for stock and limit: `'day'`, `'week'`, `'month'`; leave out for lifetime |
+| `id = 'my_reward'` | Stable id for stock/limit tracking (default is type and position, so set one if you reorder rewards) |
 
-#### Cash Rewards
-```lua
-Config.CashRewards = {
-    {
-        label = 'Reward Name',
-        points = 500,                 -- Points required
-        amount = 50,                  -- Cash amount given
-        image = 'dollar.png'
-    },
-}
-```
-
-#### Item Rewards
-```lua
-Config.ItemRewards = {
-    {
-        label = 'Item Name',
-        points = 1000,                -- Points required
-        item = 'item_name',           -- Item identifier
-        amount = 1,                   -- Quantity given
-        image = 'item_name.png'
-    },
-}
-```
-
-### UI Settings
-```lua
-Config.UI = {
-    OpenCommand = 'loyalty',          -- Command to open menu
-    EnableCommand = false,            -- Enable/disable command
-    NotificationDuration = 5000,      -- Notification duration (ms)
-}
-```
-
-### Export Security
-```lua
-Config.Exports = {
-    AllowedResources = {},            -- Resources allowed to use mutation exports
-    AllowAllResources = false,        -- Set to true to allow all (INSECURE)
-}
-```
-
-### Discord Integration
-```lua
-Config.Discord.EnableWebhooks = true  -- Enable Discord logging
-Config.Discord.LogEvents = {
-    PointsEarned = false,             -- Log points earned
-    RedemptionSuccess = true,         -- Log successful redemptions
-    RedemptionFailed = true,          -- Log failed redemptions
-    AdminPointAward = true,           -- Log admin awards/removals
-}
-```
-
-### NPC Locations
-Configure NPC vendors in `Config.LoyaltyLocations` (coords, model, blip, scenario per location).
+Special rewards add `type = 'cash' | 'item' | 'custom'` and `rotating = true | false`. A `custom` reward calls `exports[resource][func](source, ...args)` on the server; it counts as given unless it errors or returns `false`. See the commented example in the config.
 
 ## Commands
 
-### Player Commands
-- `/loyalty` - Open the loyalty menu (configurable in `Config.UI.OpenCommand`)
+| Command | Permission | Description |
+|---|---|---|
+| `/loyalty` | everyone | Open the menu anywhere (only if `Config.UI.EnableCommand = true`) |
+| `/awardloyalty [id] [points]` | admin | Award points |
+| `/removeloyalty [id] [points]` | admin | Remove points |
+| `/checkloyalty [id]` | admin | Show a player's points |
+| `/loyaltyboost [multiplier] [minutes]` | admin | Boost earning for everyone. `/loyaltyboost off` cancels |
+| `/postleaderboard` | admin | Post the leaderboard to Discord now |
 
-### Admin Commands
-- `/awardloyalty [playerid] [amount]` - Award points to a player
-- `/removeloyalty [playerid] [amount]` - Remove points from a player
-- `/checkloyalty [playerid]` - Check a player's points
-
-## Exports (for other resources)
+## Exports (server)
 
 ```lua
-local points = exports['rsg-loyalty']:getLoyaltyPoints(citizenid)
+local points   = exports['rsg-loyalty']:getLoyaltyPoints(citizenid)
 local lifetime = exports['rsg-loyalty']:getLifetimeLoyaltyPoints(citizenid)
-local success = exports['rsg-loyalty']:addLoyaltyPoints(citizenid, points)    -- restricted
-local success = exports['rsg-loyalty']:removeLoyaltyPoints(citizenid, points) -- restricted
+local tier     = exports['rsg-loyalty']:getLoyaltyTier(citizenid)   -- { index, key, discount, earnMultiplier }
+
+-- restricted: the calling resource must be in Config.Exports.AllowedResources
+exports['rsg-loyalty']:addLoyaltyPoints(citizenid, 100)
+exports['rsg-loyalty']:removeLoyaltyPoints(citizenid, 100)
+local ok, points = exports['rsg-loyalty']:awardActivity(source, 'hunting')
+exports['rsg-loyalty']:setLoyaltyBoost(2.0, 60)   -- multiplier <= 1 clears the boost
 ```
 
-Mutation exports (`addLoyaltyPoints`, `removeLoyaltyPoints`) are restricted via `Config.Exports.AllowedResources`.
+## Support
 
-## Database Schema
-
-```sql
-CREATE TABLE IF NOT EXISTS `rsg_loyalty` (
-    `id` INT NOT NULL AUTO_INCREMENT,
-    `citizenid` VARCHAR(50) NOT NULL UNIQUE,
-    `charname` VARCHAR(50) NOT NULL,
-    `loyalty_points` INT NOT NULL DEFAULT 0,
-    `lifetime_points` INT NOT NULL DEFAULT 0,
-    `last_update` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`),
-    KEY `citizenid_idx` (`citizenid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-```
-
-## Troubleshooting
-
-### Discord Events Not Sending
-- Verify `Config.Discord.EnableWebhooks` is `true` and the specific event is enabled in `Config.Discord.LogEvents`
-- Confirm the webhook URL is set in `server/config.lua` and is valid
-- Check server console for error messages
-
-### Points Not Earning
-- Verify `MinPlaytimeBeforeEarning` has passed
-- Check the player hasn't hit `MaxPointsPerSession`
-- Verify player is actively in-game
-
-### Redemption Failures
-- Ensure player has sufficient points and inventory space (for items)
-- Verify reward is properly configured and rsg-inventory is running
+Support: https://rexshack.tebex.store
+Buy Me a Coffee: https://buymeacoffee.com/rexshack

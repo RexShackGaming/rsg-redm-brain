@@ -180,7 +180,7 @@ html, body {
 
 .tab-btn {
     flex: 1;
-    padding: 15px 20px;
+    padding: 15px 10px;
     background: none;
     border: none;
     color: var(--rdr-muted);
@@ -243,7 +243,6 @@ html, body {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    cursor: pointer;
     transition: all 0.15s ease;
 }
 
@@ -502,6 +501,143 @@ html, body {
     pointer-events: none;
 }
 
+
+/* Tier card, perks and boost */
+.points-card.tier {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+}
+
+.tier-name {
+    font-size: 24px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stat-track {
+    height: 8px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--rdr-gold-dim);
+    border-radius: 4px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+}
+
+.stat-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 4px 0 0 4px;
+    transition: width 0.35s ease, background-color 0.35s ease;
+}
+
+.stat-fill.stat-good {
+    background: linear-gradient(90deg, #7fcf82, var(--rdr-cost-ok));
+}
+
+.tier-next {
+    font-size: 11px;
+    color: var(--rdr-muted);
+    font-style: italic;
+}
+
+.perks-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 30px 16px;
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.perk-chip {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--rdr-text);
+    border: 1px solid var(--rdr-gold-dim);
+    border-radius: 2px;
+    padding: 4px 10px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.2));
+}
+
+.boost-banner {
+    padding: 10px 30px;
+    text-align: center;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #1a1204;
+    background: linear-gradient(90deg, #b9852c, var(--rdr-amber), #b9852c);
+    border-bottom: 1px solid var(--rdr-gold-dim);
+}
+
+/* Specials, stock and history */
+.rotation-note {
+    margin-bottom: 16px;
+    font-size: 12px;
+    font-style: italic;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--rdr-muted);
+    text-align: center;
+}
+
+.old-price {
+    text-decoration: line-through;
+    color: var(--rdr-muted);
+}
+
+.stock-text {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--rdr-amber);
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.history-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 14px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.15));
+    border: 1px solid rgba(201, 162, 75, 0.18);
+    border-left: 4px solid var(--rdr-gold-dim);
+    animation: fadeInUp 0.4s ease-out;
+}
+
+.history-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--rdr-text);
+}
+
+.history-time {
+    margin-top: 3px;
+    font-size: 11px;
+    color: var(--rdr-muted);
+}
+
+.history-amount {
+    font-size: 16px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.history-amount.gain { color: var(--rdr-cost-ok); }
+.history-amount.spend { color: var(--rdr-cost-over); }
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .loyalty-container {
@@ -515,6 +651,7 @@ html, body {
 
     .rewards-grid {
         grid-template-columns: 1fr;
+        gap: 15px;
     }
 
     .points-display {
@@ -538,10 +675,6 @@ html, body {
 
     .content-area {
         padding: 20px;
-    }
-
-    .rewards-grid {
-        gap: 15px;
     }
 
     .leaderboard-container {

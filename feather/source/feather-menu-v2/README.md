@@ -1,4 +1,6 @@
 # Feather Menu v2
+
+Current version: **2.0.0-alpha.11**. Keeps empty numeric drafts finite and restores invalid values on commit.
 [![UI and Lua CI](https://github.com/FeatherFramework/feather-menu-v2/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/FeatherFramework/feather-menu-v2/actions/workflows/ci.yml)
 [![Latest version](https://img.shields.io/github/v/release/DavFount/feather-menu-v2?include_prereleases&label=latest)](https://github.com/FeatherFramework/feather-menu-v2/releases)
 
@@ -887,3 +889,5 @@ No destructive behavior is attached automatically to existing resource buttons.
 Accordion `selected = true` adds separate muted-color `< >` markers around the plain text label and sets `aria-current`. It does not expand the section or allow HTML in labels. Marker color follows `theme.muted`, matching subheadings.
 
 Buttons accept an optional plain-text `description` (up to 512 characters), displayed below the label in smaller, subdued text. Use `UpdateElement` with `busy=true` for asynchronous work that outlives its activation callback, then clear busy when that work finishes.
+
+Number controls retain an empty draft while editing instead of assigning browser valueAsNumber=NaN back to the input. Empty/invalid drafts restore the configured value or minimum on commit without emitting an invalid number.

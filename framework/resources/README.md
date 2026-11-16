@@ -56,7 +56,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-lockpick](rsg-lockpick.md) | Simple lockpicking minigame for RedM (RSG Core). > A lightweight NUI lockpicking game (pin + cylinder) you | 0 | 0 |
 | [rsg-looting](rsg-looting.md) | Secure NPC looting and player robbery for RSG Framework (RedM), with rsg-core notifications, progress bars | 1 | 2 |
 | [rsg-lottery](rsg-lottery.md) | Lottery script for RSG Framework | 0 | 0 |
-| [rsg-loyalty](rsg-loyalty.md) | Loyalty script for RSG Framework | 4 | 11 |
+| [rsg-loyalty](rsg-loyalty.md) | Loyalty script for RSG Framework | 7 | 13 |
 | [rsg-lumberjack](rsg-lumberjack.md) | Lumberjack gameplay: grow, chop, carry, and sell wagon loads of logs | 0 | 26 |
 | [rsg-mapping](rsg-mapping.md) | Mapping tool for RSG Framework | 1 | 5 |
 | [rsg-mdt](rsg-mdt.md) | Mobile Data Terminal for RSG Framework | 39 | 34 |
@@ -79,7 +79,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-smelting](rsg-smelting.md) | Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for RSG-Core (RedM) with rsg-target a | 1 | 1 |
 | [rsg-stables](rsg-stables.md) | Horse and stables script for RSG Framework | 2 | 20 |
 | [rsg-stores](rsg-stores.md) | Version 3.1.0 · requires rsg-core, rsg-inventory, rsg-target, rsg-gizmo, oxmysql (no ox_lib) Create NPC sh | 1 | 21 |
-| [rsg-target](rsg-target.md) | targeting system for RSG RedM Framework | 0 | 5 |
+| [rsg-target](rsg-target.md) | targeting system for RSG RedM Framework | 19 | 6 |
 | [rsg-targetpractise](rsg-targetpractise.md) | Placeable archery and throwing-knife practice targets for RSG Framework | 0 | 18 |
 | [rsg-telegram](rsg-telegram.md) | Telegram system for RSG Framework (RedM). Send and receive telegrams at any post office, with an address book, | 17 | 4 |
 | [rsg-telephone](rsg-telephone.md) | rsg-telephone - persistent telephone props with private voice calls | 0 | 16 |

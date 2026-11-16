@@ -1,8 +1,8 @@
 # rsg-loyalty
 
-Version 3.0.1. Loyalty script for RSG Framework
+Version 3.1.0. Loyalty script for RSG Framework
 
-A comprehensive loyalty points system for RedM/RSG Framework servers. Players earn loyalty points through gameplay and redeem them for cash or items at NPC loyalty store locations. - **Automatic Point Earning**: Players earn points passively (configurable per-minute rate) after minimum playtime - **Session Caps & Cooldowns**: Prevents farming with per-session limits and earn cooldowns
+Loyalty points for RSG Framework (RedM). Players earn points for playing, climb loyalty tiers and spend points at NPC stores on cash, items and weekly specials. Full developer reference: [DOCS.md](DOCS.md). **Version:** 3.1.0 | **Dependencies:** rsg-core, rsg-target, rsg-inventory, oxmysql (no ox_lib) - Passive points per minute, awarded entirely on the server (anti-AFK movement check, session cap
 
 Source: https://github.com/Rexshack-RedM/rsg-loyalty
 
@@ -12,13 +12,13 @@ Has NUI (`ui_page`).
 
 ## Exports (call as exports['rsg-loyalty']:Name)
 
-**server:** `addLoyaltyPoints(citizenid, points)`, `getLifetimeLoyaltyPoints(citizenid)`, `getLoyaltyPoints(citizenid)`, `removeLoyaltyPoints(citizenid, points)`
+**server:** `addLoyaltyPoints(citizenid, points)`, `awardActivity(src, activity)`, `getLifetimeLoyaltyPoints(citizenid)`, `getLoyaltyPoints(citizenid)`, `getLoyaltyTier(citizenid)`, `removeLoyaltyPoints(citizenid, points)`, `setLoyaltyBoost(multiplier, minutes)`
 
 ## Net events registered
 
-**server:** `rsg-loyalty:server:adminAwardPoints`, `rsg-loyalty:server:earnPoints`, `rsg-loyalty:server:getLeaderboard`, `rsg-loyalty:server:getLoyaltyData`, `rsg-loyalty:server:playerLoaded`, `rsg-loyalty:server:redeem`
+**server:** `rsg-loyalty:server:adminAwardPoints`, `rsg-loyalty:server:getHistory`, `rsg-loyalty:server:getLeaderboard`, `rsg-loyalty:server:getStore`, `rsg-loyalty:server:playerLoaded`, `rsg-loyalty:server:redeem`
 
-**client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `rsg-loyalty:client:leaderboardData`, `rsg-loyalty:client:openloyaltyUI`, `rsg-loyalty:client:updateLoyaltyData`
+**client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `rsg-loyalty:client:historyData`, `rsg-loyalty:client:leaderboardData`, `rsg-loyalty:client:openloyaltyUI`, `rsg-loyalty:client:storeState`, `rsg-loyalty:client:updateLoyaltyData`
 
 ## Event handlers
 
@@ -26,8 +26,8 @@ Has NUI (`ui_page`).
 
 ## Commands (RegisterCommand)
 
-**server:** `/awardloyalty`, `/checkloyalty`, `/postleaderboard`, `/removeloyalty`
+**server:** `/awardloyalty`, `/checkloyalty`, `/loyaltyboost`, `/postleaderboard`, `/removeloyalty`
 
 ## Database tables
 
-`rsg_loyalty`
+`rsg_loyalty`, `rsg_loyalty_history`, `rsg_loyalty_redemptions`

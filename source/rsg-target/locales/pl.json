@@ -4,5 +4,8 @@
     "debug_ped": "(Debug) Ped",
     "debug_vehicle": "(Debug) Pojazd",
     "debug_object": "(Debug) Obiekt",
-    "go_back": "Wróć"
+    "go_back": "Wróć",
+    "notify_title": "Celowanie",
+    "highlight_on": "Ikony pobliskich celów włączone",
+    "highlight_off": "Ikony pobliskich celów wyłączone"
 }

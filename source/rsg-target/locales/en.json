@@ -4,5 +4,8 @@
     "debug_ped": "(Debug) Ped",
     "debug_vehicle": "(Debug) Vehicle",
     "debug_object": "(Debug) Object",
-    "go_back": "Go back"
+    "go_back": "Go back",
+    "notify_title": "Targeting",
+    "highlight_on": "Nearby target icons enabled",
+    "highlight_off": "Nearby target icons disabled"
 }

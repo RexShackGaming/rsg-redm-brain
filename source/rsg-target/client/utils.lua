@@ -138,6 +138,30 @@ function utils.hasPlayerGotGroup(filter)
     return true
 end
 
+---stub, replaced by client/framework.lua
+---@return boolean
+function utils.isOnDuty()
+    return true
+end
+
+---@param option table
+---@return boolean
+function utils.onCooldown(option)
+    return option.cooldownEnd ~= nil and GetGameTimer() < option.cooldownEnd
+end
+
+---shared visibility checks used by the menu and the highlighter
+---@param option table
+---@return boolean
+function utils.passesFilters(option)
+    if option.requiresDuty and not utils.isOnDuty() then return false end
+    if utils.onCooldown(option) then return false end
+    if option.groups and not utils.hasPlayerGotGroup(option.groups) then return false end
+    if option.items and not utils.hasPlayerGotItems(option.items, option.anyItem) then return false end
+
+    return true
+end
+
 SetTimeout(0, function()
     require 'client.framework'
 end)
@@ -146,7 +170,7 @@ function utils.warn(msg)
     local trace = Citizen.InvokeNative(`FORMAT_STACK_TRACE` & 0xFFFFFFFF, nil, 0, Citizen.ResultAsString())
     local _, _, src = string.strsplit('\n', trace, 4)
 
-    warn(('%s ^0%s\n'):format(msg, src:gsub(".-%(", '(')))
+    warn(('%s ^0%s\n'):format(msg, src and (src:gsub(".-%(", '(')) or ''))
 end
 
 return utils

@@ -4,5 +4,8 @@
     "debug_ped": "(Debug) Ped",
     "debug_vehicle": "(Debug) Όχημα",
     "debug_object": "(Debug) Αντικείμενο",
-    "go_back": "Πίσω"
+    "go_back": "Πίσω",
+    "notify_title": "Στόχευση",
+    "highlight_on": "Τα εικονίδια κοντινών στόχων ενεργοποιήθηκαν",
+    "highlight_off": "Τα εικονίδια κοντινών στόχων απενεργοποιήθηκαν"
 }

@@ -76,7 +76,7 @@ function api.zoneExists(id)
 
     if type(id) == 'number' and Zones[id] then return true end
 
-    for key, zone in pairs(Zones) do
+    for _, zone in pairs(Zones) do
         if type(id) == 'string' and zone.name == id then return true end
     end
 
@@ -148,6 +148,12 @@ local function addTarget(target, options, resource)
         local option = options[i]
         option.resource = resource
 
+        -- dynamic labels: label = function(entity, distance, coords, name) return 'text' end
+        if type(option.label) == 'function' then
+            option.labelFn = option.label
+            option.label = ''
+        end
+
         if option.name then
             checkNames[#checkNames + 1] = option.name
         end
@@ -176,6 +182,9 @@ local function addTarget(target, options, resource)
         target[num] = options[i]
     end
 end
+
+---@type OxTargetOption[]
+local global = {}
 
 ---@type table<number, OxTargetOption[]>
 local peds = {}
@@ -284,7 +293,7 @@ function api.addEntity(arr, options)
     for i = 1, #arr do
         local netId = arr[i]
 
-        if NetworkDoesNetworkIdExist(netId) then
+        if type(netId) == 'number' and NetworkDoesNetworkIdExist(netId) then
             if not entities[netId] then
                 entities[netId] = {}
 
@@ -417,7 +426,7 @@ end
 
 ---@param resource string
 AddEventHandler('onClientResourceStop', function(resource)
-    removeResourceGlobals(resource, { peds, vehicles, objects, players })
+    removeResourceGlobals(resource, { peds, vehicles, objects, players, global })
     removeResourceTargets(resource, { models, entities, localEntities })
 
     if Zones then
@@ -475,9 +484,6 @@ function options_mt:set(entity, _type, model)
     if self.entity then options_mt.size += 1 end
     if self.localEntity then options_mt.size += 1 end
 end
-
----@type OxTargetOption[]
-local global = {}
 
 ---@param options OxTargetOption | OxTargetOption[]
 function api.addGlobalOption(options)

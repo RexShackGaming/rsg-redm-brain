@@ -19,6 +19,30 @@ Config.Keys = {
 }
 
 ---------------------------------
+-- quick select: press the key while aiming at a target to run
+-- the top option without focusing the menu (E = INPUT_CONTEXT)
+---------------------------------
+Config.QuickSelect = {
+    Enabled = true,
+    Key     = 0xCEFD9220,
+    Label   = 'E', -- shown on the top option
+}
+
+---------------------------------
+-- menu navigation (only while the menu is focused with Left Mouse)
+---------------------------------
+Config.UI = {
+    KeyboardNav = true, -- Up/Down + Enter, 1-9 picks an option
+    Gamepad     = true, -- D-pad up/down + A, B to close (experimental)
+}
+
+---------------------------------
+-- multi job: `groups` also matches every job the player holds (not just the
+-- active one). Job list comes from rsg-core's GetPlayerJobs on the server.
+---------------------------------
+Config.MultiJob = true
+
+---------------------------------
 -- zone sprites
 ---------------------------------
 Config.DrawSprite   = 24                   -- max zone sprites drawn per frame (0 = disabled, limit 32)
@@ -31,7 +55,8 @@ Config.SpriteHover  = { 255, 255, 255, 255 } -- r, g, b, a when looking at zone
 -- everything you can interact with
 ---------------------------------
 Config.Highlight = {
-    Enabled            = true,
+    Enabled            = true,  -- server default; players can toggle it with the command below
+    Command            = 'targethighlight', -- player command that toggles the highlighter (saved per player), false = off
     Radius             = 10.0,  -- scan radius around the player
     ScanInterval       = 500,   -- (ms) how often to rescan
     MaxDrawn           = 16,    -- max markers (game limit is 32 draws per frame)

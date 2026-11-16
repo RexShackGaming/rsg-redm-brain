@@ -19,8 +19,11 @@
                 <h1 id="headerTitle"></h1>
                 <div id="headerSubtitle" class="header-subtitle"></div>
             </div>
-            <button id="closeBtn" class="icon-btn close-btn" >&times;</button>
+            <button id="closeBtn" class="icon-btn close-btn" type="button">&times;</button>
         </div>
+
+        <!-- Active points boost -->
+        <div id="boostBanner" class="boost-banner hidden"></div>
 
         <!-- Points Display -->
         <div class="points-display">
@@ -32,13 +35,24 @@
                 <div id="lifetimePointsLabel" class="points-label"></div>
                 <div id="lifetimePoints" class="points-value">0</div>
             </div>
+            <div class="points-card tier">
+                <div id="tierLabel" class="points-label"></div>
+                <div id="tierName" class="points-value tier-name"></div>
+                <div class="stat-track"><div id="tierBar" class="stat-fill stat-good"></div></div>
+                <div id="tierNext" class="tier-next"></div>
+            </div>
         </div>
+
+        <!-- Tier perks and streak -->
+        <div id="perksRow" class="perks-row"></div>
 
         <!-- Tab Navigation -->
         <div class="tab-navigation">
             <button id="tabCash" class="tab-btn active" data-tab="cash"></button>
             <button id="tabItems" class="tab-btn" data-tab="items"></button>
+            <button id="tabSpecials" class="tab-btn" data-tab="specials"></button>
             <button id="tabLeaderboard" class="tab-btn" data-tab="leaderboard"></button>
+            <button id="tabHistory" class="tab-btn" data-tab="history"></button>
         </div>
 
         <!-- Content Area -->
@@ -53,6 +67,14 @@
             <!-- Item Rewards Tab -->
             <div id="itemsTab" class="tab-content">
                 <div id="itemRewardsContainer" class="rewards-grid">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Special Rewards Tab -->
+            <div id="specialsTab" class="tab-content">
+                <div id="specialsRotation" class="rotation-note hidden"></div>
+                <div id="specialRewardsContainer" class="rewards-grid">
                     <!-- Populated by JavaScript -->
                 </div>
             </div>
@@ -72,6 +94,13 @@
                             <!-- Populated by JavaScript -->
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- History Tab -->
+            <div id="historyTab" class="tab-content">
+                <div id="historyList" class="history-list">
+                    <!-- Populated by JavaScript -->
                 </div>
             </div>
         </div>

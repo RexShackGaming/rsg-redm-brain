@@ -1,6 +1,6 @@
 # Feather Shops
 
-Current version: **0.4.0**.
+Current version: **0.4.1**. Adds melee and throwable category presentation for the Weapons-owned gun-store catalog.
 
 ## Weapons-owned gun stores and ammunition boxes
 
@@ -128,3 +128,5 @@ callback transport, MariaDB contention, migration execution or RedM acceptance.
 Those checks remain required before release.
 
 The menu is pinned 3% from the top and left. Ammunition is grouped by family; offers use two lines for name and quantity/price, and dollars display with $. Transaction busy feedback remains active until asynchronous work completes. Requires the companion Menu v2 button-description update (2.0.0-alpha.10).
+
+Gun-store melee offers are grouped under Melee weapons. Weapons owns prices and canonical issuance; Shops retains one-item-per-order checkout with the existing atomic payment/delivery/provenance transaction.

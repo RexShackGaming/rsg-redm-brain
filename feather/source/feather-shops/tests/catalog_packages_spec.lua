@@ -10,12 +10,15 @@ dofile(weaponsRoot..'/shop_config.lua')
 vector3=function(x,y,z) return {x=x,y=y,z=z} end
 dofile(weaponsRoot..'/config.lua')
 for _,name in ipairs({'weapons','ammunition','attachments'}) do dofile(weaponsRoot..'/shared/definitions/'..name..'.lua') end
+GetConvarInt=function(_,default) return default end
+dofile(weaponsRoot..'/shared/native_melee_catalog.lua')
 dofile(weaponsRoot..'/server/services/gun_store_catalog.lua')
 local generated=WeaponGunStore.Build(WeaponStoreConfig,WeaponDefinitionCatalog);assert(generated.ok,generated.message)
-exports['feather-weapons']={GetGunStoreCatalog=function() return WeaponGunStore.Build(WeaponStoreConfig,WeaponDefinitionCatalog) end}
+local weaponsConfig=Config
+exports['feather-weapons']={GetGunStoreCatalog=function() local current=Config;Config=weaponsConfig;local result=WeaponGunStore.Build(WeaponStoreConfig,WeaponDefinitionCatalog);Config=current;return result end}
 dofile(shopRoot..'/config.lua');dofile(shopRoot..'/server/catalog_sources.lua')
 local imported=ShopCatalogSources.Load();assert(imported.ok,imported.message)
-assert(#Config.Shops==2 and #Config.Shops[2].offers==106,tostring(#Config.Shops[2].offers))
+assert(#Config.Shops==2 and #Config.Shops[2].offers==111,tostring(#Config.Shops[2].offers))
 assert(ShopCatalogSources.Owns('feather-weapons') and ShopCatalogSources.IsCurrent())
 events[1]('feather-weapons');assert(not ShopCatalogSources.IsCurrent())
 -- Disabled provider keeps standalone ordinary Shops available.

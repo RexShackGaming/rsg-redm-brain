@@ -40,7 +40,7 @@ local function CheckVersion()
 
     local versionUrl = githubRawBase .. resourceName .. '/version.txt'
 
-    PerformHttpRequest(versionUrl, function(statusCode, remoteVersion, headers)
+    PerformHttpRequest(versionUrl, function(statusCode, remoteVersion)
         if statusCode ~= 200 then
             printLog('error', ('Version check failed (HTTP %s). Check your internet or the GitHub URL.'):format(statusCode))
             return
@@ -52,7 +52,7 @@ local function CheckVersion()
         end
 
         -- Trim whitespace/newlines
-        remoteVersion = remoteVersion:gsub('%s+$', '')
+        remoteVersion = remoteVersion:match('^%s*(.-)%s*$')
 
         if currentVersion == remoteVersion then
             printLog('success', 'You are running the latest version!')
@@ -61,7 +61,7 @@ local function CheckVersion()
 
         if isVersionOutdated(currentVersion, remoteVersion) then
             printLog('error', ('OUTDATED! Please update to version %s'):format(remoteVersion))
-            printLog('error', 'Download from: https://github.com/Rexshack-RedM/'..GetCurrentResourceName()..'')
+            printLog('error', ('Download from: https://github.com/Rexshack-RedM/%s'):format(resourceName))
         else
             printLog('warning', ('You are running a newer version (%s) than the remote (%s). Possible dev build?'):format(currentVersion, remoteVersion))
         end

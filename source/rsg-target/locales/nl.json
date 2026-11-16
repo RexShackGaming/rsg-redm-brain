@@ -4,5 +4,8 @@
     "debug_ped": "(Debug) Ped",
     "debug_vehicle": "(Debug) Voertuig",
     "debug_object": "(Debug) Object",
-    "go_back": "Terug"
+    "go_back": "Terug",
+    "notify_title": "Richten",
+    "highlight_on": "Pictogrammen voor nabije doelen ingeschakeld",
+    "highlight_off": "Pictogrammen voor nabije doelen uitgeschakeld"
 }

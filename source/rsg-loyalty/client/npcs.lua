@@ -20,7 +20,7 @@ local blips = {}
 local function spawnNpc(loc)
     local model = loc.npcmodel
     local ok = pcall(RSGCore.Functions.RequestModel, model, 10000)
-    if not ok then
+    if not ok or not HasModelLoaded(model) then
         print(('[rsg-loyalty] Failed to load model for %s'):format(loc.name))
         return nil
     end
@@ -112,6 +112,7 @@ AddEventHandler('onResourceStop', function(resourceName)
     end
     for _, point in ipairs(npcPoints) do
         if point.ped and DoesEntityExist(point.ped) then
+            exports['rsg-target']:removeLocalEntity(point.ped, 'npc_loyalty')
             DeletePed(point.ped)
         end
     end

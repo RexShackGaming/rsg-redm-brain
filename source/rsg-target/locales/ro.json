@@ -4,5 +4,8 @@
     "debug_ped": "(Debug) Ped",
     "debug_vehicle": "(Debug) Vehicul",
     "debug_object": "(Debug) Obiect",
-    "go_back": "Înapoi"
+    "go_back": "Înapoi",
+    "notify_title": "Țintire",
+    "highlight_on": "Pictogramele țintelor din apropiere au fost activate",
+    "highlight_off": "Pictogramele țintelor din apropiere au fost dezactivate"
 }

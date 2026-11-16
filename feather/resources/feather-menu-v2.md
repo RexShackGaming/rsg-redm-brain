@@ -1,8 +1,8 @@
 # feather-menu-v2
 
-Version 2.0.0-alpha.10. A focused, reactive menu system for Feather Framework and standalone RedM resources
+Version 2.0.0-alpha.11. A focused, reactive menu system for Feather Framework and standalone RedM resources
 
-Build RedM menus from your resource's client-side Lua. Feather Menu v2 draws the menu, manages input and focus, and tells your code when the player changes something. Your resource decides what those changes mean. **Status:** Contract 1 alpha, with the required element set and accepted dropdown design implemented. See [release verification](docs/RELEASE_CHECKLIST.md) for the remaining live and rel
+Current version: **2.0.0-alpha.11**. Keeps empty numeric drafts finite and restores invalid values on commit. Build RedM menus from your resource's client-side Lua. Feather Menu v2 draws the menu, manages input and focus, and tells your code when the player changes something. Your resource decides what those changes mean. **Status:** Contract 1 alpha, with the required element set and accepted dro
 
 Source: https://github.com/FeatherFramework/feather-menu-v2
 

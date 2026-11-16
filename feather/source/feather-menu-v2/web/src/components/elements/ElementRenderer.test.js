@@ -40,6 +40,26 @@ describe('ElementRenderer interactions', () => {
     wrapper.unmount()
   })
 
+  it('keeps cleared number drafts empty without writing NaN back to the input', async () => {
+    post.mockResolvedValue({ok:true})
+    const writes=vi.spyOn(HTMLInputElement.prototype,'value','set')
+    const wrapper=mountElement('number',{label:'Quantity',value:1,min:1,max:10})
+    try {
+      const input=wrapper.get('input')
+      input.element.value=''
+      await input.trigger('input')
+      expect(writes.mock.calls.some(([value])=>String(value)==='NaN')).toBe(false)
+      expect(input.element.value).toBe('')
+      expect(post).not.toHaveBeenCalled()
+      await input.trigger('change')
+      expect(input.element.value).toBe('1')
+      input.element.value='3'
+      await input.trigger('input')
+      await input.trigger('change')
+      expect(post).toHaveBeenCalledWith('elementAction',expect.objectContaining({event:'change',value:3}))
+    } finally { wrapper.unmount();writes.mockRestore() }
+  })
+
   it('links inline errors to text fields without changing the draft', () => {
     for (const type of ['input', 'textarea', 'number']) {
       const wrapper = mountElement(type, { label: 'Name', value: type === 'number' ? 2 : 'Willow', error: 'Enter a valid value.' })

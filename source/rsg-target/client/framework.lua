@@ -4,9 +4,49 @@ local utils = require 'client.utils'
 
 local playerItems = utils.getItems()
 local playerData = {}
+local playerJobs = {}     -- { [jobName] = grade } for every job held (multi job)
+local lastJobRefresh = 0
+
+---@param value any
+---@return number
+local function gradeOf(value)
+    if type(value) == 'number' then return value end
+    if type(value) == 'table' then
+        local g = value.level or value.grade
+        if type(g) == 'table' then g = g.level end
+        return tonumber(g) or 0
+    end
+    return 0
+end
+
+local function refreshJobs()
+    if not Config.MultiJob then return end
+
+    local now = GetGameTimer()
+    if now - lastJobRefresh < 1000 then return end
+    lastJobRefresh = now
+
+    RSGCore.Functions.TriggerCallback('rsg-target:server:getJobs', function(jobs)
+        table.wipe(playerJobs)
+        if type(jobs) ~= 'table' then return end
+
+        for name, grade in pairs(jobs) do
+            playerJobs[name] = gradeOf(grade)
+        end
+    end)
+end
+
+local lastJobName
 
 local function refresh(data)
     playerData = data or {}
+
+    local jobName = playerData.job and playerData.job.name
+    if jobName ~= lastJobName then
+        lastJobName = jobName
+        if jobName then refreshJobs() else table.wipe(playerJobs) end
+    end
+
     table.wipe(playerItems)
 
     for _, item in pairs(playerData.items or {}) do
@@ -22,11 +62,21 @@ do
 end
 
 RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
+    lastJobRefresh = 0
     refresh(RSGCore.Functions.GetPlayerData())
+    refreshJobs()
 end)
 
 RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
+    table.wipe(playerJobs)
+    lastJobName = nil
     refresh(nil)
+end)
+
+-- jobs can be added / removed without the active job changing
+RegisterNetEvent('RSGCore:Client:OnJobUpdate', function()
+    lastJobRefresh = 0
+    refreshJobs()
 end)
 
 RegisterNetEvent('RSGCore:Player:SetPlayerData', function(val)
@@ -49,7 +99,19 @@ local function matches(name, grade)
         return true
     end
 
+    local held = playerJobs[name]
+
+    if held and (not grade or grade <= held) then
+        return true
+    end
+
     return false
+end
+
+---@diagnostic disable-next-line: duplicate-set-field
+function utils.isOnDuty()
+    local job = playerData.job
+    return job ~= nil and job.onduty == true
 end
 
 ---@param filter string | string[] | table<string, number>

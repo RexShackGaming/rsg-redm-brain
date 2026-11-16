@@ -42,14 +42,44 @@ local function enabled(event)
     return IsWebhookConfigured() and Config.Discord.LogEvents[event]
 end
 
+-- points earned are collected and posted as one summary embed per batch
+local pendingEarned = {}
+
 function LogPointsEarned(citizenid, charname, points)
     if not enabled('PointsEarned') then return end
-    sendEmbed(locale('discord_title_points_earned'), locale('discord_desc_earned', points), COLORS.green, {
-        field('discord_field_player', charname),
-        field('discord_field_citizenid', citizenid),
-        field('discord_field_points', points),
-    })
+    local entry = pendingEarned[citizenid]
+    if entry then
+        entry.total = entry.total + points
+        entry.name = charname
+    else
+        pendingEarned[citizenid] = { name = charname, total = points }
+    end
 end
+
+local function batchMinutes()
+    return math.max(1, Config.Discord.PointsBatchMinutes or 10)
+end
+
+local function flushEarned()
+    if not next(pendingEarned) then return end
+    local list = {}
+    for _, entry in pairs(pendingEarned) do list[#list + 1] = entry end
+    pendingEarned = {}
+    table.sort(list, function(a, b) return a.total > b.total end)
+
+    local fields = {}
+    for i = 1, math.min(#list, 25) do
+        fields[i] = { name = list[i].name, value = locale('discord_lb_points', list[i].total), inline = true }
+    end
+    sendEmbed(locale('discord_title_points_earned_batch'), locale('discord_desc_earned_batch', #list, batchMinutes()), COLORS.green, fields)
+end
+
+CreateThread(function()
+    while true do
+        Wait(batchMinutes() * 60000)
+        flushEarned()
+    end
+end)
 
 function LogRedemptionSuccess(citizenid, charname, rewardType, rewardLabel, amount, points)
     if not enabled('RedemptionSuccess') then return end
@@ -149,7 +179,7 @@ CreateThread(function()
     local lb = Config.Discord.Leaderboard
     if not Config.Enabled or not lb or not lb.Enable then return end
 
-    local intervalMs = (lb.IntervalMinutes or 60) * 60000
+    local intervalMs = math.max(1, lb.IntervalMinutes or 60) * 60000
     while true do
         Wait(intervalMs)
         SendLeaderboardWebhook()

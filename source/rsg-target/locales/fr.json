@@ -4,5 +4,8 @@
     "debug_ped": "(Debug) Ped",
     "debug_vehicle": "(Debug) Véhicule",
     "debug_object": "(Debug) Objet",
-    "go_back": "Retour"
+    "go_back": "Retour",
+    "notify_title": "Ciblage",
+    "highlight_on": "Icônes des cibles proches activées",
+    "highlight_off": "Icônes des cibles proches désactivées"
 }

@@ -1,7 +1,3 @@
-local function exportHandler(exportName, func)
-    exports(exportName, func)
-end
-
 ---Merges a legacy job / gang / citizenid filter into a { name = minGrade } map
 ---@param groups table<string, number>
 ---@param value string | string[] | table<string, number> | nil
@@ -73,7 +69,7 @@ end
 local api = require 'client.api'
 local utils = require 'client.utils'
 
-exportHandler('AddBoxZone', function(name, center, length, width, options, targetoptions)
+exports('AddBoxZone', function(name, center, length, width, options, targetoptions)
     options = options or {}
     options.minZ = options.minZ or -100
     options.maxZ = options.maxZ or 800
@@ -93,7 +89,7 @@ exportHandler('AddBoxZone', function(name, center, length, width, options, targe
     })
 end)
 
-exportHandler('AddPolyZone', function(name, points, options, targetoptions)
+exports('AddPolyZone', function(name, points, options, targetoptions)
     options = options or {}
     options.minZ = options.minZ or -100
     options.maxZ = options.maxZ or 800
@@ -114,7 +110,7 @@ exportHandler('AddPolyZone', function(name, points, options, targetoptions)
     })
 end)
 
-exportHandler('AddCircleZone', function(name, center, radius, options, targetoptions)
+exports('AddCircleZone', function(name, center, radius, options, targetoptions)
     options = options or {}
     return api.addSphereZone({
         name = name,
@@ -125,17 +121,17 @@ exportHandler('AddCircleZone', function(name, center, radius, options, targetopt
     })
 end)
 
-exportHandler('RemoveZone', function(id)
+exports('RemoveZone', function(id)
     api.removeZone(id, true)
 end)
 
-exportHandler('AddTargetBone', function(_, options)
+exports('AddTargetBone', function(_, options)
     -- bone targeting is not supported: options are added to all vehicles instead
     utils.warn('AddTargetBone: bones are not supported by rsg-target, options were added as global vehicle options.')
     api.addGlobalVehicle(convert(options))
 end)
 
-exportHandler('AddTargetEntity', function(entities, options)
+exports('AddTargetEntity', function(entities, options)
     if type(entities) ~= 'table' then entities = { entities } end
     options = convert(options)
 
@@ -150,7 +146,7 @@ exportHandler('AddTargetEntity', function(entities, options)
     end
 end)
 
-exportHandler('RemoveTargetEntity', function(entities, labels)
+exports('RemoveTargetEntity', function(entities, labels)
     if type(entities) ~= 'table' then entities = { entities } end
 
     for i = 1, #entities do
@@ -164,50 +160,50 @@ exportHandler('RemoveTargetEntity', function(entities, labels)
     end
 end)
 
-exportHandler('AddTargetModel', function(models, options)
+exports('AddTargetModel', function(models, options)
     api.addModel(models, convert(options))
 end)
 
-exportHandler('RemoveTargetModel', function(models, labels)
+exports('RemoveTargetModel', function(models, labels)
     api.removeModel(models, labels)
 end)
 
-exportHandler('AddGlobalPed', function(options)
+exports('AddGlobalPed', function(options)
     api.addGlobalPed(convert(options))
 end)
 
-exportHandler('RemoveGlobalPed', function(labels)
+exports('RemoveGlobalPed', function(labels)
     api.removeGlobalPed(labels)
 end)
 
-exportHandler('AddGlobalVehicle', function(options)
+exports('AddGlobalVehicle', function(options)
     api.addGlobalVehicle(convert(options))
 end)
 
-exportHandler('RemoveGlobalVehicle', function(labels)
+exports('RemoveGlobalVehicle', function(labels)
     api.removeGlobalVehicle(labels)
 end)
 
-exportHandler('AddGlobalObject', function(options)
+exports('AddGlobalObject', function(options)
     api.addGlobalObject(convert(options))
 end)
 
-exportHandler('RemoveGlobalObject', function(labels)
+exports('RemoveGlobalObject', function(labels)
     api.removeGlobalObject(labels)
 end)
 
-exportHandler('AddGlobalPlayer', function(options)
+exports('AddGlobalPlayer', function(options)
     api.addGlobalPlayer(convert(options))
 end)
 
-exportHandler('RemoveGlobalPlayer', function(labels)
+exports('RemoveGlobalPlayer', function(labels)
     api.removeGlobalPlayer(labels)
 end)
 
-exportHandler('AddEntityZone', function()
+exports('AddEntityZone', function()
     utils.warn('AddEntityZone is not supported by rsg-target - try using addEntity/addLocalEntity.')
 end)
 
-exportHandler('RemoveTargetBone', function()
+exports('RemoveTargetBone', function()
     utils.warn('RemoveTargetBone is not supported by rsg-target.')
 end)

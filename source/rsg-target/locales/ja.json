@@ -4,5 +4,8 @@
     "debug_ped": "(デバッグ) Ped",
     "debug_vehicle": "(デバッグ) 乗り物",
     "debug_object": "(デバッグ) オブジェクト",
-    "go_back": "戻る"
+    "go_back": "戻る",
+    "notify_title": "ターゲット",
+    "highlight_on": "近くのターゲットアイコンを有効にしました",
+    "highlight_off": "近くのターゲットアイコンを無効にしました"
 }

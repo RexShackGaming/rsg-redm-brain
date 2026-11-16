@@ -4,5 +4,8 @@
     "debug_ped": "(Debug) Ped",
     "debug_vehicle": "(Debug) Vehículo",
     "debug_object": "(Debug) Objeto",
-    "go_back": "Volver"
+    "go_back": "Volver",
+    "notify_title": "Objetivo",
+    "highlight_on": "Iconos de objetivos cercanos activados",
+    "highlight_off": "Iconos de objetivos cercanos desactivados"
 }

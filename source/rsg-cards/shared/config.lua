@@ -112,7 +112,7 @@ Config.Card = {
 -- Use the box to open it beside your inventory; use it again to close just the box.
 Config.Storage = {
     MaxWeight = 500,
-    MaxSlots  = 81,
+    MaxSlots  = 156, -- allows for storage of each 12 cards per set and a bundled version of 12 different sets
     OpenDelay = 300, -- ms to wait before the box opens when the box item is `shouldClose = true` (the inventory closes first)
 
     -- Shows a "Bundle Sets" button at the top of the box. It turns every complete run of cards
