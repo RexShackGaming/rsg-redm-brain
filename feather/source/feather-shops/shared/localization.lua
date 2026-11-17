@@ -7,7 +7,7 @@ local english={
  ammo_rifle='Rifle cartridges',ammo_shotgun='Shotgun shells',ammo_varmint='Varmint cartridges',
  ammo_arrow='Arrows',ammo_other_ammo='Other ammunition',
  category_revolver='Revolvers',category_pistol='Pistols',category_repeater='Repeaters',
- category_rifle='Rifles',category_shotgun='Shotguns',category_ammunition='Ammunition',category_melee='Melee weapons',category_throwables='Throwables',
+ category_rifle='Rifles',category_shotgun='Shotguns',category_bow='Bows',category_ammunition='Ammunition',category_melee='Melee weapons',category_throwables='Throwables',
  category_attachments='Attachments',category_maintenance='Maintenance',category_goods='Goods',
  error_generic='Purchase unavailable. Please review the shop again.',
  error_checkout_pending='Your purchase is being checked automatically. Please wait.',

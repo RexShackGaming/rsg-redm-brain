@@ -77,7 +77,7 @@ function V.Read(owner,bound)
  for _,item in ipairs(m.items) do v.maintenance[#v.maintenance+1]={id=item.itemInstanceId,revision=item.itemRevision,wear=item.maintenance} end
  return V.Normalize(v)
 end
-function V.MatchesDurable(view,durable,limits)
+function V.MatchesDurable(view,durable,limits,options)
  if type(durable)~='table' or type(durable.items)~='table' or type(durable.equipment)~='table'
   or type(durable.ammo)~='table' or not durable.ammo[1] then return false,'audit_shape' end
  if view.revision~=tonumber(durable.ammo[1].revision) then
@@ -91,7 +91,7 @@ function V.MatchesDurable(view,durable,limits)
  for pool,amount in pairs(stored) do
   if client[pool]~=amount then return false,'ammo_pools',{pool=pool,client=client[pool],durable=amount} end
  end
- if view.copies~=#view.maintenance or view.copies<1 then return false,'firearm_count' end
+ if view.copies~=#view.maintenance or view.copies<1 and not (options and options.allowEmptyFirearms==true and view.copies==0) then return false,'firearm_count' end
  local items,owners={},{ }
  for _,row in ipairs(durable.items) do items[tonumber(row.id)]=row end
  for _,kind in ipairs({'utility','melee','maintenance'}) do for _,item in ipairs(view[kind]) do

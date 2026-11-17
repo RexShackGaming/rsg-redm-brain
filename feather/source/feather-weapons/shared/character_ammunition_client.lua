@@ -41,21 +41,27 @@ function WeaponCharacterAmmoClient.New()
     end
     function C.Prepare(currentPed,pools,worldReady) return prepare(currentPed,pools,worldReady,false) end
     function C.PrepareFinal(currentPed,pools,worldReady) return prepare(currentPed,pools,worldReady,true) end
-    function C.PrepareNativePickup(currentPed,pools,worldReady)
+    function C.PrepareNativePickup(currentPed,pools,worldReady,quantityMode)
         if phase~='active' then return nil,'pickup_not_active' end
         if currentPed~=ped then phase='suspended'; pending=nil; return nil,'ped_changed' end
         if worldReady~=true or pending then return nil,'pickup_world_or_request_pending' end
         local observed=WeaponCharacterAmmunition.Validate(pools,limits)
-        if not observed or limits.ammo_tomahawk_regular~=1 or baseline.pools.ammo_tomahawk_regular~=0
-            or observed.ammo_tomahawk_regular~=1 then return nil,'pickup_one_unit_increase_required' end
+        local ammoId='ammo_tomahawk_regular'
+        if quantityMode==true and limits.ammo_arrow_regular==40 and observed
+            and observed.ammo_arrow_regular>baseline.pools.ammo_arrow_regular then ammoId='ammo_arrow_regular' end
+        local allowed=quantityMode==true and limits[ammoId]==(ammoId=='ammo_arrow_regular' and 40 or 3)
+            and observed and observed[ammoId]>baseline.pools[ammoId]
+        if not allowed and (not observed or limits.ammo_tomahawk_regular~=1 or baseline.pools.ammo_tomahawk_regular~=0
+            or observed.ammo_tomahawk_regular~=1) then return nil,'pickup_one_unit_increase_required' end
         for id in pairs(limits) do
-            if pools[id]==nil or (id~='ammo_tomahawk_regular' and observed[id]~=baseline.pools[id]) then
+            if pools[id]==nil or (id~=ammoId and
+                (quantityMode==true and observed[id]>baseline.pools[id] or quantityMode~=true and observed[id]~=baseline.pools[id])) then
                 return nil,'pickup_other_pool_changed'
             end
         end
         sequence=sequence+1
         local report=copy(baseline); report.pools=copy(observed); report.phase=nil
-        pending={id=sequence,kind='pickup',report=report,expected={revision=baseline.revision+1,pools=copy(observed)}}
+        pending={id=sequence,kind='pickup',ammunitionId=ammoId,quantityMode=quantityMode==true,report=report,expected={revision=baseline.revision+1,pools=copy(observed)}}
         return copy(pending)
     end
     function C.PrepareTransfer(currentPed,pools,worldReady,ammunitionId,amount,operationId)
@@ -93,6 +99,22 @@ function WeaponCharacterAmmoClient.New()
         if not pending or pending.id~=id then return nil,'stale_reply' end
         local expected=copy(baseline); expected.revision=pending.expected.revision
         local value=type(result)=='table' and result.ok==true and result.value
+        if pending.kind=='pickup' and pending.quantityMode and type(result)=='table' and result.quantityDeclined==true then
+            local expected=copy(baseline);expected.revision=pending.expected.revision
+            local recovered=result.quantityAccepted
+            local ammoId=pending.ammunitionId or 'ammo_tomahawk_regular'
+            local maximum=pending.expected.pools[ammoId]-baseline.pools[ammoId]
+            if type(recovered)~='number' or recovered%1~=0 or recovered<0 or recovered>=maximum then
+                phase='frozen';pending=nil;return nil,'invalid_quantity_decline'
+            end
+            local wanted=copy(pending.expected.pools);wanted[ammoId]=baseline.pools[ammoId]+recovered
+            local valid=type(value)=='table' and same(expected,value) and value.phase=='active'
+                and WeaponCharacterAmmunition.Validate(value.pools,limits)~=nil
+            for ammo,count in pairs(wanted) do valid=valid and value and value.pools and value.pools[ammo]==count end
+            pending=nil
+            if not valid then phase='frozen';return nil,'invalid_decline_ack' end
+            baseline=copy(value);return copy(baseline),'quantity_declined'
+        end
         local nextPhase=pending.kind=='cleanup' and 'released' or (pending.kind=='seal' and 'sealed'
             or (pending.kind=='transfer' and 'restoring' or 'active'))
         local valid=type(value)=='table' and same(expected,value) and value.phase==nextPhase

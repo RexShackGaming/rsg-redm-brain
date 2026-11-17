@@ -70,6 +70,8 @@ function WeaponNativeThrowableRecovery.BindingPlan(candidate,durable,observed)
         or not integer(candidate.itemId,1) or not integer(candidate.itemRevision,0) or not bounded(candidate.serialNumber)
         or type(candidate.identity)~='table' or type(candidate.key)~='table' then return nil,'invalid_throwable_spend_candidate' end
     local identity,key=candidate.identity,candidate.key
+    if candidate.physicalUnitContract~=nil and (candidate.physicalUnitContract~=2
+        or key.itemId~=candidate.itemId) then return nil,'throwable_binding_physical_unit_key_required' end
     for _,name in ipairs({'characterId','sessionId','epoch'}) do
         if not bounded(identity[name]) or key[name]~=identity[name] then return nil,'throwable_binding_identity_required' end
     end
@@ -137,4 +139,51 @@ function WeaponNativeThrowableRecovery.SpendCandidate(before,after,snapshot,cata
         itemId=assigned.row.id,itemRevision=assigned.row.revision,serialNumber=assigned.row.metadata.serialNumber,
         definitionId='throwable_tomahawk',units=1,pickupCredits=false,requiresProjectileBinding=true,
         requiresDurableSingleClaim=true}
+end
+
+-- Physical-unit spend evidence for subsequent own OR cross-player recovery.
+-- This only identifies conserved paid instances. It does not authenticate a
+-- projectile, authorize a collector, or claim a unit. The Inventory commit must
+-- supply the confirmed post-move rows; client reports cannot supply these rows.
+function WeaponNativeThrowableRecovery.PhysicalSpendCandidates(before,after,snapshot,spent,catalog,limits)
+    if type(before)~='table' or type(after)~='table' or before.phase~='active' or after.phase~='active'
+        or type(limits)~='table' or limits.ammo_tomahawk_regular~=3
+        or not integer(before.revision,0) or after.revision~=before.revision+1 then
+        return nil,'throwable_physical_confirmed_spend_required'
+    end
+    local identity={characterId=before.characterId,sessionId=before.sessionId,epoch=before.epoch}
+    for _,name in ipairs({'characterId','sessionId','epoch'}) do
+        if not bounded(identity[name]) or after[name]~=identity[name] then
+            return nil,'throwable_physical_spend_identity_changed'
+        end
+    end
+    local assigned,why=WeaponNativeThrowableItem.AssignedUnits(snapshot,catalog,identity,limits)
+    if not assigned then return nil,why or 'throwable_physical_funded_units_required' end
+    if snapshot.revision~=before.revision or not equal(snapshot.pools,before.pools) then
+        return nil,'throwable_physical_spend_snapshot_changed'
+    end
+    local report=copy(after);report.revision=before.revision
+    local expected=WeaponCharacterAmmunition.Observe(before,report,limits)
+    local remaining=type(after.pools)=='table' and after.pools.ammo_tomahawk_regular
+    if not expected or expected.revision~=after.revision or not equal(expected.pools,after.pools)
+        or not integer(remaining,0) or remaining>=#assigned.units or type(spent)~='table'
+        or #spent~=#assigned.units-remaining then return nil,'throwable_physical_spend_not_conserved' end
+    for key in pairs(spent) do
+        if not integer(key,1) or key>#spent then return nil,'throwable_physical_spent_array_required' end
+    end
+    local candidates={}
+    for index=1,#assigned.units-remaining do
+        local row=spent[index]
+        local paid=assigned.units[remaining+index]
+        if type(row)~='table' or row.id~=paid.id or row.revision~=paid.revision+1
+            or not equal(row.metadata,paid.metadata) then return nil,'throwable_physical_spent_instance_changed' end
+        candidates[#candidates+1]={version=1,kind='unbound_spend_candidate',identity=copy(identity),
+            key={characterId=identity.characterId,sessionId=identity.sessionId,epoch=identity.epoch,
+                revisionBefore=before.revision,revisionAfter=after.revision,
+                ammunitionId='ammo_tomahawk_regular',itemId=paid.id},
+            itemId=paid.id,itemRevision=row.revision,serialNumber=paid.metadata.serialNumber,
+            definitionId='throwable_tomahawk',units=1,physicalUnitContract=2,
+            pickupCredits=false,requiresProjectileBinding=true,requiresDurableSingleClaim=true}
+    end
+    return candidates
 end

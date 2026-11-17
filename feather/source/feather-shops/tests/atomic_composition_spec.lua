@@ -515,10 +515,12 @@ return function(h)
         shop.ShopService.ListShops=function() return {ok=true,value={{id=catalog.id}}} end
         languages[source]='es'
         translations.es={['ui_shops_store_'..catalog.id]='Armeria',
-            ['ui_shops_item_'..catalog.offers[1].itemName]='Cartuchos'}
+            ['ui_shops_item_'..catalog.offers[1].itemName]='Cartuchos',ui_shops_category_bow='Arcos'}
+        assert(shop.ShopText(source,'category_bow')=='Arcos')
         assert(shop.ShopCatalogText(source,'ui_shops_store_'..catalog.id,catalog.label)=='Armeria')
         assert(shop.ShopCatalogText(source,'ui_shops_item_'..catalog.offers[1].itemName,catalog.offers[1].label)=='Cartuchos')
         languages[source]='missing'
+        assert(shop.ShopText(source,'category_bow')=='Bows','language changes and missing dictionaries use current player locale then English')
         local result=handlers['shops.catalog.v1']({},source)
         assert(result.value[1].label=='Gun Store' and result.value[1].offers[1].label=='Regular cartridges')
         assert(shop.ShopCatalogText(source,'ui_shops_store_'..catalog.id,catalog.label)=='Gun Store')

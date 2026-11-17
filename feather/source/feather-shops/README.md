@@ -1,6 +1,9 @@
 # Feather Shops
 
-Current version: **0.4.1**. Adds melee and throwable category presentation for the Weapons-owned gun-store catalog.
+Current version: **0.5.0**. Adds a Bows category to the Weapons-owned gun-store
+catalog. Its label follows each player's feather-settings/Core language with
+English fallback. Pair with Weapons0.25.0 and Inventory0.17.0 for the opt-in
+regular-arrow flow; prices and ammunition recovery remain owned by those resources.
 
 ## Weapons-owned gun stores and ammunition boxes
 

@@ -1,8 +1,8 @@
 # feather-shops
 
-Version 0.4.1. Authoritative commerce workflows for the Feather Framework
+Version 0.5.0. Authoritative commerce workflows for the Feather Framework
 
-Current version: **0.4.1**. Adds melee and throwable category presentation for the Weapons-owned gun-store catalog. `Config.WeaponStoresEnabled=true` imports locations and offers from Weapons' `shop_config.lua`. Set it false only for an intentional standalone Shops install
+Current version: **0.5.0**. Adds a Bows category to the Weapons-owned gun-store catalog. Its label follows each player's feather-settings/Core language with English fallback. Pair with Weapons0.25.0 and Inventory0.17.0 for the opt-in
 
 Source: https://github.com/FeatherFramework/feather-shops
 

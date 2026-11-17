@@ -17,15 +17,26 @@ local limits={
     ammo_varmint=100,ammo_varmint_tranquilizer=200,ammo_rifle_elephant=20,
 }
 function WeaponCharacterAmmoPolicy.Limits()
-    local copy={}; for id,cap in pairs(limits) do copy[id]=cap end; return copy
+    local copy={}; for id,cap in pairs(limits) do copy[id]=cap end
+    if WeaponRegularArrowPolicy and WeaponRegularArrowPolicy.Enabled() then copy.ammo_arrow_regular=40 end
+    return copy
 end
 function WeaponCharacterAmmoPolicy.Build(catalog)
     local registry,why=WeaponCharacterAmmoCatalog.Build(catalog,WeaponCharacterAmmoPolicy.Limits())
     if not registry then return nil,why end
-    if WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.Enabled() then
+    local units=WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.UnitsEnabled and WeaponNativeThrowablePolicy.UnitsEnabled()
+    local quantities=WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.QuantityEnabled()
+    if WeaponNativeThrowablePolicy and (quantities or units or WeaponNativeThrowablePolicy.Enabled()) then
         local candidate
         candidate,why=WeaponNativeThrowablePolicy.Preview(catalog,registry)
         if not candidate then return nil,why end
+        if quantities then
+            candidate.registry.limits.ammo_tomahawk_regular=3
+            candidate.registry.throwableQuantityContract=1
+        elseif units then
+            candidate.registry.limits.ammo_tomahawk_regular=3
+            candidate.registry.throwableUnitContract=2
+        end
         return candidate.registry
     end
     return registry

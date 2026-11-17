@@ -1,3 +1,4 @@
+-- Historical research regression; manifest assertions use the archived snapshot.
 Config={AmmunitionPools={enabled=false}}
 for _,p in ipairs({'shared/constants.lua','shared/definitions/weapons.lua','shared/definitions/ammunition.lua',
  'shared/character_ammunition.lua','shared/character_ammunition_catalog.lua','shared/character_ammunition_policy.lua',
@@ -60,6 +61,6 @@ local second=assert(WeaponNativeThrowableRecovery.BindingPlan(candidate,durable,
 assert(second.projectileInstanceId~=binding.projectileInstanceId and second.networkId==binding.networkId,
  'network ID reuse does not identify the same projectile lifetime')
 binding.identity.characterId='mutated'; assert(candidate.identity.characterId=='john')
-local f=assert(io.open('fxmanifest.lua')); local manifest=f:read('*a'); f:close()
+local f=assert(io.open('tests/archive/throwable-research/fxmanifest.lua')); local manifest=f:read('*a'); f:close()
 assert(manifest:find('shared/native_throwable_recovery.lua',1,true),'pure planner loaded; admission remains separately gated')
 print('inert recovery spend evidence PASS: exact carrier/epoch/durable decrease, stable key, no pickup credit/native/world mutations')

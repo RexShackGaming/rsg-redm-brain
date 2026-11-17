@@ -85,7 +85,7 @@ function WeaponCharacterAmmoNativeOwner.New(dependencies)
     end
     local function melee(ped,identity,approval)
         local owned=lease
-        if Config.NativeAlphaRuntime~=true or GetConvarInt('feather_native_melee',0)~=1
+        if Config.NativeAlphaRuntime~=true or GetConvarInt('feather_native_melee',1)~=1
             or not WeaponNativeMeleeOwner or not WeaponNativeMeleeCatalog or not owned or owned.cleaned
             or owned.knifeAttempted or owned.ped~=ped or type(identity)~='table' or type(d.knife)~='function' then
             return nil,'native_melee_owner_unavailable'
@@ -97,7 +97,7 @@ function WeaponCharacterAmmoNativeOwner.New(dependencies)
         if not checked then return nil,why end
         owned.knifeAttempted=true -- same parent ownership/cleanup barrier, not a second lease
         local function live(check)
-            return GetConvarInt('feather_native_melee',0)==1 and lease==owned and not owned.cleaned
+            return GetConvarInt('feather_native_melee',1)==1 and lease==owned and not owned.cleaned
                 and current(owned.identity,ped) and check.characterId==owned.identity.characterId
                 and check.sessionId==owned.identity.sessionId and check.epoch==owned.identity.epoch
         end
@@ -110,7 +110,12 @@ function WeaponCharacterAmmoNativeOwner.New(dependencies)
     end
     local function throwable(ped,identity,sealed,registry)
         local owned=lease
-        if Config.NativeAlphaRuntime~=true or GetConvarInt('feather_native_throwable',0)~=1
+        local function admitted()
+            return (WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.QuantityEnabled and WeaponNativeThrowablePolicy.QuantityEnabled())
+                or (WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.UnitsEnabled and WeaponNativeThrowablePolicy.UnitsEnabled())
+                or GetConvarInt('feather_native_throwable',0)==1
+        end
+        if Config.NativeAlphaRuntime~=true or not admitted()
             or not owned or owned.cleaned or owned.throwableAttempted or owned.ped~=ped
             or type(identity)~='table' or type(d.throwable)~='function' then return nil,'native_throwable_owner_unavailable' end
         for _,key in ipairs({'characterId','sessionId','epoch'}) do
@@ -118,7 +123,7 @@ function WeaponCharacterAmmoNativeOwner.New(dependencies)
         end
         owned.throwableAttempted=true
         local value,why=d.throwable(ped,owned.identity,function(check)
-            return lease==owned and not owned.cleaned and GetConvarInt('feather_native_throwable',0)==1
+            return lease==owned and not owned.cleaned and admitted()
                 and current(owned.identity,ped) and check.characterId==owned.identity.characterId
                 and check.sessionId==owned.identity.sessionId and check.epoch==owned.identity.epoch
         end,sealed,WeaponDefinitionCatalog,registry)

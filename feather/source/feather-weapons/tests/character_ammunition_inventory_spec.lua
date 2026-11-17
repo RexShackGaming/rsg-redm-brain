@@ -58,4 +58,16 @@ assert(not registrations[#registrations-2]({id=128},{operation='metadata_write',
 assert(not registrations[#registrations-1]({id=128},{operation='metadata_write',runtimeTicket='approved'}),'destruction remains held')
 assert(registrations[#registrations]({id=128},{operation='metadata_write',runtimeTicket='approved'}))
 assert(not registrations[#registrations]({id=112},{operation='metadata_write',runtimeTicket='approved'}))
+local received
+local physical=WeaponCharacterAmmoInventory.New(function() return inventory end,function(id,context)
+    received=context
+    return not (id==128 and context and context.nativeThrowableSpend==true and context.runtimeTicket=='spend')
+end,policy)
+assert(physical.Install())
+assert(registrations[#registrations-2]({id=128},{nativeThrowableSpend=true,runtimeTicket='spend',
+    operation='metadata_write',metadata={forged=true}}))
+assert(received.operation==nil and received.metadata==nil and received.runtimeTicket=='spend',
+    'movement forwards only physical-spend scope, never metadata/equipment authority')
+assert(not registrations[#registrations-1]({id=128},{nativeThrowableSpend=true,runtimeTicket='spend'}),
+    'spend movement authority cannot authorize destruction')
 print('character_ammunition_inventory_spec PASS (native-only guards; scoped metadata context never authorizes movement/destruction)')

@@ -7,7 +7,8 @@
 WeaponStoreConfig = {
     enabled = true,
     currency = 'dollars',
-    maximumBoxes = 2, -- additionally capped at 100 delivered items per checkout
+    maximumBoxes = 2, -- packs containing multiple rounds; capped at 100 delivered items
+    maximumUnits = 10, -- ammunition sold individually; purchase limit, not loaded capacity
     stores = {
         {
             id = '73000000-0000-4000-8000-000000000001',
@@ -51,13 +52,13 @@ WeaponStoreConfig = {
         utility_camera = false,              -- no canonical Shops issuance support yet
         utility_camera_advanced = false,     -- no canonical Shops issuance support yet
         utility_lasso_reinforced = false,    -- no canonical Shops issuance support yet
-        melee_knife = false,                 -- no canonical Shops issuance support yet
-        melee_machete = false,               -- no canonical Shops issuance support yet
-        melee_hammer = false,                -- no canonical Shops issuance support yet
-        melee_cleaver = false,               -- no canonical Shops issuance support yet
-        melee_hatchet = false,               -- no canonical Shops issuance support yet
+        melee_knife = 1, -- configurable gameplay price
+        melee_machete = 3, -- configurable gameplay price
+        melee_hammer = 0.75, -- configurable gameplay price
+        melee_cleaver = 1, -- configurable gameplay price
+        melee_hatchet = 1.5, -- configurable gameplay price
         throwable_throwing_knives = false,   -- no canonical Shops issuance support yet
-        throwable_tomahawk = false,          -- no canonical Shops issuance support yet
+        throwable_tomahawk = false,          -- staged paid-unit/prompt flow; explicit combined test overlay only
         throwable_tomahawk_ancient = false,  -- no canonical Shops issuance support yet
         throwable_bolas = false,             -- no canonical Shops issuance support yet
         throwable_bolas_hawkmoth = false,    -- no canonical Shops issuance support yet
@@ -66,7 +67,7 @@ WeaponStoreConfig = {
         throwable_dynamite = false,          -- no canonical Shops issuance support yet
         throwable_molotov = false,           -- no canonical Shops issuance support yet
         throwable_poisonbottle = false,      -- no canonical Shops issuance support yet
-        bow = false,                         -- no canonical Shops issuance support yet
+        bow = 5.00,                          -- regular-arrow opt-in only; gameplay price
     },
     ammunition = {
         -- Representative period pack sizes. Specialty prices are gameplay estimates.
@@ -104,7 +105,7 @@ WeaponStoreConfig = {
         ammo_arrow_dynamite = { price = 2.50, rounds = 5 },
         ammo_throwing_knives_regular = { price = 1.00, rounds = 1 },
         ammo_throwing_knives_poison = { price = 3.00, rounds = 1 },
-        ammo_tomahawk_regular = { price = 1.00, rounds = 1 },
+        ammo_tomahawk_regular = { price = 1.50, rounds = 1 }, -- offered only with feather_throwable_quantities=1
         ammo_bolas_regular = { price = 1.00, rounds = 1 },
         ammo_bolas_hawkmoth = { price = 1.00, rounds = 1 },
         ammo_bolas_ironspiked = { price = 1.00, rounds = 1 },

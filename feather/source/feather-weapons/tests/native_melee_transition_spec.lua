@@ -19,6 +19,8 @@ local id={characterId='john',sessionId='s',epoch='e1'}
 local state={phase='active',identity=id}
 local request,writes,assigned,starts=nil,0,false,0
 local reply
+local equippedSlot='weapon_melee_quinary'
+local expectedSlot='weapon_melee_quinary'
 local row={id=90,revision=0,itemName='weapon_melee_hatchet',metadata=assert(WeaponNativeKnife.Build(
  WeaponDefinitionCatalog.weapons.melee_hatchet,{serialNumber='HATCHET'}))}
 TriggerClientEvent=function(name,_,value,scope,result)
@@ -27,17 +29,17 @@ TriggerClientEvent=function(name,_,value,scope,result)
 end
 exports=setmetatable({['feather-inventory']={
  ReadNativeEquipmentTransition=function(_,context,item)
-  local expected=assigned and {weapon_melee_quinary={itemId=90,revision=0}} or {}
+  local expected=assigned and {[equippedSlot]={itemId=90,revision=0}} or {}
   return {ok=true,value={characterId='john',expected=expected,equipment={},candidate=item and row or nil,
-   meleeEquipment={characterId='john',expected=expected,equipment=assigned and {melee_quinary=row} or {}},
+   meleeEquipment={characterId='john',expected=expected,equipment=assigned and {[equippedSlot:sub(8)]=row} or {}},
    brokenEquipmentContract=1,brokenPromotionContract=1}}
  end,
  CommitNativeMeleeEquipment=function(_,context,spec)
   assert(state.phase=='released' and registered.ValidateNativeEquipmentCommit(context,spec))
-  local forged={}; for k,v in pairs(spec) do forged[k]=v end; forged.slot='weapon_melee'
+  local forged={}; for k,v in pairs(spec) do forged[k]=v end; forged.slot=spec.slot=='weapon_melee' and 'weapon_melee_secondary' or 'weapon_melee'
   assert(not registered.ValidateNativeEquipmentCommit(context,forged),'ticket binds exact slot')
-  assert(spec.melee==true and spec.knifeId==90 and spec.slot=='weapon_melee_quinary' and #spec.lifecycleWear==0)
-  assigned=spec.action=='equip'; writes=writes+1; return {ok=true,value={}}
+  assert(spec.melee==true and spec.knifeId==90 and spec.slot==expectedSlot and #spec.lifecycleWear==0)
+  equippedSlot=spec.slot; assigned=spec.action=='equip'; writes=writes+1; return {ok=true,value={}}
  end}}, {__call=function(_,name,fn) registered[name]=fn end})
 WeaponCharacterAmmoDispatcher={Status=function() return state end,Start=function()
  starts=starts+1; local bundle={}; WeaponNativeEquipmentBindings.Attach(3,bundle)
@@ -60,9 +62,10 @@ commands.WeaponNativeEquipmentChange(0,{'3','unequip','weapon_melee_quinary'})
 assert(writes==1); finish(); assert(not assigned and writes==2 and starts==2)
 source=3
 events['feather-weapons:server:native-equipment-ui']('melee-options','options',{itemId=90,scope=id})
-assert(reply.ok and #reply.value.options==5 and reply.value.options[5].slot=='weapon_melee_quinary')
+assert(reply.ok and #reply.value.options==1 and reply.value.options[1].slot=='weapon_melee')
+expectedSlot=reply.value.options[1].slot
 events['feather-weapons:server:native-equipment-ui']('melee-change','change',
- {itemId=90,scope=id,action='equip',slot='weapon_melee_quinary'})
+ {itemId=90,scope=id,action='equip',slot=expectedSlot})
 assert(writes==2); finish(); assert(assigned and writes==3)
 local snapshot={characterId='john',expected={},equipment={},candidate=row,
  meleeEquipment={characterId='john',expected={},equipment={}}}

@@ -1,7 +1,7 @@
 local N=WeaponCharacterAmmoCreationNative
 local identity={characterId='c',sessionId='s',epoch='e'}
 local function rawGuid(n) return string.pack('<I4I4I4I4I4I4I4I4',n,0,2,0,3,0,4,0)..string.rep('\0',72) end
-return function(mode,targets,model)
+return function(mode,targets,model,carryPoints)
  local points,entries,applied,order={},{},{},{}
  local sequence,removals,grants=0,0,0
  local clock,pendingPrimary=0,nil
@@ -81,7 +81,7 @@ return function(mode,targets,model)
    local p=points[point]; if p then return {entity=p.entity,hash=100,guid=p.guid} end
   end})
  local items={}
- for index,point in ipairs({2,3}) do
+ for index,point in ipairs(carryPoints or {2,3}) do
   items[index]={nativeWeaponName=model or 'WEAPON_REVOLVER_CATTLEMAN',point=point,itemInstanceId=100+index,
    itemRevision=index,serialNumber='serial-'..index,attachments={},cosmetics={},
    maintenance={permanentDegradation=targets[index]}}

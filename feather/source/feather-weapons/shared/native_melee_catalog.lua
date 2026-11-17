@@ -1,11 +1,11 @@
--- Reuse the five previously accepted melee models/slots. Pure policy;
+-- Normal support for the five previously accepted melee models/slots. Pure policy;
 -- manifest loading alone never grants gameplay admission.
 WeaponNativeMeleeCatalog={}
 function WeaponNativeMeleeCatalog.Enabled()
     return Config and Config.NativeAlphaRuntime==true
         and Config.CharacterAmmunitionEnabled==true and Config.CharacterAmmoTransportEnabled==true
         and Config.NativeAlphaLifecycleWearEnabled==true and type(GetConvarInt)=='function'
-        and GetConvarInt('feather_native_melee',0)==1 or false
+        and GetConvarInt('feather_native_melee',1)==1 or false
 end
 local profiles={
     melee_knife={itemName='weapon_melee_knife',nativeWeaponName='WEAPON_MELEE_KNIFE',family='knife',nativeGrantAmount=0},

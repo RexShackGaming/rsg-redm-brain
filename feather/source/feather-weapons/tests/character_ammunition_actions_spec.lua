@@ -24,6 +24,7 @@ local actions
 actions=WeaponCharacterAmmoActions.New({
     enabled=function() return enabled end,owner=function() return owner end,
     context=function() return context end,catalog={regular={label='Regular',itemName='ammo_regular'}},
+    limits=function() return {regular=3} end,
     weapons={cattleman={itemName='weapon_revolver_cattleman',ammunitionTypes={'regular'}}},
     operation=function(n) return 'ui:'..n end,now=function() return clock end,
     wait=function(ms)
@@ -39,12 +40,17 @@ actions=WeaponCharacterAmmoActions.New({
     end,
 })
 assert(actions.Options().value.options[1].carried==0)
+assert(actions.Options().value.options[1].capacity==3)
 assert(#actions.Options('unknown').value.options==0)
 assert(#actions.Options('ammo_regular').value.options==1)
 assert(#actions.Options('weapon_revolver_cattleman').value.options==1)
 assert(not actions.Transfer('regular',0,'load').ok and sends==0)
 assert(not actions.Transfer('regular',1,'unload').ok and sends==0)
 local scope={characterId='jane',sessionId='session',epoch='epoch'}
+baseline.pools.regular=3
+local full=actions.Transfer('regular',1,'load',scope)
+assert(not full.ok and full.dispatched==false and full.error.code=='ammunition_capacity_exceeded' and sends==0)
+baseline.pools.regular=0
 assert(actions.Transfer('regular',1,'load').error.code=='ammunition_panel_expired_reopen' and sends==0)
 assert(actions.Transfer('regular',1,'load',{characterId='jane',sessionId='old',epoch='epoch'}).error.code=='ammunition_panel_expired_reopen' and sends==0)
 assert(actions.Transfer('regular',1,'load',{characterId='jane',sessionId='session',epoch='old'}).error.code=='ammunition_panel_expired_reopen' and sends==0)

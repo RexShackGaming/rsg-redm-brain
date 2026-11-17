@@ -20,7 +20,7 @@ local events={}
 RegisterCommand=function() end;AddEventHandler=function() end;SetTimeout=function() end
 RegisterNetEvent=function(name,fn) events[name]=fn end
 local clock=100;GetGameTimer=function() return clock end
-GetResourceState=function() return 'stopped' end
+GetResourceState=function(name) return name=='feather-weapons-native-proof' and 'missing' or 'started' end
 GetInvokingResource=function() return 'feather-inventory' end
 local position=copy(Config.Attachments.stations.valentine.coords)
 GetPlayerPed=function() return 42 end;GetEntityCoords=function() return position end

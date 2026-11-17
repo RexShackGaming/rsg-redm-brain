@@ -6,7 +6,7 @@ lua54 'yes'
 name 'feather-shops'
 description 'Authoritative commerce workflows for the Feather Framework'
 author 'Feather Framework'
-version '0.4.1'
+version '0.5.0'
 
 shared_script 'shared/localization.lua'
 

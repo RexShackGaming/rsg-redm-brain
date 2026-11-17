@@ -41,13 +41,23 @@ api.remove(42,123,2)
 assert(removed[1]==0xB6CFEC32E3742779 and removed[2]==42 and removed[3]==123 and removed[4]==2 and removed[5]==0xA07362E6)
 blocks=0
 local bindings=assert(WeaponCharacterAmmoClientBindings.New(function() enforced=enforced+1 end))
-local handler=function() return {ok=true} end
+local checkpointResult={ok=true}
+local handler=function() return checkpointResult end
 assert(not bindings.checkpoint(handler) and not bindings.frame(handler))
 assert(registered==0 and #threads==0)
 Config.CharacterAmmunitionEnabled=true; Config.CharacterAmmoTransportEnabled=true
 assert(bindings.checkpoint(handler)); assert(not bindings.checkpoint(handler))
 caller='untrusted'; assert(callbacks.CheckpointCharacterAmmunitionBeforeLogout({}).error.code=='checkpoint_caller_denied')
 caller='feather-character'; assert(callbacks.CheckpointCharacterAmmunitionBeforeLogout({}).ok)
+checkpointResult={ok=false,error={code='test_checkpoint_refusal'}}
+local savedPrint=print
+local diagnostic
+print=function(line) diagnostic=line end
+assert(callbacks.CheckpointCharacterAmmunitionBeforeLogout({})==checkpointResult)
+assert(diagnostic=='[WeaponNativeLogoutCheckpoint] CLIENT REFUSED test_checkpoint_refusal')
+print=function() error('diagnostic output unavailable') end
+assert(callbacks.CheckpointCharacterAmmunitionBeforeLogout({})==checkpointResult,'logging cannot change checkpoint result')
+print=savedPrint;checkpointResult={ok=true}
 assert(bindings.frame(function() steps=steps+1; if steps==2 then error('fault') end end))
 assert(not bindings.frame(handler))
 assert(coroutine.resume(threads[1])); assert(steps==1 and enforced==1 and blocks==0)

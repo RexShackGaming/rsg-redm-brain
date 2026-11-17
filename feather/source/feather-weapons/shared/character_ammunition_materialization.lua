@@ -74,8 +74,14 @@ function WeaponCharacterAmmoMaterialization.Validate(plan,registry,baseline)
     for key,item in pairs(plan.items) do
         count=count+1
         if type(key)~='number' or key<1 or key%1~=0 or key>4 or type(item)~='table'
-            or not slots[item.slot] or seen[item.slot] or slots[item.slot]~=item.point then return nil,'invalid_creation_slot' end
+            or not slots[item.slot] or seen[item.slot] then return nil,'invalid_creation_slot' end
         local definition=registry.weapons[item.definitionId]
+        local expectedPoint=slots[item.slot]
+        if definition and definition.family=='bow' then
+            if item.definitionId~='bow' or definition.nativeWeaponName~='WEAPON_BOW' then return nil,'untrusted_bow_definition' end
+            expectedPoint=({shoulder=8,back=7})[item.slot]
+        end
+        if not expectedPoint or expectedPoint~=item.point then return nil,'invalid_creation_slot' end
         if not definition or definition.nativeWeaponName~=item.nativeWeaponName
             or not definition.compatible[item.preferredAmmoType] then return nil,'untrusted_creation_definition' end
         -- Sawed-off is a catalog sidearm using shotgun ammo; family alone is

@@ -1,5 +1,5 @@
 Config={DevMode=false,NativeAlphaRuntime=true,CharacterAmmunitionEnabled=true,
- CharacterAmmoTransportEnabled=true,AmmunitionPools={enabled=false},Escrow={maxTotal=200}}
+ CharacterAmmoTransportEnabled=true,NativeAlphaLifecycleWearEnabled=true,AmmunitionPools={enabled=false},Escrow={maxTotal=200}}
 for _,path in ipairs({'shared/constants.lua','shared/definitions/ammunition.lua','shared/definitions/weapons.lua',
  'shared/validation.lua','shared/character_ammunition_item.lua'}) do dofile(path) end
 WeaponResult={Ok=function(v) return {ok=true,value=v} end,
@@ -14,7 +14,9 @@ WeaponProvenanceService={IsReady=function() return true end}
 WeaponNativeEquipmentBindings={IsStopping=function() return stopping end}
 WeaponCharacterAmmoPolicy={Build=function() return {weapons={revolver_cattleman={}}} end}
 GetResourceState=function() return 'stopped' end
-GetConvarInt=function() return 0 end
+GetConvarInt=function(_,default) return default end
+dofile('shared/native_melee_catalog.lua')
+dofile('shared/native_knife.lua')
 exports=function() end
 DefinitionRegistry={ValidateAttachmentSet=function() return WeaponResult.Ok(true) end}
 dofile('server/services/metadata.lua')
@@ -30,6 +32,28 @@ assert(first.value.metadata.ammo.ownership=='character' and first.value.metadata
 local second=IssuanceService.PreparePurchase(context,request)
 assert(second.ok and second.value.fingerprint==first.value.fingerprint and second.value.metadata.serialNumber~=first.value.metadata.serialNumber,
  'receipt payload identity excludes generated serial/time; outcome must be committed once by coordinator')
+for _,key in ipairs({'knife','machete','hammer','cleaver','hatchet'}) do
+ local meleeRequest={orderId=request.orderId,itemName='weapon_melee_'..key,currency='dollars',total=100}
+ local purchased=IssuanceService.PreparePurchase(context,meleeRequest)
+ assert(purchased.ok,purchased.error and purchased.error.message)
+ local m=purchased.value.metadata
+ assert(m.weaponDefinitionId=='melee_'..key and m.condition==100 and m.ammo==nil and m.maintenance==nil)
+ assert(m.provenance.type=='purchase' and m.provenance.reference==request.orderId and #m.serialNumber>0)
+end
+assert(not IssuanceService.PurchaseDefinition('weapon_thrown_tomahawk'))
+dofile('shared/native_throwable_policy.lua');dofile('shared/native_throwable_item.lua')
+Config.NativeThrowableUnitsEnabled=true
+local tomahawk=IssuanceService.PreparePurchase(context,{orderId=request.orderId,itemName='weapon_thrown_tomahawk',currency='dollars',total=100})
+assert(tomahawk.ok and tomahawk.value.metadata.weaponDefinitionId=='throwable_tomahawk')
+assert(tomahawk.value.metadata.provenance.type=='purchase' and tomahawk.value.metadata.provenance.reference==request.orderId)
+assert(tomahawk.value.metadata.ammo.quantity==nil and tomahawk.value.metadata.maintenance==nil,
+ 'one paid physical instance, no ammunition or carrier quantity grant')
+Config.NativeThrowableUnitsEnabled=false
+assert(not IssuanceService.PurchaseDefinition('weapon_thrown_tomahawk'),'staged physical purchases disabled by default')
+local defaults=GetConvarInt
+GetConvarInt=function() return 0 end
+assert(not IssuanceService.PurchaseDefinition('weapon_melee_knife'),'explicit disable cannot issue unusable melee')
+GetConvarInt=defaults
 stopping=true;assert(not IssuanceService.PreparePurchase(context,request).ok);stopping=false
 current=false;assert(not IssuanceService.PreparePurchase(context,request).ok);current=true
 epoch='other';assert(not IssuanceService.PreparePurchase(context,request).ok);epoch='epoch'

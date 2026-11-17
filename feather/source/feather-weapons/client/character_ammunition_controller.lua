@@ -1,7 +1,7 @@
 -- Dormant orchestration. The owner supplies world readiness, transport and lifecycle ticks.
 -- No threads/routes, weapon grants, clip writes or ammunition selection here.
 WeaponCharacterAmmoController={}
-function WeaponCharacterAmmoController.New(api,pickupAck)
+function WeaponCharacterAmmoController.New(api,pickupAck,prepareQuantityRestore)
     local C=WeaponCharacterAmmoClient.New()
     local adapter,phase,closing=nil,'closed',false
     local deathClosing=false
@@ -37,13 +37,28 @@ function WeaponCharacterAmmoController.New(api,pickupAck)
                 phase=reason=='ped_changed' and 'suspended' or 'frozen'; return
             end
             phase=accepted.phase
+            if request.kind=='pickup' and reason=='quantity_declined' then
+                -- Only remove rejected units from THIS report. Additional game
+                -- pickups arriving while SQL was pending remain provisional for
+                -- the next sample; genuine firearm reductions are never reset.
+                local actual,why=adapter.Read(api.ped(),true)
+                if not actual then return fail(why) end
+                local ammoId=request.ammunitionId or 'ammo_tomahawk_regular'
+                local rejected=request.report.pools[ammoId]-accepted.pools[ammoId]
+                actual[ammoId]=math.max(0,actual[ammoId]-rejected)
+                for id,n in pairs(actual) do if id~=ammoId and n>accepted.pools[id] then return fail('quantity_decline_foreign_increase') end end
+                local restored;restored,why=adapter.Restore({phase='restoring',pools=actual},api.ped(),true)
+                if not restored then return fail(why) end
+                return
+            end
             if request.kind=='pickup' then
                 if closing or api.ready()~=true or type(pickupAck)~='function' then return fail('pickup_owner_ack_unavailable') end
-                local ok,value=pcall(pickupAck,accepted)
+                local ok,value=pcall(pickupAck,accepted,request.ammunitionId)
                 if not ok or value~=true then return fail('pickup_owner_rebind_unconfirmed') end
             end
             if request.kind=='transfer' then
                 if closing or api.ready()~=true then return fail('transfer_world_changed') end
+                if prepareQuantityRestore and prepareQuantityRestore(accepted)~=true then return fail('quantity_carrier_restore_failed') end
                 local restored,why=adapter.Restore(accepted,api.ped(),true)
                 if not restored then return fail(why) end
                 -- Exact committed baseline is the only economic native write.
@@ -72,7 +87,13 @@ function WeaponCharacterAmmoController.New(api,pickupAck)
         else pools,reason=adapter.Read(status.ped,true) end
         if not pools then return fail(reason) end
         local request
-        if not closing and Config and Config.DevMode==true and type(GetConvarInt)=='function'
+        local quantityMode=WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.QuantityEnabled and WeaponNativeThrowablePolicy.QuantityEnabled()
+        local arrowPickup=WeaponRegularArrowPolicy and WeaponRegularArrowPolicy.Enabled() and pools.ammo_arrow_regular
+            and pools.ammo_arrow_regular>status.baseline.pools.ammo_arrow_regular
+        if not closing and (arrowPickup or quantityMode and pools.ammo_tomahawk_regular>status.baseline.pools.ammo_tomahawk_regular) then
+            request,reason=C.PrepareNativePickup(status.ped,pools,true,true)
+            if request and type(api.block)=='function' then api.block(true) end
+        elseif not closing and Config and Config.DevMode==true and type(GetConvarInt)=='function'
             and GetConvarInt('feather_native_throwable_pickup',0)==1
             and status.baseline.pools.ammo_tomahawk_regular==0 and pools.ammo_tomahawk_regular==1 then
             request,reason=C.PrepareNativePickup(status.ped,pools,true)

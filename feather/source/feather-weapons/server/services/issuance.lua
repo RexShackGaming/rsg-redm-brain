@@ -110,8 +110,13 @@ function IssuanceService.PurchaseDefinition(itemName)
     if not IssuanceService.PurchaseAvailable() or type(itemName)~='string' then return nil end
     local registry=WeaponCharacterAmmoPolicy.Build(WeaponDefinitionCatalog)
     for id,definition in pairs(WeaponDefinitionCatalog.weapons) do
-        if definition.itemName==itemName and registry and registry.weapons[id]
-            and (definition.slot=='sidearm' or definition.slot=='longgun') then return definition end
+        if definition.itemName==itemName then
+            if id=='throwable_tomahawk' and WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.UnitsEnabled
+                and WeaponNativeThrowablePolicy.UnitsEnabled() then return definition end
+            if registry and registry.weapons[id] and (definition.slot=='sidearm' or definition.slot=='longgun') then return definition end
+            if WeaponNativeMeleeCatalog and WeaponNativeMeleeCatalog.Enabled()
+                and WeaponNativeMeleeCatalog.Resolve(definition) then return definition end
+        end
     end
 end
 function IssuanceService.PreparePurchase(context,request)

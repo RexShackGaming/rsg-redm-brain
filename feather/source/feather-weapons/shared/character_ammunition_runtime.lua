@@ -2,6 +2,16 @@
 -- Callers must obtain baselines/epochs from server authority, never client input.
 WeaponCharacterAmmoRuntime={}
 WeaponCharacterAmmoRuntime.RecoveryContract=1
+local function recoveryType(limits,before,after)
+    local found
+    for id,cap in pairs({ammo_tomahawk_regular=3,ammo_arrow_regular=40}) do
+        if limits[id]==cap and after[id]>before[id] then
+            if found then return nil end -- one ammunition type per claim
+            found=id
+        end
+    end
+    return found
+end
 function WeaponCharacterAmmoRuntime.New(isCurrent)
     assert(type(isCurrent)=='function','local session validator required')
     local sessions,issued={},{}
@@ -71,6 +81,35 @@ function WeaponCharacterAmmoRuntime.New(isCurrent)
     end
     function R.PrepareObservation(source,report) return prepareObservation(source,report,false) end
     function R.PrepareFinalObservation(source,report,finalWear) return prepareObservation(source,report,true,finalWear) end
+    function R.AttachQuantitySpend(request,location)
+        if type(request)~='table' or not R.IsOperationCurrent(request.context,'observe',request.spec)
+            or type(location)~='table' then return false end
+        local s=sessions[request.context.actorSource]
+        local spent=false
+        for id,cap in pairs({ammo_tomahawk_regular=3,ammo_arrow_regular=40}) do
+            if s.limits[id]==cap and s.pools[id]>request.spec.pools[id] then spent=true end
+        end
+        if s.pending.sealAfter or s.pending.finalWear~=nil or not spent then return false end
+        s.pending.quantityRecovery=clone(location);request.spec.quantityRecovery=clone(location);return true
+    end
+    function R.PrepareQuantityPickup(source,report,location)
+        local s=sessions[source]
+        if not match(s,report) or s.phase~='active' or s.pending
+            or type(location)~='table' then return nil,'quantity_pickup_not_ready' end
+        local pools=WeaponCharacterAmmunition.Validate(report.pools,s.limits)
+        local ammoId=pools and recoveryType(s.limits,s.pools,pools)
+        if not ammoId then return nil,'quantity_pickup_increase_required' end
+        for id in pairs(s.limits) do
+            if report.pools[id]==nil or id~=ammoId and pools[id]>s.pools[id] then return nil,'quantity_pickup_other_pool_changed' end
+        end
+        local plan={version=2,kind='quantity_pickup_ledger_plan',expectedRevision=s.revision,location=clone(location)}
+        if ammoId~='ammo_tomahawk_regular' then plan.ammunitionId=ammoId end
+        s.sequence=s.sequence+1
+        s.pending={ticket=s.epoch..':'..s.sequence,operation='pickup',nativePickupPlan=clone(plan),
+            proposed={characterId=s.characterId,revision=s.revision+1,pools=clone(pools),changed=true}}
+        return {context={actorSource=source,characterId=s.characterId,sessionId=s.sessionId,runtimeEpoch=s.epoch,
+            runtimeTicket=s.pending.ticket},spec={expectedRevision=s.revision,pools=clone(pools),limits=clone(s.limits),nativePickupPlan=plan}}
+    end
     -- `plan` is produced by the server recovery planner from its committed
     -- receipt, never supplied by the client transport.
     function R.PrepareNativePickup(source,report,plan)
@@ -138,6 +177,7 @@ function WeaponCharacterAmmoRuntime.New(isCurrent)
         end
         if not equal(spec.finalWear,s.pending.finalWear) then return false end
         if not equal(spec.nativePickupPlan,s.pending.nativePickupPlan) then return false end
+        if not equal(spec.quantityRecovery,s.pending.quantityRecovery) then return false end
         if type(spec.limits)~='table' then return false end
         for id,limit in pairs(s.limits) do if spec.limits[id]~=limit then return false end end
         for id in pairs(spec.limits) do if s.limits[id]==nil then return false end end
@@ -157,6 +197,18 @@ function WeaponCharacterAmmoRuntime.New(isCurrent)
             s.pending=nil; s.phase='frozen'; return nil,'persistence_failed'
         end
         local value,expected=result.value,s.pending.proposed
+        if value.quantityDeclined==true then
+            if s.pending.operation~='pickup' or not s.pending.nativePickupPlan or s.pending.nativePickupPlan.version~=2 then
+                s.pending=nil;s.phase='frozen';return nil,'unexpected_quantity_decline'
+            end
+            local recovered=value.recovered
+            local ammoId=s.pending.nativePickupPlan.ammunitionId or 'ammo_tomahawk_regular'
+            local maximum=expected.pools[ammoId]-s.pools[ammoId]
+            if type(recovered)~='number' or recovered%1~=0 or recovered<0 or recovered>=maximum then
+                s.pending=nil;s.phase='frozen';return nil,'invalid_quantity_decline'
+            end
+            expected=clone(expected);expected.pools[ammoId]=s.pools[ammoId]+recovered
+        end
         local accepted=WeaponCharacterAmmunition.Validate(value.pools,s.limits)
         local valid=value.characterId==s.characterId and value.revision==expected.revision and accepted~=nil
         for id,count in pairs(expected.pools) do valid=valid and accepted and accepted[id]==count end

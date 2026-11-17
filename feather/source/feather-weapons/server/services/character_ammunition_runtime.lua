@@ -8,6 +8,13 @@ local sequence=0
 local loadouts={}
 local opening={}
 local deathWrites={}
+local unitSpends={}
+local quantityWrites={}
+local quantityExpiryTests={}
+local function rejectionTestName(test)
+    if test and test.kind=='bucket' then return 'WeaponQuantityBucketTest' end
+    return test and test.kind=='distance' and 'WeaponQuantityDistanceTest' or 'WeaponQuantityExpiryTest'
+end
 local retirements,recoverySnapshots={},{}
 local function copy(value)
     if type(value)~='table' then return value end
@@ -15,6 +22,21 @@ local function copy(value)
 end
 local function failure(code) return {ok=false,error={code=code,message=code}} end
 local function enabled() return Config.CharacterAmmunitionEnabled==true end
+local function quantities() return WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.QuantityEnabled
+    and WeaponNativeThrowablePolicy.QuantityEnabled() end
+local function arrows() return WeaponRegularArrowPolicy and WeaponRegularArrowPolicy.Enabled() end
+local function recoveryEnabled() return quantities() or arrows() end
+local function quantityLocation(source,bound)
+    if not recoveryEnabled() or not bound or not CoreAdapter.IsSessionCurrent(source,bound.sessionId,bound.characterId) then return nil end
+    local ok,medical=pcall(function() return exports['feather-medical']:ReadNativeWeaponCondition(source,
+        {characterId=bound.characterId,sessionId=bound.sessionId,runtimeEpoch=bound.epoch}) end)
+    if not ok or not medical or not medical.ok or not medical.value or medical.value.lifeState~='alive' then return nil end
+    local ped=GetPlayerPed(source)
+    if not ped or ped==0 then return nil end
+    local position=GetEntityCoords(ped);local bucket=GetPlayerRoutingBucket(source)
+    if not CoreAdapter.IsSessionCurrent(source,bound.sessionId,bound.characterId) then return nil end
+    return {version=1,bucket=bucket,position={x=position.x,y=position.y,z=position.z}}
+end
 function S.Open(source,limits)
     if not enabled() then return failure('character_ammunition_disabled') end
     if loadouts[source] then return failure('native_loadout_release_required') end
@@ -62,7 +84,8 @@ function S.OpenLoadout(source,catalog,policy)
     -- Preserve the exact policy/catalog used before the Inventory export yields.
     catalog,policy=copy(catalog),copy(policy)
     local registry,reason
-    if WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.Enabled() then
+    if WeaponNativeThrowablePolicy and (quantities() or (WeaponNativeThrowablePolicy.UnitsEnabled and WeaponNativeThrowablePolicy.UnitsEnabled())
+        or WeaponNativeThrowablePolicy.Enabled()) then
         registry,reason=WeaponNativeThrowablePolicy.RegistryFromLimits(catalog,policy)
     else registry,reason=WeaponCharacterAmmoCatalog.Build(catalog,policy) end
     if not registry then return failure(reason) end
@@ -72,7 +95,9 @@ function S.OpenLoadout(source,catalog,policy)
     local session=resolved.value
     if not reservation or opening[source]~=reservation then return failure('open_reservation_lost') end
     reservation.sessionId=session.sessionId
-    local context={actorSource=source,characterId=session.characterId,sessionId=session.sessionId}
+    sequence=sequence+1
+    local epoch=('%s:%s:%s:%s'):format(session.sessionId,os.time(),GetGameTimer(),sequence)
+    local context={actorSource=source,characterId=session.characterId,sessionId=session.sessionId,epoch=epoch}
     local ok,snapshot=pcall(function()
         return exports['feather-inventory']:GetCharacterFirearmRuntimeSnapshot(context,registry.limits)
     end)
@@ -84,14 +109,12 @@ function S.OpenLoadout(source,catalog,policy)
     end
     if type(snapshot.value)~='table' or snapshot.value.characterId~=session.characterId
         or type(snapshot.value.equipment)~='table' then return failure('invalid_runtime_snapshot') end
-    sequence=sequence+1
-    local epoch=('%s:%s:%s:%s'):format(session.sessionId,os.time(),GetGameTimer(),sequence)
     local plan
     plan,reason=WeaponCharacterAmmoMaterialization.Build(snapshot.value.equipment,catalog,registry,
         {characterId=session.characterId,sessionId=session.sessionId,epoch=epoch})
     if not plan then return failure(reason) end
     local knife,melee
-    if type(GetConvarInt)=='function' and GetConvarInt('feather_native_melee',0)==1 then
+    if type(GetConvarInt)=='function' and GetConvarInt('feather_native_melee',1)==1 then
         if not WeaponNativeMeleeCatalog or type(snapshot.value.meleeEquipment)~='table'
             or snapshot.value.knifeEquipment~=nil then return failure('native_melee_components_not_ready') end
         melee,reason=WeaponNativeMeleeCatalog.Project(snapshot.value.meleeEquipment,catalog,plan.identity)
@@ -104,9 +127,12 @@ function S.OpenLoadout(source,catalog,policy)
         if knife==false then knife=nil end
     elseif snapshot.value.knifeEquipment~=nil then return failure('native_knife_gate_changed') end
     local throwableSnapshot,throwable
-    if WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.Enabled() then
+    if WeaponNativeThrowablePolicy and (quantities() or (WeaponNativeThrowablePolicy.UnitsEnabled and WeaponNativeThrowablePolicy.UnitsEnabled())
+        or WeaponNativeThrowablePolicy.Enabled()) then
         if not WeaponNativeThrowableItem or type(snapshot.value.throwableEquipment)~='table'
-            or registry.limits.ammo_tomahawk_regular~=1 then return failure('native_throwable_components_not_ready') end
+            or (registry.limits.ammo_tomahawk_regular~=1 and not quantities() and not (registry.limits.ammo_tomahawk_regular==3
+                and snapshot.value.throwableEquipment.contract==2 and WeaponNativeThrowablePolicy.UnitsEnabled
+                and WeaponNativeThrowablePolicy.UnitsEnabled())) then return failure('native_throwable_components_not_ready') end
         throwableSnapshot=copy(snapshot.value.throwableEquipment)
         if throwableSnapshot.revision~=snapshot.value.revision or type(throwableSnapshot.pools)~='table'
             or type(snapshot.value.pools)~='table' then return failure('native_throwable_ledger_changed') end
@@ -135,7 +161,7 @@ function S.OpenLoadout(source,catalog,policy)
     for _,item in ipairs(plan.items) do items[#items+1]={itemId=item.itemInstanceId,revision=item.itemRevision} end
     if knife then items[#items+1]={itemId=knife.row.id,revision=knife.row.revision} end
     if melee then for _,entry in ipairs(melee.items) do items[#items+1]={itemId=entry.row.id,revision=entry.row.revision} end end
-    if throwable then items[#items+1]={itemId=throwable.row.id,revision=throwable.row.revision} end
+    if throwable then for _,row in ipairs(throwable.units or {throwable.row}) do items[#items+1]={itemId=row.id,revision=row.revision} end end
     if utility then for _,tool in ipairs(utility.items or {utility}) do items[#items+1]={itemId=tool.row.id,revision=tool.row.revision} end end
     recoverySnapshots[source]={characterId=session.characterId,sessionId=session.sessionId,epoch=epoch,
         policy='last_durable_snapshot',ledgerRevision=snapshot.value.revision,itemRevisions=items,
@@ -190,7 +216,7 @@ function S.ValidateLoadout(source)
     end
     local ok,snapshot=pcall(function()
         return exports['feather-inventory']:GetCharacterFirearmRuntimeSnapshot(
-            {actorSource=source,characterId=bound.characterId,sessionId=bound.sessionId},bound.registry.limits)
+            {actorSource=source,characterId=bound.characterId,sessionId=bound.sessionId,epoch=bound.epoch},bound.registry.limits)
     end)
     if loadouts[source]~=bound then return failure('loadout_lifecycle_changed') end
     if not enabled() or bound.invalid then return failure('loadout_frozen_release_required') end
@@ -209,10 +235,19 @@ function S.IsNativeItemBound(itemId)
     for _,bound in pairs(loadouts) do if bound.lease.Contains(itemId) then return true end end
     return false
 end
+function S.IsThrowableSpendMoveAuthorized(itemId,context)
+    if type(context)~='table' or context.nativeThrowableSpend~=true or context.resource~='feather-weapons'
+        or context.reason~='character_ammunition_observation' then return false end
+    local request=unitSpends[context.actorSource]
+    return request~=nil and request.ids[itemId]==true
+        and context.characterId==request.context.characterId and context.sessionId==request.context.sessionId
+        and context.runtimeEpoch==request.context.runtimeEpoch and context.runtimeTicket==request.context.runtimeTicket
+        and runtime.IsOperationCurrent(request.context,'observe',request.spec)==true
+end
 function S.CanReleaseInventoryGuards()
     -- No callback removal while an item lease/open/final persistence operation
     -- remains owned. Orderly ConfirmCleanup clears loadouts only after release.
-    return next(loadouts)==nil and next(opening)==nil and next(deathWrites)==nil
+    return next(loadouts)==nil and next(opening)==nil and next(deathWrites)==nil and next(unitSpends)==nil
 end
 -- Server-only retained lease data for idle periodic sampling. No SQL/readiness
 -- hints from clients, and no metadata authority outside the release coordinator.
@@ -290,24 +325,137 @@ function S.FreezeLoadout(source,identity)
 end
 local function commit(request,method)
     local bound=loadouts[request.context.actorSource]
+    local unitSpend
+    if method=='ObserveCharacterAmmunition' and bound and bound.throwableSnapshot
+        and bound.throwableSnapshot.contract==2 and type(request.spec.pools)=='table' then
+        local prior=bound.throwableSnapshot.units
+        local after=request.spec.pools.ammo_tomahawk_regular
+        if type(prior)=='table' and type(after)=='number' and after%1==0 and after>=0 and after<#prior then
+            unitSpend={context=copy(request.context),spec=copy(request.spec),ids={}}
+            for index=after+1,#prior do unitSpend.ids[prior[index].id]=true end
+            unitSpends[request.context.actorSource]=unitSpend
+        end
+    end
     if bound then bound.providerOutcome='pending' end
+    local quantityWrite=recoveryEnabled() and request.spec.quantityRecovery
+    if quantityWrite then quantityWrites[request.context.actorSource]=quantityWrite end
     local ok,result=pcall(function() return exports['feather-inventory'][method](exports['feather-inventory'],request.context,request.spec) end)
+    if quantityWrites[request.context.actorSource]==quantityWrite then quantityWrites[request.context.actorSource]=nil end
+    if unitSpend and unitSpends[request.context.actorSource]==unitSpend then unitSpends[request.context.actorSource]=nil end
     if bound then bound.providerOutcome=ok and type(result)=='table' and (result.ok==true and 'confirmed' or result.ok==false and 'refused') or 'uncertain' end
     local value,reason=runtime.Complete(request.context,ok and result or {ok=false})
     if value and bound and loadouts[request.context.actorSource]==bound and bound.epoch==request.context.runtimeEpoch then
+        if unitSpend then
+            local snapshot=result.value.throwableUnitsSnapshot
+            if type(snapshot)~='table' or snapshot.revision~=result.value.revision
+                or snapshot.pools.ammo_tomahawk_regular~=result.value.pools.ammo_tomahawk_regular
+                or bound.lease.AdvanceThrowable(snapshot,bound.catalog,bound.registry)~=true then
+                runtime.Revoke(request.context.actorSource);bound.invalid=true
+                return failure('physical_throwable_spend_rebind_failed')
+            end
+            bound.throwableSnapshot=copy(snapshot)
+            -- Only confirmed spend + successful lease rebind may start recovery.
+            -- Failure here retains the spent item; it must never refund/replay.
+            if WeaponNativeThrowablePickupServer and WeaponNativeThrowablePickupServer.Ready() then
+                local ids={};for id in pairs(unitSpend.ids) do ids[#ids+1]=id end;table.sort(ids)
+                local issued,accepted=pcall(WeaponNativeThrowablePickupServer.ConfirmedSpend,
+                    request.context.actorSource,{characterId=request.context.characterId,
+                        sessionId=request.context.sessionId,epoch=request.context.runtimeEpoch},
+                    'observe:'..request.spec.expectedRevision,ids)
+                if not issued or accepted~=true then
+                    print('[feather-weapons] confirmed throwable spend retained; recovery challenge requires review')
+                end
+            end
+        end
         if method=='ReconcileNativeThrowablePickup' then bound.nativePickupCredit=nil
         elseif type(result.value.nativePickupSpend)=='table' then bound.nativePickupCredit=copy(result.value.nativePickupSpend) end
     end
-    return value and {ok=true,value=value} or failure(reason)
+    return value and {ok=true,value=value,quantityDeclined=result.value.quantityDeclined==true or nil,
+        quantityAccepted=result.value.quantityDeclined==true and result.value.recovered or nil} or failure(reason)
 end
 function S.Observe(source,report)
     if not enabled() then return failure('character_ammunition_disabled') end
     local request,reason=runtime.PrepareObservation(source,report)
     if not request then return failure(reason) end
     if request.unchanged then return {ok=true,value=request.value} end
-    return commit(request,'ObserveCharacterAmmunition')
+    local expiryTest
+    if recoveryEnabled() then
+        local live=runtime.Get(source)
+        local tomSpent=quantities() and live and request.spec.pools.ammo_tomahawk_regular<live.pools.ammo_tomahawk_regular
+        local arrowSpent=arrows() and live and live.pools.ammo_arrow_regular and request.spec.pools.ammo_arrow_regular<live.pools.ammo_arrow_regular
+        if tomSpent or arrowSpent then
+            local where=quantityLocation(source,loadouts[source])
+            local test=quantityExpiryTests[source]
+            if tomSpent and test and test.phase=='armed' then
+                local sameScope=test.sessionId==live.sessionId and test.epoch==live.epoch
+                    and test.characterId==live.characterId and test.revision==live.revision
+                local switch=test.kind=='bucket' and 'feather_quantity_bucket_test'
+                    or test.kind=='distance' and 'feather_quantity_distance_test' or 'feather_quantity_expiry_test'
+                if sameScope and test.deadline>=os.time() and GetConvar(switch,'0')=='1'
+                    and live.pools.ammo_tomahawk_regular-request.spec.pools.ammo_tomahawk_regular==1 and where then
+                    if test.kind=='bucket' then
+                        where.bucketTest=true;test.actualBucket=where.bucket
+                        test.allowanceBucket=where.bucket==2147483647 and 0 or where.bucket+1
+                    elseif test.kind=='distance' then where.distanceTestOffset=100 else where.expiryTestSeconds=5 end
+                    test.phase='dispatching';expiryTest=test
+                else test.phase='cancelled' end
+            end
+            if not where or not runtime.AttachQuantitySpend(request,where) then return failure('quantity_spend_context_changed') end
+        end
+    end
+    local result=commit(request,'ObserveCharacterAmmunition')
+    if expiryTest then
+        expiryTest.phase=result and result.ok and 'debit_confirmed' or 'review_required'
+        expiryTest.confirmedAt=os.time()
+        print('['..rejectionTestName(expiryTest)..'] '..expiryTest.phase..'; one-shot consumed; '
+            ..(expiryTest.kind=='bucket' and 'allowance recorded in different bucket; lifetime=180 seconds'
+                or expiryTest.kind=='distance' and 'allowance offset=100 metres; lifetime=180 seconds' or 'allowance lifetime=5 seconds')
+            ..'; no grants/retries')
+    end
+    return result
 end
 function S.NativePickup(source,report)
+    report=copy(report) -- capture before medical/other-player pending writes yield
+    if recoveryEnabled() then
+        local bound=loadouts[source]
+        local where=quantityLocation(source,bound)
+        if not where then return failure('quantity_pickup_context_changed') end
+        -- The native pickup can precede another player's debit commit. Wait
+        -- briefly for an ALREADY pending nearby spend; never replay SQL writes.
+        for _=1,200 do
+            local pending=false
+            for _,location in pairs(quantityWrites) do
+                local a,b=where.position,location.position
+                if where.bucket==location.bucket and (a.x-b.x)^2+(a.y-b.y)^2+(a.z-b.z)^2<=2500 then pending=true;break end
+            end
+            if not pending then break end
+            Wait(25)
+        end
+        local fresh=quantityLocation(source,bound)
+        if not fresh or fresh.bucket~=where.bucket then return failure('quantity_pickup_context_changed') end
+        local live=runtime.Get(source)
+        if arrows() and live and live.pools.ammo_arrow_regular and type(report)=='table' and type(report.pools)=='table'
+            and type(report.pools.ammo_arrow_regular)=='number' and report.pools.ammo_arrow_regular>live.pools.ammo_arrow_regular then
+            local checked=S.ValidateLoadout(source)
+            if not checked.ok or loadouts[source]~=bound then return failure('arrow_pickup_loadout_changed') end
+        end
+        local request,why=runtime.PrepareQuantityPickup(source,copy(report),where)
+        if not request then return failure(why) end
+        if request.spec.nativePickupPlan.ammunitionId=='ammo_arrow_regular' then
+            local owned=false
+            for _,row in pairs(bound.equipment or {}) do
+                if type(row)=='table' and row.metadata and row.metadata.weaponDefinitionId=='bow' then owned=true end
+            end
+            if not arrows() or not owned then runtime.Revoke(source);return failure('owned_bow_required') end
+        end
+        local result=commit(request,'ReconcileNativeThrowablePickup')
+        local test=quantityExpiryTests[source]
+        if test and test.phase=='debit_confirmed' and test.epoch==report.epoch then
+            test.phase=result and result.ok and (result.quantityDeclined and 'pickup_declined' or 'pickup_credited') or 'review_required'
+            print('['..rejectionTestName(test)..'] '..test.phase..'; verify saved/native quantities before further actions')
+        end
+        return result
+    end
     if not enabled() or Config.DevMode~=true or Config.NativeAlphaRuntime~=true
         or type(GetConvarInt)~='function' or GetConvarInt('feather_native_throwable_pickup',0)~=1
         or not WeaponNativeThrowablePolicy or not WeaponNativeThrowablePolicy.Enabled()
@@ -333,7 +481,7 @@ function S.Transfer(source,report,id,amount,operationId)
     if not enabled() then return failure('character_ammunition_disabled') end
     -- Throwable quantities require retiring/rebuilding the owned native carrier;
     -- never trust the client's matching refusal as the economic boundary.
-    if id=='ammo_tomahawk_regular' then return failure('throwable_transfer_requires_rebuild') end
+    if id=='ammo_tomahawk_regular' and not quantities() then return failure('throwable_transfer_requires_rebuild') end
     if loadouts[source] then
         local live=runtime.Get(source)
         if not live or type(report)~='table' or report.epoch~=live.epoch
@@ -364,7 +512,7 @@ local function deathPlan(source,report)
     local live=runtime.Get(source)
     if not live or live.phase~='active' or type(report)~='table' or report.characterId~=live.characterId
         or report.sessionId~=live.sessionId or report.epoch~=live.epoch or report.revision~=live.revision then return nil,'stale_death_wear' end
-    local context={actorSource=source,characterId=bound.characterId,sessionId=bound.sessionId}
+    local context={actorSource=source,characterId=bound.characterId,sessionId=bound.sessionId,epoch=bound.epoch}
     local medical=readMedical(source,context)
     if not medical or loadouts[source]~=bound then return nil,'death_wear_medical_unavailable' end
     if medical.lifeState~='dead' then
@@ -418,6 +566,8 @@ function S.ConfirmCleanup(source,report)
     return {ok=true,value=released}
 end
 function S.Revoke(source,sessionId,reason)
+    local test=quantityExpiryTests[source]
+    if test and (not sessionId or test.sessionId==sessionId) then quantityExpiryTests[source]=nil end
     if deathWrites[source] and (not sessionId or deathWrites[source].context.sessionId==sessionId) then deathWrites[source]=nil end
     if opening[source] and (not sessionId or opening[source].sessionId==sessionId) then opening[source]=nil end
     local bound=loadouts[source]
@@ -454,10 +604,19 @@ exports('ValidateCharacterAmmoRuntimeOperation',function(context,operation,spec)
     if GetInvokingResource()~='feather-inventory' or not enabled()
         or runtime.IsOperationCurrent(context,operation,spec)~=true then return false end
     if operation=='pickup' then
-        if Config.DevMode~=true or Config.NativeAlphaRuntime~=true or type(GetConvarInt)~='function'
-            or GetConvarInt('feather_native_throwable_pickup',0)~=1 then return false end
+        if recoveryEnabled() then
+            local where=quantityLocation(context.actorSource,loadouts[context.actorSource])
+            return where and spec and spec.nativePickupPlan and spec.nativePickupPlan.version==2
+                and where.bucket==spec.nativePickupPlan.location.bucket and runtime.IsOperationCurrent(context,operation,spec)==true or false
+        end
+        if not quantities() and (Config.DevMode~=true or Config.NativeAlphaRuntime~=true or type(GetConvarInt)~='function'
+            or GetConvarInt('feather_native_throwable_pickup',0)~=1) then return false end
         local medical=readMedical(context.actorSource,context)
         return medical and medical.lifeState=='alive' and runtime.IsOperationCurrent(context,operation,spec)==true or false
+    end
+    if type(spec)=='table' and spec.quantityRecovery~=nil then
+        local where=quantityLocation(context.actorSource,loadouts[context.actorSource])
+        return where and where.bucket==spec.quantityRecovery.bucket and runtime.IsOperationCurrent(context,operation,spec)==true or false
     end
     if type(spec)=='table' and spec.finalWear~=nil then
         if operation~='observe' or Config.NativeAlphaLifecycleWearEnabled~=true
@@ -473,6 +632,43 @@ if type(RegisterCommand)=='function' then RegisterCommand('WeaponNativeRecoveryS
     local value=S.ReadRecoveryStatus(tonumber(args and args[1]))
     print('[WeaponNativeRecoveryStatus] '..json.encode(value or {error='current_native_session_required'}))
 end,true) end
+if type(RegisterCommand)=='function' and quantities() then RegisterCommand('WeaponQuantityStatus',function(source,args)
+    if source~=0 then return end
+    local target=tonumber(args and args[1]);local value=target and runtime.Get(target)
+    print('[WeaponQuantityStatus] '..json.encode(value and {source=target,quantityMode=true,phase=value.phase,
+        revision=value.revision,quantity=value.pools.ammo_tomahawk_regular} or {phase='unavailable'}))
+end,true) end
+local function registerQuantityRejectionTest(name,kind,switch,detail)
+if type(RegisterCommand)=='function' then RegisterCommand(name,function(source,args)
+    if source~=0 then return end
+    local action,target=args and args[1],tonumber(args and args[2])
+    if not target or target<1 or target%1~=0 or #args~=2
+        or (action~='arm' and action~='status' and action~='cancel') then
+        return print('['..name..'] usage: arm|status|cancel current-server-id')
+    end
+    if action=='cancel' then quantityExpiryTests[target]=nil;return print('['..name..'] cancelled; no balances changed') end
+    local test=quantityExpiryTests[target]
+    if action=='status' then
+        local live=runtime.Get(target)
+        return print('['..name..'] '..json.encode({phase=test and test.phase or 'idle',kind=test and test.kind,
+            actualBucket=test and test.actualBucket,allowanceBucket=test and test.allowanceBucket,
+            quantity=live and live.pools.ammo_tomahawk_regular,revision=live and live.revision,
+            elapsedSeconds=test and test.confirmedAt and os.time()-test.confirmedAt or nil}))
+    end
+    local live=runtime.Get(target)
+    if not quantities() or type(GetConvar)~='function' or GetConvar(switch,'0')~='1'
+        or test and test.phase~='cancelled' or not live or live.phase~='active'
+        or live.pools.ammo_tomahawk_regular<1 or not quantityLocation(target,loadouts[target]) then
+        return print('['..name..'] REFUSED explicit test switch and active alive funded owner required; cancel old test before rearming')
+    end
+    quantityExpiryTests[target]={phase='armed',kind=kind,characterId=live.characterId,sessionId=live.sessionId,
+        epoch=live.epoch,revision=live.revision,deadline=os.time()+60}
+    print('['..name..'] ARMED next single paid throw within 60 seconds; '..detail..'; no grants')
+end,true) end
+end
+registerQuantityRejectionTest('WeaponQuantityExpiryTest','expiry','feather_quantity_expiry_test','allowance expires after 5 seconds')
+registerQuantityRejectionTest('WeaponQuantityDistanceTest','distance','feather_quantity_distance_test','allowance offset=100 metres; lifetime=180 seconds')
+registerQuantityRejectionTest('WeaponQuantityBucketTest','bucket','feather_quantity_bucket_test','allowance recorded in different bucket; lifetime=180 seconds')
 AddEventHandler('playerDropped',function() S.Revoke(source,nil,'player_dropped') end)
 AddEventHandler('core.session.left.v1',function(session)
     -- Local Core lifecycle event, not a client-triggerable net route.

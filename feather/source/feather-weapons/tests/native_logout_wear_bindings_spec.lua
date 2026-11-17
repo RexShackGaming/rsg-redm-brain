@@ -1,13 +1,15 @@
+for _,fixtureProofState in ipairs({'missing','stopped'}) do
 dofile('shared/constants.lua') -- shared enrollment dependency from normal manifest
 local events,registered,timers={},{},{}
-Config={DevMode=true,NativeAlphaRuntime=true,CharacterAmmunitionEnabled=true,CharacterAmmoTransportEnabled=true,
+Config={DevMode=false,NativeAlphaRuntime=true,CharacterAmmunitionEnabled=true,CharacterAmmoTransportEnabled=true,
  NativeAlphaLifecycleWearEnabled=true,NativeAlphaCharacterId='Jane'}
 RegisterCommand=function() end
 RegisterNetEvent=function(name,fn) events[name]=fn end
 AddEventHandler=RegisterNetEvent
 SetTimeout=function(_,fn) timers[#timers+1]=fn end
 GetGameTimer=function() return 1 end
-GetResourceState=function() return 'stopped' end
+local proofState=fixtureProofState
+GetResourceState=function(name) return name=='feather-weapons-native-proof' and proofState or 'started' end
 GetInvokingResource=function() return 'feather-inventory' end
 local id={characterId='Jane',sessionId='s',epoch='e'}
 local state={phase='active',identity=id}
@@ -33,6 +35,13 @@ exports=setmetatable({['feather-inventory']={
 }},{__call=function(_,name,fn) registered[name]=fn end})
 dofile('server/services/native_equipment_transition.lua')
 source=1
+for _,active in ipairs({'started','starting','stopping','unknown','uninitialized'}) do
+ proofState=active
+ events['feather-weapons:server:native-logout-wear']('blocked',id)
+ assert(not release and not reply and writes==0,'active/uncertain proof must block logout release')
+end
+proofState=fixtureProofState
+
 events['feather-weapons:server:native-logout-wear']('stale',{characterId='Jane',sessionId='old',epoch='e'})
 assert(reply and not reply.result.ok and not release and writes==0)
 events['feather-weapons:server:native-logout-wear']('logout',id)
@@ -52,3 +61,5 @@ assert(reply.result.ok,'old timeout cannot overwrite completed result')
 events['core.session.left.v1']({source=1,sessionId='s'})
 assert(not WeaponNativeEquipmentBindings.IsStopping(1),'logout retire marker clears on exact session exit')
 print('Native logout wear concrete bindings PASS (scope/rate/pending gate, release-before-commit, parked acknowledgment, no rebuild, duplicate and timer retirement)')
+
+end

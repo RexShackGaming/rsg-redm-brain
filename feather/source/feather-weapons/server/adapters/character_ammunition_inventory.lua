@@ -24,8 +24,17 @@ function WeaponCharacterAmmoInventory.New(getInventory,isBound,administrativePol
         if bound then return false,'Native loadout still owns this item; complete its release first.' end
         return true
     end
-    local function movementGuard(instance)
-        local permitted,reason=guard(instance)
+    local function movementGuard(instance,context)
+        -- Movement must never inherit metadata/equipment-write exceptions.
+        -- Forward only the immutable physical-spend ticket fields, not an
+        -- arbitrary operation or metadata document from the move caller.
+        local spend
+        if type(context)=='table' and context.nativeThrowableSpend==true then
+            spend={resource=context.resource,reason=context.reason,actorSource=context.actorSource,
+                characterId=context.characterId,sessionId=context.sessionId,runtimeEpoch=context.runtimeEpoch,
+                runtimeTicket=context.runtimeTicket,nativeThrowableSpend=true}
+        end
+        local permitted,reason=guard(instance,spend)
         if not permitted then return false,reason end
         local checked,equipped=pcall(surface.Equipment.IsInstanceEquipped,instance.id)
         if not checked or type(equipped)~='table' or equipped.ok~=true
@@ -58,7 +67,8 @@ function WeaponCharacterAmmoInventory.New(getInventory,isBound,administrativePol
             if Config.CharacterAmmunitionEnabled~=true or Config.CharacterAmmoTransportEnabled~=true then
                 return fail('character_ammunition_disabled')
             end
-            local callback=name=='RegisterInstanceChangeGuard' and guard or movementGuard
+            local callback=name=='RegisterInstanceChangeGuard' and guard
+                or (name=='RegisterMoveGuard' and movementGuard or function(instance) return movementGuard(instance) end)
             local registered,result=pcall(inventory.Guards[name],'feather-weapons',callback)
             if not registered or type(result)~='table' or result.ok~=true then
                 return fail('native_inventory_guard_failed')
@@ -157,6 +167,8 @@ end,function(id,context)
     return WeaponCharacterAmmoService.IsNativeItemBound(id)
         and not WeaponCharacterAmmoService.IsDeathWearWriteAuthorized(id,context)
         and not WeaponCharacterAmmoService.IsDeathEquipmentWriteAuthorized(id,context)
+        and not (WeaponCharacterAmmoService.IsThrowableSpendMoveAuthorized
+            and WeaponCharacterAmmoService.IsThrowableSpendMoveAuthorized(id,context))
 end,function(instance)
     local name=type(instance.definition)=='table' and instance.definition.name
     for _,definition in pairs(WeaponDefinitionCatalog.weapons) do

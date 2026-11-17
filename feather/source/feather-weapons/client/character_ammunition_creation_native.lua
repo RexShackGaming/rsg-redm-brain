@@ -52,7 +52,9 @@ end
 -- Live-verified weapon_locker/options ABI. Never write guessed options fields.
 function WeaponCharacterAmmoCreationNative.GuidOptions(guid,hash,point,reason)
     local key=WeaponCharacterAmmoCreationNative.GuidKey(guid)
-    if not key or key==string.rep('0',32) or not ({[2]=true,[3]=true,[9]=true,[10]=true})[point] then return nil end
+    local allowed=({[2]=true,[3]=true,[9]=true,[10]=true})[point]
+        or (point==7 or point==8) and type(joaat)=='function' and hash==joaat('WEAPON_BOW')
+    if not key or key==string.rep('0',32) or not allowed then return nil end
     local function int(v) return string.pack('<I4I4',v & 0xffffffff,0) end
     return guid:sub(1,32)..int(hash)..int(0)..int(point)..int(reason)
         ..string.pack('<fI4fI4',0.5,0,1.0,0)..int(0)..int(0)..int(1)
@@ -151,7 +153,9 @@ function WeaponCharacterAmmoCreationNative.New(ped,current,prepareDual,applyMain
     local function valid(item)
         local function integer(n) return type(n)=='number' and n==n and n>=0 and n%1==0 and n<math.huge end
         return type(item)=='table' and type(item.nativeWeaponName)=='string' and item.nativeWeaponName:match('^WEAPON_[A-Z0-9_]+$')
-            and ({[2]=true,[3]=true,[9]=true,[10]=true})[item.point] and integer(item.itemInstanceId) and item.itemInstanceId>0
+            and (item.nativeWeaponName=='WEAPON_BOW' and (item.point==7 or item.point==8)
+                or item.nativeWeaponName~='WEAPON_BOW' and ({[2]=true,[3]=true,[9]=true,[10]=true})[item.point])
+            and integer(item.itemInstanceId) and item.itemInstanceId>0
             and integer(item.itemRevision) and type(item.serialNumber)=='string' and #item.serialNumber>0
             and type(item.attachments)=='table' and next(item.attachments)==nil and type(item.cosmetics)=='table' and next(item.cosmetics)==nil
             and type(item.maintenance)=='table' and type(item.maintenance.permanentDegradation)=='number'
@@ -337,7 +341,7 @@ function WeaponCharacterAmmoCreationNative.Scoped(ped,identity,prepareDual,clean
         if not current(check) then return nil,'diagnostic_context_changed' end
         resolveOwned(record,check) -- optional independently captured GUID authority
         local points={}
-        for _,point in ipairs({0,1,2,3,9,10}) do
+        for _,point in ipairs({0,1,2,3,7,8,9,10}) do
             local present,hash=GetCurrentPedWeapon(ped,true,point,true)
             local handle=GetCurrentPedWeaponEntityIndex(ped,point)
             local guid=pointGuid(point)
@@ -388,7 +392,7 @@ function WeaponCharacterAmmoCreationNative.Scoped(ped,identity,prepareDual,clean
         if not probes then probes={}; childProbes[record]=probes end
         local function exactParent()
             if not current(check) or not guard() or not resolveOwned(record,check) then return nil end
-            for _,point in ipairs({0,1,2,3,9,10}) do
+            for _,point in ipairs({0,1,2,3,7,8,9,10}) do
                 local present,hash=GetCurrentPedWeapon(ped,true,point,true)
                 if yes(present) and hash==joaat(record.name) and GetCurrentPedWeaponEntityIndex(ped,point)==record.entity then
                     local raw=string.rep('\0',104)
@@ -502,7 +506,7 @@ function WeaponCharacterAmmoCreationNative.Scoped(ped,identity,prepareDual,clean
         local component=joaat('COMPONENT_REPEATER_CARBINE_SIGHT_WIDE')
         local function exact()
             if not current(check) or guard()~=true then return nil end
-            for _,point in ipairs({0,1,2,3,9,10}) do
+            for _,point in ipairs({0,1,2,3,7,8,9,10}) do
                 local present,hash=GetCurrentPedWeapon(ped,true,point,true)
                 if (present==true or present==1) and hash==joaat(record.name)
                     and GetCurrentPedWeaponEntityIndex(ped,point)==record.entity then

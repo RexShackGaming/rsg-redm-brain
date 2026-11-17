@@ -1,8 +1,8 @@
 # feather-inventory
 
-Version 0.15.0. The Inventory API for the Feather Framework
+Version 0.17.0. The Inventory API for the Feather Framework
 
-Boxed shop offers use the immutable Shops order's `pack_size` (default 1 for historical orders). Inventory atomically delivers `quantity * pack_size` existing items and stages the unchanged whole-order Economy payment. Package size and
+Version **0.17.0** adds type-separated Regular-arrow recovery for Weapons0.25.0. With `setr feather_regular_arrows 1`, funded shot debits create arrow allowances atomically; native recovery consumes them once within180seconds/50metres and the
 
 Source: https://github.com/FeatherFramework/feather-inventory
 
@@ -12,7 +12,7 @@ Has NUI (`ui_page`).
 
 ## Exports (call as exports['feather-inventory']:Name)
 
-**server:** `AwaitReady(timeoutMs)`, `BeginNativeAmmoFixture(identity,baseline,limits,validator,economy)`, `CancelCharacterItemGrant(request)`, `CancelCharacterUniqueItemGrant(request)`, `CheckoutShopOrder(orderId,source,permitId)`, `CommitNativeAttachmentTransition(context,spec)`, `CommitNativeEquipmentTransition(context,spec)`, `CommitNativeEvidenceTransition(context,spec)`, `CommitNativeRepairTransition(context,spec)`, `CommitNativeThrowableFunding(context,spec)`, `CommitNativeUtilityEquipment(context,spec)`, `GetCharacterAmmunitionSnapshot(context, limits)`, `GetCharacterFirearmRuntimeSnapshot(context, limits)`, `GetCharacterInventory(characterId)`, `GetConsumptionContract()`, `GetHealth()`, `GetNativeIssuanceContract()`, `GetShopCheckoutContract()`, `GetShopCheckoutDefinition(itemName)`, `GrantCharacterItem(characterId, itemName, quantity, reason)`, `GrantCharacterItemOnce(request)`, `GrantCharacterUniqueItemOnce(request)`, `InventoryDelegationFixture(request)`, `IssueNativeFirearmOnce(context,spec)`, `MutateCharacterAmmunition(context, spec)`, `ObserveCharacterAmmunition(context, spec)`, `ObserveNativeAmmoFixture(context,spec)`, `PrepareRestartRecovery(mode)`, `ReadNativeAcceptanceAudit(actors)`, `ReadNativeAttachmentMaterial(context,itemName)`, `ReadNativeEquipmentTransition(context,itemId,limits)`, `ReadNativeRepairMaterial(context,itemName)`, `ReadNativeUtilityEquipment(context)`, `ReadRestartRecovery(verify)`, `ReconcileNativeThrowablePickup(context,spec)`, `ReleaseNativeAmmoFixture()`, `RemoveCharacterInventoryInstance(characterId, instanceId, reason)`, `ResolveShopCheckout(orderId)`, `RunInstanceChangeGuardCFXSmokeTest(target,provider)`, `StablesCareProofFixture(action)`, `TransferNativeAmmoFixture(context,spec)`, `initiate()`
+**server:** `AwaitReady(timeoutMs)`, `BeginNativeAmmoFixture(identity,baseline,limits,validator,economy)`, `CancelCharacterItemGrant(request)`, `CancelCharacterUniqueItemGrant(request)`, `CheckoutShopOrder(orderId,source,permitId)`, `CommitNativeAttachmentTransition(context,spec)`, `CommitNativeEquipmentTransition(context,spec)`, `CommitNativeEvidenceTransition(context,spec)`, `CommitNativeRepairTransition(context,spec)`, `CommitNativeThrowableFunding(context,spec)`, `CommitNativeThrowableUnits(context,spec)`, `CommitNativeUtilityEquipment(context,spec)`, `GetCharacterAmmunitionSnapshot(context, limits)`, `GetCharacterFirearmRuntimeSnapshot(context, limits)`, `GetCharacterInventory(characterId)`, `GetConsumptionContract()`, `GetHealth()`, `GetNativeIssuanceContract()`, `GetShopCheckoutContract()`, `GetShopCheckoutDefinition(itemName)`, `GrantCharacterItem(characterId, itemName, quantity, reason)`, `GrantCharacterItemOnce(request)`, `GrantCharacterUniqueItemOnce(request)`, `InventoryDelegationFixture(request)`, `IssueNativeFirearmOnce(context,spec)`, `MutateCharacterAmmunition(context, spec)`, `ObserveCharacterAmmunition(context, spec)`, `ObserveNativeAmmoFixture(context,spec)`, `PrepareRestartRecovery(mode)`, `ReadNativeAcceptanceAudit(actors)`, `ReadNativeAttachmentMaterial(context,itemName)`, `ReadNativeEquipmentTransition(context,itemId,limits)`, `ReadNativeRepairMaterial(context,itemName)`, `ReadNativeThrowableNativeBinding(id)`, `ReadNativeThrowablePromptBinding(id)`, `ReadNativeThrowablePromptPage(cursor)`, `ReadNativeThrowableSpentUnit(context,operationId,itemId)`, `ReadNativeUtilityEquipment(context)`, `ReadRestartRecovery(verify)`, `ReconcileNativeThrowablePickup(context,spec)`, `ReleaseNativeAmmoFixture()`, `RemoveCharacterInventoryInstance(characterId, instanceId, reason)`, `ResolveShopCheckout(orderId)`, `RunInstanceChangeGuardCFXSmokeTest(target,provider)`, `StablesCareProofFixture(action)`, `TransferNativeAmmoFixture(context,spec)`, `initiate()`
 
 **client:** `GetHotbarOpacity()`, `GetHotbarPolicy()`, `GetHotbarVisibility()`, `SetHotbarOpacity(value)`, `SetHotbarVisibility(value)`, `initiate()`
 
@@ -46,7 +46,7 @@ Has NUI (`ui_page`).
 
 **server/controllers/ground.lua:** `GroundControllers.GetGroundById(id, query)`, `GroundControllers.GetAllGroundLocations()`, `GroundControllers.GetGroundCleanupRows()`, `GroundControllers.GetClosestGroundByCoords(x, y, z, radius)`, `GroundControllers.CreateGround(x, y, z)`, `GroundControllers.DeleteGroundIfEmpty(id)`, `GroundControllers.DeleteEmptyGround()`, `GroundControllers.GetGroundID(id, query)`
 
-**server/controllers/inventory.lua:** `InventoryControllers.GetInventoryById(inventoryId, type)`, `InventoryControllers.GetInventoryLocationById(id, query)`, `InventoryControllers.GetInventoryCapacity(inventory)`, `InventoryControllers.GetInventoryWeightLimit(inventory)`, `InventoryControllers.GetCustomInventoryById(key, id)`, `InventoryControllers.GetInventoryByCharacter(character, query)`, `InventoryControllers.InventoryItemCount(inventory, itemId)`, `InventoryControllers.GetInventoryItemById(id)`, `InventoryControllers.GetInventoryTotalWeight(inventory)`, `InventoryControllers.GetInventoryItems(inventory)`, `InventoryControllers.GetInventoryItemsPair(sourceInventory, targetInventory)`, `InventoryControllers.InventoryItemCounts(inventory)`, `InventoryControllers.GetInventoryTotalItemCounts(inventory)`, `InventoryControllers.GetOccupiedSlotSet(inventory)`, `InventoryControllers.GetFreeSlot(inventory, capacity)`, `InventoryControllers.GetSplitPreflight(inventory, sourceSlot)`, `InventoryControllers.GetItemsInSlot(inventory, slot)`, `InventoryControllers.AreSlotsStackCompatible(fromInventory, fromSlot, toInventory, toSlot)`, `InventoryControllers.GetItemStackCounts(inventory, itemId)`, `InventoryControllers.GetSlotItemBreakdown(inventory, slot)`, `InventoryControllers.MoveSlotItemsPartial(fromInventory, fromSlot, toInventory, toSlot, quantity, context)`, `InventoryControllers.GetOccupiedSlotCount(inventory)`, `InventoryControllers.MoveSlotItems(fromInventory, fromSlot, toInventory, toSlot, context)`, `InventoryControllers.SplitSlotItems(inventory, fromSlot, toSlot, quantity, context)`, `InventoryControllers.IsItemRestricted(inventory, itemId)`, `InventoryControllers.UpdateRestrictedItems(inventory, items)`, `InventoryControllers.AcceptanceInTransaction(query, inventory, checkItems)`, `InventoryControllers.NormalizeMoveItemIds(items)`, `InventoryControllers.MoveInventoryItems(sourceInventory, targetInventory, items, context)`
+**server/controllers/inventory.lua:** `InventoryControllers.GetInventoryById(inventoryId, type)`, `InventoryControllers.GetInventoryLocationById(id, query)`, `InventoryControllers.GetInventoryCapacity(inventory)`, `InventoryControllers.GetInventoryWeightLimit(inventory)`, `InventoryControllers.GetCustomInventoryById(key, id)`, `InventoryControllers.GetInventoryByCharacter(character, query)`, `InventoryControllers.InventoryItemCount(inventory, itemId)`, `InventoryControllers.GetInventoryItemById(id)`, `InventoryControllers.GetInventoryTotalWeight(inventory)`, `InventoryControllers.GetInventoryItems(inventory)`, `InventoryControllers.GetInventoryItemsPair(sourceInventory, targetInventory)`, `InventoryControllers.InventoryItemCounts(inventory)`, `InventoryControllers.GetInventoryTotalItemCounts(inventory)`, `InventoryControllers.GetOccupiedSlotSet(inventory)`, `InventoryControllers.GetFreeSlot(inventory, capacity)`, `InventoryControllers.GetSplitPreflight(inventory, sourceSlot)`, `InventoryControllers.GetItemsInSlot(inventory, slot)`, `InventoryControllers.AreSlotsStackCompatible(fromInventory, fromSlot, toInventory, toSlot)`, `InventoryControllers.GetItemStackCounts(inventory, itemId)`, `InventoryControllers.GetSlotItemBreakdown(inventory, slot)`, `InventoryControllers.MoveSlotItemsPartial(fromInventory, fromSlot, toInventory, toSlot, quantity, context)`, `InventoryControllers.GetOccupiedSlotCount(inventory)`, `InventoryControllers.MoveSlotItems(fromInventory, fromSlot, toInventory, toSlot, context)`, `InventoryControllers.SplitSlotItems(inventory, fromSlot, toSlot, quantity, context)`, `InventoryControllers.IsItemRestricted(inventory, itemId)`, `InventoryControllers.UpdateRestrictedItems(inventory, items)`, `InventoryControllers.AcceptanceInTransaction(query, inventory, checkItems, returningCarriedIds)`, `InventoryControllers.NormalizeMoveItemIds(items)`, `InventoryControllers.MoveInventoryItems(sourceInventory, targetInventory, items, context)`
 
 **server/controllers/item.lua:** `ItemControllers.GetItemByName(itemName)`, `ItemControllers.GetItemDefinitionByName(itemName)`, `ItemControllers.GetItemDefinitions()`
 
@@ -64,6 +64,8 @@ Has NUI (`ui_page`).
 
 **server/internal/move_recovery.lua:** `InventoryMoveRecoveryEngine.New(api)`, `T.Run(body,metrics,context,scope)`, `T.Sweep()`
 
+**server/internal/native_collection_timing.lua:** `NativeCollectionTiming.New(stage,source,itemId,api)`, `P.Wrap(name,fn)`, `P.Run(fn)`
+
 **server/internal/native_equipment_snapshot.lua:** `NativeEquipmentSnapshot.With(tx,characterId,authority,headerLocked,body)`
 
 **server/internal/native_move_contention_probe.lua:** `NativeMoveContentionProbe.RunAckLoss(api,before,itemId,sourceInventory,targetInventory)`, `NativeMoveContentionProbe.Run(api,before,itemId,sourceInventory,targetInventory)`
@@ -74,7 +76,11 @@ Has NUI (`ui_page`).
 
 **server/internal/native_throwable_recovery_claim.lua:** `C.Apply(tx,context,plan,current)`
 
+**server/internal/native_throwable_shared_claim.lua:** `C.RecordBinding(tx,context,record,current)`, `C.ReadPromptBinding(tx,pickupId)`, `C.ReadNativeBinding(tx,pickupId)`, `C.ReadPromptPage(tx,afterId)`, `C.ReadSpentUnit(tx,context,operationId,itemId)`, `C.Apply(tx,context,plan,limits,current)`
+
 **server/internal/native_utility_equipment.lua:** `U.Read(tx,characterId,authority,locked)`, `U.Apply(tx,spec,authority)`
+
+**server/internal/throwable_quantity_recovery.lua:** `Q.Record(tx,context,spec,previous,observed,current)`, `Q.Claim(tx,context,spec,current)`
 
 **server/services/character_ammunition.lua:** `A.Apply(tx, context, spec)`, `A.ApplyThrowableFunding(tx,context,spec,authority)`, `A.ApplyObservation(tx,context,spec,authority)`, `A.Mutate(context,spec,invokingResource)`, `A.Observe(context,spec,invokingResource)`, `A.ReadRuntimeEquipment(tx,characterId,locked)`, `A.ReadSnapshot(tx,characterId,limits,withEquipment,initializeFresh)`, `A.PrepareFreshCharacter(tx,characterId,limits,isCurrent)`, `A.Snapshot(context,limits,invokingResource)`, `A.RuntimeSnapshot(context,limits,invokingResource)`
 
@@ -104,7 +110,7 @@ Has NUI (`ui_page`).
 
 **server/services/grants_once.lua:** `NativeFirearmIssuanceAPI.Apply(tx,context,spec,current)`, `NativeFirearmIssuanceAPI.Issue(context,spec,resource)`, `GrantOnceAPI.Start()`, `GrantOnceAPI.Grant(request, resource, privateKey, sessionCurrent)`, `GrantOnceAPI.Cancel(request, resource)`, `UniqueGrantOnceAPI.Validate(request, resource)`, `UniqueGrantOnceAPI.Grant(request, resource)`, `UniqueGrantOnceAPI.Cancel(request, resource)`
 
-**server/services/guards.lua:** `GuardsAPI.PrepareMoveSnapshots(query, rows)`, `GuardsAPI.PrepareDestroySnapshots(query, rows)`, `GuardsAPI.GetLockedEquipmentState(instanceId)`, `GuardsAPI.RegisterMoveGuard(name, fn)`, `GuardsAPI.RegisterDestroyGuard(name, fn)`, `GuardsAPI.UnregisterMoveGuard(name)`, `GuardsAPI.RegisterInstanceChangeGuard(name, fn)`, `GuardsAPI.UnregisterInstanceChangeGuard(name)`, `GuardsAPI.UnregisterDestroyGuard(name)`, `GuardsAPI.HasRegisteredGuard(name)`, `GuardsAPI.CanMoveInstance(instanceId, context)`, `GuardsAPI.CanChangeInstance(instanceId, context)`, `GuardsAPI.CanMoveInstanceSnapshot(instance, context)`, `GuardsAPI.CanDestroyInstance(instanceId, context)`, `GuardsAPI.CanDestroyInstanceSnapshot(instance, context)`, `GuardsAPI.EmitItemCreated(instanceId, definitionId, inventoryId, context)`, `GuardsAPI.EmitItemMoved(instanceId, fromInventoryId, toInventoryId, context, extra)`, `GuardsAPI.EmitItemMetadataChanged(instanceId, revision, context, extra)`, `GuardsAPI.EmitItemDestroyed(instanceId, definitionId, inventoryId, context)`, `GuardsAPI.EmitTransactionCommitted(context, summary)`, `GuardsAPI.EmitDefinitionMigrated(sourceDefinitionId, targetDefinitionId, quantity, context)`
+**server/services/guards.lua:** `GuardsAPI.PrepareMoveSnapshots(query, rows)`, `GuardsAPI.PrepareDestroySnapshots(query, rows)`, `GuardsAPI.GetLockedEquipmentState(instanceId)`, `GuardsAPI.RegisterMoveGuard(name, fn)`, `GuardsAPI.RegisterDestroyGuard(name, fn)`, `GuardsAPI.UnregisterMoveGuard(name)`, `GuardsAPI.RegisterInstanceChangeGuard(name, fn)`, `GuardsAPI.UnregisterInstanceChangeGuard(name)`, `GuardsAPI.UnregisterDestroyGuard(name)`, `GuardsAPI.HasRegisteredGuard(name)`, `GuardsAPI.CanMoveInstance(instanceId, context, query)`, `GuardsAPI.CanChangeInstance(instanceId, context)`, `GuardsAPI.CanMoveInstanceSnapshot(instance, context)`, `GuardsAPI.CanDestroyInstance(instanceId, context)`, `GuardsAPI.CanDestroyInstanceSnapshot(instance, context)`, `GuardsAPI.EmitItemCreated(instanceId, definitionId, inventoryId, context)`, `GuardsAPI.EmitItemMoved(instanceId, fromInventoryId, toInventoryId, context, extra)`, `GuardsAPI.EmitItemMetadataChanged(instanceId, revision, context, extra)`, `GuardsAPI.EmitItemDestroyed(instanceId, definitionId, inventoryId, context)`, `GuardsAPI.EmitTransactionCommitted(context, summary)`, `GuardsAPI.EmitDefinitionMigrated(sourceDefinitionId, targetDefinitionId, quantity, context)`
 
 **server/services/hotbar.lua:** `HotbarAPI.GetBindings(src)`, `HotbarAPI.SetBinding(src, slot, itemId)`, `HotbarAPI.UseBinding(src, slot)`
 
@@ -141,6 +147,10 @@ Has NUI (`ui_page`).
 **server/services/native_repair_verify.lua:** `NativeRepairVerify.Read(tx,characterId)`, `NativeRepairVerify.Compare(before,after,spec)`, `NativeRepairVerify.Diagnose(before,after,spec)`, `NativeRepairVerify.CompareWear(before,after,spec)`, `NativeRepairVerify.ComparePromotionWear(before,after,spec)`
 
 **server/services/native_throwable_native_pickup_credits.lua:** `C.Record(tx,context,before,after,limits,current)`
+
+**server/services/native_throwable_unit_storage.lua:** `U.Accounting(query,inventoryId,lock)`, `U.Read(tx,context,limits,authority)`, `U.Apply(tx,context,spec,authority)`, `U.Observe(tx,context,spec,authority)`
+
+**server/services/native_weapon_item_policy.lua:** `InventoryNativeWeaponItemPolicy.Start()`
 
 **server/services/restart_audit.lua:** `A.Paused(id)`
 
@@ -187,6 +197,10 @@ Has NUI (`ui_page`).
 **tests/lua/native_throwable_funding_atomic_spec.lua:** `tx.query(sql,p)`, `tx:RequireAccess()`, `tx:RemoveQuantity(_,id,n)`, `tx:AddQuantity(_,id,n)`
 
 **tests/lua/native_throwable_recovery_claim_spec.lua:** `tx.query(sql,p)`, `tx:AddQuantity(inv,id,qty)`
+
+**tests/lua/native_throwable_shared_claim_spec.lua:** `tx:RequireAccess(inv,action)`, `tx.query(sql,p)`
+
+**tests/lua/native_throwable_unit_storage_spec.lua:** `tx:RequireAccess()`, `tx.query(sql,p)`
 
 **tests/lua/unique_grants_spec.lua:** `tx:CreateInstance(inv,id,metadata)`
 

@@ -6,7 +6,8 @@ local function utilityEnabled(definition)
         and WeaponNativeUtilityCatalog.Resolve(definition)~=nil
 end
 local function throwableEnabled()
-    return WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.Enabled() and WeaponNativeThrowableItem
+    return WeaponNativeThrowablePolicy and (WeaponNativeThrowablePolicy.Enabled()
+        or (WeaponNativeThrowablePolicy.UnitsEnabled and WeaponNativeThrowablePolicy.UnitsEnabled())) and WeaponNativeThrowableItem
 end
 local function melee(definition)
     return definition.id=='melee_knife' or (WeaponNativeMeleeCatalog and WeaponNativeMeleeCatalog.Resolve(definition)~=nil)

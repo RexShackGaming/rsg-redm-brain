@@ -105,3 +105,14 @@ RegisterCommand('weaponNativeStatus',function()
         and not runtime.fault and not runtime.runtimeBusy
     print('[feather-weapons] native alpha '..(active and 'ACTIVE' or 'NOT ACTIVE')..': '..json.encode(status))
 end,false)
+RegisterCommand('weaponArrowStatus',function()
+    local owner=WeaponCharacterAmmoActiveOwner
+    local status=owner and owner.Status() or {}
+    local runtime=status.bootstrap and status.bootstrap.runtime
+    local session=runtime and runtime.session
+    local baseline=session and session.ammo and session.ammo.baseline
+    print('[WeaponArrowStatus] '..json.encode({enabled=WeaponRegularArrowPolicy and WeaponRegularArrowPolicy.Enabled() or false,
+        phase=runtime and runtime.phase or 'idle',revision=baseline and baseline.revision,
+        fundedQuantity=baseline and baseline.pools and baseline.pools.ammo_arrow_regular,
+        observedQuantity=baseline and GetPedAmmoByType(PlayerPedId(),joaat('AMMO_ARROW')) or nil}))
+end,false)

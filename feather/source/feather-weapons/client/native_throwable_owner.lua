@@ -5,11 +5,18 @@ local function copy(v)
     if type(v)~='table' then return v end
     local r={}; for k,x in pairs(v) do r[k]=copy(x) end; return r
 end
+local function equal(a,b)
+    if type(a)~=type(b) then return false end
+    if type(a)~='table' then return a==b end
+    for k,v in pairs(a) do if not equal(v,b[k]) then return false end end
+    for k in pairs(b) do if a[k]==nil then return false end end;return true
+end
 function WeaponNativeThrowableOwner.New(api,catalog,identity,limits)
     for _,name in ipairs({'current','sealed','present','quantity','createFunded','removeOwned','releaseSpent'}) do
         assert(type(api)=='table' and type(api[name])=='function','Local throwable adapter required: '..name)
     end
     local bound=copy(identity)
+    local maximum=type(limits)=='table' and limits.ammo_tomahawk_regular==3 and 3 or 1
     local phase,reason,approval,handle,last='idle',nil,nil,nil,nil
     local nativeIncrease,pickupAcceptedRevision,creationPreflight
     local T={}
@@ -22,10 +29,11 @@ function WeaponNativeThrowableOwner.New(api,catalog,identity,limits)
     local function retain(why) phase='retained'; reason=why; return nil,why end
     local function quantity()
         local ok,n=call('quantity',copy(bound))
-        if not ok or type(n)~='number' or n%1~=0 or n<0 or n>1 or not current() then return nil end
+        if not ok or type(n)~='number' or n%1~=0 or n<0 or n>maximum or not current() then return nil end
         return n
     end
     local function pickupEnabled()
+        if approval and approval.contract==2 then return false end -- old carrier spend credit cannot recover physical units
         if type(api.pickupEnabled)~='function' then return false end
         local ok,value=call('pickupEnabled'); return ok and value==true
     end
@@ -36,7 +44,7 @@ function WeaponNativeThrowableOwner.New(api,catalog,identity,limits)
             nativeIncrease=copy(nativeIncrease),pickupAcceptedRevision=pickupAcceptedRevision,
             creationPreflight=copy(creationPreflight)}
     end
-    function T.Create(snapshot)
+    function T.Create(snapshot,preserveExistingPool)
         if phase~='idle' then return nil,'throwable_creation_already_attempted' end
         local value,why=WeaponNativeThrowableItem.Assigned(snapshot,catalog,bound,limits)
         if not value then return nil,why or 'assigned_throwable_required' end
@@ -53,10 +61,13 @@ function WeaponNativeThrowableOwner.New(api,catalog,identity,limits)
                 quantity=existingQuantity,approvedQuantity=approval.fundedQuantity}
             return retain('throwable_preexisting_or_unconfirmed')
         end
+        if preserveExistingPool==true and (maximum~=3 or approval.contract~=2 or existingQuantity~=approval.fundedQuantity) then
+            return retain('throwable_collected_pool_required')
+        end
         last=approval.fundedQuantity
         if last==0 then phase='empty'; return true end -- no native grant for an unfunded carrier
         phase='creating'
-        local ok,created,detail=call('createFunded',copy(approval))
+        local ok,created,detail=call('createFunded',copy(approval),preserveExistingPool==true)
         if not ok then return retain('throwable_funded_adapter_exception') end
         if created==nil and type(detail)=='string' and #detail<=96
             and detail:match('^throwable_[a-z_]+$') then return retain(detail) end
@@ -67,7 +78,7 @@ function WeaponNativeThrowableOwner.New(api,catalog,identity,limits)
             or not current() then return retain('throwable_funded_creation_unconfirmed') end
         handle=copy(created)
         local seen,owned=call('present',copy(bound))
-        if quantity()~=1 or not seen or owned~=true or not current() then return retain('throwable_funded_readback_failed') end
+        if quantity()~=approval.fundedQuantity or not seen or owned~=true or not current() then return retain('throwable_funded_readback_failed') end
         phase='active'; return true
     end
     -- A decrease is an observation only: no second ledger or persistence claim.
@@ -119,6 +130,43 @@ function WeaponNativeThrowableOwner.New(api,catalog,identity,limits)
         end
         handle=copy(rebound); last=1; approval.ledgerRevision=baseline.revision; nativeIncrease=nil
         pickupAcceptedRevision=baseline.revision
+        return true
+    end
+    -- Called only for a matching server-confirmed physical claim. The shared
+    -- validator checks the one paid addition; the adapter only captures the
+    -- already collected native GUID and never grants/restores ammunition.
+    function T.AcceptPhysicalPickup(before,after,receipt)
+        if maximum~=3 or (phase~='active' and phase~='idle') or nativeIncrease
+            or type(api.rebindPhysicalPickup)~='function' or not current() then
+            return nil,'throwable_physical_pickup_not_ready'
+        end
+        local recovered,why=WeaponNativeThrowableItem.Recovered(before,after,receipt,catalog,bound,limits)
+        if not recovered then return retain(why or 'throwable_physical_pickup_receipt_changed') end
+        if phase=='idle' then
+            if approval or handle or #before.units~=0 then return retain('throwable_physical_pickup_prior_owner_changed') end
+        else
+            if not approval or approval.contract~=2 or #before.units~=last or before.revision<approval.ledgerRevision then
+                return retain('throwable_physical_pickup_prior_owner_changed')
+            end
+            for index,row in ipairs(before.units) do
+                local prior=approval.units[index]
+                if not equal(prior,row) then
+                    return retain('throwable_physical_pickup_prior_owner_changed')
+                end
+            end
+        end
+        if quantity()~=#after.units then return retain('throwable_physical_pickup_native_quantity_changed') end
+        phase='rebinding' -- reserve before the native adapter can yield
+        local ok,rebound=call('rebindPhysicalPickup',copy(handle),copy(recovered.approval),copy(bound),copy(after))
+        local nextApproval=recovered.approval
+        if not ok or type(rebound)~='table' or rebound.entity~=0 or rebound.inventoryOnly~=true
+            or type(rebound.guid)~='string' or #rebound.guid~=32 or not rebound.guid:match('^[0-9a-f]+$')
+            or rebound.guid==string.rep('0',32) or rebound.itemId~=nextApproval.row.id
+            or rebound.itemRevision~=nextApproval.row.revision or quantity()~=#after.units or not current() then
+            return retain('throwable_physical_pickup_rebind_unconfirmed')
+        end
+        approval=copy(nextApproval);handle=copy(rebound);last=#after.units
+        pickupAcceptedRevision=after.revision;phase='active'
         return true
     end
     function T.Release()

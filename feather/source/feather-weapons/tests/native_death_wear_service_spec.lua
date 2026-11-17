@@ -24,7 +24,7 @@ GetGameTimer=function() return 1 end
 AddEventHandler=function(name,fn) handlers[name]=fn end
 CoreAdapter={IsSessionCurrent=function() return true end,ResolveSession=function() return {ok=true,value={characterId='Jane',sessionId='s'}} end}
 local medical={characterId='Jane',sessionId='s',lifeState='dead',revision=7,episodeId='death'}
-local item,ledger,writes,mode,pair
+local item,ledger,writes,mode,pair,expectedEpoch
 local inventory={}
 exports['feather-inventory']=inventory
 exports['feather-medical']={ReadNativeWeaponCondition=function() return {ok=true,value=copy(medical)} end}
@@ -34,7 +34,10 @@ local function equipment()
  return rows
 end
 inventory.GetCharacterFirearmRuntimeSnapshot=function() return {ok=true,value={characterId='Jane',revision=ledger.revision,pools=copy(ledger.pools),equipment=equipment()}} end
-inventory.ReadNativeEquipmentTransition=function()
+inventory.ReadNativeEquipmentTransition=function(_,context)
+ assert(type(context.epoch)=='string' and context.epoch==expectedEpoch
+  and context.characterId=='Jane' and context.sessionId=='s',
+  'death preflight must preserve full native identity for physical-unit snapshots, including empty carry')
  local expected={weapon={itemId=128,revision=item.revision}}
  if pair then expected.weapon_offhand={itemId=129,revision=4} end
  return {ok=true,value={characterId='Jane',equipment=equipment(),brokenPromotionContract=mode~='old-promotion' and 1 or nil,
@@ -86,6 +89,7 @@ local function reset(funded,withPair)
  item={id=128,revision=4,itemName=definition.itemName,metadata=copy(original)}
  ledger={revision=25,pools={ammo=funded and 1 or 0}}; writes=0; mode=nil
  local bundle=assert(S.OpenLoadout(1,WeaponDefinitionCatalog,{}).value)
+ expectedEpoch=bundle.runtime.epoch
  local report=copy(bundle.runtime)
  assert(S.ConfirmRestore(1,report).ok)
  report.deathWear={epoch=report.epoch,medicalRevision=7,items={{itemInstanceId=128,itemRevision=4,

@@ -100,8 +100,16 @@ function WeaponCharacterAmmoClientBindings.New(enforceInput)
                     return {ok=false,error={code='checkpoint_caller_denied'}}
                 end
                 if not enabled() then return {ok=false,error={code='character_ammunition_disabled'}} end
-                if Config.NativeAlphaLifecycleWearEnabled==true then return lifecycle.Run(context) end
-                return handler(context)
+                local result
+                if Config.NativeAlphaLifecycleWearEnabled==true then result=lifecycle.Run(context)
+                else result=handler(context) end
+                if type(result)=='table' and result.ok==false then
+                    -- Character reports only the checkpoint name. Preserve the
+                    -- original result while exposing its actual refusal locally.
+                    pcall(print,'[WeaponNativeLogoutCheckpoint] CLIENT REFUSED '..tostring(
+                        type(result.error)=='table' and result.error.code or result.code or 'unknown'))
+                end
+                return result
             end)
             local called,result=pcall(function()
                 return exports['feather-character']:RegisterLogoutCheckpoint(

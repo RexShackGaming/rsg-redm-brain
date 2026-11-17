@@ -1,3 +1,4 @@
+-- Historical research regression; manifest assertions use the archived snapshot.
 Config={AmmunitionPools={enabled=false}}
 for _,p in ipairs({'shared/constants.lua','shared/definitions/weapons.lua','shared/definitions/ammunition.lua',
  'shared/character_ammunition.lua','shared/character_ammunition_catalog.lua','shared/character_ammunition_policy.lua',
@@ -78,6 +79,6 @@ local function run(mode)
  assert(snapshot.pools.ammo_tomahawk_regular==(mode=='empty' and 0 or 1),'owner never mutates economic ledger')
 end
 for _,mode in ipairs({'funded','empty','throw','pickup','creation_throw','readback_failed','cleanup_failed','world_lost','stale_seal'}) do run(mode) end
-local f=assert(io.open('fxmanifest.lua')); local manifest=f:read('*a'); f:close()
+local f=assert(io.open('tests/archive/throwable-research/fxmanifest.lua')); local manifest=f:read('*a'); f:close()
 assert(manifest:find('client/native_throwable_owner.lua',1,true))
 print('inert funded throwable owner PASS: no unfunded grant, monotonic observations/no pickup credit, existing seal, spent-proof versus exact cleanup, uncertainty retained')

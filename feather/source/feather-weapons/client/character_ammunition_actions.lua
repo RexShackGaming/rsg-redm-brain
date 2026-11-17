@@ -44,10 +44,11 @@ function WeaponCharacterAmmoActions.New(api)
             end
         end
         local options={}
+        local limits=api.limits and api.limits() or {}
         for id,total in pairs(ready.baseline.pools) do
             local definition=api.catalog[id]
             if definition and (not compatible or compatible[id]) then options[#options+1]={id=id,label=definition.label or id,
-                itemName=definition.itemName,carried=total} end
+                itemName=definition.itemName,carried=total,capacity=limits[id]} end
         end
         table.sort(options,function(a,b) return a.id<b.id end)
         return {ok=true,value={options=options,revision=ready.baseline.revision,
@@ -69,6 +70,10 @@ function WeaponCharacterAmmoActions.New(api)
         local amount=direction=='load' and quantity or -quantity
         local expected=ready.baseline.pools[id]+amount
         if expected<0 then return failure('insufficient_carried_ammunition') end
+        local limits=api.limits and api.limits() or {}
+        if direction=='load' and limits[id] and expected>limits[id] then
+            return {ok=false,dispatched=false,error={code='ammunition_capacity_exceeded'}}
+        end
         busy=true -- reserve across transport and restore acknowledgement waits
         sequence=sequence+1
         local operationId=api.operation(sequence,ready.baseline)
@@ -113,6 +118,10 @@ local actions=WeaponCharacterAmmoActions.New({
     owner=function() return WeaponCharacterAmmoActiveOwner end,
     context=function() return WeaponCharacterAmmoWorldContext.Read() end,
     catalog=WeaponDefinitionCatalog.ammunition,weapons=WeaponDefinitionCatalog.weapons,now=GetGameTimer,wait=Wait,
+    limits=function()
+        local registry=WeaponCharacterAmmoPolicy.Build(WeaponDefinitionCatalog)
+        return registry and registry.limits or {}
+    end,
     operation=function(sequence,baseline) return ('ui:%s:%s:%s'):format(baseline.sessionId,GetGameTimer(),sequence) end,
 })
 exports('GetNativeAmmunitionControls',function(itemName)

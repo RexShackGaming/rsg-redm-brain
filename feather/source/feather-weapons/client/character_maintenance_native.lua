@@ -293,7 +293,7 @@ end
 WeaponNativeGuidIdentity={}
 function WeaponNativeGuidIdentity.New(api,observationPoints)
     local bindings=setmetatable({},{__mode='k'})
-    local points={0,1,2,3,9,10}
+    local points={0,1,2,3,7,8,9,10}
     if observationPoints~=nil then
         assert(type(observationPoints)=='table' and #observationPoints>0 and #observationPoints<=32,'Bounded native identity points required')
         points={}; local seen={}
@@ -439,7 +439,7 @@ local function scoped(ped,current,deadRead,resolveOwned)
             if resolveOwned and resolveOwned(record,identity)~=record.entity then return nil end
             -- Locate the tracked entity even after draw/holster changes points.
             -- Matching model alone never establishes ownership of a copy.
-            for _,point in ipairs({0,1,2,3,9,10}) do
+            for _,point in ipairs({0,1,2,3,7,8,9,10}) do
                 local present,hash=GetCurrentPedWeapon(ped,true,point,true)
                 if yes(present) and hash==joaat(record.name)
                     and GetCurrentPedWeaponEntityIndex(ped,point)==record.entity

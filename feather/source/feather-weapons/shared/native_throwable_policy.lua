@@ -1,7 +1,22 @@
 -- Default-off first throwable policy: no grant, slot mutation,
 -- native setter, pickup credit, item escrow or alternate ammunition ledger.
 WeaponNativeThrowablePolicy={}
+function WeaponNativeThrowablePolicy.QuantityEnabled()
+    return Config and Config.NativeThrowableQuantityContract==1 and Config.NativeAlphaRuntime==true and Config.CharacterAmmunitionEnabled==true
+        and Config.CharacterAmmoTransportEnabled==true and Config.NativeAlphaLifecycleWearEnabled==true
+        and type(GetConvarInt)=='function' and GetConvarInt('feather_throwable_quantities',0)==1 or false
+end
+-- Staged normal-unit admission. Not shipped enabled until commerce, lifecycle,
+-- UI and recovery/retirement integration are complete.
+function WeaponNativeThrowablePolicy.UnitsEnabled()
+    if Config and Config.NativeThrowableQuantityOnly==true then return false end
+    if WeaponNativeThrowablePolicy.QuantityEnabled() then return false end
+    return Config and Config.NativeThrowableUnitsEnabled==true and Config.NativeAlphaRuntime==true
+        and Config.CharacterAmmunitionEnabled==true and Config.CharacterAmmoTransportEnabled==true
+        and Config.NativeAlphaLifecycleWearEnabled==true or false
+end
 function WeaponNativeThrowablePolicy.Enabled()
+    if Config and Config.NativeThrowableQuantityOnly==true then return false end
     return Config and Config.NativeAlphaRuntime==true
         and Config.CharacterAmmunitionEnabled==true and Config.CharacterAmmoTransportEnabled==true
         and Config.NativeAlphaLifecycleWearEnabled==true and type(GetConvarInt)=='function'
@@ -48,11 +63,16 @@ function WeaponNativeThrowablePolicy.Preview(catalog,firearmRegistry)
         metadataAmmoOwnership='character',slot='weapon_throwable'}
 end
 function WeaponNativeThrowablePolicy.RegistryFromLimits(catalog,limits)
-    if type(limits)~='table' or limits.ammo_tomahawk_regular~=1 then return nil,'throwable_funding_policy_required' end
+    if type(limits)~='table' or (limits.ammo_tomahawk_regular~=1 and limits.ammo_tomahawk_regular~=3) then return nil,'throwable_funding_policy_required' end
     local firearms=copy(limits); firearms.ammo_tomahawk_regular=nil
     local registry,why=WeaponCharacterAmmoCatalog.Build(catalog,firearms)
     if not registry then return nil,why end
     local candidate
     candidate,why=WeaponNativeThrowablePolicy.Preview(catalog,registry)
+    if candidate and limits.ammo_tomahawk_regular==3 then
+        candidate.registry.limits.ammo_tomahawk_regular=3
+        if WeaponNativeThrowablePolicy.QuantityEnabled() then candidate.registry.throwableQuantityContract=1
+        else candidate.registry.throwableUnitContract=2 end
+    end
     return candidate and candidate.registry or nil,why
 end

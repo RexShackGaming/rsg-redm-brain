@@ -1,5 +1,13 @@
 -- Strict new firearm item contract. No legacy import, ammo repair or credits.
 WeaponCharacterAmmoItem={}
+function WeaponCharacterAmmoItem.AttachPoint(definition,slot)
+    -- MP weapon_locker func103: bow carry positions8/7, two-handed guns10/9.
+    if definition and definition.family=='bow' then
+        if definition.id~='bow' or definition.nativeWeaponName~='WEAPON_BOW' then return nil end
+        return ({shoulder=8,back=7})[slot]
+    end
+    return ({primary=2,offhand=3,shoulder=10,back=9})[slot]
+end
 local function clone(v)
     if type(v)~='table' then return v end
     local out={}; for k,x in pairs(v) do out[k]=clone(x) end; return out
@@ -7,6 +15,7 @@ end
 local function finite(v) return type(v)=='number' and v==v and math.abs(v)<math.huge end
 function WeaponCharacterAmmoItem.Validate(metadata,definition)
     local families={pistol=true,revolver=true,repeater=true,rifle=true,shotgun=true}
+    families.bow=WeaponRegularArrowPolicy and WeaponRegularArrowPolicy.Enabled() or nil
     if type(definition)~='table' or not families[definition.family] then return nil,'unsupported_native_firearm' end
     if type(metadata)~='table' or type(metadata.ammo)~='table'
         or metadata.ammo.ownership~='character' then return nil,'character_ammo_ownership_required' end
@@ -15,6 +24,9 @@ function WeaponCharacterAmmoItem.Validate(metadata,definition)
     end
     if type(metadata.ammo.type)~='string' or not WeaponValidation.AcceptsAmmunition(definition,metadata.ammo.type) then
         return nil,'incompatible_ammunition_type'
+    end
+    if definition.family=='bow' and (definition.id~='bow' or metadata.ammo.type~='ammo_arrow_regular') then
+        return nil,'unsupported_bow_ammunition'
     end
     if not finite(metadata.condition) or type(metadata.maintenance)~='table' then return nil,'invalid_condition' end
     for _,key in ipairs({'degradation','permanentDegradation','damage','dirt','soot'}) do
@@ -55,7 +67,7 @@ function WeaponCharacterAmmoItem.Loadout(rows,catalog,registry)
             if other then out.sameModel=true end
             seen[row.id]=true; hashes[definition.nativeWeaponName]=slot
             out.slots[slot]={itemInstanceId=row.id,itemRevision=row.revision,definitionId=id,
-                nativeWeaponName=definition.nativeWeaponName,point=points[slot],serialNumber=metadata.serialNumber,
+                nativeWeaponName=definition.nativeWeaponName,point=WeaponCharacterAmmoItem.AttachPoint(definition,slot),serialNumber=metadata.serialNumber,
                 condition=metadata.condition,maintenance=metadata.maintenance,attachments=metadata.attachments,
                 cosmetics=metadata.cosmetics,preferredAmmoType=metadata.ammo.type}
         end

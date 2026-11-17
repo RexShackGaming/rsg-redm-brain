@@ -1,6 +1,6 @@
 -- Concrete but inert port: no registration, activation, grants or loops on load.
 WeaponNativeThrowableAdapter={}
-function WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog,registry)
+function WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog,registry,collection)
     assert(type(current)=='function' and type(sealed)=='function','Local parent throwable lifecycle required')
     if type(identity)~='table' then return nil,'throwable_identity_required' end
     identity={characterId=identity.characterId,sessionId=identity.sessionId,epoch=identity.epoch}
@@ -9,7 +9,9 @@ function WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog
     if not WeaponNativeGuidIdentity or not WeaponCharacterAmmoCreationNative or not WeaponCharacterAmmoNative
         or type(registry)~='table' or type(registry.names)~='table' or type(registry.limits)~='table'
         or registry.names.ammo_tomahawk_regular~='AMMO_TOMAHAWK'
-        or registry.limits.ammo_tomahawk_regular~=1 then return nil,'throwable_native_components_required' end
+        or (registry.limits.ammo_tomahawk_regular~=1 and not (registry.limits.ammo_tomahawk_regular==3
+            and (registry.throwableUnitContract==2 or registry.throwableQuantityContract==1))) then return nil,'throwable_native_components_required' end
+    local maximum=registry.limits.ammo_tomahawk_regular
     local def=profile.definition
     local function yes(v) return v==true or v==1 end
     local function valid(check)
@@ -89,6 +91,112 @@ function WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog
         end
         return false
     end
+    if registry.throwableQuantityContract==1 then
+        if not WeaponNativeThrowablePolicy.QuantityEnabled() or not WeaponThrowableQuantityOwner
+            or not WeaponNativeThrowablePickupPermissions then return nil,'quantity_components_required' end
+        local permissions=WeaponNativeThrowablePickupPermissions.New(function(name,allowed)
+            SetLocalPlayerPermittedToCollectPickupsWithModel(joaat(name),allowed)
+        end,Config.NativeThrowablePickupPriorPolicy)
+        local function unchanged(a,b)
+            if not a or not b then return false end
+            for id,n in pairs(a) do if b[id]~=n then return false end end
+            for id,n in pairs(b) do if a[id]~=n then return false end end;return true
+        end
+        return WeaponThrowableQuantityOwner.New({current=function() return valid(identity) end,
+            quantity=quantity,find=inventoryGuid,sealed=sealed,
+            allow=permissions.Allow,suppress=permissions.Suppress,restorePermissions=permissions.Restore,
+            materialize=function()
+                local before=native.Read(ped,true)
+                if not before or not valid(identity) or inventoryGuid()~=false or present() then return nil end
+                GiveWeaponToPed(ped,model,0,false,true,0,false,0.5,1.0,joaat('ADD_REASON_DEFAULT'),true,0.0,false)
+                if not valid(identity) or not unchanged(before,native.Read(ped,true)) then return nil end
+                local found=inventoryGuid();return found and found or nil
+            end,
+            remove=function(handle)
+                local before=native.Read(ped,true);local found=inventoryGuid()
+                if not before or found==nil or not valid(identity) then return false end
+                if found then
+                    if not handle or found.guid~=handle.guid then return false end
+                    local removed=Citizen.InvokeNative(0x3E4E811480B3AE79,1,found.raw,1,joaat('REMOVE_REASON_CLIENT_PURGED'))
+                    if not yes(removed) or inventoryGuid()~=false or present() or anyVisible() then return false end
+                elseif handle and (present() or anyVisible()) then return false end
+                local remaining=quantity()
+                if type(remaining)~='number' or remaining<0 or remaining>before.ammo_tomahawk_regular then return false end
+                if remaining>0 then Citizen.InvokeNative(0xB6CFEC32E3742779,ped,ammo,remaining,0xA07362E6) end
+                before.ammo_tomahawk_regular=0
+                return valid(identity) and not present() and inventoryGuid()==false and unchanged(before,native.Read(ped,true))
+            end},catalog,identity,registry.limits)
+    end
+    if collection~=nil then
+        if maximum~=3 or type(collection)~='table' or type(collection.world)~='function'
+            or not WeaponNativeThrowableCollectionEscrow then return nil,'throwable_collection_components_required' end
+        local captured,raw,attempted,ticket,removalAttempted
+        local function matching(check,token)
+            return valid(check) and token==ticket and not yes(IsEntityDead(ped))
+        end
+        local function samePools(a,b)
+            if type(a)~='table' or type(b)~='table' then return false end
+            for id,n in pairs(a) do if b[id]~=n then return false end end
+            for id,n in pairs(b) do if a[id]~=n then return false end end
+            return true
+        end
+        return WeaponNativeThrowableCollectionEscrow.New({now=GetGameTimer,world=collection.world,
+            pools=function() return native.Read(ped,true) end,
+            capture=function(check,baseline,token)
+                if attempted or not valid(check) or yes(IsEntityDead(ped)) then return nil end
+                attempted=true;ticket=token -- reserve before even a zero-ammo carrier native
+                local before=native.Read(ped,true)
+                local expected={};for id,n in pairs(baseline) do expected[id]=n end
+                expected.ammo_tomahawk_regular=1
+                if not samePools(before,expected) then return nil end
+                local value=inventoryGuid()
+                if value==nil then return nil end -- ambiguous or unreadable inventory is not absence
+                if not present() then
+                    -- The game may collect ammo without a weapon entry. Reuse
+                    -- the live-tested zero-ammo carrier pattern, never fund it.
+                    if value~=false or not matching(check,token) then return nil end
+                    GiveWeaponToPed(ped,model,0,false,true,0,false,0.5,1.0,joaat('ADD_REASON_DEFAULT'),true,0.0,false)
+                    if not matching(check,token) or not samePools(native.Read(ped,true),before) then return nil end
+                    value=inventoryGuid()
+                end
+                if not value or not present() or not matching(check,token)
+                    or not samePools(native.Read(ped,true),before) then return nil end
+                captured={entity=0,inventoryOnly=true,guid=value.guid};raw=value.raw
+                return {entity=0,inventoryOnly=true,guid=captured.guid}
+            end,
+            release=function(handle,check,token)
+                if removalAttempted or not captured or handle.guid~=captured.guid or not matching(check,token) then return false end
+                removalAttempted=true -- uncertain native outcomes must never replay
+                local before=native.Read(ped,true)
+                local carried=inventoryGuid()
+                if not before or before.ammo_tomahawk_regular~=1 or not carried or carried.guid~=captured.guid
+                    or not present() or not matching(check,token) then return false end
+                local read=string.rep('\0',104)
+                local found=Citizen.InvokeNative(0x9700E8EFC4AB9089,1,raw,read,true)
+                local item=WeaponCharacterAmmoCreationNative.DecodeEquippedChild(read,found)
+                if not item or item.itemHash~=(model & 0xffffffff) or key(read)~=captured.guid
+                    or not matching(check,token) or quantity()~=1 then return false end
+                if not yes(Citizen.InvokeNative(0x3E4E811480B3AE79,1,raw,1,joaat('REMOVE_REASON_CLIENT_PURGED'))) then return false end
+                if not matching(check,token) or present() or anyVisible() then return false end
+                found=Citizen.InvokeNative(0x9700E8EFC4AB9089,1,raw,string.rep('\0',104),true)
+                if found~=false and found~=0 then return false end
+                local after=native.Read(ped,true)
+                if not after or (after.ammo_tomahawk_regular~=0 and after.ammo_tomahawk_regular~=1) then return false end
+                for id,n in pairs(before) do if id~='ammo_tomahawk_regular' and after[id]~=n then return false end end
+                if after.ammo_tomahawk_regular==1 then
+                    Citizen.InvokeNative(0xB6CFEC32E3742779,ped,ammo,1,0xA07362E6)
+                end
+                after=native.Read(ped,true)
+                before.ammo_tomahawk_regular=0
+                return matching(check,token) and not present() and not anyVisible() and samePools(after,before)
+            end,
+            absent=function(handle,check)
+                if not captured or handle.guid~=captured.guid or not valid(check) or yes(IsEntityDead(ped))
+                    or present() or anyVisible() or inventoryGuid()~=false then return false end
+                local found=Citizen.InvokeNative(0x9700E8EFC4AB9089,1,raw,string.rep('\0',104),true)
+                return (found==false or found==0) and valid(check)
+            end})
+    end
     return WeaponNativeThrowableOwner.New({current=valid,sealed=sealed,present=present,quantity=quantity,
         pickupEnabled=function()
             return Config.DevMode==true and type(GetConvarInt)=='function'
@@ -104,7 +212,23 @@ function WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog
             owned.guid=captured.guid; buffer=captured.raw
             return {entity=0,inventoryOnly=true,guid=captured.guid,itemId=owned.itemInstanceId,itemRevision=owned.itemRevision}
         end,
-        createFunded=function(approval)
+        rebindPhysicalPickup=function(handle,approval,check,snapshot)
+            if maximum~=3 or not valid(check) or yes(IsEntityDead(ped)) or approval.contract~=2
+                or not valid(approval.identity) or (owned and not handle) or (handle and not exact(handle,check)) then return nil end
+            local before=native.Read(ped,true)
+            if not before or not present() or type(snapshot)~='table' or type(snapshot.pools)~='table'
+                or before.ammo_tomahawk_regular~=approval.fundedQuantity then return nil end
+            for id,value in pairs(before) do if snapshot.pools[id]~=value then return nil end end
+            local captured=inventoryGuid()
+            local after=native.Read(ped,true)
+            if not captured or not after or not valid(check) or not present() or quantity()~=approval.fundedQuantity then return nil end
+            for id,value in pairs(before) do if after[id]~=value then return nil end end
+            owned={name=def.nativeWeaponName,itemInstanceId=approval.row.id,itemRevision=approval.row.revision,
+                serialNumber=approval.row.metadata.serialNumber,guid=captured.guid}
+            buffer=captured.raw
+            return {entity=0,inventoryOnly=true,guid=owned.guid,itemId=owned.itemInstanceId,itemRevision=owned.itemRevision}
+        end,
+        createFunded=function(approval,preserveExistingPool)
             local function failed(reason)
                 local qok,q=pcall(quantity)
                 local pok,p=pcall(present)
@@ -112,10 +236,15 @@ function WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog
                     reason,tostring(approval.row.id),qok and tostring(q) or 'unreadable',pok and tostring(p) or 'unreadable'))
                 return nil,reason
             end
-            if owned or not valid(approval.identity) or yes(IsEntityDead(ped)) or approval.fundedQuantity~=1 then return failed('throwable_creation_context_changed') end
+            if owned or not valid(approval.identity) or yes(IsEntityDead(ped))
+                or type(approval.fundedQuantity)~='number' or approval.fundedQuantity%1~=0
+                or approval.fundedQuantity<1 or approval.fundedQuantity>maximum
+                or (maximum==3 and approval.contract~=2) then return failed('throwable_creation_context_changed') end
             local before=native.Read(ped,true)
             if not before or (before.ammo_tomahawk_regular~=0 and before.ammo_tomahawk_regular~=approval.fundedQuantity)
                 or present() then return failed('throwable_creation_preflight_failed') end
+            if preserveExistingPool==true and (approval.contract~=2 or before.ammo_tomahawk_regular~=approval.fundedQuantity) then
+                return failed('throwable_collected_pool_required') end
             local prior,priorWhy=inventoryGuid()
             if prior~=false then return failed(priorWhy or 'throwable_preexisting_inventory_guid') end
             if not valid(approval.identity) or quantity()~=before.ammo_tomahawk_regular or present()
@@ -130,10 +259,12 @@ function WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog
             -- Give only the zero-ammo carrier; do not redundantly grant/reset
             -- a pool which already agrees with the authoritative ledger.
             local carried=quantity()
-            if carried==0 then SetPedAmmoByType(ped,ammo,1)
-            elseif carried~=1 then return failed('throwable_creation_pool_changed') end
+            if carried==0 then
+                if preserveExistingPool==true then return failed('throwable_collected_pool_changed') end
+                SetPedAmmoByType(ped,ammo,approval.fundedQuantity)
+            elseif carried~=approval.fundedQuantity then return failed('throwable_creation_pool_changed') end
             local after=native.Read(ped,true)
-            if not after or after.ammo_tomahawk_regular~=1 then return failed('throwable_funded_pool_readback_failed') end
+            if not after or after.ammo_tomahawk_regular~=approval.fundedQuantity then return failed('throwable_funded_pool_readback_failed') end
             for id,value in pairs(before) do if id~='ammo_tomahawk_regular' and after[id]~=value then return failed('throwable_foreign_pool_changed') end end
             local captured,captureWhy=inventoryGuid()
             if captured==nil then return failed(captureWhy) end
@@ -170,13 +301,14 @@ function WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog
                     reason,tostring(quantity()),tostring(present())))
                 return false,reason
             end
-            if not exact(handle,check) or quantity()~=1 then return failed('throwable_cleanup_preflight_failed') end
+            local count=quantity()
+            if not exact(handle,check) or type(count)~='number' or count<1 or count>maximum or count%1~=0 then return failed('throwable_cleanup_preflight_failed') end
             -- Captured GUID is authority even if the representation is hidden.
             local raw=string.rep('\0',104)
             local result=Citizen.InvokeNative(0x9700E8EFC4AB9089,1,buffer,raw,true)
             local item=WeaponCharacterAmmoCreationNative.DecodeEquippedChild(raw,result)
             if not item or item.itemHash~=(model & 0xffffffff) or key(raw)~=owned.guid
-                or not valid(check) or quantity()~=1 then return failed('throwable_cleanup_guid_readback_failed') end
+                or not valid(check) or quantity()~=count then return failed('throwable_cleanup_guid_readback_failed') end
             local removed=Citizen.InvokeNative(0x3E4E811480B3AE79,1,buffer,1,joaat('REMOVE_REASON_CLIENT_PURGED'))
             if not yes(removed) then return failed('throwable_cleanup_remove_not_acknowledged') end
             if not valid(check) or present() or anyVisible() then return failed('throwable_cleanup_model_not_absent') end
@@ -187,10 +319,10 @@ function WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog
             -- after exact GUID/model absence; this is not economic consumption.
             local before=native.Read(ped,true)
             if not before or not valid(check) then return failed('throwable_cleanup_pool_unreadable') end
-            if before.ammo_tomahawk_regular==1 then
+            if before.ammo_tomahawk_regular>0 and before.ammo_tomahawk_regular<=maximum then
                 -- Same reduction primitive as WeaponCharacterAmmoNative.Restore:
                 -- RedM's absolute setter need not reduce an existing pool.
-                Citizen.InvokeNative(0xB6CFEC32E3742779,ped,ammo,1,0xA07362E6)
+                Citizen.InvokeNative(0xB6CFEC32E3742779,ped,ammo,before.ammo_tomahawk_regular,0xA07362E6)
             end
             local after=native.Read(ped,true)
             if not after or after.ammo_tomahawk_regular~=0 or not valid(check) or present() or anyVisible() then
@@ -238,4 +370,9 @@ function WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog
             return true
         end,
     },catalog,identity,registry.limits)
+end
+-- Separate construction mode: no canonical owner or funding methods escape.
+-- The trusted host supplies a live runtime hold predicate and world snapshot.
+function WeaponNativeThrowableAdapter.ScopedCollection(ped,identity,current,world,catalog,registry)
+    return WeaponNativeThrowableAdapter.Scoped(ped,identity,current,function() return nil end,catalog,registry,{world=world})
 end

@@ -176,11 +176,26 @@ local function InstallDryRun()
 WeaponNativeEquipmentBindings={}
 WeaponNativeEquipmentBindings.RecoveryContract=1
 local pending={}
+local pickupRequests,pickupHistory={},{}
+local function nativeCollectionEnabled()
+    return Config.NativeThrowableNativeCollectionContract==1 and type(GetConvarInt)=='function'
+        and GetConvarInt('feather_native_paid_collection',0)==1
+end
+local function pickupCurrent(target,bound)
+    local request=pickupRequests[target]
+    if not request or not same(request.identity,bound) or (request.native and not nativeCollectionEnabled()) then return false end
+    local ok,value=pcall(request.current)
+    return ok and value==true
+end
 local stopping={}
 local sequence=0
 local function enabled()
     return Config.NativeAlphaRuntime==true
         and Config.CharacterAmmunitionEnabled==true and Config.CharacterAmmoTransportEnabled==true
+end
+local function proofInactive()
+    local state=GetResourceState('feather-weapons-native-proof')
+    return state=='missing' or state=='stopped'
 end
 local coordinator
 local drain
@@ -198,6 +213,9 @@ local function replyLogout(target,result)
     local request=logoutPending[target]
     if not request then return end
     logoutPending[target]=nil
+    if type(result)=='table' and result.ok==false then
+        print('[WeaponNativeLogoutCheckpoint] REFUSED '..tostring(result.error and result.error.code or result.code or 'unknown'))
+    end
     TriggerClientEvent('feather-weapons:client:native-logout-wear-result',target,request.id,request.scope,result)
 end
 local uiRates={}
@@ -221,7 +239,8 @@ local adapters={
         if drain and drain.IsLatched() and intent.action~='shutdown' then return denied('native_global_shutdown_latched') end
         local attachmentChange=intent.action=='attachment-install' or intent.action=='attachment-remove'
         local funding=intent.action=='throwable-funding'
-        if intent.action~='dry-run' and intent.action~='shutdown' and intent.action~='equip' and intent.action~='unequip' and intent.action~='move' and intent.action~='unequip_primary' and intent.action~='options' and intent.action~='repair' and intent.action~='maintenance' and not attachmentChange and not funding then return denied('invalid_equipment_action') end
+        local pickup=intent.action=='throwable-pickup'
+        if intent.action~='dry-run' and intent.action~='shutdown' and intent.action~='equip' and intent.action~='unequip' and intent.action~='move' and intent.action~='unequip_primary' and intent.action~='options' and intent.action~='repair' and intent.action~='maintenance' and not attachmentChange and not funding and not pickup then return denied('invalid_equipment_action') end
         if attachmentChange and not attachmentEnabled() then return denied('native_attachment_transactions_disabled') end
         if intent.action=='repair' and Config.NativeAlphaRepairEnabled~=true then return denied('native_repair_disabled') end
         if intent.action=='maintenance' and Config.NativeAlphaMaintenanceEnabled~=true then return denied('native_maintenance_disabled') end
@@ -235,6 +254,19 @@ local adapters={
         end
         local bound=copy(state.identity)
         if intent.scope and not same(intent.scope,bound) then return denied('equipment_panel_expired_reopen') end
+        if pickup then
+            if not WeaponNativeThrowablePolicy or not WeaponNativeThrowablePolicy.UnitsEnabled()
+                or Config.NativeAlphaLifecycleWearEnabled~=true or not pickupCurrent(source,bound) then return denied('pickup_reservation_required') end
+            local registry=WeaponCharacterAmmoPolicy.Build(WeaponDefinitionCatalog)
+            if not registry or registry.limits.ammo_tomahawk_regular~=3 then return denied('pickup_registry_required') end
+            local read=exports['feather-inventory']:ReadNativeEquipmentTransition(
+                {actorSource=source,characterId=bound.characterId,sessionId=bound.sessionId,epoch=bound.epoch},nil,registry.limits)
+            if not read or not read.ok or not pickupCurrent(source,bound) then return denied('pickup_wear_snapshot_unavailable') end
+            return {ok=true,value={identity=bound,spec={characterId=bound.characterId,action='throwable-pickup',
+                pickupContract=pickupRequests[source].native and 2 or 1,pickupBinding=copy(pickupRequests[source].binding),limits=copy(registry.limits),
+                expected=copy(read.value.expected),lifecycleSnapshot=copy(read.value.equipment),
+                brokenEquipmentContract=read.value.brokenEquipmentContract,brokenPromotionContract=read.value.brokenPromotionContract}}}
+        end
         if intent.action=='shutdown' and Config.NativeAlphaLifecycleWearEnabled==true then
             local context={actorSource=source,characterId=bound.characterId,sessionId=bound.sessionId}
             local snapshot=exports['feather-inventory']:ReadNativeEquipmentTransition(context,nil)
@@ -248,6 +280,24 @@ local adapters={
             return {ok=true,value={identity=bound,spec={characterId=bound.characterId,action=intent.action}}}
         end
         if intent.slot=='weapon_throwable' and (intent.action=='equip' or intent.action=='unequip' or funding) then
+            if WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.UnitsEnabled and WeaponNativeThrowablePolicy.UnitsEnabled() then
+                if funding then return denied('physical_throwable_has_no_separate_funding') end
+                local checked=WeaponCharacterAmmoService.ValidateLoadout(source)
+                if not checked or not checked.ok then return denied('native_loadout_changed') end
+                local registry=WeaponCharacterAmmoPolicy.Build(WeaponDefinitionCatalog)
+                if not registry or registry.limits.ammo_tomahawk_regular~=3 then return denied('physical_throwable_registry_required') end
+                local context={actorSource=source,characterId=bound.characterId,sessionId=bound.sessionId,epoch=bound.epoch}
+                local selected=intent.action=='equip' and intent.itemId or intent.selectedItemId
+                local read=exports['feather-inventory']:ReadNativeEquipmentTransition(context,selected,registry.limits)
+                if not read or not read.ok then return denied('throwable_units_snapshot_unavailable') end
+                local spec,why=WeaponNativeThrowableItem.PrepareUnits(read.value,WeaponDefinitionCatalog,bound,intent)
+                if not spec then return denied(why) end
+                local now=WeaponCharacterAmmoDispatcher.Status(source)
+                if not now or now.phase~='active' or now.busy or not same(now.identity,bound)
+                    or not WeaponNativeThrowablePolicy.UnitsEnabled()
+                    or not CoreAdapter.IsSessionCurrent(source,bound.sessionId,bound.characterId) then return denied('native_owner_changed') end
+                return {ok=true,value={identity=bound,spec=spec}}
+            end
             if not WeaponNativeThrowablePolicy or not WeaponNativeThrowablePolicy.Enabled() or not WeaponNativeThrowableItem then
                 return denied('native_throwable_disabled')
             end
@@ -309,7 +359,7 @@ local adapters={
             return {ok=true,value={identity=bound,spec=spec}}
         end
         local meleeChange=false
-        if WeaponNativeMeleeCatalog and GetConvarInt('feather_native_melee',0)==1 then
+        if WeaponNativeMeleeCatalog and GetConvarInt('feather_native_melee',1)==1 then
             for _,slot in pairs(WeaponNativeMeleeCatalog.Slots()) do
                 if slot==intent.slot and (intent.action=='equip' or intent.action=='unequip') then meleeChange=true end
             end
@@ -325,7 +375,7 @@ local adapters={
             if not spec then return denied(why) end
             local now=WeaponCharacterAmmoDispatcher.Status(source)
             if not now or now.phase~='active' or now.busy or not same(now.identity,bound)
-                or GetConvarInt('feather_native_melee',0)~=1
+                or GetConvarInt('feather_native_melee',1)~=1
                 or not CoreAdapter.IsSessionCurrent(source,bound.sessionId,bound.characterId) then return denied('native_owner_changed') end
             return {ok=true,value={identity=bound,spec=spec}}
         end
@@ -352,8 +402,12 @@ local adapters={
         if metadataChange and (type(intent.itemId)~='number' or intent.itemId<1 or intent.itemId%1~=0 or intent.itemId==math.huge) then return denied('invalid_repair_item') end
         local checked=WeaponCharacterAmmoService.ValidateLoadout(source)
         if not checked or not checked.ok then return denied('native_loadout_changed') end
-        local context={actorSource=source,characterId=bound.characterId,sessionId=bound.sessionId}
-        local snapshot=exports['feather-inventory']:ReadNativeEquipmentTransition(context,(intent.action=='equip' or intent.action=='move' or intent.action=='options' or metadataChange) and intent.itemId or nil)
+        local context={actorSource=source,characterId=bound.characterId,sessionId=bound.sessionId,epoch=bound.epoch}
+        local unitLimits
+        if WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.UnitsEnabled and WeaponNativeThrowablePolicy.UnitsEnabled() then
+            local registry=WeaponCharacterAmmoPolicy.Build(WeaponDefinitionCatalog);unitLimits=registry and registry.limits
+        end
+        local snapshot=exports['feather-inventory']:ReadNativeEquipmentTransition(context,(intent.action=='equip' or intent.action=='move' or intent.action=='options' or metadataChange) and intent.itemId or nil,unitLimits)
         if not snapshot or not snapshot.ok or type(snapshot.value)~='table' or snapshot.value.characterId~=bound.characterId then
             return denied('equipment_snapshot_unavailable')
         end
@@ -408,7 +462,8 @@ local adapters={
                     state=row and (row.itemId==intent.itemId and 'selected' or 'occupied') or 'open',itemId=row and row.itemId}
             end
             if value.candidate.metadata and value.candidate.metadata.weaponDefinitionId=='throwable_tomahawk' then
-                if not WeaponNativeThrowablePolicy or not WeaponNativeThrowablePolicy.Enabled() or not WeaponNativeThrowableItem then
+                if not WeaponNativeThrowablePolicy or not (WeaponNativeThrowablePolicy.Enabled()
+                    or (WeaponNativeThrowablePolicy.UnitsEnabled and WeaponNativeThrowablePolicy.UnitsEnabled())) or not WeaponNativeThrowableItem then
                     return denied('native_throwable_disabled')
                 end
                 local options={}
@@ -420,7 +475,7 @@ local adapters={
                 end
                 local now=WeaponCharacterAmmoDispatcher.Status(source)
                 if not now or now.phase~='active' or now.busy or not same(now.identity,bound)
-                    or not WeaponNativeThrowablePolicy.Enabled()
+                    or not (WeaponNativeThrowablePolicy.Enabled() or (WeaponNativeThrowablePolicy.UnitsEnabled and WeaponNativeThrowablePolicy.UnitsEnabled()))
                     or not CoreAdapter.IsSessionCurrent(source,bound.sessionId,bound.characterId) then return denied('native_owner_changed') end
                 return {ok=true,value={identity=bound,options=options,slots=slotOverview,itemId=intent.itemId}}
             end
@@ -464,13 +519,17 @@ local adapters={
                 and WeaponDefinitionCatalog.weapons[value.candidate.metadata.weaponDefinitionId]
             if WeaponNativeMeleeCatalog and WeaponNativeMeleeCatalog.Enabled() and WeaponNativeMeleeCatalog.Resolve(meleeDef) then
                 local options={}
-                local labels={'Melee','Melee 2','Melee 3','Melee 4','Melee 5'}
-                for n,slot in ipairs({'weapon_melee','weapon_melee_secondary','weapon_melee_tertiary','weapon_melee_quaternary','weapon_melee_quinary'}) do
-                    for _,action in ipairs({'equip','unequip'}) do
-                        local proposal={action=action,slot=slot,itemId=action=='equip' and intent.itemId or nil,selectedItemId=intent.itemId}
-                        if WeaponNativeMeleeCatalog.Prepare(value,WeaponDefinitionCatalog,bound,proposal) then
-                            options[#options+1]={action=action,slot=slot,label=(action=='equip' and 'Equip' or 'Unequip')..' — '..labels[n]}
-                        end
+                -- One compatible action, rather than exposing internal melee slots.
+                local assigned
+                for _,entry in pairs(value.expected) do if entry.itemId==intent.itemId then assigned=true end end
+                local action=assigned and 'unequip' or 'equip'
+                for _,slot in ipairs({'weapon_melee','weapon_melee_secondary','weapon_melee_tertiary','weapon_melee_quaternary','weapon_melee_quinary'}) do
+                    local proposal={action=action,slot=slot,itemId=action=='equip' and intent.itemId or nil,selectedItemId=intent.itemId}
+                    -- Equipping must not silently replace another model.
+                    if (action=='unequip' or value.expected[slot]==nil)
+                        and WeaponNativeMeleeCatalog.Prepare(value,WeaponDefinitionCatalog,bound,proposal) then
+                        options[1]={action=action,slot=slot,label=action=='equip' and 'Equip' or 'Unequip'}
+                        break
                     end
                 end
                 local now=WeaponCharacterAmmoDispatcher.Status(source)
@@ -726,6 +785,34 @@ local adapters={
         if detached and detached.weapon_offhand and detached.weapon_offhand.promote and spec.brokenPromotionContract~=1 then return denied('broken_promotion_inventory_update_required') end
         spec.lifecycleWear=changes
         spec.brokenEquipment=detached
+        if spec.action=='throwable-pickup' then
+            if not WeaponNativeThrowablePolicy.UnitsEnabled() or not pickupCurrent(context.actorSource,context) then return denied('pickup_reservation_changed') end
+            local read=exports['feather-inventory']:GetCharacterFirearmRuntimeSnapshot(context,spec.limits)
+            local value=read and read.ok and read.value
+            if not value or type(value.pools)~='table' or not pickupCurrent(context.actorSource,context) then return denied('pickup_ledger_unavailable') end
+            if spec.pickupContract==2 and value.pools.ammo_tomahawk_regular~=0 then return denied('native_pickup_empty_carry_required') end
+            local binding=copy(spec.pickupBinding)
+            binding.phase=nil;binding.kind=spec.pickupContract==2 and 'physical_throwable_native_claim' or 'physical_throwable_prompt_claim'
+            binding.expectedRevision=value.revision;binding.expectedPools=copy(value.pools)
+            binding.collector={characterId=context.characterId,sessionId=context.sessionId,epoch=context.epoch}
+            spec.pickupClaim=binding
+        end
+        if spec.throwableUnits then
+            if not WeaponNativeThrowablePolicy.UnitsEnabled() then return denied('physical_throwable_disabled') end
+            local read=exports['feather-inventory']:ReadNativeEquipmentTransition(context,spec.unitItemId,spec.limits)
+            if not read or not read.ok or type(read.value.expected)~='table' then return denied('throwable_units_equipment_changed') end
+            for slot,row in pairs(read.value.expected) do
+                local prior=spec.expected[slot]
+                if not prior or prior.itemId~=row.itemId or prior.revision~=row.revision then return denied('throwable_units_equipment_changed') end
+            end
+            for slot in pairs(spec.expected) do if not read.value.expected[slot] then return denied('throwable_units_equipment_changed') end end
+            local refreshed,why=WeaponNativeThrowableItem.PrepareUnits(read.value,WeaponDefinitionCatalog,
+                {characterId=context.characterId,sessionId=context.sessionId,epoch=context.epoch},
+                {action=spec.action,slot='weapon_throwable',itemId=spec.action=='equip' and spec.unitItemId or nil,
+                    selectedItemId=spec.action=='unequip' and spec.unitItemId or nil})
+            if not refreshed then return denied(why) end
+            spec.unitStorage=refreshed.unitStorage
+        end
         if spec.action=='throwable-funding' then
             -- Read only after final seal/release: a last throw may have advanced
             -- the durable ledger since equipment preflight.
@@ -752,6 +839,15 @@ local adapters={
     commit=function(context,spec)
         if not coordinator.CanCommit(context,spec) then return denied('equipment_commit_ticket_denied') end
         if spec.periodic and Config.NativeAlphaPeriodicWearEnabled~=true then return denied('native_periodic_wear_disabled') end
+        if spec.action=='throwable-pickup' then
+            if not WeaponNativeThrowablePolicy.UnitsEnabled() or not pickupCurrent(context.actorSource,context) then return denied('pickup_commit_reservation_changed') end
+            local result
+            if spec.pickupContract==2 then result=exports['feather-inventory']:CommitNativeThrowableNativePickup(context,spec)
+            else result=exports['feather-inventory']:CommitNativeThrowablePromptPickup(context,spec) end
+            local request=pickupRequests[context.actorSource]
+            if result and result.ok and request and same(request.identity,context) then request.receipt=copy(result.value) end
+            return result
+        end
         if spec.action=='shutdown' then
             if spec.lifecycleSnapshot then
                 local result=exports['feather-inventory']:CommitNativeEquipmentTransition(context,spec)
@@ -777,6 +873,13 @@ local adapters={
             return exports['feather-inventory']:CommitNativeUtilityEquipment(context,spec)
         end
         if spec.throwable==true then
+            if spec.throwableUnits then
+                if not WeaponNativeThrowablePolicy.UnitsEnabled() or not coordinator.CanCommit(context,spec) then
+                    return denied('physical_throwable_commit_disabled')
+                end
+                if pending[context.actorSource] then pending[context.actorSource].physicalUnits=true end
+                return exports['feather-inventory']:CommitNativeThrowableUnits(context,spec)
+            end
             if not WeaponNativeThrowablePolicy or not WeaponNativeThrowablePolicy.Enabled() or not WeaponNativeThrowableItem
                 or not coordinator.CanCommit(context,spec) then return denied('native_throwable_commit_disabled') end
             if spec.action=='throwable-funding' then
@@ -786,7 +889,7 @@ local adapters={
             return exports['feather-inventory']:CommitNativeThrowableEquipment(context,spec)
         end
         if spec.melee==true then
-            if GetConvarInt('feather_native_melee',0)~=1 or not WeaponNativeMeleeCatalog
+            if GetConvarInt('feather_native_melee',1)~=1 or not WeaponNativeMeleeCatalog
                 or not coordinator.CanCommit(context,spec) then return denied('native_melee_commit_disabled') end
             return exports['feather-inventory']:CommitNativeMeleeEquipment(context,spec)
         end
@@ -921,10 +1024,58 @@ end
 function WeaponNativeEquipmentBindings.GuidValidationTransition(target)
     if not WeaponGuidAcceptanceServer or not WeaponGuidAcceptanceServer.Reserved(target)
         or GetConvarInt('feather_native_guid_suite',0)~=1 or not enabled()
-        or GetResourceState('feather-weapons-native-proof')~='stopped' then return denied('guid_suite_not_reserved') end
+        or (GetResourceState('feather-weapons-native-proof')~='stopped' and GetResourceState('feather-weapons-native-proof')~='missing') then return denied('guid_suite_not_reserved') end
     return coordinator.Begin(target,{action='dry-run'})
 end
 function WeaponNativeEquipmentBindings.AcceptanceStatus(target) return coordinator.Status(target) end
+-- Server-local admission only. No client route accepts this action or authority callback.
+local function pickupTransition(target,binding,bound,current,native)
+    local callable=type(current)=='function' or type(current)=='table' and type(rawget(current,'__cfx_functionReference'))=='string'
+    if type(target)~='number' or target<1 or target%1~=0 or target==math.huge
+        or not enabled() or not WeaponNativeThrowablePolicy or not WeaponNativeThrowablePolicy.UnitsEnabled()
+        or not proofInactive() or not callable or not identity(bound) or type(binding)~='table'
+        or binding.version~=(native and 4 or 3) or binding.kind~=(native and 'paid_tomahawk_native_pickup' or 'paid_tomahawk_pickup') or binding.phase~='available'
+        or (native and (not nativeCollectionEnabled() or binding.presentation~='native'))
+        or (not native and binding.presentation~=nil and binding.presentation~='prompt')
+        or pickupRequests[target] then return denied('pickup_admission_denied') end
+    local state=WeaponCharacterAmmoDispatcher.Status(target)
+    if not state or state.phase~='active' or state.busy or not same(state.identity,bound) then return denied('pickup_owner_changed') end
+    local request={binding=copy(binding),identity=copy(bound),current=current,native=native==true}
+    pickupRequests[target]=request
+    if not pickupCurrent(target,bound) then pickupRequests[target]=nil;return denied('pickup_reservation_changed') end
+    local result=coordinator.Begin(target,{action='throwable-pickup',scope=copy(bound)})
+    if not result or not result.ok then
+        local state=coordinator.Status(target)
+        if not state or state.phase=='active' then pickupRequests[target]=nil end
+    end
+    return result
+end
+function WeaponNativeEquipmentBindings.PickupTransition(target,binding,bound,current)
+    return pickupTransition(target,binding,bound,current,false)
+end
+function WeaponNativeEquipmentBindings.NativePickupTransition(target,binding,bound,current)
+    return pickupTransition(target,binding,bound,current,true)
+end
+local function pickupTransitionStatus(target,pickupId,native)
+    local request=pickupRequests[target] or pickupHistory[target]
+    if not request or request.native~=native or request.binding.pickupId~=pickupId
+        or not CoreAdapter.IsSessionCurrent(target,request.identity.sessionId,request.identity.characterId) then return nil end
+    local state=coordinator.Status(target)
+    local live=WeaponCharacterAmmoDispatcher.Status(target)
+    local settled=request.restored and live and live.phase=='active' and not live.busy and identity(live.identity)
+        and live.identity.characterId==request.identity.characterId and live.identity.sessionId==request.identity.sessionId
+    return {phase=settled and 'claimed' or 'pending',transition=state,
+        id=request.binding.pickupId,revision=request.binding.pickupRevision,itemId=request.binding.itemId,
+        collector=copy(request.identity),identity=settled and copy(live.identity) or nil,
+        receipt=settled and copy(request.receipt) or nil}
+end
+function WeaponNativeEquipmentBindings.PickupTransitionStatus(target,pickupId)
+    return pickupTransitionStatus(target,pickupId,false)
+end
+function WeaponNativeEquipmentBindings.NativePickupTransitionStatus(target,pickupId)
+    return pickupTransitionStatus(target,pickupId,true)
+end
+
 exports('ReadNativeMaintenanceAuditSpec',function(target,itemId)
     if GetInvokingResource()~='feather-inventory' or not enabled() or Config.NativeAlphaMaintenanceEnabled~=true
         or type(itemId)~='number' or itemId<1 or itemId%1~=0 or itemId==math.huge then return denied('maintenance_audit_denied') end
@@ -953,7 +1104,7 @@ exports('ReadNativeMaintenanceAuditSpec',function(target,itemId)
 end)
 exports('ReadNativeRepairAuditSpec',function(target,itemId)
     if GetInvokingResource()~='feather-inventory' or not enabled()
-        or Config.NativeAlphaRepairEnabled~=true or GetResourceState('feather-weapons-native-proof')~='stopped'
+        or Config.NativeAlphaRepairEnabled~=true or not proofInactive()
         or type(target)~='number' or target<1 or target%1~=0 or target==math.huge then return denied('repair_audit_denied') end
     local state=coordinator.Status(target)
     if state and state.phase~='active' then return denied('repair_transition_in_flight') end
@@ -971,7 +1122,7 @@ local function replyUI(target,result)
 end
 RegisterNetEvent('feather-weapons:server:native-equipment-ui',function(id,kind,intent)
     local target=source
-    if not enabled() or GetResourceState('feather-weapons-native-proof')~='stopped'
+    if not enabled() or not proofInactive()
         or type(id)~='string' or #id<1 or #id>128 or type(intent)~='table'
         or not identity(intent.scope) or uiPending[target] then return end
     if kind~='options' and kind~='change' and kind~='attachment-change' and kind~='repair-change' then return end
@@ -983,7 +1134,8 @@ RegisterNetEvent('feather-weapons:server:native-equipment-ui',function(id,kind,i
     if type(intent.itemId)~='number' or intent.itemId<1 or intent.itemId%1~=0 or intent.itemId==math.huge then return end
     local slots={weapon=true,weapon_offhand=true,weapon_shoulder=true,weapon_back=true,
         weapon_melee=WeaponNativeKnife and WeaponNativeKnife.Enabled() or nil}
-    if WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.Enabled() then slots.weapon_throwable=true end
+    if WeaponNativeThrowablePolicy and (WeaponNativeThrowablePolicy.Enabled()
+        or (WeaponNativeThrowablePolicy.UnitsEnabled and WeaponNativeThrowablePolicy.UnitsEnabled())) then slots.weapon_throwable=true end
     if WeaponNativeUtilityCatalog and WeaponNativeUtilityCatalog.Enabled() then slots.weapon_utility=true end
     if WeaponNativeUtilityCatalog and WeaponNativeUtilityCatalog.Slots().weapon_utility_secondary then slots.weapon_utility_secondary=true end
     if WeaponNativeUtilityCatalog and WeaponNativeUtilityCatalog.Slots().weapon_utility_tertiary then slots.weapon_utility_tertiary=true end
@@ -1043,6 +1195,8 @@ exports('ValidateNativeEquipmentCommit',function(context,spec)
     return GetInvokingResource()=='feather-inventory' and enabled()
         and type(spec)=='table' and (spec.action=='equip' or spec.action=='unequip' or spec.action=='move' or spec.action=='unequip_primary'
             or (spec.action=='throwable-funding' and WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.Enabled())
+            or (spec.action=='throwable-pickup' and WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.UnitsEnabled()
+                and pickupCurrent(context.actorSource,context))
             or (spec.action=='repair' and Config.NativeAlphaRepairEnabled==true)
             or (spec.action=='maintenance' and Config.NativeAlphaMaintenanceEnabled==true)
             or ((spec.action=='attachment-install' or spec.action=='attachment-remove') and attachmentEnabled()
@@ -1051,6 +1205,8 @@ exports('ValidateNativeEquipmentCommit',function(context,spec)
             or (spec.action=='shutdown' and spec.lifecycleSnapshot~=nil and Config.NativeAlphaLifecycleWearEnabled==true))
         -- Shutdown wear is a metadata-only reserved commit, not equipment removal.
         and (spec.lifecycleSnapshot==nil or Config.NativeAlphaLifecycleWearEnabled==true)
+        and (spec.throwableUnits~=true or (WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.UnitsEnabled
+            and WeaponNativeThrowablePolicy.UnitsEnabled()))
         and (spec.periodic~=true or Config.NativeAlphaPeriodicWearEnabled==true)
         -- Maintenance uses the same exact reservation and released authority.
         and coordinator.CanCommit(context,spec)==true
@@ -1108,7 +1264,7 @@ end)
 RegisterNetEvent('feather-weapons:server:native-logout-wear',function(id,scope)
     local target=source
     if not enabled() or Config.NativeAlphaLifecycleWearEnabled~=true
-        or GetResourceState('feather-weapons-native-proof')~='stopped'
+        or not proofInactive()
         or type(id)~='string' or #id<1 or #id>128 or not identity(scope)
         or logoutPending[target] then return end
     local bound={characterId=scope.characterId,sessionId=scope.sessionId,epoch=scope.epoch}
@@ -1142,8 +1298,13 @@ RegisterNetEvent('feather-weapons:server:native-equipment-restored',function(tic
         local funding=pending[playerSource] and pending[playerSource].action=='throwable-funding'
         local maintenance=pending[playerSource] and pending[playerSource].action=='maintenance'
         local attachment=pending[playerSource] and (pending[playerSource].action=='attachment-install' or pending[playerSource].action=='attachment-remove')
+        local physicalUnits=pending[playerSource] and pending[playerSource].physicalUnits==true
+        local pickup=pickupRequests[playerSource]
+        if pickup and pickup.receipt then
+            pickup.restored=true;pickupHistory[playerSource]=pickup;pickupRequests[playerSource]=nil
+        end
         pending[playerSource]=nil
-        replyUI(playerSource,{ok=true,value={identity=copy(identity),phase='active'}})
+        replyUI(playerSource,{ok=true,value={identity=copy(identity),phase='active',refreshInventory=physicalUnits or nil}})
         local state=coordinator.Status(playerSource)
         print(funding and '[WeaponNativeThrowableFunding] PASS loose-ammo/character-ledger transaction/fresh same-session restore; no pickup credits'
             or attachment and '[WeaponNativeAttachmentChange] PASS attachment payment/metadata CAS/fresh same-session restore; no ammo economic writes'
@@ -1191,14 +1352,14 @@ RegisterCommand('WeaponNativePrepareStop',function(source,args)
     local result=coordinator.Begin(tonumber(args[1]),{action='shutdown'})
     print('[WeaponNativePrepareStop] '..(result.ok and 'STARTED; wait for PASS before stopping' or 'REFUSED '..tostring(result.error.code)))
 end,true)
-RegisterCommand('WeaponNativeThrowableFunding',function(source,args)
+if Config.NativeThrowableQuantityOnly~=true then RegisterCommand('WeaponNativeThrowableFunding',function(source,args)
     if Config.DevMode~=true then return end
     if source~=0 or not enabled() or GetResourceState('feather-weapons-native-proof')~='stopped' then return end
     if not args or #args~=3 then return print('[WeaponNativeThrowableFunding] usage: serverId +1|-1 stable-operation-id') end
     local result=coordinator.Begin(tonumber(args[1]),{action='throwable-funding',slot='weapon_throwable',
         amount=tonumber(args[2]),operationId=args[3]})
     print('[WeaponNativeThrowableFunding] '..(result.ok and 'STARTED; released-owner funding requested' or 'REFUSED '..tostring(result.error.code)))
-end,true)
+end,true) end
 drain=WeaponNativeShutdownDrain.New({
     now=GetGameTimer,
     deadline=function(fn) SetTimeout(90000,fn) end,
@@ -1372,7 +1533,7 @@ RegisterCommand('WeaponNativeAttachmentStatus',function(source,args)
     print('[WeaponNativeAttachmentStatus] '..(called and value and json.encode(value) or 'REFUSED current owned weapon/material snapshot unavailable'))
 end,true)
 local function requestWear(target,itemId,automatic)
-    if not enabled() or Config.NativeAlphaMaintenanceEnabled~=true or GetResourceState('feather-weapons-native-proof')~='stopped' then
+    if not enabled() or Config.NativeAlphaMaintenanceEnabled~=true or not proofInactive() then
         return false
     end
     if not target or target<1 or target%1~=0 or target==math.huge

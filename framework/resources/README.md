@@ -92,7 +92,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-voice](rsg-voice.md) | rsg-voice - proximity voice for RSG Framework | 11 | 13 |
 | [rsg-wagons](rsg-wagons.md) | rsg-wagons - wagon store with full NUI catalogue, 3D preview and wagon ownership | 2 | 8 |
 | [rsg-wardrobe](rsg-wardrobe.md) | Version 3.2.0 · RSG Framework (RedM) Take individual clothing items off and put them back on from a wardro | 9 | 9 |
-| [rsg-weaponcomp](rsg-weaponcomp.md) | Weapon customisation for RSG Framework (RedM). Players place a portable gunsmith workbench, then use it to | 0 | 14 |
+| [rsg-weaponcomp](rsg-weaponcomp.md) | Weapon customisation for RSG Framework (RedM). Players place a portable gunsmith workbench, then use it to | 1 | 18 |
 | [rsg-weapons](rsg-weapons.md) | Weapon handling for RSG Framework: dual wield, serial-based equipping, weapon wear, repairs, saved loadouts  | 6 | 14 |
 | [rsg-weather](rsg-weather.md) | rsg-weather - time, weather and wind sync for RSG Framework (weathersync compatible) | 16 | 15 |
 | [rsg-zonenotify](rsg-zonenotify.md) | rsg-zonenotify - location banner when entering states, districts and towns | 8 | 4 |

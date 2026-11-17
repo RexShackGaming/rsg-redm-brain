@@ -1,5 +1,24 @@
 # Feather Weapons
 
+Current version: **0.25.0**. See [release notes](docs/release-0.25.0.md).
+
+## Regular arrows
+
+`setr feather_regular_arrows 1` opts the current native runtime into owned bows
+and the 40-unit Regular-arrow character pool. Bows use their native Shoulder8 /
+Back7 carry points. The default Bow offer is $5; Regular arrows retain their
+$0.50 five-arrow pack. Native recovery consumes a separate, once-only funded
+arrow allowance within180seconds/50metres in the same routing bucket; it never
+issues a bow or an extra native ammunition grant. Deploy with the matching
+Inventory recovery and Shops Bow-category changes. Persist the flag before
+startup while using this pool; disabling it is not a saved-data migration.
+
+Own/batched/cross-player recovery, recovered-arrow reselection, loaded death/
+revive/restart, both carry positions and 40-unit capacity controls are live
+accepted. Specialty arrows remain outside this admission; simultaneous increases
+of arrow and Tomahawk pools fail closed. Live competing collectors remain untested.
+See [the integration record](docs/regular-arrow-integration.md) for evidence.
+
 ## Gun-store configuration
 
 `shop_config.lua` owns gun-store locations and all firearm, ammunition, attachment
@@ -28,7 +47,7 @@ replay or catalog change rewrites historical orders. Each player's language is
 resolved through feather-settings/Core, with English fallback. Store/item label
 translation keys are `ui_shops_store_<store UUID>` and `ui_shops_item_<item name>`.
 
-Current version: **0.23.0**.
+Current version: **0.24.0**. Adds melee commerce and opt-in quantity Tomahawk recovery; pair with Inventory **0.16.0** and Shops **0.4.1**.
 
 Feather's native-only, Inventory-backed firearm system. Weapons are unique
 item instances; equipped assignments and maintenance persist per character.
@@ -171,3 +190,41 @@ The former README is retained there as historical documentation only.
 
 
 Firearm creation uses the same GUID inventory insertion/activation and exact-copy cleanup for singles, mixed loadouts and matching pairs, including independently worn/customized copies. The opt-in [GUID acceptance suite](docs/guid-creation-validation.md) exercises this production implementation with a temporary native-only matrix; it does not issue Inventory weapons or repair saved data.
+
+Fresh recipe installs do not require the retired feather-weapons-native-proof resource. Normal equipment, maintenance and voluntary logout accept that resource being missing or stopped; an active or uncertain proof state remains blocked.
+
+Normal melee commerce supports Knife, Machete, Hammer, Cleaver and Hatchet with unique serials and purchase provenance. Prices live in shop_config.lua. The five-model native path defaults on (feather_native_melee may explicitly disable it); throwing/pickup and same-model equipped duplicates remain unsupported. Equipment offers one Equip or Unequip action and chooses an empty compatible slot without replacing another model. No ammunition is created by melee purchases.
+
+## Opt-in Tomahawk quantities
+
+Set replicated `feather_throwable_quantities=1` before Inventory, Weapons and
+Shops start to use regular Tomahawk ammunition instead of serialized thrown
+units. Capacity is three; Inventory's Ammunition panel loads/unloads the existing
+`ammo_tomahawk_regular` stack item. Native walk-over collection consumes shared
+server allowances created atomically with confirmed paid throws. Allowances
+expire after 180 seconds and require the same routing bucket within 50 metres
+of the server-recorded launch position. Each allowance can be consumed once.
+This deliberately accepts nearby quantity claims rather than exact projectile
+identity; a modified client can consume an available nearby allowance, but cannot
+recover more saved quantity than funded throws supplied. Serial, condition and
+provenance do not follow thrown quantities. Historical serialized items are not
+converted, refunded or deleted. Store legacy carried units before opting in.
+
+Disable the old paid-throwable, paid-collection and GUID-suite test switches for
+this mode. Do not revert to physical-unit mode while quantities remain loaded.
+This mode remains default-off. Own/shared/repeated recovery, three outstanding
+throws, load/unload persistence, loaded reconnect, death/admin revive, prepared
+resource stop/start and full server restart were confirmed live. Capacity pickup
+suppression/re-enable, multi-unit pickup, and controlled expiry/distance/bucket
+rejection also passed. A settled unprepared resource stop correctly refused
+cleanup, then full client exit/rejoin restored the acknowledged balance. Actual
+process crashes and interrupted-write durability remain untested. See the
+[quantity acceptance summary](docs/quantity-recovery-acceptance.md) for scope.
+The normal manifest excludes the retired prompt, exact-item handoff, capture and
+loan hosts. Their source and historical regressions remain offline evidence;
+see [the research boundary](tests/archive/throwable-research/README.md). Old
+throwable gameplay switches are refused at startup. Quantity mode uses
+`shared/throwable_mode.lua`, with regular ammunition price/pack size configured
+in `shop_config.lua`; temporary paid-test overlays are no longer loaded. The
+firearm GUID matrix remains available, while its retired throwable loan actions
+refuse without dispatch. No archive/test files are needed for deployment.

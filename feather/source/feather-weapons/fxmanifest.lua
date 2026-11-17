@@ -6,10 +6,14 @@ lua54 'yes'
 description 'The official weapon system for Feather framework.'
 author 'Feather Framework'
 name 'feather-weapons'
-version '0.23.0'
+version '0.25.0'
+
+-- Normal startup includes the supported quantity path. Retired exact-item
+-- experiments remain offline research and are not loaded by this manifest.
 
 shared_scripts {
     'config.lua',
+    '/shared/throwable_mode.lua',
     '/shared/constants.lua',
     '/shared/errors.lua',
     '/shared/definitions/ammunition.lua',
@@ -40,7 +44,6 @@ shared_scripts {
     '/shared/native_utility_collection.lua',
     '/shared/native_throwable_policy.lua',
     '/shared/native_throwable_item.lua',
-    '/shared/native_throwable_recovery.lua',
     '/shared/character_attachments.lua',
     '/shared/character_maintenance.lua',
     '/shared/character_lifecycle_wear.lua',
@@ -71,7 +74,6 @@ server_scripts {
     '/server/services/issuance.lua',
     '/server/services/shop_purchases.lua',
     '/server/services/gun_store_catalog.lua',
-    '/server/services/native_throwable_projectile_probe.lua',
     '/server/services/native_acceptance_suite.lua',
     '/server/services/native_guid_acceptance.lua',
     '/shared/native_restart_acceptance.lua',
@@ -102,7 +104,7 @@ client_scripts {
     '/client/character_ammunition_routes.lua',
     '/client/native_knife_owner.lua',
     '/client/native_melee_owner.lua',
-    '/client/native_throwable_owner.lua',
+    '/client/throwable_quantity_owner.lua',
     '/client/native_throwable_adapter.lua',
     '/client/native_utility_owner.lua',
     '/client/native_utility_collection.lua',
@@ -113,8 +115,8 @@ client_scripts {
     '/client/native_guid_acceptance.lua',
     '/client/character_ammunition_actions.lua',
     '/client/native_equipment_actions.lua',
-    '/client/native_throwable_projectile_probe.lua',
     '/client/native_maintenance_checkpoint.lua',
+    '/client/native_throwable_pickup_permissions.lua',
 }
 
 files {

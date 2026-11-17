@@ -21,6 +21,14 @@ local function equal(a,b)
     for k in pairs(b) do if a[k]==nil then return false end end
     return true
 end
+local function throwableBinding(assigned)
+    if not assigned then return nil end
+    if assigned.contract==3 then return {contract=3,units={}} end
+    local value={row=copy(assigned.row),equipmentSlot=assigned.equipmentSlot}
+    if assigned.contract==2 then value.contract=2;value.units=copy(assigned.units) end
+    return value
+end
+local function throwableRows(binding) return binding and (binding.units or {binding.row}) or {} end
 function WeaponCharacterAmmoLoadoutLease.New(plan,knifeApproval,meleeApproval,throwableSnapshot,limits,utilitySnapshot)
     assert(type(plan)=='table' and type(plan.identity)=='table' and type(plan.items)=='table','Creation plan required')
     local expected=copy(plan)
@@ -44,10 +52,12 @@ function WeaponCharacterAmmoLoadoutLease.New(plan,knifeApproval,meleeApproval,th
         local assigned,why=WeaponNativeThrowableItem.Assigned(throwableSnapshot,WeaponDefinitionCatalog,expected.identity,limits)
         assert(assigned~=nil,why)
         if assigned then
-            throwable={row=copy(assigned.row),equipmentSlot=assigned.equipmentSlot}
-            for _,item in ipairs(expected.items) do assert(item.itemInstanceId~=throwable.row.id,'Throwable/firearm alias forbidden') end
-            assert(not knife or knife.row.id~=throwable.row.id,'Throwable/knife alias forbidden')
-            if melee then for _,entry in ipairs(melee.items) do assert(entry.row.id~=throwable.row.id,'Throwable/melee alias forbidden') end end
+            throwable=throwableBinding(assigned)
+            for _,row in ipairs(throwableRows(throwable)) do
+                for _,item in ipairs(expected.items) do assert(item.itemInstanceId~=row.id,'Throwable/firearm alias forbidden') end
+                assert(not knife or knife.row.id~=row.id,'Throwable/knife alias forbidden')
+                if melee then for _,entry in ipairs(melee.items) do assert(entry.row.id~=row.id,'Throwable/melee alias forbidden') end end
+            end
         end
     end
     local utility
@@ -60,12 +70,41 @@ function WeaponCharacterAmmoLoadoutLease.New(plan,knifeApproval,meleeApproval,th
             for _,tool in ipairs(utility.items or {utility}) do
                 for _,item in ipairs(expected.items) do assert(item.itemInstanceId~=tool.row.id,'Utility/firearm alias forbidden') end
                 assert(not knife or knife.row.id~=tool.row.id,'Utility/knife alias forbidden')
-                assert(not throwable or throwable.row.id~=tool.row.id,'Utility/throwable alias forbidden')
+                for _,row in ipairs(throwableRows(throwable)) do assert(row.id~=tool.row.id,'Utility/throwable alias forbidden') end
                 if melee then for _,entry in ipairs(melee.items) do assert(entry.row.id~=tool.row.id,'Utility/melee alias forbidden') end end
             end
         end
     end
-    return {Validate=function(snapshot,catalog,registry)
+    return {RecoverThrowable=function(before,after,receipt,catalog,registry)
+        if not throwableSnapshot or throwableSnapshot.contract~=2 then return false,'physical_throwable_lease_required' end
+        local prior,why=WeaponNativeThrowableItem.AssignedUnits(before,catalog,expected.identity,registry.limits)
+        if prior==nil then return false,why end
+        if not equal(throwableBinding(prior),throwable) then return false,'throwable_prior_lease_changed' end
+        local recovered;recovered,why=WeaponNativeThrowableItem.Recovered(before,after,receipt,catalog,expected.identity,registry.limits)
+        if not recovered then return false,why end
+        local id=recovered.unit.id
+        for _,item in ipairs(expected.items) do if item.itemInstanceId==id then return false,'throwable_firearm_alias' end end
+        if knife and knife.row.id==id then return false,'throwable_knife_alias' end
+        if melee then for _,entry in ipairs(melee.items) do if entry.row.id==id then return false,'throwable_melee_alias' end end end
+        if utility then for _,tool in ipairs(utility.items or {utility}) do
+            if tool.row.id==id then return false,'throwable_utility_alias' end
+        end end
+        -- Mutate only after every receipt, balance, identity and companion check.
+        throwable=throwableBinding(recovered.approval)
+        return true
+    end,AdvanceThrowable=function(snapshot,catalog,registry)
+        if not throwable or throwable.contract~=2 then return false,'physical_throwable_lease_required' end
+        local assigned,why=WeaponNativeThrowableItem.Assigned(snapshot,catalog,expected.identity,registry.limits)
+        if assigned==nil then return false,why end
+        local now=throwableBinding(assigned)
+        local remaining=throwableRows(now)
+        if #remaining>=#throwable.units then return false,'throwable_spend_decrease_required' end
+        for index,row in ipairs(remaining) do
+            if not equal(row,throwable.units[index]) then return false,'throwable_remaining_units_changed' end
+        end
+        throwable=now
+        return true
+    end,Validate=function(snapshot,catalog,registry)
         if type(snapshot)~='table' or snapshot.characterId~=expected.identity.characterId
             or type(snapshot.equipment)~='table' then return false,'loadout_identity_changed' end
         local actual,reason=WeaponCharacterAmmoMaterialization.Build(snapshot.equipment,catalog,registry,expected.identity)
@@ -81,7 +120,7 @@ function WeaponCharacterAmmoLoadoutLease.New(plan,knifeApproval,meleeApproval,th
             if not WeaponNativeThrowableItem or type(snapshot.throwableEquipment)~='table' then return false,'throwable_snapshot_required' end
             local assigned,why=WeaponNativeThrowableItem.Assigned(snapshot.throwableEquipment,catalog,expected.identity,registry.limits)
             if assigned==nil then return false,why end
-            local now=assigned and {row=assigned.row,equipmentSlot=assigned.equipmentSlot} or nil
+            local now=throwableBinding(assigned)
             if not equal(now,throwable) then return false,'throwable_revision_or_content_changed' end
         end
         if melee or snapshot.meleeEquipment~=nil then
@@ -99,7 +138,7 @@ function WeaponCharacterAmmoLoadoutLease.New(plan,knifeApproval,meleeApproval,th
         return true
     end,Contains=function(itemId)
         if utility then for _,tool in ipairs(utility.items or {utility}) do if tool.row.id==tonumber(itemId) then return true end end end
-        if throwable and throwable.row.id==tonumber(itemId) then return true end
+        for _,row in ipairs(throwableRows(throwable)) do if row.id==tonumber(itemId) then return true end end
         if melee then for _,entry in ipairs(melee.items) do if entry.row.id==tonumber(itemId) then return true end end end
         if knife and knife.row.id==tonumber(itemId) then return true end
         for _,item in ipairs(expected.items) do if item.itemInstanceId==tonumber(itemId) then return true end end

@@ -80,3 +80,39 @@ assert(writes==3); finish(); assert(not assigned and writes==4 and uiResult.ok)
 events['feather-weapons:server:native-equipment-ui']('options-2','options',{itemId=170,scope=identity})
 assert(uiResult.ok and #uiResult.value.options==1 and uiResult.value.options[1].action=='equip')
 print('throwable actual reservation coordinator PASS: gated equip/unequip, release before exact item/slot ticket, final wear, fresh same-session rebuild')
+
+-- Normal physical-unit path, independent of the old developer carrier gate.
+Config.DevMode=false;Config.NativeThrowableUnitsEnabled=true;flag=0
+GetGameTimer=function() return 20000 end
+local physical,revision=false,20
+local function clone(v) if type(v)~='table' then return v end;local r={};for k,x in pairs(v) do r[k]=clone(x) end;return r end
+exports['feather-inventory'].ReadNativeEquipmentTransition=function(_,context,item,limits)
+ assert(limits and limits.ammo_tomahawk_regular==3 and context.epoch==identity.epoch)
+ local pools={};for id in pairs(limits) do pools[id]=id=='ammo_tomahawk_regular' and (physical and 1 or 0) or 0 end
+ return {ok=true,value={characterId='john',expected={},equipment={},candidate=item and clone(row) or nil,
+  candidateCustody=item and (physical and 'carried' or 'inventory') or nil,throwableLimits=clone(limits),
+  throwableEquipment={contract=2,kind='physical_throwable_units',characterId='john',identity=clone(identity),
+   revision=revision,pools=pools,units=physical and {clone(row)} or {}},brokenEquipmentContract=1,brokenPromotionContract=1}}
+end
+exports['feather-inventory'].CommitNativeThrowableUnits=function(_,context,spec)
+ assert(state.phase=='released' and registered.ValidateNativeEquipmentCommit(context,spec))
+ assert(spec.throwableUnits and spec.unitStorage.expectedRevision==revision and spec.unitStorage.items[1].id==170)
+ assert(spec.unitStorage.action==(spec.action=='equip' and 'carry' or 'return'))
+ local forged=clone(spec);forged.unitStorage.items[1].id=171
+ assert(not registered.ValidateNativeEquipmentCommit(context,forged),'changed physical unit cannot borrow released ticket')
+ physical=spec.action=='equip';revision=revision+1;row.revision=row.revision+1;writes=writes+1
+ return {ok=true,value={revision=revision}}
+end
+source=7
+events['feather-weapons:server:native-equipment-ui']('physical-options','options',{itemId=170,scope=identity})
+assert(uiResult.ok and uiResult.value.options[1].action=='equip')
+events['feather-weapons:server:native-equipment-ui']('physical-equip','change',
+ {itemId=170,scope=identity,action='equip',slot='weapon_throwable'})
+assert(not physical and writes==4);finish();assert(physical and writes==5 and uiResult.ok and uiResult.value.refreshInventory)
+GetGameTimer=function() return 40000 end
+events['feather-weapons:server:native-equipment-ui']('physical-return-options','options',{itemId=170,scope=identity})
+assert(uiResult.ok and uiResult.value.options[1].action=='unequip')
+events['feather-weapons:server:native-equipment-ui']('physical-return','change',
+ {itemId=170,scope=identity,action='unequip',slot='weapon_throwable'})
+finish();assert(not physical and writes==6 and uiResult.ok and uiResult.value.refreshInventory)
+print('Physical throwable coordinator PASS: DevMode=false, one paid unit carry/return, seal/release/CAS/fresh restore and forged-ticket refusal')
