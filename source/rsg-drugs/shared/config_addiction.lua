@@ -53,6 +53,14 @@ Config.Addiction.Substances = {
             goldSeconds  = 45.0,                   -- _ENABLE_ATTRIBUTE_CORE_OVERPOWER value
         },
     },
+    tobacco = {
+        label         = 'Tobacco',
+        registerItems = false,
+        items         = {},
+        threshold     = 50, -- dependency level at which the player is "hooked"
+        decay         = 2,  -- level lost per tick while NOT hooked
+        cravingRate   = 3,  -- craving gained per tick while hooked and not feeding
+    },
 }
 
 ---------------------------------------------------------------------

@@ -33,6 +33,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-doorlock](rsg-doorlock.md) | A database-driven door lock system for RedM using the RSG Framework. Doors are created, edited and del | 0 | 7 |
 | [rsg-drugs](rsg-drugs.md) | Drug production for RSG Framework (cannabis lab: drying, processing, packing bags & bricks with hired crew) pl | 9 | 18 |
 | [rsg-essentials](rsg-essentials.md) | Quality-of-life utilities and fixes for RedM using RSG Core. > A collection of small but essential feature | 0 | 9 |
+| [rsg-factory](rsg-factory.md) | Version 3.0.0 · Requires: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` · Optional: `rsg-telegram`  | 0 | 3 |
 | [rsg-farming](rsg-farming.md) | Plant, water, fertilise and harvest crops anywhere in the world, with portable well pumps to fill your water b | 0 | 9 |
 | [rsg-fireworks](rsg-fireworks.md) | Firework script for RSG Framework | 0 | 11 |
 | [rsg-fishing](rsg-fishing.md) | Fishing for RSG-Core (RedM), version 3.0.4. Full technical reference: [DOCS.md](DOCS.md). Players equip a  | 0 | 3 |
@@ -77,6 +78,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-roulette](rsg-roulette.md) | Multiplayer roulette tables for RSG Framework | 1 | 11 |
 | [rsg-samples](rsg-samples.md) | Animal sample collector for RedM (best version) with leaderboard, certificate, and milestone rewards. - Sedate | 0 | 3 |
 | [rsg-smelting](rsg-smelting.md) | Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for RSG-Core (RedM) with rsg-target a | 1 | 1 |
+| [rsg-smoking](rsg-smoking.md) | Cigarettes, cigars, pipes and chewing tobacco for the RSG Framework (RedM). Version: 3.0.0 / Dependencie | 0 | 2 |
 | [rsg-stables](rsg-stables.md) | Horse and stables script for RSG Framework | 2 | 20 |
 | [rsg-stores](rsg-stores.md) | Version 3.1.0 · requires rsg-core, rsg-inventory, rsg-target, rsg-gizmo, oxmysql (no ox_lib) Create NPC sh | 1 | 21 |
 | [rsg-target](rsg-target.md) | targeting system for RSG RedM Framework | 19 | 6 |
