@@ -32,6 +32,8 @@ Config.ActiveHorse = {
 Config.HorseFeedItems = {
     { item = 'horse_apple',  label = 'Horse Apple',  health = 10, stamina = 10, hunger = 15 },
     { item = 'horse_carrot', label = 'Horse Carrot', health = 10, stamina = 10, hunger = 15 },
+    { item = 'haysnack', label = 'Hay Snack', health = 25, stamina = 25, hunger = 30 },
+    { item = 'horsemeal', label = 'Horse Meal', health = 50, stamina = 50, hunger = 75 },
 }
 
 Config.HorseDrinkItems = {
