@@ -2,7 +2,7 @@
 
 This document explains how rsg-character works under the hood, so you can configure it confidently, troubleshoot problems and build other resources on top of it. For a quick install guide see [README.md](README.md).
 
-**Version:** 3.1.1 · **Framework:** RSG-Core · **Lua:** 5.4
+**Version:** 3.3.0 · **Framework:** RSG-Core · **Lua:** 5.4
 
 ---
 
@@ -18,8 +18,10 @@ This document explains how rsg-character works under the hood, so you can config
 9. [Webhooks](#9-webhooks)
 10. [Locales](#10-locales)
 11. [Developer API](#11-developer-api)
-12. [Common tasks](#12-common-tasks)
+12. [Common tasks](#12-common-tasks) (incl. admin commands, slots and names)
 13. [Troubleshooting](#13-troubleshooting)
+14. [Configuration reference](#14-configuration-reference)
+15. [Changelog](#15-changelog)
 
 ---
 
@@ -28,6 +30,7 @@ This document explains how rsg-character works under the hood, so you can config
 ```
 rsg-character/
 ├── fxmanifest.lua
+├── install.sql           -- manual table install (same schema as sv_database.lua)
 ├── shared/
 │   ├── config.lua        -- all settings (RSG table)
 │   └── functions.lua     -- birthdate check, clothing validation, price calculation (shared)
@@ -37,12 +40,14 @@ rsg-character/
 │   ├── clothes.lua       -- clothing store, clothing layer order, wardrobe/outfits
 │   ├── functions.lua     -- shared client helpers (camera, prompts, components)
 │   ├── spawn.lua         -- spawn select screen, ApplySkin event, spawn checks
-│   ├── ui.lua            -- NUI bridge (loading screen, menus)
+│   ├── ui.lua            -- NUI bridge (loading screen, menus), NUI focus + push-to-talk whitelist
 │   └── hashtocache.lua   -- builds hash lookup caches (loaded as a file)
 ├── server/
 │   ├── sv_charselect.lua -- slots, select, delete, request create
 │   ├── sv_appearance.lua -- routing buckets, creator sessions, SaveSkin, createCharacter, appearance callbacks
+│   ├── sv_admin.lua      -- /charinfo, /resetskin, /changename
 │   ├── sv_clothing.lua   -- buy outfit, wear/delete outfit, outfit callbacks, DB migration
+│   ├── sv_database.lua   -- builds playerskins / playeroutfit tables (RSG.AutoDatabase)
 │   ├── sv_logout.lua     -- /logout command
 │   ├── webhook.lua       -- Discord webhook queue
 │   └── versionchecker.lua
@@ -103,12 +108,13 @@ One row per character. If more than one row exists, the newest (`ORDER BY id DES
 | `clothes` | LONGTEXT | Same JSON format as `playerskins.clothes` |
 | `is_default` | TINYINT(1) | `1` = the protected Default outfit |
 
-### Automatic migration
+### Automatic setup and migration
 On `MySQL.ready` the script:
+0. When `RSG.AutoDatabase = true`, runs the `CREATE TABLE IF NOT EXISTS` statements from `server/sv_database.lua` (printing a green "database tables ready" or a red error). Set it to `false` and import `install.sql` to install manually.
 1. Adds `is_default` to `playeroutfit` if missing.
 2. Creates a Default outfit for every character that has clothes but no Default yet, and prints how many it created.
 
-This runs on every start and is safe to repeat. The two tables themselves are **not** created automatically — use the SQL in the README if they don't exist.
+This runs on every start and is safe to repeat.
 
 ### What deleting a character removes
 `RSGCore.Player.DeleteCharacter` (players row and rsg-core data) plus that citizenid's rows in `playerskins` and `playeroutfit`.
@@ -131,11 +137,19 @@ rsg-character assumes the client can't be trusted. Server-side protections:
 | Store location | Buying and entering the fitting-room bucket require being within 10 m of a store. |
 | Wardrobe | Wearing an outfit requires being near a cloakroom, unless `WardrobeTarget.enabled` (props can't be checked server-side; outfits are already paid for). Outfits are re-validated before being applied. |
 | Cooldowns | Buy 2 s, wear/delete 1 s, delete character 3 s, `/logout` configurable. |
-| Routing buckets | The script only resets a bucket **it** assigned, so it can't be used to escape jail or other instances. |
+| Routing buckets | The script only resets a bucket **it** assigned, and restores the bucket the player was in before (never blindly bucket 0), so it can't be used to escape jail or other instances. |
+| Double requests | Selecting a character is ignored while a login is running; `/logout` is ignored while a logout is running. Rejected or failed requests send `CharSelectFailed` so the client never hangs on the loading screen. |
+| Character slots | Slots are `RSG.MaxCharacterSlots` plus the best matching `RSG.SlotRules` ACE rule, resolved on the server for every slot list and create request. |
+| Unique names | `RSG.NameExists` is checked by the `isNameAvailable` callback (creator session only) and again in `createCharacter`. |
+| Outfit sharing | Server checks ownership, same body type, distance (re-checked after the prompt), per-player cooldown, one pending offer per receiver and the 30-outfit limit. The receiver must accept (client callback with timeout); the copy is re-validated with `ValidateClothesData`. |
+| Admin commands | Registered with rsg-core's permission level (`RSG.AdminCommands.Permission`); every action can be logged to the `admin_action` webhook. |
+| Outfit names | HTML/control characters are stripped, max 40 chars; the client also escapes names before showing them. |
 
 ---
 
 ## 5. Clothing store & wardrobe
+
+> **Outfit sharing:** in the wardrobe, pick an outfit and choose *Share Outfit*. The nearest player (within `RSG.OutfitSharing.MaxDistance`) gets a confirm dialog; if they accept, a copy is added to their wardrobe. Only same body type, and only if they have room.
 
 ### Store flow
 1. Player stands at `promtcoords` and presses `RSG.OpenKey`.
@@ -179,7 +193,7 @@ If a new clothing category clips, add it to `CLOTHING_ORDER` in the right layer.
 ## 7. Spawning
 
 - `RSG.SpawnLocations` builds the spawn cards. Card `image` paths are relative to `html/`.
-- The spawn screen shows for **new characters** and for characters whose saved position is invalid.
+- The spawn screen shows for **new characters** and for characters whose saved position is invalid. With `RSG.SpawnMenuWithLastLocation = true` it also shows for returning characters, with a **Last Location** card first.
 - `RSG.SpawnChecks` is a safety net on `RSGCore:Client:OnPlayerLoaded`: anyone loading within `Radius` of a `badSpawn` point (by default the character select lineup) is moved to `moveTo`. Add more groups if players end up somewhere they shouldn't:
 
 ```lua
@@ -236,67 +250,198 @@ Every embed also includes the player's identity fields (name and identifiers). O
 
 ## 11. Developer API
 
-### Client exports
-| Export | Description |
-|---|---|
-| `ApplySkin()` | Reloads the local player's saved skin and clothes from the server. |
-| `ApplySkinMultiChar(skinData, ped, clothesData)` | Applies a skin + clothes table to any ped (used for the select lineup). |
-| `SetFaceOverlays(ped, data)` | Applies overlay data (scars, makeup, etc.). |
-| `SetHair(ped, data)` | Applies hair. |
-| `SetBeard(ped, data)` | Applies beard. |
-| `GetComponentId(name)` | Current creator component id by name. |
-| `GetBodyComponents()` | Body component table. |
-| `GetBodyCurrentComponentHash(name)` | Current body component hash. |
-| `GetComponentsMax(name)` | Max option count for a component. |
-| `GetMaxTexturesForModel(category, model, isClothing)` | Texture count for a model. |
-| `GetClothesCache(name)` | Current clothing cache entry (or whole cache). |
-| `GetClothesComponentId(name)` | Current clothing component id. |
-| `GetClothesCurrentComponentHash(name)` | Current clothing hash. |
-| `IsCothingActive()` | `true` while the player is in the clothing store. (Spelling kept for compatibility.) |
+Everything other resources may rely on is listed here. Anything not listed (the net events in 11.7, `RSG.*` helpers, global functions) is internal and may change.
 
-Example — stop your script's UI opening while the player is in a store:
-```lua
-if exports['rsg-character']:IsCothingActive() then return end
-```
+### 11.1 Client exports
 
-Example — reapply appearance after your script changes the ped model (e.g. after a jail or animal transform):
-```lua
-exports['rsg-character']:ApplySkin()
-```
-
-### Client events you can trigger
-| Event | Description |
-|---|---|
-| `rsg-character:client:ApplySkin` (`skin`, `clothes`) | Applies given skin and clothes to the player. |
-| `rsg-character:client:outfits` | Opens the outfits/wardrobe menu (server still checks location unless wardrobe props are enabled). |
-| `rsg-character:client:OpenCharSelect` | Opens character select. Only works for logged-out players (use after `RSGCore.Player.Logout`). |
-| `rsg-character:client:OpenSpawnSelect` (`lastPos`, `isNew`) | Opens spawn select, or teleports to `lastPos` if given. |
-| `rsg-character:client:OpenCreator` | Opens the creator UI. Saves are only accepted when the server opened the session, so trigger the flow from the server instead. |
-
-### Server
-| Name | Type | Description |
+| Export | Returns | Description |
 |---|---|---|
-| `rsg-character:server:getAppearance` | callback | `{ skin, clothes }` for the caller's character, or `nil`. |
-| `rsg-multicharacter:server:getAppearance` | callback | Same, returns `{ skin = {}, clothes = {} }` when none. Legacy name for older resources. |
-| `rsg-character:server:getOutfits` | callback | Saved outfits: `{ id, name, clothes, is_default }[]`, Default first. |
-| `rsg-character:server:LoadClothes` | callback | Current clothes table. |
-| `rsg-character:server:wearOutfit` (`id`) | callback | Applies outfit and returns its clothes, or `nil`. |
-| `RSG.OpenCreatorFor(src, nil)` | function (this resource) | Opens an appearance-only creator for a logged-in player (e.g. a barber/surgeon feature added inside this resource). |
+| `ApplySkin()` | - | Reloads the local player's saved skin and clothes from the server. Blocks until done. |
+| `ApplySkinMultiChar(skinData, ped, clothesData)` | - | Applies a skin + clothes table to any ped (used for the select lineup). |
+| `SetFaceOverlays(ped, data)` | - | Applies overlay data (scars, makeup, etc.). |
+| `SetHair(ped, data)` / `SetBeard(ped, data)` | - | Applies hair / beard. |
+| `GetComponentId(name)` | number | Current creator component id by name. |
+| `GetBodyComponents()` | table | Body component table. |
+| `GetBodyCurrentComponentHash(name)` | number | Current body component hash. |
+| `GetComponentsMax(name)` | number | Max option count for a component. |
+| `GetMaxTexturesForModel(category, model, isClothing)` | number | Texture count for a model. |
+| `GetClothesCache(name)` | table | Current clothing cache (whole cache). |
+| `GetClothesComponentId(name)` | table/nil | Current clothing cache entry for a category. |
+| `GetClothesCurrentComponentHash(name)` | number | Current clothing hash (`0` when nothing is worn). |
+| `IsCothingActive()` | boolean | `true` while the player is in the clothing store. (Spelling kept for compatibility.) |
+| `IsInCreator()` | boolean | `true` while the character creator is open (new character or appearance-only). |
+| `IsInCharacterSelect()` | boolean | `true` while the character select lineup is on screen. |
+| `OpenWardrobe()` | boolean | Opens the saved-outfits menu. Returns `false` (and does nothing) in the clothing store or character select. |
 
 ```lua
--- client, from another resource
-local appearance = RSGCore.Functions.AwaitCallback('rsg-character:server:getAppearance')
-if appearance then
-    print(appearance.skin.sex == 1 and 'male' or 'female')
+-- do not open your own UI while the player is in a store, creator or character select
+local function playerIsBusy()
+    return exports['rsg-character']:IsCothingActive()
+        or exports['rsg-character']:IsInCreator()
+        or exports['rsg-character']:IsInCharacterSelect()
 end
 ```
 
-### Sending a player back to character select (server, another resource)
 ```lua
-local Player = RSGCore.Functions.GetPlayer(src)
-Player.Functions.Save()
-RSGCore.Player.Logout(src)
-TriggerClientEvent('rsg-character:client:OpenCharSelect', src)
+-- reapply appearance after your script changed the ped model (jail, transformation...)
+exports['rsg-character']:ApplySkin()
+```
+
+```lua
+-- add a "Wardrobe" entry to your own menu or command
+RegisterCommand('wardrobe', function()
+    exports['rsg-character']:OpenWardrobe()
+end, false)
+```
+
+### 11.2 Client events
+
+**You can trigger**
+
+| Event | Description |
+|---|---|
+| `rsg-character:client:ApplySkin` (`skin`, `clothes`) | Applies the given skin and clothes to the local player. |
+| `rsg-character:client:ApplyClothes` (`clothes`, `ped?`) | Applies a clothes table (`{ [category] = { hash = n } }`) to `ped` (default: the local player). Prefer the server export `SetClothes`, which validates first. |
+| `rsg-character:client:outfits` | Opens the wardrobe menu (same as `OpenWardrobe`). |
+| `rsg-character:client:OpenCharSelect` | Opens character select. Only works for logged-out players (see 11.8). |
+| `rsg-character:client:OpenSpawnSelect` (`lastPos`, `isNew`) | Opens spawn select, or teleports to `lastPos` if given (unless `RSG.SpawnMenuWithLastLocation`). |
+| `rsg-character:client:OpenCreator` | Opens the creator UI. Saves are only accepted when the server opened the session, so start the flow from the server instead. |
+
+**You can listen to**
+
+| Event | Fired when |
+|---|---|
+| `rsg-character:client:skinApplied` | The local player's skin and clothes finished applying (after login, `/loadskin`, `ApplySkin()`). |
+| `RSGCore:Client:OnPlayerLoaded` | Standard rsg-core event; fired after the spawn select completes. |
+
+```lua
+AddEventHandler('rsg-character:client:skinApplied', function()
+    -- re-attach props, re-apply a mask, refresh your HUD...
+end)
+```
+
+### 11.3 Player state (`LocalPlayer.state`, local only)
+
+| Key | Meaning |
+|---|---|
+| `inCharacterSelect` | `true` while the lineup is shown. |
+| `inClothingStore` | `true` while the player is in a fitting room. |
+| `isLoadingSkin` | `true` while a skin reload swaps the ped (other resources such as rsg-medic ignore the temporary death state). |
+
+### 11.4 Server exports
+
+Called from another server script: `exports['rsg-character']:Name(...)`.
+
+| Export | Returns | Description |
+|---|---|---|
+| `GetMaxSlots(src)` | number | Slots this player may use: `RSG.MaxCharacterSlots` plus the best matching `RSG.SlotRules` entry. |
+| `IsInCreator(src)` | boolean | `true` while the player has a server-opened creator session. |
+| `IsNameAvailable(first, last)` | boolean | `true` when no character uses that name (always `true` if `RSG.UniqueNames = false`). |
+| `GetAppearance(citizenid)` | `{ skin, clothes }` or `nil` | Saved appearance of any character, online or offline. |
+| `GetOutfits(citizenid)` | `{ id, name, clothes, is_default }[]` | Saved outfits, Default first. |
+| `SetClothes(src, clothes, save?)` | `ok, reason` | Validates and wears `clothes` on an online player. `save = true` also stores them as the current clothes (free). Reasons: `no_player`, `invalid_clothes`, `too_large`. |
+| `AddOutfit(citizenid, name, clothes)` | `id` or `nil, reason` | Adds a wardrobe outfit (online or offline character). Reasons: `no_character`, `invalid_clothes`, `limit_reached` (30 non-default outfits). |
+| `ResetAppearance(citizenid)` | boolean | Deletes the saved skin and Default outfit; the creator opens on the next login. |
+| `ChangeCharacterName(citizenid, first, last)` | `ok, reason` | Renames a character (online or offline) with the creator's name rules and uniqueness check. Reasons: `invalid_name`, `name_taken`, `not_found`. |
+| `LogoutToCharacterSelect(src)` | boolean | Saves, logs out and opens character select; ignores the `/logout` cooldown and dead check. Returns `false` if the player isn't logged in. |
+
+`clothes` is `{ [category] = { hash = <number> } }` using the hashes from `data/clothing.lua` / `data/hairs_list.lua`; every hash is validated against the character's body type.
+
+### 11.5 Server hook events
+
+These are **local server events** (not net events, clients cannot trigger them). Listen with `AddEventHandler`:
+
+| Event | Arguments | Fired when |
+|---|---|---|
+| `rsg-character:server:characterSelected` | `src, citizenid` | A character was selected and logged in. |
+| `rsg-character:server:characterCreated` | `src, citizenid, cid` | A new character was created (appearance is saved afterwards). |
+| `rsg-character:server:characterDeleted` | `src, citizenid` | A character was deleted from character select. |
+| `rsg-character:server:characterLoggedOut` | `src, citizenid` | `/logout` or `LogoutToCharacterSelect` finished. |
+| `rsg-character:server:appearanceSaved` | `src, citizenid, isNew` | The creator saved a skin. |
+| `rsg-character:server:appearanceReset` | `citizenid` | `ResetAppearance` / `/resetskin` ran. |
+| `rsg-character:server:nameChanged` | `citizenid, first, last` | `ChangeCharacterName` / `/changename` ran. |
+| `rsg-character:server:outfitPurchased` | `src, citizenid, price, outfitName` | A clothing purchase completed. |
+| `rsg-character:server:outfitShared` | `src, targetSrc, outfitId` | An outfit share was accepted and copied. |
+
+```lua
+-- give a welcome item and a bank account to every new character
+AddEventHandler('rsg-character:server:characterCreated', function(src, citizenid, cid)
+    exports['rsg-inventory']:AddItem(src, 'bread', 1, nil, nil, 'new-character')
+end)
+```
+
+### 11.6 Callbacks (rsg-core)
+
+| Name | Side | Returns |
+|---|---|---|
+| `rsg-character:server:getAppearance` | server | `{ skin, clothes }` for the caller, or `nil`. |
+| `rsg-multicharacter:server:getAppearance` | server | Same, `{ skin = {}, clothes = {} }` when none. Legacy name for older resources. |
+| `rsg-character:server:getOutfits` | server | The caller's saved outfits (see `GetOutfits`). |
+| `rsg-character:server:LoadClothes` | server | The caller's current clothes table. |
+| `rsg-character:server:wearOutfit` (`id`) | server | Clothes of that outfit (re-validated), or `nil`. Needs a cloakroom nearby unless `WardrobeTarget.enabled`. |
+| `rsg-character:server:isNameAvailable` (`first`, `last`) | server | boolean. Only answers during a new-character creator session. |
+| `rsg-character:client:confirmShare` (`fromName`, `outfitName`) | client | boolean; asked of the receiver of an outfit share. |
+
+```lua
+-- client of another resource
+local appearance = RSGCore.Functions.AwaitCallback('rsg-character:server:getAppearance')
+if appearance then print(appearance.skin.sex == 1 and 'male' or 'female') end
+```
+
+### 11.7 Net events handled by this resource (internal, do not call)
+
+Listed for auditing and anti-cheat rules. Every one validates `source`, arguments and state on the server.
+
+| Event | Validation |
+|---|---|
+| `rsg-character:server:RequestCharacterSlots` | Logged-out players only. |
+| `rsg-character:server:SelectCharacterSlot` (`citizenid`) | Logged-out, license must own the citizenid (else the player is dropped), one login at a time. |
+| `rsg-character:server:DeleteCharacterSlot` (`citizenid`) | Logged-out, ownership, 3 s cooldown. |
+| `rsg-character:server:RequestCreateCharacterSlot` (`cid`, `sex`) | Logged-out, `cid` within `GetMaxSlots`, slot free. |
+| `rsg-multicharacter:server:createCharacter` (`data`) | Needs a server-opened creator session; name, nationality, birth date, uniqueness and `cid` re-validated. Event name kept for compatibility. |
+| `rsg-character:server:SaveSkin` (`skin`, `clothes`) | Needs a creator session; schema, size and clothing hashes validated; gender taken from the character record. |
+| `rsg-character:server:SetPlayerBucket` | Must be logged in and within 10 m of a store; only undoes buckets this resource set. |
+| `rsg-character:server:saveOutfit` (`clothes`, `_`, `name`) | Near a store, 2 s cooldown, clothes validated, price computed server-side. |
+| `rsg-character:server:DeleteOutfit` (`id`) | Own, non-default outfits only. |
+| `rsg-character:server:ShareOutfit` (`id`, `targetSrc`) | Ownership, distance, same body type, cooldown, receiver must accept. |
+
+Internal client events (NUI bridge and scene control, not part of the API): `rsg-character:client:ReceiveCharacterSlots`, `CharSelectFailed`, `BeginLogout`, `CharInfoPlay`, `CharInfoDelete`, `CharInfoGenderChange`, `CameraMoveStart`, `CameraMoveStop`, `CameraReset`.
+
+### 11.8 Examples
+
+```lua
+-- send a player back to character select (e.g. from your own admin menu)
+exports['rsg-character']:LogoutToCharacterSelect(targetSrc)
+```
+
+```lua
+-- jail uniform: wear it, but don't overwrite what they own
+local ok, reason = exports['rsg-character']:SetClothes(src, {
+    shirts_full = { hash = 123456789 }, -- use a real hash from data/clothing.lua
+}, false)
+if not ok then print('uniform failed: ' .. reason) end
+```
+
+```lua
+-- registry office: paid name change
+RSGCore.Functions.CreateCallback('myres:server:rename', function(src, cb, first, last)
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player or not Player.Functions.RemoveMoney('cash', 25, 'rename') then return cb(false, 'no_money') end
+    local ok, reason = exports['rsg-character']:ChangeCharacterName(Player.PlayerData.citizenid, first, last)
+    if not ok then Player.Functions.AddMoney('cash', 25, 'rename-refund') end
+    cb(ok, reason)
+end)
+```
+
+```lua
+-- read a character's saved look from another resource (works offline too)
+local look = exports['rsg-character']:GetAppearance(citizenid)
+if look then print(('sex=%s'):format(look.skin.sex)) end
+```
+
+```lua
+-- hand out a themed outfit to a character's wardrobe
+local id, reason = exports['rsg-character']:AddOutfit(citizenid, 'Sunday Best', clothesTable)
 ```
 
 ---
@@ -321,17 +466,26 @@ TriggerClientEvent('rsg-character:client:OpenCharSelect', src)
 
 ---
 
+## 12b. Admin commands, extra slots and unique names
+
+- `/charinfo [id]`, `/resetskin [id]`, `/changename [id] [first] [last]` (names and permission in `RSG.AdminCommands`). `/resetskin` deletes `playerskins` rows and the Default outfit; the player must `/logout` (or reconnect) so the creator opens.
+- Extra slots: `RSG.SlotRules = { { slots = 6, ace = 'rsgchar.slots6' } }` and `add_ace group.vip rsgchar.slots6 allow`. Characters stored in a slot above the player's current allowance are hidden, not deleted.
+- `RSG.UniqueNames` compares first + last name against `players.charinfo` (case-insensitive with the default collation).
+
 ## 13. Troubleshooting
 
 | Problem | Likely cause / fix |
 |---|---|
 | Black screen or stuck on character select | Another multicharacter/appearance resource is running, or `rsg-character` starts before `rsg-core`/`oxmysql`. Check F8 and server console. |
-| "Table doesn't exist" errors | `playerskins` / `playeroutfit` missing — run the SQL in the README. |
+| "Table doesn't exist" errors | `RSG.AutoDatabase` is `false` or the database user can't create tables — import `install.sql` manually. |
+| Can't talk while a menu is open | Check `RSG.AllowPushToTalkWhileOpen = true` and that your push-to-talk control hash is in `RSG.PushToTalkControls`. |
 | Players naked or wrong body after login | Old/legacy skin row. Ask them to use `/loadskin`; if still wrong, delete their `playerskins` row so the creator opens on next select. |
 | Clothing clips | Category missing from `CLOTHING_ORDER` or in the wrong layer. |
 | Webhook warning in console | Category enabled but URL still the placeholder. Add a URL or set `enabled = false`. |
 | Can't create a character: "missing info" | Name doesn't match the rules (capital first, letters only, 2–20) or birth date out of range. |
 | Kicked when selecting a character | The citizenid doesn't belong to that license (exploit protection) — often caused by license changes (e.g. Steam vs Rockstar). |
+| Creator says the name is taken | Another character already uses that first + last name. Set `RSG.UniqueNames = false` to allow duplicates. |
+| Extra slots not showing | The ACE isn't granted to the player (`add_ace ... rsgchar.slotsN allow`), or `RSG.SlotRules` has a different ACE name. |
 | Wardrobe prop does nothing | rsg-target not started, or `WardrobeTarget.enabled = false`. |
 | Spawn card image blank | Image path wrong or missing from `html/img/spawn/`. |
 | Spawn at character select scene | Add/adjust `RSG.SpawnChecks`. |
@@ -342,3 +496,47 @@ Enable `RSG.Debug = true` for extra client console output.
 ---
 
 Support development: https://buymeacoffee.com/rexshack
+
+---
+
+## 14. Configuration reference
+
+All options live in `shared/config.lua` (`RSG` table). Texts come from `locales/*.json`.
+
+| Option | Default | Description |
+|---|---|---|
+| `Debug` | `false` | Extra client console output. |
+| `AutoDatabase` | `true` | Create `playerskins` / `playeroutfit` on start; `false` = import `install.sql` manually. |
+| `AllowPushToTalkWhileOpen` | `true` | Block game controls while a NUI is open, except `PushToTalkControls`. |
+| `PushToTalkControls` | `{ 0x4BC9DABB }` | Control hashes that stay enabled while the NUI has focus. |
+| `ProfanityWords` | table | Lowercase words rejected as first/last name. |
+| `MaxCharacterSlots` | `4` | Base slots per license. |
+| `SlotRules` | `{}` | `{ slots = n, ace = 'name' }` entries; highest allowed wins. |
+| `UniqueNames` | `true` | One character per first + last name. |
+| `SpawnMenuWithLastLocation` | `false` | Show the spawn menu (with Last Location) for returning characters. |
+| `AdminCommands` | table | `Enabled`, `Permission`, `CharInfo`, `ResetSkin`, `ChangeName`. |
+| `OutfitSharing` | table | `Enabled`, `MaxDistance` (m), `Cooldown` (s), `AcceptTimeout` (s). |
+| `Birthdate` | table | `Min`, `Max`, `Default` (`YYYY-MM-DD`). |
+| `Logout` | table | `Enabled`, `Command`, `Cooldown` (s), `BlockWhenDead`. |
+| `Nationalities` | list | Locale keys under `nationalities`. |
+| `StarterItems` | list | `{ item, amount }` given once to a new character. |
+| `CharSelectLocation` | table | `coords` (vector4), `spacing`, `camera = { back, height, fov }`. |
+| `Webhooks` | table | Per category (`character_created`, `character_deleted`, `character_selected`, `character_logout`, `admin_action`, `appearance_saved`, `outfit_purchased`): `enabled`, `url`, `name`, `avatar`, `color`. |
+| `SpawnLocations` | list | `label`, `coords` (vector4), `image` (path under `html/`). |
+| `SpawnChecks` | table | `badSpawn` points, `moveTo`, `Radius`. |
+| `Prompt` | table | Control hashes used by the creator (gender, confirm, camera, rotate, zoom). |
+| `OpenKey` / `Keybind` | hash / string | Key that opens the clothing store / cloakroom. |
+| `BlipSprite`, `BlipSpriteCloakRoom`, `BlipScale` | numbers | Map blip settings. |
+| `SetDoorState` | list | Store door hashes and state (`0` open, `1` locked). |
+| `Zones1` | list | Stores: `location`, `blipcoords`, `fittingcoords`, `quitcoords`, `promtcoords`, `epromtcoords?`, `showblip`. |
+| `Cloakroom` | list of vector3 | Cloakroom locations. |
+| `WardrobeTarget` | table | rsg-target wardrobe props: `enabled`, `distance`, `icon`, `label`, `models`. |
+| `MenuElements` | table | Which clothing categories appear in each store menu section. |
+| `Price` | table | Cash price per clothing category. |
+| `Texts`, `Label` | tables | Locale-driven UI strings (edit `locales/*.json`, not these). |
+
+---
+
+## 15. Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).

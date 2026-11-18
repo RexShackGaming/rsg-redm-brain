@@ -235,7 +235,11 @@ function ApplySkin()
     local ok, err = pcall(ApplySkinInner)
     Wait(1000) -- let the new ped settle before death checks resume
     LocalPlayer.state:set('isLoadingSkin', false, false)
-    if not ok then print(('[rsg-character] ApplySkin failed: %s'):format(tostring(err))) end
+    if not ok then
+        print(('[rsg-character] ApplySkin failed: %s'):format(tostring(err)))
+        return
+    end
+    TriggerEvent('rsg-character:client:skinApplied')
 end
 
 local function ApplySkinMultiChar(SkinData, Target, ClothesData)
@@ -572,6 +576,10 @@ function FirstMenu()
                     Lastname = charinfo.lastname or ''
                     FotoMugshots()
                 elseif Firstname and Lastname and Nationality and Selectedsex and Birthdate and Cid then
+                    if not RSGCore.Functions.AwaitCallback('rsg-character:server:isNameAvailable', nil, Firstname, Lastname) then
+                        RSGCore.Functions.Notify({ title = locale('name_taken.title'), description = locale('name_taken.description'), type = 'error', duration = 7000 })
+                        return
+                    end
                     UI.CloseAll()
                     local newData = {
                         firstname = Firstname,
@@ -1144,3 +1152,7 @@ exports('GetMaxTexturesForModel', function(category, model, isClothing)
 end)
 
 exports('ApplySkin', ApplySkin)
+-- true while the character creator (new character or appearance-only) is open
+exports('IsInCreator', function()
+    return IsInCharCreation == true or InCharacterCreator == true or Skinkosong == true
+end)

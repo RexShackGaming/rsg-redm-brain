@@ -40,15 +40,6 @@ html, body {
     height: 100%;
 }
 
-#vignette {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background:
-        radial-gradient(ellipse at center, rgba(0,0,0,0) 70%, rgba(0,0,0,0.15) 100%);
-    z-index: 1;
-}
-
 #loading-screen {
     position: fixed;
     inset: 0;

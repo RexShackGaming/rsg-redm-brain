@@ -145,7 +145,9 @@
         "delete": "Supprimer la tenue",
         "delete_desc": "supprimer la tenue",
         "shop": "Magasin de vêtements",
-        "total": "Prix"
+        "total": "Prix",
+        "share": "Partager la tenue",
+        "share_desc": "Proposer une copie au joueur le plus proche"
     },
     "menu_elements": {
         "head": {
@@ -280,16 +282,7 @@
     },
     "charselect": {
         "title": "Choisir un personnage",
-        "subtitle": "Choisis un personnage ou crées-en un nouveau",
         "unnamed": "Sans nom",
-        "existing": {
-            "desc": "Continuer avec ce personnage"
-        },
-        "hint": {
-            "select": "Cliquer pour jouer ~g~%s~s~",
-            "create": "Cliquer pour créer un nouveau personnage",
-            "controls": "← → Parcourir    [Entrée] Choisir    [SUPPR] Supprimer"
-        },
         "empty": {
             "label": "Créer un nouveau personnage",
             "desc": "Cet emplacement est vide - crée un nouveau personnage ici"
@@ -299,14 +292,11 @@
             "title": "Erreur",
             "description": "Impossible de charger ton personnage - réessaie."
         },
-        "slot_label": "Emplacement %s",
         "slot_taken": {
             "title": "Emplacement indisponible",
             "desc": "Cet emplacement vient d'être pris - choisis-en un autre."
         },
         "delete": {
-            "label": "Supprimer le personnage",
-            "desc": "Supprimer définitivement ce personnage - action irréversible",
             "confirm_header": "Supprimer ce personnage ? Action irréversible.",
             "loading": "Suppression du personnage..."
         },
@@ -321,8 +311,6 @@
             "create": "Créer"
         },
         "gender": {
-            "title": "Choisir le sexe",
-            "subtitle": "Cela ne pourra pas être modifié plus tard",
             "male": "Homme",
             "female": "Femme"
         },
@@ -332,14 +320,14 @@
     "spawn": {
         "title": "Où veux-tu apparaître ?",
         "subtitle": "Choisis un lieu pour entrer dans le monde",
-        "last_location": {
-            "label": "Dernière position",
-            "desc": "Retourner là où tu t'es déconnecté"
-        },
         "preset": {
             "desc": "Apparaître ici"
         },
-        "loading": "Voyage en cours..."
+        "loading": "Voyage en cours...",
+        "last_location": {
+            "label": "Dernière position",
+            "desc": "Reprendre là où tu t'es déconnecté"
+        }
     },
     "ui": {
         "back": "Retour",
@@ -407,6 +395,10 @@
             "description": "Une tenue a été achetée pour **$%s**.",
             "field_citizenid": "ID citoyen",
             "field_outfit_name": "Nom de la tenue"
+        },
+        "admin_action": {
+            "title": "Action d'admin",
+            "description": "`/%s` utilisé sur `%s`"
         }
     },
     "spawn_locations": {
@@ -454,5 +446,39 @@
         "download": "Télécharger depuis : %s",
         "newer": "Vous utilisez une version plus récente (%s) que la distante (%s). Build de développement ?"
     },
-    "outfit_wear_failed": "Couldn't wear that outfit here - use a wardrobe or cloakroom"
+    "outfit_wear_failed": "Couldn't wear that outfit here - use a wardrobe or cloakroom",
+    "name_taken": {
+        "title": "Nom déjà pris",
+        "description": "Un personnage avec ce prénom et ce nom existe déjà. Choisis un autre nom."
+    },
+    "admin": {
+        "title": "Admin personnages",
+        "arg_id": "ID du joueur",
+        "arg_first": "Prénom",
+        "arg_last": "Nom",
+        "yes": "oui",
+        "no": "non",
+        "player_not_found": "Joueur introuvable.",
+        "charinfo_help": "Afficher les infos du personnage (Admin uniquement)",
+        "resetskin_help": "Réinitialiser l'apparence pour ouvrir le créateur à la prochaine connexion (Admin uniquement)",
+        "changename_help": "Changer le nom d'un personnage (Admin uniquement)",
+        "charinfo": "%s %s | CitizenID : %s | Emplacement : %s | Apparence : %s | Tenues : %s",
+        "skin_reset_done": "Apparence de %s %s réinitialisée. Le joueur doit se reconnecter (/logout) pour ouvrir le créateur.",
+        "skin_reset_target": "Un admin a réinitialisé ton apparence. Reconnecte-toi (/logout) pour la recréer.",
+        "name_invalid": "Nom invalide. Uniquement des lettres, première lettre en majuscule (ex. Arthur).",
+        "name_taken": "Ce nom est déjà utilisé par un autre personnage.",
+        "name_changed": "Nom changé en %s %s.",
+        "name_changed_target": "Le nom de ton personnage a été changé en %s %s."
+    },
+    "outfit_share": {
+        "no_player": "Aucun joueur à proximité.",
+        "too_far": "Ce joueur est trop loin.",
+        "busy": "Ce joueur est occupé.",
+        "sent": "Offre envoyée. En attente de réponse...",
+        "prompt": "%s veut partager la tenue « %s » avec toi. L’ajouter à ta garde-robe ?",
+        "declined": "La tenue n'a pas été acceptée.",
+        "failed": "La tenue n'a pas pu être partagée (morphologie différente ou garde-robe pleine).",
+        "done_sender": "Tenue partagée.",
+        "done_target": "Tenue ajoutée à ta garde-robe."
+    }
 }

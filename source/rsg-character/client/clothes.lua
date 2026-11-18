@@ -556,6 +556,9 @@ function OutfitsManage(outfitId, isDefault)
     local elements = {
         {label = RSG.Label.wear, value = "SetOutfits", desc = RSG.Label.wear_desc},
     }
+    if RSG.OutfitSharing and RSG.OutfitSharing.Enabled then
+        elements[#elements + 1] = {label = RSG.Label.share, value = "ShareOutfit", desc = RSG.Label.share_desc}
+    end
     if not isDefault then
         elements[#elements + 1] = {label = RSG.Label.delete, value = "DeleteOutfit", desc = RSG.Label.delete_desc, danger = true}
     end
@@ -569,6 +572,14 @@ function OutfitsManage(outfitId, isDefault)
             else
                 RSGCore.Functions.Notify({ title = RSG.Label.clothes, description = locale('outfit_wear_failed'), type = 'error', duration = 5000 })
             end
+        elseif data.current.value == 'ShareOutfit' then
+            local player, distance = RSGCore.Functions.GetClosestPlayer()
+            if player == -1 or not distance or distance > RSG.OutfitSharing.MaxDistance then
+                RSGCore.Functions.Notify({ title = RSG.Label.share, description = locale('outfit_share.no_player'), type = 'error', duration = 5000 })
+            else
+                TriggerServerEvent('rsg-character:server:ShareOutfit', outfitId, GetPlayerServerId(player))
+            end
+            Outfits()
         elseif data.current.value == 'DeleteOutfit' then
             local alert = UI.alertDialog({ header = locale('outfit_delete_confirm'), cancel = true })
             if alert == 'confirm' then
@@ -602,8 +613,21 @@ exports('GetClothesCurrentComponentHash', function(name)
     return (textureData and textureData.hash) or 0
 end)
 
+-- the receiving side of an outfit share offer
+RSGCore.Functions.CreateClientCallback('rsg-character:client:confirmShare', function(cb, fromName, outfitName)
+    local result = UI.alertDialog({ header = locale('outfit_share.prompt', fromName, outfitName), cancel = true })
+    cb(result == 'confirm')
+end)
+
 RegisterNetEvent('rsg-character:client:outfits', function()
     Outfits()
+end)
+
+-- open the wardrobe menu (saved outfits) from another resource
+exports('OpenWardrobe', function()
+    if LocalPlayer.state.inClothingStore or LocalPlayer.state.inCharacterSelect then return false end
+    Outfits()
+    return true
 end)
 
 local Cloakroom = GetRandomIntInRange(0, 0xffffff)

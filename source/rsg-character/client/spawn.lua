@@ -113,8 +113,16 @@ local function TeleportToSpawn(coords, heading, fromMenu)
 
 end
 
-local function BuildSpawnElements()
+local function BuildSpawnElements(lastPos)
     local elements = {}
+
+    if lastPos then
+        elements[#elements + 1] = {
+            label = locale('spawn.last_location.label'),
+            value = 'last',
+            desc = locale('spawn.last_location.desc'),
+        }
+    end
 
     for i, loc in ipairs(RSG.SpawnLocations or {}) do
         elements[#elements + 1] = {
@@ -128,14 +136,20 @@ local function BuildSpawnElements()
     return elements
 end
 
-OpenSpawnMenu = function()
+OpenSpawnMenu = function(lastPos)
     -- loading screen (z-index 50) sits above the spawn panel (z-index 20); hide it or the menu is invisible
     UI.HideLoadingScreen()
     local value = UI.OpenSpawnSelect({
         title = locale('spawn.title'),
         subtitle = locale('spawn.subtitle'),
-        elements = BuildSpawnElements(),
+        elements = BuildSpawnElements(lastPos),
     })
+
+    if value == 'last' and lastPos then
+        UI.ShowLoadingScreen(locale('spawn.loading'))
+        TeleportToSpawn(lastPos, lastPos.w, false)
+        return
+    end
 
     local idx = value and tonumber(value:match('^preset_(%d+)$'))
     local loc = idx and RSG.SpawnLocations[idx]
@@ -152,12 +166,12 @@ RegisterNetEvent('rsg-character:client:OpenSpawnSelect', function(lastPos, isNew
     FreezeEntityPosition(ped, true)
     SetEntityVisible(ped, false, false)
 
-    if lastPos then
+    if lastPos and not RSG.SpawnMenuWithLastLocation then
         TeleportToSpawn(lastPos, lastPos.w, false)
         return
     end
 
-    OpenSpawnMenu()
+    OpenSpawnMenu(lastPos)
 end)
 
 local function getFirstVector(value)

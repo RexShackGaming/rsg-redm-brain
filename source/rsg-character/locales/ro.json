@@ -145,7 +145,9 @@
         "delete": "Șterge ținuta",
         "delete_desc": "șterge ținuta",
         "shop": "Magazin de haine",
-        "total": "Preț"
+        "total": "Preț",
+        "share": "Partajează ținuta",
+        "share_desc": "Oferă o copie celui mai apropiat jucător"
     },
     "menu_elements": {
         "head": {
@@ -280,16 +282,7 @@
     },
     "charselect": {
         "title": "Alege personajul",
-        "subtitle": "Alege un personaj sau creează unul nou",
         "unnamed": "Fără nume",
-        "existing": {
-            "desc": "Continuă cu acest personaj"
-        },
-        "hint": {
-            "select": "Click pentru a juca drept ~g~%s~s~",
-            "create": "Click pentru a crea un personaj nou",
-            "controls": "← → Răsfoiește    [Enter] Alege    [DEL] Șterge"
-        },
         "empty": {
             "label": "Creează personaj nou",
             "desc": "Acest slot e gol - creează aici un personaj nou"
@@ -299,14 +292,11 @@
             "title": "Eroare",
             "description": "Personajul nu a putut fi încărcat - încearcă din nou."
         },
-        "slot_label": "Slot %s",
         "slot_taken": {
             "title": "Slot indisponibil",
             "desc": "Slotul tocmai a fost ocupat - alege altul."
         },
         "delete": {
-            "label": "Șterge personajul",
-            "desc": "Șterge definitiv acest personaj - acțiunea nu poate fi anulată",
             "confirm_header": "Ștergi acest personaj? Acțiunea nu poate fi anulată.",
             "loading": "Se șterge personajul..."
         },
@@ -321,8 +311,6 @@
             "create": "Creează"
         },
         "gender": {
-            "title": "Alege sexul",
-            "subtitle": "Nu poate fi schimbat mai târziu",
             "male": "Bărbat",
             "female": "Femeie"
         },
@@ -332,14 +320,14 @@
     "spawn": {
         "title": "Unde vrei să apari?",
         "subtitle": "Alege o locație pentru a intra în lume",
-        "last_location": {
-            "label": "Ultima locație",
-            "desc": "Revino unde te-ai deconectat ultima dată"
-        },
         "preset": {
             "desc": "Apari aici"
         },
-        "loading": "Călătorești..."
+        "loading": "Călătorești...",
+        "last_location": {
+            "label": "Ultima locație",
+            "desc": "Continuă de unde te-ai deconectat"
+        }
     },
     "ui": {
         "back": "Înapoi",
@@ -407,6 +395,10 @@
             "description": "O ținută a fost cumpărată pentru **$%s**.",
             "field_citizenid": "ID cetățean",
             "field_outfit_name": "Numele ținutei"
+        },
+        "admin_action": {
+            "title": "Acțiune admin",
+            "description": "`/%s` folosit pe `%s`"
         }
     },
     "spawn_locations": {
@@ -454,5 +446,39 @@
         "download": "Descarcă de la: %s",
         "newer": "Rulezi o versiune mai nouă (%s) decât cea de la distanță (%s). Posibil build de dezvoltare?"
     },
-    "outfit_wear_failed": "Couldn't wear that outfit here - use a wardrobe or cloakroom"
+    "outfit_wear_failed": "Couldn't wear that outfit here - use a wardrobe or cloakroom",
+    "name_taken": {
+        "title": "Nume deja folosit",
+        "description": "Există deja un personaj cu acest nume și prenume. Alege alt nume."
+    },
+    "admin": {
+        "title": "Administrare personaje",
+        "arg_id": "ID jucător",
+        "arg_first": "Prenume",
+        "arg_last": "Nume",
+        "yes": "da",
+        "no": "nu",
+        "player_not_found": "Jucătorul nu a fost găsit.",
+        "charinfo_help": "Afișează informații despre personaj (doar Admin)",
+        "resetskin_help": "Resetează aspectul pentru ca editorul să se deschidă la următoarea conectare (doar Admin)",
+        "changename_help": "Schimbă numele unui personaj (doar Admin)",
+        "charinfo": "%s %s | CitizenID: %s | Slot: %s | Aspect: %s | Ținute: %s",
+        "skin_reset_done": "Aspectul lui %s %s a fost resetat. Jucătorul trebuie să se reconecteze (/logout) pentru a deschide editorul.",
+        "skin_reset_target": "Un admin ți-a resetat aspectul. Reconectează-te (/logout) pentru a-l recrea.",
+        "name_invalid": "Nume invalid. Doar litere, cu inițiala majusculă (ex. Arthur).",
+        "name_taken": "Acest nume este deja folosit de alt personaj.",
+        "name_changed": "Numele a fost schimbat în %s %s.",
+        "name_changed_target": "Numele personajului tău a fost schimbat în %s %s."
+    },
+    "outfit_share": {
+        "no_player": "Niciun jucător în apropiere.",
+        "too_far": "Jucătorul este prea departe.",
+        "busy": "Jucătorul este ocupat.",
+        "sent": "Ofertă trimisă. Se așteaptă răspunsul...",
+        "prompt": "%s vrea să partajeze ținuta „%s” cu tine. O adaugi în garderobă?",
+        "declined": "Ținuta nu a fost acceptată.",
+        "failed": "Ținuta nu a putut fi partajată (alt tip de corp sau garderobă plină).",
+        "done_sender": "Ținută partajată.",
+        "done_target": "Ținută adăugată în garderoba ta."
+    }
 }

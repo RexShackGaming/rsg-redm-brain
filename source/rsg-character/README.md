@@ -59,30 +59,9 @@ Character selection, character creation, clothing stores, wardrobe and spawn sel
 ## Installation
 
 1. Download the resource and place the `rsg-character` folder in your resources (e.g. `resources/[rsg]/rsg-character`). Keep the folder name `rsg-character` — NUI image paths use it.
-2. Make sure your database has the `playerskins` and `playeroutfit` tables. Most RSG-Core installs already include them. If yours doesn't, run:
+2. Database: the `playerskins` and `playeroutfit` tables are **created automatically** on first start (`RSG.AutoDatabase = true`). To install manually instead, set `RSG.AutoDatabase = false` and import `install.sql`.
 
-```sql
-CREATE TABLE IF NOT EXISTS `playerskins` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT,
-  `citizenid` VARCHAR(255) NOT NULL,
-  `skin` LONGTEXT NOT NULL,
-  `clothes` LONGTEXT NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `citizenid` (`citizenid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS `playeroutfit` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT,
-  `citizenid` VARCHAR(255) NOT NULL,
-  `name` VARCHAR(255) NOT NULL,
-  `clothes` LONGTEXT NOT NULL,
-  `is_default` TINYINT(1) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`),
-  KEY `citizenid` (`citizenid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-```
-
-   On start the script adds the `is_default` column if it's missing and gives every existing character a **Default** outfit copied from what they're wearing.
+   On start the script also adds the `is_default` column if it's missing and gives every existing character a **Default** outfit copied from what they're wearing.
 
 3. Add it to `server.cfg` **after** its dependencies:
 
@@ -112,6 +91,14 @@ Everything is in `shared/config.lua`.
 | Option | Description |
 |---|---|
 | `RSG.Debug` | Prints extra debug info to the client console. |
+| `RSG.SlotRules` | Extra character slots by ACE permission: `{ slots = 6, ace = 'rsgchar.slots6' }`. The highest matching rule wins; empty by default. |
+| `RSG.UniqueNames` | Only one character per first + last name (checked in the creator and again on the server). Default `true`. |
+| `RSG.SpawnMenuWithLastLocation` | Show a "Last Location" card in the spawn menu instead of spawning returning characters automatically. Default `false`. |
+| `RSG.AdminCommands` | `Enabled`, `Permission`, and the command names for `/charinfo`, `/resetskin`, `/changename`. |
+| `RSG.OutfitSharing` | Outfit sharing: `Enabled`, `MaxDistance`, `Cooldown` (s), `AcceptTimeout` (s). |
+| `RSG.AutoDatabase` | Create the `playerskins` / `playeroutfit` tables on start (default `true`). Set `false` to import `install.sql` manually. |
+| `RSG.AllowPushToTalkWhileOpen` | While a menu/NUI is open, game controls are blocked but push-to-talk keeps working (default `true`). |
+| `RSG.PushToTalkControls` | Control hashes that stay enabled while the NUI is open (default `INPUT_PUSH_TO_TALK`). |
 | `RSG.MaxCharacterSlots` | Character slots per player license (default `4`). |
 | `RSG.Birthdate` | `Min`, `Max` and `Default` birth dates (`YYYY-MM-DD`), checked on client and server. |
 | `RSG.Logout` | `/logout` settings: `Enabled`, `Command`, `Cooldown` (seconds), `BlockWhenDead`. |
@@ -167,6 +154,15 @@ Replace the placeholder `https://discord.com/api/webhooks/XXXXXXXX/XXXXXXXX` URL
 5. **Shop for clothes.** Head to a clothing store blip, stand at the prompt and press the open key. Browse categories, try items on, then pay in cash and name the outfit.
 6. **Change outfits.** At a cloakroom or any wardrobe/dresser prop (target it), wear or delete saved outfits.
 
+### Commands (admin)
+| Command | Permission | What it does |
+|---|---|---|
+| `/charinfo [id]` | `RSG.AdminCommands.Permission` | Shows name, citizenid, slot, whether a skin exists and the outfit count. |
+| `/resetskin [id]` | same | Deletes the character's appearance (and Default outfit) so the creator opens on their next login (`/logout`). |
+| `/changename [id] [first] [last]` | same | Renames a character (same name rules and uniqueness check as the creator). |
+
+Use `add_ace group.admin rsgchar.slots6 allow`-style ACE entries to unlock extra slots from `RSG.SlotRules`.
+
 ### Commands
 | Command | Description |
 |---|---|
@@ -196,6 +192,8 @@ Change it with the `CLOTHING_ORDER` table at the top of `client/clothes.lua` (la
 
 ## For developers
 
+Full API reference with examples: [DOCS.md, section 11](DOCS.md#11-developer-api).
+
 Quick reference — full details in [DOCS.md](DOCS.md).
 
 ```lua
@@ -217,17 +215,7 @@ local busy = exports['rsg-character']:IsCothingActive()
 
 ## Changelog
 
-### 3.1.1
-- Current release. See DOCS.md for the full feature/flow reference.
-
-### 3.0.10
-- Notifications use rsg-core notify and callbacks use rsg-core callbacks.
-- Locales load through rsg-core's shared loader; ox_lib is no longer a dependency (data files load with rsg-core's `require`).
-- Wardrobe props use rsg-target instead of ox_target.
-- Removed the unused `rsg-character:server:LoadSkin` net event (could open a free creator session).
-- Wearing a saved outfit re-validates its clothes on the server.
-- The store checks your cash before you leave the fitting room, so you keep your selection if you can't afford it.
-- The client no longer sends its gender when buying clothes (the server uses the character record).
+See [CHANGELOG.md](CHANGELOG.md) for the full history. Latest: **3.3.0** - developer API (server exports, hook events, client exports) and a full DOCS.md rewrite of the API section.
 
 ---
 

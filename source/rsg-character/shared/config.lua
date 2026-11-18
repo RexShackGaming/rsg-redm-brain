@@ -2,6 +2,16 @@ RSG = {}
 
 RSG.Debug = false
 
+-- Create the playerskins / playeroutfit tables automatically on start (CREATE TABLE IF NOT EXISTS).
+-- Set to false to import install.sql manually instead.
+RSG.AutoDatabase = true
+
+-- While the NUI has focus, game controls are blocked but push-to-talk keeps working.
+RSG.AllowPushToTalkWhileOpen = true
+RSG.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK
+}
+
 RSG.ProfanityWords = {
     ['bad word'] = true,
     ['dick'] = true,
@@ -10,6 +20,37 @@ RSG.ProfanityWords = {
 
 -- Character select: how many character slots each player license gets
 RSG.MaxCharacterSlots = 4
+
+-- Extra slots for players with an ACE permission (e.g. VIP / queue tiers). The highest matching
+-- `slots` value wins. Grant with: add_ace group.vip rsgchar.slots6 allow
+RSG.SlotRules = {
+    -- { slots = 5, ace = 'rsgchar.slots5' },
+    -- { slots = 6, ace = 'rsgchar.slots6' },
+}
+
+-- Only one character may use a given first + last name combination
+RSG.UniqueNames = true
+
+-- Spawn select: also offer a "Last Location" card (otherwise returning characters spawn at their
+-- saved position automatically and only new characters see the spawn menu)
+RSG.SpawnMenuWithLastLocation = false
+
+-- Admin commands (permission level for rsg-core commands: 'admin', 'god', ...)
+RSG.AdminCommands = {
+    Enabled = true,
+    Permission = 'admin',
+    CharInfo = 'charinfo',     -- /charinfo [id]
+    ResetSkin = 'resetskin',   -- /resetskin [id]
+    ChangeName = 'changename', -- /changename [id] [first] [last]
+}
+
+-- Wardrobe: share a saved outfit with the nearest player (they must accept)
+RSG.OutfitSharing = {
+    Enabled = true,
+    MaxDistance = 4.0,
+    Cooldown = 10,        -- seconds between share offers per player
+    AcceptTimeout = 15,   -- seconds the other player has to answer
+}
 
 -- Character creator: allowed birthdate range (YYYY-MM-DD), checked on client and server
 RSG.Birthdate = {
@@ -104,6 +145,13 @@ RSG.Webhooks = {
         name = 'Character Logs',
         avatar = '',
         color = 15105570, -- orange
+    },
+    ['admin_action'] = {
+        enabled = false,
+        url = 'https://discord.com/api/webhooks/XXXXXXXX/XXXXXXXX',
+        name = 'Character Logs',
+        avatar = '',
+        color = 16711680, -- red
     },
     ['appearance_saved'] = {
         enabled = true,
@@ -434,6 +482,8 @@ RSG.Label = {
     delete = locale('labels.delete'),
     delete_desc = locale('labels.delete_desc'),
     shop = locale('labels.shop'),
+    share = locale('labels.share'),
+    share_desc = locale('labels.share_desc'),
     total = locale('labels.total'),
 }
 

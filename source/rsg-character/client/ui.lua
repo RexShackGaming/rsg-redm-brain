@@ -1,6 +1,50 @@
 
 UI = {}
 
+-- Single place that grants/releases NUI focus. While focused, game controls are blocked
+-- except push-to-talk (RSG.AllowPushToTalkWhileOpen / RSG.PushToTalkControls).
+local uiFocus = false
+
+function UI.SetFocus(enable)
+    uiFocus = enable
+    if enable then
+        SetNuiFocus(true, true)
+        if RSG.AllowPushToTalkWhileOpen then
+            SetNuiFocusKeepInput(true)
+        end
+    else
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
+end
+
+CreateThread(function()
+    while true do
+        if uiFocus and RSG.AllowPushToTalkWhileOpen then
+            Wait(0)
+            DisableAllControlActions(0)
+            DisableAllControlActions(1)
+            DisableAllControlActions(2)
+            local list = RSG.PushToTalkControls
+            if list then
+                for i = 1, #list do
+                    EnableControlAction(0, list[i], true)
+                    EnableControlAction(1, list[i], true)
+                    EnableControlAction(2, list[i], true)
+                end
+            end
+        else
+            Wait(250)
+        end
+    end
+end)
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName == GetCurrentResourceName() and uiFocus then
+        UI.SetFocus(false)
+    end
+end)
+
 local state = {
     elements = {},
     title = "",
@@ -31,7 +75,7 @@ local function restoreFocusAfterOverlay()
     if state.open then
         sendMenu()
     else
-        SetNuiFocus(false, false)
+        UI.SetFocus(false)
     end
 end
 
@@ -75,20 +119,20 @@ function UI.Open(_type, _resource, _name, menuData, onSelect, onClose, onChange,
     state.open = true
 
     sendMenu()
-    SetNuiFocus(true, true)
+    UI.SetFocus(true)
 end
 
 function UI.CloseAll()
     state.open = false
     state.elements = {}
     SendNUIMessage({ action = "closeAll" })
-    SetNuiFocus(false, false)
+    UI.SetFocus(false)
 end
 
 function UI.inputDialog(header, fields)
     dialogPromise = promise.new()
     SendNUIMessage({ action = "dialog", header = header, fields = fields })
-    SetNuiFocus(true, true)
+    UI.SetFocus(true)
     local result = Citizen.Await(dialogPromise)
     restoreFocusAfterOverlay()
     if result == false or result == nil then
@@ -101,7 +145,7 @@ function UI.alertDialog(opts)
     opts = opts or {}
     alertPromise = promise.new()
     SendNUIMessage({ action = "alert", header = opts.header, cancel = opts.cancel ~= false })
-    SetNuiFocus(true, true)
+    UI.SetFocus(true)
     local result = Citizen.Await(alertPromise)
     restoreFocusAfterOverlay()
     return result
@@ -116,10 +160,10 @@ function UI.OpenSpawnSelect(opts)
         subtitle = opts.subtitle,
         elements = opts.elements or {},
     })
-    SetNuiFocus(true, true)
+    UI.SetFocus(true)
     local value = Citizen.Await(spawnSelectPromise)
     SendNUIMessage({ action = "closeSpawnSelect" })
-    SetNuiFocus(false, false)
+    UI.SetFocus(false)
     return value
 end
 

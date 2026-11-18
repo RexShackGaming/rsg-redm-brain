@@ -145,7 +145,9 @@
         "delete": "Delete Outfit",
         "delete_desc": "delete outfit",
         "shop": "Clothing Store",
-        "total": "Price"
+        "total": "Price",
+        "share": "Share Outfit",
+        "share_desc": "Offer a copy to the nearest player"
     },
     "menu_elements": {
         "head": {
@@ -280,16 +282,7 @@
     },
     "charselect": {
         "title": "Select Character",
-        "subtitle": "Choose a character or create a new one",
         "unnamed": "Unnamed",
-        "existing": {
-            "desc": "Continue playing as this character"
-        },
-        "hint": {
-            "select": "Click to play as ~g~%s~s~",
-            "create": "Click to create a new character",
-            "controls": "← → Browse    [Enter] Select    [DEL] Delete"
-        },
         "empty": {
             "label": "Create New Character",
             "desc": "This slot is empty - start a new character here"
@@ -299,14 +292,11 @@
             "title": "Error",
             "description": "Couldn't load your character - please try again."
         },
-        "slot_label": "Slot %s",
         "slot_taken": {
             "title": "Slot Unavailable",
             "desc": "That character slot was just taken - pick another."
         },
         "delete": {
-            "label": "Delete Character",
-            "desc": "Permanently delete this character - this cannot be undone",
             "confirm_header": "Delete this character? This cannot be undone.",
             "loading": "Deleting character..."
         },
@@ -321,8 +311,6 @@
             "create": "Create"
         },
         "gender": {
-            "title": "Choose Gender",
-            "subtitle": "This can't be changed later",
             "male": "Male",
             "female": "Female"
         },
@@ -332,14 +320,14 @@
     "spawn": {
         "title": "Where do you want to spawn?",
         "subtitle": "Pick a location to enter the world",
-        "last_location": {
-            "label": "Last Location",
-            "desc": "Return to where you last logged off"
-        },
         "preset": {
             "desc": "Spawn here"
         },
-        "loading": "Traveling..."
+        "loading": "Traveling...",
+        "last_location": {
+            "label": "Last Location",
+            "desc": "Continue where you logged out"
+        }
     },
     "ui": {
         "back": "Back",
@@ -407,6 +395,10 @@
             "description": "An outfit was purchased for **$%s**.",
             "field_citizenid": "Citizen ID",
             "field_outfit_name": "Outfit Name"
+        },
+        "admin_action": {
+            "title": "Admin Action",
+            "description": "`/%s` used on `%s`"
         }
     },
     "spawn_locations": {
@@ -454,5 +446,39 @@
         "download": "Download from: %s",
         "newer": "You are running a newer version (%s) than the remote (%s). Possible dev build?"
     },
-    "outfit_wear_failed": "Couldn't wear that outfit here - use a wardrobe or cloakroom"
+    "outfit_wear_failed": "Couldn't wear that outfit here - use a wardrobe or cloakroom",
+    "name_taken": {
+        "title": "Name Taken",
+        "description": "A character with that first and last name already exists. Please choose another name."
+    },
+    "admin": {
+        "title": "Character Admin",
+        "arg_id": "Player ID",
+        "arg_first": "First name",
+        "arg_last": "Last name",
+        "yes": "yes",
+        "no": "no",
+        "player_not_found": "Player not found.",
+        "charinfo_help": "Show character info (Admin only)",
+        "resetskin_help": "Reset a character's appearance so the creator opens on next login (Admin only)",
+        "changename_help": "Change a character's name (Admin only)",
+        "charinfo": "%s %s | CitizenID: %s | Slot: %s | Skin: %s | Outfits: %s",
+        "skin_reset_done": "Appearance reset for %s %s. They must relog (/logout) to open the creator.",
+        "skin_reset_target": "An admin reset your appearance. Relog (/logout) to recreate it.",
+        "name_invalid": "Invalid name. Use letters only with a capital first letter (e.g. Arthur).",
+        "name_taken": "That name is already used by another character.",
+        "name_changed": "Name changed to %s %s.",
+        "name_changed_target": "Your character's name was changed to %s %s."
+    },
+    "outfit_share": {
+        "no_player": "No player nearby to share with.",
+        "too_far": "That player is too far away.",
+        "busy": "That player is busy.",
+        "sent": "Offer sent. Waiting for a response...",
+        "prompt": "%s wants to share the outfit \"%s\" with you. Add it to your wardrobe?",
+        "declined": "The outfit was not accepted.",
+        "failed": "The outfit could not be shared (different body type or wardrobe full).",
+        "done_sender": "Outfit shared.",
+        "done_target": "Outfit added to your wardrobe."
+    }
 }

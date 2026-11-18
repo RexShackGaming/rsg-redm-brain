@@ -4,6 +4,7 @@ RSGCore = exports['rsg-core']:GetCoreObject()
 -- a creator session only exists after the server itself sent OpenCreator.
 CreatorSessions = {}   -- [src] = { cid = number|nil, isNew = bool, created = bool }
 local assignedBuckets = {} -- [src] = bucket this resource put the player in
+local previousBuckets = {} -- [src] = bucket the player was in before this resource moved them
 
 local MAX_JSON_SIZE = 32768
 
@@ -11,7 +12,10 @@ local MAX_JSON_SIZE = 32768
 -- Routing buckets
 ---------------------------------------------------------------------------
 function RSG.SetPrivateBucket(src)
+    -- already in one of our private buckets: keep it (no bucket churn, and the stored previous bucket stays correct)
+    if assignedBuckets[src] and GetPlayerRoutingBucket(src) == assignedBuckets[src] then return end
     local bucket = math.random(10000, 0xfffff)
+    previousBuckets[src] = GetPlayerRoutingBucket(src)
     SetRoutingBucketPopulationEnabled(bucket, false)
     SetPlayerRoutingBucket(src, bucket)
     assignedBuckets[src] = bucket
@@ -22,9 +26,11 @@ function RSG.ResetBucket(src)
     -- this resource to escape instances created by other resources (jail etc.)
     if not assignedBuckets[src] then return end
     if GetPlayerRoutingBucket(src) == assignedBuckets[src] then
-        SetPlayerRoutingBucket(src, 0)
+        -- put them back where they were, not blindly in bucket 0 (e.g. a house or jail instance)
+        SetPlayerRoutingBucket(src, previousBuckets[src] or 0)
     end
     assignedBuckets[src] = nil
+    previousBuckets[src] = nil
 end
 
 local function IsNearClothingStore(src, maxDist)
@@ -39,6 +45,15 @@ local function IsNearClothingStore(src, maxDist)
     return false
 end
 RSG.IsNearClothingStore = IsNearClothingStore
+
+function RSG.NotifyLoginFailed(src)
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
+        title = locale('charselect.login_failed.title'),
+        description = locale('charselect.login_failed.description'),
+        type = 'error',
+        duration = 5000,
+    })
+end
 
 -- Only used by the clothing store now: random = enter fitting room, otherwise leave it.
 RegisterNetEvent('rsg-character:server:SetPlayerBucket', function(_, random)
@@ -55,6 +70,7 @@ end)
 AddEventHandler('playerDropped', function()
     CreatorSessions[source] = nil
     assignedBuckets[source] = nil
+    previousBuckets[source] = nil
 end)
 
 ---------------------------------------------------------------------------
@@ -92,14 +108,23 @@ RegisterNetEvent('rsg-character:server:SaveSkin', function(skin, clothes)
 
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return end
-    if not ValidateSkin(skin) or type(clothes) ~= 'table' then return end
+    if not ValidateSkin(skin) or type(clothes) ~= 'table' then
+        RSG.NotifyLoginFailed(src)
+        return
+    end
 
     local gender = tonumber(Player.PlayerData.charinfo and Player.PlayerData.charinfo.gender) or 0
     skin.sex = gender == 1 and 2 or 1 -- trust the character record, not the client
-    if not ValidateClothesData(clothes, gender == 0) then return end
+    if not ValidateClothesData(clothes, gender == 0) then
+        RSG.NotifyLoginFailed(src)
+        return
+    end
 
     local encodedSkin, encodedClothes = json.encode(skin), json.encode(clothes)
-    if #encodedSkin > MAX_JSON_SIZE or #encodedClothes > MAX_JSON_SIZE then return end
+    if #encodedSkin > MAX_JSON_SIZE or #encodedClothes > MAX_JSON_SIZE then
+        RSG.NotifyLoginFailed(src)
+        return
+    end
 
     local citizenid = Player.PlayerData.citizenid
     local affected = MySQL.update.await('UPDATE playerskins SET skin = ?, clothes = ? WHERE citizenid = ?', { encodedSkin, encodedClothes, citizenid })
@@ -118,6 +143,7 @@ RegisterNetEvent('rsg-character:server:SaveSkin', function(skin, clothes)
     local isNew = session.isNew
     CreatorSessions[src] = nil
     RSG.ResetBucket(src)
+    TriggerEvent('rsg-character:server:appearanceSaved', src, citizenid, isNew)
     TriggerClientEvent('rsg-character:client:OpenSpawnSelect', src, nil, isNew)
 
     local identityFields = RSG.WebhookIdentityFields(src)
@@ -213,6 +239,26 @@ local function IsValidName(name)
         and name:match('^%u%l+$') ~= nil and not RSG.ProfanityWords[name:lower()]
 end
 
+RSG.IsValidName = IsValidName
+
+function RSG.NameExists(firstname, lastname, excludeCitizenid)
+    if not RSG.UniqueNames then return false end
+    return MySQL.scalar.await([[
+        SELECT 1 FROM players
+        WHERE JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.firstname')) = ?
+          AND JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.lastname')) = ?
+          AND citizenid <> ?
+        LIMIT 1
+    ]], { firstname, lastname, excludeCitizenid or '' }) ~= nil
+end
+
+-- the creator asks before the player spends time on the appearance steps
+RSGCore.Functions.CreateCallback('rsg-character:server:isNameAvailable', function(src, cb, firstname, lastname)
+    local session = CreatorSessions[src]
+    if not session or not session.isNew or not IsValidName(firstname) or not IsValidName(lastname) then return cb(false) end
+    cb(not RSG.NameExists(firstname, lastname))
+end)
+
 RegisterNetEvent('rsg-multicharacter:server:createCharacter', function(newData)
     local src = source
     local session = CreatorSessions[src]
@@ -233,11 +279,23 @@ RegisterNetEvent('rsg-multicharacter:server:createCharacter', function(newData)
     end
 
     local license = RSGCore.Functions.GetIdentifier(src, 'license')
-    if not license then return end
+    if not license then
+        CreatorSessions[src] = nil
+        RSG.NotifyLoginFailed(src)
+        TriggerClientEvent('rsg-character:client:OpenCharSelect', src)
+        return
+    end
 
     if MySQL.scalar.await('SELECT citizenid FROM players WHERE license = ? AND cid = ?', { license, cid }) then
         CreatorSessions[src] = nil
         TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('charselect.slot_taken.title'), description = locale('charselect.slot_taken.desc'), type = 'error', duration = 5000 })
+        TriggerClientEvent('rsg-character:client:OpenCharSelect', src)
+        return
+    end
+
+    if RSG.NameExists(newData.firstname, newData.lastname) then
+        CreatorSessions[src] = nil
+        TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('name_taken.title'), description = locale('name_taken.description'), type = 'error', duration = 7000 })
         TriggerClientEvent('rsg-character:client:OpenCharSelect', src)
         return
     end
@@ -259,6 +317,8 @@ RegisterNetEvent('rsg-multicharacter:server:createCharacter', function(newData)
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then
         CreatorSessions[src] = nil
+        RSG.NotifyLoginFailed(src)
+        TriggerClientEvent('rsg-character:client:OpenCharSelect', src)
         return
     end
 
@@ -269,6 +329,8 @@ RegisterNetEvent('rsg-multicharacter:server:createCharacter', function(newData)
             TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items[itemName], 'add', amount)
         end
     end
+
+    TriggerEvent('rsg-character:server:characterCreated', src, Player.PlayerData.citizenid, cid)
 
     local identityFields = RSG.WebhookIdentityFields(src)
     RSG.SendWebhook('character_created', {

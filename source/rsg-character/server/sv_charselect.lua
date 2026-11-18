@@ -6,8 +6,18 @@ local function SafeDecode(value)
     return ok and decoded or nil
 end
 
-local function GetCharacterSlots(license)
+-- base slots plus the best matching ACE rule from RSG.SlotRules
+function RSG.GetMaxSlots(src)
     local maxSlots = RSG.MaxCharacterSlots or 4
+    for _, rule in ipairs(RSG.SlotRules or {}) do
+        if rule.slots and rule.slots > maxSlots and rule.ace and IsPlayerAceAllowed(src, rule.ace) then
+            maxSlots = rule.slots
+        end
+    end
+    return maxSlots
+end
+
+local function GetCharacterSlots(license, maxSlots)
     local slots = {}
     for i = 1, maxSlots do
         slots[i] = { cid = i, exists = false }
@@ -46,7 +56,11 @@ local function GetCharacterSlots(license)
 end
 
 local deleteCooldown = {}
-AddEventHandler('playerDropped', function() deleteCooldown[source] = nil end)
+local selecting = {} -- [src] = true while a character login is in progress (blocks double-clicks)
+AddEventHandler('playerDropped', function()
+    deleteCooldown[source] = nil
+    selecting[source] = nil
+end)
 
 local function OwnsCharacter(license, citizenid)
     if type(citizenid) ~= 'string' then return false end
@@ -60,7 +74,7 @@ local function SendSlots(src)
         TriggerClientEvent('rsg-character:client:CharSelectFailed', src)
         return
     end
-    TriggerClientEvent('rsg-character:client:ReceiveCharacterSlots', src, GetCharacterSlots(license))
+    TriggerClientEvent('rsg-character:client:ReceiveCharacterSlots', src, GetCharacterSlots(license, RSG.GetMaxSlots(src)))
 end
 
 RegisterNetEvent('rsg-character:server:RequestCharacterSlots', function()
@@ -79,10 +93,7 @@ RegisterNetEvent('rsg-character:server:RequestCharacterSlots', function()
     end
 end)
 
-RegisterNetEvent('rsg-character:server:SelectCharacterSlot', function(citizenid)
-    local src = source
-    if RSGCore.Functions.GetPlayer(src) then return end
-
+local function SelectCharacter(src, citizenid)
     local license = RSGCore.Functions.GetIdentifier(src, 'license')
     if not license or type(citizenid) ~= 'string' then
         TriggerClientEvent('rsg-character:client:CharSelectFailed', src)
@@ -125,18 +136,37 @@ RegisterNetEvent('rsg-character:server:SelectCharacterSlot', function(citizenid)
         and tonumber(pos.x) and tonumber(pos.y) and tonumber(pos.z)
         and (math.abs(pos.x) > 1.0 or math.abs(pos.y) > 1.0 or math.abs(pos.z) > 1.0)
 
+    TriggerEvent('rsg-character:server:characterSelected', src, citizenid)
     TriggerClientEvent('rsg-character:client:OpenSpawnSelect', src, isValidPos and pos or nil)
+end
+
+RegisterNetEvent('rsg-character:server:SelectCharacterSlot', function(citizenid)
+    local src = source
+    if RSGCore.Functions.GetPlayer(src) or selecting[src] then return end
+    selecting[src] = true
+    local ok, err = pcall(SelectCharacter, src, citizenid)
+    selecting[src] = nil
+    if not ok then
+        print(('[rsg-character] character select failed for %s: %s'):format(src, tostring(err)))
+        TriggerClientEvent('rsg-character:client:CharSelectFailed', src)
+    end
 end)
 
 RegisterNetEvent('rsg-character:server:DeleteCharacterSlot', function(citizenid)
     local src = source
     if RSGCore.Functions.GetPlayer(src) then return end
     local now = GetGameTimer()
-    if deleteCooldown[src] and now - deleteCooldown[src] < 3000 then return end
+    if deleteCooldown[src] and now - deleteCooldown[src] < 3000 then
+        TriggerClientEvent('rsg-character:client:CharSelectFailed', src)
+        return
+    end
     deleteCooldown[src] = now
 
     local license = RSGCore.Functions.GetIdentifier(src, 'license')
-    if not license or not OwnsCharacter(license, citizenid) then return end
+    if not license or not OwnsCharacter(license, citizenid) then
+        TriggerClientEvent('rsg-character:client:CharSelectFailed', src)
+        return
+    end
 
     local charRow = MySQL.single.await('SELECT charinfo FROM players WHERE citizenid = ?', { citizenid })
     local info = charRow and SafeDecode(charRow.charinfo) or {}
@@ -153,6 +183,8 @@ RegisterNetEvent('rsg-character:server:DeleteCharacterSlot', function(citizenid)
         fields = { identityFields[1], identityFields[2] },
     })
 
+    TriggerEvent('rsg-character:server:characterDeleted', src, citizenid)
+
     Wait(300)
     SendSlots(src)
 end)
@@ -163,7 +195,7 @@ RegisterNetEvent('rsg-character:server:RequestCreateCharacterSlot', function(cid
 
     local license = RSGCore.Functions.GetIdentifier(src, 'license')
     cid = tonumber(cid)
-    if not license or not cid or cid < 1 or cid > (RSG.MaxCharacterSlots or 4) or cid % 1 ~= 0 then
+    if not license or not cid or cid < 1 or cid > RSG.GetMaxSlots(src) or cid % 1 ~= 0 then
         TriggerClientEvent('rsg-character:client:CharSelectFailed', src)
         return
     end

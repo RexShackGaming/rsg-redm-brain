@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-character'
-version '3.1.3'
+version '3.3.0'
 
 shared_scripts {
     '@rsg-core/shared/require.lua',

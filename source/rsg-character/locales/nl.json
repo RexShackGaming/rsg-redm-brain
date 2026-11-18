@@ -145,7 +145,9 @@
         "delete": "Outfit verwijderen",
         "delete_desc": "outfit verwijderen",
         "shop": "Kledingwinkel",
-        "total": "Prijs"
+        "total": "Prijs",
+        "share": "Outfit delen",
+        "share_desc": "Bied een kopie aan de dichtstbijzijnde speler aan"
     },
     "menu_elements": {
         "head": {
@@ -280,16 +282,7 @@
     },
     "charselect": {
         "title": "Kies personage",
-        "subtitle": "Kies een personage of maak een nieuw",
         "unnamed": "Naamloos",
-        "existing": {
-            "desc": "Verder spelen met dit personage"
-        },
-        "hint": {
-            "select": "Klik om te spelen als ~g~%s~s~",
-            "create": "Klik om een nieuw personage te maken",
-            "controls": "← → Bladeren    [Enter] Kiezen    [DEL] Verwijderen"
-        },
         "empty": {
             "label": "Nieuw personage maken",
             "desc": "Dit slot is leeg - begin hier een nieuw personage"
@@ -299,14 +292,11 @@
             "title": "Fout",
             "description": "Kon je personage niet laden - probeer het opnieuw."
         },
-        "slot_label": "Slot %s",
         "slot_taken": {
             "title": "Slot niet beschikbaar",
             "desc": "Dat slot is net bezet - kies een ander."
         },
         "delete": {
-            "label": "Personage verwijderen",
-            "desc": "Dit personage permanent verwijderen - dit kan niet ongedaan worden gemaakt",
             "confirm_header": "Dit personage verwijderen? Dit kan niet ongedaan worden gemaakt.",
             "loading": "Personage verwijderen..."
         },
@@ -321,8 +311,6 @@
             "create": "Maken"
         },
         "gender": {
-            "title": "Kies geslacht",
-            "subtitle": "Dit kan later niet worden gewijzigd",
             "male": "Man",
             "female": "Vrouw"
         },
@@ -332,14 +320,14 @@
     "spawn": {
         "title": "Waar wil je spawnen?",
         "subtitle": "Kies een locatie om de wereld te betreden",
-        "last_location": {
-            "label": "Laatste locatie",
-            "desc": "Keer terug naar waar je het laatst uitlogde"
-        },
         "preset": {
             "desc": "Hier spawnen"
         },
-        "loading": "Onderweg..."
+        "loading": "Onderweg...",
+        "last_location": {
+            "label": "Laatste locatie",
+            "desc": "Ga verder waar je was uitgelogd"
+        }
     },
     "ui": {
         "back": "Terug",
@@ -407,6 +395,10 @@
             "description": "Er is een outfit gekocht voor **$%s**.",
             "field_citizenid": "Burger-ID",
             "field_outfit_name": "Outfitnaam"
+        },
+        "admin_action": {
+            "title": "Admin-actie",
+            "description": "`/%s` gebruikt op `%s`"
         }
     },
     "spawn_locations": {
@@ -454,5 +446,39 @@
         "download": "Download via: %s",
         "newer": "Je gebruikt een nieuwere versie (%s) dan de remote (%s). Mogelijk een dev-build?"
     },
-    "outfit_wear_failed": "Couldn't wear that outfit here - use a wardrobe or cloakroom"
+    "outfit_wear_failed": "Couldn't wear that outfit here - use a wardrobe or cloakroom",
+    "name_taken": {
+        "title": "Naam bezet",
+        "description": "Er bestaat al een personage met deze voor- en achternaam. Kies een andere naam."
+    },
+    "admin": {
+        "title": "Personagebeheer",
+        "arg_id": "Speler-ID",
+        "arg_first": "Voornaam",
+        "arg_last": "Achternaam",
+        "yes": "ja",
+        "no": "nee",
+        "player_not_found": "Speler niet gevonden.",
+        "charinfo_help": "Personage-info tonen (alleen Admin)",
+        "resetskin_help": "Uiterlijk resetten zodat de creator bij de volgende login opent (alleen Admin)",
+        "changename_help": "Naam van een personage wijzigen (alleen Admin)",
+        "charinfo": "%s %s | CitizenID: %s | Slot: %s | Uiterlijk: %s | Outfits: %s",
+        "skin_reset_done": "Uiterlijk van %s %s gereset. De speler moet opnieuw inloggen (/logout) om de creator te openen.",
+        "skin_reset_target": "Een admin heeft je uiterlijk gereset. Log opnieuw in (/logout) om het opnieuw te maken.",
+        "name_invalid": "Ongeldige naam. Alleen letters met een hoofdletter vooraan (bijv. Arthur).",
+        "name_taken": "Die naam wordt al door een ander personage gebruikt.",
+        "name_changed": "Naam gewijzigd naar %s %s.",
+        "name_changed_target": "De naam van je personage is gewijzigd naar %s %s."
+    },
+    "outfit_share": {
+        "no_player": "Geen speler in de buurt.",
+        "too_far": "Die speler is te ver weg.",
+        "busy": "Die speler is bezig.",
+        "sent": "Aanbod verstuurd. Wachten op antwoord...",
+        "prompt": "%s wil het outfit \"%s\" met je delen. Toevoegen aan je garderobe?",
+        "declined": "Het outfit is niet geaccepteerd.",
+        "failed": "Het outfit kon niet worden gedeeld (ander lichaamstype of garderobe vol).",
+        "done_sender": "Outfit gedeeld.",
+        "done_target": "Outfit toegevoegd aan je garderobe."
+    }
 }

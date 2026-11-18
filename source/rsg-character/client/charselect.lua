@@ -67,8 +67,7 @@ local function EndScene()
     end
 
     UI.HideCharacterInfo()
-    SetNuiFocusKeepInput(false)
-    SetNuiFocus(false, false)
+    UI.SetFocus(false)
     activeEntry = nil
     lastShownKey = nil
 end
@@ -309,6 +308,9 @@ AddEventHandler('rsg-character:client:CharInfoGenderChange', function(gender)
 end)
 
 local function HandlePickPed(entry)
+    -- one pick per scene: a double-click would otherwise fire the server event twice
+    if sceneInputPaused then return end
+    sceneInputPaused = true
     if entry.slot.exists then
         local citizenid = entry.slot.citizenid
         DoScreenFadeOut(250)
@@ -329,6 +331,7 @@ local function HandlePickPed(entry)
 end
 
 local function HandleDeletePed(entry)
+    if sceneInputPaused then return end
     sceneInputPaused = true
     local confirmed = UI.alertDialog({
         header = locale('charselect.delete.confirm_header'),
@@ -342,8 +345,7 @@ local function HandleDeletePed(entry)
         TriggerServerEvent('rsg-character:server:DeleteCharacterSlot', entry.slot.citizenid)
     else
         sceneInputPaused = false
-        SetNuiFocus(true, true)
-        SetNuiFocusKeepInput(true)
+        UI.SetFocus(true)
     end
 end
 
@@ -523,7 +525,7 @@ local function RunCharSelectScene(slots)
     ClearNearbyPeds(clearCoords, 20.0)
     ClearNearbyVehicles(clearCoords, 20.0)
 
-    -- Stop weathersync fighting the scene, and force a bright clear midday
+    -- Stop the weather system fighting the scene, and force a bright clear midday
     pcall(function() exports['rsg-weather']:setSyncEnabled(false) end)
     pcall(function() exports['rsg-weather']:setMyWeather('sunny', 0, false) end)
     pcall(function() exports['rsg-weather']:setMyTime(12, 0, 0, 0) end)
@@ -553,8 +555,7 @@ local function RunCharSelectScene(slots)
     sceneInputPaused = false
     LocalPlayer.state.inCharacterSelect = true
 
-    SetNuiFocus(true, true)
-    SetNuiFocusKeepInput(true)
+    UI.SetFocus(true)
 
     FadeInSceneIfNeeded()
 
@@ -625,4 +626,9 @@ RegisterNetEvent('rsg-character:client:BeginLogout', function()
     end
     FreezeEntityPosition(ped, true)
     SetEntityVisible(ped, false, false)
+end)
+
+-- true while the character select lineup is on screen
+exports('IsInCharacterSelect', function()
+    return LocalPlayer.state.inCharacterSelect == true
 end)

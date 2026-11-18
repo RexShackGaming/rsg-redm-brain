@@ -145,7 +145,9 @@
         "delete": "衣装を削除",
         "delete_desc": "衣装を削除",
         "shop": "洋服店",
-        "total": "価格"
+        "total": "価格",
+        "share": "衣装を共有",
+        "share_desc": "最も近いプレイヤーにコピーを提案"
     },
     "menu_elements": {
         "head": {
@@ -280,16 +282,7 @@
     },
     "charselect": {
         "title": "キャラクター選択",
-        "subtitle": "キャラクターを選ぶか新しく作成してください",
         "unnamed": "名前なし",
-        "existing": {
-            "desc": "このキャラクターでプレイを続ける"
-        },
-        "hint": {
-            "select": "クリックして ~g~%s~s~ でプレイ",
-            "create": "クリックして新しいキャラクターを作成",
-            "controls": "← → 切替    [Enter] 選択    [DEL] 削除"
-        },
         "empty": {
             "label": "新しいキャラクターを作成",
             "desc": "このスロットは空です - ここで新しいキャラクターを作成"
@@ -299,14 +292,11 @@
             "title": "エラー",
             "description": "キャラクターを読み込めませんでした - もう一度お試しください。"
         },
-        "slot_label": "スロット %s",
         "slot_taken": {
             "title": "スロット使用不可",
             "desc": "そのスロットは使用されたばかりです - 別のスロットを選んでください。"
         },
         "delete": {
-            "label": "キャラクターを削除",
-            "desc": "このキャラクターを完全に削除します - 元に戻せません",
             "confirm_header": "このキャラクターを削除しますか？元に戻せません。",
             "loading": "キャラクターを削除中..."
         },
@@ -321,8 +311,6 @@
             "create": "作成"
         },
         "gender": {
-            "title": "性別を選択",
-            "subtitle": "後から変更できません",
             "male": "男性",
             "female": "女性"
         },
@@ -332,14 +320,14 @@
     "spawn": {
         "title": "どこにスポーンしますか？",
         "subtitle": "世界に入る場所を選んでください",
-        "last_location": {
-            "label": "最後の場所",
-            "desc": "最後にログアウトした場所に戻る"
-        },
         "preset": {
             "desc": "ここにスポーン"
         },
-        "loading": "移動中..."
+        "loading": "移動中...",
+        "last_location": {
+            "label": "前回の場所",
+            "desc": "ログアウトした場所から再開"
+        }
     },
     "ui": {
         "back": "戻る",
@@ -407,6 +395,10 @@
             "description": "衣装が **$%s** で購入されました。",
             "field_citizenid": "市民ID",
             "field_outfit_name": "衣装名"
+        },
+        "admin_action": {
+            "title": "管理者の操作",
+            "description": "`/%s` を `%s` に使用"
         }
     },
     "spawn_locations": {
@@ -454,5 +446,39 @@
         "download": "ダウンロード: %s",
         "newer": "新しいバージョン (%s) を使用しています（リモート: %s）。開発版ですか？"
     },
-    "outfit_wear_failed": "Couldn't wear that outfit here - use a wardrobe or cloakroom"
+    "outfit_wear_failed": "Couldn't wear that outfit here - use a wardrobe or cloakroom",
+    "name_taken": {
+        "title": "名前は使用済み",
+        "description": "その姓名のキャラクターは既に存在します。別の名前を選んでください。"
+    },
+    "admin": {
+        "title": "キャラクター管理",
+        "arg_id": "プレイヤーID",
+        "arg_first": "名",
+        "arg_last": "姓",
+        "yes": "あり",
+        "no": "なし",
+        "player_not_found": "プレイヤーが見つかりません。",
+        "charinfo_help": "キャラクター情報を表示（管理者のみ）",
+        "resetskin_help": "外見をリセットし、次回ログイン時にクリエイターを開く（管理者のみ）",
+        "changename_help": "キャラクター名を変更（管理者のみ）",
+        "charinfo": "%s %s | CitizenID: %s | スロット: %s | 外見: %s | 衣装: %s",
+        "skin_reset_done": "%s %s の外見をリセットしました。クリエイターを開くには再ログイン（/logout）が必要です。",
+        "skin_reset_target": "管理者があなたの外見をリセットしました。再ログイン（/logout）して作り直してください。",
+        "name_invalid": "無効な名前です。先頭が大文字の英字のみ使用できます（例: Arthur）。",
+        "name_taken": "その名前は別のキャラクターが使用しています。",
+        "name_changed": "名前を %s %s に変更しました。",
+        "name_changed_target": "あなたのキャラクター名が %s %s に変更されました。"
+    },
+    "outfit_share": {
+        "no_player": "近くに共有できるプレイヤーがいません。",
+        "too_far": "そのプレイヤーは遠すぎます。",
+        "busy": "そのプレイヤーは対応中です。",
+        "sent": "提案を送信しました。返答を待っています...",
+        "prompt": "%s が衣装「%s」を共有しようとしています。ワードローブに追加しますか？",
+        "declined": "衣装は受け入れられませんでした。",
+        "failed": "衣装を共有できませんでした（体型が異なる、またはワードローブが満杯）。",
+        "done_sender": "衣装を共有しました。",
+        "done_target": "衣装がワードローブに追加されました。"
+    }
 }

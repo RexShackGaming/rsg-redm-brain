@@ -145,7 +145,9 @@
         "delete": "Usuń strój",
         "delete_desc": "usuń strój",
         "shop": "Sklep z ubraniami",
-        "total": "Cena"
+        "total": "Cena",
+        "share": "Udostępnij strój",
+        "share_desc": "Zaproponuj kopię najbliższemu graczowi"
     },
     "menu_elements": {
         "head": {
@@ -280,16 +282,7 @@
     },
     "charselect": {
         "title": "Wybierz postać",
-        "subtitle": "Wybierz postać lub stwórz nową",
         "unnamed": "Bez imienia",
-        "existing": {
-            "desc": "Graj dalej tą postacią"
-        },
-        "hint": {
-            "select": "Kliknij, aby grać jako ~g~%s~s~",
-            "create": "Kliknij, aby stworzyć nową postać",
-            "controls": "← → Przeglądaj    [Enter] Wybierz    [DEL] Usuń"
-        },
         "empty": {
             "label": "Stwórz nową postać",
             "desc": "Ten slot jest pusty - stwórz tu nową postać"
@@ -299,14 +292,11 @@
             "title": "Błąd",
             "description": "Nie udało się wczytać postaci - spróbuj ponownie."
         },
-        "slot_label": "Slot %s",
         "slot_taken": {
             "title": "Slot niedostępny",
             "desc": "Ten slot właśnie został zajęty - wybierz inny."
         },
         "delete": {
-            "label": "Usuń postać",
-            "desc": "Trwale usuń tę postać - tego nie można cofnąć",
             "confirm_header": "Usunąć tę postać? Tego nie można cofnąć.",
             "loading": "Usuwanie postaci..."
         },
@@ -321,8 +311,6 @@
             "create": "Stwórz"
         },
         "gender": {
-            "title": "Wybierz płeć",
-            "subtitle": "Nie można tego później zmienić",
             "male": "Mężczyzna",
             "female": "Kobieta"
         },
@@ -332,14 +320,14 @@
     "spawn": {
         "title": "Gdzie chcesz się pojawić?",
         "subtitle": "Wybierz miejsce, aby wejść do świata",
-        "last_location": {
-            "label": "Ostatnia lokalizacja",
-            "desc": "Wróć tam, gdzie się ostatnio wylogowałeś"
-        },
         "preset": {
             "desc": "Pojaw się tutaj"
         },
-        "loading": "Podróż..."
+        "loading": "Podróż...",
+        "last_location": {
+            "label": "Ostatnia lokalizacja",
+            "desc": "Kontynuuj tam, gdzie się wylogowałeś"
+        }
     },
     "ui": {
         "back": "Wstecz",
@@ -407,6 +395,10 @@
             "description": "Kupiono strój za **$%s**.",
             "field_citizenid": "ID obywatela",
             "field_outfit_name": "Nazwa stroju"
+        },
+        "admin_action": {
+            "title": "Akcja administratora",
+            "description": "Użyto `/%s` na `%s`"
         }
     },
     "spawn_locations": {
@@ -454,5 +446,39 @@
         "download": "Pobierz z: %s",
         "newer": "Używasz nowszej wersji (%s) niż zdalna (%s). Możliwa wersja deweloperska?"
     },
-    "outfit_wear_failed": "Couldn't wear that outfit here - use a wardrobe or cloakroom"
+    "outfit_wear_failed": "Couldn't wear that outfit here - use a wardrobe or cloakroom",
+    "name_taken": {
+        "title": "Imię zajęte",
+        "description": "Postać o tym imieniu i nazwisku już istnieje. Wybierz inne imię."
+    },
+    "admin": {
+        "title": "Administracja postaci",
+        "arg_id": "ID gracza",
+        "arg_first": "Imię",
+        "arg_last": "Nazwisko",
+        "yes": "tak",
+        "no": "nie",
+        "player_not_found": "Nie znaleziono gracza.",
+        "charinfo_help": "Pokaż informacje o postaci (tylko Admin)",
+        "resetskin_help": "Zresetuj wygląd, aby kreator otworzył się przy następnym logowaniu (tylko Admin)",
+        "changename_help": "Zmień imię i nazwisko postaci (tylko Admin)",
+        "charinfo": "%s %s | CitizenID: %s | Slot: %s | Wygląd: %s | Stroje: %s",
+        "skin_reset_done": "Zresetowano wygląd postaci %s %s. Gracz musi zalogować się ponownie (/logout), aby otworzyć kreator.",
+        "skin_reset_target": "Administrator zresetował Twój wygląd. Zaloguj się ponownie (/logout), aby stworzyć go od nowa.",
+        "name_invalid": "Nieprawidłowe imię. Tylko litery, pierwsza wielka (np. Arthur).",
+        "name_taken": "To imię i nazwisko jest już używane przez inną postać.",
+        "name_changed": "Zmieniono imię i nazwisko na %s %s.",
+        "name_changed_target": "Imię i nazwisko Twojej postaci zmieniono na %s %s."
+    },
+    "outfit_share": {
+        "no_player": "Brak graczy w pobliżu.",
+        "too_far": "Ten gracz jest zbyt daleko.",
+        "busy": "Ten gracz jest zajęty.",
+        "sent": "Oferta wysłana. Oczekiwanie na odpowiedź...",
+        "prompt": "%s chce udostępnić Ci strój „%s”. Dodać do garderoby?",
+        "declined": "Strój nie został zaakceptowany.",
+        "failed": "Nie udało się udostępnić stroju (inny typ sylwetki lub pełna garderoba).",
+        "done_sender": "Strój udostępniony.",
+        "done_target": "Strój dodany do Twojej garderoby."
+    }
 }
