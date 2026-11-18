@@ -27,7 +27,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-cinema](rsg-cinema.md) | rsg-cinema - moving picture shows rebuilt from RDR2 show_movie_magic_lantern | 0 | 8 |
 | [rsg-consume](rsg-consume.md) | Universal consumption system for RedM using RSG Core. > Immersive eating and drinking system for RedM serv | 0 | 2 |
 | [rsg-cooking](rsg-cooking.md) | A cooking system for RSG-Core (RedM) that works the same way as [rsg-moonshine](https://github.com/Rexshac | 8 | 7 |
-| [rsg-core](rsg-core.md) | The core framework for RSG RedM servers: players, characters, money, jobs (with built-in multi-job), gangs, pe | 35 | 42 |
+| [rsg-core](rsg-core.md) | The core framework for RSG RedM servers: players, characters, money, jobs (with built-in multi-job), gangs, pe | 42 | 42 |
 | [rsg-crafting](rsg-crafting.md) | An XP-based crafting book for RSG-Core (RedM). Players use a crafting book item to open a NUI menu. From t | 5 | 2 |
 | [rsg-deliveries](rsg-deliveries.md) | Wagon delivery system RSG Framework | 0 | 4 |
 | [rsg-doorlock](rsg-doorlock.md) | A database-driven door lock system for RedM using the RSG Framework. Doors are created, edited and del | 0 | 7 |
