@@ -28,7 +28,7 @@ A combined RedM / RSG-Core resource that adds hunting dogs **and** hunting birds
 
 ### Multi-language support
 - All in-game notifications, prompts, menu text and the shop UI itself are fully localized via `rsg-core`'s locale system.
-- Shipped languages: **English (en), German (de), Greek (el), Spanish (es), French (fr), Japanese (ja), Dutch (nl), Polish (pl), Brazilian Portuguese (pt-br), Romanian (ro)**.
+- Shipped languages: **English (en), German (de), Greek (el), Spanish (es), French (fr), Japanese (ja), Dutch (nl), Polish (pl), Brazilian Portuguese (pt-br), Romanian (ro), Russian (ru)**.
 - The server picks one language for everyone via a convar — see [Localization](#localization) below.
 
 ### Automatic database setup
@@ -151,7 +151,7 @@ The server-wide language is chosen with a convar in `server.cfg` (defaults to En
 setr rsg:locale "de"
 ```
 
-Use one of: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Every player sees the same language — this resource follows `rsg-core`'s single-locale-per-server model, it doesn't do per-player language switching.
+Use one of: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Every player sees the same language — this resource follows `rsg-core`'s single-locale-per-server model, it doesn't do per-player language switching.
 
 To add or edit translations, edit the matching file under `locales/<code>.json` (flat `"key": "value"` pairs) — no code changes needed. If you add a brand-new piece of UI text, add its key to every locale file so it doesn't fall back to the raw key name.
 

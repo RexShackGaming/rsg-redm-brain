@@ -21,7 +21,7 @@
 | `client/client.lua` | NPCs, blips, rsg-target options, NUI bridge, preview vehicle + orbit camera, spawning the owned wagon |
 | `server/server.lua` | Database setup, purchase/take-out/store/sell/rename callbacks, storage, cleanup, exports |
 | `html/index.html`, `style.css`, `app.js` | Full-screen catalogue, details card (with camera controls), name + confirm modals |
-| `locales/*.json` | 10 languages, identical keys |
+| `locales/*.json` | 11 languages, identical keys |
 | `install.sql` | Manual schema (same as auto-build) |
 
 ## Data formats
@@ -342,6 +342,6 @@ TriggerClientEvent('RSGCore:Client:OnPlayerUnload', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

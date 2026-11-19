@@ -25,7 +25,7 @@ Full developer and server owner documentation: [DOCS.md](DOCS.md)
 - Waiting players get a clear message if the resource restarts
 - Console command for txAdmin and Tebex automation
 - Database tables built automatically on first start
-- 10 languages
+- 11 languages
 
 ## Installation
 1. Put `rsg-queue` in your resources folder (for example `resources/[framework]/rsg-queue`).
@@ -106,6 +106,6 @@ if exports['rsg-queue']:IsMaintenance() then print('maintenance on') end
 ```
 
 ## Locales
-`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro` (set with `setr rsg:locale de`).
+`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru` (set with `setr rsg:locale de`).
 
 Support the Project : https://rexshack.tebex.store/

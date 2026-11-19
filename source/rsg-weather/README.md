@@ -10,7 +10,7 @@ A drop-in replacement for `weathersync` — every old export and event keeps wor
 - **Seasonal events** switched by the real date: Halloween (fog/mist + blood-moon weather variations at night) and Christmas (snow + snow on the ground)
 - NUI admin panel (`/weatherui`) and a player forecast overlay (`/forecast`) in the RDR2 leather & gold theme
 - **Discord webhooks**: admin actions, security alerts, patterns, seasons, a scheduled "Weather Bulletin"
-- **10 languages**: en, de, el, es, fr, ja, nl, pl, pt-br, ro
+- **11 languages**: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
 - Full backward compatibility with `weathersync` exports/events (old client→server events are now admin-checked)
 
 ## Requirements
@@ -149,7 +149,7 @@ Use `set`, **not** `setr` (`setr` sends the value to every player).
 - The footer uses `sv_projectName` unless `ServerName` is set.
 
 ## Languages
-Set with `setr rsg:locale "<code>"` (falls back to `ox:locale`): `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
+Set with `setr rsg:locale "<code>"` (falls back to `ox:locale`): `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`.
 Everything is translated: notifications, command help, admin panel, forecast, weather/day/compass names, pattern errors and Discord logs. Missing keys fall back to English.
 To add a language, copy `locales/en.json` to `locales/<code>.json` and translate the values, keeping `%s` / `%d` placeholders in the same order.
 
@@ -198,7 +198,7 @@ shared/  utils.lua (helpers, translations)  config.lua
 server/  sv_webhooks_config.lua  webhooks.lua  server.lua  patterns.lua  seasonal.lua  legacy.lua  commands.lua  versionchecker.lua
 client/  client.lua  legacy.lua  menu.lua  seasonal.lua
 html/    index.html  style.css  script.js  dropdown.js (custom dropdowns: native <select> crashes RedM)
-locales/ en de el es fr ja nl pl pt-br ro (.json)
+locales/ en de el es fr ja nl pl pt-br ro ru (.json)
 ```
 
 ## Database

@@ -49,7 +49,7 @@ Horse and stables system for the **RSG Framework** (RedM). Buy, stable, customis
 - **Horse info card** – native animal info card showing horse stats.
 - **Horse stats panel** – live health, stamina, hunger, thirst, bonding, cleanliness, tack and training bonuses from the **Horse Stats** target option or `/horseinfo`.
 - **Store anywhere** – store your active horse at whichever stable you're at (or with `/storehorse`); it's kept there from then on (falls back to its previous stable if that stable is full for you).
-- **Localisation** – en, de, el, es, fr, ja, nl, pl, pt-br, ro.
+- **Localisation** – en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru.
 - **Auto database setup** – tables are created automatically on resource start.
 - **No ox_lib** – notifications, callbacks, locales and dialogs all run on rsg-core and the resource's own NUI.
 - **Version checker** – notifies you in the server console when an update is available.

@@ -98,7 +98,7 @@ Full developer and server-owner reference: **[DOCS.md](DOCS.md)**.
 
 ### Other
 - **Auto database install**: tables are created and upgraded on start.
-- **10 languages**: en, de, el, es, fr, ja, nl, pl, pt-br, ro. This covers the UI, menus, notifications, config labels and webhooks.
+- **11 languages**: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru. This covers the UI, menus, notifications, config labels and webhooks.
 
 ---
 
@@ -232,7 +232,7 @@ Set the locale in `server.cfg`:
 setr rsg:locale "de"
 ```
 (`ox:locale` still works as a fallback.)
-Available: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
+Available: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`.
 
 ---
 
@@ -361,7 +361,7 @@ rsg-stores/
 ├── shared/config.lua             General settings
 ├── html/                         NUI: shop (script.js, style.css), Shop Manager (admin.js, admin.css),
 │                                 owner management (manage.js, manage.css)
-├── locales/*.json                10 languages
+├── locales/*.json                11 languages
 └── install/
     ├── rsg-stores.sql            Manual install (optional)
     └── example.sql               Sample shop data (optional)

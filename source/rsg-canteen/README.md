@@ -11,7 +11,7 @@ Fill a canteen at water pumps with **rsg-target**, or straight from rivers and l
 - Progress bars can be cancelled; nothing is used or filled if cancelled.
 - Server-side checks: fill distance, minimum fill/drink time, and drinking only after using the item, so the net events can't be spammed or triggered remotely. Stale actions expire so a crash mid-drink never locks a player out.
 - No ox_lib: uses rsg-core locales, notify, callbacks and progress bar.
-- Translated into 10 languages, with a fully configurable `shared/config.lua`.
+- Translated into 11 languages, with a fully configurable `shared/config.lua`.
 
 ## Requirements
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
@@ -31,7 +31,7 @@ canteen = { name = 'canteen', label = 'Canteen', weight = 500, type = 'item', im
 All settings are in `shared/config.lua`: item name, uses, thirst amount, timings, pump models, water filling, animations, and the prop model/offset/rotation.
 
 ## Languages
-Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
+Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`.
 rsg-core picks the language from your server convar, e.g. in server.cfg:
 ```
 setr rsg:locale en

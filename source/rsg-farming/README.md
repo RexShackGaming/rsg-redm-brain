@@ -17,7 +17,7 @@ Plant, water, fertilise and harvest crops anywhere in the world, with portable w
 - **Ownership**: only the planter can harvest or remove a living plant (configurable). Anyone can clear dead plants.
 - **Saved to the database**: plants and pumps survive restarts, and dead plants are removed automatically.
 - **rsg-target or key prompt**: tend plants through rsg-target zones or a `[G]` prompt.
-- **Fully localised**: every player-facing string, including the UI, ships in 10 languages (en, de, el, es, fr, ja, nl, pl, pt-br, ro).
+- **Fully localised**: every player-facing string, including the UI, ships in 11 languages (en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru).
 - **Exploit-hardened**: all item changes happen on the server with distance, ownership and inventory-space checks, plus server-side action timers that stop players skipping animations.
 - **Optimised**: props are streamed by distance, the database saves in batches (and retries on failure), and player actions send single-plant updates instead of the whole list.
 - **Farming XP and levels**: every character earns XP for planting, tending and harvesting. Higher levels bring a bonus-yield chance and more plant slots. Check progress with `/farmlevel`.
@@ -229,7 +229,7 @@ Seed items are registered as usable automatically, so there's no extra code to w
 
 ## Localisation
 
-All text, including the UI, is in `locales/`. Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Locales are loaded by rsg-core.
+All text, including the UI, is in `locales/`. Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Locales are loaded by rsg-core.
 
 Set the language in your server config:
 ```cfg
@@ -260,7 +260,7 @@ rsg-farming/
 │   └── versionchecker.lua
 ├── shared/config.lua
 ├── install.sql         -- manual database install (when AutoDatabase = false)
-├── locales/           -- en, de, el, es, fr, ja, nl, pl, pt-br, ro
+├── locales/           -- en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
 ├── html/               -- NUI (index.html, style.css, script.js)
 ├── stream/             -- custom weed props
 └── fxmanifest.lua
@@ -291,7 +291,7 @@ rsg-farming/
 - Harvest now checks that all rewards fit together (combined weight and free slots) before the plant is removed.
 - Harvest / empty-bucket items that no longer fit are dropped instead of lost.
 - Plants and pumps are despawned on character logout; `/myplants` blocked while mounted or busy.
-- Added de, el, es, fr, ja, nl, pl, pt-br and ro locales.
+- Added de, el, es, fr, ja, nl, pl, pt-br, ro and ru locales.
 
 ---
 

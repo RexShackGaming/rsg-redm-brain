@@ -24,7 +24,7 @@
 | `server/versionchecker.lua` | GitHub version check |
 | `html/` | NUI shop and admin panel |
 | `install.sql` | Manual database install |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 - **Multiple boat yards:** each has an NPC (rsg-target), blip, launch point, dock zone and list of allowed boats.
@@ -185,6 +185,6 @@ TriggerClientEvent('rsg-boats:client:yards', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

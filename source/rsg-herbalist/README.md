@@ -139,7 +139,7 @@ To enable a category, set its `enabled = true` and paste a Discord webhook URL i
 
 ### Locales
 
-Player-facing text (notifications, progress bar labels, the "open mystery box" prompt) lives in `locales/*.json`, loaded by rsg-core. Shipped languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro. Pick one with the `rsg:locale` convar, e.g. `setr rsg:locale de`.
+Player-facing text (notifications, progress bar labels, the "open mystery box" prompt) lives in `locales/*.json`, loaded by rsg-core. Shipped languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru. Pick one with the `rsg:locale` convar, e.g. `setr rsg:locale de`.
 
 ---
 
@@ -163,7 +163,7 @@ shared/
   spawns.lua                    deterministic herb spawn list (shared ids for client/server)
   zones_data.lua                herb spawn point data
 html/                         tonic crafting NUI (index.html, script.js, style.css)
-locales/                      player-facing text (en, de, el, es, fr, ja, nl, pl, pt-br, ro)
+locales/                      player-facing text (en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru)
 installation/
   shared_items.lua              item definitions to copy into rsg-core/rsg-inventory
   shared_jobs.lua                herbalist job grades (reference for /jobadmin)

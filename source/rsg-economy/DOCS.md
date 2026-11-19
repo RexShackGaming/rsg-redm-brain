@@ -34,7 +34,7 @@ Regions are plain ids (`valentine`, ...) chosen by the calling script. The resou
 | `server/commands.lua` | Admin commands. |
 | `client/ui.lua` | Panel open/close, NUI focus with push-to-talk, forwarding to the server. |
 | `html/` | The NUI panel (`index.html`, `style.css`, `script.js`). |
-| `locales/*.json` | The 10 languages. |
+| `locales/*.json` | The 11 languages. |
 | `install.sql` | Manual install of the tables. |
 
 ## Regions and officials
@@ -335,6 +335,6 @@ TriggerClientEvent('rsg-economy:client:open', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

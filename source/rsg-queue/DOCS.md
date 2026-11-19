@@ -20,7 +20,7 @@
 | `server/server.lua` | Queue, deferrals and Adaptive Card, VIP cache and DB, admin callbacks, commands, exports |
 | `client/client.lua` | Opens and closes the admin NUI and relays its actions |
 | `html/` | Admin panel (house leather & gold style, custom dropdown) |
-| `locales/*.json` | 10 languages, same keys |
+| `locales/*.json` | 11 languages, same keys |
 | `install.sql` | Manual schema (same as auto-build) |
 
 ## How the queue works
@@ -239,6 +239,6 @@ TriggerClientEvent('rsg-queue:client:openAdmin', source, data)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

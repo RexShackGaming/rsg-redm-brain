@@ -107,7 +107,7 @@ exports['rsg-economy']:DepositTreasury('rhodes', 25, 'fine collected', 'rsg-lawm
 All exports, events and callbacks are in [DOCS.md](DOCS.md).
 
 ## Locales
-Ships with `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br` and `ro`, all with the same keys. Tax category names are locale keys (`cat_*`); region and project labels may be plain text or a locale key.
+Ships with `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro` and `ru`, all with the same keys. Tax category names are locale keys (`cat_*`); region and project labels may be plain text or a locale key.
 
 ## Notes
 - Regions are passed by the calling script (for example the town a shop belongs to). The resource does not detect where the player is.

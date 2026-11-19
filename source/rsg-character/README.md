@@ -41,7 +41,7 @@ Character selection, character creation, clothing stores, wardrobe and spawn sel
 - `/logout` saves the character and returns to character select (cooldown, blocked while dead).
 - `/loadskin` reloads your appearance if something looks wrong.
 - Discord webhook logging: character created, deleted, selected, logout, appearance saved and outfit purchased (rate-limit aware).
-- Locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro.
+- Locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru.
 - No ox_lib dependency — uses rsg-core notify, callbacks, locales and `require`.
 - Exports, events and callbacks for other resources.
 

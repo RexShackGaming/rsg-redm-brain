@@ -26,7 +26,7 @@ Films are projected through each cinema's own projector light, exactly as in sin
 
 ## Languages
 All player-facing text (notifications, NUI, target label, blip, film and cinema names) is in rsg-core JSON locales:
-`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "de"` in server.cfg.
+`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "de"` in server.cfg.
 Film and cinema `label` values in the config are locale keys.
 
 ## Configuration (`shared/config.lua`)

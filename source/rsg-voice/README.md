@@ -18,7 +18,7 @@ Proximity voice for **RSG Framework (RedM)**, built on RedM's native Mumble voic
 - **Riding parties**: `/party` opens a menu to invite nearby riders (up to 8). Hold **[** to talk to party members within 100 m, even past your normal range. Party members show on your map, and `/partywaypoint` shares your map waypoint (with a GPS route) with the party.
 - **Exports** (client and server) so other resources can read talking/range/party state and mute players, e.g. rsg-prison or rsg-hanging.
 - **State bag**: `Player(src).state.voiceRange` holds each player's current range.
-- **rsg-core** notifications, callbacks and locales in 10 languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro. No ox_lib needed.
+- **rsg-core** notifications, callbacks and locales in 11 languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru. No ox_lib needed.
 - Leather & gold themed UI, no vignette.
 
 ---
@@ -44,7 +44,7 @@ setr voice_useNativeAudio true
 setr voice_use3dAudio true
 setr voice_useSendingRangeOnly true
 
-# Language (en, de, el, es, fr, ja, nl, pl, pt-br, ro)
+# Language (en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru)
 setr rsg:locale en
 
 ensure oxmysql
@@ -207,7 +207,7 @@ local range = Player(serverId).state.voiceRange
 
 Locale files are in `locales/*.json`. Set the server language with `setr rsg:locale <code>` (falls back to `ox:locale`, then `en`).
 
-Supported languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
+Supported languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`.
 
 ---
 

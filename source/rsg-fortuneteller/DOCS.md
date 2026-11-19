@@ -21,7 +21,7 @@
 | `server/main.lua` | Payment, cooldowns, machine locks |
 | `server/versionchecker.lua` | GitHub version check |
 | `ui/` | Optional custom `.ogg` sound files (`ui/sounds/`) |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 - Pay at a coin-operated machine, hand over cash, and the machine reads a random fortune using RDR2 `FTELL` voice lines. Nearby players within `HearingDistance` hear it.
@@ -143,6 +143,6 @@ Generated from the source of **rsg-fortuneteller 3.0.1**. Names, arguments and d
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

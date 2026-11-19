@@ -26,7 +26,7 @@ Clerk NPC (rsg-target) -> NUI (80% screen) -> rsg-core callbacks -> oxmysql. Job
 | `server/versionchecker.lua` | GitHub version check |
 | `client/client.lua` | Clerk NPCs, rsg-target option, NUI focus, `rpc` bridge |
 | `html/` | `index.html`, `style.css`, `script.js` (house style, no native dropdowns) |
-| `locales/*.json` | 10 languages, identical keys |
+| `locales/*.json` | 11 languages, identical keys |
 | `install.sql` | Same schema as the auto-build |
 
 ## Data model
@@ -115,7 +115,7 @@ See `install.sql`: `townhall_locations`, `townhall_managers`, `townhall_postings
 - **Add a clerk**: stand at the spot, `/createtownhall <name>`. Remove with `/removetownhall` next to it.
 - **Give someone posting rights**: Town Hall -> Manage -> Managers -> enter citizen ID or server ID and a job scope.
 - **Limit postable jobs**: set `Config.PostableJobs = { 'sheriff', 'doctor' }`.
-- **Change the questions**: edit `Config.Questions` (`label` is a locale key; add it to all 10 locale files).
+- **Change the questions**: edit `Config.Questions` (`label` is a locale key; add it to all 11 locale files).
 - **Change the clerk**: `Config.NpcModel`, `Config.NpcScenario`.
 - **Webhook**: set `SvConfig.Webhook` in `server/sv_config.lua`.
 - **Allow items as prerequisites**: add rsg-inventory item names to `Config.PrerequisiteItems`.
@@ -306,6 +306,6 @@ TriggerClientEvent('rsg-townhall:client:syncLocations', source, list)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

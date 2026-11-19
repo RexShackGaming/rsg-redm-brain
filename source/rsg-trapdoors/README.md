@@ -22,7 +22,7 @@ Synced, animated trapdoors for **RSG-Core (RedM)** with an optional 4-digit pass
 - **Keypad UI** – dark leather-and-gold RDR2 style, usable by mouse or keyboard.
 - **Discord webhooks** – door, passcode and security logs across three channels, with batching, rate-limit handling and flood protection.
 - **Secure by design** – the client only ever sends a door id (and a code). The server validates the id, the player, the distance to the door, cooldowns and ownership before anything happens.
-- **Localised** – every player-facing, UI and log string comes from rsg-core JSON locales. Ships with `en, de, el, es, fr, ja, nl, pl, pt-br, ro`.
+- **Localised** – every player-facing, UI and log string comes from rsg-core JSON locales. Ships with `en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru`.
 - **rsg-target** interaction with context-aware options (Open / Close / Set / Change / Remove Passcode).
 - **No ox_lib** – uses rsg-core callbacks, notify, locales and commands.
 
@@ -198,7 +198,7 @@ Set the language with the rsg-core convar in `server.cfg` (falls back to `ox:loc
 setr rsg:locale en
 ```
 
-Available: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
+Available: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`.
 
 This controls player notifications, target options, the keypad UI and the Discord log text.
 

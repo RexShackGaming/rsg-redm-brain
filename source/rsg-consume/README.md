@@ -15,7 +15,7 @@
 - [**rsg-core**](https://github.com/Rexshack-RedM/rsg-core) 🤠 *(notifications, locales)*  
 - [**rsg-inventory**](https://github.com/Rexshack-RedM/rsg-inventory) 🎒 *(item use integration)*  
 
-**Locales:** `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`  
+**Locales:** `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`  
 **License:** GPL‑3.0  
 
 ---
@@ -117,7 +117,7 @@ coffee  = { name = 'coffee',  label = 'Cup of Coffee',      weight = 80,  type =
 ---
 
 ## 🌍 Locales
-Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`  
+Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`  
 Loaded automatically by rsg-core. Set the language with `setr rsg:locale de` in `server.cfg`.
 
 ---

@@ -73,7 +73,7 @@ Visual settings live in `html/config.json`:
 
 ## Languages
 
-All text lives in the locale files in `locales/`. Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
+All text lives in the locale files in `locales/`. Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`.
 
 - **Loading screen language:** set `Config.Locale` in `config.lua` (the loading screen runs before any Lua, so it can't read the `rsg:locale` convar).
 - **Server console language:** follows rsg-core's `setr rsg:locale "de"` convar (falls back to `ox:locale`).
@@ -192,7 +192,7 @@ rsg-loading/
 ├── config.lua          # language + seasonal themes
 ├── locales/            # locale files (all text)
 │   ├── en.json
-│   └── de.json, el.json, es.json, fr.json, ja.json, nl.json, pl.json, pt-br.json, ro.json
+│   └── de.json, el.json, es.json, fr.json, ja.json, nl.json, pl.json, pt-br.json, ro.json, ru.json
 ├── client/
 │   └── client.lua      # closes on player loaded
 ├── server/

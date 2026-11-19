@@ -23,7 +23,7 @@ Shows a Red Dead style location banner when a player rides into a new state, dis
 - Place names come from the game's labels, with a readable fallback and `Config.LabelNames` overrides for anything that looks wrong
 
 ## Languages
-en, de, el, es, fr, ja, nl, pl, pt-br, ro (`locales/`). Set your server language with `setr rsg:locale "de"` in server.cfg. Zone names are the game's own place labels, so they aren't in these files.
+en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru (`locales/`). Set your server language with `setr rsg:locale "de"` in server.cfg. Zone names are the game's own place labels, so they aren't in these files.
 
 No items are needed. The `zonenotify_discoveries` table is created automatically on first start; to install it manually set `Config.AutoDatabase = false` and import `install.sql`.
 

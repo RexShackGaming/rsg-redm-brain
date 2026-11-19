@@ -15,7 +15,7 @@
 | `lib.addCommand` (`restricted`) | `RSGCore.Commands.Add` (`TestCommandPermission`) |
 
 ## Locale
-Set with `setr rsg:locale <lang>` (falls back to `ox:locale`, then `en`). Languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro.
+Set with `setr rsg:locale <lang>` (falls back to `ox:locale`, then `en`). Languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru.
 
 ## Callbacks
 - `rsg-poison:server:getPoisonState` → `cb(boolean)`; client calls it on load/restart to resume saved poison state.
@@ -103,6 +103,6 @@ TriggerClientEvent('rsg-poison:client:useAntidote', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

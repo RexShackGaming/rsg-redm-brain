@@ -16,7 +16,7 @@ Mining system for RSG Framework (rsg-core 3.x). Mine rocks and salt rocks, drill
 - Miner's hat with lamp: needs the `mininghat` item, worn automatically near mining rocks and toggled on/off by using the item; the player's own hat is taken off while the miner's hat is worn and put back afterwards (`Config.MiningHat`)
 - Miner's lamp panel (opens with `/minerlight` while the hat is worn, top left by default, draggable): light colour, brightness and spread, on/off; `/minerlight` to adjust. Settings and panel position are saved per player, and other players see your lamp (`Config.MiningHat.light`)
 - Server-authoritative timed sessions for mining, drilling and smelting (no instant-reward spam)
-- Locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro
+- Locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
 
 ## Miner's hat item
 

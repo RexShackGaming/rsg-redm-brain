@@ -31,7 +31,7 @@ Regions are plain ids (`valentine`, `new_hanover`, ...) chosen by the calling sc
 | `client/client.lua` | Read-only mirror and client exports. |
 | `client/ui.lua` | Panel open/close, NUI focus with push-to-talk. |
 | `html/` | The NUI panel (`index.html`, `style.css`, `script.js`). |
-| `locales/*.json` | The 10 languages. |
+| `locales/*.json` | The 11 languages. |
 | `install.sql` | Manual install of the tables. |
 
 ## Honor, standing and tiers
@@ -318,6 +318,6 @@ TriggerClientEvent('rsg-reputation:client:sync', source, data)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

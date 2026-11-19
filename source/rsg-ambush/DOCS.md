@@ -18,7 +18,7 @@
 | `server/server.lua` | Ambush approval, cooldowns, loot rewards |
 | `server/logs.lua`, `server/sv_config.lua` | Logging and webhook settings |
 | `server/versionchecker.lua` | GitHub version check |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 - While a player rides outside towns, every `CheckInterval` seconds there is a `TriggerChance`% roll. If it hits and the server cooldown allows, a gang ambushes them.
@@ -154,6 +154,6 @@ TriggerClientEvent('rsg-ambush:client:force', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

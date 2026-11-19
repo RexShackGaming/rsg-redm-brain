@@ -89,7 +89,7 @@ Built automatically when `DatabaseConfig.AutoInstall = true` (default). Set it t
 
 ## 7. How-tos
 
-- **Add a door:** add an entry to `Config.Trapdoors` (see README) and its `label` key to all 10 locale files.
+- **Add a door:** add an entry to `Config.Trapdoors` (see README) and its `label` key to all 11 locale files.
 - **Public door that nobody can lock:** set `allowCode = false` on that door.
 - **Admin-only passcodes:** `Config.AllowPlayerCodes = false`.
 - **Clear a squatted door:** `/resettrapdoorcode <id>`.
@@ -186,6 +186,6 @@ TriggerServerEvent('rsg-trapdoors:server:close', id)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

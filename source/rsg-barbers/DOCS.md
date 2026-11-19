@@ -21,7 +21,7 @@
 | `server/server.lua` | Purchase validation, payment, skin save |
 | `server/versionchecker.lua` | GitHub version check |
 | `html/` | NUI panel (`index.html`, `style.css`, `script.js`) |
-| `locales/*.json` | en, cs, de, el, es, fr, it, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, cs, de, el, es, fr, it, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 - Barber NPCs spawn and fade in near each shop (`DistanceSpawn`) with map blips.
@@ -130,6 +130,6 @@ TriggerClientEvent('rsg-barbers:client:open', source, barberid)
 
 ### Locales
 
-Language files in `locales/`: `cs`, `de`, `el`, `en`, `es`, `fr`, `it`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `cs`, `de`, `el`, `en`, `es`, `fr`, `it`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

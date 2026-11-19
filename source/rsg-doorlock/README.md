@@ -49,7 +49,7 @@ A database-driven door lock system for **RedM** using the **RSG Framework**. Doo
 - The door list is sent to clients once; the seed list is server-only
 
 ### Languages
-`en`, `cs`, `de`, `el`, `es`, `fr`, `it`, `ja`, `nl`, `pl`, `pt-br`, `ro` (rsg-core locales: game text, editor UI **and** Discord logs)
+`en`, `cs`, `de`, `el`, `es`, `fr`, `it`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru` (rsg-core locales: game text, editor UI **and** Discord logs)
 
 ---
 

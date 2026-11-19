@@ -98,7 +98,7 @@ Posts are queued per webhook and sent no faster than one every `SendInterval` (2
 
 All the text players and staff see is in `locales/*.json`, using the rsg-core locale system (no ox_lib needed). That covers notifications, the foreman ledger window and the Discord webhook posts.
 
-The included languages are: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br` and `ro`.
+The included languages are: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro` and `ru`.
 
 To choose a language, set it in your server.cfg:
 

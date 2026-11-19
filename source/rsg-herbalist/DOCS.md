@@ -78,7 +78,7 @@ Nothing is stored in the database. Picked nodes, plant rotation and the box loca
 - Other scripts calling these events get no extra trust – the same checks apply.
 
 ## Server owner how-tos
-- **Add a tonic**: add a recipe to `Config.Tonics`, its item to rsg-core items, an icon to the inventory images, label/description keys to all 10 locales, and optionally an entry in `Config.TonicEffects`.
+- **Add a tonic**: add a recipe to `Config.Tonics`, its item to rsg-core items, an icon to the inventory images, label/description keys to all 11 locales, and optionally an entry in `Config.TonicEffects`.
 - **Add herb spots**: add coords to a zone in `shared/zones_data.lua` (restart the resource; ids are rebuilt).
 - **Job-lock crafting**: create `herbalist` via `/jobadmin`, set `Config.LockTonicCraftingToJob = true`.
 - **Change language**: `setr rsg:locale de` in server.cfg.
@@ -181,6 +181,6 @@ TriggerClientEvent('rsg-herbalist:client:SetSuppressed', source, id, suppress, n
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

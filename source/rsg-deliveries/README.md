@@ -145,7 +145,7 @@ All rewards are worked out on the server from the config. The cash total is capp
 
 ## Locales
 
-Player-facing text, including the contract board UI, ships in en, de, el, es, fr, ja, nl, pl, pt-br and ro (`locales/*.json`, loaded by rsg-core). Set the language with `setr rsg:locale de` in your server config.
+Player-facing text, including the contract board UI, ships in en, de, el, es, fr, ja, nl, pl, pt-br, ro and ru (`locales/*.json`, loaded by rsg-core). Set the language with `setr rsg:locale de` in your server config.
 
 ## Adding New Deliveries
 

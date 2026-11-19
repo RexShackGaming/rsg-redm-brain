@@ -53,7 +53,7 @@ General gameplay tuning, shared to both client and server:
 
 ### Languages (`locales/*.json`)
 
-Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language in `server.cfg` with `setr rsg:locale de` (rsg-core; falls back to `ox:locale`). Covers notifications, the NUI indicator, the test command and Discord log text.
+Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language in `server.cfg` with `setr rsg:locale de` (rsg-core; falls back to `ox:locale`). Covers notifications, the NUI indicator, the test command and Discord log text.
 
 ### `locales/en.json`
 

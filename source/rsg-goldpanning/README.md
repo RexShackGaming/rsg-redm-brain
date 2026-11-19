@@ -12,7 +12,7 @@ Gold panning for the RSG Framework (RedM). Stand in a river, use a gold pan, and
 - Server-authoritative anti-exploit: the server chooses the pan duration, validates timing, checks the player didn't move away, and enforces spot memory so the same spot can't be farmed
 - Cooldown between pans; stale sessions clear themselves so players never get stuck "already panning"
 - Optional Discord webhooks for rewards and suspicious claims, plus `rsg-log` support
-- rsg-core JSON locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro
+- rsg-core JSON locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
 
 ## Dependencies
 
@@ -54,7 +54,7 @@ Key options:
 
 ## Languages
 
-Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
+Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`.
 
 Set the language in `server.cfg`, e.g. `setr rsg:locale de`. To add another, copy `locales/en.json` to `locales/<code>.json` and translate the values (keep the `%s` / `%d` / `%.2f` placeholders in the same order).
 

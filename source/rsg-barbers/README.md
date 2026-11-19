@@ -18,7 +18,7 @@
 - The price is shown in the panel. Press **Pay** (or Enter) to buy. You're only charged when something actually changed.
 - Interaction via **rsg-target** on the NPC, or an rsg-core prompt.
 - Secure server side: the server works out the hair/beard hashes itself, checks every makeup value against the config ranges, checks distance to the chair, applies a cooldown, takes cash before saving and refunds it if the save fails.
-- Locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro (plus cs, it).
+- Locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru (plus cs, it).
 
 ---
 

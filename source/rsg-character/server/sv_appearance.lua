@@ -213,7 +213,7 @@ local function IsValidNationality(value)
         -- differ from the server's language. Accept the translation from every locale
         -- file so players on any language can create a character.
         local resource = GetCurrentResourceName()
-        local langs = { 'en', 'de', 'el', 'es', 'fr', 'ja', 'nl', 'pl', 'pt-br', 'ro' }
+        local langs = { 'en', 'de', 'el', 'es', 'fr', 'ja', 'nl', 'pl', 'pt-br', 'ro', 'ru' }
         for _, lang in ipairs(langs) do
             local raw = LoadResourceFile(resource, ('locales/%s.json'):format(lang))
             local ok, data = pcall(json.decode, raw or '')

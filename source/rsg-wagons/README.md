@@ -17,7 +17,7 @@ Full developer and server-owner reference: [DOCS.md](DOCS.md)
 - Each owned wagon has its own rsg-inventory stash (`wagon_<id>`) sized by the wagon's capacity and slots
 - One wagon out per player; it despawns and returns to the yard when the player leaves
 - Database table created automatically
-- 10 languages
+- 11 languages
 
 ## Installation
 1. Put `rsg-wagons` in your resources folder (e.g. `resources/[framework]/rsg-wagons`).
@@ -87,6 +87,6 @@ local wagons = exports['rsg-wagons']:GetPlayerWagons(Player.PlayerData.citizenid
 ```
 
 ## Locales
-`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale de`.
+`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale de`.
 
 Support the Project : https://rexshack.tebex.store/

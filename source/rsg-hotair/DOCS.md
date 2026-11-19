@@ -4,7 +4,7 @@
 `rsg-core` (locales, notify, callbacks), `rsg-target`, `rsg-inventory`. No ox_lib.
 
 ## Locales
-`@rsg-core/shared/locale.lua` is loaded in `shared_scripts`; strings live in `locales/*.json` (en, de, el, es, fr, ja, nl, pl, pt-br, ro) and are read with `locale('key')`. The language is set with `setr rsg:locale <code>`. The NUI receives its strings from Lua when it opens.
+`@rsg-core/shared/locale.lua` is loaded in `shared_scripts`; strings live in `locales/*.json` (en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru) and are read with `locale('key')`. The language is set with `setr rsg:locale <code>`. The NUI receives its strings from Lua when it opens.
 
 ## Config (`shared/config.lua`)
 | Key | Purpose |
@@ -112,6 +112,6 @@ TriggerClientEvent('rsg-hotair:client:forceDisembark', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

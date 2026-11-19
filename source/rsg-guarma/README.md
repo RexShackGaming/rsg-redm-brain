@@ -55,7 +55,7 @@ Players buy boat tickets from a port worker, then sail to the other port. The sc
 4. Press Travel (requires at least one ticket). Dismount first if on a horse or in a vehicle.
 
 ## Locales
-Included: en, de, el, es, fr, ja, nl, pl, pt-br, ro.
+Included: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru.
 
 Set language with `setr rsg:locale <lang>` in `server.cfg` (for example `setr rsg:locale de`).
 

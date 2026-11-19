@@ -156,7 +156,7 @@ exports['rsg-hunting']:GetDailyBounties()            -- labels of today's bounty
 ## Locales
 All text (notifications, menus, prompts, the trapper and leaderboard NUI, and Discord webhook embeds) comes from JSON locales (loaded by rsg-core) in `locales/`.
 
-Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
+Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`.
 
 The language follows rsg-core's convar (falls back to `ox:locale`), e.g. in `server.cfg`:
 ```

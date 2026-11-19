@@ -21,7 +21,7 @@
 | `server/versionchecker.lua` | GitHub version check |
 | `html/` | NUI wanted board (leather and gold style) |
 | `install.sql` | Manual database install |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 1. Talk to the clerk NPC (rsg-target) at a sheriff's office: **View Bounties** or **Turn In Bounty**.
@@ -206,6 +206,6 @@ TriggerClientEvent('rsg-bountyhunter:client:startContract', source, data)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

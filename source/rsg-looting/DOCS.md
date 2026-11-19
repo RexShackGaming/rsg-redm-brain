@@ -7,7 +7,7 @@ NPC body looting and player robbery for RSG Framework. All rewards are decided s
 rsg-core, rsg-inventory, rsg-lawman, rsg-target (only used when `Config.LootMethod = 'target'`), oxmysql, OneSync.
 
 ## Locales
-Loaded through `@rsg-core/shared/locale.lua` from `locales/*.json`. Language is set with `setr rsg:locale <code>` (falls back to `ox:locale`, then `en`). Languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro.
+Loaded through `@rsg-core/shared/locale.lua` from `locales/*.json`. Language is set with `setr rsg:locale <code>` (falls back to `ox:locale`, then `en`). Languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru.
 
 ## Flow
 ### NPC loot
@@ -122,6 +122,6 @@ TriggerClientEvent('rsg-looting:client:RobPlayer', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

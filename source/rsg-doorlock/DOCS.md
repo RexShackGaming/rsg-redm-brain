@@ -29,7 +29,7 @@
 | `server/versionchecker.lua` | GitHub version check |
 | `html/` | NUI editor (`index.html`, `style.css`, `app.js`) |
 | `installation/rsg_doorlocks.sql` | Manual database install |
-| `locales/*.json` | en, cs, de, el, es, fr, it, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, cs, de, el, es, fr, it, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 - Every lock is a row in `rsg_doorlocks` with one or more door hashes, text coordinates, allowed jobs, interaction distance and locked state.
@@ -214,6 +214,6 @@ TriggerClientEvent('rsg-doorlock:client:openEditor', source)
 
 ### Locales
 
-Language files in `locales/`: `cs`, `de`, `el`, `en`, `es`, `fr`, `it`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `cs`, `de`, `el`, `en`, `es`, `fr`, `it`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

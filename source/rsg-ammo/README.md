@@ -18,7 +18,7 @@ Players refill their weapons by using ammo boxes and arrows from their inventory
 - ⏳ **Cancellable progress bar** (rsg-core) when opening a box; cancelling keeps the box.
 - 🗄️ **Automatic database setup**: the table and any new ammo columns are created on start, with a manual SQL file as backup.
 - 🔒 **Server-authoritative**: the server decides the item, ammo type and amount; saved values are validated and clamped.
-- 🌍 **Localised** via rsg-core: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
+- 🌍 **Localised** via rsg-core: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`.
 
 ---
 
@@ -116,7 +116,7 @@ All player-facing text lives in `locales/*.json`. Choose the language in `server
 ```cfg
 setr rsg:locale en   # falls back to ox:locale, then en
 ```
-Available: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
+Available: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`.
 
 ---
 

@@ -32,7 +32,7 @@ rsg-core, rsg-inventory, rsg-target. No ox_lib.
 | `LootCash`, `LootItems` | Per-body loot, rolled and paid by the server |
 
 ## Languages
-All player text, gang names, Discord log text and the command help live in `locales/`: en, de, el, es, fr, ja, nl, pl, pt-br, ro. Locales load through rsg-core's shared loader; set the language with `setr rsg:locale "de"` in your server.cfg (falls back to `ox:locale`).
+All player text, gang names, Discord log text and the command help live in `locales/`: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru. Locales load through rsg-core's shared loader; set the language with `setr rsg:locale "de"` in your server.cfg (falls back to `ox:locale`).
 
 ## Discord logs
 Paste webhook URLs into `server/sv_config.lua` (server only, never sent to clients):

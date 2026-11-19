@@ -128,7 +128,7 @@ Every reward is the end of a server-side session: the client fires a `Start*` ev
 - UX: one smelt option per recipe with item labels (previously auto-smelted the first affordable recipe with raw item names).
 - Fixed: pickaxe prop stuck in hand after mining (scenario prop now cleaned up).
 - UX: can't start mining while mounted, in a vehicle or swimming.
-- Clean-up: removed unused events (`client:StopPlaceRock`, `client:drillrocksinput`), unused `GetMiningXP` callback, legacy string pools, label column sync; default zones seeded in one query; descriptive locale keys; added de, el, es, fr, ja, nl, pl, pt-br, ro.
+- Clean-up: removed unused events (`client:StopPlaceRock`, `client:drillrocksinput`), unused `GetMiningXP` callback, legacy string pools, label column sync; default zones seeded in one query; descriptive locale keys; added de, el, es, fr, ja, nl, pl, pt-br, ro, ru.
 - Breaking for integrations: events renamed (`CancelMining` → `CancelWork`, `finishdrilling` → `StartDrill`/`FinishDrill`, `Smelt` → `StartSmelt`/`FinishSmelt`; mining events take only the zone id).
 
 <!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
@@ -268,6 +268,6 @@ TriggerClientEvent('rsg-rocks:client:StartPlaceRock', source, oreType, radius)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

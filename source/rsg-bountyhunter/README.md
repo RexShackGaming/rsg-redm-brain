@@ -50,7 +50,7 @@ Set up in `server/sv_config.lua` (server only, so your URLs never reach clients)
 - `UseRsgLog = true` also mirrors events to rsg-log.
 
 ## Languages
-Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro` (in `locales/`).
+Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru` (in `locales/`).
 
 Locales are loaded by rsg-core. Set the language in your `server.cfg`, for example:
 ```

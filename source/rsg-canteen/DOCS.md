@@ -17,7 +17,7 @@
 | `client/client.lua` | Pump targets, river fill prompt, fill/drink animations and prop |
 | `server/server.lua` | Useable item, canteen metadata, fill/drink validation |
 | `server/versionchecker.lua` | GitHub version check |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 - Target a water pump (`p_waterpump01x`, `p_wellpumpnbx01x`) with rsg-target to fill. The option only shows if you carry a canteen.
@@ -138,6 +138,6 @@ TriggerClientEvent('rsg-canteen:client:drink', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

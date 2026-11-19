@@ -22,7 +22,7 @@ Brewing runs on the server in real time, so stills keep cooking while the owner 
 - **Brewing effects:** smoke and fire appear on the still while it is brewing.
 - **In-game menu:** a dark leather-and-gold menu with live timers, progress bars and quantity pickers.
 - **Discord webhooks:** detailed logs for every action, with a separate URL per event, rate-limit handling and a channel for suspicious activity.
-- **10 languages:** en, de, el, es, fr, ja, nl, pl, pt-br and ro, using rsg-core locales.
+- **11 languages:** en, de, el, es, fr, ja, nl, pl, pt-br, ro and ru, using rsg-core locales.
 - **Security:** every action is checked on the server (distance, ownership, job, amounts), with per-player rate limits on actions, menu refreshes and raids. Stills only spawn near the player.
 
 ---
@@ -61,7 +61,7 @@ Brewing runs on the server in real time, so stills keep cooking while the owner 
 
 6. **Language (optional):**
    ```cfg
-   setr rsg:locale "en"   # en, de, el, es, fr, ja, nl, pl, pt-br, ro
+   setr rsg:locale "en"   # en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
    ```
 
 7. **Discord logs (optional).** Add your webhook URL in `server/sv_config.lua` (see below).

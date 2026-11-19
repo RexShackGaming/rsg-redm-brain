@@ -15,7 +15,7 @@ Theatre Raleur (Saint Denis) stage shows for RSG Framework, rebuilt from Rocksta
 - Theatre door locks added to rsg-doorlock automatically on first start (main doors open, side doors locked)
 
 ## Languages
-All player-facing text (notifications, playbill UI, blip, show names and descriptions) is in `locales/`: en, de, el, es, fr, ja, nl, pl, pt-br, ro. Set the language with rsg-core's `rsg:locale` convar, e.g. `setr rsg:locale "de"` (falls back to `ox:locale`, then `en`).
+All player-facing text (notifications, playbill UI, blip, show names and descriptions) is in `locales/`: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru. Set the language with rsg-core's `rsg:locale` convar, e.g. `setr rsg:locale "de"` (falls back to `ox:locale`, then `en`).
 
 ## Install
 1. Drop `rsg-theatre` into your resources and `ensure rsg-theatre` after rsg-core, rsg-target, oxmysql and rsg-doorlock.

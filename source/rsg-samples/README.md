@@ -13,7 +13,7 @@ Animal sample collector for RedM (best version) with leaderboard, certificate, a
 - NUI collector menu (My Samples, Leaderboard, Global Stats tabs)
 - Field Research Certificate overlay with completion stats (open from the menu header or `/samplecert`)
 - rsg-target leaderboard zone + optional map blip
-- rsg-core notify + JSON locales (10 languages)
+- rsg-core notify + JSON locales (11 languages)
 - Server-side validation: the server resolves the sampled animal itself and checks model, health and distance before paying out
 
 ## Requirements
@@ -82,7 +82,7 @@ rsg-samples/
 ├── locales/
 │   ├── en.json                 # All translatable strings (rsg-core locale)
 │   ├── de.json, el.json, es.json, fr.json, ja.json,
-│   └── nl.json, pl.json, pt-br.json, ro.json
+│   └── nl.json, pl.json, pt-br.json, ro.json, ru.json
 ├── html/
 │   ├── samples.html            # NUI collector menu + certificate
 │   ├── samples.js              # NUI JavaScript
@@ -148,6 +148,7 @@ All strings live in `locales/*.json` and are loaded through rsg-core's locale mo
 | `pl`    | Polish |
 | `pt-br` | Portuguese (Brazil) |
 | `ro`    | Romanian |
+| `ru` | Russian |
 
 **Switching language:** add this to your `server.cfg` (English is used if unset or if the file for that code is missing):
 

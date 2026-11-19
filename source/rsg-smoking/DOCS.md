@@ -46,7 +46,7 @@ Key points:
 | `server/server.lua` | Registers usable items, validates, spends lighters and packs, shares lights, relieves stress, reports nicotine, starts the client session |
 | `server/versionchecker.lua` | Compares the resource version with `version.txt` in the `rex-versioncheckers` repository and prints a console message |
 | `client/client.lua` | Animation sessions, props, prompts, coughing, the "Offer a light" target, cleanup |
-| `locales/*.json` | Player-facing text (10 languages, identical keys) |
+| `locales/*.json` | Player-facing text (11 languages, identical keys) |
 | `installation/shared_items.lua` | Items to add to rsg-core shared items |
 | `installation/images/` | Inventory images (`cigarettes.png`, `matchbox.png`, `cigar.png`, `pipe.png`, `pipetobacco.png`, `chewingtobacco.png` and the old `cigarette1`...`cigarette10`) |
 | `installation/crafting_recipes.lua` | Paste-in recipes for rsg-crafting |
@@ -527,7 +527,7 @@ No database tables. Counts live in the item info, which rsg-inventory saves with
 
 ## Locales
 
-All text is in `locales/<lang>.json`, loaded by rsg-core (`@rsg-core/shared/locale.lua`). Languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro. `en.json` is the master. When you add a key, add it to every language file with the same placeholders. The language comes from `setr rsg:locale <lang>`.
+All text is in `locales/<lang>.json`, loaded by rsg-core (`@rsg-core/shared/locale.lua`). Languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru. `en.json` is the master. When you add a key, add it to every language file with the same placeholders. The language comes from `setr rsg:locale <lang>`.
 
 | Key | Placeholder | Used for |
 |---|---|---|
@@ -634,7 +634,7 @@ cigarillos = { name = 'cigarillos', label = 'Box of Cigarillos', weight = 100, t
 "cigarillo_empty": "The box is empty."
 ```
 
-Add both keys to all 10 locale files. The item reuses the cigarette animations because its `kind` is `cigarette`.
+Add both keys to all 11 locale files. The item reuses the cigarette animations because its `kind` is `cigarette`.
 
 ### Add a new kind (cigarillo with its own stress and nicotine)
 
@@ -803,6 +803,6 @@ TriggerClientEvent('rsg-smoking:client:', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

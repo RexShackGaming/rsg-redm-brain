@@ -20,7 +20,7 @@ Loyalty points for RSG Framework (RedM). Players earn points for playing, climb 
 - Admin commands to award, remove and check points
 - Discord webhook logging (points earned are sent as one summary per batch) and a scheduled leaderboard post
 - Push-to-talk keeps working while the menu is open
-- Locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro
+- Locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
 
 ## Installation
 

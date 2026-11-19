@@ -32,7 +32,7 @@ A fishmonger system for **RSG-Core (RedM)**. Players visit a fishmonger NPC in a
   - There is a per-player cooldown and a lock that stops two trades running at once.
   - If any step fails, the trade is fully reversed, so nothing is lost or duplicated.
 - **Discord webhook logging** with separate channels for sales, processing, suspicious activity, errors and system events. Posts include the player's character, citizen ID and identifiers. Suspicious activity and large trades can ping staff, and sends are queued to stay within Discord's rate limits.
-- **Translations** (rsg-core locales): `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. This covers notifications, the menu, the blip, location names and webhook logs.
+- **Translations** (rsg-core locales): `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. This covers notifications, the menu, the blip, location names and webhook logs.
 - **Performance**: NPCs spawn only when a player is nearby, the fish list is built once, and the model is released when no NPCs are nearby.
 - **Version checker** that reports on startup whether an update is available.
 
@@ -65,7 +65,7 @@ No ox_lib required: callbacks, notifications, locales and commands all use rsg-c
    ```
 5. *(Optional)* Set the language in `server.cfg`:
    ```cfg
-   setr rsg:locale "en"   # en, de, el, es, fr, ja, nl, pl, pt-br, ro
+   setr rsg:locale "en"   # en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
    ```
 6. *(Optional)* Set up Discord webhooks in `server/sv_config.lua` (see below).
 7. Restart the server.
@@ -201,7 +201,7 @@ rsg-fishmonger/
 ├── shared/config.lua        # general config, locations, fish, shop
 ├── shared/utils.lua         # opening-hours + fillet helpers
 ├── html/                    # NUI (index.html, style.css, script.js)
-├── locales/                 # en, de, el, es, fr, ja, nl, pl, pt-br, ro
+├── locales/                 # en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
 └── fxmanifest.lua
 ```
 

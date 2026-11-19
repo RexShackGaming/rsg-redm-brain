@@ -31,7 +31,7 @@ See [DOCS.md](DOCS.md) for the full developer and server-owner documentation.
 - Production keeps running while the player is offline and survives restarts; collect any time at the NPC
 - NPCs spawn only when a player is nearby; interaction through `rsg-target`
 - Push-to-talk keeps working while the UI is open
-- Locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro
+- Locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
 
 ## Installation
 1. Put `rsg-factory` in your resources folder.

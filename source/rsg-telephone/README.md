@@ -220,7 +220,7 @@ Every player-facing string – notifications, target labels, commands, the phone
 setr rsg:locale "en"
 ```
 
-Included languages: English (`en`), German (`de`), Greek (`el`), Spanish (`es`), French (`fr`), Japanese (`ja`), Dutch (`nl`), Polish (`pl`), Brazilian Portuguese (`pt-br`) and Romanian (`ro`).
+Included languages: English (`en`), German (`de`), Greek (`el`), Spanish (`es`), French (`fr`), Japanese (`ja`), Dutch (`nl`), Polish (`pl`), Brazilian Portuguese (`pt-br`), Romanian (`ro`) and Russian (`ru`).
 
 To add another language, copy `en.json` to `locales/<code>.json` and translate the values (keep the keys and every `%s`).
 

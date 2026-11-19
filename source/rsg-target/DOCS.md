@@ -48,7 +48,7 @@ It is a rewrite of ox_target in the RSG resource layout. The resource `provide`s
 | `server/server.lua` | Flags networked entities that have options, tells clients to drop options for deleted entities, answers the `getJobs` callback |
 | `server/versionchecker.lua` | Compares `version` in the manifest with `Rexshack-RedM/rsg-versioncheckers` on GitHub |
 | `html/` | NUI: `index.html`, `style.css`, `js/main.js`, `js/fetchNui.js`, `assets/*.png` |
-| `locales/*.json` | 10 languages (`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`) |
+| `locales/*.json` | 11 languages (`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`) |
 
 ### Targeting loop (client.lua)
 1. Target key pressed → `startTargeting()` sets the state active and starts a render thread (`Wait(0)`: zone sprites, eye markers, control blocking, focus handling, quick select).
@@ -408,7 +408,7 @@ See [Sub-menus](#sub-menus).
 - Prefer `addModel`/`addLocalEntity`/zones over many `addGlobal*` options.
 
 ## Locales
-`locales/*.json`, loaded by rsg-core (`locale('key')`). All 10 languages carry the same keys.
+`locales/*.json`, loaded by rsg-core (`locale('key')`). All 11 languages carry the same keys.
 
 | Key | Used for |
 |---|---|
@@ -439,7 +439,7 @@ Set the language with the `rsg:locale` convar, e.g. `setr rsg:locale de`.
 - **Quick select** key (default E) runs the top option without focusing; the NUI shows the key on that option.
 - **Menu navigation**: keyboard (arrows, Enter, 1-9) and experimental gamepad (D-pad, A, B) while focused.
 - **Highlighter toggle**: `/targethighlight`, saved per player.
-- New locale keys `notify_title`, `highlight_on`, `highlight_off` in all 10 languages.
+- New locale keys `notify_title`, `highlight_on`, `highlight_off` in all 11 languages.
 
 ### 3.0.2
 - **Fixed** a syntax error in `client/client.lua` (`\~=`) that stopped the whole client script loading.
@@ -578,6 +578,6 @@ TriggerClientEvent('rsg-target:client:removeEntity', source, arr)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

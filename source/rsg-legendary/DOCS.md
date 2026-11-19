@@ -22,7 +22,7 @@
 | `html/` | NUI trapper shop and trophy board |
 | `installation/install.sql` | Manual database install |
 | `installation/shared_items.lua` | Items to add to `rsg-core/shared/items.lua` |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 1. **Buy a map** from the Legendary Trapper (rsg-target). Each legendary shows its price, or the time until it returns if you are on cooldown. Map purchase can require hunting XP (`XPRequirement`).
@@ -219,6 +219,6 @@ TriggerClientEvent('rsg-legendary:client:startHunt', source, data)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

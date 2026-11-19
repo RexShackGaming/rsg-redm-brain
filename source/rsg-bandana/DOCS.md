@@ -16,7 +16,7 @@
 | `client/client.lua` | Toggle logic, animation, export |
 | `server/server.lua` | `/bandana` command and optional useable item |
 | `server/versionchecker.lua` | GitHub version check |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 - `/bandana` pulls the bandana over the face or drops it round the neck, using the RDR2 wearable-state system (male and female, on foot or mounted).
@@ -118,6 +118,6 @@ TriggerClientEvent('rsg-bandana:client:toggle', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

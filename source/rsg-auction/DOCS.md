@@ -23,7 +23,7 @@
 | `server/versionchecker.lua` | GitHub version check |
 | `web/` | React/Tailwind NUI source; `web/dist/` is the built UI that the resource loads |
 | `installation/rsg-auction.sql` | Manual database install |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 - Town-specific auction houses: each auctioneer NPC runs its own market (Valentine, Rhodes, Saint Denis, Blackwater, Armadillo by default). Players see only the auctions for the town they are in.
@@ -186,6 +186,6 @@ TriggerClientEvent('auction:client:update', source, payload)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

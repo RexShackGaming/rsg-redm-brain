@@ -16,7 +16,7 @@ Placeable archery and throwing-knife practice targets for **RSG-Core** on RedM. 
 - **Ownership:** only the owner or an admin can pack a target up. Packing it up returns the item.
 - **Admin tools:** item-free admin targets, calibration debug rings and a diagnostics report.
 - **Security:** item add/remove happens only on the server, with checks on owner, distance, routing bucket and spam rate. Every shot has to match one fired from a weapon the player owns, and points are calculated by the server.
-- **Fully localised (rsg-core locales):** en, de, el, es, fr, ja, nl, pl, pt-br, ro.
+- **Fully localised (rsg-core locales):** en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru.
 
 ## Requirements
 
@@ -140,7 +140,7 @@ All settings are in `shared/config.lua`.
 
 ## Locales
 
-Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Choose one with `setr rsg:locale <code>` (falls back to `ox:locale`, then `en`). To add a language, copy `locales/en.json` to a new file named with the language code, translate the values and keep the keys unchanged.
+Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Choose one with `setr rsg:locale <code>` (falls back to `ox:locale`, then `en`). To add a language, copy `locales/en.json` to a new file named with the language code, translate the values and keep the keys unchanged.
 
 ## Data and storage
 

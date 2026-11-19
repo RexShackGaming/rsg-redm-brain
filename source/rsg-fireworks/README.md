@@ -152,7 +152,7 @@ See [DOCS.md](DOCS.md) for the full event and security reference.
 
 ## Locales
 
-Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
+Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`.
 
 Set the server locale to one of the included language codes:
 

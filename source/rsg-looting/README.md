@@ -38,7 +38,7 @@ Secure NPC looting and player robbery for **RSG Framework (RedM)**, with rsg-cor
 
 ### Localisation
 - All player-facing and webhook text uses rsg-core locales.
-- Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
+- Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`.
 
 ---
 
@@ -176,7 +176,7 @@ rsg-looting/
 │   └── client.lua
 ├── locales/
 │   ├── en.json  de.json  el.json  es.json  fr.json
-│   └── ja.json  nl.json  pl.json  pt-br.json  ro.json
+│   └── ja.json  nl.json  pl.json  pt-br.json  ro.json  ru.json
 ├── server/
 │   ├── server.lua
 │   ├── sv_webhooks.lua

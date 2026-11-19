@@ -29,7 +29,7 @@ exports['rsg-smelting']:SendWebhook(event, srcOrInfo, fields, description)
 `event` is a key from `SVConfig.Webhooks.Events`.
 
 ## Adding a recipe
-Add an entry to `Config.Recipes` (`output`, `label` locale key, `time` ms per bar, `inputs` per bar) and the label key to all 10 locale files.
+Add an entry to `Config.Recipes` (`output`, `label` locale key, `time` ms per bar, `inputs` per bar) and the label key to all 11 locale files.
 
 ## Files
 - `shared/config.lua` – smelters, props, recipes
@@ -118,6 +118,6 @@ TriggerServerEvent('RSGCore:Server:OnPlayerLoaded')
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

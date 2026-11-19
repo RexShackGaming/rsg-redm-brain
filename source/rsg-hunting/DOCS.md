@@ -30,7 +30,7 @@
 | `install.sql` | Manual database install |
 | `installation/shared_items.lua` | Items to add to your items file |
 | `stream/annesburg.ymap` | Map streaming file |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 - **Skinning:** hooks the game's native skinning event (no minigame). Up to 5 reward items per animal, 90+ animals in `Config.Animals`. The client only sends the carcass network id; the server checks it exists, is dead, is close, is skinnable and was not skinned before. `Config.DeleteCarcass` removes the carcass afterwards.
@@ -249,6 +249,6 @@ TriggerServerEvent('rsg-hunting:server:giverewards', netId, quality)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

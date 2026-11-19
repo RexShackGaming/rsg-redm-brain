@@ -114,7 +114,7 @@ With `EnableGovernor = true` (the old `EnableGovenor` name still works), rent an
 
 ## Languages
 
-All text (notifications, prompts, telegrams and the whole NUI) comes from `locales/`. Included: English (`en`), German (`de`), Greek (`el`), Spanish (`es`), French (`fr`), Japanese (`ja`), Dutch (`nl`), Polish (`pl`), Brazilian Portuguese (`pt-br`) and Romanian (`ro`).
+All text (notifications, prompts, telegrams and the whole NUI) comes from `locales/`. Included: English (`en`), German (`de`), Greek (`el`), Spanish (`es`), French (`fr`), Japanese (`ja`), Dutch (`nl`), Polish (`pl`), Brazilian Portuguese (`pt-br`), Romanian (`ro`) and Russian (`ru`).
 
 The language follows rsg-core's locale setting (`rsg:locale` convar), for example in your server config:
 

@@ -19,7 +19,7 @@
 | `server/server.lua` | Useable items, auto database, load/save, validation |
 | `server/versionchecker.lua` | GitHub version check |
 | `installation/rsg-ammo.sql` | Manual database install (backup) |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 - Every ammo box and arrow in `Config.BoxAmmo` / `Config.ArrowAmmo` is registered as a useable item.
@@ -160,6 +160,6 @@ TriggerClientEvent('rsg-ammo:client:AddAmmo', source, ammoType, amount)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

@@ -23,7 +23,7 @@
 | `server/versionchecker.lua` | GitHub version check |
 | `installation/items.lua` | The 7 backpack items to paste into your items file |
 | `installation/player_backpack.sql` | Manual database install |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 - Merges and replaces `hdrp-backpack` and `bln_belt_attachments`. Stop both before starting rsg-backpacks.
@@ -172,6 +172,6 @@ TriggerClientEvent('rsg-backpacks:client:wear', source, itemName, serial)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

@@ -25,7 +25,7 @@
 | `server/versionchecker.lua` | GitHub version check |
 | `html/` | NUI banner, stamp, flavour line, sounds (`html/sounds/` for your own files) |
 | `install.sql` | Manual database install |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 Every `Config.CheckInterval` ms the client reads the map zone hashes for state, district and town (`_GET_MAP_ZONE_AT_COORDS`, 0x43AD8FC02B429D33). When one changes it queues the most specific mapped zone (town > district > state). With `Discovery.Landmarks` it also checks water and landmark zones and queues a banner for any the character hasn't found yet. A queued banner waits while something blocks it (pause menu, faded screen, dead, disabled, suppressed) and is dropped if the player leaves that zone (or rides 150 m away from a landmark).
@@ -47,7 +47,7 @@ Names come from `GetLabelText`, a readable fallback, or `Config.LabelNames`.
 ## 5. Sounds and flavour lines
 Sound kinds: `state`, `district`, `town`, `landmark`, `discovery`, `manual`, `custom`. Each `Config.Sound.Files[kind]` is `nil` (built-in WebAudio chime), a path like `'sounds/town.ogg'` (put the file in `html/sounds/`), or `false` (silent).
 
-`Config.ZoneMessages` maps a label key to a locale key. Add the locale key to all 10 locale files:
+`Config.ZoneMessages` maps a label key to a locale key. Add the locale key to all 11 locale files:
 ```lua
 Config.ZoneMessages = { town_valentine = 'zone_msg_valentine' }
 ```
@@ -302,6 +302,6 @@ TriggerClientEvent('RSGCore:Client:OnPlayerLoaded', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

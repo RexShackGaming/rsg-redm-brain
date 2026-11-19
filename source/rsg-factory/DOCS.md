@@ -19,7 +19,7 @@
 | `server/server.lua` | Database build, factory cache, `/createfactory`, all callbacks and validation |
 | `client/client.lua` | NPC spawning, `rsg-target` options, NUI bridge, push-to-talk whitelist |
 | `html/index.html`, `style.css`, `script.js` | NUI (house "leather & gold" style, custom HTML dropdowns) |
-| `locales/*.json` | 10 languages, loaded by rsg-core (`@rsg-core/shared/locale.lua`) |
+| `locales/*.json` | 11 languages, loaded by rsg-core (`@rsg-core/shared/locale.lua`) |
 | `install.sql` | Manual schema (identical to the auto-build) |
 | `example_factory.lua` | Reference example (chained cigarette factory); not loaded |
 
@@ -263,6 +263,6 @@ TriggerClientEvent('rsg-factory:client:openAdmin', source, id)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

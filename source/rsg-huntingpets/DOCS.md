@@ -9,7 +9,7 @@
 
 ## Locales
 `fxmanifest.lua` loads `@rsg-core/shared/locale.lua` in `shared_scripts`; strings live in `locales/*.json`
-(en, de, el, es, fr, ja, nl, pl, pt-br, ro) and are read with `locale('key', ...)`.
+(en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru) and are read with `locale('key', ...)`.
 Language: `setr rsg:locale "<code>"` in server.cfg (falls back to `ox:locale`, then `en`).
 The NUI receives a resolved string bundle from `client/client_shop.lua` (`GetUiLocale()`).
 
@@ -188,6 +188,6 @@ TriggerClientEvent('rsg-huntingpets:start_sell', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

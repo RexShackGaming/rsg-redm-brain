@@ -75,7 +75,7 @@ end)
 ```
 
 ## Locales
-en, de, el, es, fr, ja, nl, pl, pt-br, ro (`setr rsg:locale "en"`)
+en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru (`setr rsg:locale "en"`)
 
 Support the Project : https://rexshack.tebex.store/
 

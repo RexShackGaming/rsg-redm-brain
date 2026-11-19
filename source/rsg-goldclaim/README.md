@@ -108,7 +108,7 @@ Every embed includes the character name, server ID, Citizen ID, Discord mention,
 ## Localisation
 All text is in `locales/*.json`, loaded by rsg-core. This includes notifications, menus, placement prompts, NUI buttons, Discord webhook embeds. There is no hardcoded text in the Lua or the NUI.
 
-Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`
+Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`
 
 To set the server language, add this to your `server.cfg`:
 ```
@@ -175,7 +175,7 @@ Any key missing from a translation falls back to `en`. To add a language, copy `
 
 ### 2.3.0
 - Moved all remaining text (UI tooltips, blip name, webhook embeds) into locales.
-- Added translations: de, el, es, fr, ja, nl, pl, pt-br, ro.
+- Added translations: de, el, es, fr, ja, nl, pl, pt-br, ro, ru.
 
 ### 2.2.0
 - Added a Discord webhook system: 10 events, 7 channels, batching, 429 handling, role pings, suspicious-activity logs and a console test command.

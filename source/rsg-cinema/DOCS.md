@@ -19,7 +19,7 @@
 | `server/versionchecker.lua` | GitHub version check |
 | `data/draw.json` | Saved picture position and size per cinema |
 | `html/` | NUI (ticket seller panel and admin panel) |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 Moving picture shows rebuilt from the RDR2 `show_movie_magic_lantern` script. Films are projected through each cinema's own projector light, as in single player.
@@ -157,6 +157,6 @@ TriggerClientEvent('rsg-cinema:client:startFilm', source, id, playlist, filmLabe
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

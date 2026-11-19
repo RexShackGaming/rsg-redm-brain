@@ -15,7 +15,7 @@ treasure_map = { name = 'treasure_map', label = 'Treasure Map', weight = 50, typ
 4. Set your dig spots and loot in `shared/config.lua`. Any reward item that isn't in your items list is skipped.
 
 ## Languages
-Includes en, de, el, es, fr, ja, nl, pl, pt-br and ro (`locales/*.json`), covering both in-game text and Discord logs. Locales are loaded by rsg-core. The language comes from the `rsg:locale` convar (falls back to `ox:locale`), for example `setr rsg:locale "de"` in your server.cfg.
+Includes en, de, el, es, fr, ja, nl, pl, pt-br, ro and ru (`locales/*.json`), covering both in-game text and Discord logs. Locales are loaded by rsg-core. The language comes from the `rsg:locale` convar (falls back to `ox:locale`), for example `setr rsg:locale "de"` in your server.cfg.
 
 ## Discord Webhooks
 Set your webhook URLs in `server/sv_config.lua`. That file is server-only, so players never see the URLs. Leave a channel blank to use `Default`, and leave everything blank to turn logging off.

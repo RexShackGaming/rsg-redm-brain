@@ -25,7 +25,7 @@
 | `install.sql` | Manual database install (only when `AutoDatabase = false`) |
 | `html/` | NUI tending panel and plant list |
 | `stream/` | Custom weed props (`prop_weed_01`–`06`, textures, ytyp) |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 - Use a seed item to place a ghost crop with rsg-gizmo (the server re-validates the result with `IsPlacementValid`).
@@ -252,6 +252,6 @@ TriggerClientEvent('rsg-farming:client:sync', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

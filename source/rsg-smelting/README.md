@@ -56,7 +56,7 @@ exports['rsg-smelting']:SendWebhook('suspicious', source, { { 'Check', 'Custom' 
 ## Locales
 All player-facing text (notifications, target labels, blips, NUI, smelter/recipe names) and Discord webhook text live in `locales/<lang>.json`.
 
-Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language in server.cfg with `setr rsg:locale de`.
+Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language in server.cfg with `setr rsg:locale de`.
 
 `label` values in `shared/config.lua` (smelters, blip, prop smelter, recipes) are locale keys; if a key doesn't exist the text is shown as-is, so plain text still works. When adding a smelter or recipe, add its key to every locale file.
 
@@ -78,7 +78,7 @@ Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the
 - Removed unused locale keys (`wh_desc_stop`, `wh_f_owed`); README storage notes corrected (MySQL, not KVP)
 ### 3.0.0
 - All remaining hardcoded text moved to locales, including config labels and Discord webhook embeds
-- Added de, el, es, fr, ja, nl, pl, pt-br and ro translations
+- Added de, el, es, fr, ja, nl, pl, pt-br, ro and ru translations
 - Added Discord webhook system (`server/sv_config.lua`, `server/webhook.lua`)
 - Owed disconnect refunds lost on resource stop are now logged for manual compensation
 - Fixed NUI focus getting stuck when the smelt request was rejected client-side

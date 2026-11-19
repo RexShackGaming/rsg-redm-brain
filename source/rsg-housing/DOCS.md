@@ -54,7 +54,7 @@ There is **no ox_lib dependency**. Everything comes from rsg-core:
 | `client/client.lua` | Blips, door prompt and key animation, house menu prompt `[J]`, NUI bridge, admin panel bridge, `/myhouse`, **client API** |
 | `client/props.lua` | Furniture streaming, spawning, move / remove targets, placement with rsg-gizmo |
 | `html/` | NUI (`index.html`, `style.css`, `app.js`) |
-| `locales/*.json` | 10 languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | 11 languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 | `installation/rsg-housing.sql` | Schema (the script also builds it automatically) |
 
 ## Installation and upgrading
@@ -313,7 +313,7 @@ Stashes live in rsg-inventory's `inventories` table: `house_<houseid>` and `hous
 - **For other scripts:** a script that lets players act on a house must check `HasHouseAccess` (and distance) itself on the server. `OpenHouseStorage` and `SetHouseDoors` do not.
 
 ## Locales
-All text comes from `locales/<lang>.json` (en, de, el, es, fr, ja, nl, pl, pt-br, ro; the same keys in every file). The language follows rsg-core: `setr rsg:locale de`. To add a language copy `en.json`, translate the values, keep every `%s` / `%d` in the same order and keep `**bold**` markers and `~e~` / `~t6~` / `~q~` colour codes. NUI strings are listed in `UI_STRINGS` / `ADMIN_STRINGS` in `client/client.lua` and sent to the NUI when it opens; a new NUI string needs adding to that list too.
+All text comes from `locales/<lang>.json` (en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru; the same keys in every file). The language follows rsg-core: `setr rsg:locale de`. To add a language copy `en.json`, translate the values, keep every `%s` / `%d` in the same order and keep `**bold**` markers and `~e~` / `~t6~` / `~q~` colour codes. NUI strings are listed in `UI_STRINGS` / `ADMIN_STRINGS` in `client/client.lua` and sent to the NUI when it opens; a new NUI string needs adding to that list too.
 
 ## NUI
 `html/index.html` + `style.css` + `app.js`: the leather-and-gold house panel (rent card, guests with permission chips and key length, storage tiers, decorating list, wardrobe, mailbox) and the admin panel. The panel is draggable (position is remembered; double-click the header to reset). No native `<select>` or `<datalist>` is used. NUI callbacks are `close`, `action`, `searchPlayers`, `outfits`, `mailbox`, `admin`, `adminClose`; each is re-validated by the server callback behind it.
@@ -528,6 +528,6 @@ TriggerClientEvent('RSGCore:Client:OnPlayerLoaded', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

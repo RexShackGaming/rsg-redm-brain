@@ -38,7 +38,7 @@ For server owners and developers. Player-facing overview and install steps are i
 | `client/client.lua` | NUI bridge (focus, push-to-talk whitelist, closes the UI on death or when walking away, `Config.CloseDistance`), pack / vendor / collector UI, card inspect, shared `CardsClient.loadModel` |
 | `client/world.lua` | NPCs, blips, prompts, world card props, pickups, Eagle Eye hint, cleanup |
 | `html/` | NUI (house "leather & gold" style). `html/img` holds the card artwork, named `<item>.png` |
-| `locales/*.json` | 10 languages with identical keys |
+| `locales/*.json` | 11 languages with identical keys |
 | `install.sql` | Manual database install (same schema the script creates itself) |
 | `installation/` | Items for rsg-core and images for rsg-inventory |
 
@@ -419,7 +419,7 @@ NUI callbacks (page -> `RegisterNUICallback`, each is validated again on the ser
 
 ## Locales
 
-Language comes from rsg-core's `rsg:locale` convar (for example `setr rsg:locale de`). The 10 files in `locales/` (`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`) must keep identical keys and the same `%s`/`%d` placeholders in the same order.
+Language comes from rsg-core's `rsg:locale` convar (for example `setr rsg:locale de`). The 10 files in `locales/` (`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`) must keep identical keys and the same `%s`/`%d` placeholders in the same order.
 
 To add a text: add the key to `en.json`, translate it into the other nine, use `locale('key', ...)` on the server or client. If the UI needs it, also add it to `getStrings()` in `client/client.lua` and read it from `strings` in `html/script.js`. Some keys are built at runtime (`ptrade_<reason>`, `vendor_empty*`, `inventory_full_dropped`), so keep them even if a search for the full key finds no use.
 
@@ -811,6 +811,6 @@ TriggerClientEvent('rsg-cards:client:openPack', source, amount)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

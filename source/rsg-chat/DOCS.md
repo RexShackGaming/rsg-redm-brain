@@ -20,7 +20,7 @@
 | `server/versionchecker.lua` | GitHub version check |
 | `html/` | NUI (Vue, styles, dropdowns, suggestions) |
 | `install.sql` | Optional manual table |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 - Replaces the default chat with channels managed in game by admins (`/chatadmin`), stored in the database.
@@ -209,6 +209,6 @@ TriggerClientEvent('chatMessage', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

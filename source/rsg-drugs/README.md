@@ -42,7 +42,7 @@ exports['rsg-drugs']:ResetXP(src)               -- wipe to 0, returns XP removed
 ## Languages
 Every player-facing string (notifications, targets, commands, NUI panels, HUD and the config labels for skills, roles, packing, XP levels, substances and withdrawal stages) is in `locales/*.json`.
 
-Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Locales are loaded by rsg-core. Pick one in `server.cfg` (falls back to `ox:locale`, then `en`):
+Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Locales are loaded by rsg-core. Pick one in `server.cfg` (falls back to `ox:locale`, then `en`):
 ```
 setr rsg:locale de
 ```

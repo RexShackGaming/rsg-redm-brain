@@ -40,7 +40,7 @@ A chat resource for **RedM** servers running **RSG-Core**. It replaces the defau
 - **Command suggestions:** shows suggestions for every command the player has permission to use, including each channel's command.
 - **Message history recall:** the Up and Down arrow keys bring back messages you sent earlier.
 - **Hides automatically** while the screen is faded out or the pause menu is open.
-- **Translations:** full locale files for en, de, el, es, fr, ja, nl, pl, pt-br and ro, loaded by rsg-core (no ox_lib needed).
+- **Translations:** full locale files for en, de, el, es, fr, ja, nl, pl, pt-br, ro and ru, loaded by rsg-core (no ox_lib needed).
 - **Themes:** supports `chat_theme` from other resources, plus customisable message templates.
 - **Logging:** channel saves, deletes and enable/disable changes made in the admin panel are logged through `rsg-log`.
 

@@ -10,7 +10,7 @@ Hireable hot air balloons for RedM servers running the **RSG-Core** framework. P
 - **Live on-screen controls HUD** — a persistent panel on the left of the screen listing every flight control, with each key badge lighting up green in real time while it's actually held down.
 - **Per-player balloon storage** — each player gets their own weight/slot-limited stash (via `rsg-inventory`) tied to their currently-hired balloon, accessible by targeting it. The stash is wiped whenever the balloon is stored, so it's not a permanent personal locker.
 - **rsg-target integration everywhere** — hire, pilot, open storage, store, board, and disembark are all rsg-target options on the dock NPCs and the balloon itself; no `uiprompt` or other prompt dependency.
-- **Multi-language NUI** — every player-facing string (server callbacks, client notifications, rsg-target labels, and the full HTML/JS panel) is driven by rsg-core locale files. Ships with 10 languages out of the box: English, German, Greek, Spanish, French, Japanese, Dutch, Polish, Brazilian Portuguese, and Romanian.
+- **Multi-language NUI** — every player-facing string (server callbacks, client notifications, rsg-target labels, and the full HTML/JS panel) is driven by rsg-core locale files. Ships with 11 languages out of the box: English, German, Greek, Spanish, French, Japanese, Dutch, Polish, Brazilian Portuguese, and Romanian.
 - **Exploit-hardened server logic** — server-side ownership validation on balloon registration (a client can't claim someone else's networked entity), distance/speed checks before boarding or storing, and no client-trusted state for money or ownership.
 - **Multiple docks** — add as many hire docks as you like in the config; each spawns its own NPC, blip, and target automatically.
 
@@ -85,7 +85,7 @@ Config.Docks = {
 
 ### Changing the language
 
-Player-facing text is pulled from `locales/*.json` via rsg-core's locale system. The resource ships English (`en`), German (`de`), Greek (`el`), Spanish (`es`), French (`fr`), Japanese (`ja`), Dutch (`nl`), Polish (`pl`), Brazilian Portuguese (`pt-br`), and Romanian (`ro`).
+Player-facing text is pulled from `locales/*.json` via rsg-core's locale system. The resource ships English (`en`), German (`de`), Greek (`el`), Spanish (`es`), French (`fr`), Japanese (`ja`), Dutch (`nl`), Polish (`pl`), Brazilian Portuguese (`pt-br`), Romanian (`ro`), and Russian (`ru`).
 
 The active language is controlled by rsg-core's `rsg:locale` convar, which applies server-wide — it isn't set per-resource (falls back to `ox:locale`, then `en`). Add this to your `server.cfg` (before `ensure rsg-core`):
 

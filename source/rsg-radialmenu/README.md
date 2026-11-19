@@ -26,7 +26,7 @@ A fast, themed radial menu with nested submenus, job-specific actions, synced wa
 - ⌨️ Mouse, scroll wheel, number keys `1–9`, `Enter`, `Esc` / `Backspace` (back)
 - 🛡️ Menu closes itself if you die, get cuffed or open the pause menu
 - 📌 Options added by other resources keep a stable slot (insertion order)
-- 🌍 Locales: `en, de, el, es, fr, ja, nl, pl, pt-br, ro`
+- 🌍 Locales: `en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru`
 - 🔒 NUI never decides what runs – selections are matched against the client's own menu tree
 
 ---

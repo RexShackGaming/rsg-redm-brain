@@ -26,7 +26,7 @@
 | `server/server.lua` | Validates + stores walk styles (state bag + character metadata) |
 | `server/versionchecker.lua` | Console version check |
 | `html/` | NUI (SVG radial menu, Font Awesome icons) |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## Menu entries (config.lua)
 - `cmd(id, label, icon, command)` – runs a command (`ExecuteCommand`)
@@ -74,7 +74,7 @@ Stored in the player state bag `walkstyle` (replicated) and character metadata `
 - Menu cannot be opened (and selections are ignored) while dead, handcuffed or in the pause menu.
 
 ## Language
-`setr rsg:locale "<code>"` (falls back to `ox:locale`, then `en`). Supported: en, de, el, es, fr, ja, nl, pl, pt-br, ro. Menu labels are read when `config.lua` loads, so restart the resource after changing language.
+`setr rsg:locale "<code>"` (falls back to `ox:locale`, then `en`). Supported: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru. Menu labels are read when `config.lua` loads, so restart the resource after changing language.
 
 ## Troubleshooting
 | Problem | Fix |
@@ -154,6 +154,6 @@ TriggerClientEvent('rsg-radialmenu:client:noPlayers', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

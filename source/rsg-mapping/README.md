@@ -81,7 +81,7 @@ Saved states from the in-game tool are applied **after** these, so they always w
 
 ### Translations
 
-Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Locales are loaded by rsg-core. Choose one in `server.cfg`:
+Included languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Locales are loaded by rsg-core. Choose one in `server.cfg`:
 
 ```cfg
 setr rsg:locale de

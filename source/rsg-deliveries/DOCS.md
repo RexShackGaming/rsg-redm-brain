@@ -26,7 +26,7 @@ Version 3.2.0. For installation and the full configuration tables see [README.md
 | `server/sv_config.lua` | server | `SvConfig.Webhook` (never sent to clients) |
 | `server/versionchecker.lua` | server | Version check against GitHub |
 | `html/` | NUI | Contract board |
-| `locales/*.json` | shared | en, de, el, es, fr, ja, nl, pl, pt-br, ro (loaded by rsg-core) |
+| `locales/*.json` | shared | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru (loaded by rsg-core) |
 
 The resource has no database tables and no exports.
 
@@ -222,6 +222,6 @@ TriggerServerEvent('rsg-deliveries:server:setwagon', netId)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

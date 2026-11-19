@@ -60,7 +60,7 @@ Everything lives in `shared/config.lua`:
 ## Localisation
 All player-facing text (notifications, progress bars, target labels, prompts and
 blip names) lives in `locales/*.json`, loaded by rsg-core (`setr rsg:locale <lang>`). Included languages:
-`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
+`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`.
 
 Set the language in your server.cfg with:
 ```

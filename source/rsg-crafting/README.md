@@ -89,7 +89,7 @@ exports['rsg-crafting']:SendCraftingLog(type, title, desc, src?, fields?)
 
 ## Locales
 All player-facing, UI and Discord log text lives in `locales/*.json` (loaded by rsg-core). Included languages:
-`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
+`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`.
 
 Set the language in server.cfg, e.g. `setr rsg:locale de` (falls back to `ox:locale`, then `en`). To add another language, copy `en.json`, translate the values and keep every `%s` placeholder. Recipe `category` names come from `shared/config.lua`, so rename them there.
 

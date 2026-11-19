@@ -188,6 +188,7 @@ This resource uses rsg-core's locale system (`@rsg-core/shared/locale.lua`) — 
 | pl | Polish |
 | pt-br | Portuguese (Brazil) |
 | ro | Romanian |
+| ru | Russian |
 
 To change the language, set the `rsg:locale` convar in your `server.cfg` (falls back to `ox:locale`, then `en`; read by rsg-core and this resource's NUI) before this resource starts, e.g.:
 

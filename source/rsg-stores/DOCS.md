@@ -177,7 +177,7 @@ Created automatically (or `install/rsg-stores.sql`):
 - **Price exploit warning:** on start the server prints `price exploit: <item> costs $X at <shop> but <shop> pays $Y` for every item you can buy (NPC shop or wholesale) for less than another NPC shop pays. Raise the buy price or lower the sell price until it's gone.
 - **Refund a till before deleting:** read `balance` for the store in `rsg_shops_npcs` (also logged on delete/convert under *Till lost*) and pay the owner manually.
 - **Stop customers selling to owned stores:** the owner (or admin) sets the counter to *Buy only*.
-- **Staff ranks:** edit `Config.Staff.Ranks` (`{ name = 'cashier', perms = { 'restock', 'till' } }`) and add `ui_rank_cashier` to all 10 locale files. Existing staff keep the permissions they were saved with.
+- **Staff ranks:** edit `Config.Staff.Ranks` (`{ name = 'cashier', perms = { 'restock', 'till' } }`) and add `ui_rank_cashier` to all 11 locale files. Existing staff keep the permissions they were saved with.
 - **Turn staff off:** `Config.Staff.Enabled = false`. Staff rows are kept but give no access until it's back on.
 - **Turn the feature off:** `Config.OwnedStores.Enabled = false` — owned stores lose their counter zones and owner actions are refused; data is kept.
 
@@ -383,6 +383,6 @@ TriggerClientEvent('rsg-stores:client:transactionResult', source, success, messa
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

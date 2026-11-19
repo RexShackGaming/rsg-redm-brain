@@ -63,7 +63,7 @@ SendLoadingScreenMessage(json.encode({ type = 'endLoading' }))
 
 ## 6. Locales
 
-Screen language = `Config.Locale`; missing keys fall back to `en.json`. Tips are collected from `ui_tip_1`, `ui_tip_2`… stopping at the first gap. Theme text: `theme_<name>_subtitle`, `theme_<name>_tip_N`. News panel: `ui_news_title` + `ui_news_N` (hidden when there are none). `ui_players` takes two `%s` (players, max). `ui_music_hint` shows only when music is set. All 10 languages ship with identical keys: en, de, el, es, fr, ja, nl, pl, pt-br, ro.
+Screen language = `Config.Locale`; missing keys fall back to `en.json`. Tips are collected from `ui_tip_1`, `ui_tip_2`… stopping at the first gap. Theme text: `theme_<name>_subtitle`, `theme_<name>_tip_N`. News panel: `ui_news_title` + `ui_news_N` (hidden when there are none). `ui_players` takes two `%s` (players, max). `ui_music_hint` shows only when music is set. All 11 languages ship with identical keys: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru.
 
 ## 7. Security
 
@@ -111,6 +111,6 @@ Generated from the source of **rsg-loading 3.0.4**. Names, arguments and default
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

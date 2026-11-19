@@ -28,7 +28,7 @@ Raise and lower your bandana on RSG Framework (RedM). Works for male and female 
 - **3.0.1** - blocked toggling before login (statebag `isLoggedIn` nil was treated as logged in), animation is cancelled if the toggle is aborted, small allocation clean-up in the neckwear scan.
 
 ## Languages
-en, de, el, es, fr, ja, nl, pl, pt-br, ro. rsg-core picks the language from the `rsg:locale` convar (falls back to `ox:locale`, then `en`), e.g. `setr rsg:locale de` in server.cfg.
+en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru. rsg-core picks the language from the `rsg:locale` convar (falls back to `ox:locale`, then `en`), e.g. `setr rsg:locale de` in server.cfg.
 
 ## Config
 | Option | Default | Description |

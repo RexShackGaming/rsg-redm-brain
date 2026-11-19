@@ -64,7 +64,7 @@ Optional: `rsg-telegram` (owner notices) and `rsg-weather` (weather speed caps).
 | `client/preview.lua` | Train preview camera |
 | `client/train_robbery.lua` | Outlaws, engine pressure, ambient robberies |
 | `html/index.html`, `script.js`, `style.css` | NUI (station panel, train HUD, pressure HUD, dialogs) |
-| `locales/*.json` | `en, de, el, es, fr, ja, nl, pl, pt-br, ro` (identical keys) |
+| `locales/*.json` | `en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru` (identical keys) |
 | `install/rsg_railroad_full.sql` | All tables (`CREATE TABLE IF NOT EXISTS`); used by auto-install and manual import |
 | `install/shared_items.lua` | Item snippets to paste into your shared items |
 | `install/images/` | Item icons |
@@ -362,7 +362,7 @@ Webhook.SendFields('economy', 'Custom Event', {
 }, 'info')
 ```
 
-### Add a locale key (all 10 languages)
+### Add a locale key (all 11 languages)
 Add the same key to every file in `locales/`, keep placeholders in order, then use it:
 ```lua
 NotifyPlayer(src, locale('my_new_key', amount), 'success')   -- server
@@ -652,6 +652,6 @@ TriggerClientEvent('rsg-railroad:refreshStationData', source, companyId)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

@@ -16,7 +16,7 @@ ox_lib is **not** used (migrated in v3.1.0).
 | `server/server.lua` | Notices, fees, expiry, admin actions, callbacks |
 | `server/sv_config.lua` / `webhooks.lua` | Server-only config and Discord logs |
 | `html/` | NUI (board, admin panel, modals) |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## Callbacks (server, `RSGCore.Functions.CreateCallback`)
 Registered through a local `registerCallback(name, fn)` wrapper that calls `cb(fn(source, ...))`, so handlers simply `return` their value. Client side uses `RSGCore.Functions.AwaitCallback(name, 10000, ...)`.
@@ -134,6 +134,6 @@ TriggerClientEvent('rsg-noticeboard:client:syncBoards', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

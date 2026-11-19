@@ -26,7 +26,7 @@ All re-validate lease holder, distance and cooldown server-side.
 - `confirm { title, text, locales }` – lease purchase prompt; answered with POST `confirmAnswer { ok }`
 
 ## Locale keys added in the migration
-`ui_confirm_buy`, `ui_cancel` (all 10 languages).
+`ui_confirm_buy`, `ui_cancel` (all 11 languages).
 
 ## rsg-skills integration
 
@@ -129,6 +129,6 @@ end)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

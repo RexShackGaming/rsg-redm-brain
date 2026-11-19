@@ -13,7 +13,7 @@ Saint Denis trolleys for RSG Framework, with **one trolley on the Saint Denis lo
 - Admins turn the loop on/off in-game (`/trams`), saved across restarts
 - Free to ride: every car carries the `ownFare` state bag, so rsg-railroad never charges riders
 - Self-healing: missing or driverless trolleys are replaced; trolleys survive the spawning player leaving
-- No ox_lib: rsg-core locales, notify and commands. Languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro
+- No ox_lib: rsg-core locales, notify and commands. Languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
 
 ## Requirements
 - rsg-core, OneSync

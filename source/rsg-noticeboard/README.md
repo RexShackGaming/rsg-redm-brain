@@ -49,7 +49,7 @@ Town notice boards for the RSG Framework (RedM). Players use rsg-target on a bou
 - Admin callbacks check `RSGCore.Functions.HasPermission`
 
 ## Languages
-Includes translations for **en, de, el, es, fr, ja, nl, pl, pt-br, ro**. Every player message, the whole NUI, category and duration names, the placement help text and the Discord webhook embeds come from `locales/<lang>.json`.
+Includes translations for **en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru**. Every player message, the whole NUI, category and duration names, the placement help text and the Discord webhook embeds come from `locales/<lang>.json`.
 
 Set the language with the rsg-core locale convar in `server.cfg` (falls back to `ox:locale`, then `en`):
 ```

@@ -32,7 +32,7 @@ Technical reference for **rsg-stables**, the horse and stables resource for the 
 | Not required | `ox_lib` (callbacks, notifications, locales and dialogs run on rsg-core and the resource's own NUI) |
 | Lua | 5.4 (`lua54 'yes'`) |
 | UI | Single NUI page (`html/index.html`) with `app.js`, `training.js`, `actions.js`, `horsecard.js` |
-| Languages | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| Languages | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ---
 
@@ -815,7 +815,7 @@ Locale JSON files live in `locales/` and load through rsg-core (`@rsg-core/share
 locale('horse_enjoyed', 'Apple')   -- "Your horse enjoyed the Apple"
 ```
 
-Foal keys: `foal_cannot_ride`, `foal_grown_up` (`%s` = horse name). When adding a key, add it to **all ten** files (`en, de, el, es, fr, ja, nl, pl, pt-br, ro`). Placeholders use `%s` / `%d`. Server functions return the localised string as the error value, so it reaches the player unchanged.
+Foal keys: `foal_cannot_ride`, `foal_grown_up` (`%s` = horse name). When adding a key, add it to **all ten** files (`en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru`). Placeholders use `%s` / `%d`. Server functions return the localised string as the error value, so it reaches the player unchanged.
 
 ---
 
@@ -1047,6 +1047,6 @@ TriggerClientEvent('rsg-stables:client:openAdmin', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

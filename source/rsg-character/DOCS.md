@@ -54,7 +54,7 @@ rsg-character/
 ├── data/                 -- features, overlays, hair and clothing hash lists
 ├── html/                 -- NUI (index.html, css, js, spawn images)
 ├── img/                  -- menu icons and skin tone swatches
-└── locales/              -- en, de, el, es, fr, ja, nl, pl, pt-br, ro
+└── locales/              -- en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
 ```
 
 Data files in `data/` are large hash tables loaded on demand with rsg-core's `require` (`@rsg-core/shared/require.lua`).
@@ -243,7 +243,7 @@ Every embed also includes the player's identity fields (name and identifiers). O
 
 - All text is in `locales/<lang>.json`, loaded by rsg-core's locale loader.
 - Pick the server language with `setr rsg:locale <lang>` (`ox:locale` still works as a fallback).
-- Supported: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. When adding a key, add it to **every** file.
+- Supported: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. When adding a key, add it to **every** file.
 - Nationality validation accepts the nationality name from any locale file, so a player whose client language differs from the server can still create a character.
 
 ---
@@ -668,6 +668,6 @@ TriggerClientEvent('rsg-character:client:ReceiveCharacterSlots', source, slots)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

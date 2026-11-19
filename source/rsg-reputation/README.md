@@ -92,7 +92,7 @@ end)
 All exports, events and callbacks are in [DOCS.md](DOCS.md).
 
 ## Locales
-Ships with `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br` and `ro`, all with the same keys. Tier names are locale keys (`honor_*`, `standing_*`) and region labels may be plain text or a locale key; a new tier or region needs matching entries only if you use a locale key for it.
+Ships with `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro` and `ru`, all with the same keys. Tier names are locale keys (`honor_*`, `standing_*`) and region labels may be plain text or a locale key; a new tier or region needs matching entries only if you use a locale key for it.
 
 ## Notes
 - Regions are passed by the calling script (for example the town a shop belongs to). The resource does not detect the player's location by itself.

@@ -27,7 +27,7 @@ Collectable cigarette cards for the RSG Framework: 144 cards in 12 sets, found i
 - **Sell Duplicates** – one button at the vendor sells every spare copy and keeps one of each card
 - **Admin card editor** – place, move and remove world cards in game with rsg-gizmo. Locations are stored in the database, so no config edits or restarts are needed
 - Server-authoritative: every reward, price and cooldown is decided on the server
-- House-style NUI, push-to-talk keeps working while it is open, rsg-target or prompts, 10 languages
+- House-style NUI, push-to-talk keeps working while it is open, rsg-target or prompts, 11 languages
 
 ## Installation
 
@@ -149,7 +149,7 @@ Adding a set: add a line to `Config.Sets`, add the 13 items (`card_cigcard_<id>`
 
 ## Locales
 
-`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"` in `server.cfg`.
+`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"` in `server.cfg`.
 
 ## Credits
 

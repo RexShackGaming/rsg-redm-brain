@@ -18,7 +18,7 @@ A real-time, town-based auction house for RedM servers running the **RSG Framewo
 - **Discord webhooks**: optional embeds for created, bid, won, buyout, expired, cancelled and high-value sales, with admin commands to manage them in-game.
 - **MySQL persistence**: auctions, bids, pending collections and payouts are stored in the database (oxmysql). Tables are created automatically, timers resume after restarts, and finished auctions are pruned after a configurable number of days.
 - **RDR2 leather & gold UI**: a dark monochrome React interface with custom (non-native) dropdowns, rsg-core notifications and full translations.
-- **10 languages**: en, de, el, es, fr, ja, nl, pl, pt-br, ro (game text *and* UI).
+- **11 languages**: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru (game text *and* UI).
 - **Auto-close**: the UI closes if the player walks away from the auctioneer or dies.
 
 ### Security
@@ -201,7 +201,7 @@ Only `https://discord.com/api/webhooks/` URLs are accepted. Failed sends are ret
 
 ### Locales
 
-All text, game and UI, lives in `locales/<lang>.json` (rsg-core locale loader, ox_lib-compatible JSON). Keys starting with `ui.` are sent to the NUI when it opens, so translations need **no UI rebuild**; `web/locales.ts` only holds the English fallback. Shipped languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Pick one with `setr rsg:locale "de"` in your `server.cfg`.
+All text, game and UI, lives in `locales/<lang>.json` (rsg-core locale loader, ox_lib-compatible JSON). Keys starting with `ui.` are sent to the NUI when it opens, so translations need **no UI rebuild**; `web/locales.ts` only holds the English fallback. Shipped languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Pick one with `setr rsg:locale "de"` in your `server.cfg`.
 
 ---
 

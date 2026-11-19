@@ -11,7 +11,7 @@
 
 Config = {}
 
--- Loading screen language. Must match a file in locales/ (en, de, el, es, fr, ja, nl, pl, pt-br, ro).
+-- Loading screen language. Must match a file in locales/ (en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru).
 -- The loading screen runs before any Lua, so it cannot read the rsg:locale convar; set it here.
 -- Server console messages use rsg-core's rsg:locale convar (falls back to ox:locale) as normal.
 -- All text (title, subtitles, tips) lives in locales/<lang>.json:

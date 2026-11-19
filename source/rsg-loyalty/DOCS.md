@@ -127,7 +127,7 @@ Focus is set through one helper. With `Config.AllowPushToTalkWhileOpen = true` t
 
 ## Locales and notifications
 
-Locales load through `@rsg-core/shared/locale.lua` from `locales/*.json` (en, de, el, es, fr, ja, nl, pl, pt-br, ro; same keys in every file). Set the language with `setr rsg:locale <code>`. Reward labels, tier labels and blip names in config are locale keys. When you add a reward or tier, add its key to all 10 files. Notifications use `RSGCore:Client:Notify`.
+Locales load through `@rsg-core/shared/locale.lua` from `locales/*.json` (en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru; same keys in every file). Set the language with `setr rsg:locale <code>`. Reward labels, tier labels and blip names in config are locale keys. When you add a reward or tier, add its key to all 10 files. Notifications use `RSGCore:Client:Notify`.
 
 ## Troubleshooting
 
@@ -295,6 +295,6 @@ TriggerClientEvent('RSGCore:Client:OnPlayerLoaded', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

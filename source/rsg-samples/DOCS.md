@@ -14,7 +14,7 @@
 | Database | oxmysql; `player_samples` table auto-created (`Config.AutoInstallDB`), manual SQL in `install/rsg-samples.sql` |
 
 ## Languages
-en, de, el, es, fr, ja, nl, pl, pt-br, ro — add more by copying `locales/en.json`.
+en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru — add more by copying `locales/en.json`.
 
 ## Commands
 - `/samplesmenu` — open the samples UI
@@ -93,6 +93,6 @@ TriggerClientEvent('rsg-samples:client:openSamplesMenu', source, data)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

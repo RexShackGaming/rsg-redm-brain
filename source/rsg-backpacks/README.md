@@ -22,7 +22,7 @@ This resource merges and replaces:
   - machete
   - bow quiver
 - **rsg-core only**: notifications, commands and JSON locales (no ox_lib).
-- **Locales (rsg-core JSON)**: en, de, el, es, fr, ja, nl, pl, pt-br, ro.
+- **Locales (rsg-core JSON)**: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru.
 
 ---
 
@@ -150,7 +150,7 @@ The `rsg-backpacks` enforcer stays active as a safety net.
 
 ## Localization
 
-Locales use the rsg-core JSON loader (`locales/<lang>.json`). Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
+Locales use the rsg-core JSON loader (`locales/<lang>.json`). Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`.
 
 Pick the language in `server.cfg` (`ox:locale` still works as a fallback):
 
@@ -175,7 +175,7 @@ rsg-backpacks/
 │   └── main.lua      # serials, usable items, stash opening, nested block, recovery
 ├── shared/
 │   └── config.lua
-├── locales/          # en, de, el, es, fr, ja, nl, pl, pt-br, ro (.json)
+├── locales/          # en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru (.json)
 ├── installation/
 │   ├── images/       # backpack item icons (copy to rsg-inventory)
 │   ├── items.lua     # item entries for rsg-core/shared/items.lua

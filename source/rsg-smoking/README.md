@@ -22,7 +22,7 @@ Full technical documentation is in [DOCS.md](DOCS.md).
 - Stress relief on use, applied by the server through rsg-hud (configurable per item type)
 - Nothing is consumed when the player cannot smoke (on a horse, in a wagon or boat, swimming, cuffed, already smoking, dead) or when the prop model cannot load
 - Dropped cigarettes despawn automatically, so no entity build-up
-- Fully localised (10 languages), rsg-core notifications, no ox_lib
+- Fully localised (11 languages), rsg-core notifications, no ox_lib
 
 ## Installation
 
@@ -103,7 +103,7 @@ Anything that should cost an item must remove it on the server first. See [DOCS.
 
 ## Languages
 
-en, de, el, es, fr, ja, nl, pl, pt-br, ro. Set the language with `setr rsg:locale de` in your `server.cfg`.
+en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru. Set the language with `setr rsg:locale de` in your `server.cfg`.
 
 Support: https://rexshack.tebex.store
 Buy me a coffee: https://buymeacoffee.com/rexshack

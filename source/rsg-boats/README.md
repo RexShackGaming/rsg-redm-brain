@@ -49,7 +49,7 @@ Moving or deleting a yard is blocked while a player has a boat out from it.
 | `Config.AutoInstallDB`, `Config.DefaultBoats` | Auto install and the boats added on first install |
 | `Config.Debug` | Console debug output |
 
-All text is in `locales/`: player notifications, prompts, target labels, the whole NUI (`ui_*` keys) and Discord webhook embeds (`wh_*` keys). Included languages: en, de, el, es, fr, ja, nl, pl, pt-br and ro. Locales load through rsg-core (`@rsg-core/shared/locale.lua`); set the language with `setr rsg:locale "de"` in server.cfg (falls back to `ox:locale`, then `en`).
+All text is in `locales/`: player notifications, prompts, target labels, the whole NUI (`ui_*` keys) and Discord webhook embeds (`wh_*` keys). Included languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro and ru. Locales load through rsg-core (`@rsg-core/shared/locale.lua`); set the language with `setr rsg:locale "de"` in server.cfg (falls back to `ox:locale`, then `en`).
 
 ## Discord webhooks
 Set these in `server/sv_config.lua`. It is server only, so webhook URLs are never sent to players.

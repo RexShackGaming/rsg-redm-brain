@@ -36,7 +36,7 @@ Full developer / server-owner documentation: [DOCS.md](DOCS.md)
 - Reject = applicant sees the feedback, the vacancy stays open (optional re-apply cooldown)
 - Push-to-talk keeps working while the UI is open
 - Tables are created automatically on first start
-- Locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro
+- Locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
 
 ## Installation
 1. Make sure `rsg-core`, `rsg-target` and `oxmysql` are started before this resource.

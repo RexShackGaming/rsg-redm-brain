@@ -31,7 +31,7 @@
 | `server/versionchecker.lua` | GitHub version check |
 | `installation/install.sql` | Database install |
 | `installation/shared_items.lua` | Items to add to `rsg-core/shared/items.lua` |
-| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro |
+| `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru |
 
 ## 2. How it works
 ### Cannabis lab
@@ -271,6 +271,6 @@ TriggerClientEvent('rsg-drugs:client:useSubstance', source, key)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

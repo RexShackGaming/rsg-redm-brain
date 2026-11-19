@@ -42,7 +42,7 @@ Zone centres are approximate. Stand where you want each hunt and update `zone` (
 ## Languages
 All text (notifications, target labels and prompts, blips, NUI, command help, animal names and descriptions, Discord logs) lives in `locales/*.json`.
 
-Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language in your `server.cfg`:
+Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language in your `server.cfg`:
 
 ```
 setr rsg:locale en

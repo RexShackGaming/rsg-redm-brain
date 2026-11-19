@@ -221,7 +221,7 @@ add_ace group.admin rsg-fireworks.display allow
 
 ### Translate the resource
 
-Included locales: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the active locale in `server.cfg`:
+Included locales: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the active locale in `server.cfg`:
 
 ```cfg
 setr rsg:locale "de"
@@ -315,6 +315,6 @@ TriggerClientEvent('rsg-fireworks:client:firework_big', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->

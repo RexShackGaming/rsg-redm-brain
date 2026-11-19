@@ -20,7 +20,7 @@ Fishing for **RSG-Core** (RedM), version 3.1.0. Full technical reference: [DOCS.
 - **Server-side checks:** only real bait items are accepted, a minigame catch needs a spent bait (one catch per bait), a catch cooldown applies, fish weight is capped and inventory space is checked before the fish is added.
 - **Ground pickup:** fish picked up off the ground go straight into the inventory (can be turned off with `Config.GroundPickup`).
 - **Logging:** catches are sent to `rsg-log` (`fishing` channel) when `Config.Log` is on.
-- **Languages:** cs, de, el, en, es, fr, it, ja, nl, pl, pt-br, ro. Set with `setr rsg:locale <lang>`.
+- **Languages:** cs, de, el, en, es, fr, it, ja, nl, pl, pt-br, ro, ru. Set with `setr rsg:locale <lang>`.
 
 ## Dependencies
 
