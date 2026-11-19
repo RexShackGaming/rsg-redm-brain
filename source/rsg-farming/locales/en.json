@@ -80,6 +80,8 @@
     "level_up": "Farming level up! New rank: %s",
     "level_info": "Farming level %s (%s) - %s XP",
     "level_info_next": "Farming level %s (%s) - %s / %s XP",
+    "level_info_skills": "Farming level %s - %s XP",
+    "level_info_skills_next": "Farming level %s - %s / %s XP",
     "harvested_bonus": "Crop harvested - bumper yield!",
     "ui_btn_treat": "Treat",
     "ui_pests": "Pests",

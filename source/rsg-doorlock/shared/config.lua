@@ -1,4 +1,6 @@
 Config = {}
+-- build the database tables automatically on start (set false and import the SQL file for a manual install)
+Config.AutoDatabase = true
 
 Config.DefaultDistance   = 1.25  -- interaction range when a door has no 'distance' set
 Config.DistanceTolerance = 2.0   -- extra server-side leeway for the proximity check (latency)

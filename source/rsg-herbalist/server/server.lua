@@ -42,6 +42,18 @@ local function TakeItem(src, item, amount, reason)
     return exports['rsg-inventory']:RemoveItem(src, item, amount, nil, reason) and true or false
 end
 
+-- rsg-skills (optional): award XP and read perks, both on the server
+local function skillXP(src, amount, reason)
+    if not Config.Skills.Enabled or not amount or amount <= 0 then return end
+    if GetResourceState('rsg-skills') ~= 'started' then return end
+    exports['rsg-skills']:AddXP(src, Config.Skills.Skill, amount, reason)
+end
+
+local function skillPerk(src, perk)
+    if not Config.Skills.Enabled or GetResourceState('rsg-skills') ~= 'started' then return 0 end
+    return tonumber(exports['rsg-skills']:GetPerk(src, Config.Skills.Skill, perk)) or 0
+end
+
 local function IsDead(Player)
     local md = Player.PlayerData.metadata
     return md and md.isdead
@@ -185,6 +197,12 @@ RegisterNetEvent('rsg-herbalist:server:gathered', function(id)
     suppressedUntil[id] = os.time() + Config.SuppressionWearoffSeconds
     TriggerClientEvent('rsg-herbalist:client:SetSuppressed', -1, id, true)
     Webhook.LogGather(src, ItemLabel(item), ('#%d %s'):format(id, tostring(spawn.coord)))
+
+    -- rsg-skills: XP and the extra_yield perk (chance of one more herb)
+    skillXP(src, Config.Skills.GatherXP, 'herb gathered')
+    if Config.Skills.ExtraYield and math.random(100) <= skillPerk(src, 'extra_yield') and CanCarry(src, item, 1) then
+        GiveItem(src, item, 1, 'rsg-herbalist:skill-bonus')
+    end
 end)
 
 -- Regrowth: the server picks the node's next plant so every client agrees.

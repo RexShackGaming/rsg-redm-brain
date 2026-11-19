@@ -85,6 +85,7 @@ end
 
 -- Creates tables if missing. Must be called from a thread (uses await).
 function AuctionDB.init()
+    if Config.AutoDatabase == false then return end -- manual install: import installation/rsg-auction.sql
     for _, sql in ipairs(SCHEMA) do
         MySQL.query.await(sql)
     end

@@ -1,4 +1,6 @@
 Config = {}
+-- build the database tables automatically on start (set false and import the SQL file for a manual install)
+Config.AutoDatabase = true
 
 Config.ForemanModel    = 'u_m_m_bht_mineforeman'
 Config.SpawnDistance   = 50.0       -- foreman ped spawns when player is within this range
@@ -153,4 +155,12 @@ Config.Mines = {
             { item = 'resource_sapphire_uncut', chance = 1,  min = 1, max = 1, minSkill = 7 },
         },
     },
+}
+
+-- rsg-skills integration (optional). Needs the rsg-skills resource; does nothing when it is not started.
+Config.Skills = {
+    Enabled = true,
+    Skill   = 'mining', -- skill key in rsg-skills
+    CollectXP = 1,       -- XP per ore item collected from a mine (rsg-skills applies its own multipliers and cap)
+    MaxXPPerCollect = 50, -- cap on the XP from one collect action
 }

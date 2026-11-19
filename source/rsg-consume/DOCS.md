@@ -28,3 +28,43 @@
 
 ## Events
 - `rsg-consume:client:onConsume(data)` (client, local), which other resources can hook.
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-consume 3.1.1**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Consumables` | `table` | stress: positive relieves stress, negative adds stress \| hunger/thirst: added to current value (0-100) |
+| `Config.AlcoholSystem` | `table` | AlcoholSystem Configuration |
+| `Config.AlcoholEffects` | `table` |  |
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-consume:client:consume` | client | `itemName, category` | `client/client.lua` |
+| `rsg-consume:server:finish` | server | `consumed` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-consume:server:finish', consumed)
+-- from a server script
+TriggerClientEvent('rsg-consume:client:consume', source, itemName, category)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

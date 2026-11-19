@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-noticeboard - player notice boards with NUI, fees, expiry/renewal and admin management'
-version '3.1.0'
+version '3.1.1'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',

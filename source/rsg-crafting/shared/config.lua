@@ -87,3 +87,12 @@ Config.Crafting = {
     },
 
 }
+
+-- rsg-skills integration (optional). Needs the rsg-skills resource; does nothing when it is not started.
+-- The crafting XP above keeps working; this also awards XP to the shared rsg-skills skill.
+Config.Skills = {
+    Enabled    = true,
+    Skill      = 'crafting', -- skill key in rsg-skills
+    XPScale    = 5,          -- rsg-skills XP = crafting XP earned x this (rsg-skills applies its own multipliers and cap)
+    SaveChance = true,       -- the skill's save_chance perk (%) is the chance a craft does not use up its ingredients
+}

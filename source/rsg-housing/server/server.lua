@@ -14,6 +14,17 @@ local RentedHouses = {} -- [houseid] = { owner = fullname, citizenid = citizenid
 local DoorStates   = {} -- [doorid (string)] = 1 locked / 0 unlocked
 local Cooldowns    = {}
 
+-- decorating: props the tenant may place (from Config.DecorProps)
+local DecorByKey, DecorList = {}, {}
+for _, def in ipairs(Config.DecorProps or {}) do
+    DecorByKey[def.key] = def
+    DecorList[#DecorList + 1] = { key = def.key, label = def.label, price = def.price or 0 }
+end
+
+-- key lengths a tenant may pick (hours, 0 = until removed)
+local GUEST_DURATION_SET = {}
+for _, h in ipairs(Config.GuestDurations or { 0 }) do GUEST_DURATION_SET[h] = true end
+
 local HousesById, DoorsById = {}, {}
 for _, house in ipairs(Config.Houses) do HousesById[house.houseid] = house end
 for _, door in ipairs(Config.HouseDoors) do DoorsById[tostring(door.doorid)] = door end
@@ -90,7 +101,7 @@ end
 
 -- the player's key to a house (guest flag + permissions), or nil
 local function getKey(citizenid, houseid)
-    return MySQL.single.await('SELECT guest, ' .. PERM_COLUMNS .. ' FROM rsg_housekeys WHERE citizenid = ? AND houseid = ? LIMIT 1', { citizenid, houseid })
+    return MySQL.single.await('SELECT guest, ' .. PERM_COLUMNS .. ' FROM rsg_housekeys WHERE citizenid = ? AND houseid = ? AND (expires IS NULL OR expires > NOW()) LIMIT 1', { citizenid, houseid })
 end
 
 -- returns 'tenant', 'guest' or nil
@@ -133,10 +144,25 @@ local function syncRentedHouses()
     end
 end
 
-local function payGovernor(region, amount)
+-- rsg-economy (optional): returns true when the payment was deposited into a town treasury
+local function payTreasury(houseid, amount, reason)
+    if not Config.Economy.Enabled or amount <= 0 or GetResourceState('rsg-economy') ~= 'started' then return false end
+    local h = HousesById[houseid]
+    local c = h and h.menucoords
+    if not c then return false end
+    local region = exports['rsg-economy']:GetRegionAt(vector3(c.x, c.y, c.z))
+    if not region then return false end
+    return exports['rsg-economy']:DepositTreasury(region, amount, reason, 'rsg-housing') ~= nil
+end
+
+local function payGovernor(region, amount, houseid, reason)
+    if payTreasury(houseid, amount, reason or 'rent') and Config.Economy.ReplaceGovernor then return end
     local job = Config.GovernorJobs[region]
-    if Config.EnableGovenor and job and amount > 0 then
-        exports['rsg-bossmenu']:AddMoney(job, amount)
+    local enabled = Config.EnableGovernor
+    if enabled == nil then enabled = Config.EnableGovenor end
+    if enabled and job and amount > 0 then
+        local ok = pcall(function() exports['rsg-bossmenu']:AddMoney(job, amount) end)
+        if not ok then print('^1[rsg-housing] could not pay the governor account (is rsg-bossmenu started?)^7') end
     end
 end
 
@@ -172,21 +198,60 @@ local function setHouseDoors(houseid, state)
     end
 end
 
--- wipes the house stash in rsg-inventory memory and the database
-local function purgeStorage(houseid)
-    local stashId = getStashId(houseid)
-    pcall(function()
-        exports['rsg-inventory']:ClearStash(stashId)
-        exports['rsg-inventory']:DeleteInventory(stashId)
-    end)
+-- empties a stash in rsg-inventory memory and the database
+local function stashPurge(stashId)
+    pcall(function() exports['rsg-inventory']:ClearInventory(stashId) end)
+    pcall(function() exports['rsg-inventory']:ClearStash(stashId) end)
+    pcall(function() exports['rsg-inventory']:DeleteInventory(stashId) end)
     MySQL.update.await('DELETE FROM inventories WHERE identifier = ?', { stashId })
+end
+
+local function purgeStorage(houseid)
+    stashPurge(getStashId(houseid))
+end
+
+local function retrievalId(houseid, citizenid)
+    return ('houseret_%s_%s'):format(citizenid, houseid)
+end
+
+-- moves the house stash into a per-tenant retrieval stash they can open for Config.RetrievalDays
+local function moveToRetrieval(houseid, citizenid)
+    local days = tonumber(Config.RetrievalDays) or 0
+    if days <= 0 or not citizenid or citizenid == '0' then return false end
+
+    local ok, inv = pcall(function() return exports['rsg-inventory']:GetInventory(getStashId(houseid)) end)
+    local list = {}
+    if ok and type(inv) == 'table' and type(inv.items) == 'table' then
+        for slot, it in pairs(inv.items) do
+            if type(it) == 'table' and it.name then
+                list[#list + 1] = { name = it.name, amount = it.amount, info = it.info or {}, slot = tonumber(it.slot) or tonumber(slot) }
+            end
+        end
+    end
+    if #list == 0 then return false end
+
+    local retId = retrievalId(houseid, citizenid)
+    stashPurge(retId)
+    MySQL.insert.await('INSERT INTO inventories (identifier, items) VALUES (?, ?) ON DUPLICATE KEY UPDATE items = VALUES(items)', { retId, json.encode(list) })
+    MySQL.insert.await('INSERT INTO rsg_housing_retrieval (houseid, citizenid, expires) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? DAY)) ON DUPLICATE KEY UPDATE expires = VALUES(expires)', { houseid, citizenid, days })
+    return true
 end
 
 -- highest slot used in the house stash (so a smaller storage never hides items)
 local function storageUsedSlots(houseid)
-    local raw = MySQL.scalar.await('SELECT items FROM inventories WHERE identifier = ?', { getStashId(houseid) })
-    local items = raw and json.decode(raw)
+    local stashId = getStashId(houseid)
     local highest = 0
+    local ok, inv = pcall(function() return exports['rsg-inventory']:GetInventory(stashId) end)
+    if ok and type(inv) == 'table' and type(inv.items) == 'table' then
+        for key, item in pairs(inv.items) do
+            local slot = type(item) == 'table' and tonumber(item.slot) or tonumber(key)
+            if slot and slot > highest then highest = slot end
+        end
+        return highest
+    end
+    -- rsg-inventory not answering: read what was last saved
+    local raw = MySQL.scalar.await('SELECT items FROM inventories WHERE identifier = ?', { stashId })
+    local items = raw and json.decode(raw)
     if type(items) == 'table' then
         for key, item in pairs(items) do
             local slot = type(item) == 'table' and tonumber(item.slot) or tonumber(key)
@@ -201,21 +266,29 @@ local function getStorageTier(level)
     return Config.StorageTiers[level] and level or 1, Config.StorageTiers[level] or Config.StorageTiers[1]
 end
 
--- purge: true/false forces deleting the storage or keeping it, nil uses Config.PurgeStorageOnLeave
-local function endTenancy(houseid, purge)
+-- purge: true deletes the storage, false keeps it for the old tenant (Config.RetrievalDays), nil uses Config.PurgeStorageOnLeave
+-- reason is passed to the tenancyEnded hook: 'left' | 'evicted' | 'admin' | 'api'
+-- returns true when belongings were kept for retrieval
+local function endTenancy(houseid, purge, ownerCid, reason)
     MySQL.update.await("UPDATE rsg_housing SET citizenid = '0', fullname = '0', rented = 0, rent_due = NULL, reminder_sent = 0, custom_name = NULL, storage_tier = 1 WHERE houseid = ?", { houseid })
     MySQL.update.await('DELETE FROM rsg_housekeys WHERE houseid = ?', { houseid })
+    MySQL.update.await('DELETE FROM rsg_housing_props WHERE houseid = ?', { houseid })
+    TriggerClientEvent('rsg-housing:client:propsCleared', -1, houseid)
+
     if purge == nil then purge = Config.PurgeStorageOnLeave end
-    if purge then
-        purgeStorage(houseid)
-    end
+    local moved = false
+    if not purge then moved = moveToRetrieval(houseid, ownerCid) end
+    purgeStorage(houseid) -- the next tenant always starts with an empty house
+
     RentedHouses[houseid] = nil
     setHouseDoors(houseid, 0)
+    TriggerEvent('rsg-housing:server:tenancyEnded', houseid, ownerCid, reason or 'left')
+    return moved
 end
 
 -- guest list with character names (two queries, so table collations never have to match)
 local function getGuests(houseid)
-    local guests = MySQL.query.await('SELECT citizenid, ' .. PERM_COLUMNS .. ' FROM rsg_housekeys WHERE houseid = ? AND guest = 1', { houseid }) or {}
+    local guests = MySQL.query.await('SELECT citizenid, ' .. PERM_COLUMNS .. ", DATE_FORMAT(expires, '%d/%m/%Y %H:%i') AS expires_text FROM rsg_housekeys WHERE houseid = ? AND guest = 1 AND (expires IS NULL OR expires > NOW())", { houseid }) or {}
     if #guests == 0 then return guests end
     for i = 1, #guests do
         guests[i].perms = permsFromRow(guests[i])
@@ -238,6 +311,54 @@ local function getGuests(houseid)
     return guests
 end
 
+-- opens the house stash for a player (no permission check: callers decide who may)
+local function openStash(src, houseid)
+    local level = MySQL.scalar.await('SELECT storage_tier FROM rsg_housing WHERE houseid = ?', { houseid })
+    local _, tier = getStorageTier(level)
+    exports['rsg-inventory']:OpenInventory(src, getStashId(houseid), {
+        label     = locale('storage_label', HousesById[houseid].name),
+        maxweight = tier.weight,
+        slots     = tier.slots
+    })
+end
+
+-- gives a key (guest = 1); hours > 0 makes it expire. perms = { doors, storage, wardrobe, mailbox } booleans
+local function giveKey(houseid, citizenid, hours, perms)
+    hours = math.max(0, math.tointeger(tonumber(hours)) or 0)
+    perms = perms or Config.GuestDefaultPermissions or {}
+    -- an expired key for the same person would block the insert below
+    MySQL.update.await('DELETE FROM rsg_housekeys WHERE houseid = ? AND citizenid = ? AND expires IS NOT NULL AND expires <= NOW()', { houseid, citizenid })
+    local values = {}
+    for i, perm in ipairs(GUEST_PERMS) do values[i] = perms[perm] == false and 0 or 1 end
+    MySQL.insert.await('INSERT INTO rsg_housekeys (citizenid, houseid, guest, ' .. PERM_COLUMNS .. ', expires) VALUES (?, ?, 1, ?, ?, ?, ?, IF(? > 0, DATE_ADD(NOW(), INTERVAL ? HOUR), NULL))', {
+        citizenid, houseid, values[1], values[2], values[3], values[4], hours, hours
+    })
+    TriggerEvent('rsg-housing:server:guestAdded', houseid, citizenid, hours)
+end
+
+local function revokeKey(houseid, citizenid)
+    local removed = MySQL.update.await('DELETE FROM rsg_housekeys WHERE houseid = ? AND citizenid = ? AND guest = 1', { houseid, citizenid })
+    if removed > 0 then
+        TriggerEvent('rsg-housing:server:guestRemoved', houseid, citizenid)
+        return true
+    end
+    return false
+end
+
+-- ends the current tenancy with the lettings-office message; returns the tenant row (or nil) and whether belongings were kept
+local function evictHouse(houseid, purge, reason)
+    local row = MySQL.single.await('SELECT citizenid, fullname FROM rsg_housing WHERE houseid = ? AND rented = 1', { houseid })
+    if not row then return nil end
+    local name = HousesById[houseid] and HousesById[houseid].name or houseid
+    local moved = endTenancy(houseid, purge == true, row.citizenid, reason)
+    syncRentedHouses()
+    local msg = locale('admin_eviction_message', name)
+    if moved then msg = msg .. ' ' .. locale('retrieval_hint', Config.RetrievalDays) end
+    sendTelegram(row.citizenid, row.fullname, locale('eviction_subject'), msg)
+    notifyIfOnline(row.citizenid, locale('rent_title'), msg, 'error')
+    return row, moved
+end
+
 -- result sent back to the NUI (shown as a toast)
 local function reply(ok, msg, nType)
     return { ok = ok, msg = msg, type = nType or (ok and 'success' or 'error') }
@@ -251,31 +372,66 @@ end)
 -- startup: cache rented houses, lock all doors
 ---------------------------------------------
 -- creates the tables from installation/rsg-housing.sql the first time the resource starts
-local function ensureDatabase()
-    local exists = MySQL.scalar.await("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'rsg_housing'")
-    if exists and exists > 0 then
-        -- add columns from newer versions to an existing table
-        MySQL.query.await('ALTER TABLE rsg_housing ADD COLUMN IF NOT EXISTS `custom_name` varchar(30) DEFAULT NULL')
-        MySQL.query.await('ALTER TABLE rsg_housing ADD COLUMN IF NOT EXISTS `storage_tier` tinyint(4) NOT NULL DEFAULT 1')
-        for _, perm in ipairs(GUEST_PERMS) do
-            MySQL.query.await(('ALTER TABLE rsg_housekeys ADD COLUMN IF NOT EXISTS `perm_%s` tinyint(1) NOT NULL DEFAULT 1'):format(perm))
-        end
-        return true
-    end
+local function columnExists(tbl, col)
+    return (MySQL.scalar.await('SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?', { tbl, col }) or 0) > 0
+end
 
-    local sql = LoadResourceFile(GetCurrentResourceName(), 'installation/rsg-housing.sql')
-    if not sql then
-        print('^1[rsg-housing] rsg_housing table missing and installation/rsg-housing.sql not found^7')
+local function tableExists(tbl)
+    return (MySQL.scalar.await('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?', { tbl }) or 0) > 0
+end
+
+local function addColumn(tbl, col, definition)
+    if not columnExists(tbl, col) then
+        MySQL.query.await(('ALTER TABLE `%s` ADD COLUMN `%s` %s'):format(tbl, col, definition))
+    end
+end
+
+local function addIndex(tbl, name, columns)
+    local found = MySQL.scalar.await('SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?', { tbl, name }) or 0
+    if found == 0 then
+        MySQL.query.await(('ALTER TABLE `%s` ADD INDEX `%s` (%s)'):format(tbl, name, columns))
+    end
+end
+
+local function ensureDatabase()
+    if not Config.AutoDatabase then return true end
+
+    local ok, err = pcall(function()
+        local firstInstall = not tableExists('rsg_housing')
+        local sql = LoadResourceFile(GetCurrentResourceName(), 'installation/rsg-housing.sql')
+        assert(sql, 'installation/rsg-housing.sql not found')
+        sql = sql:gsub('%-%-[^\n]*', '')
+        for statement in sql:gmatch('[^;]+') do
+            if statement:match('^%s*CREATE') or (firstInstall and statement:match('^%s*INSERT')) then
+                MySQL.query.await(statement)
+            end
+        end
+
+        -- columns from newer versions (MySQL and MariaDB safe, never destructive)
+        addColumn('rsg_housing', 'custom_name', 'varchar(30) DEFAULT NULL')
+        addColumn('rsg_housing', 'storage_tier', 'tinyint(4) NOT NULL DEFAULT 1')
+        for _, perm in ipairs(GUEST_PERMS) do
+            addColumn('rsg_housekeys', 'perm_' .. perm, 'tinyint(1) NOT NULL DEFAULT 1')
+        end
+        addColumn('rsg_housekeys', 'expires', 'datetime DEFAULT NULL')
+        addIndex('rsg_housekeys', 'idx_house_citizen', '`houseid`, `citizenid`')
+        -- house ids longer than 7 characters (house100+)
+        MySQL.query.await('ALTER TABLE rsg_housing MODIFY `houseid` varchar(20) NOT NULL')
+        MySQL.query.await("ALTER TABLE rsg_housekeys MODIFY `houseid` varchar(20) NOT NULL DEFAULT '0'")
+
+        -- houses added to Config.Houses get a database row (needs region = '...' in the house entry)
+        for _, house in ipairs(Config.Houses) do
+            if house.region then
+                MySQL.insert.await('INSERT IGNORE INTO rsg_housing (region, houseid, rent) VALUES (?, ?, ?)', { house.region, house.houseid, house.rent or 50 })
+            end
+        end
+    end)
+
+    if not ok then
+        print(('^1[rsg-housing] database setup failed: %s^7'):format(tostring(err)))
         return false
     end
-
-    sql = sql:gsub('%-%-[^\n]*', '')
-    for statement in sql:gmatch('[^;]+') do
-        if statement:match('%S') then
-            MySQL.query.await(statement)
-        end
-    end
-    print('^2[rsg-housing] database tables created^7')
+    print('^2[rsg-housing] database tables ready^7')
     return true
 end
 
@@ -288,6 +444,12 @@ CreateThread(function()
 
     for doorid, door in pairs(DoorsById) do
         DoorStates[doorid] = RentedHouses[door.houseid] and 1 or 0
+    end
+
+    for _, house in ipairs(Config.Houses) do
+        if not MySQL.scalar.await('SELECT 1 FROM rsg_housing WHERE houseid = ?', { house.houseid }) then
+            print(('^3[rsg-housing] %s has no row in rsg_housing and cannot be rented (add region = \'...\' to its config entry or insert the row)^7'):format(house.houseid))
+        end
     end
 
     print(('[rsg-housing] loaded %s rented houses'):format(#houses))
@@ -322,6 +484,14 @@ registerCallback('rsg-housing:server:getHouseStatus', function(source, houseid)
             status.customName = house.custom_name
             status.home = RentedHouses[houseid] and RentedHouses[houseid].home == true or false
             status.guests    = getGuests(houseid)
+            status.durations = Config.GuestDurations
+            if Config.Decorating and #DecorList > 0 then
+                status.decor = {
+                    items = DecorList,
+                    max   = Config.MaxPropsPerHouse,
+                    count = MySQL.scalar.await('SELECT COUNT(*) FROM rsg_housing_props WHERE houseid = ?', { houseid }) or 0
+                }
+            end
         end
         if status.access == 'guest' then
             status.perms = permsFromRow(key)
@@ -355,7 +525,7 @@ registerCallback('rsg-housing:server:rentHouse', function(src, houseid)
 
     local citizenid = Player.PlayerData.citizenid
     local count = MySQL.scalar.await('SELECT COUNT(*) FROM rsg_housing WHERE citizenid = ? AND rented = 1', { citizenid })
-    if count >= Config.MaxHousesPerPlayer then
+    if (count or 0) >= Config.MaxHousesPerPlayer then
         return reply(false, locale('already_renting'), 'error')
     end
 
@@ -381,11 +551,12 @@ registerCallback('rsg-housing:server:rentHouse', function(src, houseid)
 
     MySQL.update.await('DELETE FROM rsg_housekeys WHERE houseid = ?', { houseid })
     MySQL.insert.await('INSERT INTO rsg_housekeys (citizenid, houseid, guest) VALUES (?, ?, 0)', { citizenid, houseid })
-    payGovernor(house.region, rent)
+    payGovernor(house.region, rent, houseid, 'rent')
 
     RentedHouses[houseid] = { owner = fullname, citizenid = citizenid }
     syncRentedHouses()
     setHouseDoors(houseid, 1)
+    TriggerEvent('rsg-housing:server:houseRented', houseid, citizenid, rent)
 
     local due = MySQL.scalar.await("SELECT DATE_FORMAT(rent_due, '%d/%m/%Y') FROM rsg_housing WHERE houseid = ?", { houseid })
     return reply(true, locale('house_rented', HousesById[houseid].name, rent, due), 'success')
@@ -423,7 +594,8 @@ registerCallback('rsg-housing:server:payRent', function(src, houseid)
         return reply(false)
     end
 
-    payGovernor(house.region, rent)
+    payGovernor(house.region, rent, house.houseid, 'rent')
+    TriggerEvent('rsg-housing:server:rentPaid', house.houseid, Player.PlayerData.citizenid, rent)
     local due = MySQL.scalar.await("SELECT DATE_FORMAT(rent_due, '%d/%m/%Y') FROM rsg_housing WHERE houseid = ?", { house.houseid })
     return reply(true, locale('rent_paid', rent, due), 'success')
 end)
@@ -509,7 +681,7 @@ registerCallback('rsg-housing:server:upgradeStorage', function(src, houseid, lev
         return reply(false)
     end
 
-    payGovernor(house.region, cost)
+    payGovernor(house.region, cost, house.houseid, 'storage upgrade')
     return reply(true, locale('storage_upgraded', locale('storage_tier_' .. target.key), cost), 'success')
 end)
 
@@ -559,16 +731,34 @@ registerCallback('rsg-housing:server:endTenancy', function(src, houseid)
 
     local house = getTenantHouse(Player.PlayerData.citizenid, houseid)
     if not house then return reply(false, locale('not_tenant'), 'error') end
+    if not isNear(src, HousesById[house.houseid].menucoords, Config.InteractDistance) then
+        return reply(false, locale('too_far'), 'error')
+    end
 
-    endTenancy(house.houseid)
+    -- optional refund of the unused part of the paid month
+    local refund = 0
+    local percent = tonumber(Config.EndTenancyRefundPercent) or 0
+    local hoursLeft = tonumber(house.hours_left) or 0
+    if percent > 0 and hoursLeft > 0 then
+        refund = math.floor(math.max(0, house.rent) * math.min(hoursLeft / 720, 1) * math.min(percent, 100) / 100)
+    end
+
+    local moved = endTenancy(house.houseid, nil, Player.PlayerData.citizenid)
     syncRentedHouses()
-    return reply(true, locale('tenancy_ended', HousesById[house.houseid].name), 'success')
+    if refund > 0 then
+        Player.Functions.AddMoney('cash', refund, 'house-rent-refund')
+    end
+
+    local name = HousesById[house.houseid].name
+    local msg = refund > 0 and locale('tenancy_ended_refund', name, refund) or locale('tenancy_ended', name)
+    if moved then msg = msg .. ' ' .. locale('retrieval_hint', Config.RetrievalDays) end
+    return reply(true, msg, 'success')
 end)
 
 ---------------------------------------------
 -- guests
 ---------------------------------------------
-registerCallback('rsg-housing:server:addGuest', function(src, houseid, targetCid)
+registerCallback('rsg-housing:server:addGuest', function(src, houseid, targetCid, hours)
     if onCooldown(src) then return reply(false) end
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player or type(targetCid) ~= 'string' then return reply(false) end
@@ -584,6 +774,9 @@ registerCallback('rsg-housing:server:addGuest', function(src, houseid, targetCid
     local house = getTenantHouse(Player.PlayerData.citizenid, houseid)
     if not house then return reply(false, locale('not_tenant'), 'error') end
 
+    hours = math.tointeger(tonumber(hours)) or 0
+    if not GUEST_DURATION_SET[hours] then hours = 0 end
+
     local row = MySQL.single.await('SELECT charinfo FROM players WHERE citizenid = ? LIMIT 1', { targetCid })
     if not row then
         return reply(false, locale('guest_not_found'), 'error')
@@ -594,13 +787,18 @@ registerCallback('rsg-housing:server:addGuest', function(src, houseid, targetCid
     if getAccess(targetCid, house.houseid) then
         return reply(false, locale('guest_exists', guestName), 'error')
     end
+    local guestCount = MySQL.scalar.await('SELECT COUNT(*) FROM rsg_housekeys WHERE houseid = ? AND guest = 1 AND (expires IS NULL OR expires > NOW())', { house.houseid }) or 0
+    if guestCount >= Config.MaxGuests then
+        return reply(false, locale('guest_limit', Config.MaxGuests), 'error')
+    end
 
-    local defaults = Config.GuestDefaultPermissions or {}
-    local values = {}
-    for i, perm in ipairs(GUEST_PERMS) do values[i] = defaults[perm] == false and 0 or 1 end
-    MySQL.insert.await('INSERT INTO rsg_housekeys (citizenid, houseid, guest, ' .. PERM_COLUMNS .. ') VALUES (?, ?, 1, ?, ?, ?, ?)', {
-        targetCid, house.houseid, values[1], values[2], values[3], values[4]
-    })
+    giveKey(house.houseid, targetCid, hours)
+    notifyIfOnline(targetCid, locale('rent_title'), locale('key_received', Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname, HousesById[house.houseid].name), 'success')
+
+    if hours > 0 then
+        local untilText = MySQL.scalar.await("SELECT DATE_FORMAT(expires, '%d/%m/%Y %H:%i') FROM rsg_housekeys WHERE houseid = ? AND citizenid = ?", { house.houseid, targetCid })
+        return reply(true, locale('guest_added_temp', guestName, untilText), 'success')
+    end
     return reply(true, locale('guest_added', guestName), 'success')
 end)
 
@@ -608,7 +806,7 @@ end)
 registerCallback('rsg-housing:server:setGuestPermission', function(src, houseid, targetCid, perm, allowed)
     if onCooldown(src, 400, 'perm') then return reply(false) end
     local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player or type(targetCid) ~= 'string' or not GUEST_PERM_SET[perm] then return reply(false) end
+    if not Player or type(targetCid) ~= 'string' or #targetCid > 50 or not GUEST_PERM_SET[perm] then return reply(false) end
 
     local house = getTenantHouse(Player.PlayerData.citizenid, houseid)
     if not house then return reply(false, locale('not_tenant'), 'error') end
@@ -633,6 +831,32 @@ registerCallback('rsg-housing:server:searchPlayers', function(src, houseid, quer
     local house = getTenantHouse(Player.PlayerData.citizenid, houseid)
     if not house then return {} end
 
+    -- skip the tenant and anyone who already has a key to this house
+    local skip = { [Player.PlayerData.citizenid] = true }
+    local keys = MySQL.query.await('SELECT citizenid FROM rsg_housekeys WHERE houseid = ?', { house.houseid }) or {}
+    for _, key in ipairs(keys) do skip[key.citizenid] = true end
+
+    local results = {}
+    local scope = Config.GuestSearchScope or 'nearby'
+
+    -- 'nearby' / 'online': only characters that are logged in (and close by), no database scan
+    if scope ~= 'all' then
+        local lowered, upper = query:lower(), query:upper()
+        for psrc, target in pairs(RSGCore.Functions.GetRSGPlayers()) do
+            local cid = target.PlayerData.citizenid
+            if #results < Config.GuestSearchResults and not skip[cid] then
+                local ci = target.PlayerData.charinfo or {}
+                local name = (ci.firstname or '') .. ' ' .. (ci.lastname or '')
+                if name:lower():find(lowered, 1, true) or cid == upper then
+                    if scope ~= 'nearby' or isNear(src, GetEntityCoords(GetPlayerPed(psrc)), Config.GuestSearchDistance) then
+                        results[#results + 1] = { citizenid = cid, name = name }
+                    end
+                end
+            end
+        end
+        return results
+    end
+
     local like = '%' .. query:gsub('[%%_\\]', '\\%0') .. '%'
     local rows = MySQL.query.await([[
         SELECT citizenid, charinfo FROM players
@@ -643,12 +867,6 @@ registerCallback('rsg-housing:server:searchPlayers', function(src, houseid, quer
         LIMIT ?
     ]], { query:upper(), like, like, like, Config.GuestSearchResults + 5 }) or {}
 
-    -- skip the tenant and anyone who already has a key to this house
-    local skip = { [Player.PlayerData.citizenid] = true }
-    local keys = MySQL.query.await('SELECT citizenid FROM rsg_housekeys WHERE houseid = ?', { house.houseid }) or {}
-    for _, key in ipairs(keys) do skip[key.citizenid] = true end
-
-    local results = {}
     for _, row in ipairs(rows) do
         if not skip[row.citizenid] and #results < Config.GuestSearchResults then
             local info = type(row.charinfo) == 'string' and json.decode(row.charinfo) or row.charinfo
@@ -673,8 +891,8 @@ registerCallback('rsg-housing:server:removeGuest', function(src, houseid, target
     local info = row and (type(row.charinfo) == 'string' and json.decode(row.charinfo) or row.charinfo)
     if info and info.firstname then guestName = info.firstname .. ' ' .. (info.lastname or '') end
 
-    local removed = MySQL.update.await('DELETE FROM rsg_housekeys WHERE houseid = ? AND citizenid = ? AND guest = 1', { house.houseid, targetCid })
-    if removed > 0 then
+    if revokeKey(house.houseid, targetCid) then
+        notifyIfOnline(targetCid, locale('rent_title'), locale('key_removed', HousesById[house.houseid].name), 'inform')
         return reply(true, locale('guest_removed', guestName), 'success')
     end
     return reply(false)
@@ -766,13 +984,7 @@ RegisterNetEvent('rsg-housing:server:openStorage', function(houseid)
         return notify(src, locale('storage_title'), locale('too_far'), 'error')
     end
 
-    local level = MySQL.scalar.await('SELECT storage_tier FROM rsg_housing WHERE houseid = ?', { houseid })
-    local _, tier = getStorageTier(level)
-    exports['rsg-inventory']:OpenInventory(src, getStashId(houseid), {
-        label     = locale('storage_label', house.name),
-        maxweight = tier.weight,
-        slots     = tier.slots
-    })
+    openStash(src, houseid)
 end)
 
 ---------------------------------------------
@@ -794,7 +1006,14 @@ registerCallback('rsg-housing:server:toggleDoor', function(source, doorid)
     end
 
     if not hasPermission(Player.PlayerData.citizenid, door.houseid, 'doors') then
-        notify(src, door.name, locale('no_access'), 'error')
+        local tenant = RentedHouses[door.houseid]
+        if Config.AllowKnock and tenant and not onCooldown(src, (Config.KnockCooldown or 20) * 1000, 'knock') then
+            notify(src, door.name, locale('door_knock'), 'inform')
+            local label = tenant.label or (HousesById[door.houseid] and HousesById[door.houseid].name) or door.houseid
+            notifyIfOnline(tenant.citizenid, label, locale('knock_notice', label), 'inform')
+        else
+            notify(src, door.name, locale('no_access'), 'error')
+        end
         return false
     end
 
@@ -802,6 +1021,202 @@ registerCallback('rsg-housing:server:toggleDoor', function(source, doorid)
     DoorStates[doorid] = newState
     TriggerClientEvent('rsg-housing:client:SetDoorState', -1, doorid, newState)
     return true
+end)
+
+---------------------------------------------
+-- login reminder: rent due soon or overdue
+---------------------------------------------
+RegisterNetEvent('rsg-housing:server:loginCheck', function()
+    local src = source
+    if not Config.LoginRentReminder or onCooldown(src, 60000, 'login') then return end
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player then return end
+
+    local rows = MySQL.query.await([[
+        SELECT houseid, DATE_FORMAT(rent_due, '%d/%m/%Y') AS due_text, (rent_due < NOW()) AS overdue
+        FROM rsg_housing
+        WHERE citizenid = ? AND rented = 1 AND rent_due < DATE_ADD(NOW(), INTERVAL ? DAY)
+    ]], { Player.PlayerData.citizenid, Config.ReminderDays }) or {}
+
+    for _, row in ipairs(rows) do
+        local cfg = HousesById[row.houseid]
+        local name = cfg and cfg.name or row.houseid
+        if isTrue(row.overdue) then
+            notify(src, locale('rent_title'), locale('login_overdue', name, row.due_text, Config.GracePeriodDays), 'error')
+        else
+            notify(src, locale('rent_title'), locale('login_due', name, row.due_text), 'warning')
+        end
+    end
+end)
+
+---------------------------------------------
+-- belongings kept after a tenancy ended (/housebelongings at the old house)
+---------------------------------------------
+RSGCore.Commands.Add('housebelongings', locale('retrieval_help'), {}, false, function(src)
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player or onCooldown(src, 2000, 'belongings') then return end
+
+    local rows = MySQL.query.await('SELECT houseid FROM rsg_housing_retrieval WHERE citizenid = ? AND expires > NOW()', { Player.PlayerData.citizenid }) or {}
+    if #rows == 0 then
+        return notify(src, locale('storage_title'), locale('retrieval_none'), 'error')
+    end
+
+    local biggest = Config.StorageTiers[#Config.StorageTiers]
+    for _, row in ipairs(rows) do
+        local cfg = HousesById[row.houseid]
+        if cfg and isNear(src, cfg.menucoords, Config.InteractDistance + 10.0) then
+            exports['rsg-inventory']:OpenInventory(src, retrievalId(row.houseid, Player.PlayerData.citizenid), {
+                label = locale('retrieval_label', cfg.name), maxweight = biggest.weight, slots = biggest.slots
+            })
+            return
+        end
+    end
+    notify(src, locale('storage_title'), locale('retrieval_far'), 'error')
+end)
+
+---------------------------------------------
+-- decorating: furniture placed with rsg-gizmo, saved per house
+---------------------------------------------
+local function propPayload(row)
+    local def = DecorByKey[row.model_key]
+    if not def then return nil end
+    return {
+        id = row.id, key = row.model_key, model = def.model,
+        coords = { x = row.x, y = row.y, z = row.z },
+        rot = { x = row.rx, y = row.ry, z = row.rz }
+    }
+end
+
+local function toVec(v)
+    local t = type(v)
+    if t ~= 'table' and t ~= 'vector3' then return nil end
+    local x, y, z = tonumber(v.x), tonumber(v.y), tonumber(v.z)
+    if not x or not y or not z then return nil end
+    for _, n in ipairs({ x, y, z }) do
+        if n ~= n or n > 100000 or n < -100000 then return nil end
+    end
+    return vector3(x, y, z)
+end
+
+-- validates a client placement (position near the house, gizmo checks) and returns pos, rot or nil, errorMessage
+local function checkPlacement(src, houseid, coords, rot)
+    local pos = toVec(coords)
+    if not pos then return nil, locale('prop_invalid') end
+    if #(pos - HousesById[houseid].menucoords) > Config.PropPlaceRadius then return nil, locale('prop_invalid') end
+
+    local ok, valid = pcall(function() return exports['rsg-gizmo']:IsPlacementValid(src, pos, 5.0) end)
+    if ok and not valid then return nil, locale('prop_invalid') end
+
+    local okRot, clean = pcall(function() return exports['rsg-gizmo']:SanitiseRotation(rot) end)
+    local r = (okRot and toVec(clean)) or toVec(rot) or vector3(0.0, 0.0, 0.0)
+    return pos, r
+end
+
+registerCallback('rsg-housing:server:getProps', function(src, houseid)
+    if onCooldown(src, 500, 'getprops') then return nil end
+    local Player = RSGCore.Functions.GetPlayer(src)
+    local house = type(houseid) == 'string' and HousesById[houseid]
+    if not Player or not house or not Config.Decorating then return {} end
+    if not isNear(src, house.menucoords, Config.PropStreamDistance + 100.0) then return {} end
+
+    local rows = MySQL.query.await('SELECT id, model_key, x, y, z, rx, ry, rz FROM rsg_housing_props WHERE houseid = ?', { houseid }) or {}
+    local list = {}
+    for _, row in ipairs(rows) do
+        local payload = propPayload(row)
+        if payload then list[#list + 1] = payload end
+    end
+    return list
+end)
+
+registerCallback('rsg-housing:server:prePlaceProp', function(src, houseid, key)
+    if onCooldown(src, 500, 'preprop') then return reply(false) end
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player or not Config.Decorating then return reply(false) end
+    local house = getTenantHouse(Player.PlayerData.citizenid, houseid)
+    if not house then return reply(false, locale('not_tenant'), 'error') end
+    local def = type(key) == 'string' and DecorByKey[key]
+    if not def then return reply(false, locale('prop_invalid'), 'error') end
+    if not isNear(src, HousesById[houseid].menucoords, Config.PropPlaceRadius) then return reply(false, locale('too_far'), 'error') end
+
+    local count = MySQL.scalar.await('SELECT COUNT(*) FROM rsg_housing_props WHERE houseid = ?', { houseid }) or 0
+    if count >= Config.MaxPropsPerHouse then return reply(false, locale('prop_limit', Config.MaxPropsPerHouse), 'error') end
+    if Player.Functions.GetMoney('cash') < (def.price or 0) then return reply(false, locale('not_enough_cash'), 'error') end
+    return reply(true)
+end)
+
+registerCallback('rsg-housing:server:placeProp', function(src, houseid, key, coords, rot)
+    if onCooldown(src, 1000, 'prop') then return reply(false) end
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player or not Config.Decorating then return reply(false) end
+    local house = getTenantHouse(Player.PlayerData.citizenid, houseid)
+    if not house then return reply(false, locale('not_tenant'), 'error') end
+    local def = type(key) == 'string' and DecorByKey[key]
+    if not def then return reply(false, locale('prop_invalid'), 'error') end
+
+    local pos, r = checkPlacement(src, houseid, coords, rot)
+    if not pos then return reply(false, r, 'error') end
+
+    local price = math.max(0, def.price or 0)
+    if Player.Functions.GetMoney('cash') < price then return reply(false, locale('not_enough_cash'), 'error') end
+    if price > 0 and not Player.Functions.RemoveMoney('cash', price, 'house-decor') then return reply(false) end
+
+    -- the count check is part of the insert, so two quick placements can't pass the limit
+    local id = MySQL.insert.await([[
+        INSERT INTO rsg_housing_props (houseid, model_key, x, y, z, rx, ry, rz)
+        SELECT ?, ?, ?, ?, ?, ?, ?, ? FROM DUAL
+        WHERE (SELECT COUNT(*) FROM rsg_housing_props WHERE houseid = ?) < ?
+    ]], { houseid, key, pos.x, pos.y, pos.z, r.x, r.y, r.z, houseid, Config.MaxPropsPerHouse })
+    if not id or id == 0 then
+        if price > 0 then Player.Functions.AddMoney('cash', price, 'house-decor-refund') end
+        return reply(false, locale('prop_limit', Config.MaxPropsPerHouse), 'error')
+    end
+
+    TriggerClientEvent('rsg-housing:client:propAdded', -1, houseid, {
+        id = id, key = key, model = def.model,
+        coords = { x = pos.x, y = pos.y, z = pos.z }, rot = { x = r.x, y = r.y, z = r.z }
+    })
+    return reply(true, locale('prop_placed', def.label, price), 'success')
+end)
+
+registerCallback('rsg-housing:server:moveProp', function(src, houseid, id, coords, rot)
+    if onCooldown(src, 800, 'prop') then return reply(false) end
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player or not Config.Decorating then return reply(false) end
+    local house = getTenantHouse(Player.PlayerData.citizenid, houseid)
+    if not house then return reply(false, locale('not_tenant'), 'error') end
+    id = math.tointeger(tonumber(id))
+    if not id then return reply(false) end
+
+    local pos, r = checkPlacement(src, houseid, coords, rot)
+    if not pos then return reply(false, r, 'error') end
+
+    local updated = MySQL.update.await('UPDATE rsg_housing_props SET x = ?, y = ?, z = ?, rx = ?, ry = ?, rz = ? WHERE id = ? AND houseid = ?',
+        { pos.x, pos.y, pos.z, r.x, r.y, r.z, id, houseid })
+    if updated == 0 then return reply(false) end
+
+    TriggerClientEvent('rsg-housing:client:propMoved', -1, houseid, id, { x = pos.x, y = pos.y, z = pos.z }, { x = r.x, y = r.y, z = r.z })
+    return reply(true, locale('prop_moved'), 'success')
+end)
+
+registerCallback('rsg-housing:server:removeProp', function(src, houseid, id)
+    if onCooldown(src, 800, 'prop') then return reply(false) end
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player or not Config.Decorating then return reply(false) end
+    local house = getTenantHouse(Player.PlayerData.citizenid, houseid)
+    if not house then return reply(false, locale('not_tenant'), 'error') end
+    id = math.tointeger(tonumber(id))
+    if not id then return reply(false) end
+
+    local key = MySQL.scalar.await('SELECT model_key FROM rsg_housing_props WHERE id = ? AND houseid = ?', { id, houseid })
+    if not key then return reply(false) end
+    if MySQL.update.await('DELETE FROM rsg_housing_props WHERE id = ? AND houseid = ?', { id, houseid }) == 0 then return reply(false) end
+
+    local def = DecorByKey[key]
+    local refund = def and math.floor((def.price or 0) * math.min(Config.PropRefundPercent or 0, 100) / 100) or 0
+    if refund > 0 then Player.Functions.AddMoney('cash', refund, 'house-decor-refund') end
+
+    TriggerClientEvent('rsg-housing:client:propRemoved', -1, houseid, id)
+    return reply(true, locale('prop_removed', def and def.label or key, refund), 'success')
 end)
 
 ---------------------------------------------
@@ -928,8 +1343,7 @@ end
 
 AdminActions.removeGuest = function(src, houseid, data)
     if type(data.citizenid) ~= 'string' then return adminReply(false) end
-    local removed = MySQL.update.await('DELETE FROM rsg_housekeys WHERE houseid = ? AND citizenid = ? AND guest = 1', { houseid, data.citizenid })
-    if removed == 0 then return adminReply(false) end
+    if not revokeKey(houseid, data.citizenid) then return adminReply(false) end
     adminLog(src, ('removed guest %s from %s'):format(data.citizenid, houseid))
     return adminReply(true, locale('admin_guest_removed', data.citizenid), houseid)
 end
@@ -942,14 +1356,9 @@ AdminActions.doors = function(src, houseid, data)
 end
 
 AdminActions.evict = function(src, houseid, data)
-    local row = MySQL.single.await('SELECT citizenid, fullname FROM rsg_housing WHERE houseid = ? AND rented = 1', { houseid })
+    local row, moved = evictHouse(houseid, data.purge == true, 'admin')
     if not row then return adminReply(false, locale('admin_not_rented')) end
-    local name = HousesById[houseid] and HousesById[houseid].name or houseid
-    endTenancy(houseid, data.purge == true)
-    syncRentedHouses()
-    sendTelegram(row.citizenid, row.fullname, locale('eviction_subject'), locale('admin_eviction_message', name))
-    notifyIfOnline(row.citizenid, locale('rent_title'), locale('admin_eviction_message', name), 'error')
-    adminLog(src, ('evicted %s (%s) from %s%s'):format(row.fullname, row.citizenid, houseid, data.purge == true and ', storage deleted' or ''))
+    adminLog(src, ('evicted %s (%s) from %s%s'):format(row.fullname, row.citizenid, houseid, data.purge == true and ', storage deleted' or (moved and ', belongings kept' or '')))
     return adminReply(true, locale('admin_evicted', row.fullname, houseid), houseid)
 end
 
@@ -963,12 +1372,8 @@ end
 AdminActions.storage = function(src, houseid)
     local cfg = HousesById[houseid]
     if not cfg then return adminReply(false, locale('admin_no_config')) end
-    local level = MySQL.scalar.await('SELECT storage_tier FROM rsg_housing WHERE houseid = ?', { houseid })
-    local _, tier = getStorageTier(level)
     adminLog(src, ('opened the storage of %s'):format(houseid))
-    exports['rsg-inventory']:OpenInventory(src, getStashId(houseid), {
-        label = locale('storage_label', cfg.name), maxweight = tier.weight, slots = tier.slots
-    })
+    openStash(src, houseid)
     return { ok = true, closed = true }
 end
 
@@ -1020,14 +1425,198 @@ RSGCore.Functions.CreateCron(Config.RentCheckCronJob, function()
 
     for _, row in ipairs(overdue) do
         local name = HousesById[row.houseid] and HousesById[row.houseid].name or row.houseid
-        endTenancy(row.houseid, true)
-        sendTelegram(row.citizenid, row.fullname, locale('eviction_subject'), locale('eviction_message', name))
-        notifyIfOnline(row.citizenid, locale('rent_title'), locale('eviction_message', name), 'error')
+        local moved = endTenancy(row.houseid, false, row.citizenid, 'evicted')
+        local evictMsg = locale('eviction_message', name)
+        if moved then evictMsg = evictMsg .. ' ' .. locale('retrieval_hint', Config.RetrievalDays) end
+        sendTelegram(row.citizenid, row.fullname, locale('eviction_subject'), evictMsg)
+        notifyIfOnline(row.citizenid, locale('rent_title'), evictMsg, 'error')
         TriggerEvent('rsg-log:server:CreateLog', 'rsghousing', locale('log_eviction_title'), 'red', locale('log_eviction', row.fullname, row.houseid))
     end
 
     if #overdue > 0 then syncRentedHouses() end
+
+    -- time-limited guest keys and belongings that were not collected in time
+    MySQL.update('DELETE FROM rsg_housekeys WHERE expires IS NOT NULL AND expires <= NOW()')
+    for _, old in ipairs(MySQL.query.await('SELECT id, houseid, citizenid FROM rsg_housing_retrieval WHERE expires <= NOW()') or {}) do
+        stashPurge(retrievalId(old.houseid, old.citizenid))
+        MySQL.update.await('DELETE FROM rsg_housing_retrieval WHERE id = ?', { old.id })
+    end
     if Config.Debug then
         print(('[rsg-housing] rent check: %s reminders, %s evictions'):format(#dueSoon, #overdue))
     end
+end)
+
+---------------------------------------------
+-- public API (see DOCS.md): exports + hook events
+-- Hook events are server-side only (AddEventHandler), clients cannot trigger them:
+--   rsg-housing:server:houseRented   (houseid, citizenid, rent)
+--   rsg-housing:server:rentPaid      (houseid, citizenid, rent)
+--   rsg-housing:server:tenancyEnded  (houseid, citizenid, reason)   reason: left | evicted | admin | api
+--   rsg-housing:server:guestAdded    (houseid, citizenid, hours)    hours 0 = until removed
+--   rsg-housing:server:guestRemoved  (houseid, citizenid)
+---------------------------------------------
+local function validHouse(houseid)
+    return type(houseid) == 'string' and HousesById[houseid] ~= nil
+end
+
+local function publicHouse(row)
+    local cfg = HousesById[row.houseid]
+    local rented = isTrue(row.rented)
+    local live = RentedHouses[row.houseid]
+    return {
+        houseid     = row.houseid,
+        name        = cfg and cfg.name or row.houseid,
+        customName  = row.custom_name,
+        region      = row.region,
+        rent        = row.rent,
+        rented      = rented,
+        citizenid   = rented and row.citizenid or nil,
+        tenant      = rented and row.fullname or nil,
+        due         = rented and row.due_text or nil,
+        overdue     = rented and isTrue(row.overdue) or false,
+        storageTier = (getStorageTier(row.storage_tier)),
+        home        = live and live.home == true or false,
+        coords      = cfg and cfg.menucoords or nil,
+    }
+end
+
+exports('GetHouse', function(houseid)
+    local row = getHouse(houseid)
+    return row and publicHouse(row) or nil
+end)
+
+exports('GetHouses', function()
+    local list = {}
+    for _, row in ipairs(MySQL.query.await(HOUSE_SELECT .. ' ORDER BY id') or {}) do
+        if HousesById[row.houseid] then list[#list + 1] = publicHouse(row) end
+    end
+    return list
+end)
+
+exports('IsHouseRented', function(houseid)
+    return validHouse(houseid) and RentedHouses[houseid] ~= nil
+end)
+
+-- returns citizenid, full name (or nil)
+exports('GetTenant', function(houseid)
+    local info = validHouse(houseid) and RentedHouses[houseid]
+    if not info then return nil end
+    return info.citizenid, info.owner
+end)
+
+-- house ids the character rents
+exports('GetPlayerHouses', function(citizenid)
+    local list = {}
+    if type(citizenid) ~= 'string' then return list end
+    for houseid, info in pairs(RentedHouses) do
+        if info.citizenid == citizenid then list[#list + 1] = houseid end
+    end
+    table.sort(list)
+    return list
+end)
+
+-- 'tenant' | 'guest' | nil
+exports('GetHouseAccess', function(citizenid, houseid)
+    if type(citizenid) ~= 'string' or not validHouse(houseid) then return nil end
+    return getAccess(citizenid, houseid)
+end)
+
+-- perm: 'doors' | 'storage' | 'wardrobe' | 'mailbox' (nil = any access at all)
+exports('HasHouseAccess', function(citizenid, houseid, perm)
+    if type(citizenid) ~= 'string' or not validHouse(houseid) then return false end
+    if perm == nil then return getAccess(citizenid, houseid) ~= nil end
+    return hasPermission(citizenid, houseid, perm)
+end)
+
+-- closest house menu spot within radius (default Config.InteractDistance): houseid, distance
+exports('GetHouseAt', function(coords, radius)
+    if not coords or not coords.x then return nil end
+    local pos = vector3(coords.x, coords.y, coords.z)
+    radius = tonumber(radius) or Config.InteractDistance
+    local best, bestDist
+    for _, house in ipairs(Config.Houses) do
+        local dist = #(pos - house.menucoords)
+        if dist <= radius and (not bestDist or dist < bestDist) then best, bestDist = house.houseid, dist end
+    end
+    return best, bestDist
+end)
+
+exports('GetHouseByDoor', function(doorid)
+    local door = DoorsById[tostring(doorid)]
+    return door and door.houseid or nil
+end)
+
+-- true locked | false unlocked | nil unknown door
+exports('GetDoorState', function(doorid)
+    local state = DoorStates[tostring(doorid)]
+    if state == nil then return nil end
+    return state == 1
+end)
+
+exports('SetHouseDoors', function(houseid, locked)
+    if not validHouse(houseid) then return false end
+    setHouseDoors(houseid, locked and 1 or 0)
+    return true
+end)
+
+-- { { citizenid, name, perms = { doors, storage, wardrobe, mailbox }, expires_text } }
+exports('GetHouseGuests', function(houseid)
+    if not validHouse(houseid) then return {} end
+    return getGuests(houseid)
+end)
+
+-- opts: { hours = 0 (0 = until removed), perms = { doors = true, ... } }  ->  ok, reason
+-- reasons: invalid_house | not_rented | invalid_player | is_tenant | exists | limit
+exports('AddGuest', function(houseid, citizenid, opts)
+    if not validHouse(houseid) then return false, 'invalid_house' end
+    local tenant = RentedHouses[houseid]
+    if not tenant then return false, 'not_rented' end
+    if type(citizenid) ~= 'string' or citizenid == '' or #citizenid > 50 then return false, 'invalid_player' end
+    citizenid = citizenid:upper()
+    if citizenid == tenant.citizenid then return false, 'is_tenant' end
+    if not MySQL.scalar.await('SELECT 1 FROM players WHERE citizenid = ?', { citizenid }) then return false, 'invalid_player' end
+    if getAccess(citizenid, houseid) then return false, 'exists' end
+    local count = MySQL.scalar.await('SELECT COUNT(*) FROM rsg_housekeys WHERE houseid = ? AND guest = 1 AND (expires IS NULL OR expires > NOW())', { houseid }) or 0
+    if count >= Config.MaxGuests then return false, 'limit' end
+
+    opts = type(opts) == 'table' and opts or {}
+    giveKey(houseid, citizenid, opts.hours, opts.perms)
+    return true
+end)
+
+exports('RemoveGuest', function(houseid, citizenid)
+    if not validHouse(houseid) or type(citizenid) ~= 'string' then return false end
+    return revokeKey(houseid, citizenid)
+end)
+
+-- 0 .. Config.MaxRent
+exports('SetHouseRent', function(houseid, rent)
+    rent = math.tointeger(tonumber(rent))
+    if not validHouse(houseid) or not rent or rent < 0 or rent > Config.MaxRent then return false end
+    MySQL.update.await('UPDATE rsg_housing SET rent = ? WHERE houseid = ?', { rent, houseid })
+    return true
+end)
+
+-- opts: { purge = false } purge = true deletes the storage instead of keeping it for retrieval
+exports('EvictTenant', function(houseid, opts)
+    if not validHouse(houseid) then return false end
+    opts = type(opts) == 'table' and opts or {}
+    return evictHouse(houseid, opts.purge == true, 'api') ~= nil
+end)
+
+-- no permission check: the calling script decides who may open it
+exports('OpenHouseStorage', function(src, houseid)
+    if not validHouse(houseid) or not GetPlayerName(src) then return false end
+    openStash(src, houseid)
+    return true
+end)
+
+exports('GetHouseProps', function(houseid)
+    local list = {}
+    if not validHouse(houseid) then return list end
+    for _, row in ipairs(MySQL.query.await('SELECT id, model_key, x, y, z, rx, ry, rz FROM rsg_housing_props WHERE houseid = ?', { houseid }) or {}) do
+        local payload = propPayload(row)
+        if payload then list[#list + 1] = payload end
+    end
+    return list
 end)

@@ -1,6 +1,8 @@
 -- Auction System Configuration
 
 Config = {
+    -- build the database tables automatically on start (set false and import the SQL file for a manual install)
+    AutoDatabase = true,
     -- Categories for Auction Items
     -- Players select a category when creating an auction
     Categories = {

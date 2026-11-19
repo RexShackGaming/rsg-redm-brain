@@ -19,6 +19,9 @@ All notable changes to rsg-character. Newest first. Versions follow `fxmanifest.
 ### Removed
 - Unused `local RSGCore` in `client/functions.lua`.
 
+### Documentation
+- `DOCS.md`: added a generated technical reference (dependencies, database, configuration, exports, callbacks, events, commands, items, locales) with code examples, read straight from the source.
+
 ## 3.2.0
 
 ### Added

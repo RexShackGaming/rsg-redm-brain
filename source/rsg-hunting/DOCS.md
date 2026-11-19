@@ -1,4 +1,4 @@
-# rsg-hunting – Docs (v3.2.2)
+# rsg-hunting – Docs (v3.3.0)
 
 ## Contents
 1. Files
@@ -102,4 +102,153 @@ The server validates every skinning and sale: carcass exists, is dead, is close 
 | No leaderboard | Check `Leaderboard.Command` and `HuntingXP.Weekly.Enabled` |
 | Missing item images | Check `Config.Image` |
 
+## rsg-skills integration
+
+`Config.Skills = { Enabled, Skill, MirrorXP, SellBonus, ExtraYield }`, plus the global helpers `SkillsActive()` and `SkillPerk(src, perk)` defined at the end of `config.lua`.
+- `HuntingXP.Award` calls `exports['rsg-skills']:AddXP(src, 'hunting', amount, 'hunting', { raw = true })` after the rep is added (raw so the two totals stay equal).
+- The butcher adds `GetPerk(src, 'hunting', 'sell_bonus') / 100` to its bonus before computing the cash.
+- Skinning adds `GetPerk(src, 'hunting', 'extra_yield')` to the existing `extraSkinChance`.
+- The trapper vendor sale is not changed, because its prices are shown in the shop UI.
+- rsg-skills imports the old `hunting` rep value once per character (`repImport`), so existing levels carry over.
+
+
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-hunting 3.3.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`oxmysql`, `rsg-core`, `rsg-target`, `rsg-inventory`
+
+### Database
+
+Tables: `hunting_weekly`, `hunting_weekly_rewards`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AutoDatabase` | `true` | build the database tables automatically on start (set false and import the SQL file for a manual install) |
+| `Config.DeleteCarcass` | `false` | this will ensure the carcass is removed if true |
+| `Config.Image` | `'rsg-inventory/html/images/'` | location where your item images are stored |
+| `Config.AllowPushToTalkWhileOpen` | `true` | While NUI is open, block game controls but allow push-to-talk. |
+| `Config.PushToTalkControls` | `table` |  |
+| `Config.BlipSprite` | `'blip_shop_animal_trapper'` |  |
+| `Config.BlipScale` | `0.2` |  |
+| `Config.StockDecayMinutes` | `30` | trapper stock sells on every X minutes (0 = never, prices stay low once stocked) |
+| `Config.StockDecayPercent` | `10` | % of each item's stock removed each time (each trapper has its own stock) |
+| `Config.Bounty` | `table` |  |
+| `Config.Enabled` | `true` |  |
+| `Config.Count` | `2` |  |
+| `Config.ButcherBonus` | `50` |  |
+| `Config.XPMultiplier` | `2` |  |
+| `Config.MinReward` | `3` |  |
+| `Config.Animals` | `{}` |  |
+| `Config.Vendors` | `table` |  |
+| `Config.HuntingXP` | `table` |  |
+| `Config.RepName` | `'hunting'` |  |
+| `Config.DefaultXP` | `1` |  |
+| `Config.Notify` | `true` |  |
+| `Config.ButcherXP` | `true` | butcher sales also give xp (base xp x quality multiplier below) |
+| `Config.ButcherQualityMultiplier` | `{ poor = 1, good = 2, perfect = 3 }` |  |
+| `Config.Levels` | `table` | extraSkinChance = % chance to get a 2nd copy of the main skinning reward |
+| `Config.CleanKillMultiplier` | `1.5` | clean kill: skinning a perfect-quality animal multiplies its skinning xp (max 3) |
+| `Config.Weekly` | `table` | weekly leaderboard (needs install.sql). weeks start Monday 00:00 UTC |
+| `Config.Leaderboard` | `table` |  |
+| `Config.Debug` | `false` |  |
+| `Config.SellTime` | `10000` | butcher sell progress bar (ms) |
+| `Config.SellFromHorse` | `true` | butcher also buys a carcass strapped to your horse |
+| `Config.HorseCarcassRange` | `6.0` | max distance (m) between you and the carcass/horse |
+| `Config.PoorMultiplier` | `1` | butcher cash/item multipliers by carcass quality |
+| `Config.GoodMultiplier` | `2` |  |
+| `Config.PerfectMultiplier` | `3` |  |
+| `Config.KeyBind` | `'J'` | prompt key when Config.EnableTarget = false |
+| `Config.EnableTarget` | `true` | rsg-target on butcher NPCs instead of prompts |
+| `Config.ServerCooldown` | `2000` | per-player cooldown on skinning/butcher rewards (ms) |
+| `Config.EnableLogging` | `true` | send butcher sales to rsg-log |
+| `Config.WebhookName` | `'rsghunting'` |  |
+| `Config.WebhookTitle` | `'RSG Hunting - Butcher'` |  |
+| `Config.WebhookColour` | `'default'` |  |
+| `Config.DistanceSpawn` | `20.0` | distance before spawning/despawning the butcher ped |
+| `Config.FadeIn` | `true` | fade butcher peds in/out |
+| `Config.Blip` | `table` |  |
+| `Config.ButcherLocations` | `table` |  |
+| `Config.Animal` | `table` |  |
+| `Config.Skills` | `table` | The hunting XP, levels and leaderboard above keep working; this adds the shared rsg-skills 'hunting' skill on  |
+| `Config.Skill` | `'hunting'` |  |
+| `Config.MirrorXP` | `true` |  |
+| `Config.SellBonus` | `true` |  |
+| `Config.ExtraYield` | `true` |  |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `GetDailyBounties` | `` | `server/bounty.lua` |
+| `SendWebhook` | `` | `server/webhooks.lua` |
+| `AwardHuntingXP` | `` | `server/xp.lua` |
+| `GetHuntingXP` | `` | `server/xp.lua` |
+| `GetHuntingLevel` | `src` | `server/xp.lua` |
+
+```lua
+-- example
+local result = exports['rsg-hunting']:GetDailyBounties()
+```
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-hunting:server:getBounties` | server | `src, cb` | `server/bounty.lua` |
+| `rsg-hunting:server:sellCarcass` | server | `src, cb, netId, quality` | `server/butcher.lua` |
+| `rsg-hunting:server:getSellData` | server | `src, cb, vendorIndex` | `server/vendor.lua` |
+| `rsg-hunting:server:sellBasket` | server | `src, cb, vendorIndex, basket` | `server/vendor.lua` |
+| `rsg-hunting:server:claimWeekly` | server | `src, cb` | `server/xp.lua` |
+| `rsg-hunting:server:getLeaderboard` | server | `src, cb, mode` | `server/xp.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-hunting:server:getBounties', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-hunting:server:giverewards` | server | `netId, quality` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-hunting:server:giverewards', netId, quality)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/resetvendorstock` |  | `server/vendor.lua` |
+| `/huntingwebhooktest` | locale('wh_test_help') | `server/webhooks.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

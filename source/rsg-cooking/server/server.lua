@@ -18,6 +18,13 @@ local function notify(src, desc, ntype)
     TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('notify_title'), description = desc, type = ntype or 'inform', duration = 5000 })
 end
 
+-- rsg-skills (optional): mirror XP into the shared skill and read perks, both on the server
+local function skillXP(src, amount, reason)
+    if not Config.Skills.Enabled or not amount or amount <= 0 then return end
+    if GetResourceState('rsg-skills') ~= 'started' then return end
+    exports['rsg-skills']:AddXP(src, Config.Skills.Skill, math.max(1, math.floor(amount * (Config.Skills.XPScale or 1) + 0.5)), reason)
+end
+
 local function needsFuel(s)
     local t = Config.StationTypes[s.stype]
     return not t or t.fuel ~= false
@@ -266,24 +273,26 @@ end
 -- startup
 ---------------------------------
 CreateThread(function()
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `rsg_cooking_stations` (
-            `id` INT NOT NULL AUTO_INCREMENT,
-            `citizenid` VARCHAR(50) NOT NULL,
-            `world` TINYINT(1) NOT NULL DEFAULT 0,
-            `stype` VARCHAR(20) NOT NULL DEFAULT 'campfire',
-            `x` FLOAT NOT NULL, `y` FLOAT NOT NULL, `z` FLOAT NOT NULL,
-            `heading` FLOAT NOT NULL DEFAULT 0,
-            `recipe` VARCHAR(50) DEFAULT NULL,
-            `hopper` LONGTEXT DEFAULT NULL,
-            `output` INT NOT NULL DEFAULT 0,
-            `fuel` INT NOT NULL DEFAULT 0,
-            `batch_left` INT DEFAULT NULL,
-            `last_tick` INT DEFAULT NULL,
-            PRIMARY KEY (`id`),
-            INDEX `idx_citizenid` (`citizenid`)
-        )
-    ]])
+    if Config.AutoDatabase ~= false then
+        MySQL.query.await([[
+            CREATE TABLE IF NOT EXISTS `rsg_cooking_stations` (
+                `id` INT NOT NULL AUTO_INCREMENT,
+                `citizenid` VARCHAR(50) NOT NULL,
+                `world` TINYINT(1) NOT NULL DEFAULT 0,
+                `stype` VARCHAR(20) NOT NULL DEFAULT 'campfire',
+                `x` FLOAT NOT NULL, `y` FLOAT NOT NULL, `z` FLOAT NOT NULL,
+                `heading` FLOAT NOT NULL DEFAULT 0,
+                `recipe` VARCHAR(50) DEFAULT NULL,
+                `hopper` LONGTEXT DEFAULT NULL,
+                `output` INT NOT NULL DEFAULT 0,
+                `fuel` INT NOT NULL DEFAULT 0,
+                `batch_left` INT DEFAULT NULL,
+                `last_tick` INT DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                INDEX `idx_citizenid` (`citizenid`)
+            )
+        ]])
+    end
     -- unused world pots are recreated on demand, don't keep them around
     MySQL.update.await([[DELETE FROM rsg_cooking_stations WHERE world = 1 AND recipe IS NULL AND output = 0 AND fuel = 0
         AND batch_left IS NULL AND (hopper IS NULL OR hopper = '[]' OR hopper = '{}')]])
@@ -446,6 +455,7 @@ Actions.collect = function(src, Player, s)
     local xp = amount * (r.xp or Config.XpPerItem)
     if xp > 0 then
         Player.Functions.AddRep(Config.XpName, xp)
+        skillXP(src, xp, 'cooking')
         local after = getLevel(getXp(Player))
         if after > before then
             notify(src, locale('sv_level_up', after), 'success')
@@ -613,6 +623,7 @@ exports('GivePlayerCookingXP', function(src, amount)
     amount = math.floor(tonumber(amount) or 0)
     if not Player or amount <= 0 then return false end
     Player.Functions.AddRep(Config.XpName, amount)
+    skillXP(src, amount, 'cooking (export)')
     return true
 end)
 

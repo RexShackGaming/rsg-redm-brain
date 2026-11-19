@@ -171,6 +171,12 @@ registerCallback('rsg-stables:server:finishTraining', function(source, token, hi
     local data = decode(horse.training)
     local ups = addXp(horse, data, { [p.stat] = gain })
     notifyLevelUps(src, horse.name, ups)
+
+    -- rsg-skills (optional): a finished session also trains the rider
+    if Config.Skills and Config.Skills.Enabled and (Config.Skills.TrainingXP or 0) > 0
+        and GetResourceState('rsg-skills') == 'started' then
+        exports['rsg-skills']:AddXP(src, Config.Skills.Skill, Config.Skills.TrainingXP, 'horse training')
+    end
     return true, { gain = gain, stat = p.stat, hits = hits, training = summary(data) }
 end)
 

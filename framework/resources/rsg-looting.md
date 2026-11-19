@@ -1,6 +1,6 @@
 # rsg-looting
 
-Version 3.0.4. rsg-looting
+Version 3.1.0. rsg-looting
 
 Secure NPC looting and player robbery for **RSG Framework (RedM)**, with rsg-core notifications, progress bars and callbacks (no ox_lib), multi-language support and Discord webhook logging. - Loot dead NPCs with the **native RDR2 loot prompt** (default) or **rsg-target** (target a body → *Loot Body*, with a search animation and progress bar) — set by `Config.LootMethod`. - Looted bodies are flagge
 

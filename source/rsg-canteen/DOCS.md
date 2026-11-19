@@ -70,3 +70,74 @@ The server checks fill distance, minimum fill and drink time, and only accepts a
 | Thirst not changing | Check your HUD handles thirst changes |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-canteen 3.0.5**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `rsg-target`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.CanteenItem` | `'canteen'` | item |
+| `Config.MaxUses` | `10` | uses after filling |
+| `Config.ThirstAmount` | `25` | thirst restored per drink |
+| `Config.MaxThirst` | `100` |  |
+| `Config.FillTime` | `5000` | timings (ms) |
+| `Config.DrinkTime` | `3000` |  |
+| `Config.TargetDistance` | `2.0` | targeting |
+| `Config.PumpModels` | `table` |  |
+| `Config.WaterFill` | `table` | river / lake filling (stand in shallow water and press the prompt) |
+| `Config.Enabled` | `true` |  |
+| `Config.Key` | `0x760A9C6F` |  |
+| `Config.CheckEvery` | `500` |  |
+| `Config.AllowedZones` | `{}` | optional: only allow these water zone hashes (GetWaterMapZoneAtCoords); empty = any water |
+| `Config.FillAnim` | `{ dict = 'amb_work@world_human_crouch_inspect@male_c@idle_a', clip = '` | animations |
+| `Config.DrinkAnim` | `{ dict = 'amb_rest_drunk@world_human_drinking@male_a@idle_a', clip = '` |  |
+| `Config.CanteenProp` | `'p_cs_canteen_hercule'` | canteen prop held while drinking |
+| `Config.PropBone` | `'SKEL_R_HAND'` |  |
+| `Config.PropOffset` | `vector3(0.10, 0.0, -0.05)` |  |
+| `Config.PropRotation` | `vector3(-90.0, 0.0, 0.0)` |  |
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-canteen:server:startFill` | server | `source, cb, pumpCoords, fromWater` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-canteen:server:startFill', function(result)
+    -- use result
+end, pumpCoords, fromWater)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-canteen:client:drink` | client | `` | `client/client.lua` |
+| `rsg-canteen:client:addThirst` | client | `amount` | `client/client.lua` |
+| `rsg-canteen:server:finishDrink` | server | `completed` | `server/server.lua` |
+| `rsg-canteen:server:finishFill` | server | `completed` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-canteen:server:finishDrink', completed)
+-- from a server script
+TriggerClientEvent('rsg-canteen:client:drink', source)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

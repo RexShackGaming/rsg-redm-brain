@@ -194,6 +194,15 @@ RegisterCallback('rsg-mdt:server:payFine', function(source, fineId)
         "UPDATE mdt_fines SET status = 'paid', paid_at = ? WHERE id = ?",
         { timestamp, fineId }
     )
+
+    -- rsg-economy (optional): the fine goes into the town treasury
+    if Config.Economy and Config.Economy.Enabled and GetResourceState('rsg-economy') == 'started' then
+        local region = Config.Economy.FineRegion
+            or exports['rsg-economy']:GetRegionAt(GetEntityCoords(GetPlayerPed(source)))
+        if region then
+            exports['rsg-economy']:DepositTreasury(region, totalAmount, 'fine #' .. fineId, citizenid)
+        end
+    end
     
     local playerName = player.PlayerData.charinfo.firstname .. ' ' .. player.PlayerData.charinfo.lastname
     

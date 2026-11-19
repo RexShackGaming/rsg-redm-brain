@@ -1,6 +1,6 @@
 # rsg-goldpanning — Developer & Server Owner Docs
 
-Version 3.1.0
+Version 3.2.0
 
 ## Contents
 1. Architecture
@@ -92,4 +92,63 @@ Nothing is saved. Sessions, cooldowns and spot memory are in memory and cleared 
 
 ---
 
+## rsg-skills integration
+
+`Config.Skills = { Enabled, Skill, FindXP }`. After the server has paid out a find in the pan event, it calls `AddXP(src, 'mining', FindXP, 'gold panning')`. Change `Skill` to use another skill key. Skipped when rsg-skills is not started.
+
+
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-goldpanning 3.2.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.PanItem` | `'tool_goldpan'` | useable item that starts panning (must match rsg-core/shared/items.lua) |
+| `Config.Cooldown` | `10` | seconds between pans (counted from the start of a pan) |
+| `Config.PanTime` | `table` |  |
+| `Config.RewardItems` | `table` |  |
+| `Config.GoldChance` | `65` | % chance to find anything at all |
+| `Config.RewardTiers` | `table` | tiers are rolled after a successful find; chances should add up to 100 |
+| `Config.MinMovementDistance` | `1.5` | metres a player must move from their last pan spot |
+| `Config.SpotMemoryTime` | `300000` | ms before a used spot can be panned again (5 minutes) |
+| `Config.MaxDriftDistance` | `3.0` | max metres the player may move during a pan before the claim is rejected |
+| `Config.WaterTypes` | `table` |  |
+| `Config.Skills` | `table` | rsg-skills integration (optional). Needs the rsg-skills resource; does nothing when it is not started. |
+| `Config.Enabled` | `true` |  |
+| `Config.Skill` | `'mining'` |  |
+| `Config.FindXP` | `5` |  |
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-goldpanning:client:tryPan` | client | `` | `client/client.lua` |
+| `rsg-goldpanning:client:beginPan` | client | `duration` | `client/client.lua` |
+| `rsg-goldpanning:server:startPan` | server | `` | `server/server.lua` |
+| `rsg-goldpanning:server:cancelPan` | server | `` | `server/server.lua` |
+| `rsg-goldpanning:server:claimPan` | server | `` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-goldpanning:server:startPan')
+-- from a server script
+TriggerClientEvent('rsg-goldpanning:client:tryPan', source)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

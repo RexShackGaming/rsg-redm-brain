@@ -131,3 +131,89 @@ Set URLs in `server/sv_config.lua` (`SvConfig.Webhooks`). Separate channels, or 
 | Editor won't open | You need `Config.AdminPermission` |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-doorlock 3.2.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `oxmysql`
+
+### Database
+
+Tables: `rsg_doorlocks`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `installation/rsg_doorlocks.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AutoDatabase` | `true` | build the database tables automatically on start (set false and import the SQL file for a manual install) |
+| `Config.DefaultDistance` | `1.25` | interaction range when a door has no 'distance' set |
+| `Config.DistanceTolerance` | `2.0` | extra server-side leeway for the proximity check (latency) |
+| `Config.SyncDistance` | `30.0` | doors within this range are kept in their synced state |
+| `Config.Cooldown` | `1500` | ms between door uses per player (server enforced) |
+| `Config.HoldDuration` | `750` | ms the player must hold ENTER to use a door |
+| `Config.RequireOnDuty` | `false` | true = player must be on duty to use job doors |
+| `Config.AdminPermission` | `'admin'` | RSG permission needed for /doorlock (god, developer, headadmin, admin, mod) |
+| `Config.AdminCommand` | `'doorlock'` |  |
+| `Config.AdminBypass` | `true` | admins can open every lock (incl. ones with no jobs) |
+| `Config.MaxDoorsPerLock` | `8` | e.g. 2 for double doors |
+| `Config.PickRange` | `2.0` | how close your aim must be to a door to select it in the editor |
+| `Config.Debug` | `false` | print MLO door lookups to the F8 console |
+| `Config.AllowCustomDoors` | `true` | allow picking MLO / custom door objects that aren't in shared/doorhashes.lua |
+| `Config.ImportConfigDoors` | `true` | On first start (empty table) the doors in server/seed_doors.lua are imported once. |
+| `Config.JailDoors` | `table` |  |
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-doorlock:server:getDoors` | server | `_, cb` | `server/main.lua` |
+| `rsg-doorlock:server:admin:check` | server | `src, cb` | `server/main.lua` |
+| `rsg-doorlock:server:admin:save` | server | `src, cb, data` | `server/main.lua` |
+| `rsg-doorlock:server:admin:delete` | server | `src, cb, id` | `server/main.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-doorlock:server:getDoors', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-doorlock:client:openEditor` | client | `` | `client/editor.lua` |
+| `rsg-doorlock:client:playKeyAnim` | client | `doorID` | `client/main.lua` |
+| `rsg-doorlock:client:setState` | client | `doorID, locked` | `client/main.lua` |
+| `rsg-doorlock:client:syncAll` | client | `all` | `client/main.lua` |
+| `rsg-doorlock:client:syncDoor` | client | `id, door, old` | `client/main.lua` |
+| `rsg-doorlock:server:requestToggle` | server | `doorID` | `server/main.lua` |
+| `rsg-doorlock:server:admin:teleported` | server | `id` | `server/main.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-doorlock:server:requestToggle', doorID)
+-- from a server script
+TriggerClientEvent('rsg-doorlock:client:openEditor', source)
+```
+
+### Locales
+
+Language files in `locales/`: `cs`, `de`, `el`, `en`, `es`, `fr`, `it`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

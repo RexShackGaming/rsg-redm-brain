@@ -23,12 +23,23 @@ local function GetCharacterSlots(license, maxSlots)
         slots[i] = { cid = i, exists = false }
     end
 
-    local rows = MySQL.query.await([[
-        SELECT p.citizenid, p.cid, p.charinfo, p.job, p.money, s.skin, s.clothes
-        FROM players p
-        LEFT JOIN playerskins s ON s.citizenid = p.citizenid
-        WHERE p.license = ?
-    ]], { license }) or {}
+    -- two queries instead of a JOIN, so players/playerskins collations never have to match
+    local rows = MySQL.query.await('SELECT citizenid, cid, charinfo, job, money FROM players WHERE license = ?', { license }) or {}
+
+    if #rows > 0 then
+        local ids, marks = {}, {}
+        for i = 1, #rows do
+            ids[i] = rows[i].citizenid
+            marks[i] = '?'
+        end
+        local skins = MySQL.query.await(('SELECT citizenid, skin, clothes FROM playerskins WHERE citizenid IN (%s) ORDER BY id ASC'):format(table.concat(marks, ',')), ids) or {}
+        local byId = {}
+        for _, sk in ipairs(skins) do byId[sk.citizenid] = sk end -- latest row wins
+        for _, row in ipairs(rows) do
+            local sk = byId[row.citizenid]
+            if sk then row.skin, row.clothes = sk.skin, sk.clothes end
+        end
+    end
 
     for _, row in ipairs(rows) do
         local cid = tonumber(row.cid)

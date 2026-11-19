@@ -629,3 +629,188 @@ Vendors (`server/vendor.lua`) work on everything the player carries: the invento
 | Vendor has nothing to buy | Stock is `amount` in `Config.Shop.Items`; with persistent stock it only refills when rsg-inventory restocks |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-cards 3.2.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `oxmysql`, `rsg-target`, `rsg-gizmo`
+
+### Database
+
+Tables: `rsg_cards_boxes`, `rsg_cards_collection`, `rsg_cards_bonuses`, `rsg_cards_profiles`, `rsg_cards_unclaimed`, `rsg_cards_pickups`, `rsg_cards_points`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.CardPoints` | `table` | coords = vector4(x, y, z, heading) |
+| `Config.Debug` | `false` |  |
+| `Config.VersionCheck` | `true` | Prints a console message on start when a newer version is available on GitHub. |
+| `Config.AutoDatabase` | `true` | Set to false to import install.sql manually instead. |
+| `Config.AllowPushToTalkWhileOpen` | `true` | While the NUI is open, block game controls but allow push-to-talk. |
+| `Config.PushToTalkControls` | `table` |  |
+| `Config.CloseDistance` | `6.0` | The vendor / collector window closes by itself when the player walks further than this from where it was opene |
+| `Config.ImagePath` | `'nui://rsg-inventory/html/images/'` | Inventory image folder used for item thumbnails in the UI |
+| `Config.Items` | `table` | Item names (must exist in rsg-core shared items, see installation/shared_items.lua) |
+| `Config.Pack` | `'card_package_cards'` |  |
+| `Config.Box` | `'card_storage_box'` |  |
+| `Config.EnableTarget` | `true` | true = rsg-target, false = rsg-core prompts |
+| `Config.FadeIn` | `true` | fade NPCs and card props in/out |
+| `Config.DistanceSpawn` | `20.0` | distance at which NPCs and card props spawn |
+| `Config.Blip` | `table` |  |
+| `Config.ShopSprite` | `'blip_rc'` |  |
+| `Config.ShopScale` | `0.2` |  |
+| `Config.CollectSprite` | `'blip_ambient_secret'` |  |
+| `Config.CollectScale` | `0.2` |  |
+| `Config.CardsPerSet` | `12` |  |
+| `Config.Sets` | `table` |  |
+| `Config.Cards` | `4` |  |
+| `Config.OpenTime` | `3000` |  |
+| `Config.Chances` | `table` | Weights must be whole numbers; these add up to 1000. |
+| `Config.Card` | `table` |  |
+| `Config.Key` | `'J'` |  |
+| `Config.PickupTime` | `3000` |  |
+| `Config.PickupDistance` | `3.0` |  |
+| `Config.Cooldown` | `360` |  |
+| `Config.InspectTime` | `15000` |  |
+| `Config.EagleEye` | `table` | Eagle Eye: cards glow and a heartbeat plays when one is close |
+| `Config.Storage` | `table` | Use the box to open it beside your inventory; use it again to close just the box. |
+| `Config.MaxWeight` | `500` |  |
+| `Config.MaxSlots` | `156` |  |
+| `Config.OpenDelay` | `300` |  |
+| `Config.BundleSets` | `true` | inside the box into the complete-set item (needs rsg-inventory 3.2.0 or newer). |
+| `Config.SortButton` | `true` | and puts the box in order: complete sets, then single cards by set and number, then packs. |
+| `Config.SortOnOpen` | `false` |  |
+| `Config.AllowedCategories` | `{ 'card', 'cardset', 'cardpack' }` | Anything else put in a box is handed straight back to the player. |
+| `Config.Sounds` | `table` | Sounds (interact-sound). Skipped automatically if interact-sound isn't running. |
+| `Config.Shop` | `table` |  |
+| `Config.Payment` | `'cash'` |  |
+| `Config.InteractDistance` | `5.0` |  |
+| `Config.PersistStock` | `true` |  |
+| `Config.CraftSets` | `true` |  |
+| `Config.SellDuplicates` | `true` |  |
+| `Config.BoxesOnly` | `true` |  |
+| `Config.Locations` | `table` |  |
+| `Config.Trades` | `table` |  |
+| `Config.Refresh` | `90` |  |
+| `Config.MaxActive` | `3` |  |
+| `Config.MinCards` | `3` |  |
+| `Config.MaxCards` | `8` |  |
+| `Config.RewardAmount` | `1` |  |
+| `Config.OncePerPlayer` | `true` |  |
+| `Config.Collection` | `table` |  |
+| `Config.Command` | `'cardcollection'` |  |
+| `Config.LeaderboardSize` | `10` |  |
+| `Config.CacheSeconds` | `60` |  |
+| `Config.AnnounceFirst` | `true` |  |
+| `Config.SetBonus` | `table` | Reward the first time a character has found all cards of a set. |
+| `Config.Enabled` | `true` |  |
+| `Config.Multiplier` | `2.0` |  |
+| `Config.PlayerTrade` | `table` |  |
+| `Config.Distance` | `5.0` |  |
+| `Config.InviteSeconds` | `30` |  |
+| `Config.MaxPerSide` | `30` |  |
+| `Config.DuplicatesOnly` | `true` |  |
+| `Config.CountAsFound` | `true` |  |
+| `Config.Editor` | `table` | Locations are stored in the database (rsg_cards_points). shared/cards_points.lua is only used to fill an empty |
+| `Config.Permission` | `'admin'` |  |
+| `Config.SeedFromConfig` | `true` |  |
+| `Config.Webhook` | `table` |  |
+| `Config.Name` | `'rsg-cards'` |  |
+| `Config.Title` | `'CARDS'` |  |
+| `Config.Colour` | `'default'` |  |
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-cards:server:getCollection` | server | `source, cb` | `server/collection.lua` |
+| `rsg-cards:server:getPoints` | server | `source, cb` | `server/points.lua` |
+| `rsg-cards:server:flipCard` | server | `source, cb, index` | `server/server.lua` |
+| `rsg-cards:server:getPickups` | server | `source, cb` | `server/server.lua` |
+| `rsg-cards:server:pickupCard` | server | `source, cb, index` | `server/server.lua` |
+| `rsg-cards:server:getTrades` | server | `source, cb, locationId` | `server/trades.lua` |
+| `rsg-cards:server:trade` | server | `source, cb, locationId, offerId` | `server/trades.lua` |
+| `rsg-cards:server:getVendor` | server | `source, cb, shopId` | `server/vendor.lua` |
+| `rsg-cards:server:sell` | server | `source, cb, shopId, name, amount` | `server/vendor.lua` |
+| `rsg-cards:server:sellAll` | server | `source, cb, shopId` | `server/vendor.lua` |
+| `rsg-cards:server:sellDuplicates` | server | `source, cb, shopId` | `server/vendor.lua` |
+| `rsg-cards:server:makeSet` | server | `source, cb, shopId, setId` | `server/vendor.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-cards:server:getCollection', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-cards:client:openPack` | client | `amount` | `client/client.lua` |
+| `rsg-cards:client:openCollection` | client | `` | `client/client.lua` |
+| `rsg-cards:client:tradeInvite` | client | `name` | `client/client.lua` |
+| `rsg-cards:client:tradeState` | client | `state` | `client/client.lua` |
+| `rsg-cards:client:tradeClosed` | client | `reason` | `client/client.lua` |
+| `rsg-cards:client:boxOpened` | client | `` | `client/client.lua` |
+| `rsg-cards:client:inspectCard` | client | `card` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerUnload` | client | `` | `client/client.lua` |
+| `rsg-cards:client:setPoint` | client | `id, data` | `client/world.lua` |
+| `rsg-cards:client:editorToggle` | client | `` | `client/world.lua` |
+| `rsg-cards:client:editorPlace` | client | `item` | `client/world.lua` |
+| `rsg-cards:client:editorMove` | client | `` | `client/world.lua` |
+| `rsg-cards:client:editorRemove` | client | `` | `client/world.lua` |
+| `rsg-cards:server:pointAdd` | server | `item, x, y, z, heading` | `server/points.lua` |
+| `rsg-cards:server:pointMove` | server | `id, x, y, z, heading` | `server/points.lua` |
+| `rsg-cards:server:pointRemove` | server | `id` | `server/points.lua` |
+| `rsg-cards:server:ptradeRequest` | server | `targetId` | `server/ptrade.lua` |
+| `rsg-cards:server:ptradeRespond` | server | `accept` | `server/ptrade.lua` |
+| `rsg-cards:server:ptradeOffer` | server | `name, amount` | `server/ptrade.lua` |
+| `rsg-cards:server:ptradeReady` | server | `ready` | `server/ptrade.lua` |
+| `rsg-cards:server:ptradeCancel` | server | `` | `server/ptrade.lua` |
+| `rsg-cards:server:claimUnclaimed` | server | `` | `server/server.lua` |
+| `rsg-cards:server:closePack` | server | `` | `server/server.lua` |
+| `rsg-inventory:server:move` | server | `data` | `server/server.lua` |
+| `rsg-cards:server:boxClosed` | server | `` | `server/server.lua` |
+| `rsg-cards:server:openShop` | server | `shopId` | `server/vendor.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-cards:server:pointAdd', item, x, y, z, heading)
+-- from a server script
+TriggerClientEvent('rsg-cards:client:openPack', source, amount)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/cardplace` | locale('command_cardplace') | `server/points.lua` |
+| `/cardmove` | locale('command_cardmove') | `server/points.lua` |
+| `/cardremove` | locale('command_cardremove') | `server/points.lua` |
+| `/cardedit` | locale('command_cardedit') | `server/points.lua` |
+| `/cardmissing` | locale('command_cardmissing') | `server/points.lua` |
+| `/refreshcardtrades` | locale('command_refresh') | `server/trades.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

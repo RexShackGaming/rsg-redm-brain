@@ -100,6 +100,9 @@ Set the language in server.cfg, e.g. `setr rsg:locale de` (falls back to `ox:loc
 - Ingredients are removed and the result added only on the server. Removed items are refunded if any step fails.
 
 ## Changelog
+### 3.2.0
+- Optional rsg-skills integration (`Config.Skills`): crafting XP mirrored to the `crafting` skill and the `save_chance` perk.
+
 ### 3.1.0
 - Removed the ox_lib dependency: notifications, callbacks, locales and anim loading now use rsg-core
 - Fixed the Cloth and String recipes using `cotton` instead of `herb_cotton`, which disabled them on start
@@ -107,5 +110,10 @@ Set the language in server.cfg, e.g. `setr rsg:locale de` (falls back to `ox:loc
 - Fixed a double-click race that could start the crafting animation twice
 - Closing the book no longer cancels a craft; it finishes in the background and reopening the book shows its progress
 - The NUI now closes cleanly if the resource stops while it is open
+
+## rsg-skills integration
+
+Optional. With `rsg-skills` started, crafting XP is also awarded to the shared `crafting` skill (`Config.Skills.XPScale` times the recipe XP), and the skill's `save_chance` perk gives that percent chance a craft does not use up its ingredients. The crafting XP and `requiredxp` gates above keep working as before. Set `Config.Skills.Enabled = false` (or `SaveChance = false`) to turn it off.
+
 
 Support the Project : https://rexshack.tebex.store/

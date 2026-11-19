@@ -251,21 +251,23 @@ end
 -- startup
 ---------------------------------
 CreateThread(function()
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `rsg_moonshine_stills` (
-            `id` INT NOT NULL AUTO_INCREMENT,
-            `citizenid` VARCHAR(50) NOT NULL,
-            `x` FLOAT NOT NULL, `y` FLOAT NOT NULL, `z` FLOAT NOT NULL,
-            `heading` FLOAT NOT NULL DEFAULT 0,
-            `recipe` VARCHAR(50) DEFAULT NULL,
-            `hopper` LONGTEXT DEFAULT NULL,
-            `output` INT NOT NULL DEFAULT 0,
-            `fuel` INT NOT NULL DEFAULT 0,
-            `batch_left` INT DEFAULT NULL,
-            `last_tick` INT DEFAULT NULL,
-            PRIMARY KEY (`id`)
-        )
-    ]])
+    if Config.AutoDatabase ~= false then
+        MySQL.query.await([[
+            CREATE TABLE IF NOT EXISTS `rsg_moonshine_stills` (
+                `id` INT NOT NULL AUTO_INCREMENT,
+                `citizenid` VARCHAR(50) NOT NULL,
+                `x` FLOAT NOT NULL, `y` FLOAT NOT NULL, `z` FLOAT NOT NULL,
+                `heading` FLOAT NOT NULL DEFAULT 0,
+                `recipe` VARCHAR(50) DEFAULT NULL,
+                `hopper` LONGTEXT DEFAULT NULL,
+                `output` INT NOT NULL DEFAULT 0,
+                `fuel` INT NOT NULL DEFAULT 0,
+                `batch_left` INT DEFAULT NULL,
+                `last_tick` INT DEFAULT NULL,
+                PRIMARY KEY (`id`)
+            )
+        ]])
+    end
     -- upgrade tables created by earlier versions (MariaDB syntax; on MySQL 8 run the ALTERs in installation/rsg-moonshine.sql)
     for _, col in ipairs({
         '`hopper` LONGTEXT DEFAULT NULL', '`output` INT NOT NULL DEFAULT 0', '`fuel` INT NOT NULL DEFAULT 0',

@@ -49,5 +49,6 @@ end
 -- call immediately without waiting on MySQL.ready() first.
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
+    if Config.AutoDatabase == false then return end
     EnsureTables()
 end)

@@ -83,3 +83,34 @@ The loading screen handles no money, items or player data. All text is inserted 
 | Slow first paint | Compress backgrounds (~200–400 KB JPEG at 1920×1080). |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-loading 3.0.4**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Locale` | `'en'` | theme_<name>_tip_1, _tip_2 ...         tips for a holiday/season theme |
+| `Config.Theme` | `'auto'` | 'winter' / 'spring' / 'summer' / 'autumn' = force that season theme all year |
+| `Config.Particles` | `true` | Particle effects (snow, bats, petals, leaves, fireflies, fireworks). Set false to disable on all themes. |
+| `Config.ParticleDensity` | `1.0` | Particles are also reduced automatically when the OS has "reduce motion" turned on. |
+| `Config.CloseOnPlayerLoaded` | `true` | Safe to leave on even if your character script also closes it. |
+| `Config.ServerInfo` | `true` | Send live server info (player count / max players / server name) to the loading screen. |
+| `Config.Themes` | `table` |  |
+| `Config.MergeTips` | `true` | When true, seasonal tips are added to your normal tips. When false they replace them. |
+| `Config.UseSeasons` | `true` |  |
+| `Config.Seasons` | `table` |  |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

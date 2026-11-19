@@ -80,6 +80,8 @@
     "level_up": "¡Subes de nivel de cultivo! Nuevo rango: %s",
     "level_info": "Nivel de cultivo %s (%s) - %s XP",
     "level_info_next": "Nivel de cultivo %s (%s) - %s / %s XP",
+    "level_info_skills": "Nivel de agricultura %s - %s XP",
+    "level_info_skills_next": "Nivel de agricultura %s - %s / %s XP",
     "harvested_bonus": "Cosecha recogida - ¡rendimiento extra!",
     "ui_btn_treat": "Tratar",
     "ui_pests": "Plagas",

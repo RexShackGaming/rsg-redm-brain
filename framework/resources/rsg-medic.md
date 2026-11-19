@@ -1,8 +1,8 @@
 # rsg-medic
 
-Version 3.0.4. Death system and medic job for RSG Framework
+Version 3.1.0. Death system and medic job for RSG Framework
 
-**Version 3.0.4** · Full reference: [DOCS.md](DOCS.md) Death system and doctor job for the RSG Framework (RedM), with a custom NUI in the RDR2 leather & gold theme. **Death**
+**Version 3.1.0** · Full reference: [DOCS.md](DOCS.md) Death system and doctor job for the RSG Framework (RedM), with a custom NUI in the RDR2 leather & gold theme. **Death**
 
 Source: https://github.com/Rexshack-RedM/rsg-medic
 

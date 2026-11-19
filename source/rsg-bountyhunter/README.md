@@ -78,4 +78,13 @@ Tier labels, crimes and office names in `shared/config.lua` are locale keys (`ti
 ## Dependencies
 rsg-core, rsg-target, oxmysql
 
+## rsg-reputation integration
+
+Optional. With `rsg-reputation` started, a delivered bounty applies the `bounty_delivered` action (honor and standing in the town of the office you turned the target in at). Set `Config.Reputation.Enabled = false` to turn it off. Office ids map to reputation regions through `Config.Reputation.Regions`.
+
+
 Support the Project : https://rexshack.tebex.store/
+
+## Database
+
+Tables (`rsg_bountyhunter`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `install.sql` once.

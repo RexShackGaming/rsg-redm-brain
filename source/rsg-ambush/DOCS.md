@@ -79,3 +79,81 @@ The server enforces the per-player cooldown, tracks the ambush and its peds, and
 | Bandits linger | They clean up after `MaxDuration` or `DespawnDistance` |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-ambush 3.0.1**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `rsg-target`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Debug` | `false` | true = /testambush command + chance forced to 100 |
+| `Config.CheckInterval` | `60` | seconds between ambush rolls |
+| `Config.TriggerChance` | `6` | % chance per roll |
+| `Config.RequireMounted` | `true` | only ambush riders (like the SP ambush_* scripts) |
+| `Config.BlockInTowns` | `true` | no ambushes inside town zones |
+| `Config.PlayerCooldown` | `1800` | seconds (server enforced) between ambushes per player |
+| `Config.MinPlayerSpeed` | `2.0` | m/s, player must be travelling |
+| `Config.SpawnDistance` | `{ min = 60.0, max = 90.0 }` | ahead of the player |
+| `Config.SpawnSpread` | `12.0` | metres between bandits |
+| `Config.DespawnDistance` | `350.0` | player rides this far away = ambush ends |
+| `Config.MaxDuration` | `600` | seconds before a running ambush is cleaned up |
+| `Config.CorpseTime` | `240` | seconds bodies stay for looting after the fight |
+| `Config.UseBlips` | `true` | red enemy blips (BLIP_STYLE_ENEMY, as in ambush_* scripts) |
+| `Config.Horses` | `table` | Horse models used by the SP ambush scripts (ambush_*.c, build 1436) |
+| `Config.Gangs` | `table` |  |
+| `Config.LootDistance` | `3.0` |  |
+| `Config.LootTime` | `3000` | ms progress bar |
+| `Config.LootCash` | `{ min = 1, max = 8 }` | dollars, paid with AddMoney('cash') |
+| `Config.LootItems` | `table` |  |
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-ambush:server:requestAmbush` | server | `src, cb` | `server/server.lua` |
+| `rsg-ambush:server:loot` | server | `src, cb, id, netId` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-ambush:server:requestAmbush', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-ambush:client:force` | client | `` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerUnload` | client | `` | `client/client.lua` |
+| `rsg-ambush:server:registerPeds` | server | `id, netIds` | `server/server.lua` |
+| `rsg-ambush:server:finish` | server | `id` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-ambush:server:registerPeds', id, netIds)
+-- from a server script
+TriggerClientEvent('rsg-ambush:client:force', source)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/testambush` | locale('cmd_testambush_help') | `server/server.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

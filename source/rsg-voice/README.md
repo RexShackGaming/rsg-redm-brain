@@ -256,3 +256,7 @@ rsg-voice/
 ## Support
 
 If you find this useful, you can support development here: https://buymeacoffee.com/rexshack
+
+## Database
+
+Tables (`rsg_voice_mutes`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `install.sql` once.

@@ -119,6 +119,13 @@ local function toolLabels(missing)
     return table.concat(t, ', ')
 end
 
+-- rsg-skills (optional): mirror XP into the shared skill and read perks, both on the server
+local function skillXP(src, amount, reason)
+    if not Config.Skills.Enabled or not amount or amount <= 0 then return end
+    if GetResourceState('rsg-skills') ~= 'started' then return end
+    exports['rsg-skills']:AddXP(src, Config.Skills.Skill, math.max(1, math.floor(amount * (Config.Skills.XPScale or 1) + 0.5)), reason)
+end
+
 -- the only place items / XP are granted
 local function craftRecipe(src, Player, scaled)
     if #getMissing(src, scaled.ingredients) > 0 then return false, 'missing' end
@@ -145,6 +152,17 @@ local function craftRecipe(src, Player, scaled)
     if scaled.xpreward > 0 then
         Player.Functions.AddRep(Config.XPType, scaled.xpreward)
         notify(src, locale('xp_gained', scaled.xpreward), 'inform')
+        skillXP(src, scaled.xpreward, 'crafting')
+    end
+
+    -- rsg-skills: save_chance perk, the ingredients come back
+    if Config.Skills.SaveChance and Config.Skills.Enabled and GetResourceState('rsg-skills') == 'started'
+        and math.random(100) <= (tonumber(exports['rsg-skills']:GetPerk(src, Config.Skills.Skill, 'save_chance')) or 0) then
+        for _, ing in ipairs(scaled.ingredients) do
+            if Inventory:CanAddItem(src, ing.item, ing.amount) then
+                Inventory:AddItem(src, ing.item, ing.amount, nil, nil, 'rsg-crafting-skill-save')
+            end
+        end
     end
 
     local charinfo = Player.PlayerData.charinfo or {}
@@ -406,6 +424,7 @@ exports('GivePlayerCraftingXP', function(src, amount)
     if not Player or amount <= 0 then return false end
     Player.Functions.AddRep(Config.XPType, amount)
     notify(src, locale('xp_gained', amount), 'inform')
+    skillXP(src, amount, 'crafting (export)')
     CraftLog('xp', locale('log_xp_title'), locale('log_xp_desc', amount, GetInvokingResource() or locale('wh_unknown')), src, {
         { name = locale('wh_total_xp'), value = tostring(getXP(Player)) },
     })

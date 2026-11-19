@@ -107,7 +107,9 @@ end
 -- Database (table is created automatically)
 ---------------------------------
 MySQL.ready(function()
-    local ok, err = pcall(MySQL.query.await, [[
+    local ok, err = true, nil
+    if Config.AutoDatabase ~= false then
+    ok, err = pcall(MySQL.query.await, [[
         CREATE TABLE IF NOT EXISTS `rsg_legendary_cooldowns` (
             `citizenid` VARCHAR(50) NOT NULL,
             `animal` VARCHAR(50) NOT NULL,
@@ -143,6 +145,7 @@ MySQL.ready(function()
                 PRIMARY KEY (`citizenid`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ]])
+    end
     end
     if not ok then
         print('^1[rsg-legendary]^7 failed to create database tables: ' .. tostring(err))

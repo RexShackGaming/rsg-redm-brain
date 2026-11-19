@@ -1,6 +1,6 @@
 # rsg-lumberjack
 
-Version 3.2.0. Lumberjack gameplay: grow, chop, carry, and sell wagon loads of logs
+Version 3.3.1. Lumberjack gameplay: grow, chop, carry, and sell wagon loads of logs
 
 Lumberjack gameplay for RSG-Core (RedM): grow trees, chop them, carry logs, process them into wood, and sell full wagon loads of logs for cash. - `rsg-core`
 

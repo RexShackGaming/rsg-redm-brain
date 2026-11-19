@@ -130,3 +130,144 @@ Every reward is the end of a server-side session: the client fires a `Start*` ev
 - UX: can't start mining while mounted, in a vehicle or swimming.
 - Clean-up: removed unused events (`client:StopPlaceRock`, `client:drillrocksinput`), unused `GetMiningXP` callback, legacy string pools, label column sync; default zones seeded in one query; descriptive locale keys; added de, el, es, fr, ja, nl, pl, pt-br, ro.
 - Breaking for integrations: events renamed (`CancelMining` → `CancelWork`, `finishdrilling` → `StartDrill`/`FinishDrill`, `Smelt` → `StartSmelt`/`FinishSmelt`; mining events take only the zone id).
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-rocks 3.0.1**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-gizmo`, `oxmysql`
+
+### Database
+
+Tables: `rsg_rocks_zones`.
+
+For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.MiningTime` | `10000` |  |
+| `Config.CooldownTime` | `180000` | personal cooldown after mining a node |
+| `Config.RequiredItem` | `'pickaxe'` |  |
+| `Config.GemChance` | `15` |  |
+| `Config.NotificationDuration` | `5000` |  |
+| `Config.DrillTime` | `10000` |  |
+| `Config.DrillBatchPause` | `500` | ms pause between rocks when batch drilling (each rock takes DrillTime) |
+| `Config.DrillMaxBatch` | `50` | most rocks drilled in one batch |
+| `Config.DrillableRocks` | `table` | rocks listed in the foreman's drill menu |
+| `Config.AllowPushToTalkWhileOpen` | `true` | While the drill menu is open, block game controls but allow push-to-talk. |
+| `Config.PushToTalkControls` | `table` |  |
+| `Config.AdminPermission` | `'admin'` |  |
+| `Config.AdminDeleteDistance` | `5.0` |  |
+| `Config.AdminPlaceDistance` | `15.0` | max distance from the admin when placing a rock with rsg-gizmo |
+| `Config.AdminPlaceAllowInterior` | `true` | allow placing rocks inside interiors (mines count as interiors) |
+| `Config.AutoCreateDatabase` | `true` | create rsg_rocks_zones table on start |
+| `Config.AutoSeedDefaultZones` | `true` | insert default Annesburg/Gaptooth/Grizzlies rocks if table empty |
+| `Config.GlobalDepleteEnabled` | `true` | Global node deplete: after anyone mines a rock, it is empty for everyone for this long |
+| `Config.GlobalDepleteTime` | `120000` | ms (2 minutes) |
+| `Config.PickaxeDurability` | `true` | Pickaxe durability (uses item metadata `quality`, 0-100) |
+| `Config.PickaxeMaxQuality` | `100` |  |
+| `Config.PickaxeDegradeMin` | `1` |  |
+| `Config.PickaxeDegradeMax` | `3` |  |
+| `Config.PickaxeBreakAtZero` | `true` | false = keep the pickaxe at 0 quality; it can't mine until its quality is raised again (repair / sharpening sc |
+| `Config.MiningXP` | `table` | Mining XP (stored in player metadata) |
+| `Config.MineDistanceTolerance` | `3.0` |  |
+| `Config.WorkshopDistanceTolerance` | `10.0` |  |
+| `Config.MiningTimeTolerance` | `750` |  |
+| `Config.DrillTimeTolerance` | `500` |  |
+| `Config.MiningSessionGrace` | `30000` |  |
+| `Config.SpawnRockProps` | `true` |  |
+| `Config.DebugTarget` | `false` |  |
+| `Config.RockSpawnDistance` | `120.0` |  |
+| `Config.RockModel` | `'mp_sca_rock_grp_l_03'` |  |
+| `Config.PickaxeModel` | `'p_pickaxe01x'` |  |
+| `Config.WorkshopPropset` | `'pg_mp_workshop03x'` |  |
+| `Config.BlipStyle` | `1664425300` |  |
+| `Config.MiningScenario` | `'WORLD_HUMAN_PICKAXE_WALL'` |  |
+| `Config.MiningAnimDict` | `'amb_work@world_human_pickaxe@wall@male_d@base'` |  |
+| `Config.MiningAnimClip` | `'base'` |  |
+| `Config.DrillAnimDict` | `'mech_inventory@crafting@fallbacks'` |  |
+| `Config.DrillAnimClip` | `'full_craft_and_stow'` |  |
+| `Config.DrillAnimFlag` | `27` |  |
+| `Config.MiningHat` | `table` |  |
+| `Config.DistanceSpawn` | `20.0` |  |
+| `Config.FadeIn` | `true` |  |
+| `Config.WorkshopTents` | `table` |  |
+| `Config.Rewards` | `table` |  |
+| `Config.RockOutputs` | `table` | Weighted drill outputs (higher weight = more common) |
+| `Config.SaltRockOutputs` | `table` |  |
+| `Config.GemOutputs` | `table` |  |
+| `Config.SmeltingEnabled` | `true` | Camp smelting recipes (input ore -> bar). Items must exist in shared items. |
+| `Config.SmeltRecipes` | `table` |  |
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-rocks:server:GetZones` | server | `source, cb` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-rocks:server:GetZones', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-rocks:client:StartPlaceRock` | client | `oreType, radius` | `client/admin.lua` |
+| `rsg-rocks:client:SetZones` | client | `` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
+| `rsg-rocks:client:ZoneDepleted` | client | `zoneId, remainingMs` | `client/client.lua` |
+| `rsg-rocks:client:SetCooldown` | client | `zoneId, remainingMs` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerUnload` | client | `` | `client/drillmenu.lua` |
+| `rsg-rocks:client:ToggleMiningHat` | client | `` | `client/mininghat.lua` |
+| `RSGCore:Player:SetPlayerData` | client | `` | `client/mininghat.lua` |
+| `rsg-rocks:client:StopDrillBatch` | client | `` | `client/workshop.lua` |
+| `rsg-rocks:server:StartMining` | server | `zoneKey` | `server/server.lua` |
+| `rsg-rocks:server:MineReward` | server | `zoneKey` | `server/server.lua` |
+| `rsg-rocks:server:CancelWork` | server | `` | `server/server.lua` |
+| `rsg-rocks:server:StartDrill` | server | `item` | `server/server.lua` |
+| `rsg-rocks:server:FinishDrill` | server | `item` | `server/server.lua` |
+| `rsg-rocks:server:StartSmelt` | server | `recipeIndex` | `server/server.lua` |
+| `rsg-rocks:server:FinishSmelt` | server | `recipeIndex` | `server/server.lua` |
+| `rsg-rocks:server:AdminAddRock` | server | `oreType, radius, coords, heading` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-rocks:server:StartMining', zoneKey)
+-- from a server script
+TriggerClientEvent('rsg-rocks:client:StartPlaceRock', source, oreType, radius)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/rockadmin` | Mining rocks admin help | `server/server.lua` |
+| `/addrock` | Place a mining rock (placement mode) | `server/server.lua` |
+| `/delrock` | Delete nearest mining rock (or by id) | `server/server.lua` |
+| `/togglerock` | Enable/disable a mining rock without deleting it | `server/server.lua` |
+| `/reloadrocks` | Reload mining zones from the database | `server/server.lua` |
+| `/nearbrocks` | List mining rocks near you | `server/server.lua` |
+| `/miningxp` | Show your mining XP and level | `server/server.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

@@ -88,3 +88,61 @@ Server-authoritative: machine key, distance, price and cooldowns are all checked
 | Map machine ignored | `AutoDetectExistingProps = true` |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-fortuneteller 3.0.1**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-target`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Debug` | `false` | prints diagnostics and enables /fortunetest + /fortunespeech |
+| `Config.Price` | `1.00` | cash per reading (0 = free) |
+| `Config.CooldownSeconds` | `0` | per-machine cooldown after a reading |
+| `Config.RequestCooldown` | `2` | per-player anti-spam (seconds) |
+| `Config.Interaction` | `'auto'` | 'auto' = rsg-target if started, else native prompt \| 'target' \| 'prompt' |
+| `Config.InteractionDistance` | `2.0` |  |
+| `Config.TargetIcon` | `'fa-solid fa-moon'` |  |
+| `Config.PromptKey` | `0x760A9C6F` | G |
+| `Config.Approach` | `table` | How the player lines up with the machine before a reading. |
+| `Config.PrepareTimeoutSeconds` | `15` | ── Timing ────────────────────────────────────────────────────────────────── |
+| `Config.MaxReadingSeconds` | `120` |  |
+| `Config.StartDelayMs` | `750` | machine start -> first line |
+| `Config.PauseBetweenLines` | `0.35` | seconds |
+| `Config.SpeechPaddingSeconds` | `0.85` | breathing room after each line |
+| `Config.HearingDistance` | `25.0` | ── Audio ─────────────────────────────────────────────────────────────────── |
+| `Config.Volume` | `1.0` | CustomLines (.ogg) volume |
+| `Config.SpeechParam` | `'SPEECH_PARAMS_FORCE'` |  |
+| `Config.Voices` | `{ 'FTELL', 'FORTUNE_TELLER', 'S_F_M_BWMWORKER_01', 'CS_FORTUNETELLER',` | Ambient voice names tried in order for the FTELL speech bank |
+| `Config.Model` | `'s_fortuneteller01x'` | ── Machine ───────────────────────────────────────────────────────────────── |
+| `Config.StreamDistance` | `80.0` |  |
+| `Config.UseConfiguredMachines` | `true` |  |
+| `Config.AutoDetectExistingProps` | `true` | allow map-placed machines that aren't in Config.Machines |
+| `Config.MachineAnim` | `table` | Prop animation played on the machine itself. |
+| `Config.Handover` | `table` | ── Handover (the player hands over cash before the reading) ──────────────── |
+| `Config.Light` | `table` | ── Effects ───────────────────────────────────────────────────────────────── |
+| `Config.CoordinatesCommand` | `'fortunecoords'` | prints your vector4 for Config.Machines |
+| `Config.IntroLines` | `{}` | always played before the random fortune |
+| `Config.CustomLines` | `table` | .ogg files in ui/sounds/ |
+| `Config.Machines` | `table` | ── Machine placements ────────────────────────────────────────────────────── |
+| `Config.Lines` | `table` |  |
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/fortunetest` |  | `client/main.lua` |
+| `/fortunespeech` |  | `client/main.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

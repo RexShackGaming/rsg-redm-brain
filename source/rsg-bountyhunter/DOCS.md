@@ -1,4 +1,4 @@
-# rsg-bountyhunter – Docs (v3.0.1)
+# rsg-bountyhunter – Docs (v3.1.0)
 
 ## Contents
 1. Files
@@ -104,4 +104,108 @@ The server owns the board and contracts. It checks distance to the clerk, the jo
 | Turn-in refused | Target must be within `DeliverRadius` of the office and the hunt long enough |
 | Poster gone | Another hunter took it, or the board re-rolled |
 
+## rsg-reputation integration
+
+`Config.Reputation = { Enabled, Action, Regions }`. After the server has paid the reward in `turnIn`, it calls `exports['rsg-reputation']:ApplyAction(src, Action, region)` where `region = Regions[office.id] or office.id`. The default `saintdenis` office id is mapped to `saint_denis`. The honor and standing amounts live in rsg-reputation's `Config.Actions`. Skipped when rsg-reputation is not started.
+
+
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-bountyhunter 3.1.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-target`, `oxmysql`
+
+### Database
+
+Tables: `rsg_bountyhunter`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AutoDatabase` | `true` | build the database tables automatically on start (set false and import the SQL file for a manual install) |
+| `Config.Debug` | `false` | prints distance checks to the server console |
+| `Config.RequiredJob` | `nil` | e.g. 'bountyhunter' to job-lock contracts (checked on the server), nil = anyone |
+| `Config.MoneyType` | `'cash'` | paid with Player.Functions.AddMoney |
+| `Config.BoardSize` | `6` | posters shown on the board at once |
+| `Config.RefreshMinutes` | `30` | board re-rolls unclaimed posters this often |
+| `Config.ContractMinutes` | `30` | time to bring the target in before the contract expires |
+| `Config.WarnMinutes` | `5` | warn the hunter when this many minutes are left |
+| `Config.AcceptCooldown` | `120` | seconds before another contract can be taken after abandon/fail/expiry |
+| `Config.MinHuntSeconds` | `60` | anti-exploit: minimum time between finding the target and turning it in |
+| `Config.AbandonCommand` | `'abandonbounty'` | abandon the current contract from anywhere, false to disable |
+| `Config.InteractDistance` | `3.0` | rsg-target reach to the clerk |
+| `Config.ServerCheckDistance` | `10.0` | server-side radius around the office coords (keep larger than InteractDistance) |
+| `Config.DeliverRadius` | `12.0` | target must be within this distance of the office to turn in |
+| `Config.ClerkSpawnDistance` | `60.0` | clerk peds only exist while a player is this close |
+| `Config.SpawnDistance` | `150.0` | outlaws spawn when the hunter gets this close to the hideout |
+| `Config.SearchRadius` | `120.0` | size of the search area blip (hideout is somewhere inside) |
+| `Config.TargetBlipDistance` | `60.0` | target gets a bounty blip when the hunter is this close |
+| `Config.LeaderboardSize` | `5` |  |
+| `Config.LeaderboardCache` | `60` | seconds to cache the leaderboard query |
+| `Config.ClerkModel` | `'s_m_m_valdeputy_01'` | data/rdr3_discoveries/peds/peds_list.lua |
+| `Config.Offices` | `table` |  |
+| `Config.OfficeBlipSprite` | `-693644997` | blip sprite hash: blip_ambient_sheriff (data/rdr3_discoveries/useful_info_from_rpfs/textures/blips/README.md) |
+| `Config.Hideouts` | `table` |  |
+| `Config.Tiers` | `table` |  |
+| `Config.FirstNames` | `{ 'Jebediah', 'Silas', 'Amos', 'Cletus', 'Ezra', 'Horace', 'Virgil', '` | random poster names (proper nouns, not translated) and crimes (locale keys in locales/*.json) |
+| `Config.LastNames` | `{ 'Crane', 'Hollister', 'McCready', 'Thorne', 'Pike', 'Vance', 'Dutton` |  |
+| `Config.Crimes` | `table` |  |
+| `Config.Reputation` | `table` | rsg-reputation integration (optional). Needs the rsg-reputation resource; does nothing when it is not started. |
+| `Config.Enabled` | `true` |  |
+| `Config.Action` | `'bounty_delivered'` |  |
+| `Config.Regions` | `{ saintdenis = 'saint_denis' }` | office id -> rsg-reputation region id (an id that is not listed here is used as it is) |
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-bountyhunter:server:getBoard` | server | `src, cb, officeId` | `server/server.lua` |
+| `rsg-bountyhunter:server:accept` | server | `src, cb, officeId, posterId` | `server/server.lua` |
+| `rsg-bountyhunter:server:abandon` | server | `src, cb` | `server/server.lua` |
+| `rsg-bountyhunter:server:turnIn` | server | `src, cb, officeId` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-bountyhunter:server:getBoard', function(result)
+    -- use result
+end, officeId)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-bountyhunter:client:startContract` | client | `data` | `client/client.lua` |
+| `rsg-bountyhunter:client:endContract` | client | `reason` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerUnload` | client | `` | `client/client.lua` |
+| `rsg-bountyhunter:server:registerTarget` | server | `netId` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-bountyhunter:server:registerTarget', netId)
+-- from a server script
+TriggerClientEvent('rsg-bountyhunter:client:startContract', source, data)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

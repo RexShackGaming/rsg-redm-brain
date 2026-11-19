@@ -1,6 +1,6 @@
 # rsg-legendary
 
-Version 3.1.0. rsg-legendary - legendary animal hunting
+Version 3.1.1. rsg-legendary - legendary animal hunting
 
 Legendary animal hunting for the RSG Framework (rsg-core 3.0.3). 1. **Buy a map** from the Legendary Trapper (rsg-target). Each legendary shows its price, or how long until it returns if you are on cooldown. 2. **Use the map** from your inventory. The hunting area and the first tracks appear on your map.
 

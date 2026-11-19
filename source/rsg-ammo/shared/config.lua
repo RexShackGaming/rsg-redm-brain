@@ -1,4 +1,6 @@
 Config = {}
+-- build the database tables automatically on start (set false and import the SQL file for a manual install)
+Config.AutoDatabase = true
 
 -- how often (ms) changed ammo counts are saved to the database
 Config.SaveAmmoInterval = 10000

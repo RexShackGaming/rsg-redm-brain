@@ -80,6 +80,8 @@
     "level_up": "農業レベルアップ！新しい称号：%s",
     "level_info": "農業レベル %s（%s）- %s XP",
     "level_info_next": "農業レベル %s（%s）- %s / %s XP",
+    "level_info_skills": "農業レベル %s - %s XP",
+    "level_info_skills_next": "農業レベル %s - %s / %s XP",
     "harvested_bonus": "収穫しました - 大豊作です！",
     "ui_btn_treat": "駆除",
     "ui_pests": "害虫",

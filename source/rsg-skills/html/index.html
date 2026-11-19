@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+    <section id="panel">
+        <header class="panel-header">
+            <div class="header-spacer"></div>
+            <div class="header-text">
+                <h1 id="title">Skills</h1>
+                <div class="subtitle" id="subtitle">Frontier Experience</div>
+            </div>
+            <button class="round-btn" id="btn-close" title="Close">&#10005;</button>
+        </header>
+        <div class="divider"><span>&#10022;</span></div>
+
+        <nav class="tabs">
+            <button class="wood-btn tab active" id="tab-skills" data-tab="skills"></button>
+            <button class="wood-btn tab" id="tab-board" data-tab="board"></button>
+        </nav>
+
+        <div id="boost" class="boost hidden"></div>
+
+        <!-- my skills -->
+        <div id="view-skills" class="view">
+            <div class="summary">
+                <div class="sum-item"><span class="sum-label" id="sum-level-l"></span><span class="sum-value" id="sum-level"></span></div>
+                <div class="sum-item"><span class="sum-label" id="sum-xp-l"></span><span class="sum-value" id="sum-xp"></span></div>
+            </div>
+            <div id="skill-list" class="list"></div>
+        </div>
+
+        <!-- leaderboard -->
+        <div id="view-board" class="view hidden">
+            <div class="board-controls">
+                <div class="dd" id="dd-skill">
+                    <div class="dd-value" id="dd-skill-value"></div>
+                    <span class="dd-arrow">&#9662;</span>
+                    <div class="dd-menu hidden" id="dd-skill-menu"></div>
+                </div>
+                <div class="seg" id="seg-mode">
+                    <button class="wood-btn seg-btn active" data-mode="all" id="mode-all"></button>
+                    <button class="wood-btn seg-btn" data-mode="weekly" id="mode-weekly"></button>
+                </div>
+            </div>
+            <div class="t-head">
+                <span class="c-rank" id="col-rank"></span>
+                <span class="c-name" id="col-player"></span>
+                <span class="c-level" id="col-level"></span>
+                <span class="c-xp" id="col-xp"></span>
+            </div>
+            <div id="board-rows" class="list"></div>
+            <div id="board-me" class="board-me"></div>
+        </div>
+    </section>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

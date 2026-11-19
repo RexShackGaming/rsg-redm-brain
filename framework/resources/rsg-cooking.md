@@ -1,6 +1,6 @@
 # rsg-cooking
 
-Version 3.2.0. rsg-cooking
+Version 3.3.1. rsg-cooking
 
 A cooking system for **RSG-Core (RedM)** that works the same way as [rsg-moonshine](https://github.com/Rexshack-RedM/rsg-moonshine): cooking stations keep their own pantry, firebox and serving tray, food cooks in real time on the server (even while you're away and across restarts), and everything is run from one NUI. 1. **Find a station**: target any stove on the map (**Use Stove**) or set up your
 

@@ -80,6 +80,8 @@
     "level_up": "Poziom rolnictwa wzrósł! Nowa ranga: %s",
     "level_info": "Poziom rolnictwa %s (%s) - %s XP",
     "level_info_next": "Poziom rolnictwa %s (%s) - %s / %s XP",
+    "level_info_skills": "Poziom rolnictwa %s - %s XP",
+    "level_info_skills_next": "Poziom rolnictwa %s - %s / %s XP",
     "harvested_bonus": "Zbiór zakończony - obfity plon!",
     "ui_btn_treat": "Opryskaj",
     "ui_pests": "Szkodniki",

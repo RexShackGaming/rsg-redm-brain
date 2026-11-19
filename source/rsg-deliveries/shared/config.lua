@@ -1082,3 +1082,18 @@ Config.DeliveryLocations = {
 
 -- https://github.com/femga/rdr3_discoveries/blob/f729ba03f75a591ce5c841642dc873345242f612/vehicles/vehicle_modding/vehicle_propsets.lua
 -- https://github.com/femga/rdr3_discoveries/blob/f729ba03f75a591ce5c841642dc873345242f612/vehicles/vehicle_modding/vehicle_lantern_propsets.lua
+
+-- rsg-reputation integration (optional). Needs the rsg-reputation resource; does nothing when it is not started.
+Config.Reputation = {
+    Enabled = true,
+    Action = 'delivery', -- action name in rsg-reputation's Config.Actions
+    -- delivery hub label -> rsg-reputation region that gains standing (hubs not listed give honor only)
+    Regions = {
+        ['Valentine Deliveries']   = 'valentine',
+        ['Blackwater Deliveries']  = 'blackwater',
+        ['Strawberry Deliveries']  = 'strawberry',
+        ['Tumbleweed Deliveries']  = 'tumbleweed',
+        ['Annesburg Deliveries']   = 'annesburg',
+        ['SaintDenis Deliveries']  = 'saint_denis',
+    },
+}

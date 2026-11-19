@@ -53,3 +53,68 @@ Whichever client owns a trolley runs obstacle braking and keeps the driver prote
 
 ## Natives used
 `_CREATE_MISSION_TRAIN 0xC239DBD9A57D2A71`, `_IS_SPAWN_POSITION_VALID_FOR_TRAIN 0xF05DFAF1ADFEF2CD`, `_SET_TRAIN_STOPS_FOR_STATIONS 0x4182C037AA1F0091`, `_SET_TRAIN_MAX_SPEED 0x9F29999DFDF2AEB8`, `SET_TRAIN_CRUISE_SPEED 0x01021EB2E96B793C`, `SET_TRAIN_SPEED 0xDFBA6BBFF7CCAFBB`, `IS_TRAIN_WAITING_AT_STATION 0xE887BD31D97793F6`, `GET_TRAIN_CARRIAGE 0xD0FB093A4CDB932C`, `GET_CURRENT_STATION_FOR_TRAIN 0x86FA6D8B48667D75`, `DELETE_MISSION_TRAIN 0x0D3630FB07E8B570`, `PLAY_PED_AMBIENT_SPEECH_NATIVE 0x8E04FEDD28D42462`, `SET_AMBIENT_VOICE_NAME 0x6C8065A3B780185B`, `FORCE_USE_AUDIO_GAME_OBJECT 0x4F0C413926060B38`.
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-trams 3.1.1**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Debug` | `false` |  |
+| `Config.Tracks` | `table` |  |
+| `Config.TrolleyModels` | `{ 'trolley01x' }` | trolley is spawned (only one trolley in the world at any time). |
+| `Config.AdminPermission` | `'admin'` | rsg-core permission for /trams |
+| `Config.CruiseSpeed` | `3.5` | func_775 |
+| `Config.MaxSpeed` | `6.0` | func_779 |
+| `Config.StopForStations` | `true` | func_1287 |
+| `Config.Passengers` | `true` | ambient passengers in the car |
+| `Config.Conductor` | `true` | driver/conductor ped |
+| `Config.Invincible` | `true` | stop players wrecking the network |
+| `Config.Blip` | `true` |  |
+| `Config.BlipSprite` | ``blip_ambient_train`` |  |
+| `Config.BlipModifier` | ``BLIP_MODIFIER_MP_COLOR_32`` |  |
+| `Config.Audio` | `table` | Force each car's audio game object on every client (fixes silent trolleys) |
+| `Config.Announce` | `true` | Conductor announcements (medium_update func_773/func_1278) |
+| `Config.AnnounceRange` | `25.0` |  |
+| `Config.Avoid` | `table` | Brake for living people, horses, carts and stray trolleys on the rails ahead; move off again once clear. |
+| `Config.SpawnClearance` | `40.0` | wait to spawn until no trolley is this close to the spawn point |
+| `Config.HostCheckInterval` | `10000` | ms between server health checks |
+| `Config.DriverlessChecks` | `2` | checks in a row without a living driver before replacing the trolley |
+| `Config.SpawnTimeout` | `60000` | ms before an unanswered spawn request is retried |
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-trams:client:spawnTrack` | client | `track` | `client/client.lua` |
+| `rsg-trams:client:deleteTrain` | client | `netId` | `client/client.lua` |
+| `rsg-trams:server:registerTram` | server | `track, netId, cars` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-trams:server:registerTram', track, netId, cars)
+-- from a server script
+TriggerClientEvent('rsg-trams:client:spawnTrack', source, track)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/trams` | locale('cmd_help') | `server/server.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

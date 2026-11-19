@@ -125,3 +125,183 @@ Discoveries are cosmetic (no money or items). The server still checks: player ex
 | Locale keys shown as text | Start rsg-core first; add new `ZoneMessages` keys to every locale file |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-zonenotify 3.2.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `oxmysql`
+
+### Database
+
+Tables: `zonenotify_discoveries`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.CheckInterval` | `500` | ms between zone checks |
+| `Config.DisplayTime` | `5000` | ms the banner stays on screen |
+| `Config.DisplayMode` | `'nui'` | 'nui' = custom banner (works while riding), 'native' = RDR2 location banner, 'notify' = rsg-core notify |
+| `Config.WhileMoving` | `'native'` | 'notify' = rsg-core notify when moving, 'wait' = banner once the player slows down, 'native' = always try the  |
+| `Config.MovingSpeed` | `1.5` | m/s; above this the player counts as moving |
+| `Config.MaxFeedWait` | `3000` | native only: ms to wait for a busy feed before showing the banner anyway |
+| `Config.Debug` | `false` | print zone hashes to F8 when they change and enable /zonetest |
+| `Config.Notify` | `table` | which zone changes show a banner automatically |
+| `Config.State` | `true` |  |
+| `Config.District` | `true` |  |
+| `Config.Town` | `true` |  |
+| `Config.LeaveTown` | `true` |  |
+| `Config.ShowTime` | `true` |  |
+| `Config.NightStart` | `22` | hour the night colour starts |
+| `Config.NightEnd` | `6` | hour the night colour ends |
+| `Config.TimeDayColor` | `'~COLOR_WHITE~'` |  |
+| `Config.TimeNightColor` | `'~COLOR_BLUEDARK~'` |  |
+| `Config.ShowTemperature` | `true` |  |
+| `Config.TemperatureUnit` | `'celsius'` | 'celsius', 'fahrenheit' or 'auto' (follows the player's game metric setting) |
+| `Config.TemperatureColdDegree` | `15` | celsius; below this uses the cold colour |
+| `Config.TemperatureHotColor` | `'~COLOR_YELLOWSTRONG~'` |  |
+| `Config.TemperatureColdColor` | `'~COLOR_BLUE~'` |  |
+| `Config.ShowWind` | `true` |  |
+| `Config.SpeedUnit` | `'mph'` | 'mph', 'kmh' or 'auto' (follows the player's game metric setting) |
+| `Config.WindColor` | `'~COLOR_RADAR_CENTER_BLIP~'` |  |
+| `Config.Key` | `false` | e.g. 0x80F28E95 (L); false = no keybind |
+| `Config.Command` | `'location'` | false to disable |
+| `Config.ToggleCommand` | `'zonenotify'` | players turn auto banners on/off (saved per player); false to disable |
+| `Config.ManualCooldown` | `3000` | ms between manual checks |
+| `Config.NuiColors` | `table` |  |
+| `Config.COLOR_WHITE` | `'#f2f2f2'` |  |
+| `Config.COLOR_BLUEDARK` | `'#6f8fc9'` |  |
+| `Config.COLOR_BLUE` | `'#8fb8e8'` |  |
+| `Config.COLOR_YELLOWSTRONG` | `'#d9a441'` |  |
+| `Config.COLOR_RADAR_CENTER_BLIP` | `'#9a9a9a'` |  |
+| `Config.LabelNames` | `table` |  |
+| `Config.HOMESTEAD_MACLEANS_HOUSE` | `"MacLean's House"` |  |
+| `Config.HOMESTEAD_WATSONS_CABIN` | `"Watson's Cabin"` |  |
+| `Config.LANDMARK_BERYLS_DREAM` | `"Beryl's Dream"` |  |
+| `Config.LANDMARK_RILEYS_CHARGE` | `"Riley's Charge"` |  |
+| `Config.LANDMARK_LUCKYS_CABIN` | `"Lucky's Cabin"` |  |
+| `Config.LANDMARK_RADLEYS_PASTURE` | `"Radley's Pasture"` |  |
+| `Config.LANDMARK_GRANGERS_HOGGERY` | `"Granger's Hoggery"` |  |
+| `Config.LANDMARK_MONTOS_REST` | `"Monto's Rest"` |  |
+| `Config.LANDMARK_QUAKERS_COVE` | `"Quaker's Cove"` |  |
+| `Config.LANDMARK_MILLESANI_CLAIM` | `"Millesani Claim"` |  |
+| `Config.LANDMARK_JORGES_GAP` | `"Jorge's Gap"` |  |
+| `Config.LANDMARK_BARDS_CROSSING` | `"Bard's Crossing"` |  |
+| `Config.LANDMARK_CALIBANS_SEAT` | `"Caliban's Seat"` |  |
+| `Config.LANDMARK_SOLOMONS_FOLLY` | `"Solomon's Folly"` |  |
+| `Config.HIDEOUT_SOLOMONS_FOLLY` | `"Solomon's Folly"` |  |
+| `Config.HOMESTEAD_LONNIES_SHACK` | `"Lonnie's Shack"` |  |
+| `Config.HOMESTEAD_WILLARDS_REST` | `"Willard's Rest"` |  |
+| `Config.HOMESTEAD_CATFISH_JACKSONS` | `"Catfish Jackson's"` |  |
+| `Config.HOMESTEAD_COMPSONS_STEAD` | `"Compson's Stead"` |  |
+| `Config.HOMESTEAD_SHEPHERDS_RISE` | `"Shepherd's Rise"` |  |
+| `Config.HOMESTEAD_CHEZ_PORTER` | `'Chez Porter'` |  |
+| `Config.SETTLEMENT_COOTS_CHAPEL` | `"Coot's Chapel"` |  |
+| `Config.SETTLEMENT_THIEVES_LANDING` | `"Thieves' Landing"` |  |
+| `Config.SETTLEMENT_AGUASDULCES` | `'Aguasdulces'` |  |
+| `Config.SETTLEMENT_SISIKA_PENITENTIARY` | `'Sisika Penitentiary'` |  |
+| `Config.TOWN_SAINTDENIS` | `'Saint Denis'` |  |
+| `Config.TOWN_VANHORN` | `'Van Horn'` |  |
+| `Config.TOWN_MACFARLANES_RANCH` | `"MacFarlane's Ranch"` |  |
+| `Config.WATER_OCREAGHS_RUN` | `"O'Creagh's Run"` |  |
+| `Config.WATER_FLAT_IRON_LAKE` | `'Flat Iron Lake'` |  |
+| `Config.WATER_KAMASSA_RIVER_BLUEWATER_MARSH` | `'Kamassa River'` |  |
+| `Config.WATER_KAMASSA_RIVER_BAYOU_NWA` | `'Kamassa River'` |  |
+| `Config.WATER_SAN_LUIS_RIVER_NEW_AUSTIN` | `'San Luis River'` |  |
+| `Config.WATER_SEA_OF_CORONADO` | `'Sea of Coronado'` |  |
+| `Config.WATER_BAHIA_DE_LA_PAZ` | `'Bahía de la Paz'` |  |
+| `Config.LANDMARK_HEARTLAND_OVERFLOW` | `'Heartland Overflow'` |  |
+| `Config.LANDMARK_BRITTLEBUSH_TRAWL` | `'Brittlebrush Trawl'` |  |
+| `Config.STATE_AMBARINO` | `'Ambarino'` |  |
+| `Config.AutoDatabase` | `true` | create the table automatically; set false to import install.sql manually |
+| `Config.Discovery` | `table` |  |
+| `Config.Enabled` | `true` |  |
+| `Config.ShowStamp` | `true` |  |
+| `Config.Landmarks` | `true` |  |
+| `Config.MaxPerPlayer` | `1000` |  |
+| `Config.Sound` | `table` |  |
+| `Config.Volume` | `0.25` |  |
+| `Config.Files` | `table` |  |
+| `Config.ZoneMessages` | `table` |  |
+| `Config.HideWhileScriptedCam` | `true` |  |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `ShowBanner` | `target, title, subtitle, duration` | `server/server.lua` |
+| `GetDiscoveryCount` | `citizenid` | `server/server.lua` |
+| `HasDiscovered` | `citizenid, zone` | `server/server.lua` |
+
+**Client**
+
+| Export | Arguments | File |
+|---|---|---|
+| `ShowCurrentLocation` | `` | `client/client.lua` |
+| `ShowBanner` | `` | `client/client.lua` |
+| `SetSuppressed` | `` | `client/client.lua` |
+| `IsDiscovered` | `key` | `client/client.lua` |
+| `GetDiscoveryCount` | `` | `client/client.lua` |
+
+```lua
+-- example
+local result = exports['rsg-zonenotify']:ShowBanner(target, title, subtitle, duration)
+```
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-zonenotify:server:getDiscoveries` | server | `source, cb` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-zonenotify:server:getDiscoveries', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerUnload` | client | `` | `client/client.lua` |
+| `rsg-zonenotify:client:showBanner` | client | `data` | `client/client.lua` |
+| `rsg-zonenotify:server:discover` | server | `zone` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-zonenotify:server:discover', zone)
+-- from a server script
+TriggerClientEvent('RSGCore:Client:OnPlayerLoaded', source)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/zonetest` |  | `client/client.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

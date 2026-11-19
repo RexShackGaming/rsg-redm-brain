@@ -73,3 +73,63 @@ The server works out hair and beard hashes itself, checks every makeup value aga
 | Preview stuck | Close and reopen; the cancel path calls `ApplySkin` |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-barbers 3.0.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-character`, `rsg-target`, `oxmysql`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Debug` | `false` |  |
+| `Config.BarberCost` | `5` | default price (cash) for a new style; a location can override with `price` |
+| `Config.UseTarget` | `true` | true = rsg-target on the barber NPC, false = rsg-core prompt at `coords` |
+| `Config.Key` | `'J'` | prompt key when Config.UseTarget = false |
+| `Config.MaxDistance` | `3.0` | max distance (server checked) from the chair when paying |
+| `Config.Cooldown` | `3` | seconds between purchase attempts per player |
+| `Config.MenuAlign` | `'right'` | NUI panel side: 'right' or 'left' |
+| `Config.DistanceSpawn` | `20.0` | spawn/despawn distance for barber NPCs |
+| `Config.FadeIn` | `true` |  |
+| `Config.BlipSprite` | `-2090472724` |  |
+| `Config.BlipScale` | `0.2` |  |
+| `Config.Makeup` | `table` |  |
+| `Config.BarberLocations` | `table` |  |
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-barbers:server:purchase` | server | `source, cb, barberid, payload` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-barbers:server:purchase', function(result)
+    -- use result
+end, barberid, payload)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-barbers:client:open` | client | `barberid` | `client/client.lua` |
+
+```lua
+-- from a server script
+TriggerClientEvent('rsg-barbers:client:open', source, barberid)
+```
+
+### Locales
+
+Language files in `locales/`: `cs`, `de`, `el`, `en`, `es`, `fr`, `it`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

@@ -26,3 +26,9 @@ Config.TakeBloodMoney = true
 -- outlaw status added on success (0 = disabled)
 Config.OutlawLoot = 10
 Config.OutlawRob  = 50
+
+-- rsg-reputation integration (optional). Needs the rsg-reputation resource; does nothing when it is not started.
+Config.Reputation = {
+    Enabled = true,
+    Action = 'robbery', -- action name in rsg-reputation's Config.Actions, applied to the robber when a player is robbed
+}

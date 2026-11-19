@@ -5,7 +5,7 @@ lua54 'yes'
 
 name 'rsg-goldpanning'
 description 'Gold panning system for RSG Framework'
-version '3.1.0'
+version '3.2.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',

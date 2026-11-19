@@ -103,6 +103,7 @@ local function handler_sellCarcass(src, netId, quality)
     DeleteEntity(carcass)
 
     local bonus = (HuntingXP.GetPerks(src).butcherBonus or 0) / 100 + HuntingBounty.ButcherBonus(animal.model)
+    if Config.Skills and Config.Skills.SellBonus then bonus = bonus + SkillPerk(src, 'sell_bonus') / 100 end -- rsg-skills perk
     local cash = math.floor((tonumber(animal.rewardmoney) or 0) * QualityMultiplier[quality] * (1 + bonus) * 100 + 0.5) / 100
     if cash > 0 then
         Player.Functions.AddMoney('cash', cash, 'rsg-hunting-butcher')

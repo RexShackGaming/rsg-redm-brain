@@ -78,6 +78,7 @@ function StartDelivery(src, hubIndex, destIndex)
     local cash = CalculateCashReward(location, destination)
 
     ActiveDeliveries[src] = {
+        region = Config.Reputation and Config.Reputation.Regions[location.label],
         destination = destination,
         cash = cash,
         distance = distance,
@@ -213,6 +214,11 @@ RegisterNetEvent('rsg-deliveries:server:completedelivery', function(clientNetId)
 
     if delivery.cash > 0 then
         Player.Functions.AddMoney('cash', delivery.cash, 'rsg-deliveries-complete')
+    end
+
+    -- rsg-reputation (optional): standing in the town the delivery started from
+    if Config.Reputation.Enabled and GetResourceState('rsg-reputation') == 'started' then
+        exports['rsg-reputation']:ApplyAction(src, Config.Reputation.Action, delivery.region)
     end
 
     local item = RollItemReward(delivery.destination.reward and delivery.destination.reward.itemreward)

@@ -270,6 +270,9 @@ rsg-farming/
 
 ## Changelog
 
+**3.2.0**
+- Optional rsg-skills integration: rsg-skills replaces the built-in farming XP when started (`Config.Skills`); new locale keys `level_info_skills`, `level_info_skills_next`.
+
 ### 3.1.0
 - New: farming XP and levels (`/farmlevel`), harvest quality bonus, seasonal growth, rain auto-watering (rsg-weather), optional pests with a Treat button (needs a `pesticide` item).
 - The "time to harvest" estimate is now worked out by the server so it includes season, fertiliser and pests.
@@ -295,5 +298,16 @@ rsg-farming/
 ## Credits
 
 Rexshack-RedM: RSG Framework (RexShack)
+
+## rsg-skills integration
+
+Optional. With `rsg-skills` started, it becomes the farming XP source (`Config.Skills`):
+- XP for planting, watering, fertilising, treating and harvesting goes to the shared `farming` skill;
+- the skill's `extra_yield` perk is the chance of bonus produce on harvest;
+- every `LevelsPerExtraPlant` levels above 1 adds one plant slot;
+- `/farmlevel` shows the rsg-skills level and XP.
+
+Without rsg-skills (or with `Config.Skills.Enabled = false`) the built-in `Config.XP` and `Config.Levels` are used as before. Existing farming XP in character metadata is not carried over to rsg-skills.
+
 
 Support the Project : https://rexshack.tebex.store/

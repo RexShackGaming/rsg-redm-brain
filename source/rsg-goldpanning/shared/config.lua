@@ -60,3 +60,10 @@ Config.WaterTypes = {
     { name = 'Random5',              waterhash = -196675805  },
     { name = 'Arroyo De La Vibora',  waterhash = -49694339   },
 }
+
+-- rsg-skills integration (optional). Needs the rsg-skills resource; does nothing when it is not started.
+Config.Skills = {
+    Enabled = true,
+    Skill   = 'mining', -- skill key in rsg-skills
+    FindXP  = 5,         -- XP when the pan finds something (rsg-skills applies its own multipliers and cap)
+}

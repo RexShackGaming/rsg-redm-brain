@@ -4,7 +4,7 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 
 author 'RexShack'
 description 'Mobile Data Terminal for RSG Framework'
-version '3.0.0'
+version '3.1.1'
 
 ui_page 'web/dist/index.html'
 files { 'web/dist/**/*', 'locales/*.json' }

@@ -258,3 +258,63 @@ Enable client/server console output and check the server console for `[rsg-firew
 ## Support
 
 - Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-fireworks 3.0.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `rsg-gizmo`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.EnableSound` | `true` |  |
+| `Config.BigFireworkTime` | `30` | seconds |
+| `Config.SmallFireworkTime` | `30` | seconds |
+| `Config.PlacementDistance` | `6.0` | max metres between the player and the placed firework |
+| `Config.FuseTime` | `5000` | ms between placing the firework and it igniting |
+| `Config.AllowInteriorPlacement` | `false` | false = fireworks can only be placed outside (rsg-gizmo interior rule) |
+| `Config.PendingFireworkTimeout` | `30000` | ms after using an item in which the client may finish placing it |
+| `Config.BroadcastCooldown` | `1000` | ms between ignited fireworks per player |
+| `Config.DisplayCooldown` | `5000` | ms between display commands per admin |
+| `Config.Displays` | `table` | Fireworks Displays Configuration |
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-fireworks:client:firework_big` | client | `` | `client/client.lua` |
+| `rsg-fireworks:client:firework_small` | client | `` | `client/client.lua` |
+| `rsg-fireworks:client:ignite` | client | `item, coords, rotation` | `client/client.lua` |
+| `rsg-fireworks:client:big_fireworks_players` | client | `coords` | `client/client.lua` |
+| `rsg-fireworks:client:small_fireworks_players` | client | `coords` | `client/client.lua` |
+| `rsg-fireworks:client:display` | client | `displayName` | `client/client.lua` |
+| `rsg-fireworks:client:display_big_firework` | client | `coords` | `client/client.lua` |
+| `rsg-fireworks:client:display_small_firework` | client | `coords` | `client/client.lua` |
+| `rsg-fireworks:server:place` | server | `item, coords, rot` | `server/server.lua` |
+| `rsg-fireworks:server:cancel` | server | `item` | `server/server.lua` |
+| `rsg-fireworks:server:display` | server | `displayName` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-fireworks:server:place', item, coords, rot)
+-- from a server script
+TriggerClientEvent('rsg-fireworks:client:firework_big', source)
+```
+
+### Useable items
+
+`firework_big`, `firework_small`
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

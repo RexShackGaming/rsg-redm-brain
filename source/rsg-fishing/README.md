@@ -1,6 +1,6 @@
 # rsg-fishing
 
-Fishing for **RSG-Core** (RedM), version 3.0.4. Full technical reference: [DOCS.md](DOCS.md).
+Fishing for **RSG-Core** (RedM), version 3.1.0. Full technical reference: [DOCS.md](DOCS.md).
 
  Players equip a fishing rod, bait it with an item from their inventory, cast, hook and reel in fish. Caught fish go into the inventory with their weight. An on-screen HUD guides the player through each step.
 
@@ -97,6 +97,9 @@ shared/config.lua     Settings
 
 ## Changelog
 
+**3.1.0**
+- Optional rsg-skills integration: fishing XP per catch (`Config.Skills`).
+
 **3.0.4**
 - Fixed reeling: holding the reel key now keeps pulling the fish in. Before, each key press only pulled for half a second, and a key held through a struggle did nothing afterwards.
 - The reel key is read even when the fishing task disables the control.
@@ -117,6 +120,11 @@ shared/config.lua     Settings
 - Struggle splash effect no longer spawns every frame and its asset load can no longer hang.
 - Removed unused prompt groups (the HUD replaced them), the unused `VERTICAL_PROBE` export and duplicated fish tables.
 - HUD title is now translated. Added ja, nl and ro locales.
+
+## rsg-skills integration
+
+Optional. When `rsg-skills` is started, every fish caught with the rod awards fishing XP (`Config.Skills.CatchXP`, default 10). Fish picked up off the ground earn nothing. Set `Config.Skills.Enabled = false` to turn it off. Nothing breaks when rsg-skills is not installed.
+
 
 ## License
 

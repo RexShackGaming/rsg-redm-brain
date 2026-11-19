@@ -1,6 +1,6 @@
 # rsg-animations
 
-Version 3.0.1. rsg-animations
+Version 3.0.2. rsg-animations
 
 **Emote & animation menu for RedM (RSG Core).** > A Vue.js animation menu that lets players play gestures, dances, emotes and scenarios, and save their favourites per character. - **rsg-core** – framework, player data, callbacks, notifications & locales
 

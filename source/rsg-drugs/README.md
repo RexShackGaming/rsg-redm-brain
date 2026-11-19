@@ -129,3 +129,7 @@ exports['rsg-drugs']:IsInRehab(src)
 - Scenarios `WORLD_HUMAN_SMOKE`, `WORLD_HUMAN_DRINKING`, `WORLD_HUMAN_DRUNK_BRACE_WALL_NO_VOMIT`: rdr3_discoveries `animations/scenarios`
 
 Support the Project : https://rexshack.tebex.store/
+
+## Database
+
+Tables (`rsg_drugs_labs`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `installation/install.sql` once.

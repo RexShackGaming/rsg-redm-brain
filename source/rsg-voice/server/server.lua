@@ -134,16 +134,18 @@ end)
 
 CreateThread(function()
     -- Create the table on first start (same as install.sql)
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `rsg_voice_mutes` (
-            `license`    VARCHAR(64)  NOT NULL,
-            `reason`     VARCHAR(255) DEFAULT NULL,
-            `muted_by`   VARCHAR(100) DEFAULT NULL,
-            `expires_at` INT UNSIGNED DEFAULT NULL,
-            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (`license`)
-        )
-    ]])
+    if Config.AutoDatabase ~= false then
+        MySQL.query.await([[
+            CREATE TABLE IF NOT EXISTS `rsg_voice_mutes` (
+                `license`    VARCHAR(64)  NOT NULL,
+                `reason`     VARCHAR(255) DEFAULT NULL,
+                `muted_by`   VARCHAR(100) DEFAULT NULL,
+                `expires_at` INT UNSIGNED DEFAULT NULL,
+                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`license`)
+            )
+        ]])
+    end
     local rows = MySQL.query.await('SELECT license, reason, expires_at FROM rsg_voice_mutes') or {}
     local now = os.time()
     for _, r in ipairs(rows) do

@@ -163,3 +163,7 @@ To add or edit translations, edit the matching file under `locales/<code>.json` 
 - The food item used to feed pets is not sold by this resource; make sure players can obtain `Config.AnimalFood` (default `raw_meat`) some other way.
 - Dogs need regular feeding to keep growing and to avoid becoming hungry; birds gain XP from successful hunts/scavenges/fishing trips instead.
 - The in-game "Transfer" and "Commands" pet actions in the My Pets detail panel are UI placeholders and are not implemented yet.
+
+## Database
+
+Tables (`is`, `player_dogs`, `player_birds`, `player_selected_pets`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `installation/rsg_huntingpets.sql` once.

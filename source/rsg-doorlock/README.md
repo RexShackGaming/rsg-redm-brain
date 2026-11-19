@@ -212,3 +212,7 @@ If you find this resource useful, consider supporting development:
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/rexshack)
 
 ☕ **https://buymeacoffee.com/rexshack**
+
+## Database
+
+Tables (`rsg_doorlocks`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `installation/rsg_doorlocks.sql` once.

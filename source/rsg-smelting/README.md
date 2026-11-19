@@ -89,3 +89,7 @@ Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the
 - NPC spawning moved to `lib.points` (no constant distance loop)
 - Enter confirms / Escape closes in the quantity modal
 - Removed unused `client/client.lua`, `server/server.lua`, `Config.Debug`; version checker now loaded
+
+## Database
+
+Tables (`rsg_smelting_state`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `installation/rsg-smelting.sql` once.

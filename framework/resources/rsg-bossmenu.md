@@ -1,6 +1,6 @@
 # rsg-bossmenu
 
-Version 3.0.1. rsg-bossmenu
+Version 3.0.2. rsg-bossmenu
 
 Boss management menu for **RSG Framework** (RedM). Job bosses can manage employees, hire nearby players, open job storage, and manage the company bank. - Employee list (online/offline), promote/demote, fire (online or offline) - Hire nearby civilians (server distance check)
 

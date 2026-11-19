@@ -401,13 +401,15 @@ end
 
 CreateThread(function()
     -- build the database table automatically if it doesn't exist
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `rsg_drugs_labs` (
-            `citizenid` VARCHAR(50) NOT NULL,
-            `data` LONGTEXT NOT NULL,
-            PRIMARY KEY (`citizenid`)
-        )
-    ]])
+    if Config.AutoDatabase ~= false then
+        MySQL.query.await([[
+            CREATE TABLE IF NOT EXISTS `rsg_drugs_labs` (
+                `citizenid` VARCHAR(50) NOT NULL,
+                `data` LONGTEXT NOT NULL,
+                PRIMARY KEY (`citizenid`)
+            )
+        ]])
+    end
     -- load every lab so production runs while owners are offline
     local rows = MySQL.query.await('SELECT citizenid, data FROM rsg_drugs_labs') or {}
     for _, r in ipairs(rows) do

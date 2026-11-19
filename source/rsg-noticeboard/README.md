@@ -80,3 +80,7 @@ Messages are queued per webhook and sent about one per second. Discord rate limi
 
 ## Support
 https://buymeacoffee.com/rexshack
+
+## Database
+
+Tables (`rsg_noticeboard_boards`, `rsg_noticeboard_notices`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `install.sql` once.

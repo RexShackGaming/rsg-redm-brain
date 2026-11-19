@@ -101,3 +101,124 @@ The server owns the hunt: map use, clue distance, animal registration, skin dist
 | Animal didn't appear | Get within `ActivateDistance` of the spawn point after the last clue |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-legendary 3.1.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
+
+### Database
+
+Tables: `rsg_legendary_cooldowns`, `rsg_legendary_trophies`, `rsg_legendary_hunts`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `installation/install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AutoDatabase` | `true` | build the database tables automatically on start (set false and import the SQL file for a manual install) |
+| `Config.Debug` | `false` |  |
+| `Config.Trappers` | `table` |  |
+| `Config.TrapperInteractDistance` | `3.0` | rsg-target distance |
+| `Config.TrapperServerDistance` | `6.0` | server-side check for buy/sell |
+| `Config.TrapperSpawnDistance` | `80.0` | trapper ped only exists while a player is this close |
+| `Config.MapItem` | `'legendary_map'` |  |
+| `Config.HuntDuration` | `60 * 60` | seconds a started hunt stays active |
+| `Config.ClueCount` | `3` | clues to inspect before the animal appears |
+| `Config.ClueSpread` | `120.0` | clues are scattered this far from the zone centre (metres, 2D) |
+| `Config.RouteToClue` | `true` | draw a GPS route to the next clue |
+| `Config.ClueZoneDistance` | `40.0` | clue prompt is armed once you're this close (terrain is loaded) |
+| `Config.ClueTargetDistance` | `3.0` | how close you must be for the 'Inspect tracks' prompt to show |
+| `Config.CluePromptKey` | `0xCEFD9220` | E (RSGCore.Shared.Keybinds['E']) |
+| `Config.CluePromptHold` | `1000` | ms to hold the key |
+| `Config.ClueInspectDist` | `4.0` | server check: player must be this close to a clue |
+| `Config.ClueInspectTime` | `5000` | ms crouch-inspect |
+| `Config.ClueScenario` | ``WORLD_HUMAN_CROUCH_INSPECT`` | rdr3_discoveries/animations/scenarios |
+| `Config.SpawnOffset` | `60.0` | animal spawns this far beyond the last clue |
+| `Config.ActivateDistance` | `120.0` | the legendary spawns once you are this close to its spawn point |
+| `Config.SkinFallbackDelay` | `15` | seconds after death before an rsg-target 'Skin' option appears (0 = never). Covers models with no native skin  |
+| `Config.SkinTime` | `8000` | ms progress bar for rsg-target skinning |
+| `Config.DeleteCarriedPelt` | `true` | remove the vanilla pelt the game puts on your shoulder (you get the RSG items instead) |
+| `Config.SkinMaxDistance` | `6.0` | server: player must be this close to the carcass |
+| `Config.CooldownHours` | `24` | per player, per legendary animal |
+| `Config.MoneyType` | `'cash'` |  |
+| `Config.Quality` | `table` |  |
+| `Config.Enabled` | `true` |  |
+| `Config.PerfectWeapons` | `{ `WEAPON_BOW`, `WEAPON_BOW_IMPROVED`, `WEAPON_MELEE_KNIFE`, `WEAPON_T` |  |
+| `Config.TrinketMult` | `2` |  |
+| `Config.BonusTrinketChance` | `0.10` | 0.0 - 1.0 |
+| `Config.Trophies` | `table` |  |
+| `Config.CacheSec` | `60` |  |
+| `Config.Group` | `table` |  |
+| `Config.MaxMembers` | `3` |  |
+| `Config.InviteDistance` | `10.0` |  |
+| `Config.InviteTimeout` | `60` |  |
+| `Config.ShareDistance` | `30.0` |  |
+| `Config.SaveHunts` | `true` |  |
+| `Config.CooldownTelegram` | `table` |  |
+| `Config.CheckMin` | `5` |  |
+| `Config.XPRequirement` | `table` | stored as player rep 'hunting'). Each animal can set its own minXP; otherwise DefaultMinXP is used. |
+| `Config.DefaultMinXP` | `1000` |  |
+| `Config.RepName` | `'hunting'` |  |
+| `Config.ZoneBlipStyle` | ``BLIP_STYLE_AREA`` | Blip styles (rdr3_discoveries/useful_info_from_rpfs/blip_styles) |
+| `Config.ClueBlipStyle` | ``BLIP_STYLE_OBJECTIVE`` |  |
+| `Config.Animals` | `table` |  |
+| `Config.SellPrices` | `table` |  |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `GetTrophies` | `citizenid` | `server/server.lua` |
+
+```lua
+-- example
+local result = exports['rsg-legendary']:GetTrophies(citizenid)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-legendary:client:startHunt` | client | `data` | `client/client.lua` |
+| `rsg-legendary:client:endHunt` | client | `` | `client/client.lua` |
+| `rsg-legendary:client:preview` | client | `key, preset` | `client/client.lua` |
+| `rsg-legendary:server:animalSpawned` | server | `netId` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-legendary:server:animalSpawned', netId)
+-- from a server script
+TriggerClientEvent('rsg-legendary:client:startHunt', source, data)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/abandonhunt` | locale('cmd_abandon') | `server/server.lua` |
+| `/invitehunt` | locale('cmd_invite') | `server/server.lua` |
+| `/accepthunt` | locale('cmd_accept') | `server/server.lua` |
+| `/legendpreview` | locale('cmd_preview') | `server/server.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

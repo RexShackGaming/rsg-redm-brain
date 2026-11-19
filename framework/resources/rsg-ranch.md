@@ -1,6 +1,6 @@
 # rsg-ranch
 
-Version 3.2.0. rsg-ranch
+Version 3.3.1. rsg-ranch
 
 A complete livestock ranching system for **RedM** servers running the **RSG Framework**. Buy a ranch, hire staff, raise cattle, pigs, sheep and chickens, keep them fed and watered, breed them, collect their produce, and sell or slaughter them for profit, all managed from an in-game ranch menu. - Six purchasable ranches out of the box (Macfarlane, Emerald, Pronghorn, Downes, Hill Haven, Hanging Dog
 
@@ -36,8 +36,8 @@ Has NUI (`ui_page`).
 
 **client/modules/animals.lua:** `SpawnManager:Initialize()`, `SpawnManager:CheckSpawnRequests()`, `SpawnManager:IsValidAnimalData(data)`, `SpawnManager:RequestSpawn(animalId, animalData)`, `SpawnManager:SpawnAnimal(animalId, animalData, networkId, isCreator)`, `SpawnManager:CreateAnimalEntity(animalData, networkId)`, `SpawnManager:ConfigureAnimalEntity(entity, animalData)`, `SpawnManager:CreateOrUpdateAnimalBlip(animalId)`, `SpawnManager:RemoveAnimalBlip(animalId)`, `SpawnManager:SetupAnimalInteraction(entity, animalData)`, `SpawnManager:SetupAnimalWandering(animalId, entity, animalData)`, `SpawnManager:StartWanderManager()`, `SpawnManager:UpdateAnimalWander(animalId)`, `SpawnManager:StartAnimalWander(animalId, wanderState)`, `SpawnManager:StopAnimalWander(animalId, wanderState)`, `SpawnManager:PauseAnimalWander(animalId)`, `SpawnManager:ResumeAnimalWander(animalId)`, `SpawnManager:DespawnAnimal(animalId)`, `SpawnManager:GetPendingCount()`, `SpawnManager:GetEntityById(animalId)`, `SpawnManager:RemoveAnimal(animalId)`, `SpawnManager:ClearAll()`, `SpawnManager:CleanupOrphanedEntities()`
 
-**server/server.lua:** `SpawnController:Initialize()`, `SpawnController:CanPlayerSpawn(playerId, animalId)`, `SpawnController:RegisterSpawn(playerId, animalId, animalData, networkId)`, `SpawnController:CleanupStaleData()`, `SpawnController:ClearPlayerSpawns(playerId)`
+**server/server.lua:** `RanchSkills.Active()`, `RanchSkills.Price(src, price)`, `RanchSkills.SoldXP(src, count)`, `SpawnController:Initialize()`, `SpawnController:CanPlayerSpawn(playerId, animalId)`, `SpawnController:RegisterSpawn(playerId, animalId, animalData, networkId)`, `SpawnController:CleanupStaleData()`, `SpawnController:ClearPlayerSpawns(playerId)`
 
 ## Database tables
 
-`below`, `rsg_ranch_animals`, `rsg_ranch_chickencoops`, `rsg_ranch_custom`, `rsg_ranch_feedtroughs`, `rsg_ranch_orders`, `rsg_ranch_owners`, `rsg_ranch_settings`, `rsg_ranch_storages`, `rsg_ranch_watertroughs`
+`below`, `rsg_ranch_animals`, `rsg_ranch_chickencoops`, `rsg_ranch_custom`, `rsg_ranch_feedtroughs`, `rsg_ranch_orders`, `rsg_ranch_owners`, `rsg_ranch_settings`, `rsg_ranch_storages`, `rsg_ranch_watertroughs`, `rsg_ranch_wellpumps`

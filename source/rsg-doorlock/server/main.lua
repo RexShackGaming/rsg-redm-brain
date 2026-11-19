@@ -88,18 +88,20 @@ local function importConfigDoors()
 end
 
 CreateThread(function()
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `rsg_doorlocks` (
-            `id` INT NOT NULL AUTO_INCREMENT,
-            `name` VARCHAR(64) NOT NULL,
-            `doors` LONGTEXT NOT NULL,
-            `text_coords` LONGTEXT NOT NULL,
-            `jobs` LONGTEXT NOT NULL,
-            `distance` FLOAT NOT NULL DEFAULT 1.25,
-            `locked` TINYINT(1) NOT NULL DEFAULT 1,
-            PRIMARY KEY (`id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ]])
+    if Config.AutoDatabase ~= false then
+        MySQL.query.await([[
+            CREATE TABLE IF NOT EXISTS `rsg_doorlocks` (
+                `id` INT NOT NULL AUTO_INCREMENT,
+                `name` VARCHAR(64) NOT NULL,
+                `doors` LONGTEXT NOT NULL,
+                `text_coords` LONGTEXT NOT NULL,
+                `jobs` LONGTEXT NOT NULL,
+                `distance` FLOAT NOT NULL DEFAULT 1.25,
+                `locked` TINYINT(1) NOT NULL DEFAULT 1,
+                PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ]])
+    end
 
     if Config.ImportConfigDoors and (MySQL.scalar.await('SELECT COUNT(*) FROM rsg_doorlocks') or 0) == 0 then
         importConfigDoors()

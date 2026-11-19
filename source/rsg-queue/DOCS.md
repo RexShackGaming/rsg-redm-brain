@@ -133,3 +133,112 @@ Support the Project : https://rexshack.tebex.store/
 
 
 - **3.0.1**: estimated wait and "players skipped" on the card, Discord role priority, maintenance mode (`/queuemaint`, panel toggle, exports), add VIP from the Queue tab, daily VIP cash rewards (`rsg_queue_rewards` table), rsg-log logging, restart message for waiting players; admits every free slot each second (was one player per second), rejects connections cleanly if the database fails on start, no crash grace after a deliberate quit/kick/ban, expired grace entries are swept, `IsVip` respects expiry, identifiers like `license2:` accepted, Staff label localised.
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-queue 3.0.2**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `oxmysql`
+
+### Database
+
+Tables: `rsg_queue_vip`, `rsg_queue_rewards`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AutoDatabase` | `true` | create tables on start; set false and import install.sql to install manually |
+| `Config.Debug` | `false` |  |
+| `Config.ServerName` | `'My RSG Server'` | shown at the top of the queue card |
+| `Config.CardImage` | `''` | optional banner image url (https) for the queue card, '' = none |
+| `Config.UpdateInterval` | `1000` | ms between queue card refreshes (keep at 1000 so the card clock ticks every second) |
+| `Config.MinCardTime` | `15` | seconds the queue card always shows, even with a free slot (0 = join instantly) |
+| `Config.ConnectTimeout` | `180` | seconds an admitted player may take to load in before their slot is freed |
+| `Config.VipRefresh` | `300` | seconds between VIP cache reloads from the database (expiry) |
+| `Config.EstimateWindow` | `20` | recent admits used to estimate the wait time on the card |
+| `Config.ReservedSlots` | `4` | slots kept free for VIP/staff only. Public players can fill (sv_maxclients - ReservedSlots) |
+| `Config.AdminPermission` | `'admin'` | rsg-core permission for /queue, /vipadd, /vipremove |
+| `Config.StaffAce` | `'rsgqueue.staff'` | ace that gives staff top priority + reserved slot access |
+| `Config.StaffPriority` | `100` |  |
+| `Config.Grace` | `table` | players who drop keep a priority boost for a few minutes so they can rejoin quickly |
+| `Config.Tiers` | `table` | priority: higher goes first \| reserved: may use reserved slots |
+| `Config.Links` | `table` |  |
+| `Config.Maintenance` | `table` |  |
+| `Config.Discord` | `table` | the bot must be in your guild with the Server Members intent enabled |
+| `Config.Log` | `table` |  |
+| `Config.VipRewards` | `table` |  |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `AddVip` | `identifier, tier, days, name` | `server/server.lua` |
+| `RemoveVip` | `identifier` | `server/server.lua` |
+| `SetMaintenance` | `on` | `server/server.lua` |
+| `IsMaintenance` | `` | `server/server.lua` |
+| `IsVip` | `identifier` | `server/server.lua` |
+| `GetQueueSize` | `` | `server/server.lua` |
+| `GetQueue` | `` | `server/server.lua` |
+
+```lua
+-- example
+local result = exports['rsg-queue']:AddVip(identifier, tier, days, name)
+```
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-queue:server:getAdminData` | server | `source, cb` | `server/server.lua` |
+| `rsg-queue:server:adminAction` | server | `source, cb, action, data` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-queue:server:getAdminData', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-queue:client:openAdmin` | client | `data` | `client/client.lua` |
+
+```lua
+-- from a server script
+TriggerClientEvent('rsg-queue:client:openAdmin', source, data)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/queue` | locale('cmd_queue') | `server/server.lua` |
+| `/vipadd` | locale('cmd_vipadd') | `server/server.lua` |
+| `/vipremove` | locale('cmd_vipremove') | `server/server.lua` |
+| `/queuemaint` | locale('cmd_maint') | `server/server.lua` |
+| `/queuevip` |  | `server/server.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

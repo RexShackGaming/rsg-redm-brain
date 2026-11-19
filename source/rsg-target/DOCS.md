@@ -460,3 +460,124 @@ Set the language with the `rsg:locale` convar, e.g. `setr rsg:locale de`.
 - The context-menu close check was removed (rsg-core has no context menu). Targeting still closes for the inventory and progress bars, and won't open while any NUI has focus.
 
 Support: https://rexshack.tebex.store
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-target 3.1.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Debug` | `false` | spawns debug zones/options (see client/debug.lua) |
+| `Config.Toggle` | `false` | true: press key to open/close \| false: hold key |
+| `Config.DefaultDistance` | `7.0` | default interact distance when an option has none |
+| `Config.RaycastDistance` | `20.0` | how far the camera raycast reaches |
+| `Config.CleanupInterval` | `10000` | (ms) server cleanup of deleted networked entities |
+| `Config.Keys` | `table` |  |
+| `Config.Target` | `0x8AAA0AD4` |  |
+| `Config.Focus` | `0x07B8BEAF` |  |
+| `Config.Close` | `0x53296B75` |  |
+| `Config.QuickSelect` | `table` |  |
+| `Config.Enabled` | `true` |  |
+| `Config.Key` | `0xCEFD9220` |  |
+| `Config.Label` | `'E'` |  |
+| `Config.UI` | `table` |  |
+| `Config.KeyboardNav` | `true` |  |
+| `Config.Gamepad` | `true` |  |
+| `Config.MultiJob` | `true` |  |
+| `Config.DrawSprite` | `24` | max zone sprites drawn per frame (0 = disabled, limit 32) |
+| `Config.SpriteColour` | `{ 155, 155, 155, 175 }` | r, g, b, a |
+| `Config.SpriteHover` | `{ 255, 255, 255, 255 }` | r, g, b, a when looking at zone |
+| `Config.Highlight` | `table` |  |
+| `Config.Command` | `'targethighlight'` |  |
+| `Config.Radius` | `10.0` |  |
+| `Config.ScanInterval` | `500` |  |
+| `Config.MaxDrawn` | `16` |  |
+| `Config.Peds` | `true` |  |
+| `Config.Vehicles` | `true` |  |
+| `Config.Objects` | `true` |  |
+| `Config.Zones` | `true` |  |
+| `Config.IncludeGlobal` | `false` |  |
+| `Config.RequireLineOfSight` | `true` |  |
+| `Config.HeightOffset` | `0.15` |  |
+| `Config.Size` | `22` |  |
+| `Config.Pulse` | `true` |  |
+| `Config.Colour` | `'#c8c8c8'` |  |
+| `Config.HoverColour` | `'#6fbf73'` |  |
+
+### Exports
+
+**Client**
+
+| Export | Arguments | File |
+|---|---|---|
+| `AddBoxZone` | `name, center, length, width, options, targetoptions` | `client/compat/rsg-target.lua` |
+| `AddPolyZone` | `name, points, options, targetoptions` | `client/compat/rsg-target.lua` |
+| `AddCircleZone` | `name, center, radius, options, targetoptions` | `client/compat/rsg-target.lua` |
+| `RemoveZone` | `id` | `client/compat/rsg-target.lua` |
+| `AddTargetBone` | `_, options` | `client/compat/rsg-target.lua` |
+| `AddTargetEntity` | `entities, options` | `client/compat/rsg-target.lua` |
+| `RemoveTargetEntity` | `entities, labels` | `client/compat/rsg-target.lua` |
+| `AddTargetModel` | `models, options` | `client/compat/rsg-target.lua` |
+| `RemoveTargetModel` | `models, labels` | `client/compat/rsg-target.lua` |
+| `AddGlobalPed` | `options` | `client/compat/rsg-target.lua` |
+| `RemoveGlobalPed` | `labels` | `client/compat/rsg-target.lua` |
+| `AddGlobalVehicle` | `options` | `client/compat/rsg-target.lua` |
+| `RemoveGlobalVehicle` | `labels` | `client/compat/rsg-target.lua` |
+| `AddGlobalObject` | `options` | `client/compat/rsg-target.lua` |
+| `RemoveGlobalObject` | `labels` | `client/compat/rsg-target.lua` |
+| `AddGlobalPlayer` | `options` | `client/compat/rsg-target.lua` |
+| `RemoveGlobalPlayer` | `labels` | `client/compat/rsg-target.lua` |
+| `AddEntityZone` | `` | `client/compat/rsg-target.lua` |
+| `RemoveTargetBone` | `` | `client/compat/rsg-target.lua` |
+
+```lua
+-- example
+local result = exports['rsg-target']:AddBoxZone(name, center, length, width, options, targetoptions)
+```
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-target:server:getJobs` | server | `source, cb` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-target:server:getJobs', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-target:client:removeEntity` | client | `arr` | `client/api.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/framework.lua` |
+| `RSGCore:Client:OnPlayerUnload` | client | `` | `client/framework.lua` |
+| `RSGCore:Client:OnJobUpdate` | client | `` | `client/framework.lua` |
+| `RSGCore:Player:SetPlayerData` | client | `val` | `client/framework.lua` |
+| `rsg-target:server:setEntityHasOptions` | server | `netId` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-target:server:setEntityHasOptions', netId)
+-- from a server script
+TriggerClientEvent('rsg-target:client:removeEntity', source, arr)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

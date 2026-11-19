@@ -92,4 +92,95 @@ Nothing is stored in the database. Picked nodes, plant rotation and the box loca
 | Webhooks silent | Set `Config.Webhook.enabled`, the category `enabled` and its `url` |
 | Mystery box never appears | `Config.MysteryBox.enabled` and at least one entry in `coords` |
 
+## rsg-skills integration
+
+`Config.Skills = { Enabled, Skill, GatherXP, ExtraYield }`. In `rsg-herbalist:server:gathered`, after the herb is added and the node suppressed, the server calls `AddXP(src, 'herbalism', GatherXP, ...)` and, when `ExtraYield` is on, rolls the `extra_yield` perk for one more herb (only if `CanCarry`). Server side only; skipped when rsg-skills is not started.
+
+
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-herbalist 3.2.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Debug` | `false` | leave off in production; verbose per-gather/per-craft tracing |
+| `Config.InventoryImagePath` | `'nui://rsg-inventory/html/images/'` | Where the crafting UI loads item icons from (rsg-inventory's image folder). |
+| `Config.ScopeRangeLoad` | `100.0` | distance at which a herb node starts streaming in |
+| `Config.ScopeRangeUnload` | `120.0` | distance at which a loaded node streams back out |
+| `Config.NearbyRange` | `15.0` | radius refreshed once/sec for interaction checks |
+| `Config.PickupRange` | `3.0` | client-side distance within which a node can be picked |
+| `Config.CompositeLoadTimeoutMs` | `10000` | max time to wait for a composite asset to stream in |
+| `Config.GatherDurationMs` | `3000` | length of the gather progress bar |
+| `Config.GatherProgressBarEnabled` | `false` | cancellable. |
+| `Config.GatherCooldownMs` | `2500` | server-side minimum time between gather attempts per player |
+| `Config.ScopeRangeGather` | `3.5` | server-side distance check before a gather is accepted |
+| `Config.SuppressionWearoffSeconds` | `10 * 60` | how long a gathered node stays empty before it regrows |
+| `Config.TonicCraftingEnabled` | `true` | master switch for the tonic crafting system |
+| `Config.TonicCraftCooldownMs` | `1500` | server-side minimum time between craft requests per player |
+| `Config.TonicCraftProgressBarEnabled` | `false` | always completes once that time passes. |
+| `Config.TonicCraftAnim` | `table` | always use the generic standing scenario instead. |
+| `Config.TonicCraftCamera` | `table` | the player is facing or where they are. |
+| `Config.TonicAttributeIndex` | `table` | changes that ordering. value is 0.0-1.0 (fraction of the core topped up). |
+| `Config.TonicDrinkAnim` | `table` | Deleted automatically once the clips finish. |
+| `Config.TonicEffects` | `table` | tonic. Tonics not listed here do nothing extra when consumed. |
+| `Config.TonicUseCooldownMs` | `5 * 60 * 1000` | 5 minutes |
+| `Config.LockTonicCraftingToJob` | `false` | the database via rsg-core's /jobadmin (see installation/shared_jobs.lua for grades). |
+| `Config.TonicCraftingJobName` | `'herbalist'` |  |
+| `Config.MysteryBox` | `table` |  |
+| `Config.Tonics` | `table` | output      { item = <inventory item name>, amount = <amount granted> } |
+| `Config.Skills` | `table` | rsg-skills integration (optional). Needs the rsg-skills resource; does nothing when it is not started. |
+| `Config.Enabled` | `true` |  |
+| `Config.Skill` | `'herbalism'` |  |
+| `Config.GatherXP` | `5` |  |
+| `Config.ExtraYield` | `true` |  |
+| `Config.Webhook` | `table` |  |
+| `Config.Zones` | `table` |  |
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-herbalist:client:SetSuppressed` | client | `id, suppress, newPlant` | `client/client.lua` |
+| `rsg-herbalist:client:SyncState` | client | `suppressedIds, plantOverrides` | `client/client.lua` |
+| `rsg-herbalist:client:ForceReload` | client | `id` | `client/client.lua` |
+| `RSGCore:Player:SetPlayerData` | client | `data` | `client/client.lua` |
+| `rsg-herbalist:client:OpenTonicCrafting` | client | `` | `client/client.lua` |
+| `rsg-herbalist:client:StartCraftProgress` | client | `durationMs` | `client/client.lua` |
+| `rsg-herbalist:client:ApplyTonicEffect` | client | `itemName` | `client/client.lua` |
+| `rsg-herbalist:client:SetMysteryBox` | client | `coord` | `client/mysterybox.lua` |
+| `rsg-herbalist:server:requestMysteryBox` | server | `` | `server/mysterybox.lua` |
+| `rsg-herbalist:server:openMysteryBox` | server | `` | `server/mysterybox.lua` |
+| `rsg-herbalist:server:gathered` | server | `id` | `server/server.lua` |
+| `rsg-herbalist:server:requestSync` | server | `` | `server/server.lua` |
+| `rsg-herbalist:server:requestCraft` | server | `tonicId` | `server/server.lua` |
+| `rsg-herbalist:server:finishCraft` | server | `` | `server/server.lua` |
+| `rsg-herbalist:server:cancelCraft` | server | `` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-herbalist:server:requestMysteryBox')
+-- from a server script
+TriggerClientEvent('rsg-herbalist:client:SetSuppressed', source, id, suppress, newPlant)
+```
+
+### Useable items
+
+`mortarpestle`
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

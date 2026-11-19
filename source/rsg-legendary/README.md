@@ -90,3 +90,7 @@ Everything that matters runs on the server: trapper distance checks for buying a
 - If a player disconnects or a hunt expires, the spawned legendary is removed from the world.
 
 Support the Project : https://rexshack.tebex.store/
+
+## Database
+
+Tables (`rsg_legendary_cooldowns`, `rsg_legendary_trophies`, `rsg_legendary_hunts`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `installation/install.sql` once.

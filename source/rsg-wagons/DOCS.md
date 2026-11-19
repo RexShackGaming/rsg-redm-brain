@@ -217,3 +217,131 @@ The prompt and target both call `rsg-wagons:server:storeNearest`, which stores a
 | Storage does nothing right after taking a wagon out | Fixed: the server now waits up to 5s for the spawned wagon to replicate before linking it, and falls back to its own active-wagon record. If it still fails, look for `entity never reached the server` in the server console |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-wagons 3.0.1**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
+
+### Database
+
+Tables: `player_wagons`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AutoDatabase` | `true` | build the player_wagons table on start; set false to import install.sql manually |
+| `Config.MoneyType` | `'cash'` | 'cash' \| 'bank' \| 'gold' \| 'bloodmoney' (always taken via RemoveMoney) |
+| `Config.MaxWagons` | `5` | max wagons a player can own in total |
+| `Config.SellPercent` | `0.50` | trade-in value = price * SellPercent * condition modifier |
+| `Config.DamagedThreshold` | `90` | condition % below this counts as "damaged" (RDR2 fence: health < 90% of max) |
+| `Config.DamagedSellModifier` | `0.5` | damaged wagons fetch this fraction of the normal trade-in |
+| `Config.StoreDistance` | `15.0` | wagon must be within this distance of a store to be stored / sold |
+| `Config.StoreRadius` | `35.0` | wagon AND player must be within this distance of a yard (keeper or preview spot) to store |
+| `Config.StorePrompt` | `true` | show a hold-to-store prompt when near a yard with your wagon out |
+| `Config.StoreKey` | `0x760A9C6F` | prompt key (G); any RedM control hash works |
+| `Config.StoreHoldTime` | `1000` | ms to hold the key |
+| `Config.FieldRepair` | `table` | field repair: patch a damaged or wrecked wagon on the road (temporary) - full repair only at a yard |
+| `Config.YardRepair` | `table` | yard repair: back to 100% at any wagon yard (My Wagons -> Repair), priced by damage |
+| `Config.CallKey` | `0xF3830D8E` | J (INPUT_OPEN_JOURNAL, works on foot and on horseback); set false to disable the key |
+| `Config.CallCommand` | `'callwagon'` | chat command to call your wagon (false = off) |
+| `Config.FleeCommand` | `'fleewagon'` | chat command to send your wagon away (false = off) |
+| `Config.CallNearDistance` | `25.0` | if the wagon is closer than this, calling just tells you it's nearby |
+| `Config.CallRoadDistance` | `60.0` | look for a road this close to you to bring the wagon to; otherwise it appears beside you |
+| `Config.UseDistance` | `4.0` | distance to the wagon to open its storage |
+| `Config.InteractDistance` | `3.0` | server-side check: player distance to the shop NPC (plus target distance) |
+| `Config.ActionCooldown` | `1500` | ms between purchase/take-out/store/sell actions per player |
+| `Config.NameMaxLength` | `24` |  |
+| `Config.Preview` | `table` | Orbit camera around the preview wagon, same controls as rsg-stables |
+| `Config.Blip` | `table` | blip sprite verified in rdr3_discoveries textures/blips |
+| `Config.WagonBlip` | `table` | map blip on the wagon you have out (follows it, hidden while you ride it) |
+| `Config.Stores` | `table` | preview     : where the preview wagon is spawned AND where bought/taken-out wagons appear |
+| `Config.Categories` | `table` | order + icon (Font Awesome) used by the NUI category tabs |
+| `Config.Wagons` | `table` | stores (optional) = { 'valentine', ... } limits a wagon to those yards. |
+| `Config.HuntingCart` | `table` | so cart loads sell for the same as carcasses sold by hand. Keep in step if you change rsg-hunting's prices. |
+| `Config.Liveries` | `table` | Labels are the game's internal livery names, tidied. Remove a model or entry to hide it. |
+| `Config.Tints` | `table` | Set a model to 0 (or remove it) to hide the colour picker for it. |
+| `Config.Propsets` | `table` | _ADD_LIGHT_PROP_SET_TO_VEHICLE 0xC0F0417A90402742 / _REMOVE_VEHICLE_LIGHT_PROP_SETS 0xE31C0CB1C3186D40 |
+| `Config.Lanterns` | `table` |  |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `GetActiveWagon` | `src` | `server/server.lua` |
+| `GetPlayerWagons` | `citizenid` | `server/server.lua` |
+
+```lua
+-- example
+local result = exports['rsg-wagons']:GetActiveWagon(src)
+```
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-wagons:server:getOwned` | server | `source, cb` | `server/server.lua` |
+| `rsg-wagons:server:buy` | server | `source, cb, storeKey, model, name, livery, tint` | `server/server.lua` |
+| `rsg-wagons:server:takeOut` | server | `source, cb, storeKey, id` | `server/server.lua` |
+| `rsg-wagons:server:store` | server | `source, cb, storeKey, condition` | `server/server.lua` |
+| `rsg-wagons:server:storeNearest` | server | `source, cb, condition` | `server/server.lua` |
+| `rsg-wagons:server:sell` | server | `source, cb, storeKey, id` | `server/server.lua` |
+| `rsg-wagons:server:rename` | server | `source, cb, id, name` | `server/server.lua` |
+| `rsg-wagons:server:fleeWagon` | server | `source, cb, condition` | `server/server.lua` |
+| `rsg-wagons:server:callWagon` | server | `source, cb` | `server/server.lua` |
+| `rsg-wagons:server:setLook` | server | `source, cb, propset, lantern` | `server/server.lua` |
+| `rsg-wagons:server:fieldRepair` | server | `source, cb` | `server/server.lua` |
+| `rsg-wagons:server:yardRepair` | server | `source, cb, storeKey, id` | `server/server.lua` |
+| `rsg-wagons:server:stowCarcass` | server | `source, cb, netId, quality` | `server/server.lua` |
+| `rsg-wagons:server:sellCargo` | server | `source, cb` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-wagons:server:getOwned', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `RSGCore:Client:OnPlayerUnload` | client | `` | `client/client.lua` |
+| `rsg-wagons:client:restore` | client | `info` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
+| `rsg-wagons:server:registerSpawned` | server | `id, netId` | `server/server.lua` |
+| `rsg-wagons:server:spawnFailed` | server | `id` | `server/server.lua` |
+| `rsg-wagons:server:openStorage` | server | `netId` | `server/server.lua` |
+| `rsg-wagons:server:restore` | server | `` | `server/server.lua` |
+| `rsg-wagons:server:condition` | server | `condition, wrecked` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-wagons:server:registerSpawned', id, netId)
+-- from a server script
+TriggerClientEvent('RSGCore:Client:OnPlayerUnload', source)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

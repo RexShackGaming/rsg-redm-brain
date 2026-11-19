@@ -1,6 +1,6 @@
 # rsg-smelting
 
-Version 3.0.4. rsg-smelting
+Version 3.0.5. rsg-smelting
 
 Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for **RSG-Core** (RedM) with rsg-target and rsg-inventory. No ox_lib required. - Smelter NPCs with blips, spawned/despawned by proximity - Optional world-prop smelters via rsg-target (`p_bucketore03x`, `p_horseprops03x` by default)
 
@@ -29,3 +29,7 @@ Has NUI (`ui_page`).
 ## Public (table) functions
 
 **server/webhook.lua:** `Webhook.PlayerInfo(src)`, `Webhook.Send(event, srcOrInfo, fields, description)`, `Webhook.Inputs(recipe, amount)`, `Webhook.SmelterName(smelter)`, `Webhook.Flush()`
+
+## Database tables
+
+`rsg_smelting_state`

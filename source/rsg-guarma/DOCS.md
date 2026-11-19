@@ -83,3 +83,70 @@ Calling scripts that teleport players to Guarma do not need extra checks for the
 
 ## Support
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-guarma 3.0.1**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `rsg-target`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.TicketItem` | `'boat_ticket'` |  |
+| `Config.TicketCost` | `10` | cash per ticket |
+| `Config.MaxTickets` | `10` | max tickets per purchase |
+| `Config.BuyCooldown` | `5` | seconds |
+| `Config.TravelCooldown` | `30` | seconds |
+| `Config.InteractRadius` | `5.0` | server-side max distance from the port NPC |
+| `Config.DistanceSpawn` | `20.0` | NPC spawn distance |
+| `Config.FadeIn` | `true` | fade NPCs in/out |
+| `Config.TravelTime` | `3000` | ms the screen stays black while travelling |
+| `Config.Blip` | `table` |  |
+| `Config.Ports` | `table` |  |
+| `Config.Guarma` | `table` |  |
+| `Config.AmbientAudio` | `true` |  |
+| `Config.Shipwreck` | `table` |  |
+| `Config.Population` | `table` |  |
+| `Config.Weather` | `table` |  |
+| `Config.Soldiers` | `table` |  |
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-guarma:server:buyTicket` | server | `src, cb, portId, amount` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-guarma:server:buyTicket', function(result)
+    -- use result
+end, portId, amount)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-guarma:client:performTravel` | client | `destId` | `client/client.lua` |
+| `rsg-guarma:server:requestTravel` | server | `portId` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-guarma:server:requestTravel', portId)
+-- from a server script
+TriggerClientEvent('rsg-guarma:client:performTravel', source, destId)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

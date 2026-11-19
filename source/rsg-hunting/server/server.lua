@@ -99,6 +99,7 @@ RegisterNetEvent('rsg-hunting:server:giverewards', function(netId, quality)
 
     -- perk: chance of a second main reward
     local chance = HuntingXP.GetPerks(src).extraSkinChance or 0
+    if Config.Skills and Config.Skills.ExtraYield then chance = chance + SkillPerk(src, 'extra_yield') end -- rsg-skills perk
     local bonusItem = toGive[1]
     if chance > 0 and math.random(100) <= chance and exports['rsg-inventory']:CanAddItem(src, bonusItem, 1) then
         exports['rsg-inventory']:AddItem(src, bonusItem, 1, nil, nil, 'rsg-hunting-skinning-perk')

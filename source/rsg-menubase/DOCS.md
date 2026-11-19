@@ -88,3 +88,25 @@ end)
 | Player stuck frozen | A menu with `disableMovement` was not closed; call `menu.close()` on cancel |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-menubase 1.1.6**. Names, arguments and defaults below are read straight from the code.
+
+### Exports
+
+**Client**
+
+| Export | Arguments | File |
+|---|---|---|
+| `GetMenuData` | `` | `client/main.lua` |
+| `SetScale` | `scale` | `client/scale.lua` |
+
+```lua
+-- example
+local result = exports['rsg-menubase']:GetMenuData()
+```
+
+<!-- END AUTO-REFERENCE -->

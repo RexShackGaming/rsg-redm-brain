@@ -158,3 +158,111 @@ Factories and their lines live in `rsg_factories`. Running productions live in `
 | Collect says inventory full | Free space; unpaid items stay queued |
 
 Support: https://rexshack.tebex.store
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-factory 3.0.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
+
+### Database
+
+Tables: `rsg_factories`, `rsg_factory_queue`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AutoDatabase` | `true` | Set to false and import install.sql manually instead. |
+| `Config.CommandName` | `'createfactory'` | Admin command + permission level needed to create / edit / delete factories |
+| `Config.AdminPermission` | `'admin'` |  |
+| `Config.DefaultPedModel` | `'a_m_m_rancher_01'` | used when an admin leaves the model empty or invalid |
+| `Config.InteractDistance` | `2.5` | target distance (server allows a little extra) |
+| `Config.SpawnDistance` | `60.0` | NPCs spawn/despawn around this distance |
+| `Config.DefaultPrice` | `5000` | price of newly created factories (admins can change it per factory) |
+| `Config.MaxPrice` | `1000000` |  |
+| `Config.MaxFactoriesPerPlayer` | `3` | factories one player can own |
+| `Config.DefaultFuelPerBatch` | `1` | default for new lines |
+| `Config.DefaultWaterPerBatch` | `1` |  |
+| `Config.MaxUtilityPerBatch` | `100` |  |
+| `Config.MaxFuel` | `500` | storage capacity (units) |
+| `Config.MaxWater` | `500` |  |
+| `Config.ImagePath` | `'nui://rsg-inventory/html/images/'` | where item pictures are loaded from |
+| `Config.MaxSupplyAtOnce` | `100` | items an owner can add in one go |
+| `Config.Supplies` | `table` | Remove the returnItem field to give nothing back. It is skipped if the item does not exist. |
+| `Config.Fees` | `{ MaxPerBatch = 500 }` | highest fee per batch an owner can charge other players |
+| `Config.SellbackPercent` | `60` | % of the factory price the owner gets when selling it back |
+| `Config.TransferExpiry` | `60` | seconds the receiver has to type /acceptfactory |
+| `Config.TrustedMax` | `8` | trusted workers per factory |
+| `Config.Upgrades` | `table` | Upgrades the owner buys with cash. Cost of the next level = cost * (current level + 1). |
+| `Config.Breakdown` | `{ enabled = true, chance = 2.0, repairCost = 150, repairItem = nil }` | Repair costs `repairCost` cash, or 1x `repairItem` if you set one (use an item that exists in your items.lua). |
+| `Config.AutoDeliver` | `true` | finished products go straight to the player's inventory when they are online with room |
+| `Config.Alerts` | `table` |  |
+| `Config.Blips` | `table` | Map blips (sprite blip_shop_blacksmith; colours are the rsg-banking modifiers) |
+| `Config.MaxRecipes` | `20` | production lines per factory |
+| `Config.MaxItemsPerRecipe` | `6` | distinct input items and distinct output items per line |
+| `Config.MaxAmount` | `1000` | max amount of one item in a line |
+| `Config.MinTime` | `1` | seconds per batch |
+| `Config.MaxTime` | `3600` |  |
+| `Config.MaxChainLength` | `5` | production lines that can be linked in one chain |
+| `Config.MaxBatches` | `50` | batches a player can start at once |
+| `Config.MaxQueuePerPlayer` | `5` | running productions per player per factory |
+| `Config.AllowPushToTalkWhileOpen` | `true` | While NUI is open, block game controls but allow push-to-talk. |
+| `Config.PushToTalkControls` | `table` |  |
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-factory:server:getFactories` | server | `source, cb` | `server/server.lua` |
+| `rsg-factory:server:getFactory` | server | `source, cb, factoryId` | `server/server.lua` |
+| `rsg-factory:server:getItems` | server | `source, cb` | `server/server.lua` |
+| `rsg-factory:server:saveFactory` | server | `source, cb, factoryId, data` | `server/server.lua` |
+| `rsg-factory:server:deleteFactory` | server | `source, cb, factoryId` | `server/server.lua` |
+| `rsg-factory:server:findPlayers` | server | `source, cb, factoryId, query, mode` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-factory:server:getFactories', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-factory:client:openAdmin` | client | `id` | `client/client.lua` |
+| `rsg-factory:client:sync` | client | `list` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
+
+```lua
+-- from a server script
+TriggerClientEvent('rsg-factory:client:openAdmin', source, id)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/acceptfactory` | Accept a factory transfer offer | `server/server.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

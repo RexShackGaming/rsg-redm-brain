@@ -1,6 +1,9 @@
 -- RSG MDT Configuration
 Config = Config or {}
 
+-- build the database tables automatically on start (set false and import sql/mdt.sql for a manual install)
+Config.AutoDatabase = true
+
 -- ============================================
 -- Law Enforcement Jobs
 -- Jobs that can access the MDT system
@@ -121,4 +124,11 @@ Config.Jail = {
 Config.AllowPushToTalkWhileOpen = true
 Config.PushToTalkControls = {
     0x4BC9DABB, -- INPUT_PUSH_TO_TALK
+}
+
+-- rsg-economy integration (optional). Needs the rsg-economy resource; does nothing when it is not started.
+-- A paid fine is deposited into the treasury of the town nearest to the player (rsg-economy GetRegionAt).
+Config.Economy = {
+    Enabled = true,
+    FineRegion = nil, -- set a region id (e.g. 'valentine') to always use that town instead of the nearest one
 }

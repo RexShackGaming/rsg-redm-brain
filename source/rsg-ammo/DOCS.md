@@ -76,3 +76,90 @@ The server picks item, type and amount; the client never sends an amount to add.
 | Ammo lost after restart | Start `oxmysql`, `rsg-core`, `rsg-inventory` before rsg-ammo |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-ammo 3.0.2**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `oxmysql`
+
+### Database
+
+Tables: `player_ammo`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `installation/rsg-ammo.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AutoDatabase` | `true` | build the database tables automatically on start (set false and import the SQL file for a manual install) |
+| `Config.SaveAmmoInterval` | `10000` | how often (ms) changed ammo counts are saved to the database |
+| `Config.OpenAmmoBoxTime` | `2000` | progress bar time (ms) when opening an ammo box |
+| `Config.BoxAmmo` | `table` | ammo box items (progress bar) -> ammo type |
+| `Config.ArrowAmmo` | `table` | arrow items (used instantly) -> ammo type |
+| `Config.AmmoTypes` | `table` | maxAmmo = carry limit, refill = amount given per item |
+
+### Exports
+
+**Client**
+
+| Export | Arguments | File |
+|---|---|---|
+| `GetAmmoTypes` | `` | `client/client.lua` |
+
+```lua
+-- example
+local result = exports['rsg-ammo']:GetAmmoTypes()
+```
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-ammo:client:CanAddAmmo` | client | `cb, ammoType, amount` | `client/client.lua` |
+| `rsg-ammo:server:initializeDb` | server | `source, cb` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-ammo:client:CanAddAmmo', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-ammo:client:AddAmmo` | client | `ammoType, amount` | `client/client.lua` |
+| `rsg-ammo:client:openAmmoBox` | client | `ammoBoxItem` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerUnload` | client | `` | `client/client.lua` |
+| `rsg-ammo:server:openAmmoBox` | server | `` | `server/server.lua` |
+| `rsg-ammo:server:cancelOpen` | server | `` | `server/server.lua` |
+| `rsg-ammo:server:updateDb` | server | `update` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-ammo:server:openAmmoBox')
+-- from a server script
+TriggerClientEvent('rsg-ammo:client:AddAmmo', source, ammoType, amount)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

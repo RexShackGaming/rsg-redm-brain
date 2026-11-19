@@ -96,3 +96,95 @@ The server owns purchases, ownership, launching, storing and transfers. It check
 | No tables | Set `AutoInstallDB = true` or import `install.sql` |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-boats 3.1.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-target`, `oxmysql`, `rsg-inventory`
+
+### Database
+
+Tables: `rsg_boats_models`, `rsg_boats_owned`, `rsg_boats_yards`, `rsg_boats_settings`.
+
+For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Debug` | `false` |  |
+| `Config.Yard` | `table` | Boat yard |
+| `Config.FallbackSpawnOffset` | `vector3(0.0, 8.0, -1.0)` | Fallback launch point if no admin has set one yet (offset in front of the NPC) |
+| `Config.MaxBoats` | `0` | max boats one character can own (0 = unlimited) |
+| `Config.LockToYard` | `true` | boats can only be launched/sold at the yard they are stored at |
+| `Config.MoneyType` | `'cash'` |  |
+| `Config.SellBackRate` | `0.5` | 50% refund when selling a boat back |
+| `Config.ActionRadius` | `15.0` | server: max distance from the yard to buy / launch / sell |
+| `Config.MaxPointDistance` | `300.0` | launch point / dock must be within this distance of their yard |
+| `Config.StoreRadius` | `60.0` | shop 'Store Boat' button: boat must be this close to the yard |
+| `Config.Dock` | `table` | Dock / store zone (defaults to the yard NPC position; admins set position + radius per yard in /boatadmin) |
+| `Config.Cooldown` | `2000` | ms between shop actions per player |
+| `Config.WarpIntoBoat` | `true` |  |
+| `Config.Transfer` | `table` | Transfer ownership to another player (My Boats tab) |
+| `Config.Storage` | `table` | Boat storage (rsg-inventory stash per owned boat; slots/weight set per model in /boatadmin) |
+| `Config.AdminCommand` | `'boatadmin'` | Admin |
+| `Config.AdminPermission` | `'admin'` |  |
+| `Config.Placer` | `table` | Ghost placer |
+| `Config.Keys` | `table` | Controls: femga Controls/README.md |
+| `Config.AutoInstallDB` | `true` | create/update tables automatically on resource start (set false to use install.sql manually) |
+| `Config.DefaultBoats` | `table` | boats added on first install only (rowboat: femga/rdr3_discoveries vehicles_list 0x9FD6BA58) |
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-boats:client:transferOffer` | client | `cb, fromName, label, yardName` | `client/client.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-boats:client:transferOffer', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-boats:client:yards` | client | `` | `client/client.lua` |
+| `rsg-inventory:client:open` | client | `_, other` | `client/client.lua` |
+| `rsg-boats:client:openAdmin` | client | `` | `client/client.lua` |
+| `rsg-boats:server:launched` | server | `netId` | `server/server.lua` |
+| `rsg-boats:server:launchFailed` | server | `` | `server/server.lua` |
+| `rsg-boats:server:inBoatInventory` | server | `netId` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-boats:server:launched', netId)
+-- from a server script
+TriggerClientEvent('rsg-boats:client:yards', source)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/boatwebhooktest` |  | `server/webhooks.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

@@ -80,6 +80,8 @@
     "level_up": "Nível de agricultura subiu! Novo título: %s",
     "level_info": "Nível de agricultura %s (%s) - %s XP",
     "level_info_next": "Nível de agricultura %s (%s) - %s / %s XP",
+    "level_info_skills": "Nível de agricultura %s - %s XP",
+    "level_info_skills_next": "Nível de agricultura %s - %s / %s XP",
     "harvested_bonus": "Colheita feita - rendimento extra!",
     "ui_btn_treat": "Tratar",
     "ui_pests": "Pragas",

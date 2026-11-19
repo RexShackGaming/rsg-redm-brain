@@ -144,3 +144,7 @@ local ammoTypes = exports['rsg-ammo']:GetAmmoTypes()
 - License: GPL‑3.0
 
 ☕ Support the Project : https://rexshack.tebex.store/
+
+## Database
+
+Tables (`player_ammo`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `installation/rsg-ammo.sql` once.

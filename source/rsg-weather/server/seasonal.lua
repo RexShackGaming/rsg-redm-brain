@@ -8,7 +8,9 @@ local mode = 'auto'
 local modeLoaded = false
 
 MySQL.ready(function()
-    MySQL.query.await('CREATE TABLE IF NOT EXISTS rsg_weather_state (`key` VARCHAR(50) NOT NULL PRIMARY KEY, value VARCHAR(100) NOT NULL)')
+    if Config.AutoDatabase ~= false then -- set false and import installation/rsg-weather.sql for a manual install
+        MySQL.query.await('CREATE TABLE IF NOT EXISTS rsg_weather_state (`key` VARCHAR(50) NOT NULL PRIMARY KEY, value VARCHAR(100) NOT NULL)')
+    end
     local saved = MySQL.scalar.await('SELECT value FROM rsg_weather_state WHERE `key` = ?', { 'season_mode' })
     if not saved then
         -- one-time migration from the old KVP value (only read if a db folder already exists)

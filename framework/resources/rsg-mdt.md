@@ -1,6 +1,6 @@
 # rsg-mdt
 
-Version 3.0.0. Mobile Data Terminal for RSG Framework
+Version 3.1.1. Mobile Data Terminal for RSG Framework
 
 Mobile Data Terminal for RSG Framework (RedM) - **Criminal Records** — Search, create, and manage citizen criminal records - **Warrants** — Issue and manage active/served/expired warrants
 

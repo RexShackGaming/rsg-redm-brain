@@ -1,5 +1,5 @@
 -- RSG MDT Database Schema
--- Import this file into your database before using the MDT
+-- Created automatically on start (Config.AutoDatabase = true). Import this file manually only if you set it to false
 
 -- Criminal Records Table
 CREATE TABLE IF NOT EXISTS `mdt_records` (

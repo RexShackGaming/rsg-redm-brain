@@ -198,3 +198,8 @@ rsg-looting/
 ## Support
 
 If you enjoy this script, you can support development here: https://buymeacoffee.com/rexshack
+
+## rsg-reputation integration
+
+Optional. With `rsg-reputation` started, robbing another player applies the `robbery` action to the robber (honor loss). Set `Config.Reputation.Enabled = false` to turn it off.
+

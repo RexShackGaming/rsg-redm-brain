@@ -15,7 +15,9 @@ end
 local dbReady = false
 
 CreateThread(function()
-    local ok, err = pcall(function()
+    local ok, err = true, nil
+    if Config.AutoDatabase ~= false then
+    ok, err = pcall(function()
         MySQL.query.await([[
             CREATE TABLE IF NOT EXISTS `player_ammo` (
                 `id` INT(11) NOT NULL AUTO_INCREMENT,
@@ -46,6 +48,7 @@ CreateThread(function()
             print(('^2[rsg-ammo] added %d ammo column(s) to player_ammo^7'):format(added))
         end
     end)
+    end
 
     if not ok then
         print(('^1[rsg-ammo] database setup failed, import installation/rsg-ammo.sql manually: %s^7'):format(err))

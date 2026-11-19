@@ -202,3 +202,187 @@ Support the Project : https://rexshack.tebex.store/
 
 ## Dependencies
 `rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-gizmo` (shop sign placement), `oxmysql`. Ensure `rsg-gizmo` before `rsg-stores`.
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-stores 3.1.2**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-gizmo`, `oxmysql`
+
+### Database
+
+Tables: `rsg_shops_npcs`, `rsg_shops_items`, `rsg_shops_blips`, `rsg_shops_ledger`, `rsg_shops_staff`, `rsg_shops_presets`.
+
+For a manual install set `Config.AutoDatabase = false` and import `install/example.sql` / `install/rsg-stores.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AdminPermission` | `'admin'` | Required permission to use the Blip/NPC menu |
+| `Config.AutoInstallDatabase` | `true` | Set to false if you prefer to import rsg-stores.sql by hand. |
+| `Config.DefaultScenario` | `'WORLD_HUMAN_STAND_IMPATIENT'` | NPC scenario |
+| `Config.DistanceSpawn` | `20.0` | Distance before spawning/despawning the NPC (GTA Units) |
+| `Config.FadeIn` | `true` | Enable fade in/out effect |
+| `Config.SellPricePercentage` | `0.80` | Player gets 80% (20% shop fee) |
+| `Config.SellAddsStock` | `true` | Items sold to a shop are added back to its stock (limited-stock items only) |
+| `Config.MaxShopStock` | `100` | Most of any one item a shop will hold from player sales (0 = no cap) |
+| `Config.TargetDistance` | `2.5` | rsg-target range; server allows +5.0 for latency |
+| `Config.AllowPushToTalkWhileOpen` | `true` | While NUI is open, block game controls but allow push-to-talk. |
+| `Config.PushToTalkControls` | `table` |  |
+| `Config.OwnedStores` | `table` | The owner stocks the store from their own inventory, sets prices and collects the till. |
+| `Config.Enabled` | `true` |  |
+| `Config.ZoneRadius` | `1.2` |  |
+| `Config.BuyBackPercentage` | `0.80` |  |
+| `Config.MaxListings` | `50` |  |
+| `Config.MaxStock` | `500` |  |
+| `Config.MaxPrice` | `10000` |  |
+| `Config.NotifyOwner` | `true` |  |
+| `Config.MinQuality` | `75` |  |
+| `Config.BlacklistItems` | `{ 'dollar', 'cent', 'blood_dollar', 'blood_cent' }` | Items owners may not stock (money items, unique/metadata items are always refused) |
+| `Config.Staff` | `table` | remove listings - also needs takestock), wholesale, till (withdraw), ledger, settings, upkeep. |
+| `Config.MaxStaff` | `5` |  |
+| `Config.MaxJobsPerPlayer` | `2` |  |
+| `Config.HireDistance` | `5.0` |  |
+| `Config.DailyWithdrawLimit` | `0` |  |
+| `Config.Ranks` | `table` | The owner can also pick "Custom" and tick permissions one by one. |
+| `Config.ShopSign` | `table` | Customers and the owner target the sign to trade / manage. |
+| `Config.Item` | `'shopsign'` |  |
+| `Config.Model` | `'p_sandwichboard02x'` |  |
+| `Config.MaxPerPlayer` | `1` |  |
+| `Config.MinSpacing` | `8.0` |  |
+| `Config.PlaceDistance` | `1.5` |  |
+| `Config.DefaultType` | `'buy'` |  |
+| `Config.ReturnOnPackUp` | `true` |  |
+| `Config.AllowMove` | `true` | Name, type, stock, prices, till and ledger are kept; upkeep is paused while picked up. |
+| `Config.Upkeep` | `{ Enabled = true, Amount = 5.0, IntervalHours = 24, EvictAfterMissed =` | (stock and till forfeited, sign not returned). |
+| `Config.Blip` | `{ Enabled = true, Sprite = 1475879922, Color = 'BLIP_MODIFIER_MP_COLOR` |  |
+| `Config.ItemDefinition` | `table` | Auto-registered in rsg-core if your items list doesn't have it yet |
+| `Config.Speech` | `table` | (PLAY_PED_AMBIENT_SPEECH_NATIVE). Set a line to false to skip it. |
+| `Config.Greet` | `'WELCOME'` |  |
+| `Config.Thanks` | `'THANKS'` |  |
+| `Config.Goodbye` | `'GOODBYE_POS'` |  |
+| `Config.Params` | `'SPEECH_PARAMS_FORCE_NORMAL_CLEAR'` |  |
+| `Config.OpeningHours` | `table` | Opening hours (in-game clock, 0-23). Close < Open wraps past midnight (e.g. 18 -> 2). |
+| `Config.Open` | `7` |  |
+| `Config.Close` | `21` |  |
+| `Config.Shops` | `table` |  |
+| `Config.Discounts` | `table` | The best matching discount applies; worked out on the server. |
+| `Config.MaxDiscount` | `0.50` |  |
+| `Config.Jobs` | `table` |  |
+| `Config.Gangs` | `table` |  |
+| `Config.Wholesale` | `table` | Wholesale: owners of player stores buy stock straight onto the shelf from a supplier. |
+| `Config.PayFrom` | `'either'` |  |
+| `Config.Markup` | `1.5` |  |
+| `Config.Items` | `table` |  |
+| `Config.Ledger` | `table` | Sales ledger shown to owners in the management panel. |
+| `Config.Keep` | `100` |  |
+| `Config.Show` | `50` |  |
+| `Config.BlipTypes` | `table` | Labels are locale keys (locales/*.json), translated when the admin menu opens. |
+| `Config.NpcModels` | `table` |  |
+| `Config.BlipColors` | `table` |  |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `SendWebhook` | `channel, title, description, src, fields` | `server/sv_webhooks.lua` |
+
+```lua
+-- example
+local result = exports['rsg-stores']:SendWebhook(channel, title, description, src, fields)
+```
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-stores:server:getPresets` | server | `source` | `server/server.lua` |
+| `rsg-stores:server:savePreset` | server | `source, id, data` | `server/server.lua` |
+| `rsg-stores:server:deletePreset` | server | `source, id` | `server/server.lua` |
+| `rsg-stores:server:getOnlinePlayers` | server | `source` | `server/server.lua` |
+| `rsg-blipmenu:server:hasAdminPerm` | server | `source` | `server/server.lua` |
+| `rsg-blipmenu:server:saveNPC` | server | `source, data` | `server/server.lua` |
+| `rsg-stores:server:ownerGetState` | server | `source, npcId` | `server/server.lua` |
+| `rsg-stores:server:ownerAddStock` | server | `source, npcId, itemName, qty, price` | `server/server.lua` |
+| `rsg-stores:server:ownerTakeStock` | server | `source, npcId, itemName, qty` | `server/server.lua` |
+| `rsg-stores:server:ownerSetPrice` | server | `source, npcId, itemName, price` | `server/server.lua` |
+| `rsg-stores:server:ownerRemoveListing` | server | `source, npcId, itemName` | `server/server.lua` |
+| `rsg-stores:server:ownerWithdraw` | server | `source, npcId, amount` | `server/server.lua` |
+| `rsg-stores:server:ownerSetSettings` | server | `source, npcId, label, sType` | `server/server.lua` |
+| `rsg-stores:server:staffNearby` | server | `source, npcId` | `server/server.lua` |
+| `rsg-stores:server:staffHire` | server | `source, npcId, targetId, rank, perms` | `server/server.lua` |
+| `rsg-stores:server:staffUpdate` | server | `source, npcId, cid, rank, perms` | `server/server.lua` |
+| `rsg-stores:server:staffFire` | server | `source, npcId, cid` | `server/server.lua` |
+| `rsg-stores:server:staffQuit` | server | `source, npcId` | `server/server.lua` |
+| `rsg-stores:server:placeSign` | server | `source, data` | `server/server.lua` |
+| `rsg-stores:server:ownerPickUp` | server | `source, npcId` | `server/server.lua` |
+| `rsg-stores:server:ownerPackUp` | server | `source, npcId` | `server/server.lua` |
+| `rsg-stores:server:ownerWholesale` | server | `source, npcId, itemName, qty, price` | `server/server.lua` |
+| `rsg-stores:server:ownerPayUpkeep` | server | `source, npcId` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-stores:server:getPresets', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-stores:client:transactionResult` | client | `success, message, newMoney, updatedShopItems` | `client/client.lua` |
+| `rsg-stores:client:purchaseSuccess` | client | `message, newMoney, updatedShopItems` | `client/client.lua` |
+| `rsg-stores:client:purchaseFailed` | client | `message, newMoney` | `client/client.lua` |
+| `rsg-stores:client:shopStock` | client | `shopItems` | `client/client.lua` |
+| `RSGCore:Player:SetPlayerData` | client | `` | `client/client.lua` |
+| `rsg-stores:client:staffStores` | client | `ids` | `client/client.lua` |
+| `rsg-stores:client:startSignPlacement` | client | `move` | `client/client.lua` |
+| `rsg-blipmenu:client:refreshNPCs` | client | `npcs` | `client/client.lua` |
+| `rsg-stores:client:updateShop` | client | `npcId, shop, owner, upkeepOwed` | `client/client.lua` |
+| `rsg-blipmenu:client:refreshBlips` | client | `blips` | `client/client.lua` |
+| `rsg-stores:server:sellItem` | server | `npcId, itemName, quantity` | `server/server.lua` |
+| `rsg-stores:server:purchaseCart` | server | `npcId, cartItems` | `server/server.lua` |
+| `rsg-stores:server:requestShopStock` | server | `npcId` | `server/server.lua` |
+| `rsg-blipmenu:server:saveBlip` | server | `data` | `server/server.lua` |
+| `rsg-blipmenu:server:updateBlip` | server | `blipId, data` | `server/server.lua` |
+| `rsg-blipmenu:server:deleteBlip` | server | `blipId` | `server/server.lua` |
+| `rsg-blipmenu:server:requestBlips` | server | `` | `server/server.lua` |
+| `rsg-blipmenu:server:updateNPC` | server | `npcId, data` | `server/server.lua` |
+| `rsg-blipmenu:server:deleteNPC` | server | `npcId` | `server/server.lua` |
+| `rsg-blipmenu:server:requestNPCs` | server | `` | `server/server.lua` |
+| `rsg-blipmenu:server:evictOwner` | server | `npcId, force` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-stores:server:sellItem', npcId, itemName, quantity)
+-- from a server script
+TriggerClientEvent('rsg-stores:client:transactionResult', source, success, message, newMoney, updatedShopItems)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/createshop` |  | `client/client.lua` |
+| `/storeswebhooktest` |  | `server/sv_webhooks.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

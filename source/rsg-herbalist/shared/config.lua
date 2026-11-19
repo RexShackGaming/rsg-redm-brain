@@ -258,3 +258,11 @@ Config.Tonics = {
         output = { item = 'tonic_energy', amount = 1 },
     },
 }
+
+-- rsg-skills integration (optional). Needs the rsg-skills resource; does nothing when it is not started.
+Config.Skills = {
+    Enabled = true,
+    Skill   = 'herbalism', -- skill key in rsg-skills
+    GatherXP = 5,        -- XP per herb gathered (rsg-skills applies its own multipliers and cap)
+    ExtraYield = true,   -- the skill's extra_yield perk (%) is the chance of one extra herb
+}

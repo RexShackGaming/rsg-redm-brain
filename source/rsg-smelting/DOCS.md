@@ -38,3 +38,86 @@ Add an entry to `Config.Recipes` (`output`, `label` locale key, `time` ms per ba
 - `server/webhook.lua` – Discord queue
 - `client/main.lua` – peds, targets, NUI, timer
 - `html/` – NUI (RDR2 leather & gold theme)
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-smelting 3.0.4**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `oxmysql`, `rsg-inventory`, `rsg-target`
+
+### Database
+
+Tables: `rsg_smelting_state`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `installation/rsg-smelting.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AutoDatabase` | `true` | build the database tables automatically on start (set false and import the SQL file for a manual install) |
+| `Config.Smelters` | `table` | Smelter NPCs |
+| `Config.SpawnDistance` | `50.0` | NPC spawns when player is within this range |
+| `Config.TargetDistance` | `2.5` | rsg-target interaction range |
+| `Config.SmeltProps` | `table` | Props that can be targeted to open the smelter (rsg-target addModel) |
+| `Config.MaxUseDistance` | `5.0` | server-side anti-exploit distance check |
+| `Config.MaxBatch` | `20` | max bars per smelt |
+| `Config.ImagePath` | `'nui://rsg-inventory/html/images/'` | Inventory image folder used for item icons in the UI |
+| `Config.Recipes` | `table` | label is a locale key (falls back to the text itself if no key exists) |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `SendWebhook` | `` | `server/webhook.lua` |
+
+```lua
+-- example
+local result = exports['rsg-smelting']:SendWebhook()
+```
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-smelting:server:getOreCounts` | server | `src, cb` | `server/main.lua` |
+| `rsg-smelting:server:startSmelt` | server | `src, cb, ...` | `server/main.lua` |
+| `rsg-smelting:server:finishSmelt` | server | `src, cb, cancelled` | `server/main.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-smelting:server:getOreCounts', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `RSGCore:Server:OnPlayerLoaded` | server | `` | `server/main.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('RSGCore:Server:OnPlayerLoaded')
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

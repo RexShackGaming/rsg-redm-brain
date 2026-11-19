@@ -1,6 +1,6 @@
 # rsg-gangmenu
 
-Version 3.0.1. rsg-gangmenu
+Version 3.0.2. rsg-gangmenu
 
 A gang boss management menu for **RedM** servers running the **RSG Framework**. Gang bosses can manage members, recruit nearby players, use a shared gang stash and manage a shared gang bank account. All actions are validated on the server. - **Member management** — view online/offline members, promote/demote, fire with confirmation - **Recruitment** — nearby players (configurable range) must accep
 

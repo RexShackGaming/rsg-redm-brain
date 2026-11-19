@@ -80,6 +80,8 @@
     "level_up": "Ανέβηκε το επίπεδο καλλιέργειας! Νέος τίτλος: %s",
     "level_info": "Επίπεδο καλλιέργειας %s (%s) - %s XP",
     "level_info_next": "Επίπεδο καλλιέργειας %s (%s) - %s / %s XP",
+    "level_info_skills": "Επίπεδο καλλιέργειας %s - %s XP",
+    "level_info_skills_next": "Επίπεδο καλλιέργειας %s - %s / %s XP",
     "harvested_bonus": "Η σοδειά μαζεύτηκε - πλούσια απόδοση!",
     "ui_btn_treat": "Θεραπεία",
     "ui_pests": "Παράσιτα",

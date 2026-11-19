@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-voice - proximity voice for RSG Framework'
-version '3.0.4'
+version '3.0.5'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',

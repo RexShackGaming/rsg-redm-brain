@@ -106,3 +106,86 @@ Built automatically when `DatabaseConfig.AutoInstall = true` (default). Set it t
 ---
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-trapdoors 3.0.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `oxmysql`, `rsg-target`
+
+### Database
+
+Tables: `rsg_trapdoors`, `rsg_trapdoors_schema`.
+
+For a manual install set `Config.AutoDatabase = false` and import `rsg_trapdoors.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.MoveDuration` | `2000` | ms the open/close animation takes |
+| `Config.AutoCloseTime` | `30000` | ms before an open trapdoor closes itself (0 = never) |
+| `Config.PlayerCooldown` | `1000` | ms between toggle requests per player |
+| `Config.StreamDistance` | `100.0` | distance at which clients look for / sync the prop |
+| `Config.AllowPlayerCodes` | `true` | false = only admins can manage passcodes (stops players locking public doors). Per door: allowCode = false |
+| `Config.MaxCodeAttempts` | `3` | wrong guesses before a player is locked out of that door |
+| `Config.CodeLockoutTime` | `60000` | ms lockout after too many wrong guesses |
+| `Config.AdminResetCommand` | `'resettrapdoorcode'` | /resettrapdoorcode <door id> (group.admin) |
+| `Config.Trapdoors` | `table` | rotations are pitch/roll/yaw in degrees (rotation order 2) |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `Log` | `` | `server/logs.lua` |
+
+```lua
+-- example
+local result = exports['rsg-trapdoors']:Log()
+```
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-trapdoors:server:open` | server | `src, cb, id, code` | `server/server.lua` |
+| `rsg-trapdoors:server:setCode` | server | `src, cb, id, newCode` | `server/server.lua` |
+| `rsg-trapdoors:server:changeCode` | server | `src, cb, id, current, newCode` | `server/server.lua` |
+| `rsg-trapdoors:server:removeCode` | server | `src, cb, id, current` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-trapdoors:server:open', function(result)
+    -- use result
+end, id, code)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-trapdoors:server:close` | server | `id` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-trapdoors:server:close', id)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

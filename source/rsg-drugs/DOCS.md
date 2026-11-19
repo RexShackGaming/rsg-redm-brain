@@ -130,3 +130,147 @@ All XP, payouts and prices come from config on the server; clients can't send am
 | Rehab bonus not paid | Job must be in `AllowedJobTypes`/`AllowedJobs`; NPC rewards have a cooldown |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-drugs 3.1.1**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
+
+### Database
+
+Tables: `rsg_drugs_labs`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `installation/install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AutoDatabase` | `true` | build the database tables automatically on start (set false and import the SQL file for a manual install) |
+| `Config.NPC` | `table` |  |
+| `Config.Items` | `table` |  |
+| `Config.SeedChance` | `2.0` | chance (%) per fresh weed dried that a seed is found; collect them from the Supplies tab |
+| `Config.Packing` | `table` | a packer adds their skill rate in work points each shift (e.g. Skilled = 1.5 per shift) |
+| `Config.Food` | `{ bread = 1, cooked_meat = 2 }` | food and drink employees can be given (item = how many 'meals' it gives) |
+| `Config.Water` | `{ water = 1 }` |  |
+| `Config.TickSeconds` | `60` | one work shift tick |
+| `Config.MaxEmployees` | `6` |  |
+| `Config.MaxStorage` | `5000` | max of each stock type held at the lab (must be >= a brick's uses) |
+| `Config.HungerDrain` | `8` | per tick |
+| `Config.ThirstDrain` | `12` | per tick |
+| `Config.MealRestore` | `50` | hunger restored per food unit |
+| `Config.DrinkRestore` | `50` | thirst restored per water unit |
+| `Config.AutoFeedBelow` | `50` | staff eat/drink from the pantry under this value |
+| `Config.UnpaidStrikeTicks` | `3` | missed paydays before going on strike |
+| `Config.Skill` | `table` | skill 1-5: production per tick and wage per tick |
+| `Config.Roles` | `table` |  |
+| `Config.HireFee` | `5.0` | one-off signing fee |
+| `Config.CandidateCount` | `6` |  |
+| `Config.CandidateRefreshMinutes` | `30` |  |
+| `Config.FirstNames` | `{ 'Amos','Bill','Cyrus','Dutch','Eli','Floyd','Gus','Hattie','Ida','Je` |  |
+| `Config.LastNames` | `{ 'Barlow','Cobb','Dawes','Fenwick','Grady','Holt','Kincaid','Mercer',` |  |
+| `Config.XP` | `table` |  |
+| `Config.Enabled` | `true` |  |
+| `Config.RepName` | `'drugs'` |  |
+| `Config.Notify` | `true` |  |
+| `Config.BrickMinLevel` | `5` |  |
+| `Config.ResetOnJail` | `true` |  |
+| `Config.Produce` | `table` | If the owner is offline it is banked and paid the next time they open the lab. |
+| `Config.Sell` | `table` | XP per completed sale |
+| `Config.Levels` | `table` | level thresholds (total XP needed) |
+| `Config.Addiction` | `{}` |  |
+| `Config.Addiction.TickInterval` | `60` | seconds between server addiction ticks (craving growth / natural decay) |
+| `Config.Addiction.UseCooldown` | `5` | seconds, per player anti-spam on reported uses |
+| `Config.Addiction.Substances` | `table` |  |
+| `Config.Addiction.ShakeName` | `'DRUNK_SHAKE'` |  |
+| `Config.Addiction.Stages` | `table` |  |
+| `Config.Addiction.EffectInterval` | `15000` | ms between stumble/stress rolls on the client |
+| `Config.Addiction.StumbleOnlyMoving` | `true` |  |
+| `Config.Addiction.Rehab` | `table` |  |
+| `Config.Addiction.NPC` | `table` |  |
+| `Config.Addiction.Selling` | `table` |  |
+| `Config.Export` | `table` |  |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `AddUse` | `` | `server/addiction.lua` |
+| `GetAddiction` | `src` | `server/addiction.lua` |
+| `IsInRehab` | `src` | `server/addiction.lua` |
+| `ReturnRehabItems` | `src` | `server/addiction.lua` |
+| `DiscordLog` | `category, title, src, fields, description` | `server/discord.lua` |
+| `AddXP` | `src, amount, reason` | `server/xp.lua` |
+| `ResetXP` | `src` | `server/xp.lua` |
+| `GetXP` | `src` | `server/xp.lua` |
+
+**Client**
+
+| Export | Arguments | File |
+|---|---|---|
+| `NpcSoldWeedBag` | `` | `client/addiction_npc.lua` |
+
+```lua
+-- example
+local result = exports['rsg-drugs']:AddUse()
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-drugs:client:useSubstance` | client | `key` | `client/addiction.lua` |
+| `rsg-consume:client:consume` | client | `itemName` | `client/addiction.lua` |
+| `rsg-drugs:client:teleport` | client | `pos` | `client/addiction.lua` |
+| `rsg-drugs:client:disarm` | client | `` | `client/addiction.lua` |
+| `rsg-drugs:client:reequip` | client | `list` | `client/addiction.lua` |
+| `rsg-drugs:client:openUI` | client | `` | `client/addiction.lua` |
+| `RSGCore:Client:OnPlayerUnload` | client | `` | `client/addiction.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/addiction_npc.lua` |
+| `RSGCore:Client:OnJobUpdate` | client | `job` | `client/addiction_npc.lua` |
+| `RSGCore:Client:SetDuty` | client | `onDuty` | `client/addiction_npc.lua` |
+| `RSGCore:Player:SetPlayerData` | client | `data` | `client/addiction_npc.lua` |
+| `rsg-drugs:client:sellAlert` | client | `coords` | `client/addiction_npc.lua` |
+| `rsg-drugs:client:refresh` | client | `data` | `client/client.lua` |
+| `rsg-drugs:server:consumed` | server | `itemName` | `server/addiction.lua` |
+| `rsg-drugs:server:npcRehab` | server | `netId` | `server/addiction.lua` |
+| `rsg-drugs:server:checkIn` | server | `` | `server/addiction.lua` |
+| `rsg-drugs:server:closed` | server | `` | `server/server.lua` |
+| `rsg-prison:server:startSentence` | server | `` | `server/xp.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-drugs:server:consumed', itemName)
+-- from a server script
+TriggerClientEvent('rsg-drugs:client:useSubstance', source, key)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/addiction` | locale('cmd_addiction') | `server/addiction.lua` |
+| `/rehab` | locale('cmd_rehab') | `server/addiction.lua` |
+| `/clearaddiction` | locale('cmd_clear') | `server/addiction.lua` |
+| `/setaddiction` | locale('cmd_set') | `server/addiction.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

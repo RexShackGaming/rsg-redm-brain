@@ -117,3 +117,144 @@ Admin mutes are enforced on the server, so the client can't undo them. Party inv
 | Party invite fails | Target must be within `InviteRange` |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-voice 3.0.4**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `oxmysql`
+
+### Database
+
+Tables: `rsg_voice_mutes`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AutoDatabase` | `true` | build the database tables automatically on start (set false and import the SQL file for a manual install) |
+| `Config.Ranges` | `table` | Voice ranges (metres). The entry with default = true is used on spawn. |
+| `Config.CycleKey` | `0xA5BDCD3C` | RIGHTBRACKET |
+| `Config.CycleCommand` | `'voice'` |  |
+| `Config.SaveRange` | `true` | remember each player's last range between sessions (client KVP) |
+| `Config.ShowRangeRing` | `true` | Ground ring shown when changing range |
+| `Config.RingDuration` | `1500` |  |
+| `Config.RingColour` | `{ r = 255, g = 255, b = 255, a = 90 }` |  |
+| `Config.ShowHud` | `true` | HUD |
+| `Config.HudEditCommand` | `'voicehud'` | drag the HUD box to move it |
+| `Config.HudToggleCommand` | `'togglevoicehud'` | players can hide/show their own HUD (saved per client) |
+| `Config.MuteWhenDead` | `true` | Auto-mute (rsg-core metadata) |
+| `Config.MuteWhenCuffed` | `false` |  |
+| `Config.AdminMuteCommand` | `'voicemute'` | /voiceunmute [id] |
+| `Config.AdminUnmuteCommand` | `'voiceunmute'` |  |
+| `Config.AdminPermission` | `'admin'` |  |
+| `Config.MuteExpiryCheck` | `30` | seconds between checks for expired mutes |
+| `Config.Muffle` | `table` | Muffled voices: players in a different interior (inside vs outside, another building) sound quieter |
+| `Config.Enabled` | `true` |  |
+| `Config.Volume` | `0.35` |  |
+| `Config.Interval` | `500` |  |
+| `Config.TalkIcon` | `table` | Texture: overhead / overhead_speaker (rdr3_discoveries textures/overhead) |
+| `Config.Distance` | `15.0` |  |
+| `Config.ShowSelf` | `false` |  |
+| `Config.Dict` | `'overhead'` |  |
+| `Config.Texture` | `'overhead_speaker'` |  |
+| `Config.Size` | `0.022` |  |
+| `Config.ZOffset` | `1.05` |  |
+| `Config.Colour` | `{ r = 255, g = 255, b = 255, a = 220 }` |  |
+| `Config.PartyColour` | `{ r = 217, g = 164, b = 65,  a = 230 }` |  |
+| `Config.Party` | `table` | Party members within TalkRange hear each other while holding the party talk key. |
+| `Config.Command` | `'party'` |  |
+| `Config.TalkKey` | `0x430593AA` |  |
+| `Config.TalkRange` | `100.0` |  |
+| `Config.InviteRange` | `10.0` |  |
+| `Config.MaxMembers` | `8` |  |
+| `Config.InviteTimeout` | `30` |  |
+| `Config.Blips` | `table` | Map blips for your party members |
+| `Config.Waypoint` | `table` | Share your map waypoint with the party (/partywaypoint, run again with no waypoint to clear) |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `SetPlayerMuted` | `src, state, reason` | `server/server.lua` |
+| `IsPlayerMuted` | `src` | `server/server.lua` |
+| `GetPartyMembers` | `` | `server/server.lua` |
+| `IsInParty` | `src` | `server/server.lua` |
+
+**Client**
+
+| Export | Arguments | File |
+|---|---|---|
+| `GetVoiceRange` | `` | `client/client.lua` |
+| `SetVoiceRangeIndex` | `i` | `client/client.lua` |
+| `IsMuted` | `` | `client/client.lua` |
+| `IsPlayerTalking` | `sid` | `client/client.lua` |
+| `SetMuteOverride` | `state, reason` | `client/client.lua` |
+| `GetPartyMembers` | `` | `client/client.lua` |
+| `IsInParty` | `` | `client/client.lua` |
+
+```lua
+-- example
+local result = exports['rsg-voice']:SetPlayerMuted(src, state, reason)
+```
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-voice:server:isMuted` | server | `src, cb` | `server/server.lua` |
+| `rsg-voice:server:getParty` | server | `src, cb` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-voice:server:isMuted', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerUnload` | client | `` | `client/client.lua` |
+| `RSGCore:Player:SetPlayerData` | client | `data` | `client/client.lua` |
+| `rsg-voice:client:muteState` | client | `state` | `client/client.lua` |
+| `rsg-voice:client:partyPositions` | client | `list` | `client/client.lua` |
+| `rsg-voice:client:partyWaypoint` | client | `c, fromName` | `client/client.lua` |
+| `rsg-voice:client:partyUpdate` | client | `data` | `client/client.lua` |
+| `rsg-voice:client:partyInvite` | client | `fromName, timeout` | `client/client.lua` |
+| `rsg-voice:server:partyInvite` | server | `target` | `server/server.lua` |
+| `rsg-voice:server:partyRespond` | server | `accept` | `server/server.lua` |
+| `rsg-voice:server:partyKick` | server | `target` | `server/server.lua` |
+| `rsg-voice:server:partyLeave` | server | `` | `server/server.lua` |
+| `rsg-voice:server:partyWaypoint` | server | `coords` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-voice:server:partyInvite', target)
+-- from a server script
+TriggerClientEvent('RSGCore:Client:OnPlayerLoaded', source)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

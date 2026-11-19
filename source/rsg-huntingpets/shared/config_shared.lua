@@ -1,5 +1,8 @@
 Config = Config or {}
 
+-- build the database tables automatically on start (set false and import installation/rsg_huntingpets.sql for a manual install)
+Config.AutoDatabase = true
+
 -- Locales are provided by rsg-core (@rsg-core/shared/locale.lua). Language is
 -- set by the 'rsg:locale' convar, e.g. `setr rsg:locale "de"` (defaults to 'en').
 

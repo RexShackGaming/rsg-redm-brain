@@ -540,3 +540,134 @@ All options live in `shared/config.lua` (`RSG` table). Texts come from `locales/
 ## 15. Changelog
 
 See [CHANGELOG.md](CHANGELOG.md).
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-character 3.3.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`
+
+### Database
+
+Tables: `playerskins`, `playeroutfit`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `GetMaxSlots` | `src` | `server/sv_api.lua` |
+| `IsInCreator` | `src` | `server/sv_api.lua` |
+| `IsNameAvailable` | `firstname, lastname` | `server/sv_api.lua` |
+| `GetAppearance` | `citizenid` | `server/sv_api.lua` |
+| `ResetAppearance` | `citizenid` | `server/sv_api.lua` |
+| `ChangeCharacterName` | `citizenid, firstname, lastname` | `server/sv_api.lua` |
+| `LogoutToCharacterSelect` | `src` | `server/sv_api.lua` |
+| `SetClothes` | `src, clothes, save` | `server/sv_clothing.lua` |
+| `AddOutfit` | `citizenid, name, clothes` | `server/sv_clothing.lua` |
+| `GetOutfits` | `citizenid` | `server/sv_clothing.lua` |
+
+**Client**
+
+| Export | Arguments | File |
+|---|---|---|
+| `IsInCharacterSelect` | `` | `client/charselect.lua` |
+| `IsCothingActive` | `` | `client/clothes.lua` |
+| `GetClothesCache` | `name` | `client/clothes.lua` |
+| `GetClothesComponentId` | `name` | `client/clothes.lua` |
+| `GetClothesCurrentComponentHash` | `name` | `client/clothes.lua` |
+| `OpenWardrobe` | `` | `client/clothes.lua` |
+| `ApplySkinMultiChar` | `` | `client/creator.lua` |
+| `GetComponentId` | `name` | `client/creator.lua` |
+| `GetBodyComponents` | `` | `client/creator.lua` |
+| `GetBodyCurrentComponentHash` | `name` | `client/creator.lua` |
+| `SetFaceOverlays` | `target, data` | `client/creator.lua` |
+| `SetHair` | `target, data` | `client/creator.lua` |
+| `SetBeard` | `target, data` | `client/creator.lua` |
+| `GetComponentsMax` | `name` | `client/creator.lua` |
+| `GetMaxTexturesForModel` | `category, model, isClothing` | `client/creator.lua` |
+| `ApplySkin` | `` | `client/creator.lua` |
+| `IsInCreator` | `` | `client/creator.lua` |
+
+```lua
+-- example
+local result = exports['rsg-character']:GetMaxSlots(src)
+```
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-character:client:confirmShare` | client | `cb, fromName, outfitName` | `client/clothes.lua` |
+| `rsg-character:server:getAppearance` | server | `src, cb` | `server/sv_appearance.lua` |
+| `rsg-multicharacter:server:getAppearance` | server | `src, cb` | `server/sv_appearance.lua` |
+| `rsg-character:server:isNameAvailable` | server | `src, cb, firstname, lastname` | `server/sv_appearance.lua` |
+| `rsg-character:server:wearOutfit` | server | `src, cb, id` | `server/sv_clothing.lua` |
+| `rsg-character:server:LoadClothes` | server | `src, cb` | `server/sv_clothing.lua` |
+| `rsg-character:server:getOutfits` | server | `src, cb` | `server/sv_clothing.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-character:client:confirmShare', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-character:client:ReceiveCharacterSlots` | client | `slots` | `client/charselect.lua` |
+| `rsg-character:client:CharSelectFailed` | client | `` | `client/charselect.lua` |
+| `rsg-character:client:OpenCharSelect` | client | `` | `client/charselect.lua` |
+| `rsg-character:client:BeginLogout` | client | `` | `client/charselect.lua` |
+| `rsg-character:client:ApplyClothes` | client | `` | `client/clothes.lua` |
+| `rsg-character:client:outfits` | client | `` | `client/clothes.lua` |
+| `rsg-character:client:OpenCreator` | client | `data, empty` | `client/creator.lua` |
+| `rsg-character:client:ApplySkin` | client | `skin, clothes` | `client/spawn.lua` |
+| `rsg-character:client:OpenSpawnSelect` | client | `lastPos, isNewCharacter` | `client/spawn.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/spawn.lua` |
+| `rsg-character:server:SetPlayerBucket` | server | `_, random` | `server/sv_appearance.lua` |
+| `rsg-character:server:SaveSkin` | server | `skin, clothes` | `server/sv_appearance.lua` |
+| `rsg-multicharacter:server:createCharacter` | server | `newData` | `server/sv_appearance.lua` |
+| `rsg-character:server:RequestCharacterSlots` | server | `` | `server/sv_charselect.lua` |
+| `rsg-character:server:SelectCharacterSlot` | server | `citizenid` | `server/sv_charselect.lua` |
+| `rsg-character:server:DeleteCharacterSlot` | server | `citizenid` | `server/sv_charselect.lua` |
+| `rsg-character:server:RequestCreateCharacterSlot` | server | `cid, selectedSex` | `server/sv_charselect.lua` |
+| `rsg-character:server:saveOutfit` | server | `newClothes, _, outfitName` | `server/sv_clothing.lua` |
+| `rsg-character:server:DeleteOutfit` | server | `id` | `server/sv_clothing.lua` |
+| `rsg-character:server:ShareOutfit` | server | `outfitId, targetSrc` | `server/sv_clothing.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-character:server:SetPlayerBucket', _, random)
+-- from a server script
+TriggerClientEvent('rsg-character:client:ReceiveCharacterSlots', source, slots)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/loadskin` |  | `client/creator.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

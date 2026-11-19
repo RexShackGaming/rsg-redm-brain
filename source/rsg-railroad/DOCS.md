@@ -413,3 +413,245 @@ end)
 | NUI will not release focus | Close with Escape/back; `ApplyNuiFocus(false)` runs on close and on resource stop |
 
 Support: https://rexshack.tebex.store
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-railroad 3.3.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-target`, `oxmysql`, `rsg-inventory`
+
+### Database
+
+Tables: `railroad_trains`, `railroad_companies`, `railroad_rewards`, `railroad_companies_owned`, `railroad_employees`, `railroad_company_upgrades`, `railroad_company_supplies`.
+
+For a manual install set `Config.AutoDatabase = false` and import `install/rsg_railroad_full.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AllowPushToTalkWhileOpen` | `true` | While the NUI is open, block game controls but allow push-to-talk. |
+| `Config.PushToTalkControls` | `table` |  |
+| `Config.Debug` | `false` |  |
+| `Config.AutoInstallDatabase` | `true` | automatically creates/verifies all required MySQL tables on resource start (from install/rsg_railroad_full.sql |
+| `Config.MaxTrainsPerPlayer` | `5` | max trains a single player can personally own |
+| `Config.ServerInteractRadius` | `25.0` | server-side: how close (m) to a company station a player must be for buy/sell/manage actions |
+| `Config.TrainDespawnDist` | `250` | despawn if player is far from their train |
+| `Config.StationInteractRadius` | `3.0` | how close to station marker to interact |
+| `Config.TicketItem` | `'trainticket'` |  |
+| `Config.TicketPrice` | `20.00` |  |
+| `Config.MarkupPrice` | `25.00` |  |
+| `Config.PassengerSystem` | `table` |  |
+| `Config.Enabled` | `true` |  |
+| `Config.MaxBoardPerStop` | `10` |  |
+| `Config.MinBoardPerStop` | `1` |  |
+| `Config.SearchRadius` | `120.0` |  |
+| `Config.TicketXP` | `5` |  |
+| `Config.DisembarkChance` | `50` |  |
+| `Config.MinBoardedToKeep` | `1` |  |
+| `Config.BoardingWindowMs` | `38000` |  |
+| `Config.BoardWalkSpeed` | `5.0` |  |
+| `Config.BoardDistance` | `5.0` |  |
+| `Config.StationStopRadius` | `135.0` |  |
+| `Config.TrainStopSpeed` | `1.5` |  |
+| `Config.CompanyShare` | `0.50` |  |
+| `Config.Ranks` | `table` |  |
+| `Config.CompanyPurchasePrice` | `50000` |  |
+| `Config.CompanySellPercent` | `0.50` |  |
+| `Config.SupplyItems` | `table` |  |
+| `Config.Fuel` | `table` |  |
+| `Config.Water` | `table` |  |
+| `Config.Condition` | `table` |  |
+| `Config.Companies` | `table` |  |
+| `Config.Upgrades` | `table` |  |
+| `Config.Trains` | `table` |  |
+| `Config.Stations` | `table` |  |
+| `Config.TrackSwitches` | `table` |  |
+| `Config.TrainSetup` | `table` |  |
+| `Config.RouteOneTrainSwitches` | `table` |  |
+| `Config.RouteOneTrainStops` | `table` |  |
+| `Config.RouteThreeTrainSwitches` | `table` |  |
+| `Config.RouteThreeTrainStops` | `table` |  |
+| `Config.TrackModels` | `table` |  |
+| `Config.WeatherSpeedCaps` | `table` |  |
+| `Config.Multipliers` | `table` |  |
+| `Config.Telegram` | `table` |  |
+| `Config.LowSupplyThreshold` | `5` |  |
+| `Config.LowSupplyCooldown` | `3600` |  |
+| `Config.DriverWages` | `table` |  |
+| `Config.DefaultPercent` | `0` |  |
+| `Config.MaxPercent` | `60` |  |
+| `Config.OwnerEarnsWage` | `false` |  |
+| `Config.Missions` | `table` |  |
+| `Config.MinLegSeconds` | `20` |  |
+| `Config.DeliveryDestinations` | `table` |  |
+| `Config.CargoDelivery` | `table` |  |
+| `Config.PropModel` | `'p_barrel010x'` |  |
+| `Config.MaxSimultaneous` | `3` |  |
+| `Config.RequiredTrainModel` | `'appleseed_config'` |  |
+| `Config.FlatbedCarModel` | `'privateflatcar01x'` |  |
+| `Config.PlatformOverrides` | `table` | needed (e.g. move it away from doorways/props, face it properly, etc.). |
+| `Config.PlatformFallbackCoords` | `vector4(-164.49, 636.65, 114.03, 111.05)` | Used only if a mission is somehow started without a station reference. |
+| `Config.PlatformBarrelOffsets` | `table` | barrels don't spawn stacked on top of each other. |
+| `Config.TrainAttachOffsets` | `table` | are clipped into the flatbed deck or float above it. |
+| `Config.CarryOffset` | `{ x = 0.0, y = 0.7, z = -0.2 }` | Proven values from mack-oilcompany's Config.CarryOffsets.barrel (CP_BeltFront attach point). |
+| `Config.CarryAnim` | `{ dict = 'mech_carry_box', name = 'walk_heavy' }` | Proven barrel carry animation from mack-oilcompany's AttachBarrelToPlayer. |
+| `Config.CarryMoveRate` | `0.7` |  |
+| `Config.PickupRequiresStopped` | `true` |  |
+| `Config.MaxTrainSpeedToPickup` | `1.5` |  |
+| `Config.DropRadius` | `4.0` |  |
+| `Config.AbandonDistance` | `100.0` |  |
+| `Config.MinMoveDistance` | `15.0` | must move at least this far from that spot before "Unload Cargo" appears again. |
+| `Config.TrainStorage` | `table` |  |
+| `Config.DefaultSlots` | `20` | Used for any train model not listed in Models below. |
+| `Config.DefaultMaxWeight` | `150000` |  |
+| `Config.Models` | `table` | Per-model capacity: bigger engines haul more. |
+| `Config.WarnOnFirstOpen` | `true` | Warn the player once per deployment, the first time they open storage. |
+| `Config.ConfirmOnPutAway` | `true` | that would destroy a non-empty stash. Never blocks the action. |
+| `Config.DistanceWarnPercent` | `0.7` | carrying cargo, since the auto-despawn is the most common cause of loss. |
+| `Config.DistanceWarnInterval` | `15000` |  |
+| `Config.TrainPreview` | `table` |  |
+| `Config.ShowFullConsist` | `true` | false = show a single car only, chosen by CarIndex below |
+| `Config.CarIndex` | `0` | Used only when ShowFullConsist = false. 0 is the locomotive. |
+| `Config.MaxCars` | `12` | can't spawn dozens of vehicles at once. |
+| `Config.CarGap` | `0.4` | Coupling gap between cars, in metres. |
+| `Config.HeightOffset` | `90.0` | How far above the player the preview is staged. |
+| `Config.OrbitRadiusMult` | `0.60` | reads much more impressive than framing the whole thing small and distant. |
+| `Config.MinOrbitRadius` | `15.0` |  |
+| `Config.CameraHeightMult` | `0.20` |  |
+| `Config.MinCameraHeight` | `4.5` |  |
+| `Config.RotateSpeed` | `0.25` | Degrees per frame the camera orbits. 0 gives a static side-on view. |
+| `Config.ExitControl` | `0xCEFD9220` | than bound to guessed A/D control hashes. |
+| `Config.LoadTimeout` | `5000` | Safety cap on waiting for each model to stream in (ms). |
+| `Config.RailwaymanRewards` | `table` |  |
+| `Config.CompanyRankRewards` | `table` |  |
+| `Config.Blips` | `table` |  |
+| `Config.TrainRobbery` | `table` |  |
+| `Config.AmbientEnabled` | `true` |  |
+| `Config.AmbientCheckInterval` | `300000` |  |
+| `Config.AmbientChance` | `25` |  |
+| `Config.AmbientFollowMs` | `45000` |  |
+| `Config.PlayerChance` | `20` |  |
+| `Config.SafeZoneRadius` | `500.0` |  |
+| `Config.ManualStopRobRadius` | `15.0` |  |
+| `Config.RobberySlowSpeed` | `8.0` |  |
+| `Config.BoardTrain` | `true` |  |
+| `Config.BoardSideOffset` | `1.2` |  |
+| `Config.EscapeTimeMs` | `15000` |  |
+| `Config.InitialMessageDelay` | `4000` |  |
+| `Config.SpawnAheadDistance` | `80.0` |  |
+| `Config.SpawnMultiplier` | `3.0` |  |
+| `Config.OutlawCount` | `{ min = 2, max = 4 }` |  |
+| `Config.OutlawAccuracy` | `35` |  |
+| `Config.OutlawModels` | `{ 'g_m_m_unibanditos_01', 'g_m_m_uniduster_01', 'g_m_m_unicriminals_01` | Model names checked against rdr3_discoveries peds_list.lua / weapons list: |
+| `Config.HorseModels` | `{ 'a_c_horse_kentuckysaddle_black' }` |  |
+| `Config.OutlawWeapons` | `{ 'WEAPON_REPEATER_WINCHESTER', 'WEAPON_REVOLVER_CATTLEMAN' }` |  |
+| `Config.PressureDecayInterval` | `4000` |  |
+| `Config.PressureDecayPerOutlaw` | `4` |  |
+| `Config.PressureAttackRadius` | `40.0` |  |
+| `Config.PressureRecoveryInterval` | `2000` |  |
+| ... | | 10 more options in the config files |
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-railroad:shouldSpawnAmbient` | server | `source` | `server/ambient.lua` |
+| `rsg-railroad:getCompanyOwnership` | server | `source, companyId` | `server/company_ownership.lua` |
+| `rsg-railroad:getPlayerRole` | server | `source, companyId` | `server/company_ownership.lua` |
+| `rsg-railroad:getMyEmployeeData` | server | `source, companyId` | `server/company_ownership.lua` |
+| `rsg-railroad:getCompanyStats` | server | `source, companyId` | `server/company_ownership.lua` |
+| `rsg-railroad:getAllCompanyStats` | server | `source` | `server/company_ownership.lua` |
+| `rsg-railroad:getCompanyTrains` | server | `source, companyId` | `server/company_ownership.lua` |
+| `rsg-railroad:getEmployees` | server | `source, companyId` | `server/employees.lua` |
+| `rsg-railroad:getPendingApplications` | server | `source, companyId` | `server/employees.lua` |
+| `rsg-railroad:getMyEmployment` | server | `source` | `server/employees.lua` |
+| `rsg-railroad:getOwnedTrains` | server | `source` | `server/main.lua` |
+| `rsg-railroad:getTrainById` | server | `source, trainId` | `server/main.lua` |
+| `rsg-railroad:canSpawnTrain` | server | `source` | `server/main.lua` |
+| `rsg-railroad:getAmbientState` | server | `` | `server/main.lua` |
+| `rsg-railroad:getMyCompanyMembership` | server | `source, companyId` | `server/main.lua` |
+| `rsg-railroad:getTrainStorageState` | server | `source` | `server/storage.lua` |
+| `rsg-railroad:getCompanySupplies` | server | `source, companyId` | `server/supplies.lua` |
+| `rsg-railroad:server:useTicket` | server | `source, companyId` | `server/ticketsserver.lua` |
+| `rsg-railroad:getCompanyUpgrades` | server | `source, companyId` | `server/upgrades.lua` |
+| `rsg-railroad:getTrainModelUpgrade` | server | `source, companyId, trainModel` | `server/upgrades.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-railroad:shouldSpawnAmbient', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-railroad:refreshStationData` | client | `companyId` | `client/main.lua` |
+| `rsg-railroad:setAmbientState` | client | `active` | `client/train_ambient.lua` |
+| `rsg-railroad:client:trainpos` | client | `` | `client/train_ambient.lua` |
+| `rsg-railroad:client:setjunction` | client | `args` | `client/train_ambient.lua` |
+| `rsg-railroad:maintenanceResult` | client | `mType, success` | `client/train_spawn.lua` |
+| `rsg-railroad:ambientDespawned` | server | `` | `server/ambient.lua` |
+| `rsg-railroad:buyCompany` | server | `companyId` | `server/company_ownership.lua` |
+| `rsg-railroad:sellCompany` | server | `companyId` | `server/company_ownership.lua` |
+| `rsg-railroad:renameCompany` | server | `companyId, newName` | `server/company_ownership.lua` |
+| `rsg-railroad:setWagePercent` | server | `companyId, pct` | `server/company_ownership.lua` |
+| `rsg-railroad:withdrawFunds` | server | `companyId, amount` | `server/company_ownership.lua` |
+| `rsg-railroad:applyAsDriver` | server | `companyId` | `server/employees.lua` |
+| `rsg-railroad:approveDriver` | server | `companyId, employeeId` | `server/employees.lua` |
+| `rsg-railroad:rejectDriver` | server | `companyId, employeeId` | `server/employees.lua` |
+| `rsg-railroad:fireDriver` | server | `companyId, employeeId` | `server/employees.lua` |
+| `rsg-railroad:buyTrain` | server | `trainIndex` | `server/main.lua` |
+| `rsg-railroad:sellTrain` | server | `trainId` | `server/main.lua` |
+| `rsg-railroad:ticketRevenue` | server | `companyId, passengerCount` | `server/main.lua` |
+| `rsg-railroad:setTrainSpawned` | server | `spawned, trainId, model` | `server/main.lua` |
+| `rsg-railroad:parkTrain` | server | `trainId, _, fuel, water, condition` | `server/main.lua` |
+| `rsg-railroad:updateTrainState` | server | `trainId, fuel, water, condition` | `server/main.lua` |
+| `rsg-railroad:updateFuel` | server | `trainId, fuel` | `server/main.lua` |
+| `rsg-railroad:updateWater` | server | `trainId, water` | `server/main.lua` |
+| `rsg-railroad:updateCondition` | server | `trainId, condition` | `server/main.lua` |
+| `rsg-railroad:addMiles` | server | `trainId, miles` | `server/main.lua` |
+| `rsg-railroad:useMaintenanceItem` | server | `mType, trainId` | `server/main.lua` |
+| `rsg-railroad:missionLegStarted` | server | `missionType, label` | `server/missions.lua` |
+| `rsg-railroad:completeMission` | server | `missionType, destination, cargo, companyId` | `server/missions.lua` |
+| `rsg-railroad:robberyStarted` | server | `companyId` | `server/robbery.lua` |
+| `rsg-railroad:robberyOccurred` | server | `companyId` | `server/robbery.lua` |
+| `rsg-railroad:robberyDefeated` | server | `companyId` | `server/robbery.lua` |
+| `rsg-railroad:openTrainStorage` | server | `` | `server/storage.lua` |
+| `rsg-railroad:addSupply` | server | `companyId, itemName, quantity` | `server/supplies.lua` |
+| `rsg-railroad:takeSupply` | server | `companyId, itemName, quantity` | `server/supplies.lua` |
+| `rsg-railroad:purchaseUpgrade` | server | `companyId, trainModel, upgradeType` | `server/upgrades.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-railroad:ambientDespawned')
+-- from a server script
+TriggerClientEvent('rsg-railroad:refreshStationData', source, companyId)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/trainrobbery` |  | `client/train_robbery.lua` |
+| `/trainpos` | Show train locations (admin) | `server/ambient.lua` |
+| `/setjunction` | Set a train track junction (admin) | `server/ambient.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

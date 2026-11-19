@@ -1,4 +1,6 @@
-Config = {}
+Config = {}
+-- build the database tables automatically on start (set false and import the SQL file for a manual install)
+Config.AutoDatabase = true
 
 -- ===================== GENERAL =====================
 Config.MaxOwnedHorses      = 8      -- max horses a single player can own across all stables
@@ -2601,3 +2603,10 @@ Config.HorseRaces = {
     },
 }
 
+
+-- rsg-skills integration (optional). Needs the rsg-skills resource; does nothing when it is not started.
+Config.Skills = {
+    Enabled    = true,
+    Skill      = 'horsemanship', -- skill key in rsg-skills
+    TrainingXP = 15,             -- XP for finishing a paid stable training session (rsg-skills applies its own multipliers and cap)
+}

@@ -726,3 +726,83 @@ Config.CigarettesPerPack = 10
 
 Support: https://rexshack.tebex.store
 Buy me a coffee: https://buymeacoffee.com/rexshack
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-smoking 3.0.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `rsg-target`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Prompts` | `table` |  |
+| `Config.DropKey` | `0x3B24C470` |  |
+| `Config.SmokeKey` | `0x07B8BEAF` |  |
+| `Config.ChangeKey` | `0xD51B784F` |  |
+| `Config.LongDragHoldTime` | `500` | ms the smoke key must be held for a long drag (cigarettes) |
+| `Config.DropDespawnTime` | `15000` | ms a dropped cigarette stays on the ground before it is removed (0 = remove at once) |
+| `Config.CigaretteRelieveStress` | `5` |  |
+| `Config.CigarRelieveStress` | `5` |  |
+| `Config.PipeRelieveStress` | `5` |  |
+| `Config.ChewingRelieveStress` | `5` |  |
+| `Config.Cough` | `table` |  |
+| `Config.Enabled` | `true` |  |
+| `Config.Chance` | `35` |  |
+| `Config.StaminaBelow` | `25` |  |
+| `Config.HealthBelow` | `25` |  |
+| `Config.CigarettesPerPack` | `20` |  |
+| `Config.ChewsPerTin` | `10` | chews in a full 'chewingtobacco' tin (same system as the pack) |
+| `Config.ConvertLegacyPacks` | `true` | 'cigarettes' pack holding the remaining cigarettes (number = cigarettes the old pack held). |
+| `Config.LegacyPacks` | `table` |  |
+| `Config.LighterItems` | `{ 'matchbox' }` |  |
+| `Config.Lighters` | `table` |  |
+| `Config.ShareLight` | `table` |  |
+| `Config.Distance` | `3.0` |  |
+| `Config.Timeout` | `30` |  |
+| `Config.OfferCooldown` | `2` |  |
+| `Config.Nicotine` | `table` |  |
+| `Config.Substance` | `'tobacco'` |  |
+| `Config.BlockInRehab` | `true` |  |
+| `Config.Amount` | `table` |  |
+| `Config.Smokables` | `table` |  |
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-smoking:client:canSmoke` | client | `cb, kind` | `client/client.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-smoking:client:canSmoke', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-smoking:client:` | client | `` | `client/client.lua` |
+| `rsg-smoking:server:offerLight` | server | `targetId` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-smoking:server:offerLight', targetId)
+-- from a server script
+TriggerClientEvent('rsg-smoking:client:', source)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

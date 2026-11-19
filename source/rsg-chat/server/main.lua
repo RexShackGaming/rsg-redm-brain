@@ -247,14 +247,16 @@ local function SaveOrder()
 end
 
 local function LoadChannels()
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `rsg_chat_channels` (
-            `id` VARCHAR(32) NOT NULL,
-            `data` LONGTEXT NOT NULL,
-            `sort` INT NOT NULL DEFAULT 0,
-            PRIMARY KEY (`id`)
-        )
-    ]])
+    if Config.AutoDatabase ~= false then
+        MySQL.query.await([[
+            CREATE TABLE IF NOT EXISTS `rsg_chat_channels` (
+                `id` VARCHAR(32) NOT NULL,
+                `data` LONGTEXT NOT NULL,
+                `sort` INT NOT NULL DEFAULT 0,
+                PRIMARY KEY (`id`)
+            )
+        ]])
+    end
 
     local rows = MySQL.query.await('SELECT id, data FROM rsg_chat_channels ORDER BY sort ASC, id ASC') or {}
     if #rows == 0 then

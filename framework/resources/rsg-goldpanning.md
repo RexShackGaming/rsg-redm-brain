@@ -1,8 +1,8 @@
 # rsg-goldpanning
 
-Version 3.1.0. Gold panning system for RSG Framework
+Version 3.2.0. Gold panning system for RSG Framework
 
-**Version 3.1.0** · Requires rsg-core and rsg-inventory · Full developer docs: [DOCS.md](DOCS.md) Gold panning for the RSG Framework (RedM). Stand in a river, use a gold pan, and sift for nuggets. - Use the `tool_goldpan` item while standing in one of the configured rivers/creeks
+**Version 3.2.0** · Requires rsg-core and rsg-inventory · Full developer docs: [DOCS.md](DOCS.md) Gold panning for the RSG Framework (RedM). Stand in a river, use a gold pan, and sift for nuggets. - Use the `tool_goldpan` item while standing in one of the configured rivers/creeks
 
 Source: https://github.com/Rexshack-RedM/rsg-goldpanning
 

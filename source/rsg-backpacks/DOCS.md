@@ -98,3 +98,80 @@ Open requests are rate limited. Nested and extra backpacks are removed by the se
 | Table errors | Import `installation/player_backpack.sql` |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-backpacks 3.0.4**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `oxmysql`
+
+### Database
+
+Tables: `player_backpack`.
+
+For a manual install set `Config.AutoDatabase = false` and import `installation/player_backpack.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.ActionCooldown` | `1000` | ms between backpack open requests per player |
+| `Config.AutoCreateTable` | `true` | build / upgrade the `player_backpack` table on start (no manual SQL needed) |
+| `Config.BlockNestedBackpacks` | `true` | backpacks can not be stored inside another backpack stash |
+| `Config.OneBackpackOnly` | `true` | a player can only carry ONE backpack item at a time |
+| `Config.backpackType` | `table` | backpack models (item names / stash sizes). Stash name is always 'backpack_<serial>' |
+| `Config.backpackByItem` | `{}` | lookup by item name (built automatically) |
+| `Config.Belt` | `table` |  |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `IsBackpackItem` | `itemName` | `server/main.lua` |
+
+```lua
+-- example
+local result = exports['rsg-backpacks']:IsBackpackItem(itemName)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-backpacks:client:wear` | client | `itemName, serial` | `client/main.lua` |
+| `rsg:client:refreshSkin` | client | `` | `client/main.lua` |
+| `rsg-inventory:server:SetInventoryData` | server | `fromInventory, toInventory, _, toSlot` | `server/main.lua` |
+| `rsg-inventory:server:closeInventory` | server | `inventory` | `server/main.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-inventory:server:SetInventoryData', fromInventory, toInventory, _, toSlot)
+-- from a server script
+TriggerClientEvent('rsg-backpacks:client:wear', source, itemName, serial)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/removebackpack` |  | `client/main.lua` |
+| `/backpackrecover` | locale('cmd_recover_help') | `server/main.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

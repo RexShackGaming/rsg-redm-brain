@@ -5,7 +5,7 @@ game 'rdr3'
 author 'RexShack'
 name 'rsg-deliveries'
 description 'Wagon delivery system RSG Framework'
-version '3.1.1'
+version '3.2.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',

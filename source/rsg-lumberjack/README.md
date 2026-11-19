@@ -92,3 +92,11 @@ A sell point's blip name can be overridden per location with `blip.label`.
 
 ## Credits
 Mack
+
+## rsg-skills integration
+
+Optional. With `rsg-skills` started, picking up a wood piece awards lumberjack XP (`Config.Skills.WoodXP`) and the lumberjack `extra_yield` perk gives that percent chance of one extra piece. Set `Config.Skills.Enabled = false` (or `ExtraYield = false`) to turn it off.
+
+## Database
+
+Tables (`rsg_lumberjack_trees`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `install/database.sql` once.

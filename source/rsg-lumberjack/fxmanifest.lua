@@ -4,7 +4,7 @@ game 'rdr3'
 
 name 'rsg-lumberjack'
 description 'Lumberjack gameplay: grow, chop, carry, and sell wagon loads of logs'
-version '3.2.0'
+version '3.3.1'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',

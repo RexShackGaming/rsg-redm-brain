@@ -162,3 +162,150 @@ Each applicant update (interview, approval, rejection, vacancy closed/filled/exp
 ## Upgrading to 3.1.0 manually
 
 With `Config.AutoDatabase = true` everything is added on start. For a manual install run the new tables from `install.sql` plus: `ALTER TABLE townhall_postings ADD COLUMN warned TINYINT(1) NOT NULL DEFAULT 0;` and `ALTER TABLE townhall_applications ADD COLUMN fee INT NOT NULL DEFAULT 0, ADD COLUMN refund INT NOT NULL DEFAULT 0;` (and the `notified` column from 3.0.1 if you have not added it).
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-townhall 3.1.1**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-target`, `oxmysql`
+
+### Database
+
+Tables: `townhall_locations`, `townhall_managers`, `townhall_postings`, `townhall_applications`, `townhall_resignations`, `townhall_messages`, `townhall_templates`, `townhall_blacklist`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AutoDatabase` | `true` | false = import install.sql manually |
+| `Config.NpcModel` | `'a_m_m_valtownfolk_01'` | Clerks are placed in game by an admin with /createtownhall and stored in the database. |
+| `Config.NpcScenario` | `'WORLD_HUMAN_STAND_WAITING'` | set to nil/false for no scenario |
+| `Config.SpawnDistance` | `60.0` | clerk spawns when the player is this close |
+| `Config.TargetDistance` | `2.5` | rsg-target interaction distance |
+| `Config.ServerDistance` | `12.0` | server only accepts Town Hall requests this close to a clerk |
+| `Config.CloseDistance` | `8.0` | UI closes automatically when the player walks further than this |
+| `Config.Commands` | `table` | Commands (admin placement) --------------------------------------------------- |
+| `Config.AdminPermission` | `'admin'` | rsg-core permission level that can post/review ANY job and manage the manager list. |
+| `Config.AllowBossManagement` | `true` | Players whose active job is a boss grade may post and review vacancies for their own job. |
+| `Config.RestrictBossGrades` | `true` | Only admins may post vacancies for boss grades (isboss) when true. |
+| `Config.ManagerJob` | `'government'` | Bosses never need to be on the list: with AllowBossManagement they can post for their own job by default. |
+| `Config.AllowSelfReview` | `false` | A reviewer may never approve/reject their own application when false. |
+| `Config.PostableJobs` | `{}` | Jobs that may be posted. Empty = any job from the database (multijob_jobs). |
+| `Config.BlockedJobs` | `{ 'unemployed' }` | Jobs that can never be posted. |
+| `Config.MaxOpenPostingsPerJob` | `5` |  |
+| `Config.MaxActiveApplications` | `3` | pending applications per player |
+| `Config.ReapplyCooldownHours` | `24` | wait after a rejection before re-applying to the same vacancy (0 = none) |
+| `Config.RequireFeedback` | `true` | reviewer must write feedback for approve and reject |
+| `Config.MinFeedbackLength` | `5` |  |
+| `Config.MaxCustomQuestions` | `5` | extra questions the poster may add |
+| `Config.BypassMaxJobs` | `false` | ignore the multijob max job limit |
+| `Config.SetActiveJobOnApproval` | `false` | also switch the applicant's active job to the new one |
+| `Config.MaxSlots` | `10` | seats per vacancy |
+| `Config.ExpiryOptions` | `table` | A plain list such as { 0, 3, 7, 14, 30 } is still accepted and applies to everyone. |
+| `Config.DefaultExpiryDays` | `14` | used when reopening a vacancy |
+| `Config.ExpiryCheckMinutes` | `5` | how often expired vacancies are closed |
+| `Config.AllowMessages` | `true` | applicant and reviewers can exchange short messages while an application is open |
+| `Config.MaxMessages` | `30` | per application |
+| `Config.AllowEditApplication` | `true` | applicants can change their answers while the application is still open |
+| `Config.ApplicationFee` | `0` | money taken when applying (0 = free) |
+| `Config.RefundFeeWhenClosed` | `true` | refund the fee if the vacancy closes, fills or expires before a decision |
+| `Config.ApplicationFeeAccount` | `'cash'` | 'cash' or 'bank' |
+| `Config.AllowBlacklist` | `true` | reviewers can bar a citizen from one job (or all jobs, admins/all-job managers) |
+| `Config.MaxTemplates` | `10` | saved vacancy templates per poster |
+| `Config.ExpiryWarnHours` | `24` | warn the poster this long before a vacancy closes (0 = off) |
+| `Config.AllowOfflineApproval` | `true` | approve offline applicants; the job is granted on their next login |
+| `Config.AllowInterviews` | `true` | reviewers can invite an applicant to an interview before deciding |
+| `Config.AllowResign` | `true` | players can resign from jobs in the "My Jobs" tab |
+| `Config.ResignCooldownHours` | `24` | wait before applying for the same job again (0 = none) |
+| `Config.PrerequisiteItems` | `{}` | Items a poster may require applicants to carry (rsg-inventory item names). Empty = no item prerequisites. |
+| `Config.MaxPrerequisiteItems` | `3` |  |
+| `Config.AllowJobPrerequisites` | `true` | "must already hold job X at rank Y or higher" (promotion paths) |
+| `Config.Limits` | `table` | Text limits (characters) ------------------------------------------------------- |
+| `Config.Questions` | `table` | label = locale key. type = 'textarea' or 'text'. required defaults to true. |
+| `Config.AllowPushToTalkWhileOpen` | `true` | While the UI is open, game controls are blocked but push-to-talk still works. |
+| `Config.PushToTalkControls` | `table` |  |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `HasPendingApplication` | `citizenid, job` | `server/server.lua` |
+| `GetOpenVacancyCount` | `job` | `server/server.lua` |
+| `IsBlacklisted` | `citizenid, job` | `server/server.lua` |
+
+```lua
+-- example
+local result = exports['rsg-townhall']:HasPendingApplication(citizenid, job)
+```
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-townhall:server:getLocations` | server | `source, cb` | `server/server.lua` |
+| `rsg-townhall:server:getPerms` | server | `source, cb` | `server/server.lua` |
+| `rsg-townhall:server:getVacancies` | server | `source, cb` | `server/server.lua` |
+| `rsg-townhall:server:apply` | server | `source, cb, payload` | `server/server.lua` |
+| `rsg-townhall:server:getMyApplications` | server | `source, cb` | `server/server.lua` |
+| `rsg-townhall:server:markSeen` | server | `source, cb` | `server/server.lua` |
+| `rsg-townhall:server:withdraw` | server | `source, cb, payload` | `server/server.lua` |
+| `rsg-townhall:server:getMyJobs` | server | `source, cb` | `server/server.lua` |
+| `rsg-townhall:server:resign` | server | `source, cb, payload` | `server/server.lua` |
+| `rsg-townhall:server:getManageData` | server | `source, cb` | `server/server.lua` |
+| `rsg-townhall:server:postJob` | server | `source, cb, payload` | `server/server.lua` |
+| `rsg-townhall:server:editPosting` | server | `source, cb, payload` | `server/server.lua` |
+| `rsg-townhall:server:closePosting` | server | `source, cb, payload` | `server/server.lua` |
+| `rsg-townhall:server:reopenPosting` | server | `source, cb, payload` | `server/server.lua` |
+| `rsg-townhall:server:requestInterview` | server | `source, cb, payload` | `server/server.lua` |
+| `rsg-townhall:server:review` | server | `source, cb, payload` | `server/server.lua` |
+| `rsg-townhall:server:addManager` | server | `source, cb, payload` | `server/server.lua` |
+| `rsg-townhall:server:removeManager` | server | `source, cb, payload` | `server/server.lua` |
+| `rsg-townhall:server:getMessages` | server | `source, cb, payload` | `server/server.lua` |
+| `rsg-townhall:server:sendMessage` | server | `source, cb, payload` | `server/server.lua` |
+| `rsg-townhall:server:editApplication` | server | `source, cb, payload` | `server/server.lua` |
+| `rsg-townhall:server:getTemplates` | server | `source, cb` | `server/server.lua` |
+| `rsg-townhall:server:saveTemplate` | server | `source, cb, payload` | `server/server.lua` |
+| `rsg-townhall:server:deleteTemplate` | server | `source, cb, payload` | `server/server.lua` |
+| `rsg-townhall:server:addBlacklist` | server | `source, cb, payload` | `server/server.lua` |
+| `rsg-townhall:server:removeBlacklist` | server | `source, cb, payload` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-townhall:server:getLocations', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-townhall:client:syncLocations` | client | `list` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
+
+```lua
+-- from a server script
+TriggerClientEvent('rsg-townhall:client:syncLocations', source, list)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

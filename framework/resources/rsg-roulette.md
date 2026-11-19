@@ -1,6 +1,6 @@
 # rsg-roulette
 
-Version 3.0.1. Multiplayer roulette tables for RSG Framework
+Version 3.0.2. Multiplayer roulette tables for RSG Framework
 
 Multiplayer European roulette tables for **RSG Framework** (RedM). Players share a table, place chips on a full betting layout during a timed round, and winnings are paid in cash server side. - Shared, server-authoritative rounds (betting → spin → result) per table - Straight, split, corner, red/black, odd/even, 1-18/19-36, dozens and columns
 

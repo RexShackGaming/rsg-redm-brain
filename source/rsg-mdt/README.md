@@ -74,3 +74,11 @@ Edit JSON files in `locales/` to customize strings.
 
 Run `sql/mdt.sql` for all required tables:
 `mdt_records`, `mdt_warrants`, `mdt_bolos`, `mdt_reports`, `mdt_report_comments`, `mdt_citizen_profiles`, `mdt_staff`, `mdt_roles`, `mdt_audit_logs`, `mdt_charge_templates`, `mdt_issued_charges`, `mdt_charge_attachments`, `mdt_fines`
+
+## rsg-economy integration
+
+Optional. With `rsg-economy` started, a fine paid by a player is deposited into the treasury of the town nearest to them (or `Config.Economy.FineRegion` when set). Set `Config.Economy.Enabled = false` to turn it off.
+
+## Database
+
+Tables (`mdt_records`, `mdt_warrants`, `mdt_bolos`, `mdt_reports`, `mdt_report_comments`, `mdt_citizen_profiles`, `mdt_staff`, `mdt_roles`, `mdt_audit_logs`, `mdt_charge_templates`, `mdt_issued_charges`, `mdt_charge_attachments`, `mdt_fines`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `sql/mdt.sql` once.

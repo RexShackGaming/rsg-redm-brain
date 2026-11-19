@@ -1,4 +1,4 @@
-# rsg-fishmonger – Docs (v3.0.0)
+# rsg-fishmonger – Docs (v3.1.0)
 
 ## Contents
 1. Files
@@ -85,4 +85,79 @@ The server checks distance to the NPC, opening hours, cooldown, that the fish ar
 | Shop items missing | Item must exist in rsg-core items |
 | Fish not listed | Missing from `Config.Fish` |
 
+## rsg-skills integration
+
+`Config.Bonus.skill = { enabled, name, perk }`. `bonusFor(Player)` reads `exports['rsg-skills']:GetPerk(src, name, perk)` on the server (a percent, so `10` becomes `+0.10`) and adds it to the job and rep bonus. It is applied on the server for the payout and for the bonus sent to the UI. Skipped when rsg-skills is not started.
+
+
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-fishmonger 3.1.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `rsg-target`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.NpcModel` | ``cs_fishcollector`` |  |
+| `Config.SpawnDistance` | `50.0` | npc spawns / despawns at this range |
+| `Config.TargetDistance` | `2.5` | rsg-target interaction distance |
+| `Config.MaxUseDistance` | `5.0` | server-side distance check to the npc |
+| `Config.Cooldown` | `2000` | ms between checkouts per player (anti-spam) |
+| `Config.MoneyType` | `'cash'` | 'cash' \| 'bank' \| 'bloodmoney' |
+| `Config.FilletItem` | `'raw_fish'` |  |
+| `Config.ImagePath` | `'nui://rsg-inventory/html/images/'` |  |
+| `Config.Blip` | `table` |  |
+| `Config.Locations` | `table` |  |
+| `Config.OpeningHours` | `table` |  |
+| `Config.Demand` | `table` |  |
+| `Config.Bonus` | `table` |  |
+| `Config.DailyStock` | `table` |  |
+| `Config.Shop` | `table` |  |
+| `Config.Fish` | `table` |  |
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-fishmonger:server:getMenuData` | server | `source, cb, locationIndex` | `server/server.lua` |
+| `rsg-fishmonger:server:checkout` | server | `source, cb, locationIndex, mode, cart` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-fishmonger:server:getMenuData', function(result)
+    -- use result
+end, locationIndex)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-fishmonger:server:openShop` | server | `locationIndex` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-fishmonger:server:openShop', locationIndex)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/fishmonger_webhooktest` | locale('cmd_webhooktest_help') | `server/webhook.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

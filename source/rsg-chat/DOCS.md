@@ -98,3 +98,117 @@ The server works out the sender, checks channel access and range, trims messages
 | Message rejected | Over the channel limit or `MessageCooldown` |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-chat 3.2.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `oxmysql`
+
+### Database
+
+Tables: `rsg_chat_channels`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AutoDatabase` | `true` | build the database tables automatically on start (set false and import the SQL file for a manual install) |
+| `Config.AdminPermission` | `'admin'` | rsg-core permission for /chatadmin (channel manager) |
+| `Config.PSAPermission` | `'admin'` | rsg-core permission needed to send a SERVER PSA |
+| `Config.MessageCooldown` | `1000` | ms between chat messages per player (all channels) |
+| `Config.HardMaxLength` | `512` | absolute cap; a channel's own limit can't go above this |
+| `Config.DefaultChannel` | `'ooc'` | channel players start on (falls back to the first one they can use) |
+| `Config.MaxHistoryCap` | `250` | highest "message history" value players can pick |
+| `Config.DistanceLimits` | `{ min = 2, max = 5000 }` | Distance limits the admin panel will accept (metres) |
+| `Config.PermissionLevels` | `{ '', 'helper', 'mod', 'admin', 'headadmin', 'developer', 'god' }` | Permission levels offered in the admin panel dropdown ('' = everyone) |
+| `Config.DefaultSettings` | `table` |  |
+| `Config.Channels` | `table` |  |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `SendChannelMessage` | `channelId, author, text` | `server/main.lua` |
+| `GetChannels` | `` | `server/main.lua` |
+
+```lua
+-- example
+local result = exports['rsg-chat']:SendChannelMessage(channelId, author, text)
+```
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-chat:server:adminGetChannels` | server | `src, cb` | `server/main.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-chat:server:adminGetChannels', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `chatMessage` | client | `` | `client/cl_chat.lua` |
+| `chat:addTemplate` | client | `` | `client/cl_chat.lua` |
+| `chat:addMessage` | client | `` | `client/cl_chat.lua` |
+| `chat:addSuggestion` | client | `` | `client/cl_chat.lua` |
+| `chat:addSuggestions` | client | `` | `client/cl_chat.lua` |
+| `chat:removeSuggestion` | client | `` | `client/cl_chat.lua` |
+| `chat:clear` | client | `` | `client/cl_chat.lua` |
+| `__cfx_internal:serverPrint` | client | `` | `client/cl_chat.lua` |
+| `rsg-chat:client:syncChannels` | client | `list, defaultId` | `client/cl_chat.lua` |
+| `rsg-chat:client:channelMessage` | client | `payload` | `client/cl_chat.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/cl_chat.lua` |
+| `RSGCore:Client:OnJobUpdate` | client | `` | `client/cl_chat.lua` |
+| `RSGCore:Client:OnGangUpdate` | client | `` | `client/cl_chat.lua` |
+| `rsg-chat:client:openAdmin` | client | `` | `client/cl_chat.lua` |
+| `rsg-chat:server:send` | server | `channelId, message` | `server/main.lua` |
+| `_chat:messageEntered` | server | `_, _, message` | `server/main.lua` |
+| `rsg-chat:server:requestChannels` | server | `` | `server/main.lua` |
+| `__cfx_internal:commandFallback` | server | `command` | `server/main.lua` |
+| `chat:server:ServerPSA` | server | `message` | `server/main.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-chat:server:send', channelId, message)
+-- from a server script
+TriggerClientEvent('chatMessage', source)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/chatsettings` |  | `client/cl_chat.lua` |
+| `/togglechat` |  | `client/cl_chat.lua` |
+| `/channel` |  | `client/cl_chat.lua` |
+| `/chatadmin` | locale('help_chatadmin') | `server/main.lua` |
+| `/clearchat` |  | `server/main.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

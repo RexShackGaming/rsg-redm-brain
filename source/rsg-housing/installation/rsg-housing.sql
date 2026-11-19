@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS `rsg_housing` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `region` varchar(30) NOT NULL,
-  `houseid` varchar(7) NOT NULL,
+  `houseid` varchar(20) NOT NULL,
   `citizenid` varchar(50) NOT NULL DEFAULT '0',
   `fullname` varchar(255) NOT NULL DEFAULT '0',
   `rented` tinyint(1) NOT NULL DEFAULT 0,
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS `rsg_housing` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- `rent` is the monthly rent in $
-INSERT INTO `rsg_housing` (`id`, `region`, `houseid`, `rent`) VALUES
+INSERT IGNORE INTO `rsg_housing` (`id`, `region`, `houseid`, `rent`) VALUES
 (1, 'newhanover', 'house1', 50),
 (2, 'westelizabeth', 'house2', 50),
 (3, 'newhanover', 'house3', 50),
@@ -69,14 +69,39 @@ INSERT INTO `rsg_housing` (`id`, `region`, `houseid`, `rent`) VALUES
 
 CREATE TABLE IF NOT EXISTS `rsg_housekeys` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `houseid` varchar(7) NOT NULL DEFAULT '0',
+  `houseid` varchar(20) NOT NULL DEFAULT '0',
   `citizenid` varchar(50) NOT NULL DEFAULT '0',
   `guest` int(1) NOT NULL DEFAULT 0,
   `perm_doors` tinyint(1) NOT NULL DEFAULT 1,
   `perm_storage` tinyint(1) NOT NULL DEFAULT 1,
   `perm_wardrobe` tinyint(1) NOT NULL DEFAULT 1,
   `perm_mailbox` tinyint(1) NOT NULL DEFAULT 1,
+  `expires` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_citizenid` (`citizenid`),
+  KEY `idx_houseid` (`houseid`),
+  KEY `idx_house_citizen` (`houseid`,`citizenid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `rsg_housing_props` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `houseid` varchar(20) NOT NULL,
+  `model_key` varchar(32) NOT NULL,
+  `x` double NOT NULL,
+  `y` double NOT NULL,
+  `z` double NOT NULL,
+  `rx` double NOT NULL DEFAULT 0,
+  `ry` double NOT NULL DEFAULT 0,
+  `rz` double NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
   KEY `idx_houseid` (`houseid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `rsg_housing_retrieval` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `houseid` varchar(20) NOT NULL,
+  `citizenid` varchar(50) NOT NULL,
+  `expires` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_house_citizen` (`houseid`,`citizenid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

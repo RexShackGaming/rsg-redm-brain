@@ -1,6 +1,6 @@
 # rsg-moonshine
 
-Version 3.0.2. rsg-moonshine
+Version 3.0.3. rsg-moonshine
 
 Placeable moonshine stills for **RedM** on the **RSG Framework**. Players set up a still in the wild, load a mash, keep the fire fed and bottle their shine, while the law hunts the stills down. Brewing runs on the server in real time, so stills keep cooking while the owner is away and carry on through restarts. - **Placeable stills:** use the still item to get a see-through preview. Rotate it, the
 

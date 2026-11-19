@@ -1,6 +1,7 @@
 Config = {}
 
 Config.Debug = false
+Config.AutoDatabase = true -- create/update the tables on start; set false to import installation/rsg-housing.sql manually
 
 ---------------------------------
 -- rent settings
@@ -17,6 +18,13 @@ Config.HouseNameMin       = 3      -- shortest custom house name a tenant can se
 Config.HouseNameMax       = 30     -- longest custom house name (max 30, the database column size)
 Config.GuestSearchMin     = 2      -- characters typed before the guest search runs
 Config.GuestSearchResults = 6      -- max players shown in the guest search
+Config.MaxGuests          = 8      -- max guests (keys) a tenant can give out per house
+Config.GuestSearchScope   = 'nearby' -- who the guest search finds: 'nearby' (online players close to the tenant), 'online' (any online player) or 'all' (every character, searches the whole players table)
+Config.GuestSearchDistance = 25.0  -- 'nearby' range in metres
+Config.GuestDurations     = { 0, 24, 168 } -- key lengths a tenant can choose in hours (0 = until removed)
+Config.AllowKnock         = true   -- visitors without a key knock instead of getting an error; the tenant is told if online
+Config.KnockCooldown      = 20     -- seconds between knocks per player
+Config.LoginRentReminder  = true   -- remind tenants about rent that is due soon or overdue when they log in
 
 -- what a newly added guest can use (the tenant can change each guest from the guest list)
 Config.GuestDefaultPermissions = {
@@ -36,6 +44,15 @@ Config.WardrobeResource = 'rsg-wardrobe'
 ---------------------------------
 Config.TelegramResource = 'rsg-telegram'
 Config.MailboxMax       = 50 -- telegrams shown in the house mailbox
+
+---------------------------------
+-- push-to-talk while the panel is open
+---------------------------------
+-- While the NUI has focus, game controls are blocked but push-to-talk keeps working.
+Config.AllowPushToTalkWhileOpen = true
+Config.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK
+}
 
 ---------------------------------
 -- 'at home' status & blips
@@ -65,14 +82,40 @@ Config.StorageTiers = {
 -- house settings
 ---------------------------------
 Config.OwnedHouseBlips   = false -- when true, only your own rented house shows a blip
-Config.PurgeStorageOnLeave = true -- also delete storage when a tenant moves out (evictions ALWAYS delete it)
-Config.EnableGovenor     = false -- when true, rent and storage upgrades are paid into the region's govenor boss account (rsg-bossmenu)
+Config.PurgeStorageOnLeave = true -- true: storage is deleted when a tenant moves out. false: it is kept for Config.RetrievalDays (see below)
+Config.RetrievalDays     = 3     -- days an evicted / departed tenant can collect their belongings with /housebelongings at the house (0 = delete straight away)
+Config.EndTenancyRefundPercent = 0 -- % of the unused rent refunded when a tenant ends the tenancy early (0 = no refund)
+Config.EnableGovernor    = false -- when true, rent and storage upgrades are paid into the region's governor boss account (rsg-bossmenu). The old name Config.EnableGovenor still works
 Config.GovernorJobs      = {      -- region (rsg_housing.region) -> rsg-bossmenu job that receives the money
     newhanover    = 'govenor1',
     westelizabeth = 'govenor2',
     newaustin     = 'govenor3',
     ambarino      = 'govenor4',
     lemoyne       = 'govenor5',
+}
+
+---------------------------------
+-- decorating (tenants place furniture with rsg-gizmo)
+---------------------------------
+Config.Decorating         = true
+Config.MaxPropsPerHouse   = 25
+Config.PropPlaceRadius    = 40.0  -- furniture must be within this distance of the house menu spot (server checked)
+Config.PropStreamDistance = 80.0  -- furniture spawns for a player this close to the house
+Config.PropRefundPercent  = 50    -- % of the price refunded when a tenant removes an item
+-- models checked against femga/rdr3_discoveries objects/object_list.lua
+Config.DecorProps = {
+    { key = 'chair1',   label = 'Chair',          model = 'p_chair05x',        price = 12 },
+    { key = 'chair2',   label = 'Chair (plain)',  model = 'p_chair04x',        price = 12 },
+    { key = 'chair3',   label = 'Chair (sturdy)', model = 'p_chair06x',        price = 14 },
+    { key = 'rocker',   label = 'Rocking Chair',  model = 'p_chairrocking02x', price = 35 },
+    { key = 'stool',    label = 'Stool',          model = 'p_stool01x',        price = 8  },
+    { key = 'table',    label = 'Table',          model = 'p_table01x',        price = 25 },
+    { key = 'sidetable',label = 'Side Table',     model = 'p_sidetable01x',    price = 20 },
+    { key = 'cabinet',  label = 'Cabinet',        model = 'p_cabinet01x',      price = 45 },
+    { key = 'bookcase', label = 'Bookcase',       model = 'p_bookcase01x',     price = 50 },
+    { key = 'candle',   label = 'Candlestick',    model = 'p_candlestick01x',  price = 5  },
+    { key = 'crate',    label = 'Crate',          model = 'p_crate01x',        price = 6  },
+    { key = 'barrel',   label = 'Barrel',         model = 'p_barrel01ax',      price = 8  },
 }
 
 -- house config
@@ -955,4 +998,11 @@ Config.HouseDoors = {
         doorcoords = vector3(-1636.94, -1352.22, 83.97)
     },
     ---------------------------------------------------------------------------
+}
+
+-- rsg-economy integration (optional). Needs the rsg-economy resource; does nothing when it is not started.
+-- Rent and storage upgrade payments are deposited into the treasury of the town nearest to the house.
+Config.Economy = {
+    Enabled          = true,
+    ReplaceGovernor  = false, -- true = the treasury replaces the governor boss account payout (Config.EnableGovernor); false = both
 }

@@ -228,6 +228,9 @@ rsg-fishmonger/
 
 ## Changelog
 
+### 3.1.0
+- Optional rsg-skills integration: fishing `sell_bonus` perk adds to the seller bonus (`Config.Bonus.skill`).
+
 ### 2.2.0
 - Daily demand per town, reputation/job seller bonus and daily stock limits.
 - Fishing supplies shop on every fishmonger NPC.
@@ -241,5 +244,10 @@ rsg-fishmonger/
 - NUI focus is now released cleanly when the resource stops.
 
 ---
+
+## rsg-skills integration
+
+Optional. With `rsg-skills` started, the player's fishing `sell_bonus` perk is added to the seller bonus when selling fish (`Config.Bonus.skill`). The bonus shown in the shop UI includes it. Set `Config.Bonus.skill.enabled = false` to turn it off.
+
 
 Support the Project : https://rexshack.tebex.store/

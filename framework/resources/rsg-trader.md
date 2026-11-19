@@ -1,6 +1,6 @@
 # rsg-trader
 
-Version 3.1.0. rsg-trader
+Version 3.2.0. rsg-trader
 
 Dynamic-price NPC traders for **RSG-Core (RedM)**. Players buy and sell items at prices that move with stock levels. Admins place traders and manage stock in game through a built-in admin panel, with no config edits or restarts. - NPC traders spawn and despawn by distance, with optional fade-in and an rsg-target "Speak with the Trader" option - Buy / Sell UI that shows stock bars, your cash, owned
 

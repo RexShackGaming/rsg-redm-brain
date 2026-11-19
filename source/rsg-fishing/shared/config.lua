@@ -360,3 +360,10 @@ Config.fishData = {
     A_C_FISHSMALLMOUTHBASS_01_LG = { "Small Mouth Bass (Large)", "PROVISION_FISH_SMALLMOUTH_BASS", "PROVISION_SMLMTHBASS_DESC" },
     A_C_FISHSMALLMOUTHBASS_01_MS = { "Small Mouth Bass (Medium)", "PROVISION_FISH_SMALLMOUTH_BASS", "PROVISION_SMLMTHBASS_DESC" },
 }
+
+-- rsg-skills integration (optional). Needs the rsg-skills resource; does nothing when it is not started.
+Config.Skills = {
+    Enabled = true,
+    Skill   = 'fishing', -- skill key in rsg-skills
+    CatchXP = 10,        -- XP per fish caught (rsg-skills applies its own multipliers and cap)
+}

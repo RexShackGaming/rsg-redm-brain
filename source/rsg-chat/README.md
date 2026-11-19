@@ -211,3 +211,7 @@ end)
 See [LICENSE](LICENSE).
 
 Support the Project : https://rexshack.tebex.store/
+
+## Database
+
+Tables (`rsg_chat_channels`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `install.sql` once.

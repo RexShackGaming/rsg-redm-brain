@@ -157,6 +157,9 @@ RegisterNetEvent('rsg-looting:server:robPlayer', function(targetId)
         notify(src, locale('rob_title'), locale('rob_no_money'), 'inform')
     end
     addOutlaw(Player, Config.OutlawRob)
+    if Config.Reputation.Enabled and GetResourceState('rsg-reputation') == 'started' then
+        exports['rsg-reputation']:ApplyAction(src, Config.Reputation.Action) -- rsg-reputation (optional), honor only
+    end
     Webhooks.Rob(src, targetId, reason, cash, blood)
 
     exports['rsg-inventory']:OpenInventoryById(src, targetId)

@@ -80,6 +80,8 @@
     "level_up": "Landbouwniveau omhoog! Nieuwe rang: %s",
     "level_info": "Landbouwniveau %s (%s) - %s XP",
     "level_info_next": "Landbouwniveau %s (%s) - %s / %s XP",
+    "level_info_skills": "Landbouwniveau %s - %s XP",
+    "level_info_skills_next": "Landbouwniveau %s - %s / %s XP",
     "harvested_bonus": "Oogst binnengehaald - extra opbrengst!",
     "ui_btn_treat": "Behandelen",
     "ui_pests": "Ongedierte",

@@ -80,6 +80,8 @@
     "level_up": "Nivel de agricultură crescut! Noul rang: %s",
     "level_info": "Nivel de agricultură %s (%s) - %s XP",
     "level_info_next": "Nivel de agricultură %s (%s) - %s / %s XP",
+    "level_info_skills": "Nivel de agricultură %s - %s XP",
+    "level_info_skills_next": "Nivel de agricultură %s - %s / %s XP",
     "harvested_bonus": "Recoltă adunată - randament sporit!",
     "ui_btn_treat": "Tratează",
     "ui_pests": "Dăunători",

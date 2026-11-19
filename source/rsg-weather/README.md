@@ -201,6 +201,10 @@ html/    index.html  style.css  script.js  dropdown.js (custom dropdowns: native
 locales/ en de el es fr ja nl pl pt-br ro (.json)
 ```
 
+## Database
+
+Tables (`rsg_weather_state`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `installation/rsg-weather.sql` once.
+
 ---
 Support the Project : https://rexshack.tebex.store/
 

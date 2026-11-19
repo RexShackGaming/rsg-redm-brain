@@ -263,6 +263,9 @@ Ride an unowned (wild or stolen) horse to a fence NPC from `Config.HorseFence.lo
 
 ## Changelog
 
+**3.6.0**
+- Optional rsg-skills integration: horsemanship XP for finished training sessions (`Config.Skills`).
+
 ### 3.5.0
 - Admin panel: `/horseadmin` lets admins search players, edit horses (name, sex, stable, age, stats), force-store, revive, reset shoes / coat / tack / training, open saddlebags, give, transfer and delete horses. Server-validated, logged to rsg-log and the owner is notified.
 - Stable menu: each horse's icon shows its sex (♂ / ♀) and is coloured by age (green young, white adult, amber old, grey deceased).
@@ -294,3 +297,11 @@ If you find this useful, you can support development here: [Buy Me a Coffee](htt
 ## Client exports
 - `exports['rsg-stables']:GetActiveHorseNeeds()` → `{ entity, hunger, thirst }` (0–100) for your active horse, or `nil`. Used by rsg-hud to show horse hunger/thirst.
 - `exports['rsg-stables']:GetHorseBonusInfo()` → horse training bonus info.
+
+## rsg-skills integration
+
+Optional. With `rsg-skills` started, finishing a paid stable training session also awards horsemanship XP (`Config.Skills.TrainingXP`). Ride training does not, to avoid a notification every tick. Set `Config.Skills.Enabled = false` to turn it off.
+
+## Database
+
+Tables (`rsg_stables_horses`, `rsg_stables_breeding`, `rsg_stables_races`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `installation/install.sql` once.

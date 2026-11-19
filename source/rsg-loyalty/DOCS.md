@@ -156,3 +156,145 @@ Locales load through `@rsg-core/shared/locale.lua` from `locales/*.json` (en, de
 - Server-side earning, `Config.AutoDatabase`, fixed SQL file, push-to-talk whitelist, menu closes on death, UTF-8 safe names, capped export amounts
 
 Support: https://rexshack.tebex.store
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-loyalty 3.1.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-target`, `rsg-inventory`, `oxmysql`
+
+### Database
+
+Tables: `rsg_loyalty`, `rsg_loyalty_history`, `rsg_loyalty_redemptions`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `installation/rsg_loyalty.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Discord.WebhookURL` | `''` | Set your Discord webhook URL here |
+| `Config.Enabled` | `true` | Player points stay saved in the database and come back when re-enabled. |
+| `Config.AutoDatabase` | `true` | Set to false to import installation/rsg_loyalty.sql manually instead. |
+| `Config.AllowPushToTalkWhileOpen` | `true` | While the loyalty menu is open, block game controls but keep push-to-talk working. |
+| `Config.PushToTalkControls` | `table` |  |
+| `Config.Loyalty` | `table` | Loyalty Points Settings |
+| `Config.EnableEarning` | `true` | (set to false to keep the store open while only awarding points via admin commands / exports) |
+| `Config.RequireMovement` | `true` | Anti-AFK: only award points if the player moved since the last tick (checked server-side) |
+| `Config.MinMoveDistance` | `5.0` | Minimum distance (metres) the player must move between ticks (~1 minute) to earn |
+| `Config.MaxRedeemDistance` | `5.0` | Ignored when Config.UI.EnableCommand is true (menu can be opened anywhere). |
+| `Config.PointsPerMinute` | `1` | Points earned per minute of gameplay |
+| `Config.MaxPointsPerSession` | `500` | Maximum points a player can earn per session (resets on relog / character switch) |
+| `Config.MinPlaytimeBeforeEarning` | `60` | Minimum time (in seconds) before earning points starts |
+| `Config.MaxAdminAwardPoints` | `10000` | Maximum points an admin can award in a single command/event |
+| `Config.CashRewards` | `table` | Loyalty Store Items (for cash redemption) |
+| `Config.ItemRewards` | `table` | Loyalty Store Items (for item redemption) |
+| `Config.Tiers` | `table` | label is a locale key. Remove the table entries (or set discount = 0, earnMultiplier = 1.0) to turn perks off. |
+| `Config.Daily` | `table` | Daily login bonus and streak (claimed once per calendar day, database date) |
+| `Config.BasePoints` | `25` |  |
+| `Config.PerStreakDay` | `5` |  |
+| `Config.MaxPoints` | `100` |  |
+| `Config.Milestones` | `table` |  |
+| `Config.Boost` | `table` | (applies to passive and activity points, not to admin awards or the daily bonus) |
+| `Config.MaxMultiplier` | `5.0` |  |
+| `Config.MaxMinutes` | `240` |  |
+| `Config.Activities` | `table` | dailyCap = max points per player per day for that activity (counted after tier/boost multipliers). |
+| `Config.History` | `table` | Points history shown in the menu |
+| `Config.Rows` | `20` |  |
+| `Config.KeepDays` | `30` |  |
+| `Config.Notify` | `table` | Notifications |
+| `Config.AffordableReward` | `true` |  |
+| `Config.Rotation` | `table` | Entries with rotating = false are always available. |
+| `Config.Count` | `2` |  |
+| `Config.Period` | `'week'` |  |
+| `Config.SpecialRewards` | `table` | func(source, unpack(args)); returning false (or erroring) refunds the points. |
+| `Config.UI` | `table` | UI Settings |
+| `Config.OpenCommand` | `'loyalty'` | Command to open loyalty menu |
+| `Config.EnableCommand` | `false` | Enable loyalty command (set to false to disable) |
+| `Config.NotificationDuration` | `5000` | Notification duration (in milliseconds) |
+| `Config.Image` | `'nui://rsg-inventory/html/images/'` | Image Settings (path to rsg-inventory images) |
+| `Config.Exports` | `table` | Export Security Settings |
+| `Config.AllowedResources` | `{}` | Example: {'my-admin-menu', 'my-other-resource'} |
+| `Config.AllowAllResources` | `false` | Set to true to allow all resources (INSECURE - only use for testing) |
+| `Config.Discord` | `table` | Discord Webhook Settings (WebhookURL is set in server/config.lua - server only) |
+| `Config.EnableWebhooks` | `true` |  |
+| `Config.PointsBatchMinutes` | `10` | PointsEarned logs are sent as one summary embed per batch instead of one message per tick |
+| `Config.LogEvents` | `table` |  |
+| `Config.Leaderboard` | `table` |  |
+| `Config.Performance` | `table` | npc settings |
+| `Config.NpcSpawnDistance` | `20.0` |  |
+| `Config.NpcFadeIn` | `true` |  |
+| `Config.NpcFadeSpeed` | `40` |  |
+| `Config.LoyaltyLocations` | `table` | loyalty npc locations |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `getLoyaltyPoints` | `citizenid` | `server/server.lua` |
+| `getLifetimeLoyaltyPoints` | `citizenid` | `server/server.lua` |
+| `getLoyaltyTier` | `citizenid` | `server/server.lua` |
+| `addLoyaltyPoints` | `citizenid, points` | `server/server.lua` |
+| `removeLoyaltyPoints` | `citizenid, points` | `server/server.lua` |
+| `awardActivity` | `src, activity` | `server/server.lua` |
+| `setLoyaltyBoost` | `multiplier, minutes` | `server/server.lua` |
+
+```lua
+-- example
+local result = exports['rsg-loyalty']:getLoyaltyPoints(citizenid)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerUnload` | client | `` | `client/client.lua` |
+| `rsg-loyalty:client:updateLoyaltyData` | client | `data` | `client/client.lua` |
+| `rsg-loyalty:client:storeState` | client | `data` | `client/client.lua` |
+| `rsg-loyalty:client:leaderboardData` | client | `data` | `client/client.lua` |
+| `rsg-loyalty:client:historyData` | client | `rows` | `client/client.lua` |
+| `rsg-loyalty:client:openloyaltyUI` | client | `` | `client/client.lua` |
+| `rsg-loyalty:server:playerLoaded` | server | `` | `server/server.lua` |
+| `rsg-loyalty:server:getStore` | server | `` | `server/server.lua` |
+| `rsg-loyalty:server:getLeaderboard` | server | `` | `server/server.lua` |
+| `rsg-loyalty:server:getHistory` | server | `` | `server/server.lua` |
+| `rsg-loyalty:server:redeem` | server | `rewardType, rewardIndex` | `server/server.lua` |
+| `rsg-loyalty:server:adminAwardPoints` | server | `targetId, points` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-loyalty:server:playerLoaded')
+-- from a server script
+TriggerClientEvent('RSGCore:Client:OnPlayerLoaded', source)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/awardloyalty` |  | `server/server.lua` |
+| `/removeloyalty` |  | `server/server.lua` |
+| `/checkloyalty` |  | `server/server.lua` |
+| `/loyaltyboost` |  | `server/server.lua` |
+| `/postleaderboard` |  | `server/server.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

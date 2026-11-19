@@ -1,6 +1,6 @@
 # rsg-deliveries — Technical Documentation
 
-Version 3.1.1. For installation and the full configuration tables see [README.md](README.md).
+Version 3.2.0. For installation and the full configuration tables see [README.md](README.md).
 
 ## Contents
 
@@ -140,3 +140,88 @@ Nothing is saved. Active deliveries and cooldowns live in server memory and are 
 ## Support
 
 https://buymeacoffee.com/rexshack
+
+## rsg-reputation integration
+
+`Config.Reputation = { Enabled, Action, Regions }`. When a delivery starts, the hub's region is looked up by hub label and stored on the active delivery. On completion (wagon validated, cash paid) the server calls `ApplyAction(src, 'delivery', region)`. A hub that is not listed (for example Macfarlanes Ranch) passes no region, so nothing changes because the default `delivery` action has no honor. Skipped when rsg-reputation is not started.
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-deliveries 3.2.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-target`, `rsg-inventory`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Blip` | `table` |  |
+| `Config.DistanceSpawn` | `20.0` |  |
+| `Config.FadeIn` | `true` |  |
+| `Config.SpawnVehDistance` | `5.0` | check to see if another cart has spawned |
+| `Config.DestinationMarker` | `true` |  |
+| `Config.UIPosition` | `"top-center"` | rsg-core DrawText position (left, right, top-center) |
+| `Config.ShowDeliveryTimerUI` | `false` | toggle the rsg-core text UI for the delivery timer on/off |
+| `Config.FadeIncrement` | `51` | alpha fade increment |
+| `Config.DefaultDeliveryTime` | `30` | default delivery time limit in minutes |
+| `Config.MaxRewardAmount` | `500` | maximum cash reward to prevent exploitation |
+| `Config.InteractionDistance` | `2.0` | NPC interaction distance |
+| `Config.CompleteDistance` | `10.0` | how close the wagon must be to the drop-off to complete |
+| `Config.DeliveryCooldown` | `60` | seconds a player must wait between deliveries (0 = off) |
+| `Config.MaxAverageSpeed` | `25.0` | m/s; deliveries finished faster than distance / this are rejected (teleport check) |
+| `Config.RequireWagonAtDestination` | `true` | server checks the delivery wagon is actually at the drop-off (needs OneSync) |
+| `Config.ShowRewardImages` | `true` | show reward item images in the delivery UI |
+| `Config.ImagePath` | `'nui://rsg-inventory/html/images/'` | where item images live (uses the item's image from rsg-core shared items) |
+| `Config.WagonLabels` | `table` | friendly wagon names shown in the UI (falls back to the model name) |
+| `Config.RewardPerDistance` | `0.01` | Cash reward per meter traveled (e.g., 0.05 = $0.05 per meter) |
+| `Config.BaseReward` | `0` | Base reward given regardless of distance |
+| `Config.DeliveryLocations` | `table` |  |
+| `Config.Reputation` | `table` | rsg-reputation integration (optional). Needs the rsg-reputation resource; does nothing when it is not started. |
+| `Config.Enabled` | `true` |  |
+| `Config.Action` | `'delivery'` |  |
+| `Config.Regions` | `table` | delivery hub label -> rsg-reputation region that gains standing (hubs not listed give honor only) |
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-deliveries:server:startdelivery` | server | `src, cb, hubIndex, destIndex` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-deliveries:server:startdelivery', function(result)
+    -- use result
+end, hubIndex, destIndex)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-deliveries:server:setwagon` | server | `netId` | `server/server.lua` |
+| `rsg-deliveries:server:completedelivery` | server | `clientNetId` | `server/server.lua` |
+| `rsg-deliveries:server:canceldelivery` | server | `` | `server/server.lua` |
+| `rsg-deliveries:server:faildelivery` | server | `reason` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-deliveries:server:setwagon', netId)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/canceldelivery` |  | `client/client.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

@@ -37,3 +37,89 @@ See `shared/config.lua` (gameplay) and `server/sv_config.lua` (webhooks, server 
 - Hunts resume after relog / resource restart.
 - Detector native only called when the value changes.
 - Removed unused locale keys (`log_inv_full`, `log_loot_lost`, `log_no`) and the inventory-full log field.
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-treasure 3.1.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.MapItem` | `'treasure_map'` | usable item that starts a hunt |
+| `Config.RequiredItem` | `nil` | e.g. 'shovel' to require a tool, nil = none |
+| `Config.Detector` | ``WEAPON_KIT_METAL_DETECTOR`` | femga weapons/weapons.lua |
+| `Config.DetectorItem` | `'weapon_kit_metal_detector'` | inventory item name (server check) |
+| `Config.DetectRange` | `40.0` | detector starts picking up signal at this distance |
+| `Config.PinpointDistance` | `2.5` | signal maxes out & strongbox can be dug here |
+| `Config.Bleep` | `table` | Bleep (played via NUI so volume can scale with distance) |
+| `Config.SearchRadius` | `120.0` | size of the search circle on the map |
+| `Config.DigKey` | `0xF3830D8E` | [J] INPUT_OPEN_JOURNAL |
+| `Config.DigDistance` | `3.0` | server-checked max distance to dig |
+| `Config.DigTime` | `10000` | ms (length of the dig-up-chest anim scene) |
+| `Config.ChestRevealDelay` | `3000` | ms into the dig before the strongbox becomes visible |
+| `Config.Cooldown` | `10` | seconds between digs per player (anti-spam) |
+| `Config.ChestModel` | ``p_strongbox_muddy_01x`` | femga objects/object_list.lua |
+| `Config.DigAnim` | `{ dict = 'script@mech@treasure_hunting@chest', playlist = 'PBL_CHEST_0` | anim scene (old rsg-treasure) |
+| `Config.BlipSprite` | ``BLIP_RC_TREASURE_HUNTER`` | 1491.50 treasure_hunter.c |
+| `Config.Cash` | `{ min = 15, max = 60 }` | Cash reward (server rolls this) |
+| `Config.Rewards` | `table` | Item rewards: each has its own chance (0-100) |
+| `Config.Locations` | `table` | Possible treasure spots (exact dig points; the blip circle is offset so it isn't given away) |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `SendLog` | `` | `server/webhook.lua` |
+
+```lua
+-- example
+local result = exports['rsg-treasure']:SendLog()
+```
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-treasure:server:digStart` | server | `src, cb` | `server/server.lua` |
+| `rsg-treasure:server:dig` | server | `src, cb` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-treasure:server:digStart', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-treasure:client:startHunt` | client | `loc, centre` | `client/client.lua` |
+| `rsg-treasure:client:endHunt` | client | `` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerUnload` | client | `` | `client/client.lua` |
+| `rsg-treasure:server:resume` | server | `` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-treasure:server:resume')
+-- from a server script
+TriggerClientEvent('rsg-treasure:client:startHunt', source, loc, centre)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

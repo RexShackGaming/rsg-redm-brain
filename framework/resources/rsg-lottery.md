@@ -1,6 +1,6 @@
 # rsg-lottery
 
-Version 3.0.1. Lottery script for RSG Framework
+Version 3.0.2. Lottery script for RSG Framework
 
 A daily lottery for the RSG Framework (RedM). Players buy tickets from seller NPCs in every major town, pick their numbers, and a draw runs automatically every day. Prizes are held until the winner next visits a ticket seller, and the jackpot grows with every ticket sold until someone wins it. - **Daily automatic draw** at a configurable time. Draws missed while the server was offline run as soon 
 

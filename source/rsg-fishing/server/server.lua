@@ -11,6 +11,13 @@ for model, data in pairs(Config.fishData) do
     fishByModel[joaat(model)] = { item = model:lower(), label = data[1] }
 end
 
+-- rsg-skills: award fishing XP (optional dependency)
+local function awardSkillXP(src, amount, reason)
+    if not Config.Skills.Enabled or amount <= 0 then return end
+    if GetResourceState('rsg-skills') ~= 'started' then return end
+    exports['rsg-skills']:AddXP(src, Config.Skills.Skill, amount, reason)
+end
+
 local FishingEligible = {} -- [src] = expiry time of the last spent bait
 local LastCatch = {}       -- [src] = time of the last accepted catch
 
@@ -77,6 +84,9 @@ RegisterNetEvent('rsg-fishing:server:catchFish', function(fishModel, weight)
     -- AddItem fires the ItemBox itself
 
     notify(src, locale('sv_you_got_fish_name') .. ' ' .. fish.label, 'success')
+
+    -- ground pickups (weight 0) are not fished, so they earn no XP
+    if weight > 0 then awardSkillXP(src, Config.Skills.CatchXP, 'fishing catch') end
 
     if Config.Log then
         local ci = Player.PlayerData.charinfo

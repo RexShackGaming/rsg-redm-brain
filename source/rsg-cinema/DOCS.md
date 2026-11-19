@@ -86,3 +86,77 @@ Tickets are bought and checked on the server (one per character per showing). On
 | Picture off-centre | Adjust it in the admin panel and Save |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-cinema 3.0.1**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-target`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Debug` | `false` | prints setup info (render target, projector, house lights) to the F8 console |
+| `Config.TicketPrice` | `1.0` | cash, per showing |
+| `Config.ShowInterval` | `15` | minutes between showings (per cinema) |
+| `Config.SalesWindow` | `10` | minutes before a showing that tickets go on sale |
+| `Config.MaxShowLength` | `600` | seconds; safety cut-off if no client reports end of film |
+| `Config.MinShowLength` | `60` | seconds; end-of-film reports earlier than this are ignored |
+| `Config.LightsDim` | `0.05` | house light intensity during a film (1.0 = normal, 0.0 = off) |
+| `Config.LightsFade` | `3000` | ms to fade the house lights down / up |
+| `Config.WatchRadius` | `25.0` | player must be this close to the cinema centre to see the film |
+| `Config.SellerSpawnDistance` | `50.0` | ticket seller NPC spawns when a player is this close |
+| `Config.AdminCommand` | `'cinemaadmin'` | opens the admin panel (start/stop films) |
+| `Config.AdminPermission` | `'admin'` |  |
+| `Config.Films` | `table` | label = locale key (locales/*.json); cinema labels below are locale keys too |
+| `Config.Cinemas` | `table` | projector = coords of the S_MOVIEPROJECTION01X map light (Rockstar pins it and projects the film through it) |
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-cinema:server:getDraws` | server | `_, cb` | `server/server.lua` |
+| `rsg-cinema:server:getInfo` | server | `src, cb, id` | `server/server.lua` |
+| `rsg-cinema:server:buyTicket` | server | `src, cb, id` | `server/server.lua` |
+| `rsg-cinema:server:adminData` | server | `src, cb` | `server/server.lua` |
+| `rsg-cinema:server:adminAction` | server | `src, cb, action, id, filmIndex` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-cinema:server:getDraws', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-cinema:client:startFilm` | client | `id, playlist, filmLabel, ticket` | `client/client.lua` |
+| `rsg-cinema:client:stopFilm` | client | `id` | `client/client.lua` |
+| `rsg-cinema:client:setDraw` | client | `` | `client/client.lua` |
+| `rsg-cinema:client:openAdmin` | client | `` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
+| `rsg-cinema:server:filmEnded` | server | `id` | `server/server.lua` |
+| `rsg-cinema:server:sync` | server | `` | `server/server.lua` |
+| `rsg-cinema:server:adminSetDraw` | server | `id, d` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-cinema:server:filmEnded', id)
+-- from a server script
+TriggerClientEvent('rsg-cinema:client:startFilm', source, id, playlist, filmLabel, ticket)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

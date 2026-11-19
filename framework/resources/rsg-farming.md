@@ -1,6 +1,6 @@
 # rsg-farming
 
-Version 3.1.2. rsg-farming
+Version 3.2.0. rsg-farming
 
 Plant, water, fertilise and harvest crops anywhere in the world, with portable well pumps to fill your water buckets. Built for **RSG-Core (RedM)** with rsg-target and oxmysql. No ox_lib required. - **Plant anywhere**: use a seed item to place a ghost crop with the standard **rsg-gizmo** placement tool. - **Live growth simulation on the server**: water and fertiliser drain over time, health drops 
 

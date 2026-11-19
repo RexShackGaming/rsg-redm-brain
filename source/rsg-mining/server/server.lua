@@ -168,24 +168,28 @@ end
 -- database
 ---------------------------------
 CreateThread(function()
-    MySQL.query.await([[CREATE TABLE IF NOT EXISTS rsg_mining (
-        mine VARCHAR(50) NOT NULL PRIMARY KEY,
-        citizenid VARCHAR(50) NULL,
-        expires INT NOT NULL DEFAULT 0,
-        wages INT NOT NULL DEFAULT 0,
-        supplies LONGTEXT NULL,
-        storage LONGTEXT NULL
-    )]])
-    MySQL.query.await([[CREATE TABLE IF NOT EXISTS rsg_mining_workers (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        mine VARCHAR(50) NOT NULL,
-        name VARCHAR(100) NOT NULL,
-        skill FLOAT NOT NULL DEFAULT 1,
-        food INT NOT NULL DEFAULT 100,
-        water INT NOT NULL DEFAULT 100,
-        pickaxe INT NOT NULL DEFAULT 0,
-        status VARCHAR(50) NOT NULL DEFAULT 'idle'
-    )]])
+    if Config.AutoDatabase ~= false then
+        MySQL.query.await([[CREATE TABLE IF NOT EXISTS rsg_mining (
+            mine VARCHAR(50) NOT NULL PRIMARY KEY,
+            citizenid VARCHAR(50) NULL,
+            expires INT NOT NULL DEFAULT 0,
+            wages INT NOT NULL DEFAULT 0,
+            supplies LONGTEXT NULL,
+            storage LONGTEXT NULL
+        )]])
+    end
+    if Config.AutoDatabase ~= false then
+        MySQL.query.await([[CREATE TABLE IF NOT EXISTS rsg_mining_workers (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            mine VARCHAR(50) NOT NULL,
+            name VARCHAR(100) NOT NULL,
+            skill FLOAT NOT NULL DEFAULT 1,
+            food INT NOT NULL DEFAULT 100,
+            water INT NOT NULL DEFAULT 100,
+            pickaxe INT NOT NULL DEFAULT 0,
+            status VARCHAR(50) NOT NULL DEFAULT 'idle'
+        )]])
+    end
 
     -- upgrade older installs (information_schema check works on both MySQL and MariaDB)
     local hasWages = MySQL.scalar.await([[SELECT COUNT(*) FROM information_schema.COLUMNS
@@ -444,6 +448,18 @@ registerCallback('rsg-mining:server:deposit', function(src, id, key, amount)
     return buildData(src, id)
 end)
 
+-- rsg-skills (optional): award XP and read perks, both on the server
+local function skillXP(src, amount, reason)
+    if not Config.Skills.Enabled or not amount or amount <= 0 then return end
+    if GetResourceState('rsg-skills') ~= 'started' then return end
+    exports['rsg-skills']:AddXP(src, Config.Skills.Skill, amount, reason)
+end
+
+local function skillPerk(src, perk)
+    if not Config.Skills.Enabled or GetResourceState('rsg-skills') ~= 'started' then return 0 end
+    return tonumber(exports['rsg-skills']:GetPerk(src, Config.Skills.Skill, perk)) or 0
+end
+
 -- largest amount (<= want) of an item the player can carry, checked via rsg-inventory
 local function maxCarry(src, item, want)
     local inv = exports['rsg-inventory']
@@ -489,6 +505,7 @@ registerCallback('rsg-mining:server:collect', function(src, id, item)
     end
     if got > 0 then
         notify(src, table.concat(msgs, '\n'), 'success') -- one toast instead of one per item
+        skillXP(src, math.min(got * (Config.Skills.CollectXP or 0), Config.Skills.MaxXPPerCollect or 50), 'mining collect')
         saveMine(id)
         Webhook.Log('ore_collected', { src = src, mine = MineCfg[id].label, value = got,
             description = table.concat(lines, '\n'),

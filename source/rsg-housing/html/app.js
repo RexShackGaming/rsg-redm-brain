@@ -60,8 +60,8 @@ function applyStrings() {
 function showView(name) {
     if (name !== view) clearSearch();
     view = name;
-    ['rent', 'main', 'guests', 'wardrobe', 'mailbox', 'storage'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
-    $('btn-back').classList.toggle('hidden', !['guests', 'wardrobe', 'mailbox', 'storage'].includes(name));
+    ['rent', 'main', 'guests', 'wardrobe', 'mailbox', 'storage', 'decorate'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
+    $('btn-back').classList.toggle('hidden', !['guests', 'wardrobe', 'mailbox', 'storage', 'decorate'].includes(name));
     render();
 }
 
@@ -86,6 +86,7 @@ function render() {
 
     if (view === 'guests') return renderGuests();
     if (view === 'storage') return renderStorage();
+    if (view === 'decorate') return renderDecor();
     if (view === 'wardrobe' || view === 'mailbox') return;
 
     // rent card (tenant only)
@@ -99,6 +100,7 @@ function render() {
     }
     // guests only see what the tenant has allowed
     const can = (perm) => isTenant || (status.perms && status.perms[perm]);
+    if (isTenant && status.decor) rows.push({ key: 'decorate', icon: 'storage', title: S.menu_decor_title, desc: S.menu_decor_desc, chev: true });
     if (can('storage')) rows.push({ key: 'storage', icon: 'storage', title: S.menu_storage_title, desc: S.menu_storage_desc, chev: true });
     if (can('wardrobe')) rows.push({ key: 'outfits', icon: 'outfits', title: S.menu_outfits_title, desc: S.menu_outfits_desc });
     if (can('mailbox')) rows.push({ key: 'mailbox', icon: 'mailbox', title: S.menu_mailbox_title, desc: S.menu_mailbox_desc, chev: true, unread: status.unread });
@@ -154,7 +156,35 @@ function renderRentCard() {
     pay.textContent = status.canPay ? fmt(S.ui_pay_rent, money(status.rent)) : S.ui_paid_ahead;
 }
 
+let guestHours = 0;
+
+function durationLabel(h) {
+    if (!h) return S.ui_duration_permanent;
+    return h % 24 === 0 && h >= 48 ? fmt(S.ui_duration_days, h / 24) : fmt(S.ui_duration_hours, h);
+}
+
+function renderDurations() {
+    const list = status.durations || [0];
+    if (!list.includes(guestHours)) guestHours = list[0] || 0;
+    $('duration-row').classList.toggle('hidden', list.length < 2);
+    $('duration-row').innerHTML = `<span class="perm-label">${escapeHtml(S.ui_duration_label)}</span>` + list.map((h) =>
+        `<button class="perm-chip${h === guestHours ? ' on' : ''}" data-hours="${Number(h)}">${escapeHtml(durationLabel(h))}</button>`).join('');
+}
+
+function renderDecor() {
+    const decor = status.decor;
+    if (!decor) return showView('main');
+    $('decor-info').textContent = fmt(S.ui_decor_count, decor.count, decor.max) + ' - ' + S.ui_decor_hint;
+    $('decor-rows').innerHTML = (decor.items || []).map((d) => `
+        <div class="row" data-prop="${escapeHtml(d.key)}">
+            <div class="badge">${ICONS.storage}</div>
+            <div class="row-body"><div class="row-title">${escapeHtml(d.label)}</div></div>
+            <span class="pill">${money(d.price)}</span>
+        </div>`).join('');
+}
+
 function renderGuests() {
+    renderDurations();
     const guests = status.guests || [];
     if (guests.length === 0) {
         $('guest-rows').innerHTML = `<div class="muted empty">${escapeHtml(S.ui_no_guests)}</div>`;
@@ -167,7 +197,7 @@ function renderGuests() {
                 <div class="badge">${ICONS.person}</div>
                 <div class="row-body">
                     <div class="row-title">${escapeHtml(g.name || g.citizenid)}</div>
-                    <div class="row-desc">${escapeHtml(g.citizenid)}</div>
+                    <div class="row-desc">${escapeHtml(g.citizenid)}${g.expires_text ? ' · ' + escapeHtml(fmt(S.ui_guest_until, g.expires_text)) : ''}</div>
                 </div>
                 <button class="wood-btn muted small" data-remove="${escapeHtml(g.citizenid)}" data-name="${escapeHtml(g.name || g.citizenid)}">${escapeHtml(S.ui_remove)}</button>
             </div>
@@ -292,6 +322,7 @@ $('main-rows').addEventListener('click', (e) => {
     if (key === 'guests') return showView('guests');
     if (key === 'outfits') return openWardrobe();
     if (key === 'storage') return showView('storage');
+    if (key === 'decorate') return showView('decorate');
     if (key === 'home') return post('action', { action: 'home', on: !status.home });
     if (key === 'mailbox') return openMailbox();
     if (key === 'rename') {
@@ -362,10 +393,22 @@ $('guest-input').addEventListener('input', () => {
     searchTimer = setTimeout(() => runSearch(query), 300);
 });
 
+$('duration-row').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-hours]');
+    if (!chip) return;
+    guestHours = Number(chip.dataset.hours) || 0;
+    renderDurations();
+});
+
+$('decor-rows').addEventListener('click', (e) => {
+    const row = e.target.closest('[data-prop]');
+    if (row) post('action', { action: 'placeProp', key: row.dataset.prop });
+});
+
 $('search-rows').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-add]');
     if (!btn) return;
-    post('action', { action: 'addGuest', citizenid: btn.dataset.add });
+    post('action', { action: 'addGuest', citizenid: btn.dataset.add, hours: guestHours });
     clearSearch();
 });
 

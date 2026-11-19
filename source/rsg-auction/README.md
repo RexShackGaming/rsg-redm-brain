@@ -259,3 +259,7 @@ The server keeps live state in memory and writes every change to the database in
 Created by **RexShack** for the RSG Framework community.
 
 Support the Project : https://rexshack.tebex.store/
+
+## Database
+
+Tables (`rsg_auctions`, `rsg_auction_bids`, `rsg_auction_collections`, `rsg_auction_payouts`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `installation/rsg-auction.sql` once.

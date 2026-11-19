@@ -136,7 +136,9 @@ local function ensureDatabase()
     print('^2[rsg-stables] Database ready.^7')
 end
 
-MySQL.ready(ensureDatabase)
+MySQL.ready(function()
+    if Config.AutoDatabase ~= false then ensureDatabase() end
+end)
 
 
 -- ===================== HELPERS =====================

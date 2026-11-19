@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-chat'
-version '3.2.0'
+version '3.2.1'
 
 ui_page 'html/index.html'
 

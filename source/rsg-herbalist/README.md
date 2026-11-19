@@ -175,3 +175,8 @@ installation/
 ## Support
 
 If you find this useful, you can support development here: https://buymeacoffee.com/rexshack
+
+## rsg-skills integration
+
+Optional. With `rsg-skills` started, gathering a herb awards herbalism XP (`Config.Skills.GatherXP`) and the herbalism `extra_yield` perk gives that percent chance of one extra herb. Set `Config.Skills.Enabled = false` (or `ExtraYield = false`) to turn it off.
+

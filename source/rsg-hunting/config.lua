@@ -1,4 +1,6 @@
 Config = {}
+-- build the database tables automatically on start (set false and import the SQL file for a manual install)
+Config.AutoDatabase = true
 
 ----------------------------------
 -- general settings
@@ -1876,3 +1878,23 @@ Config.Animal = {
     { name = 'Legendary Wolf',           model = -1392359921, rewardmoney = 50, rewarditem1 = 'raw_meat', rewarditem2 = nil, rewarditem3 = nil },
 
 }
+
+-- rsg-skills integration (optional). Needs the rsg-skills resource; does nothing when it is not started.
+-- The hunting XP, levels and leaderboard above keep working; this adds the shared rsg-skills 'hunting' skill on top.
+Config.Skills = {
+    Enabled     = true,
+    Skill       = 'hunting', -- skill key in rsg-skills
+    MirrorXP    = true,      -- every hunting XP award is also given to the rsg-skills skill (raw amount)
+    SellBonus   = true,      -- the skill's sell_bonus perk (%) is added to butcher cash payouts
+    ExtraYield  = true,      -- the skill's extra_yield perk (%) is the chance of a second main skinning reward
+}
+
+-- shared helpers for the rsg-skills integration (server only)
+function SkillsActive()
+    return Config.Skills and Config.Skills.Enabled and GetResourceState('rsg-skills') == 'started'
+end
+
+function SkillPerk(src, perk)
+    if not SkillsActive() then return 0 end
+    return tonumber(exports['rsg-skills']:GetPerk(src, Config.Skills.Skill, perk)) or 0
+end

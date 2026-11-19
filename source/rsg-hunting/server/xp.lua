@@ -55,24 +55,28 @@ end
 CreateThread(function()
     if not (Cfg and Cfg.Enabled and Cfg.Weekly and Cfg.Weekly.Enabled) then return end
     local ok, err = pcall(function()
-        MySQL.query.await([[CREATE TABLE IF NOT EXISTS `hunting_weekly` (
-            `citizenid` VARCHAR(50) NOT NULL,
-            `week` INT NOT NULL,
-            `name` VARCHAR(100) NOT NULL DEFAULT '',
-            `xp` INT NOT NULL DEFAULT 0,
-            PRIMARY KEY (`citizenid`, `week`),
-            KEY `week_xp` (`week`, `xp`)
-        )]])
-        MySQL.query.await([[CREATE TABLE IF NOT EXISTS `hunting_weekly_rewards` (
-            `id` INT NOT NULL AUTO_INCREMENT,
-            `citizenid` VARCHAR(50) NOT NULL,
-            `week` INT NOT NULL,
-            `rank` INT NOT NULL,
-            `cash` DECIMAL(10,2) NOT NULL DEFAULT 0,
-            `claimed` TINYINT(1) NOT NULL DEFAULT 0,
-            PRIMARY KEY (`id`),
-            UNIQUE KEY `cid_week` (`citizenid`, `week`)
-        )]])
+        if Config.AutoDatabase ~= false then
+            MySQL.query.await([[CREATE TABLE IF NOT EXISTS `hunting_weekly` (
+                `citizenid` VARCHAR(50) NOT NULL,
+                `week` INT NOT NULL,
+                `name` VARCHAR(100) NOT NULL DEFAULT '',
+                `xp` INT NOT NULL DEFAULT 0,
+                PRIMARY KEY (`citizenid`, `week`),
+                KEY `week_xp` (`week`, `xp`)
+            )]])
+        end
+        if Config.AutoDatabase ~= false then
+            MySQL.query.await([[CREATE TABLE IF NOT EXISTS `hunting_weekly_rewards` (
+                `id` INT NOT NULL AUTO_INCREMENT,
+                `citizenid` VARCHAR(50) NOT NULL,
+                `week` INT NOT NULL,
+                `rank` INT NOT NULL,
+                `cash` DECIMAL(10,2) NOT NULL DEFAULT 0,
+                `claimed` TINYINT(1) NOT NULL DEFAULT 0,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `cid_week` (`citizenid`, `week`)
+            )]])
+        end
     end)
     if ok then
         weeklyReady = true
@@ -99,6 +103,11 @@ function HuntingXP.Award(src, amount)
     Player.Functions.AddRep(Cfg.RepName, amount)
     local after = before + amount
     addWeeklyXP(Player, amount)
+
+    -- rsg-skills: mirror the XP (raw, so the amount matches; rsg-skills notifies on its own level-ups)
+    if SkillsActive() and Config.Skills.MirrorXP then
+        exports['rsg-skills']:AddXP(src, Config.Skills.Skill, amount, 'hunting', { raw = true })
+    end
 
     if Cfg.Notify then
         TriggerClientEvent('RSGCore:Client:Notify', src, {

@@ -85,3 +85,98 @@ Created automatically when `Config.AutoDatabase = true`; same schema is in `inst
 | Waypoint/View greyed out | That IMAP has no known coordinates in the data. |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-mapping 3.1.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `oxmysql`
+
+### Database
+
+Tables: `rsg_imaps`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `installation/rsg-imap.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AutoDatabase` | `true` | create the rsg_imaps table on start (set false to import installation/rsg-imap.sql manually) |
+| `Config.Command` | `'imaps'` | /imaps [radius]  open the nearby IMAP menu |
+| `Config.DrawCommand` | `'imapdraw'` | /imapdraw [radius] toggle 3D labels in the world |
+| `Config.DefaultRadius` | `50.0` |  |
+| `Config.MaxRadius` | `500.0` |  |
+| `Config.MaxResults` | `200` | max rows rendered in the UI |
+| `Config.OnlyAdmins` | `true` | require rsg-core 'admin' permission |
+| `Config.AdminPerm` | `'admin'` |  |
+| `Config.DrawDistance` | `60.0` | labels farther than this are hidden |
+| `Config.DrawRefresh` | `1000` | ms between re-scans while labels are on |
+| `Config.HighlightSize` | `3.0` | ring diameter around the selected IMAP |
+| `Config.HighlightBeam` | `40.0` | height of the beam above the selected IMAP |
+| `Config.PersistToggles` | `true` | enabling/disabling in the UI is saved to the DB and synced to all players |
+| `Config.ViewDistance` | `25.0` | view camera distance from the IMAP |
+| `Config.ViewHeight` | `15.0` | view camera height above the IMAP |
+| `Config.ViewOrbitSpeed` | `0.25` | orbit speed (radians/sec), 0 = static |
+
+### Exports
+
+**Client**
+
+| Export | Arguments | File |
+|---|---|---|
+| `GetNearbyImaps` | `radius` | `client/client.lua` |
+
+```lua
+-- example
+local result = exports['rsg-mapping']:GetNearbyImaps(radius)
+```
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-mapping:server:canUse` | server | `source, cb` | `server/server.lua` |
+| `rsg-mapping:server:getSaved` | server | `_, cb` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-mapping:server:canUse', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-mapping:client:syncAll` | client | `` | `client/client.lua` |
+| `rsg-mapping:client:update` | client | `hash, e` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
+| `rsg-mapping:server:setLabel` | server | `hash, name, label` | `server/server.lua` |
+| `rsg-mapping:server:setState` | server | `hash, name, state` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-mapping:server:setLabel', hash, name, label)
+-- from a server script
+TriggerClientEvent('rsg-mapping:client:syncAll', source)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

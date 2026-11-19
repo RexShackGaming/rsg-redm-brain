@@ -128,26 +128,28 @@ CreateThread(function()
         Player(tonumber(id)).state:set('lumberjackCarrying', nil, true)
     end
 
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `rsg_lumberjack_trees` (
-            `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-            `identifier` VARCHAR(64) NOT NULL,
-            `owner_citizenid` VARCHAR(50) NOT NULL,
-            `x` DOUBLE NOT NULL,
-            `y` DOUBLE NOT NULL,
-            `z` DOUBLE NOT NULL,
-            `heading` FLOAT NOT NULL DEFAULT 0,
-            `model` VARCHAR(64) NOT NULL DEFAULT 'p_tree_birch_01_sapling',
-            `stage` TINYINT UNSIGNED NOT NULL DEFAULT 1,
-            `state` ENUM('planted','growing','ready','chopped') NOT NULL DEFAULT 'planted',
-            `watered` TINYINT(1) NOT NULL DEFAULT 0,
-            `fertilized` TINYINT(1) NOT NULL DEFAULT 0,
-            `planted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            `next_stage_at` DATETIME NULL,
-            PRIMARY KEY (`id`),
-            INDEX `idx_owner` (`owner_citizenid`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]])
+    if Config.AutoDatabase ~= false then
+        MySQL.query.await([[
+            CREATE TABLE IF NOT EXISTS `rsg_lumberjack_trees` (
+                `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `identifier` VARCHAR(64) NOT NULL,
+                `owner_citizenid` VARCHAR(50) NOT NULL,
+                `x` DOUBLE NOT NULL,
+                `y` DOUBLE NOT NULL,
+                `z` DOUBLE NOT NULL,
+                `heading` FLOAT NOT NULL DEFAULT 0,
+                `model` VARCHAR(64) NOT NULL DEFAULT 'p_tree_birch_01_sapling',
+                `stage` TINYINT UNSIGNED NOT NULL DEFAULT 1,
+                `state` ENUM('planted','growing','ready','chopped') NOT NULL DEFAULT 'planted',
+                `watered` TINYINT(1) NOT NULL DEFAULT 0,
+                `fertilized` TINYINT(1) NOT NULL DEFAULT 0,
+                `planted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `next_stage_at` DATETIME NULL,
+                PRIMARY KEY (`id`),
+                INDEX `idx_owner` (`owner_citizenid`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ]])
+    end
 
     -- UNIX_TIMESTAMP avoids oxmysql's DATETIME -> millisecond conversion, which
     -- previously broke growth for every tree after a restart.
@@ -376,6 +378,18 @@ RegisterNetEvent('rsg-lumberjack:server:pickupLog', function(logId)
     NotifySuccess(src, 'log_picked_up')
 end)
 
+-- rsg-skills (optional): award XP and read perks, both on the server
+local function skillXP(src, amount, reason)
+    if not Config.Skills.Enabled or not amount or amount <= 0 then return end
+    if GetResourceState('rsg-skills') ~= 'started' then return end
+    exports['rsg-skills']:AddXP(src, Config.Skills.Skill, amount, reason)
+end
+
+local function skillPerk(src, perk)
+    if not Config.Skills.Enabled or GetResourceState('rsg-skills') ~= 'started' then return 0 end
+    return tonumber(exports['rsg-skills']:GetPerk(src, Config.Skills.Skill, perk)) or 0
+end
+
 RegisterNetEvent('rsg-lumberjack:server:pickupWood', function(woodId)
     local src = source
     if not RSGCore.Functions.GetPlayer(src) then return end
@@ -392,6 +406,14 @@ RegisterNetEvent('rsg-lumberjack:server:pickupWood', function(woodId)
 
     exports['rsg-inventory']:AddItem(src, item, 1, nil, nil, 'lumberjack-wood-pickup')
     TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items[item], 'add', 1)
+
+    -- rsg-skills: XP and the extra_yield perk (chance of one more piece)
+    skillXP(src, Config.Skills.WoodXP, 'lumberjack wood pickup')
+    if Config.Skills.ExtraYield and math.random(100) <= skillPerk(src, 'extra_yield')
+        and exports['rsg-inventory']:CanAddItem(src, item, 1) then
+        exports['rsg-inventory']:AddItem(src, item, 1, nil, nil, 'lumberjack-skill-bonus')
+        TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items[item], 'add', 1)
+    end
 end)
 
 -- ============================================================================

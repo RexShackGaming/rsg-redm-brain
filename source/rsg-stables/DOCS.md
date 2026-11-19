@@ -832,3 +832,221 @@ Foal keys: `foal_cannot_ride`, `foal_grown_up` (`%s` = horse name). When adding 
 | Foal is full size / won't grow | Only horses collected from breeding after the update have `born = 1`; check `Config.FoalGrowth.enabled`, or set `applyToPurchased = true` |
 | Other players see a foal full size | The owner's client publishes `rsgFoalScale` on the entity state bag; make sure the horse entity is networked and the other client has `client/foal.lua` running |
 | Fence refuses a horse | Owned horses (state bag `rsgStablesOwned`) are never accepted; add locations to `Config.HorseFence.locations` |
+
+## rsg-skills integration
+
+`Config.Skills = { Enabled, Skill, TrainingXP }`. At the end of `rsg-stables:server:finishTraining`, after the horse's training XP is saved, the server calls `AddXP(src, 'horsemanship', TrainingXP, 'horse training')`. The amount comes from config. The horsemanship `speed_bonus` perk is not applied by rsg-stables. Skipped when rsg-skills is not started.
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-stables 3.6.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-target`, `oxmysql`, `rsg-inventory`
+
+### Database
+
+Tables: `rsg_stables_horses`, `rsg_stables_breeding`, `rsg_stables_races`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `installation/install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AutoDatabase` | `true` | build the database tables automatically on start (set false and import the SQL file for a manual install) |
+| `Config.MaxOwnedHorses` | `8` | max horses a single player can own across all stables |
+| `Config.MaxHorsesPerStable` | `20` | max horses a single player can keep at one stable location |
+| `Config.RenameCost` | `15` | $ cost to rename an owned horse |
+| `Config.InsuranceCost` | `25` | $ cost to insure a horse |
+| `Config.ReviveCost` | `40` | $ cost to revive/replace a dead insured horse |
+| `Config.StoreDistance` | `8.0` | max distance player's mount can be from stable to store it |
+| `Config.PaymentAccount` | `'cash'` | 'cash' or 'bank' |
+| `Config.WhistleStopDistance` | `1.0` | whistled horse stops this many meters in front of the player (measured to the horse's nose) |
+| `Config.WhistleAnim` | `'WHISTLEHORSESHORT'` | whistle sound + animation played on H ('WHISTLEHORSESHORT', 'WHISTLEHORSELONG', 'WHISTLEHORSEDOUBLE'), false t |
+| `Config.WhistleSpawnDistance` | `12.0` | when moved closer, the horse is placed on open ground about this far away (preferring behind you) with a clear |
+| `Config.WhistleTeleportDistance` | `60.0` | if the active horse is farther than this when whistled, it's moved near the player instead of walking/running  |
+| `Config.AllowTwoPlayersRide` | `false` |  |
+| `Config.ActiveHorse` | `table` | brings it back toward the player instead of it being returned to the stable. |
+| `Config.HorseFeedItems` | `table` | ===================== FEEDING / NEEDS ===================== |
+| `Config.HorseDrinkItems` | `table` |  |
+| `Config.HorseStimulant` | `table` | ===================== HORSE STIMULANT ===================== |
+| `Config.HorseNeeds` | `table` |  |
+| `Config.HorseHitch` | `table` | while hitched so the horse doesn't pull itself off the post and wander. |
+| `Config.HorseNaturalDrink` | `table` | ===================== NATURAL DRINKING (rivers / lakes / troughs) ===================== |
+| `Config.HorseNaturalGraze` | `table` | ===================== NATURAL GRAZING (hay near the player) ===================== |
+| `Config.HolsterStoresLongarms` | `true` | When false, the game default applies (any owned horse stores long guns). |
+| `Config.Horseshoes` | `table` | worn they come off and the horse stays degraded until new shoes are fitted at a stable (tack menu -> Horseshoe |
+| `Config.HorseLantern` | `table` |  |
+| `Config.HorseBrushItem` | `'horse_brush'` | item required (not consumed) to Brush Horse; using it from the inventory brushes your horse |
+| `Config.HorseBrushDistance` | `4.0` | how close you must be to your horse to use the brush or a feed item from the inventory (measured to the horse' |
+| `Config.DebugHorseChecks` | `false` | prints why a feed/water/brush server check failed to the server console |
+| `Config.HorseBrushMounted` | `true` | allow brushing from the saddle (Interaction_Brush, rdr3_discoveries tasks/TASK_ANIMAL_INTERACTION) |
+| `Config.HorseBonding` | `table` | ===================== BONDING ===================== |
+| `Config.HideNativeBrushFeed` | `true` | hide the game's own Brush / Feed horse prompts (rsg-target options are used instead) |
+| `Config.HorseInventory` | `table` | ===================== HORSE INVENTORY ===================== |
+| `Config.HorseFlee` | `table` | ===================== FLEE ===================== |
+| `Config.HorseActions` | `table` | Horse action ids from rdr3_discoveries tasks/TASK_HORSE_ACTION |
+| `Config.WildHorse` | `table` | "Claim Wild Horse" at the stable hand. Only breeds listed in Config.Breeds can be claimed. |
+| `Config.Breeding` | `table` | ===================== BREEDING ===================== |
+| `Config.HorseAging` | `table` | Age is counted in real-life days since the horse was bought (or born as a foal). |
+| `Config.FoalGrowth` | `table` | with other players through the `rsgFoalScale` entity state bag. |
+| `Config.Admin` | `table` | transfer to another player or delete. Every action is checked and logged on the server (rsg-log channel `rsgst |
+| `Config.AllowPushToTalkWhileOpen` | `true` | While a stables NUI that supports it is open, block game controls but still allow push-to-talk. |
+| `Config.PushToTalkControls` | `table` |  |
+| `Config.HorseGive` | `table` | ===================== GIVE HORSE TO ANOTHER PLAYER ===================== |
+| `Config.Stables` | `table` | ===================== STABLES ===================== |
+| `Config.BreedStatMax` | `10` | ===================== BREEDS ===================== |
+| `Config.BuyPriceBands` | `table` | Price ranges shown in the Buy menu "Price" filter (max = nil means no upper limit) |
+| `Config.Breeds` | `table` |  |
+| `Config.Tack` | `table` | Lets players fit their horse with separate saddle, blanket, saddlebags, horn, stirrups, |
+| `Config.Coat` | `table` | mane / tail = 0-254. Applied with SetMetaPedTag on the metaped_tint_horse palette. |
+| `Config.TackSounds` | `table` | frontend sound played when cycling tack styles in the customisation menu |
+| `Config.TackCategories` | `table` |  |
+| `Config.TackItems` | `table` |  |
+| `Config.HorseCard` | `table` | Live horse information panel (target "Horse Stats" on your horse, or the command below) |
+| `Config.HorseMedicine` | `table` | Health counterpart to the stimulant (SP: CONSUMABLE_HORSE_CARE_PACKAGE / horse medicine) |
+| `Config.HorseReviver` | `table` | in the field with the item before it counts as dead (insurance / death rules then apply as normal). |
+| `Config.TackBonuses` | `table` | A per-item `bonus = { speed = 1 }` on any Config.TackItems entry overrides its category default. |
+| `Config.HorseSell` | `table` | Sell a stabled horse back to the stablehand (Sell Horse in the horse menu) |
+| `Config.HorseFence` | `table` | brain data, so add your own locations below (vector4 x, y, z, heading for the fence NPC). |
+| `Config.Training` | `table` | Attribute IDs: rsg-redm-brain data/rdr3-native-enums/PedAttribute__AttributeType.md |
+| `Config.HorseSpook` | `table` | from rdr3_discoveries tasks/TASK_ANIMAL_INTERACTION) or the timer runs out. |
+| `Config.HorseSalvage` | `table` | The saddlebags can still be emptied at its stable afterwards. |
+| `Config.HorseRaces` | `table` | Build routes in-game: /raceroute add (at each checkpoint), /raceroute print (prints the config to F8), /racero |
+| `Config.Skills` | `table` | rsg-skills integration (optional). Needs the rsg-skills resource; does nothing when it is not started. |
+| `Config.Enabled` | `true` |  |
+| `Config.Skill` | `'horsemanship'` |  |
+| `Config.TrainingXP` | `15` |  |
+
+### Exports
+
+**Client**
+
+| Export | Arguments | File |
+|---|---|---|
+| `GetActiveHorseNeeds` | `` | `client/client.lua` |
+| `GetHorseBonusInfo` | `` | `client/training.lua` |
+
+```lua
+-- example
+local result = exports['rsg-stables']:GetActiveHorseNeeds()
+```
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-stables:client:confirmHorseGift` | client | `cb, giverName, horseName, breedLabel, price` | `client/client.lua` |
+| `rsg-stables:client:isHorseDead` | client | `cb, netId` | `client/client.lua` |
+| `rsg-stables:server:admin:search` | server | `source, query` | `server/admin.lua` |
+| `rsg-stables:server:admin:getOptions` | server | `source` | `server/admin.lua` |
+| `rsg-stables:server:admin:getHorses` | server | `source, citizenid` | `server/admin.lua` |
+| `rsg-stables:server:admin:updateHorse` | server | `source, horseId, changes` | `server/admin.lua` |
+| `rsg-stables:server:admin:action` | server | `source, horseId, action` | `server/admin.lua` |
+| `rsg-stables:server:admin:giveHorse` | server | `source, citizenid, model, name, gender, stable, ageDays, foal` | `server/admin.lua` |
+| `rsg-stables:server:admin:transferHorse` | server | `source, horseId, targetCitizenid` | `server/admin.lua` |
+| `rsg-stables:server:getStableHorses` | server | `source, stableName` | `server/server.lua` |
+| `rsg-stables:server:restoreActiveHorse` | server | `source` | `server/server.lua` |
+| `rsg-stables:server:toggleLantern` | server | `source` | `server/server.lua` |
+| `rsg-stables:server:useStimulant` | server | `source, horseNetId` | `server/server.lua` |
+| `rsg-stables:server:feedHorse` | server | `source, preferredItem, horseNetId` | `server/server.lua` |
+| `rsg-stables:server:waterHorse` | server | `source, horseNetId` | `server/server.lua` |
+| `rsg-stables:server:naturalDrink` | server | `source, horseNetId` | `server/server.lua` |
+| `rsg-stables:server:naturalGraze` | server | `source, horseNetId` | `server/server.lua` |
+| `rsg-stables:server:brushHorse` | server | `source, horseNetId` | `server/server.lua` |
+| `rsg-stables:server:buyHorse` | server | `source, stableName, model, horseName, outfit, gender` | `server/server.lua` |
+| `rsg-stables:server:claimWildHorse` | server | `source, stableName, netId, horseName` | `server/server.lua` |
+| `rsg-stables:server:retrieveHorse` | server | `source, horseId` | `server/server.lua` |
+| `rsg-stables:server:storeHorse` | server | `source, horseId, health, stamina` | `server/server.lua` |
+| `rsg-stables:server:fleeStoreHorse` | server | `source, horseId, health, stamina` | `server/server.lua` |
+| `rsg-stables:server:horseDied` | server | `source, horseId, netId` | `server/server.lua` |
+| `rsg-stables:server:horseDown` | server | `source, netId` | `server/server.lua` |
+| `rsg-stables:server:reviveDownedHorse` | server | `source, netId` | `server/server.lua` |
+| `rsg-stables:server:useMedicine` | server | `source, horseNetId` | `server/server.lua` |
+| `rsg-stables:server:renameHorse` | server | `source, horseId, newName` | `server/server.lua` |
+| `rsg-stables:server:insureHorse` | server | `source, horseId` | `server/server.lua` |
+| `rsg-stables:server:reviveHorse` | server | `source, horseId` | `server/server.lua` |
+| `rsg-stables:server:releaseHorse` | server | `source, horseId` | `server/server.lua` |
+| `rsg-stables:server:transferHorse` | server | `source, horseId, newStable` | `server/server.lua` |
+| `rsg-stables:server:getNearbyPlayers` | server | `source` | `server/server.lua` |
+| `rsg-stables:server:giveHorse` | server | `source, horseId, targetId, price` | `server/server.lua` |
+| `rsg-stables:server:getHorseshoeCondition` | server | `source` | `server/server.lua` |
+| `rsg-stables:server:wearHorseshoe` | server | `source, horseNetId, seconds` | `server/server.lua` |
+| `rsg-stables:server:applyHorseTack` | server | `source, horseId, selections` | `server/server.lua` |
+| `rsg-stables:server:applyHorseCoat` | server | `source, horseId, rawCoat` | `server/server.lua` |
+| `rsg-stables:server:startBreeding` | server | `source, stableName, idA, idB` | `server/server.lua` |
+| `rsg-stables:server:getBreedingJobs` | server | `source, stableName` | `server/server.lua` |
+| `rsg-stables:server:collectFoal` | server | `source, breedingId` | `server/server.lua` |
+| `rsg-stables:server:getSellPrice` | server | `source, horseId` | `server/server.lua` |
+| `rsg-stables:server:sellHorse` | server | `source, horseId` | `server/server.lua` |
+| `rsg-stables:server:fenceHorse` | server | `source, fenceIndex, netId` | `server/server.lua` |
+| `rsg-stables:server:getRaces` | server | `source, stableName` | `server/server.lua` |
+| `rsg-stables:server:startRace` | server | `source, raceId, horseNetId` | `server/server.lua` |
+| `rsg-stables:server:raceCheckpoint` | server | `source, idx` | `server/server.lua` |
+| `rsg-stables:server:abortRace` | server | `source` | `server/server.lua` |
+| `rsg-stables:server:getTraining` | server | `source` | `server/training.lua` |
+| `rsg-stables:server:startTraining` | server | `source, stat, horseNetId` | `server/training.lua` |
+| `rsg-stables:server:finishTraining` | server | `source, token, hits` | `server/training.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-stables:client:confirmHorseGift', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-stables:client:openAdmin` | client | `` | `client/admin.lua` |
+| `rsg-stables:client:adminStoreHorse` | client | `` | `client/admin.lua` |
+| `rsg-stables:client:useStimulant` | client | `` | `client/client.lua` |
+| `rsg-stables:client:useFeed` | client | `item` | `client/client.lua` |
+| `rsg-stables:client:useBrush` | client | `` | `client/client.lua` |
+| `rsg-stables:client:useLantern` | client | `` | `client/client.lua` |
+| `rsg-stables:client:horseDiedOfAge` | client | `horseId, horseName` | `client/client.lua` |
+| `rsg-stables:client:useReviver` | client | `` | `client/client.lua` |
+| `rsg-stables:client:useMedicine` | client | `` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerUnload` | client | `` | `client/client.lua` |
+| `rsg-stables:client:raceRoute` | client | `action` | `client/races.lua` |
+| `rsg-stables:client:fieldCorpse` | client | `data` | `client/salvage.lua` |
+| `rsg-stables:client:trainingUpdate` | client | `horseId, data` | `client/training.lua` |
+| `rsg-stables:server:saveHorsePosition` | server | `horseId, x, y, z, h, health` | `server/server.lua` |
+| `rsg-stables:server:wildHorseBroken` | server | `netId` | `server/server.lua` |
+| `rsg-stables:server:openHorseInventory` | server | `horseId, horseNetId` | `server/server.lua` |
+| `rsg-stables:server:openFieldSaddlebags` | server | `horseId` | `server/server.lua` |
+| `rsg-stables:server:openDeadHorseInventory` | server | `horseId` | `server/server.lua` |
+| `rsg-stables:server:trainingRideTick` | server | `horseNetId` | `server/training.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-stables:server:saveHorsePosition', horseId, x, y, z, h, health)
+-- from a server script
+TriggerClientEvent('rsg-stables:client:openAdmin', source)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/storehorse` |  | `client/client.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

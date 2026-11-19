@@ -1,6 +1,6 @@
 # rsg-chat
 
-Version 3.2.0. rsg-chat
+Version 3.2.1. rsg-chat
 
 A chat resource for **RedM** servers running **RSG-Core**. It replaces the default chat with channels that admins manage in-game, and a chat window each player can move, resize and style to suit themselves. Every message shows the sender's in-character name, and the server checks each message before sending it to players. - **Admin panel:** `/chatadmin` opens a channel manager. Admins can create, 
 

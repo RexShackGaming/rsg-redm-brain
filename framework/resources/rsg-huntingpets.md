@@ -1,6 +1,6 @@
 # rsg-huntingpets
 
-Version 3.1.1. rsg-huntingpets
+Version 3.1.2. rsg-huntingpets
 
 A combined RedM / RSG-Core resource that adds hunting dogs **and** hunting birds to your server in one package, with a single leather-and-gold themed NUI shop for buying, selling and managing both. Built on `rsg-core` and `rsg-target` — no `ox_lib` required. - 11 purchasable dog breeds (Husky, Mutt, Labrador Retriever, Rufus, Coon Hound, Hound Dog, Border Collie, Poodle, Foxhound, Australian Sheph
 
@@ -30,4 +30,4 @@ Has NUI (`ui_page`).
 
 ## Database tables
 
-`IF`, `player_birds`, `player_dogs`, `player_selected_pets`
+`player_birds`, `player_dogs`, `player_selected_pets`

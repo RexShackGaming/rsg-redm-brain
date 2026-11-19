@@ -96,3 +96,96 @@ Everything is validated on the server: distance to an auctioneer, ownership and 
 | No Discord posts | Configure `server/sv_config.lua`; check `/auctionwebhookstatus` |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-auction 3.1.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
+
+### Database
+
+Tables: `rsg_auctions`, `rsg_auction_bids`, `rsg_auction_collections`, `rsg_auction_payouts`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `installation/rsg-auction.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.AutoDatabase` | `true` | build the database tables automatically on start (set false and import the SQL file for a manual install) |
+| `Config.Categories` | `table` | Players select a category when creating an auction |
+| `Config.MinStartingBid` | `0.01` | Auction Settings |
+| `Config.MinDuration` | `60` |  |
+| `Config.MaxDuration` | `604800` |  |
+| `Config.DefaultDuration` | `3600` |  |
+| `Config.MaxAuctionsPerPlayer` | `10` |  |
+| `Config.MaxPrice` | `1000000` |  |
+| `Config.HistoryRetentionDays` | `7` |  |
+| `Config.AntiSnipe` | `table` | Anti-snipe: a bid placed in the last `window` seconds extends the auction to `extendBy` seconds |
+| `Config.RateLimits` | `table` | Rate Limiting (milliseconds between actions) |
+| `Config.MinBidIncrement` | `0.05` | Bid Settings |
+| `Config.Buyout` | `table` | Buyout Price Settings |
+| `Config.CreationFee` | `table` | Fee formula: BaseFee + (DurationMultiplier * hours) + (QuantityMultiplier * quantity) |
+| `Config.BlacklistedItems` | `table` | Items in this list cannot be auctioned by players |
+| `Config.AuctioneerNPCs` | `table` | Auctions are TOWN-SPECIFIC: players can only see auctions from the town they're in |
+| `Config.InteractionDistance` | `2.5` | NPC Interaction Settings (rsg-target) |
+| `Config.NotificationDuration` | `5000` | Notification Settings |
+| `Config.NpcSpawnDistance` | `60.0` |  |
+| `Config.Debug` | `false` | Debug |
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `auction:client:update` | client | `payload` | `client/main.lua` |
+| `auction:client:createResult` | client | `result` | `client/main.lua` |
+| `auction:client:cancelResult` | client | `result` | `client/main.lua` |
+| `auction:client:collectionResult` | client | `result` | `client/main.lua` |
+| `auction:client:notification` | client | `data` | `client/main.lua` |
+| `auction:client:webhookResult` | client | `data` | `client/main.lua` |
+| `auction:client:openFromNPC` | client | `locationData` | `client/npc.lua` |
+| `auction:server:getAuctions` | server | `location` | `server/main.lua` |
+| `auction:server:searchAuctions` | server | `params` | `server/main.lua` |
+| `auction:server:reportMissingImage` | server | `itemName` | `server/main.lua` |
+| `auction:server:createAuction` | server | `data` | `server/main.lua` |
+| `auction:server:placeBid` | server | `auctionId, amount` | `server/main.lua` |
+| `auction:server:buyoutAuction` | server | `auctionId` | `server/main.lua` |
+| `auction:server:cancelAuction` | server | `auctionId` | `server/main.lua` |
+| `auction:server:getPendingCollections` | server | `` | `server/main.lua` |
+| `auction:server:collectItem` | server | `auctionId, itemName` | `server/main.lua` |
+| `auction:server:collectMoney` | server | `` | `server/main.lua` |
+| `auction:server:validateNPCInteraction` | server | `data` | `server/main.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('auction:server:getAuctions', location)
+-- from a server script
+TriggerClientEvent('auction:client:update', source, payload)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/auctionwebhook` |  | `server/webhooks.lua` |
+| `/auctionwebhooktoggle` |  | `server/webhooks.lua` |
+| `/auctionwebhookstatus` |  | `server/webhooks.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

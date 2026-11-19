@@ -1,4 +1,4 @@
-# rsg-crafting – Docs (v3.1.0)
+# rsg-crafting – Docs (v3.2.0)
 
 ## Contents
 1. Files
@@ -82,4 +82,95 @@ Fully server-authoritative: the server picks the recipe, validates timing, remov
 | Can't craft | Missing ingredient or required tool |
 | No images | Check `Config.Image` |
 
+## rsg-skills integration
+
+`Config.Skills = { Enabled, Skill, XPScale, SaveChance }`. In `craftRecipe` (the only place items and XP are granted), after the output is added the server calls `AddXP(src, 'crafting', xpreward * XPScale, 'crafting')`, and rolls the `save_chance` perk; on a hit every ingredient is given back (when `CanAddItem` allows it). `GivePlayerCraftingXP` mirrors its XP the same way. Recipes' `requiredxp` still reads the rep value (`Config.XPType`), not rsg-skills. Skipped when rsg-skills is not started.
+
+
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-crafting 3.2.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.BookItem` | `'craftingbook'` | usable item that opens the crafting UI |
+| `Config.XPType` | `'crafting'` | rep type used with Player.Functions.AddRep / GetRep |
+| `Config.Image` | `'rsg-inventory/html/images/'` | item image path |
+| `Config.MaxBatch` | `10` | max of one recipe crafted in a single go (time scales with qty) |
+| `Config.ShowLocked` | `true` | show locked recipes (greyed out with the XP needed) |
+| `Config.Anim` | `table` | animation played while crafting |
+| `Config.Crafting` | `table` |  |
+| `Config.Skills` | `table` | The crafting XP above keeps working; this also awards XP to the shared rsg-skills skill. |
+| `Config.Enabled` | `true` |  |
+| `Config.Skill` | `'crafting'` |  |
+| `Config.XPScale` | `5` |  |
+| `Config.SaveChance` | `true` |  |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `GetPlayerCraftingXP` | `src` | `server/server.lua` |
+| `GivePlayerCraftingXP` | `src, amount` | `server/server.lua` |
+| `GetCraftingRecipes` | `` | `server/server.lua` |
+| `SendCraftingLog` | `` | `server/webhook.lua` |
+
+**Client**
+
+| Export | Arguments | File |
+|---|---|---|
+| `OpenCraftingBook` | `` | `client/client.lua` |
+
+```lua
+-- example
+local result = exports['rsg-crafting']:GetPlayerCraftingXP(src)
+```
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-crafting:server:getRecipes` | server | `src, cb` | `server/server.lua` |
+| `rsg-crafting:server:startCrafting` | server | `src, cb, index, qty` | `server/server.lua` |
+| `rsg-crafting:server:finishCrafting` | server | `src, cb, index` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-crafting:server:getRecipes', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-crafting:client:openBook` | client | `` | `client/client.lua` |
+| `rsg-crafting:server:cancelCrafting` | server | `` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-crafting:server:cancelCrafting')
+-- from a server script
+TriggerClientEvent('rsg-crafting:client:openBook', source)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

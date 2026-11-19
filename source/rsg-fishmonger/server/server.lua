@@ -73,6 +73,10 @@ local function bonusFor(Player)
     local b, cfg = 0, Config.Bonus
     local job = Player.PlayerData.job
     if job and cfg.jobs[job.name] then b = b + cfg.jobs[job.name] end
+    if cfg.skill and cfg.skill.enabled and GetResourceState('rsg-skills') == 'started' then
+        local perk = tonumber(exports['rsg-skills']:GetPerk(Player.PlayerData.source, cfg.skill.name, cfg.skill.perk)) or 0
+        b = b + math.max(0, perk) / 100
+    end
     if cfg.rep.enabled then
         b = b + math.min(cfg.rep.max, (Player.Functions.GetRep(cfg.rep.name) or 0) * cfg.rep.perPoint)
     end

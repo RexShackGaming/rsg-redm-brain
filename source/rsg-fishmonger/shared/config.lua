@@ -64,6 +64,12 @@ Config.Bonus = {
     jobs = {                 -- current job name = extra fraction (0.10 = +10%)
         -- fishmonger = 0.10,
     },
+    -- rsg-skills integration (optional): adds the player's skill perk to the bonus. Needs rsg-skills started.
+    skill = {
+        enabled = true,
+        name    = 'fishing',     -- rsg-skills skill key
+        perk    = 'sell_bonus',  -- perk value is a percent (10 = +10%)
+    },
     rep = {
         enabled     = true,
         name        = 'fishing', -- rsg-core rep key (Player.Functions.GetRep)

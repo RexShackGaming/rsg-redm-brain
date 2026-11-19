@@ -1,6 +1,6 @@
 # rsg-goldpanning
 
-**Version 3.1.0** · Requires rsg-core and rsg-inventory · Full developer docs: [DOCS.md](DOCS.md)
+**Version 3.2.0** · Requires rsg-core and rsg-inventory · Full developer docs: [DOCS.md](DOCS.md)
 
 Gold panning for the RSG Framework (RedM). Stand in a river, use a gold pan, and sift for nuggets.
 
@@ -59,5 +59,10 @@ Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
 Set the language in `server.cfg`, e.g. `setr rsg:locale de`. To add another, copy `locales/en.json` to `locales/<code>.json` and translate the values (keep the `%s` / `%d` / `%.2f` placeholders in the same order).
 
 ---
+
+## rsg-skills integration
+
+Optional. With `rsg-skills` started, a successful pan awards mining XP (`Config.Skills.FindXP`). Set `Config.Skills.Enabled = false` to turn it off.
+
 
 Support the Project : https://rexshack.tebex.store/

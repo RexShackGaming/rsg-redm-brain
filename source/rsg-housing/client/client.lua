@@ -15,6 +15,9 @@ local uiOpening      = false
 local adminOpen      = false
 local houseMenuGroup = GetRandomIntInRange(0, 0xffffff)
 local houseMenuPrompt = nil
+local uiFocus        = false
+local keyProp        = nil
+local routeActive    = false
 
 for _, house in ipairs(Config.Houses) do HousesById[house.houseid] = house end
 
@@ -106,13 +109,16 @@ local function playKeyAnimation()
     RSGCore.Functions.RequestModel(model)
 
     local prop = CreateObject(model, GetEntityCoords(ped) + vec3(0, 0, 0.2), false, false, false)
+    keyProp = prop
     TaskPlayAnim(ped, dict, 'action', 8.0, -8.0, 2500, 31, 0, true, 0, false, 0, false)
     Wait(750)
     AttachEntityToEntity(prop, ped, GetEntityBoneIndexByName(ped, 'SKEL_R_Finger12'), 0.02, 0.0120, -0.00850, 0.024, -160.0, 200.0, true, true, false, true, 1, true)
 
-    while IsEntityPlayingAnim(ped, dict, 'action', 3) do Wait(100) end
+    local timeout = GetGameTimer() + 4000
+    while IsEntityPlayingAnim(ped, dict, 'action', 3) and GetGameTimer() < timeout do Wait(100) end
 
-    DeleteObject(prop)
+    if DoesEntityExist(prop) then DeleteObject(prop) end
+    keyProp = nil
     RemoveAnimDict(dict)
     SetModelAsNoLongerNeeded(model)
 end
@@ -156,7 +162,7 @@ CreateThread(function()
             end
             PromptSetActiveGroupThisFrame(doorPromptGroup, CreateVarString(10, 'LITERAL_STRING', houseName(nearest.houseid) .. ': ' .. status))
 
-            if not doorBusy and PromptHasHoldModeCompleted(lockPrompt) then
+            if not doorBusy and PromptHasHoldModeCompleted(lockPrompt) and not IsEntityDead(PlayerPedId()) and not IsPedOnMount(PlayerPedId()) and not IsPedInAnyVehicle(PlayerPedId(), false) then
                 doorBusy = true
                 local doorCoords = nearest.doorcoords
                 CreateThread(function()
@@ -185,12 +191,17 @@ local function loadState()
     refreshHouseBlips()
 end
 
-RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', loadState)
+RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
+    loadState()
+    -- remind tenants about rent that is due soon / overdue, once the loading screen is gone
+    SetTimeout(8000, function() TriggerServerEvent('rsg-housing:server:loginCheck') end)
+end)
 
 RegisterNetEvent('rsg-housing:client:SyncOwnedHouses', function(owned, mine)
     OwnedHouses = owned or {}
     MyHouses = mine or {}
     refreshHouseBlips()
+    TriggerEvent('rsg-housing:client:housesUpdated', MyHouses) -- hook for other scripts
 end)
 
 RegisterNetEvent('rsg-housing:client:SyncDoors', function(doors)
@@ -211,6 +222,41 @@ end)
 ---------------------------------------
 -- house NUI
 ---------------------------------------
+---------------------------------------
+-- NUI focus (push-to-talk keeps working while a panel is open)
+---------------------------------------
+local function applyNuiFocus(enable)
+    uiFocus = enable
+    if enable then
+        SetNuiFocus(true, true)
+        if Config.AllowPushToTalkWhileOpen then SetNuiFocusKeepInput(true) end
+    else
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
+end
+
+CreateThread(function()
+    while true do
+        if uiFocus and Config.AllowPushToTalkWhileOpen then
+            Wait(0)
+            DisableAllControlActions(0)
+            DisableAllControlActions(1)
+            DisableAllControlActions(2)
+            local list = Config.PushToTalkControls
+            if list then
+                for i = 1, #list do
+                    EnableControlAction(0, list[i], true)
+                    EnableControlAction(1, list[i], true)
+                    EnableControlAction(2, list[i], true)
+                end
+            end
+        else
+            Wait(250)
+        end
+    end
+end)
+
 local UI_STRINGS = {
     'ui_vacant', 'ui_tenant', 'ui_guest', 'ui_per_month', 'ui_rent_terms', 'ui_rent_button',
     'ui_rent_status', 'ui_paid_until', 'ui_overdue_since', 'ui_days_left', 'ui_overdue_days', 'ui_pay_rent',
@@ -224,7 +270,9 @@ local UI_STRINGS = {
     'ui_confirm_delete_mail', 'ui_confirm_delete_mail_content', 'ui_close', 'ui_house',
     'ui_storage_title', 'ui_storage_current', 'ui_storage_open', 'ui_storage_warning', 'ui_storage_upgrade', 'ui_storage_included',
     'ui_storage_owned', 'ui_storage_slots', 'ui_storage_weight', 'ui_confirm_upgrade', 'ui_confirm_upgrade_content',
-    'storage_tier_small', 'storage_tier_medium', 'storage_tier_large', 'ui_home_title', 'ui_home_desc', 'ui_home_on', 'ui_home_off', 'ui_outfits_empty', 'ui_outfit_default', 'ui_wear', 'ui_outfit_worn', 'ui_outfits_hint', 'ui_confirm_remove', 'ui_confirm_remove_content'
+    'storage_tier_small', 'storage_tier_medium', 'storage_tier_large', 'ui_home_title', 'ui_home_desc', 'ui_home_on', 'ui_home_off', 'ui_outfits_empty', 'ui_outfit_default', 'ui_wear', 'ui_outfit_worn', 'ui_outfits_hint', 'ui_confirm_remove', 'ui_confirm_remove_content',
+    'menu_decor_title', 'menu_decor_desc', 'ui_decor_header', 'ui_decor_count', 'ui_decor_hint', 'ui_duration_label',
+    'ui_duration_permanent', 'ui_duration_hours', 'ui_duration_days', 'ui_guest_until'
 }
 
 local function getStrings()
@@ -237,7 +285,7 @@ local function closeUI()
     if not uiOpen then return end
     uiOpen = false
     uiHouse = nil
-    SetNuiFocus(false, false)
+    applyNuiFocus(false)
     SendNUIMessage({ action = 'close' })
 end
 
@@ -267,7 +315,7 @@ local function openHouseUI(houseid)
     uiHouse = houseid
     if pushStatus(houseid, false) then
         uiOpen = true
-        SetNuiFocus(true, true)
+        applyNuiFocus(true)
     else
         uiHouse = nil
     end
@@ -339,7 +387,7 @@ RegisterNUICallback('action', function(data, cb)
     elseif action == 'payRent' then
         runAction('payRent', houseid)
     elseif action == 'addGuest' and type(data.citizenid) == 'string' then
-        runAction('addGuest', houseid, string.upper(data.citizenid))
+        runAction('addGuest', houseid, string.upper(data.citizenid), tonumber(data.hours) or 0)
     elseif action == 'removeGuest' and type(data.citizenid) == 'string' then
         runAction('removeGuest', houseid, data.citizenid)
     elseif action == 'setGuestPerm' and type(data.citizenid) == 'string' and type(data.perm) == 'string' then
@@ -350,6 +398,9 @@ RegisterNUICallback('action', function(data, cb)
         runAction('renameHouse', houseid, data.name)
     elseif action == 'endTenancy' then
         if runAction('endTenancy', houseid) then closeUI() end
+    elseif action == 'placeProp' and type(data.key) == 'string' then
+        closeUI()
+        TriggerEvent('rsg-housing:client:placeProp', houseid, data.key)
     elseif action == 'storage' then
         closeUI()
         TriggerServerEvent('rsg-housing:server:openStorage', houseid)
@@ -381,8 +432,8 @@ local ADMIN_STRINGS = {
     'adm_rent', 'adm_tenant', 'adm_due', 'adm_storage', 'adm_none',
     'adm_home', 'adm_away', 'adm_locked', 'adm_unlocked', 'adm_save', 'adm_details', 'adm_rent_section',
     'adm_tenancy_section', 'adm_property_section', 'adm_due_minus', 'adm_due_plus', 'adm_set_date',
-    'adm_reset_name', 'adm_lock', 'adm_unlock', 'adm_teleport', 'adm_open_storage', 'adm_evict', 'adm_evict_keep',
-    'adm_evict_purge', 'adm_confirm_evict', 'adm_confirm_evict_content', 'adm_no_results', 'adm_custom_name',
+    'adm_reset_name', 'adm_lock', 'adm_unlock', 'adm_teleport', 'adm_open_storage', 'adm_evict_keep',
+    'adm_evict_purge', 'adm_confirm_evict_content', 'adm_no_results', 'adm_custom_name',
     'adm_not_in_config', 'adm_guest_list', 'adm_no_guests', 'ui_remove', 'ui_confirm', 'ui_cancel',
     'storage_tier_small', 'storage_tier_medium', 'storage_tier_large', 'adm_doors', 'adm_days_left',
     'adm_overdue_by', 'adm_refresh', 'ui_back', 'ui_close', 'ui_storage_slots', 'ui_storage_weight'
@@ -391,7 +442,7 @@ local ADMIN_STRINGS = {
 local function closeAdmin()
     if not adminOpen then return end
     adminOpen = false
-    SetNuiFocus(false, false)
+    applyNuiFocus(false)
     SendNUIMessage({ action = 'adminClose' })
 end
 
@@ -404,7 +455,7 @@ RegisterNetEvent('rsg-housing:client:openAdmin', function()
     for _, key in ipairs(ADMIN_STRINGS) do strings[key] = locale(key) end
 
     adminOpen = true
-    SetNuiFocus(true, true)
+    applyNuiFocus(true)
     SendNUIMessage({
         action = 'adminOpen',
         houses = result.houses,
@@ -486,6 +537,63 @@ CreateThread(function()
 end)
 
 ---------------------------------------
+-- /myhouse: route to the house you rent (run again to clear)
+---------------------------------------
+local function clearRoute()
+    if routeActive then
+        ClearGpsMultiRoute()
+        routeActive = false
+    end
+end
+
+RegisterCommand('myhouse', function()
+    if routeActive then
+        clearRoute()
+        return RSGCore.Functions.Notify({ title = locale('rent_title'), description = locale('myhouse_cleared'), type = 'inform' })
+    end
+
+    local pos = GetEntityCoords(PlayerPedId())
+    local best, bestDist
+    for houseid in pairs(MyHouses) do
+        local house = HousesById[houseid]
+        if house then
+            local dist = #(pos - house.menucoords)
+            if not bestDist or dist < bestDist then best, bestDist = house, dist end
+        end
+    end
+    if not best then
+        return RSGCore.Functions.Notify({ title = locale('rent_title'), description = locale('myhouse_none'), type = 'error' })
+    end
+
+    StartGpsMultiRoute(joaat('COLOR_YELLOW'), true, true)
+    AddPointToGpsMultiRoute(best.menucoords.x, best.menucoords.y, best.menucoords.z)
+    SetGpsMultiRouteRender(true)
+    routeActive = true
+    RSGCore.Functions.Notify({ title = locale('rent_title'), description = locale('myhouse_route', houseName(best.houseid)), type = 'success' })
+
+    CreateThread(function()
+        while routeActive do
+            Wait(1500)
+            if #(GetEntityCoords(PlayerPedId()) - best.menucoords) < 8.0 then clearRoute() end
+        end
+    end)
+end, false)
+
+CreateThread(function()
+    TriggerEvent('chat:addSuggestion', '/myhouse', locale('myhouse_help'))
+end)
+
+---------------------------------------
+-- character unload
+---------------------------------------
+RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
+    if uiOpen then closeUI() end
+    if adminOpen then closeAdmin() end
+    MyHouses = {}
+    refreshHouseBlips()
+end)
+
+---------------------------------------
 -- cleanup
 ---------------------------------------
 AddEventHandler('onResourceStop', function(resource)
@@ -494,5 +602,57 @@ AddEventHandler('onResourceStop', function(resource)
     for i = 1, #HouseBlips do RemoveBlip(HouseBlips[i]) end
     if lockPrompt then PromptDelete(lockPrompt) end
     if houseMenuPrompt then PromptDelete(houseMenuPrompt) end
-    if uiOpen or adminOpen then SetNuiFocus(false, false) end
+    if uiOpen or adminOpen or uiFocus then applyNuiFocus(false) end
+    if keyProp and DoesEntityExist(keyProp) then DeleteObject(keyProp) end
+    clearRoute()
+end)
+
+---------------------------------------
+-- public API (see DOCS.md)
+-- Hook event (local, other client scripts can listen with AddEventHandler):
+--   rsg-housing:client:housesUpdated (myHouses)   myHouses = { [houseid] = true }
+---------------------------------------
+exports('IsHouseRented', function(houseid)
+    return OwnedHouses[houseid] ~= nil
+end)
+
+exports('IsMyHouse', function(houseid)
+    return MyHouses[houseid] == true
+end)
+
+-- list of house ids the local player rents
+exports('GetMyHouses', function()
+    local list = {}
+    for houseid in pairs(MyHouses) do list[#list + 1] = houseid end
+    table.sort(list)
+    return list
+end)
+
+-- tenant's custom name, otherwise the config name
+exports('GetHouseName', function(houseid)
+    if not HousesById[houseid] then return nil end
+    return houseName(houseid)
+end)
+
+-- closest house menu spot within maxDist (default 50.0): houseid, distance
+exports('GetNearestHouse', function(coords, maxDist)
+    local pos = coords or GetEntityCoords(PlayerPedId())
+    maxDist = tonumber(maxDist) or 50.0
+    local best, bestDist
+    for _, house in ipairs(Config.Houses) do
+        local dist = #(vector3(pos.x, pos.y, pos.z) - house.menucoords)
+        if dist <= maxDist and (not bestDist or dist < bestDist) then best, bestDist = house.houseid, dist end
+    end
+    return best, bestDist
+end)
+
+-- opens the house panel as if the player pressed [J] there (the server still checks distance for every action)
+exports('OpenHouseMenu', function(houseid)
+    if not HousesById[houseid] then return false end
+    CreateThread(function() openHouseUI(houseid) end)
+    return true
+end)
+
+exports('IsHouseMenuOpen', function()
+    return uiOpen or adminOpen
 end)

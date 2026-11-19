@@ -109,3 +109,151 @@ Created automatically when `Config.AutoDatabase = true`; identical to `installat
 
 ---
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-goldclaim 3.1.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
+
+### Database
+
+Tables: `player_goldrockers`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `installation/rsg-goldclaim.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.PlayerProps` | `{}` | populated at runtime by the server, do not edit |
+| `Config.Debug` | `false` |  |
+| `Config.AutoDatabase` | `true` | create the database table automatically on start (set false to import installation/rsg-goldclaim.sql manually) |
+| `Config.NotifyPosition` | `'top-right'` | rsg-core notification position: 'top' \| 'top-right' \| 'top-left' \| 'bottom' \| 'bottom-right' \| 'bottom-left' \| |
+| `Config.NotifyDuration` | `10000` | default notification duration (ms) |
+| `Config.EnableVegModifier` | `true` | clears vegetation around placed rockers |
+| `Config.GoldRocker` | ``p_goldcradlestand01x`` | prop used for gold rocker |
+| `Config.MaxGoldRockers` | `4` | maximum gold rockers per character |
+| `Config.DegradeChance` | `5` | % chance (per rocker) of losing 1% quality each cron cycle |
+| `Config.DegradeInterval` | `30` | minutes between degradation rolls |
+| `Config.RepairWoodAmount` | `5` | amount of wood needed to repair |
+| `Config.LeoJobType` | `'leo'` | job type allowed to destroy unlicensed claims |
+| `Config.OwnerOnlyProcessing` | `true` | only the owner can start processing (and receives the output) |
+| `Config.LicenseItem` | `'resource_gold_claim_license'` | consumed on placement to make the claim licensed |
+| `Config.InteractDistance` | `5.0` | max distance from a rocker to interact with it |
+| `Config.PickupDistance` | `10.0` | max distance from a rocker to pick up its output |
+| `Config.PlaceMaxDistance` | `6.0` | max distance between player and placed rocker |
+| `Config.MinRockerSpacing` | `4.0` | min distance between two rockers |
+| `Config.PropDrawDistance` | `60.0` | distance at which rocker props are streamed in |
+| `Config.ProcessingTime` | `60000` | time in ms per processing cycle |
+| `Config.GoldChance` | `50` | % chance of gold vs paydirt return |
+| `Config.AddPaydirtTime` | `10000` | time in ms to add paydirt to rocker |
+| `Config.AddWaterTime` | `10000` | time in ms to add water to rocker |
+| `Config.MaxPaydirt` | `5` | max paydirt units a rocker can hold |
+| `Config.MaxWater` | `5` | max water units a rocker can hold |
+| `Config.RepairTime` | `10000` | time in ms to repair |
+| `Config.PackUpTime` | `10000` | time in ms to pack up |
+| `Config.PlaceTime` | `10000` | time in ms to set up a rocker |
+| `Config.DestroyTime` | `10000` | time in ms for LEO to destroy an illegal claim |
+| `Config.PickupTime` | `3000` | time in ms to pick up an output prop |
+| `Config.GoldOreItem` | `'resource_gold_nugget'` |  |
+| `Config.GoldOreAmount` | `{ min = 1, max = 5 }` |  |
+| `Config.ShovelDigTime` | `10000` | time in ms to dig paydirt |
+| `Config.BucketFillTime` | `8000` | time in ms to fill bucket |
+| `Config.GoldProp` | ``p_goldstack01x`` | gold output prop |
+| `Config.PaydirtProp` | ``mp005_p_dirtpile_sca02_buried`` | paydirt output prop |
+| `Config.PropSpawnOffset` | `1.5` | distance to side of rocker to spawn output prop |
+| `Config.ShovelProp` | `table` |  |
+| `Config.DigDirtPile` | `table` | dirt pile spawned in front of the player after a successful dig (cosmetic, local only) |
+| `Config.Anims` | `table` |  |
+| `Config.ClaimZoneRadius` | `20.0` |  |
+| `Config.MaxClaimNameLength` | `50` |  |
+| `Config.ClaimBlip` | `table` |  |
+| `Config.ForwardDistance` | `2.0` |  |
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-goldclaim:server:getprops` | server | `_, cb` | `server/server.lua` |
+| `rsg-goldclaim:server:getpending` | server | `source, cb` | `server/server.lua` |
+| `rsg-goldclaim:server:countprops` | server | `source, cb` | `server/server.lua` |
+| `rsg-goldclaim:server:getrockerdata` | server | `source, cb, propid` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-goldclaim:server:getprops', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-goldclaim:rocker:client:updatePropData` | client | `` | `client/main.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/main.lua` |
+| `rsg-goldclaim:rocker:client:removePropObject` | client | `propid` | `client/main.lua` |
+| `rsg-goldclaim:rocker:client:refreshclaim` | client | `propid, newname` | `client/main.lua` |
+| `rsg-goldclaim:rocker:client:mainmenu` | client | `propid` | `client/main.lua` |
+| `rsg-goldclaim:rocker:client:checkrocker` | client | `data` | `client/main.lua` |
+| `rsg-goldclaim:rocker:client:addpaydirt` | client | `propid` | `client/main.lua` |
+| `rsg-goldclaim:rocker:client:addwater` | client | `propid` | `client/main.lua` |
+| `rsg-goldclaim:rocker:client:startprocessing` | client | `data` | `client/main.lua` |
+| `rsg-goldclaim:rocker:client:processingcomplete` | client | `` | `client/main.lua` |
+| `rsg-goldclaim:rocker:client:spawnoutputprop` | client | `propid, resultType, silent` | `client/main.lua` |
+| `rsg-goldclaim:rocker:client:goldpickupresult` | client | `amount` | `client/main.lua` |
+| `rsg-goldclaim:rocker:client:repairrocker` | client | `data` | `client/main.lua` |
+| `rsg-goldclaim:rocker:client:renameclaim` | client | `data` | `client/main.lua` |
+| `rsg-goldclaim:rocker:client:packuprocker` | client | `data` | `client/main.lua` |
+| `rsg-goldclaim:rocker:client:destroyillegal` | client | `propid` | `client/main.lua` |
+| `rsg-goldclaim:rocker:client:useshovel` | client | `` | `client/main.lua` |
+| `rsg-goldclaim:rocker:client:usebucket` | client | `` | `client/main.lua` |
+| `rsg-goldclaim:rocker:client:createprop` | client | `` | `client/placeprop.lua` |
+| `rsg-goldclaim:rocker:server:digpaydirt` | server | `` | `server/server.lua` |
+| `rsg-goldclaim:rocker:server:fillbucket` | server | `` | `server/server.lua` |
+| `rsg-goldclaim:rocker:server:newProp` | server | `location, heading` | `server/server.lua` |
+| `rsg-goldclaim:rocker:server:destroyProp` | server | `propid` | `server/server.lua` |
+| `rsg-goldclaim:rocker:server:leodestroy` | server | `propid` | `server/server.lua` |
+| `rsg-goldclaim:rocker:server:addpaydirt` | server | `propid` | `server/server.lua` |
+| `rsg-goldclaim:rocker:server:addwater` | server | `propid` | `server/server.lua` |
+| `rsg-goldclaim:rocker:server:processrocker` | server | `propid` | `server/server.lua` |
+| `rsg-goldclaim:rocker:server:pickupgold` | server | `propid` | `server/server.lua` |
+| `rsg-goldclaim:rocker:server:pickuppaydirt` | server | `propid` | `server/server.lua` |
+| `rsg-goldclaim:rocker:server:repairrocker` | server | `propid` | `server/server.lua` |
+| `rsg-goldclaim:rocker:server:renameclaim` | server | `propid, newname` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-goldclaim:rocker:server:digpaydirt')
+-- from a server script
+TriggerClientEvent('rsg-goldclaim:rocker:client:updatePropData', source)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/goldclaim_webhooktest` |  | `server/webhooks.lua` |
+
+### Useable items
+
+`tool_goldrocker`, `tool_rocker_shovel`, `tool_rocker_bucket_empty`
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

@@ -101,7 +101,9 @@ end
 
 -- Load at start: any job still "live" was interrupted by a crash/kill -> owe its inputs
 MySQL.ready(function()
-    MySQL.query.await('CREATE TABLE IF NOT EXISTS rsg_smelting_state (id TINYINT UNSIGNED NOT NULL PRIMARY KEY, data LONGTEXT NOT NULL)')
+    if Config.AutoDatabase ~= false then -- set false and import installation/rsg-smelting.sql for a manual install
+        MySQL.query.await('CREATE TABLE IF NOT EXISTS rsg_smelting_state (id TINYINT UNSIGNED NOT NULL PRIMARY KEY, data LONGTEXT NOT NULL)')
+    end
     local raw = MySQL.scalar.await('SELECT data FROM rsg_smelting_state WHERE id = 1')
     local ok, data = pcall(json.decode, raw or '')
     if ok and type(data) == 'table' then

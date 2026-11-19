@@ -92,3 +92,68 @@ Stored in the player state bag `walkstyle` (replicated) and character metadata `
 - 3.1.0 – Removed ox_lib dependency (locales and notify now from rsg-core).
 
 Support: https://rexshack.tebex.store
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-radialmenu 3.2.1**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Keybind` | `'F6'` |  |
+| `Config.HoldToOpen` | `true` | true: hold key, release to close \| false: tap to open |
+| `Config.EmergencyCooldown` | `60` | seconds between emergency button presses |
+| `Config.WalkstyleCooldown` | `2` | seconds between walkstyle changes (server enforced) |
+| `Config.LawJobs` | `{ vallaw = true, rholaw = true, blklaw = true, strlaw = true, stdenlaw` |  |
+| `Config.MedicJobs` | `{ medic = true }` |  |
+| `Config.Walkstyles` | `table` | key = { clipset, motion type }  (server only accepts keys listed here) |
+| `Config.MenuItems` | `table` |  |
+| `Config.JobInteractions` | `table` |  |
+
+### Exports
+
+**Client**
+
+| Export | Arguments | File |
+|---|---|---|
+| `AddOption` | `` | `client/main.lua` |
+| `RemoveOption` | `` | `client/main.lua` |
+
+```lua
+-- example
+local result = exports['rsg-radialmenu']:AddOption()
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-radialmenu:client:noPlayers` | client | `` | `client/main.lua` |
+| `rsg-radialmenu:client:SendLawmanEmergencyAlert` | client | `` | `client/main.lua` |
+| `rsg-radialmenu:client:SendMedicEmergencyAlert` | client | `` | `client/main.lua` |
+| `rsg-radialmenu:client:setWalkstyle` | client | `data` | `client/walkstyles.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/walkstyles.lua` |
+| `rsg-radialmenu:client:reapplyWalkstyle` | client | `` | `client/walkstyles.lua` |
+| `rsg-radialmenu:server:setWalkstyle` | server | `key` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-radialmenu:server:setWalkstyle', key)
+-- from a server script
+TriggerClientEvent('rsg-radialmenu:client:noPlayers', source)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

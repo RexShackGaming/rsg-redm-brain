@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-looting'
-version '3.0.4'
+version '3.1.0'
 
 shared_scripts {
   '@rsg-core/shared/locale.lua',

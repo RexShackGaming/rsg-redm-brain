@@ -61,3 +61,63 @@
 | Wrong state after clothing change | Use the export instead of the state bag |
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-bandana 3.0.3**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Command` | `'bandana'` | /bandana toggles up/down |
+| `Config.UseItem` | `false` | true = also toggle by using an inventory item |
+| `Config.ItemName` | `'bandana'` | item to register as useable (must exist in rsg-core items) |
+| `Config.Cooldown` | `2500` | ms between toggles |
+| `Config.AnimTime` | `1200` | ms into the animation before the state swaps |
+| `Config.PlayAnim` | `true` | play the RDR2 hand-to-face animation |
+| `Config.Debug` | `false` | print neckwear state to F8 when toggling |
+| `Config.NeckwearCategory` | `0x5FC29285` | "neckwear" (same for male and female MP peds) |
+| `Config.StateUp` | `-1829635046` | wearable state: bandana over face |
+| `Config.StateDown` | `joaat('BASE')` | wearable state: bandana round neck |
+| `Config.Anims` | `table` |  |
+
+### Exports
+
+**Client**
+
+| Export | Arguments | File |
+|---|---|---|
+| `IsWearingBandana` | `` | `client/client.lua` |
+
+```lua
+-- example
+local result = exports['rsg-bandana']:IsWearingBandana()
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-bandana:client:toggle` | client | `` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerUnload` | client | `` | `client/client.lua` |
+
+```lua
+-- from a server script
+TriggerClientEvent('rsg-bandana:client:toggle', source)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

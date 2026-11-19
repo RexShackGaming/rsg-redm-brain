@@ -4,7 +4,7 @@ A wagon delivery system for RedM using the RSG Framework. Players pick up goods 
 
 Talking to a foreman opens a NUI contract board listing every destination from that hub. Selecting a route shows its distance, time limit, wagon, difficulty rating, a route-length bar, and the cash and item rewards (with item images when configured).
 
-Version 3.1.1. Full technical reference (events, security model, troubleshooting): [DOCS.md](DOCS.md)
+Version 3.2.0. Full technical reference (events, security model, troubleshooting): [DOCS.md](DOCS.md)
 
 ## Dependencies
 
@@ -153,6 +153,9 @@ Add a new entry to `Config.DeliveryLocations` following the existing structure, 
 
 ## Changelog
 
+### 3.2.0
+- Optional rsg-reputation integration: `delivery` action on a completed delivery (`Config.Reputation`).
+
 ### 3.1.1
 - Fixed deliveries being rejected with "You need to bring the wagon to the drop-off" (and no reward) while the player was in the delivery wagon. The wagon was reported to the server before it had synced, so it was never registered. The server now waits for the wagon to sync, and can validate it again on arrival.
 - The server console now prints the reason whenever the wagon check rejects a delivery.
@@ -160,3 +163,8 @@ Add a new entry to `Config.DeliveryLocations` following the existing structure, 
 ## Support
 
 If you find this resource useful, you can support development here: https://buymeacoffee.com/rexshack
+
+## rsg-reputation integration
+
+Optional. With `rsg-reputation` started, a completed delivery applies the `delivery` action: standing in the town of the delivery hub you started from (`Config.Reputation.Regions`). Set `Config.Reputation.Enabled = false` to turn it off.
+

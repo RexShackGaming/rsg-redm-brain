@@ -1,6 +1,6 @@
 # rsg-weather
 
-Version 3.1.1. rsg-weather - time, weather and wind sync for RSG Framework (weathersync compatible)
+Version 3.1.2. rsg-weather - time, weather and wind sync for RSG Framework (weathersync compatible)
 
 Time, weather and wind sync for **RSG Framework** (RedM), with no ox_lib dependency (locales, notify, callbacks and commands all use rsg-core). A drop-in replacement for `weathersync` — every old export and event keeps working. - Server-authoritative time, weather and wind synced to all players through `GlobalState` (late joiners are in sync instantly)
 
@@ -47,3 +47,7 @@ Has NUI (`ui_page`).
 ## Public (table) functions
 
 **server/server.lua:** `API.getWeather()`, `API.setWeather(weather, transition, freeze, permanentSnow)`, `API.resetWeather()`, `API.setWeatherPattern(pattern)`, `API.resetWeatherPattern()`, `API.getTime()`, `API.setTime(d, h, m, s, transition, freeze)`, `API.resetTime()`, `API.getTimescale()`, `API.setTimescale(scale)`, `API.resetTimescale()`, `API.getWind()`, `API.setWind(direction, speed, frozen)`, `API.resetWind()`, `API.getSyncDelay()`, `API.setSyncDelay(delay)`, `API.resetSyncDelay()`, `API.getForecast()`, `API.getState()`, `API.resetAll()`
+
+## Database tables
+
+`rsg_weather_state`

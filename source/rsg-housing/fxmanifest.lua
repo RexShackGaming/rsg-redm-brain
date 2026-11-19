@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-housing'
-version '3.0.2'
+version '3.3.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
@@ -12,7 +12,8 @@ shared_scripts {
 }
 
 client_scripts {
-    'client/client.lua'
+    'client/client.lua',
+    'client/props.lua'
 }
 
 server_scripts {
@@ -24,7 +25,9 @@ server_scripts {
 dependencies {
     'rsg-core',
     'oxmysql',
-    'rsg-inventory'
+    'rsg-inventory',
+    'rsg-target',
+    'rsg-gizmo'
 }
 
 ui_page 'html/index.html'

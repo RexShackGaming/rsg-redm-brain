@@ -233,3 +233,14 @@ Config.WellPump = {
     interactDist    = 2.0,
     ownerOnlyPackup = true,                 -- only the placer can pack it up
 }
+
+-- rsg-skills integration (optional). Needs the rsg-skills resource.
+-- When rsg-skills is started it becomes the farming XP source: XP goes to the shared 'farming' skill,
+-- the extra_yield perk replaces the level's bonusYieldChance and every LevelsPerExtraPlant levels adds one plant
+-- slot. The Config.XP / Config.Levels above are used when rsg-skills is missing or Enabled = false.
+Config.Skills = {
+    Enabled            = true,
+    Skill              = 'farming', -- skill key in rsg-skills
+    XPScale            = 1,         -- rsg-skills XP = the Config.XP amounts x this (rsg-skills applies its own multipliers and cap)
+    LevelsPerExtraPlant = 3,        -- one extra plant slot per this many levels above 1 (0 = none)
+}

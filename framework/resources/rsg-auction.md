@@ -1,6 +1,6 @@
 # rsg-auction
 
-Version 3.1.0. Real-time auction system for RSG Framework
+Version 3.1.1. Real-time auction system for RSG Framework
 
 A real-time, town-based auction house for RedM servers running the **RSG Framework**. Players list items at auctioneer NPCs, bid against each other live, use instant buyouts, and collect their winnings or earnings in person at the auctioneer. - **Town-specific auction houses**: each auctioneer NPC (Valentine, Rhodes, Saint Denis, Blackwater, Armadillo by default) runs its own market. Players only 
 

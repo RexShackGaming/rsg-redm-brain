@@ -172,6 +172,11 @@ RegisterNetEvent('rsg-goldpanning:server:claimPan', function()
     TriggerClientEvent('rsg-inventory:client:ItemBox', src, itemData, 'add', tier.amount)
     Notify(src, 'found_' .. tier.tier, 'success')
 
+    -- rsg-skills (optional): panning counts towards the mining skill
+    if Config.Skills.Enabled and GetResourceState('rsg-skills') == 'started' then
+        exports['rsg-skills']:AddXP(src, Config.Skills.Skill, Config.Skills.FindXP, 'gold panning')
+    end
+
     local charinfo = Player.PlayerData.charinfo
     local charName = ('%s %s'):format(charinfo.firstname, charinfo.lastname)
     TriggerEvent('rsg-log:server:CreateLog', 'goldpanning', locale('log_title_' .. tier.tier), 'yellow',

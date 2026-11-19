@@ -1,4 +1,6 @@
 Config = {}
+-- build the database tables automatically on start (set false and import the SQL file for a manual install)
+Config.AutoDatabase = true
 
 -- Debug Settings
 Config.Debug = false
@@ -231,4 +233,12 @@ Config.Trees = {
     `rdr_pine_branch_aa_sim`, `rdr_pine_branch_ab_sim`, `rdr2_tree_beech`, `rdr2_tree_brokentree`,
     `rdr2_tree_gimlet`, `rdr2_tree_rata01`, `rdr2_tree_rata02`, `rdr2_tree_riverbirch`,
     `rdr2_tree_sycamore`, `rdr2_tree_utahjuniper`
+}
+
+-- rsg-skills integration (optional). Needs the rsg-skills resource; does nothing when it is not started.
+Config.Skills = {
+    Enabled = true,
+    Skill   = 'lumberjack', -- skill key in rsg-skills
+    WoodXP  = 5,         -- XP per wood piece picked up (rsg-skills applies its own multipliers and cap)
+    ExtraYield = true,   -- the skill's extra_yield perk (%) is the chance of one extra wood piece
 }

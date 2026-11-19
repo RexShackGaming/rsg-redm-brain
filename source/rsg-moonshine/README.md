@@ -198,3 +198,7 @@ If you enjoy this script, you can support development here:
 ☕ **[Buy Me a Coffee](https://buymeacoffee.com/rexshack)**
 
 Found a bug or have an idea? Open an issue on [GitHub](https://github.com/Rexshack-RedM/rsg-moonshine).
+
+## Database
+
+Tables (`rsg_moonshine_stills`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `installation/rsg-moonshine.sql` once.

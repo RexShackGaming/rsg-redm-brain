@@ -5,7 +5,7 @@ lua54 'yes'
 
 author 'RexShack'
 description 'Real-time auction system for RSG Framework'
-version '3.1.0'
+version '3.1.1'
 
 ui_page 'web/dist/index.html'
 

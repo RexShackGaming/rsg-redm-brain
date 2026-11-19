@@ -97,6 +97,11 @@ end
 ---------------------------------
 -- farming xp / levels (stored in player metadata)
 ---------------------------------
+-- rsg-skills (optional): when started it replaces the built-in XP and levels
+local function useSkills()
+    return Config.Skills.Enabled and GetResourceState('rsg-skills') == 'started'
+end
+
 local function xpOf(Player)
     local v = Player.Functions.GetMetaData('farmingxp')
     return tonumber(v) or 0
@@ -111,6 +116,15 @@ local function levelOf(xp)
 end
 
 local function perkOf(Player)
+    if useSkills() then
+        local src = Player.PlayerData.source
+        local per = Config.Skills.LevelsPerExtraPlant or 0
+        local level = exports['rsg-skills']:GetLevel(src, Config.Skills.Skill) or 1
+        return {
+            bonusYieldChance = tonumber(exports['rsg-skills']:GetPerk(src, Config.Skills.Skill, 'extra_yield')) or 0,
+            extraPlants = per > 0 and math.floor((level - 1) / per) or 0,
+        }
+    end
     if not Config.XP.enabled then return Config.Levels[1] end
     return Config.Levels[levelOf(xpOf(Player))]
 end
@@ -120,6 +134,12 @@ local function maxPlantsFor(Player)
 end
 
 local function addXP(src, Player, amount)
+    if useSkills() then
+        if amount and amount > 0 then
+            exports['rsg-skills']:AddXP(src, Config.Skills.Skill, math.max(1, math.floor(amount * (Config.Skills.XPScale or 1) + 0.5)), 'farming')
+        end
+        return -- rsg-skills sends its own level-up notification
+    end
     if not Config.XP.enabled or not amount or amount <= 0 then return end
     local old = xpOf(Player)
     local new = old + amount
@@ -133,6 +153,14 @@ end
 RSGCore.Commands.Add('farmlevel', 'Show your farming level', {}, false, function(source)
     local Player = Utils.getPlayer(source)
     if not Player then return end
+    if useSkills() then
+        local pr = exports['rsg-skills']:GetProgress(source, Config.Skills.Skill)
+        if pr then
+            return Utils.notify(source, pr.nextXP
+                and locale('level_info_skills_next', pr.level, pr.xp, pr.nextXP)
+                or locale('level_info_skills', pr.level, pr.xp), 'inform')
+        end
+    end
     local xp = xpOf(Player)
     local lvl = levelOf(xp)
     local nextLevel = Config.Levels[lvl + 1]

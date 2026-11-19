@@ -138,3 +138,66 @@ Resources that read input through key mappings / commands (which `DisableControl
 ```lua
 if LocalPlayer.state.gizmoActive then return end
 ```
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-gizmo 3.0.1**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Debug` | `false` |  |
+| `Config.Defaults` | `table` | Defaults (every one can be overridden per call through the options table) |
+| `Config.Colours` | `table` | Draw colours (r, g, b, a) |
+| `Config.Controls` | `table` | Control hashes: data/rdr3_discoveries/Controls/README.md |
+| `Config.BlockControls` | `table` | Extra controls blocked while placing |
+| `Config.TestCommand` | `{ enabled = true, name = 'gizmotest', permission = 'admin', model = 'p` | Admin test command: /gizmotest [model] |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `IsPlacementValid` | `` | `server/server.lua` |
+| `SanitiseRotation` | `` | `server/server.lua` |
+
+**Client**
+
+| Export | Arguments | File |
+|---|---|---|
+| `Place` | `` | `client/client.lua` |
+| `Edit` | `` | `client/client.lua` |
+| `IsActive` | `` | `client/client.lua` |
+| `Cancel` | `` | `client/client.lua` |
+
+```lua
+-- example
+local result = exports['rsg-gizmo']:IsPlacementValid()
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-gizmo:client:test` | client | `model` | `client/client.lua` |
+
+```lua
+-- from a server script
+TriggerClientEvent('rsg-gizmo:client:test', source, model)
+```
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

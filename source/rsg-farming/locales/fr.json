@@ -80,6 +80,8 @@
     "level_up": "Niveau d'agriculture supérieur ! Nouveau rang : %s",
     "level_info": "Niveau d'agriculture %s (%s) - %s XP",
     "level_info_next": "Niveau d'agriculture %s (%s) - %s / %s XP",
+    "level_info_skills": "Niveau d'agriculture %s - %s XP",
+    "level_info_skills_next": "Niveau d'agriculture %s - %s / %s XP",
     "harvested_bonus": "Récolte terminée - rendement exceptionnel !",
     "ui_btn_treat": "Traiter",
     "ui_pests": "Parasites",

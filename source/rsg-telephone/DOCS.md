@@ -456,3 +456,142 @@ Copy `locales/en.json` to `locales/<code>.json`, translate the values, keep ever
 ---
 
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-telephone 3.1.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-gizmo`, `oxmysql`
+
+### Database
+
+Tables: `rsg_telephones`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `installation/install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Models` | `table` | Prop models (both confirmed in rdr3_discoveries objects/object_list.lua) |
+| `Config.SpawnDistance` | `75.0` | props stream in/out around the player |
+| `Config.UseDistance` | `2.0` | rsg-target interaction distance |
+| `Config.PlaceDistance` | `6.0` | rsg-gizmo placement range |
+| `Config.AutoDatabase` | `true` | Set to false and import installation/install.sql yourself if you prefer. |
+| `Config.Payphone` | `table` | unused credit is refunded when the call ends. Unanswered calls are fully refunded. |
+| `Config.Enabled` | `true` |  |
+| `Config.MoneyType` | `'cash'` |  |
+| `Config.CostPerMinute` | `0.10` |  |
+| `Config.MaxDeposit` | `5.00` |  |
+| `Config.Coins` | `{ 0.05, 0.10, 0.25, 1.00 }` |  |
+| `Config.WarnSeconds` | `15` |  |
+| `Config.Item` | `table` | number and settings stored on it) and re-place it anywhere with the same configuration. |
+| `Config.Name` | `'telephone'` |  |
+| `Config.MaxPerPlayer` | `2` |  |
+| `Config.Blip` | `table` | Map blip on every placed telephone (named after the phone's label) |
+| `Config.Sprite` | `'blip_ambient_telegraph'` |  |
+| `Config.Scale` | `0.2` |  |
+| `Config.MaxCallDistance` | `3.0` | server: walk further than this from your phone and the call ends |
+| `Config.RingDistance` | `25.0` | how far away other players can hear a phone ringing |
+| `Config.RingTimeout` | `30` | seconds before an unanswered call gives up |
+| `Config.MaxCallLength` | `600` | seconds, 0 = unlimited |
+| `Config.CallCooldown` | `5` | seconds between dial attempts per player |
+| `Config.NumberLength` | `4` | auto-generated numbers have this many digits |
+| `Config.Voice` | `table` | Built-in voice line (Mumble natives, no pma-voice) |
+| `Config.Target` | `4` |  |
+| `Config.DefaultTarget` | `0` |  |
+| `Config.KeepProximity` | `true` |  |
+| `Config.Volume` | `1.0` |  |
+| `Config.Refresh` | `1000` |  |
+| `Config.AdminPermission` | `'admin'` | Who can place / remove phones (rsg-core permission) |
+| `Config.Item.MaxPerPlayer` | `math.max(1, math.floor(numberOr(Config.Item.MaxPerPlayer, 2)))` |  |
+| `Config.Payphone.CostPerMinute` | `math.max(0, numberOr(Config.Payphone.CostPerMinute, 0.10))` |  |
+| `Config.Payphone.MaxDeposit` | `math.max(0, numberOr(Config.Payphone.MaxDeposit, 5.00))` |  |
+| `Config.Payphone.WarnSeconds` | `math.max(0, math.floor(numberOr(Config.Payphone.WarnSeconds, 15)))` |  |
+| `Config.Payphone.Coins` | `coins` |  |
+| `Config.Blip.Scale` | `math.max(0.01, numberOr(Config.Blip.Scale, 0.2))` |  |
+| `Config.Voice.Target` | `math.max(1, math.min(30, math.floor(numberOr(Config.Voice.Target, 4)))` |  |
+| `Config.Voice.DefaultTarget` | `math.max(0, math.min(30, math.floor(numberOr(Config.Voice.DefaultTarge` |  |
+| `Config.Voice.Volume` | `math.max(0.0, math.min(1.0, numberOr(Config.Voice.Volume, 1.0)))` |  |
+| `Config.Voice.Refresh` | `math.max(250, math.floor(numberOr(Config.Voice.Refresh, 1000)))` |  |
+
+### Callbacks
+
+| Callback | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-telephone:server:getPhones` | server | `_, cb` | `server/server.lua` |
+| `rsg-telephone:server:myJobs` | server | `source, cb` | `server/server.lua` |
+| `rsg-telephone:server:getDirectory` | server | `src, cb` | `server/server.lua` |
+| `rsg-telephone:server:setListed` | server | `src, cb, id, listed` | `server/server.lua` |
+| `rsg-telephone:server:createPhone` | server | `src, cb, data` | `server/server.lua` |
+| `rsg-telephone:server:pickupPhone` | server | `src, cb, id` | `server/server.lua` |
+| `rsg-telephone:server:ownerUpdate` | server | `src, cb, id, data` | `server/server.lua` |
+| `rsg-telephone:server:adminList` | server | `src, cb` | `server/server.lua` |
+| `rsg-telephone:server:adminUpdate` | server | `src, cb, id, data` | `server/server.lua` |
+| `rsg-telephone:server:adminDelete` | server | `src, cb, id` | `server/server.lua` |
+| `rsg-telephone:server:adminEndCall` | server | `src, cb, id` | `server/server.lua` |
+| `rsg-telephone:server:startCall` | server | `src, cb, phoneId, number, deposit` | `server/server.lua` |
+| `rsg-telephone:server:answer` | server | `src, cb, phoneId` | `server/server.lua` |
+
+```lua
+-- client side
+RSGCore.Functions.TriggerCallback('rsg-telephone:server:getPhones', function(result)
+    -- use result
+end)
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-telephone:client:startVoice` | client | `partner` | `client/client.lua` |
+| `rsg-telephone:client:credit` | client | `left, cost` | `client/client.lua` |
+| `rsg-telephone:client:callConnected` | client | `info` | `client/client.lua` |
+| `rsg-telephone:client:callEnded` | client | `reason` | `client/client.lua` |
+| `rsg-telephone:client:setRinging` | client | `phoneId, state` | `client/client.lua` |
+| `rsg-telephone:client:syncPhones` | client | `` | `client/client.lua` |
+| `rsg-telephone:client:addPhone` | client | `` | `client/client.lua` |
+| `rsg-telephone:client:updatePhone` | client | `p` | `client/client.lua` |
+| `rsg-telephone:client:removePhone` | client | `id` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
+| `RSGCore:Client:OnJobUpdate` | client | `` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerUnload` | client | `` | `client/client.lua` |
+| `rsg-telephone:client:startPlacement` | client | `opts` | `client/client.lua` |
+| `rsg-telephone:client:openAdmin` | client | `` | `client/client.lua` |
+| `rsg-telephone:server:cancelPlace` | server | `` | `server/server.lua` |
+| `rsg-telephone:server:hangUp` | server | `` | `server/server.lua` |
+
+```lua
+-- from a client script
+TriggerServerEvent('rsg-telephone:server:cancelPlace')
+-- from a server script
+TriggerClientEvent('rsg-telephone:client:startVoice', source, partner)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/phoneadmin` | locale('cmd_phoneadmin') | `server/server.lua` |
+| `/addphone` | locale('cmd_addphone') | `server/server.lua` |
+| `/removephone` | locale('cmd_removephone') | `server/server.lua` |
+| `/phonejob` | locale('cmd_phonejob') | `server/server.lua` |
+| `/phoneinfo` | locale('cmd_phoneinfo') | `server/server.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->

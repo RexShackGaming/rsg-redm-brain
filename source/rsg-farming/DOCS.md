@@ -134,4 +134,124 @@ The server owns growth, water, fertiliser and health, checks ownership, distance
 | Can't plant in a town | A `Config.NoPlantZones` entry covers it |
 | Water bucket always has 5 uses | Make `fullbucket` a `unique = true` item so its remaining uses are kept per bucket |
 
+## rsg-skills integration
+
+`Config.Skills = { Enabled, Skill, XPScale, LevelsPerExtraPlant }`. A local `useSkills()` is true when enabled and `GetResourceState('rsg-skills') == 'started'`; the check is made on each call, so a restart of rsg-skills switches modes live.
+- `addXP` calls `exports['rsg-skills']:AddXP(src, 'farming', amount * XPScale, 'farming')` and returns early (no metadata XP, no built-in level-up notification).
+- `perkOf` returns `bonusYieldChance = GetPerk(src, 'farming', 'extra_yield')` and `extraPlants = floor((level - 1) / LevelsPerExtraPlant)`, which feed the harvest roll and `maxPlantsFor`.
+- `/farmlevel` uses `GetProgress` and the locale keys `level_info_skills` and `level_info_skills_next` (added to all locale files).
+- The `speed_bonus` perk is not used by this script.
+
+
 Support the Project : https://rexshack.tebex.store/
+
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-farming 3.2.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `oxmysql`, `rsg-target`, `rsg-gizmo`
+
+### Database
+
+Tables: `rsg_farming_plants`, `rsg_farming_wellpumps`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Debug` | `false` |  |
+| `Config.AutoDatabase` | `true` | create the tables on start; set false and import install.sql manually |
+| `Config.MaxPlantsPerPlayer` | `20` | max active plants per character |
+| `Config.MinPlantDistance` | `1.2` | min distance between two plants |
+| `Config.PlaceMaxDistance` | `6.0` | how far from the player the gizmo can place |
+| `Config.NoPlantZones` | `{}` | Config.NoPlantZones = { { coords = vector3(0.0, 0.0, 0.0), radius = 150.0 } } |
+| `Config.AllowPushToTalkWhileOpen` | `true` | while the tending UI is open, block game controls but keep push-to-talk working |
+| `Config.PushToTalkControls` | `table` |  |
+| `Config.CollisionModel` | `'p_emrfencepost02x'` | custom props with no collision: an invisible blocker is spawned with them (and removed with them) |
+| `Config.CollisionProps` | `table` |  |
+| `Config.InteractDistance` | `1.6` | distance to tend a plant |
+| `Config.RenderDistance` | `60.0` | props spawn / despawn distance |
+| `Config.OwnerOnlyHarvest` | `true` | only the planter can harvest / destroy |
+| `Config.InteractKey` | `0x760A9C6F` | [G] (only used when UseTarget = false) |
+| `Config.UseTarget` | `true` | use rsg-target zones on plants instead of the [G] prompt |
+| `Config.TargetRadius` | `0.8` | sphere zone radius around each plant |
+| `Config.TargetIcon` | `'fa-solid fa-seedling'` |  |
+| `Config.TickInterval` | `30` | seconds between growth ticks |
+| `Config.SaveInterval` | `120` | seconds between DB saves |
+| `Config.WaterDecay` | `100 / 60` | water lost per minute (100 -> 0 in 60 min) |
+| `Config.FertilizerDecay` | `100 / 90` | fertiliser lost per minute |
+| `Config.MinWaterToGrow` | `1` | plant only grows if water above this |
+| `Config.FertilizerBoost` | `1.5` | growth multiplier while fertilised |
+| `Config.DryDamage` | `5` | health lost per minute with no water |
+| `Config.HealthRegen` | `2` | health gained per minute while watered |
+| `Config.DeadPlantRemoveTime` | `30` | minutes before a dead plant is auto-removed |
+| `Config.WaterItem` | `'fullbucket'` | consumed when watering |
+| `Config.WaterReturnItem` | `'bucket'` | given back after watering (false to disable) |
+| `Config.WaterAmount` | `100` | water added (capped at 100) |
+| `Config.FertilizerItem` | `'fertilizer'` |  |
+| `Config.FertilizerAmount` | `100` |  |
+| `Config.Seasons` | `table` |  |
+| `Config.RainWater` | `table` |  |
+| `Config.Pests` | `table` |  |
+| `Config.Harvest` | `table` |  |
+| `Config.XP` | `{ enabled = true, plant = 2, water = 1, fertilize = 1, treat = 1, harv` |  |
+| `Config.Levels` | `table` |  |
+| `Config.PlantTime` | `6000` |  |
+| `Config.WaterTime` | `5000` |  |
+| `Config.FertilizeTime` | `5000` |  |
+| `Config.TreatTime` | `5000` |  |
+| `Config.HarvestTime` | `7000` |  |
+| `Config.Scenarios` | `table` |  |
+| `Config.Crops` | `table` |  |
+| `Config.WellPump` | `table` |  |
+| `Config.Skills` | `table` | slot. The Config.XP / Config.Levels above are used when rsg-skills is missing or Enabled = false. |
+| `Config.Enabled` | `true` |  |
+| `Config.Skill` | `'farming'` |  |
+| `Config.XPScale` | `1` |  |
+| `Config.LevelsPerExtraPlant` | `3` |  |
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-farming:client:sync` | client | `` | `client/client.lua` |
+| `rsg-farming:client:plantUpdate` | client | `p` | `client/client.lua` |
+| `rsg-farming:client:plantRemove` | client | `id` | `client/client.lua` |
+| `rsg-farming:client:plantMine` | client | `id` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
+| `RSGCore:Client:OnPlayerUnload` | client | `` | `client/client.lua` |
+| `rsg-farming:client:startPlacing` | client | `cropKey` | `client/client.lua` |
+| `rsg-farming:client:syncPumps` | client | `` | `client/wellpump.lua` |
+| `rsg-farming:client:placePump` | client | `` | `client/wellpump.lua` |
+
+```lua
+-- from a server script
+TriggerClientEvent('rsg-farming:client:sync', source)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/myplants` |  | `client/client.lua` |
+| `/farmlevel` | Show your farming level | `server/server.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->
