@@ -104,5 +104,17 @@
     "wh_turned_in_dead": "%s (%s) leverde %s dood in voor $%s",
     "wh_board_refreshed": "Bord opnieuw gevuld met %s posters.",
     "wh_test_desc": "Test voor het kanaal **%s**.",
-    "wh_started_desc": "rsg-bountyhunter gestart met %s kantoren en %s schuilplaatsen."
+    "wh_started_desc": "rsg-bountyhunter gestart met %s kantoren en %s schuilplaatsen.",
+    "crime_reputation": "Beruchte bandiet, een gevaar voor het gebied",
+    "rep_posted": "Je wetteloze gedrag heeft je een premie opgeleverd. Premiejagers kunnen je nu inleveren.",
+    "rep_cleared": "Je naam is van het premiebord gehaald.",
+    "rep_collected": "Een premiejager heeft je ingeleverd.",
+    "rep_target_left": "%s heeft het gebied verlaten. Het contract is geannuleerd.",
+    "rep_target_cleared": "%s wordt niet meer gezocht. Het contract is geannuleerd.",
+    "rep_target_jailed": "%s is opgesloten. Het contract is geannuleerd.",
+    "rep_not_secured": "Het doelwit moet dood, vastgebonden of geboeid op het kantoor zijn.",
+    "rep_own_bounty": "Je kunt niet op jezelf jagen.",
+    "rep_same_gang": "Je kunt geen premie aannemen op een lid van je eigen bende.",
+    "crime_sponsored_bounty": "Gezocht door een bende",
+    "gang_own_bounty": "Je kunt geen premie aannemen die je eigen bende heeft uitgeschreven."
 }

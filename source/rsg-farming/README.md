@@ -1,6 +1,6 @@
 # rsg-farming
 
-Plant, water, fertilise and harvest crops anywhere in the world, with portable well pumps to fill your water buckets. Built for **RSG-Core (RedM)** with rsg-target and oxmysql. No ox_lib required.
+Plant, water, fertilise and harvest crops anywhere in the world, using the water buckets from rsg-wellpump. Built for **RSG-Core (RedM)** with rsg-target and oxmysql. No ox_lib required.
 
 ---
 
@@ -12,10 +12,10 @@ Plant, water, fertilise and harvest crops anywhere in the world, with portable w
 - **Fertiliser boost**: fertilised plants grow faster.
 - **Tending UI**: a styled RDR2 panel showing growth, water, fertiliser and health bars, status, and the estimated time to harvest.
 - **`/myplants` overview**: lists all your crops, nearest first, with mini status bars. Click a far-away plant to get a map route to it.
-- **Portable well pumps**: place a pump, fill empty buckets, and pack it back up later.
+- **Well pumps via rsg-wellpump**: place a pump, fill empty buckets and pack it up with the standalone [rsg-wellpump](https://github.com/Rexshack-RedM/rsg-wellpump) resource, shared with other scripts.
 - **Limited-use water buckets**: a full bucket waters a set number of times (default 5) before it becomes an empty bucket again. The uses left show in the item description.
 - **Ownership**: only the planter can harvest or remove a living plant (configurable). Anyone can clear dead plants.
-- **Saved to the database**: plants and pumps survive restarts, and dead plants are removed automatically.
+- **Saved to the database**: plants survive restarts, and dead plants are removed automatically.
 - **rsg-target or key prompt**: tend plants through rsg-target zones or a `[G]` prompt.
 - **Fully localised**: every player-facing string, including the UI, ships in 11 languages (en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru).
 - **Exploit-hardened**: all item changes happen on the server with distance, ownership and inventory-space checks, plus server-side action timers that stop players skipping animations.
@@ -37,8 +37,9 @@ Plant, water, fertilise and harvest crops anywhere in the world, with portable w
 |---|---|
 | [rsg-core](https://github.com/Rexshack-RedM/rsg-core) | framework |
 | [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory) | item handling |
-| [rsg-target](https://github.com/Rexshack-RedM/rsg-target) | interaction (plant zones + well pumps) |
-| [rsg-gizmo](https://github.com/Rexshack-RedM/rsg-gizmo) | prop placement (crops + well pumps) |
+| [rsg-target](https://github.com/Rexshack-RedM/rsg-target) | interaction (plant zones) |
+| [rsg-gizmo](https://github.com/Rexshack-RedM/rsg-gizmo) | prop placement (crops) |
+| [rsg-wellpump](https://github.com/Rexshack-RedM/rsg-wellpump) | well pumps and the water bucket (uses) |
 | [oxmysql](https://github.com/Rexshack-RedM/oxmysql) | database |
 
 ---
@@ -53,9 +54,10 @@ Plant, water, fertilise and harvest crops anywhere in the world, with portable w
    ensure rsg-inventory
    ensure rsg-target
    ensure rsg-gizmo
+   ensure rsg-wellpump
    ensure rsg-farming
    ```
-3. **Database**: nothing to import. The tables `rsg_farming_plants` and `rsg_farming_wellpumps` are created automatically on first start. To install manually, set `Config.AutoDatabase = false` and import `install.sql`.
+3. **Database**: nothing to import. The table `rsg_farming_plants` is created automatically on first start. Pumps placed with the old farming pump are imported by rsg-wellpump the first time it starts. To install manually, set `Config.AutoDatabase = false` and import `install.sql`.
 4. **Items**: add the items below to `rsg-core/shared/items.lua`. Skip any you already have.
 5. Add the item images (`seedcorn.png`, `fullbucket.png` and so on) to `rsg-inventory/html/images/`.
 6. Restart the server.
@@ -89,8 +91,9 @@ weed    = { name = 'weed',    label = 'Weed',     weight = 100, type = 'item', i
 fertilizer    = { name = 'fertilizer',    label = 'Fertiliser',  weight = 500,  type = 'item', image = 'fertilizer.png',    unique = false, useable = false, shouldClose = true, description = 'Makes crops grow faster' },
 bucket        = { name = 'bucket',        label = 'Bucket',      weight = 500,  type = 'item', image = 'bucket.png',        unique = false, useable = false, shouldClose = true, description = 'An empty bucket' },
 fullbucket    = { name = 'fullbucket',    label = 'Water Bucket',weight = 2000, type = 'item', image = 'fullbucket.png',    unique = true,  useable = false, shouldClose = true, description = 'A bucket full of water' },
-tool_wellpump = { name = 'tool_wellpump', label = 'Well Pump',   weight = 5000, type = 'item', image = 'tool_wellpump.png', unique = false, useable = true,  shouldClose = true, description = 'A portable well pump' },
 ```
+
+The `tool_wellpump` item is added with rsg-wellpump.
 
 > **Important:** `fullbucket` must be `unique = true`. Each bucket stores its own uses left in its item data, and stacked buckets would share a single count.
 
@@ -107,7 +110,7 @@ tool_wellpump = { name = 'tool_wellpump', label = 'Well Pump',   weight = 5000, 
 ### Tending
 - Walk up to a plant and use **rsg-target** (`Tend <crop>`), or press **[G]** if target is disabled.
 - The panel shows growth, water, fertiliser and health, plus the time left until harvest.
-- **Water**: needs a `fullbucket`. Each watering uses one charge, and the last charge gives you an empty `bucket` back.
+- **Water**: needs a `fullbucket`. Each watering uses one charge (rsg-wellpump handles this), and the last charge gives you an empty `bucket` back.
 - **Fertilise**: needs `fertilizer`. Speeds up growth while it lasts.
 - **Harvest**: available at 100% growth. You get produce and a chance of a seed back. If your satchel is full, the plant stays in the ground (anything that no longer fits mid-harvest is dropped at your feet rather than lost).
 - **Remove**: digs up your own plant, or clears anyone's dead plant.
@@ -115,9 +118,7 @@ tool_wellpump = { name = 'tool_wellpump', label = 'Well Pump',   weight = 5000, 
 A plant only grows while it has water. When it runs dry, it loses health and eventually dies. Dead plants disappear on their own after `Config.DeadPlantRemoveTime` minutes.
 
 ### Well pumps
-1. Use the `tool_wellpump` item and place it with the same gizmo as crops.
-2. Target the pump and choose **Fill Bucket** to turn an empty `bucket` into a `fullbucket` with full charges.
-3. Choose **Pack Up Well Pump** to get the item back (owner only by default).
+Pumps, filling buckets and packing them up are now handled by rsg-wellpump. See its README.
 
 ### Commands
 
@@ -178,7 +179,6 @@ All settings are in `shared/config.lua`.
 | Option | Default | Description |
 |---|---|---|
 | `Config.WaterItem` | `fullbucket` | Item used to water |
-| `Config.WaterReturnItem` | `bucket` | Item returned when a bucket runs out (`false` = none) |
 | `Config.WaterAmount` | `100` | Water added per use |
 | `Config.FertilizerItem` | `fertilizer` | Item used to fertilise |
 | `Config.FertilizerAmount` | `100` | Fertiliser added per use |
@@ -211,19 +211,7 @@ Seed items are registered as usable automatically, so there's no extra code to w
 
 ### Well pump
 
-| Option | Default | Description |
-|---|---|---|
-| `item` | `tool_wellpump` | Usable item that places the pump |
-| `prop` | `p_wellpumpnbx01x` | Pump model |
-| `emptyItem` | `bucket` | Item needed to fill |
-| `fullItem` | `fullbucket` | Item given after filling |
-| `bucketUses` | `5` | Waterings per full bucket |
-| `fillTime` / `packTime` | `6000` / `4000` | Durations (ms, enforced by the server) |
-| `fillScenario` / `packScenario` | scenarios | Animations |
-| `maxPerPlayer` | `2` | Maximum pumps per character |
-| `minDistance` | `2.0` | Minimum distance between pumps (m) |
-| `interactDist` | `2.0` | Target distance (m) |
-| `ownerOnlyPackup` | `true` | Only the owner can pack it up |
+The pump options (items, uses, fill time, limits) moved to rsg-wellpump's `shared/config.lua`.
 
 ---
 
@@ -251,12 +239,10 @@ The `stream/` folder contains custom weed models (`prop_weed_01`–`06`), loaded
 rsg-farming/
 ├── client/
 │   ├── utils.lua       -- shared client helpers (notify, scenarios, props)
-│   ├── client.lua      -- plants, UI, tending
-│   └── wellpump.lua    -- well pumps
+│   └── client.lua      -- plants, UI, tending
 ├── server/
 │   ├── utils.lua       -- shared server helpers (items, validation, action timers)
 │   ├── server.lua      -- plants, growth simulation, database
-│   ├── wellpump.lua    -- well pumps
 │   └── versionchecker.lua
 ├── shared/config.lua
 ├── install.sql         -- manual database install (when AutoDatabase = false)

@@ -1,0 +1,18 @@
+{
+  "title": "Lockpicking",
+  "hint_rotate": "Rotate pick",
+  "hint_push": "Turn lock",
+  "hint_cancel": "Cancel",
+  "picks": "Picks",
+  "condition": "Condition",
+  "unlocked": "Unlocked",
+  "broken": "Pick broken",
+  "time": "Time",
+  "time_up": "Time's up",
+  "need_lockpick": "You need a lockpick",
+  "lockpick_broke": "Your lockpick broke",
+  "slow_down": "Slow down",
+  "alert_text": "Lockpicking in progress",
+  "skill_label": "Lockpicking",
+  "skill_desc": "Open locks faster and break fewer picks."
+}

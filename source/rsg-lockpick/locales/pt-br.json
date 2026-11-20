@@ -1,0 +1,18 @@
+{
+  "title": "Arrombamento",
+  "hint_rotate": "Girar gazua",
+  "hint_push": "Girar fechadura",
+  "hint_cancel": "Cancelar",
+  "picks": "Gazuas",
+  "condition": "Condição",
+  "unlocked": "Destrancado",
+  "broken": "Gazua quebrada",
+  "time": "Tempo",
+  "time_up": "Acabou o tempo",
+  "need_lockpick": "Você precisa de uma gazua",
+  "lockpick_broke": "Sua gazua quebrou",
+  "slow_down": "Calma",
+  "alert_text": "Arrombamento em andamento",
+  "skill_label": "Arrombamento",
+  "skill_desc": "Abra fechaduras mais rápido e quebre menos gazuas."
+}

@@ -1,3 +1,4 @@
+local RSGCore = exports['rsg-core']:GetCoreObject()
 -- Territory blips, member map blips and the NUI hooks for the log and territory tabs.
 local STYLE_FRIENDLY = joaat('BLIP_STYLE_FRIENDLY')
 local STYLE_CAMP = joaat('BLIP_STYLE_CAMP')
@@ -128,8 +129,17 @@ RegisterNUICallback('requestLogs', function(_, cb)
 end)
 
 RegisterNUICallback('postBounty', function(data, cb)
-    TriggerServerEvent('rsg-gangs:server:postBounty', type(data) == 'table' and tonumber(data.amount) or nil)
+    data = type(data) == 'table' and data or {}
+    TriggerServerEvent('rsg-gangs:server:postBounty', tonumber(data.amount), data.targetType, data.targetId)
     cb('ok')
+end)
+
+-- Dropdown contents for the bounty form: { { value, label }, ... } of online players or rival gangs.
+RegisterNUICallback('bountyTargets', function(data, cb)
+    local kind = type(data) == 'table' and data.kind or nil
+    if kind ~= 'player' and kind ~= 'gang' then cb({}) return end
+    local list = RSGCore.Functions.AwaitCallback('rsg-gangs:server:bountyTargets', 5000, kind)
+    cb(type(list) == 'table' and list or {})
 end)
 
 RegisterNUICallback('claimTerritory', function(data, cb)

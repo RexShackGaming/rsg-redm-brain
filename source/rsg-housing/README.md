@@ -46,7 +46,7 @@ Optional (features switch off cleanly if they aren't running):
 2. Start the server. Tables are created automatically on first start. To install manually, set `Config.AutoDatabase = false` and import `installation/rsg-housing.sql`.
 3. Adjust `shared/config.lua` (rent rules, storage tiers, blips) and set each house's rent in `/houseadmin` (see **Admin** below).
 
-Houses you add to `Config.Houses` get a database row automatically when the entry has `region = '...'` (optional `rent = 50`); otherwise the console warns that the house cannot be rented until a row exists. The script also adds any new columns to existing `rsg_housing` / `rsg_housekeys` tables on start, so updates don't need manual SQL. Guests that existed before the permissions update keep full access.
+Houses you add to `Config.Houses` get a database row automatically when the entry has `region = '...'` (optional `rent = 50`); otherwise the console warns that the house cannot be rented until a row exists. The script also adds any new columns to existing `rsg_housing` / `rsg_housekeys` tables on start, so updates don't need manual SQL. Schema changes only run when needed, so a normal restart runs no `ALTER TABLE`. Guests that existed before the permissions update keep full access.
 
 ## How it works for players
 

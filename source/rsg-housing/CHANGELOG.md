@@ -2,6 +2,10 @@
 
 All notable changes to rsg-housing. Format based on Keep a Changelog.
 
+## [3.3.1] - 2026-11-20
+### Fixed
+- The automatic database setup no longer runs `ALTER TABLE ... MODIFY houseid` on every start (oxmysql logged it as a slow query). The `houseid` columns are only widened to `varchar(20)` when they are currently shorter.
+
 ## [3.3.0] - 2026-11-18
 ### Added
 - Optional rsg-economy integration (`Config.Economy`): rent and storage upgrade payments are deposited into the treasury of the town nearest to the house. `ReplaceGovernor = true` uses the treasury instead of the governor boss account.

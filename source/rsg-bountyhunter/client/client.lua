@@ -143,6 +143,26 @@ RegisterNetEvent('rsg-bountyhunter:client:startContract', function(data)
     setBlipName(areaBlip, locale('search_area', contract.name))
 end)
 
+-- contract on a real player (reputation bounty): no hideout, the server moves the search area
+RegisterNetEvent('rsg-bountyhunter:client:startPlayerContract', function(data)
+    clearContract()
+    contract = { name = data.name, player = true }
+end)
+
+RegisterNetEvent('rsg-bountyhunter:client:trackArea', function(area)
+    if not contract or not contract.player or type(area) ~= 'table' then return end
+    removeBlip(areaBlip)
+    -- BLIP_ADD_FOR_RADIUS + BLIP_STYLE_AREA (useful_info_from_rpfs/blip_styles/README.md)
+    areaBlip = BlipAddForRadius(joaat('BLIP_STYLE_AREA'), area.x, area.y, area.z, area.radius)
+    setBlipName(areaBlip, locale('search_area', contract.name))
+end)
+
+-- the server asks the target's client whether they are hogtied (a bound target can be turned in alive)
+RSGCore.Functions.CreateClientCallback('rsg-bountyhunter:client:isRestrained', function(cb)
+    local hogtied = Citizen.InvokeNative(IS_PED_HOGTIED, PlayerPedId())
+    cb(hogtied == true or hogtied == 1)
+end)
+
 RegisterNetEvent('rsg-bountyhunter:client:endContract', function(reason)
     clearContract(reason == 'completed')
 end)
@@ -157,7 +177,7 @@ end)
 CreateThread(function()
     while true do
         local sleep = 2000
-        if contract then
+        if contract and not contract.player then
             local pcoords = GetEntityCoords(PlayerPedId())
             if not target then
                 if #(pcoords - contract.hideout) <= Config.SpawnDistance then spawnOutlaws() end

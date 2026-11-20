@@ -1,33 +1,40 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
-local gangWagons = {}    -- [gangName] = netId of the live wagon
+-- The wagon is spawned and owned by a player's client. The server does NOT depend on being
+-- able to see that entity: it keeps a registry entry per gang that nearby clients keep alive
+-- with heartbeats (position included), and tells clients to delete the wagon when needed.
+--   gangWagons[gangName] = { netId, coords = vector3, heading, seen = os.time() }
+local gangWagons = {}
 local pendingSpawns = {} -- [gangName] = os.time() the spawn request expires (stops double requests)
 
 local SPAWN_REQUEST_SECONDS = 20
+local HEARTBEAT_TIMEOUT_SECONDS = 20
 local WAGON_RESET_COOLDOWN_SECONDS = 30
 local wagonResetCooldowns = {}
 
-local function wagonEntity(gangName)
-    local netId = gangWagons[gangName]
-    if not netId then return nil end
-    local entity = NetworkGetEntityFromNetworkId(netId)
-    if entity == 0 or not DoesEntityExist(entity) then return nil end
-    return entity
+local setWagonLocation
+
+local function dbg(...)
+    if Config.DebugWagon then print('^5[rsg-gangs:wagon]^7', ...) end
 end
 
--- Live position of a spawned wagon. Used for despawn checks instead of the saved parking
--- spot, because a wagon being driven can be far from where it was last parked.
+-- Live position of a spawned wagon (last heartbeat). Used for despawn checks and equipment
+-- distance instead of the saved parking spot, because a driven wagon can be far from it.
 local function wagonLiveCoords(gangName)
-    local entity = wagonEntity(gangName)
-    return entity and GetEntityCoords(entity) or nil
+    local entry = gangWagons[gangName]
+    return entry and entry.coords or nil
 end
 
+RSGGangs.WagonLiveCoords = wagonLiveCoords
+
+-- Drops the registry entry and tells every client to delete the wagon if they have it.
 local function deleteGangWagon(gangName)
-    local entity = wagonEntity(gangName)
-    if entity then DeleteEntity(entity) end
-    if gangWagons[gangName] then
+    local entry = gangWagons[gangName]
+    if entry then
         gangWagons[gangName] = nil
+        TriggerClientEvent('rsg-gangs:client:despawnGangWagon', -1, gangName, entry.netId)
         TriggerClientEvent('rsg-gangs:client:wagonUnregistered', -1, gangName)
+        dbg('deleted wagon of', gangName)
     end
     pendingSpawns[gangName] = nil
 end
@@ -35,7 +42,7 @@ end
 RSGGangs.DeleteGangWagon = deleteGangWagon
 
 -- Saves a new parking spot for a gang's wagon (memory + database).
-local function setWagonLocation(gang, coords, heading)
+setWagonLocation = function(gang, coords, heading)
     local wagon = { x = coords.x, y = coords.y, z = coords.z, heading = heading }
     if not RSGGangs.DbOk(
         'UPDATE rsg_gangs SET wagon_x = ?, wagon_y = ?, wagon_z = ?, wagon_heading = ? WHERE name = ?',
@@ -44,6 +51,7 @@ local function setWagonLocation(gang, coords, heading)
         return false
     end
     gang.wagon = wagon
+    dbg('saved parking spot for', gang.name, wagon.x, wagon.y, wagon.z)
     return true
 end
 
@@ -54,6 +62,7 @@ local function requestClientSpawn(src, gang)
     pendingSpawns[gang.name] = os.time() + SPAWN_REQUEST_SECONDS
     RSGGangs.Grant(src, 'wagon:' .. gang.name, SPAWN_REQUEST_SECONDS + 30)
     TriggerClientEvent('rsg-gangs:client:spawnGangWagonAt', src, gang.name, gang.wagon)
+    dbg('asked', src, 'to spawn the wagon of', gang.name)
 end
 
 local function memberGang(src)
@@ -76,67 +85,88 @@ RegisterNetEvent('rsg-gangs:server:gangVehicleSpotFound', function(gangName, coo
     if not gang or gang.name ~= gangName then return end
     if not RSGGangs.IsNear(src, coords, 60.0) then return end
 
-    setWagonLocation(gang, coords, heading)
+    if setWagonLocation(gang, coords, heading) then
+        -- The founder's client spawns the first wagon itself; keep the streaming loop from asking twice.
+        pendingSpawns[gang.name] = os.time() + SPAWN_REQUEST_SECONDS
+    end
 end)
 
 RegisterNetEvent('rsg-gangs:server:gangVehicleSpotFailed', function()
     RSGGangs.Notify(source, locale('notify_wagon_no_clear_space'), 'error')
 end)
 
--- A driver parked the wagon somewhere new.
-RegisterNetEvent('rsg-gangs:server:gangWagonMoved', function(gangName, coords, heading)
-    local src = source
-    if RSGGangs.OnCooldown(src, 'wagonMoved', 2000) then return end
-
-    local gang = memberGang(src)
-    if not gang or gang.name ~= gangName then return end
+-- Clients near the wagon report it every few seconds. Any nearby client keeps it alive; only a
+-- member of the owning gang can move its saved parking spot.
+local function onHeartbeat(src, gangName, netId, coords, heading, stationary)
+    if type(gangName) ~= 'string' or type(netId) ~= 'number' then return end
     if not RSGGangs.ValidCoords(coords) or not RSGGangs.IsFinite(heading) then return end
-    if RSGGangs.GangHasDeployedEquipment(gang.name) then return end
+    if RSGGangs.OnCooldown(src, 'wagonBeat', 1500) then return end
 
-    -- The wagon has to be the real, live gang wagon, and the reporter has to be next to it.
-    local entity = wagonEntity(gang.name)
-    if not entity then return end
-    if not RSGGangs.IsNear(src, coords, 60.0) then return end
-    if #(GetEntityCoords(entity) - vector3(coords.x, coords.y, coords.z)) > 30.0 then return end
+    local entry = gangWagons[gangName]
+    local gang = RSGGangs.Gangs[gangName]
+    if not entry or not gang or entry.netId ~= netId then return end
+    if not RSGGangs.IsNear(src, coords, 150.0) then return end
 
-    setWagonLocation(gang, coords, heading)
+    local pos = vector3(coords.x, coords.y, coords.z)
+    local member = memberGang(src)
+    entry.seen = os.time()
+
+    if member and member.name == gangName then
+        entry.coords = pos
+        entry.heading = heading
+        if stationary and gang.wagon and not RSGGangs.GangHasDeployedEquipment(gangName)
+            and #(pos - vector3(gang.wagon.x, gang.wagon.y, gang.wagon.z)) > 1.0 then
+            setWagonLocation(gang, pos, heading)
+        end
+    end
+end
+
+RegisterNetEvent('rsg-gangs:server:wagonHeartbeat', function(...) onHeartbeat(source, ...) end)
+-- Kept for the "driver got out" report.
+RegisterNetEvent('rsg-gangs:server:gangWagonMoved', function(gangName, coords, heading)
+    onHeartbeat(source, gangName, gangWagons[gangName] and gangWagons[gangName].netId, coords, heading, true)
 end)
 
--- The client reports the wagon it spawned. Accepted only with a server grant, and only if the
--- entity really is a vehicle of the gang-wagon model.
-RegisterNetEvent('rsg-gangs:server:gangWagonSpawned', function(gangName, netId)
+-- The client reports the wagon it spawned. Accepted only with a server grant. The server checks the
+-- entity only when it can see it; it never rejects a wagon just because it cannot.
+RegisterNetEvent('rsg-gangs:server:gangWagonSpawned', function(gangName, netId, coords, heading)
     local src = source
     if type(gangName) ~= 'string' or type(netId) ~= 'number' then return end
     if not RSGGangs.ConsumeGrant(src, 'wagon:' .. gangName) then return end
 
     local gang = RSGGangs.Gangs[gangName]
-    if not gang then return end
+    if not gang or not gang.wagon then return end
 
     local entity = NetworkGetEntityFromNetworkId(netId)
-    if entity == 0 or not DoesEntityExist(entity) then return end
-    if GetEntityType(entity) ~= 2 then return end
-    if GetEntityModel(entity) ~= joaat(Config.GangVehicle.model) then
-        DeleteEntity(entity)
-        return
+    if entity ~= 0 and DoesEntityExist(entity) then
+        if GetEntityType(entity) ~= 2 or GetEntityModel(entity) ~= joaat(Config.GangVehicle.model) then
+            DeleteEntity(entity)
+            return
+        end
     end
 
-    -- Another wagon is already live for this gang (duplicate spawn): remove the new one.
-    local existing = wagonEntity(gangName)
-    if existing and existing ~= entity then
-        DeleteEntity(entity)
+    local existing = gangWagons[gangName]
+    if existing and existing.netId ~= netId and (os.time() - existing.seen) < HEARTBEAT_TIMEOUT_SECONDS then
+        -- A live wagon is already registered: this one is a duplicate, tell clients to remove it.
+        TriggerClientEvent('rsg-gangs:client:despawnGangWagon', -1, gangName, netId)
         pendingSpawns[gangName] = nil
         return
     end
 
-    gangWagons[gangName] = netId
+    local pos = RSGGangs.ValidCoords(coords) and vector3(coords.x, coords.y, coords.z)
+        or vector3(gang.wagon.x, gang.wagon.y, gang.wagon.z)
+    gangWagons[gangName] = { netId = netId, coords = pos, heading = heading or gang.wagon.heading or 0.0, seen = os.time() }
     pendingSpawns[gangName] = nil
     TriggerClientEvent('rsg-gangs:client:wagonRegistered', -1, gangName, netId)
+    dbg('registered wagon of', gangName, 'net id', netId)
 end)
 
 RegisterNetEvent('rsg-gangs:server:requestWagonRegistry', function()
     local src = source
     if RSGGangs.OnCooldown(src, 'wagonRegistry', 2000) then return end
-    TriggerClientEvent('rsg-gangs:client:wagonRegistrySync', src, gangWagons)
+    local registry = {}
+    for gangName, entry in pairs(gangWagons) do registry[gangName] = entry.netId end
+    TriggerClientEvent('rsg-gangs:client:wagonRegistrySync', src, registry)
 end)
 
 ---------------------------------------------------------------------
@@ -189,18 +219,19 @@ CreateThread(function()
 
         for gangName, gang in pairs(RSGGangs.Gangs) do
             if gang.wagon then
-                local live = wagonLiveCoords(gangName)
-                if live then
-                    if not RSGGangs.NearestPlayer(positions, live, Config.DespawnProximityRadius) then
+                local entry = gangWagons[gangName]
+                if entry and (now - entry.seen) > HEARTBEAT_TIMEOUT_SECONDS then
+                    -- Nobody has seen it for a while (destroyed, or its clients left): forget it.
+                    dbg('wagon of', gangName, 'timed out')
+                    deleteGangWagon(gangName)
+                    entry = nil
+                end
+
+                if entry then
+                    if not RSGGangs.NearestPlayer(positions, entry.coords, Config.DespawnProximityRadius) then
                         deleteGangWagon(gangName)
                     end
                 else
-                    -- The entity is gone (destroyed, or its owner left): forget the stale net id.
-                    if gangWagons[gangName] then
-                        gangWagons[gangName] = nil
-                        TriggerClientEvent('rsg-gangs:client:wagonUnregistered', -1, gangName)
-                    end
-
                     local waiting = pendingSpawns[gangName]
                     if not waiting or waiting < now then
                         pendingSpawns[gangName] = nil
@@ -216,13 +247,5 @@ CreateThread(function()
         end
 
         Wait(Config.ProximityCheckInterval)
-    end
-end)
-
-AddEventHandler('onResourceStop', function(resourceName)
-    if resourceName ~= GetCurrentResourceName() then return end
-    for gangName in pairs(gangWagons) do
-        local entity = wagonEntity(gangName)
-        if entity then DeleteEntity(entity) end
     end
 end)

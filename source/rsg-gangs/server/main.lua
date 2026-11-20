@@ -209,6 +209,9 @@ local SCHEMA = {
         `id` int(11) NOT NULL AUTO_INCREMENT,
         `gang_name` varchar(50) NOT NULL,
         `reward` int(11) NOT NULL,
+        `target_type` varchar(10) NOT NULL DEFAULT 'player',
+        `target_id` varchar(50) DEFAULT NULL,
+        `target_name` varchar(100) DEFAULT NULL,
         `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (`id`),
         KEY `gang_name` (`gang_name`),
@@ -238,6 +241,9 @@ local COLUMN_UPGRADES = {
     { 'rsg_gangs', 'upkeep_due', 'int(11) DEFAULT NULL' },
     { 'rsg_gangs', 'upkeep_missed', 'int(11) NOT NULL DEFAULT 0' },
     { 'rsg_gangs', 'tag', 'varchar(8) DEFAULT NULL' },
+    { 'rsg_gang_bounties', 'target_type', "varchar(10) NOT NULL DEFAULT 'player'" },
+    { 'rsg_gang_bounties', 'target_id', 'varchar(50) DEFAULT NULL' },
+    { 'rsg_gang_bounties', 'target_name', 'varchar(100) DEFAULT NULL' },
 }
 
 local function ensureDatabase()
@@ -607,12 +613,13 @@ local function buildGangPayload(gang)
     }
 end
 
-local function buildState(citizenid, gang)
+-- `payload` lets broadcastGangUpdate build the (expensive) gang payload once for every member.
+local function buildState(citizenid, gang, payload)
     local member = gang and gang.members[citizenid]
     return {
         citizenid = citizenid,
         inGang = gang ~= nil,
-        gang = gang and buildGangPayload(gang) or nil,
+        gang = gang and (payload or buildGangPayload(gang)) or nil,
         myRank = member and member.rank or nil,
         myPermissions = member and permissionList(member.rank) or {},
         canViewLog = member and canViewLog(member.rank) or false,
@@ -631,21 +638,7 @@ local function broadcastGangUpdate(gang)
     local payload = buildGangPayload(gang)
     for citizenid, member in pairs(gang.members) do
         if member.source then
-            TriggerClientEvent('rsg-gangs:client:setState', member.source, {
-                citizenid = citizenid,
-                inGang = true,
-                gang = payload,
-                myRank = member.rank,
-                myPermissions = permissionList(member.rank),
-                canViewLog = canViewLog(member.rank),
-                tagsEnabled = Config.Tags and Config.Tags.enabled or false,
-                leaderboardEnabled = Config.Leaderboard and Config.Leaderboard.enabled or false,
-                createCost = Config.CreateGangCost,
-                minNameLength = Config.MinNameLength,
-                maxNameLength = Config.MaxNameLength,
-                maxBank = Config.MaxBankBalance,
-                colors = Config.GangColors,
-            })
+            TriggerClientEvent('rsg-gangs:client:setState', member.source, buildState(citizenid, gang, payload))
         end
     end
 end
@@ -767,6 +760,10 @@ RSGGangs.NearestPlayer = nearestPlayer
 RSGGangs.Log = logEvent
 RSGGangs.AddLog = addLog
 RSGGangs.DbOk = dbOk
+RSGGangs.DbTransaction = dbTransaction
+RSGGangs.RemoveMember = removeMember
+RSGGangs.MemberCount = memberCount
+RSGGangs.RankByWeight = function(weight) return rankByWeight[weight] end
 
 ---------------------------------------------------------------------
 -- Exports for other resources

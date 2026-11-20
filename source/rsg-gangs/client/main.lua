@@ -78,6 +78,12 @@ local function closeMenu()
     SendNUIMessage({ action = 'close' })
 end
 
+-- Used by client/admin.lua for the staff panel (keeps the push-to-talk whitelist working).
+function RSGGangsClient.SetFocus(enable)
+    uiFocus = enable
+    applyNuiFocus(enable)
+end
+
 -- Used by client/crafting.lua, which opens its own NUI view.
 function RSGGangsClient.OpenFocusOnly()
     if menuOpen then return end

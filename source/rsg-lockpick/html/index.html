@@ -2,23 +2,101 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>rsg-lockpick</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-    <title>RSGCore Lockpick</title>
 </head>
-    <body>
-        <div id="wrap">
-            <img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/95637/collar.png" alt="" id="collar" />
-            <div id="cylinder"></div>
-            <div id="driver"></div>
-            <div id="pin">
-                <div class="top"></div>
-                <div class="bott"></div>
+<body>
+    <div id="app" class="hidden">
+        <div class="panel">
+            <div class="panel-header">
+                <span class="circle-btn">&#10005;</span>
+                <div>
+                    <div class="title" id="title">Lockpicking</div>
+                </div>
+                <button class="circle-btn" id="closeBtn" type="button" aria-label="Cancel">&#10005;</button>
             </div>
-          </div>
-    </body>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/2.1.3/TweenMax.min.js"></script>
-    <script src="script.js" type="text/javascript"></script>
+            <div class="ink-divider"></div>
+
+            <svg id="lock" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <defs>
+                    <radialGradient id="gCollar" cx="50%" cy="40%" r="70%">
+                        <stop offset="0" stop-color="#3a3a3a"/>
+                        <stop offset="1" stop-color="#0d0d0d"/>
+                    </radialGradient>
+                    <radialGradient id="gCyl" cx="45%" cy="35%" r="75%">
+                        <stop offset="0" stop-color="#2e2e2e"/>
+                        <stop offset="1" stop-color="#090909"/>
+                    </radialGradient>
+                    <linearGradient id="gMetal" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0" stop-color="#7a7a7a"/>
+                        <stop offset="0.5" stop-color="#f2f2f2"/>
+                        <stop offset="1" stop-color="#6a6a6a"/>
+                    </linearGradient>
+                </defs>
+
+                <!-- collar -->
+                <circle cx="100" cy="100" r="96" fill="url(#gCollar)" stroke="#5a5a5a" stroke-width="1.5"/>
+                <circle cx="100" cy="100" r="88" fill="none" stroke="#000" stroke-opacity="0.7" stroke-width="1"/>
+                <g id="scale" stroke="#5a5a5a" stroke-width="1"></g>
+                <g fill="#141414" stroke="#5a5a5a" stroke-width="0.8">
+                    <circle cx="28" cy="172" r="5"/><circle cx="172" cy="172" r="5"/>
+                </g>
+                <g stroke="#5a5a5a" stroke-width="1" stroke-linecap="round">
+                    <path d="M25 170 L31 174"/><path d="M169 174 L175 170"/>
+                </g>
+
+                <!-- cylinder (rotates when the lock is turned) -->
+                <g id="cyl">
+                    <circle cx="100" cy="100" r="66" fill="url(#gCyl)" stroke="#5a5a5a" stroke-width="1.5"/>
+                    <circle cx="100" cy="100" r="58" fill="none" stroke="#000" stroke-opacity="0.6"/>
+                    <g id="cylTicks" stroke="#5a5a5a" stroke-width="1.2" stroke-linecap="round"></g>
+                    <rect x="94" y="98" width="12" height="40" rx="3" fill="#000" stroke="#3a3a3a" stroke-width="0.8"/>
+                </g>
+
+                <!-- tension wrench -->
+                <g id="driver">
+                    <path d="M100 118 L100 146 L138 146" fill="none" stroke="#000" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.6"/>
+                    <path d="M100 118 L100 146 L138 146" fill="none" stroke="#9a9a9a" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </g>
+
+                <!-- pick -->
+                <g id="pick">
+                    <path id="pickTop" d="M98.8 10 L101.2 10 L102.4 55 L97.6 55 Z" fill="url(#gMetal)" stroke="#000" stroke-width="0.6"/>
+                    <path id="pickBot" d="M97.6 55 L102.4 55 L103.8 100 L96.2 100 Z" fill="url(#gMetal)" stroke="#000" stroke-width="0.6"/>
+                </g>
+                <circle cx="100" cy="100" r="4" fill="#1c1c1c" stroke="#9a9a9a" stroke-width="1"/>
+            </svg>
+
+            <div class="meters">
+                <div class="meter-row">
+                    <span class="meter-label" id="lblCondition">Condition</span>
+                    <div class="bar"><div class="fill stat-good" id="condFill"></div></div>
+                </div>
+                <div class="meter-row hidden" id="timeRow">
+                    <span class="meter-label" id="lblTime">Time</span>
+                    <div class="bar"><div class="fill stat-good live" id="timeFill"></div></div>
+                </div>
+                <div class="meter-row">
+                    <span class="meter-label" id="lblPicks">Picks</span>
+                    <div class="pips" id="pips"></div>
+                </div>
+            </div>
+
+            <div class="status" id="status"></div>
+
+            <div class="divider">&#10022;</div>
+
+            <div class="hints">
+                <div class="hint"><span class="kbd">Mouse</span><span class="kbd">Q</span><span class="kbd">E</span><em id="hintRotate">Rotate pick</em></div>
+                <div class="hint"><span class="kbd">LMB</span><span class="kbd">Space</span><span class="kbd">W A S D</span><em id="hintPush">Turn lock</em></div>
+                <div class="hint"><span class="kbd">Esc</span><em id="hintCancel">Cancel</em></div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
 </html>

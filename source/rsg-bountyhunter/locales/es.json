@@ -104,5 +104,17 @@
     "wh_turned_in_dead": "%s (%s) entregó a %s muerto por $%s",
     "wh_board_refreshed": "Tablón renovado con %s carteles.",
     "wh_test_desc": "Prueba para el canal **%s**.",
-    "wh_started_desc": "rsg-bountyhunter iniciado con %s oficinas y %s escondites."
+    "wh_started_desc": "rsg-bountyhunter iniciado con %s oficinas y %s escondites.",
+    "crime_reputation": "Forajido notorio, una amenaza para el territorio",
+    "rep_posted": "Tu conducta fuera de la ley te ha costado una recompensa. Los cazarrecompensas ya pueden entregarte.",
+    "rep_cleared": "Tu nombre ha sido retirado del tablón de recompensas.",
+    "rep_collected": "Un cazarrecompensas te ha entregado.",
+    "rep_target_left": "%s ha abandonado el territorio. El contrato se ha cancelado.",
+    "rep_target_cleared": "%s ya no es buscado. El contrato se ha cancelado.",
+    "rep_target_jailed": "%s ha sido encarcelado. El contrato se ha cancelado.",
+    "rep_not_secured": "El objetivo debe estar muerto, atado o esposado en la oficina.",
+    "rep_own_bounty": "No puedes cazarte a ti mismo.",
+    "rep_same_gang": "No puedes aceptar una recompensa sobre un miembro de tu propia banda.",
+    "crime_sponsored_bounty": "Buscado por una banda",
+    "gang_own_bounty": "No puedes aceptar una recompensa publicada por tu propia banda."
 }

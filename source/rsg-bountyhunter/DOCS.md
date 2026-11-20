@@ -1,4 +1,4 @@
-# rsg-bountyhunter – Docs (v3.1.0)
+# rsg-bountyhunter – Docs (v3.3.0)
 
 ## Contents
 1. Files
@@ -31,6 +31,7 @@
 5. Bring the target to any office. Alive pays the full reward; dead pays `deadMultiplier` of it.
 6. Contracts have a time limit with a warning, an abandon option (NUI or `/abandonbounty`) and a cooldown before the next one.
 7. Personal stats and a Top Hunters leaderboard (cached).
+8. With rsg-reputation started, players whose honor falls to the threshold are posted automatically and hunted as real players (see "Reputation bounties").
 
 ## 3. Configuration
 `shared/config.lua`:
@@ -67,7 +68,11 @@ Webhook URLs and the test command are in `server/sv_config.lua`.
 | `rsg-bountyhunter:server:registerTarget` | server event | `(netId)` the spawned outlaw |
 | `rsg-bountyhunter:server:turnIn` | callback | `(officeId)` |
 | `rsg-bountyhunter:client:startContract` | client event | `(data)` |
-| `rsg-bountyhunter:client:endContract` | client event | `(reason)` |
+| `rsg-bountyhunter:client:endContract` | client event | `(reason)` (`'cancelled'` = reputation poster closed, no cooldown) |
+| `rsg-bountyhunter:client:startPlayerContract` | client event | `(data)` `{ name }`, contract on a real player |
+| `rsg-bountyhunter:client:trackArea` | client event | `(area)` `{ x, y, z, radius }`, moves the search-area blip |
+| `rsg-bountyhunter:client:isRestrained` | client callback | Server asks the target's client if they are hogtied |
+| `rsg-reputation:server:honorChanged` | server event (listened to) | `(src, new, old, reason)` fired by rsg-reputation, re-checks the player |
 
 | Command | Who | What |
 |---|---|---|
@@ -103,12 +108,37 @@ The server owns the board and contracts. It checks distance to the clerk, the jo
 | Can't accept | Cooldown after abandon/fail, or a job lock |
 | Turn-in refused | Target must be within `DeliverRadius` of the office and the hunt long enough |
 | Poster gone | Another hunter took it, or the board re-rolled |
+| Player never gets a poster | rsg-reputation not started, honor above `Threshold`, lawman job type, jailed, or on the repost cooldown |
+| "The target must be dead, hogtied or cuffed" | Hogtie or cuff the target (or kill them) and keep them at the office; a dead player must not have respawned yet |
 
 ## Sponsored posters (server export)
 
-`exports['rsg-bountyhunter']:PostBounty(opts)` lets another resource (rsg-gangs uses it) put a poster on every board. `opts = { ref, reward, sponsor, expireMinutes }`: `ref` is any unique value the caller uses to settle it, `reward` is the alive reward (dead pays the tier's `deadMultiplier`), `sponsor` is shown next to the crime, `expireMinutes` defaults to 360. Returns the poster id or `nil`.
+`exports['rsg-bountyhunter']:PostBounty(opts)` lets another resource (rsg-gangs uses it) put a poster on every board. `opts = { ref, reward, sponsor, expireMinutes, targetCitizenid, targetGang, targetName, sponsorGang }`: `ref` is any unique value the caller uses to settle it, `reward` is the alive reward (dead pays the tier's `deadMultiplier`), `sponsor` is shown next to the crime, `expireMinutes` defaults to 360. Without a target the poster is a normal NPC contract. With `targetCitizenid` the hunter must bring in that player; with `targetGang` (an rsg-gangs gang name) any online member of that gang counts. Both follow a moving search area on the hunter's map and are turned in dead, hogtied or cuffed at an office, like reputation bounties. `targetName` is the name shown on the board and `sponsorGang` is the gang that cannot take its own bounty; hunters can never take a bounty on their own gang or on themselves. Gang membership is read from rsg-gangs (`GetPlayerGang`, `GetGangOnlineSources`). Returns the poster id or `nil`.
 
 The caller holds the money in escrow. When the poster ends the server fires `rsg-bountyhunter:server:posterClosed(ref, reason, paid)` (server-only, not callable by clients) with reason `'completed'` (hunter was paid `paid`) or `'expired'` (nobody delivered it). A sponsored poster that is abandoned or failed goes back on the board; sponsored posters are never re-rolled.
+
+## Reputation bounties
+
+Needs rsg-reputation (optional). Config in `Config.ReputationBounty`, see the README table for every option.
+
+**Posting.** `evaluateRep(src)` runs when rsg-reputation fires `rsg-reputation:server:honorChanged`, 5 seconds after a character loads, and for every online player each `SweepSeconds` (jail, honor decay and cooldown expiry raise no honor event). It reads `exports['rsg-reputation']:GetHonor(src)`:
+- no poster and honor <= `Threshold` and eligible: a sponsored poster (tier 3, character name, crime `crime_reputation`, `playerTarget = citizenid`) is added to the board
+- poster exists and honor <= `ClearAbove`: an untaken poster's reward is updated
+- poster exists and honor > `ClearAbove`, or the player became ineligible (exempt job, jailed): the poster is removed and a hunter holding it is released without a cooldown
+
+Eligibility: not an `ExemptJobTypes` job type, not jailed (`metadata.injail`, when `SkipJailed`), not on the `RepostCooldownMinutes` cooldown. The poster is also removed when the character logs out or disconnects. Reputation posters are kept in memory only, so no database table is added; they are re-created from honor after a restart.
+
+**Hunting.** `accept` rejects your own poster, a target who is no longer online and (with `BlockSameGang`) a member of your own gang. No outlaw is spawned. Every `TrackSeconds` the server sends `client:trackArea` with the target's position plus a fixed random offset inside `TrackRadius`.
+
+**Turn-in.** `turnIn` runs `turnInPlayer`: the target must be online and not jailed, within `DeliverRadius` of the office, the hunt must have lasted `MinHuntSeconds`, and the target must be secured:
+- dead: `metadata.isdead` (set by rsg-medic)
+- alive: `metadata.ishandcuffed` (rsg-lawman), or hogtied as reported by the target's own client through `rsg-bountyhunter:client:isRestrained`
+
+The contract and poster are removed before the money is paid. The target gets the repost cooldown, the hunter's stats are updated and the normal rsg-reputation `bounty_delivered` action is applied to the hunter.
+
+**Export.** `exports['rsg-bountyhunter']:IsReputationWanted(citizenid)` returns `true` while that character has a reputation poster on the board.
+
+**Trust model.** Everything is decided on the server. The only client-reported fact is "hogtied", asked of the target's own client: a target can only lose by lying, and the hunter cannot influence the answer.
 
 ## rsg-reputation integration
 
@@ -171,6 +201,7 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.FirstNames` | `{ 'Jebediah', 'Silas', 'Amos', 'Cletus', 'Ezra', 'Horace', 'Virgil', '` | random poster names (proper nouns, not translated) and crimes (locale keys in locales/*.json) |
 | `Config.LastNames` | `{ 'Crane', 'Hollister', 'McCready', 'Thorne', 'Pike', 'Vance', 'Dutton` |  |
 | `Config.Crimes` | `table` |  |
+| `Config.ReputationBounty` | `table` | Reputation bounties (optional): auto-post players whose honor is low; every option is listed in the README |
 | `Config.Reputation` | `table` | rsg-reputation integration (optional). Needs the rsg-reputation resource; does nothing when it is not started. |
 | `Config.Enabled` | `true` |  |
 | `Config.Action` | `'bounty_delivered'` |  |
@@ -184,6 +215,7 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `rsg-bountyhunter:server:accept` | server | `src, cb, officeId, posterId` | `server/server.lua` |
 | `rsg-bountyhunter:server:abandon` | server | `src, cb` | `server/server.lua` |
 | `rsg-bountyhunter:server:turnIn` | server | `src, cb, officeId` | `server/server.lua` |
+| `rsg-bountyhunter:client:isRestrained` | client | `cb` | `client/client.lua` |
 
 ```lua
 -- client side
@@ -200,6 +232,8 @@ Server events can be fired by any client, so every handler re-validates the play
 |---|---|---|---|
 | `rsg-bountyhunter:client:startContract` | client | `data` | `client/client.lua` |
 | `rsg-bountyhunter:client:endContract` | client | `reason` | `client/client.lua` |
+| `rsg-bountyhunter:client:startPlayerContract` | client | `data` | `client/client.lua` |
+| `rsg-bountyhunter:client:trackArea` | client | `area` | `client/client.lua` |
 | `RSGCore:Client:OnPlayerUnload` | client | `` | `client/client.lua` |
 | `rsg-bountyhunter:server:registerTarget` | server | `netId` | `server/server.lua` |
 

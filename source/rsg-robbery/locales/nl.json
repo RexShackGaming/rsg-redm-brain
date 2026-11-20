@@ -1,0 +1,20 @@
+{
+    "robbery": {
+        "title": "Overval",
+        "rob": "Beroven",
+        "uncuff": "Losmaken",
+        "need_cuffs": "Je hebt handboeien nodig",
+        "too_far": "Te ver weg",
+        "already_cuffed": "Doelwit is al geboeid",
+        "target_not_cuffed": "Doelwit is niet geboeid",
+        "in_vehicle": "Je kunt niemand in een voertuig beroven",
+        "cooldown": "Wacht voordat je opnieuw berooft",
+        "cuffing": "Doelwit boeien...",
+        "being_robbed": "Je wordt beroofd!",
+        "uncuffed_you": "Je boeien zijn verwijderd",
+        "uncuffed_other": "Je hebt de speler losgemaakt",
+        "uncuff_self_help": "Jezelf losmaken",
+        "broke_free": "Je bent losgebroken!",
+        "not_cuffed": "Je bent niet geboeid"
+    }
+}

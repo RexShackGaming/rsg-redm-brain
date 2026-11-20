@@ -1,0 +1,20 @@
+{
+    "robbery": {
+        "title": "Jaf",
+        "rob": "Jefuiește",
+        "uncuff": "Dezleagă",
+        "need_cuffs": "Ai nevoie de cătușe",
+        "too_far": "Prea departe",
+        "already_cuffed": "Ținta este deja încătușată",
+        "target_not_cuffed": "Ținta nu este încătușată",
+        "in_vehicle": "Nu poți jefui pe cineva dintr-un vehicul",
+        "cooldown": "Așteaptă înainte de a jefui din nou",
+        "cuffing": "Se încătușează ținta...",
+        "being_robbed": "Ești jefuit!",
+        "uncuffed_you": "Ai fost eliberat din cătușe",
+        "uncuffed_other": "Ai eliberat jucătorul",
+        "uncuff_self_help": "Eliberează-te",
+        "broke_free": "Te-ai eliberat!",
+        "not_cuffed": "Nu ești încătușat"
+    }
+}

@@ -1,6 +1,6 @@
 # rsg-bountyhunter
 
-Version 3.2.0. rsg-bountyhunter - hunt wanted outlaws and bring them in dead or alive
+Version 3.4.0. rsg-bountyhunter - hunt wanted outlaws and bring them in dead or alive
 
 Bounty hunting for RSG Framework (RedM). Take a wanted poster from the clerk at any sheriff's office, track the outlaw to their hideout, and bring them in dead or alive. - Clerk NPC at each sheriff's office (rsg-target): **View Bounties** and **Turn In Bounty** - NUI wanted board in the RSG leather & gold style: tiered posters (Petty / Wanted / Notorious) with random names, crimes and rewards
 
@@ -12,17 +12,17 @@ Has NUI (`ui_page`).
 
 ## Exports (call as exports['rsg-bountyhunter']:Name)
 
-**server:** `PostBounty(opts)`
+**server:** `IsReputationWanted(citizenid)`, `PostBounty(opts)`
 
 ## Net events registered
 
 **server:** `rsg-bountyhunter:server:registerTarget`
 
-**client:** `RSGCore:Client:OnPlayerUnload`, `rsg-bountyhunter:client:endContract`, `rsg-bountyhunter:client:startContract`
+**client:** `RSGCore:Client:OnPlayerUnload`, `rsg-bountyhunter:client:endContract`, `rsg-bountyhunter:client:startContract`, `rsg-bountyhunter:client:startPlayerContract`, `rsg-bountyhunter:client:trackArea`
 
 ## Event handlers
 
-**server:** `RSGCore:Server:OnPlayerUnload`
+**server:** `RSGCore:Server:OnPlayerUnload`, `RSGCore:Server:PlayerLoaded`, `rsg-reputation:server:honorChanged`
 
 ## Callbacks (RSGCore.Functions.CreateCallback)
 

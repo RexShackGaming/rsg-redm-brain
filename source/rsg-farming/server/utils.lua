@@ -1,4 +1,4 @@
--- shared server helpers for rsg-farming (loaded before server.lua / wellpump.lua)
+-- shared server helpers for rsg-farming (loaded before server.lua)
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
 Utils = {}
@@ -171,14 +171,6 @@ local SCHEMA = {
         PRIMARY KEY (`id`),
         KEY `citizenid` (`citizenid`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]],
-    [[CREATE TABLE IF NOT EXISTS `rsg_farming_wellpumps` (
-        `id` INT(11) NOT NULL AUTO_INCREMENT,
-        `citizenid` VARCHAR(50) NOT NULL,
-        `x` FLOAT NOT NULL, `y` FLOAT NOT NULL, `z` FLOAT NOT NULL, `h` FLOAT NOT NULL DEFAULT 0,
-        `placed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (`id`),
-        KEY `citizenid` (`citizenid`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]],
 }
 
 local function ensureDatabase()
@@ -193,7 +185,7 @@ local function ensureDatabase()
     return true
 end
 
--- nil = still starting, true = ready, false = failed (server.lua / wellpump.lua wait on this)
+-- nil = still starting, true = ready, false = failed (server.lua waits on this)
 CreateThread(function()
     if Config.AutoDatabase then
         Utils.DBReady = ensureDatabase()
@@ -215,9 +207,8 @@ CreateThread(function()
         chk(crop.seed)
         for _, r in ipairs(crop.harvest) do chk(r.item) end
     end
-    chk(Config.WaterItem); chk(Config.WaterReturnItem); chk(Config.FertilizerItem)
+    chk(Config.WaterItem); chk(Config.FertilizerItem)
     if Config.Pests.enabled then chk(Config.Pests.item) end
-    chk(Config.WellPump.item); chk(Config.WellPump.emptyItem); chk(Config.WellPump.fullItem)
 
     local names = {}
     for name in pairs(missing) do names[#names + 1] = name end

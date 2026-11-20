@@ -1,0 +1,20 @@
+{
+    "robbery": {
+        "title": "Roubo",
+        "rob": "Roubar",
+        "uncuff": "Soltar",
+        "need_cuffs": "Você precisa de algemas",
+        "too_far": "Muito longe",
+        "already_cuffed": "O alvo já está algemado",
+        "target_not_cuffed": "O alvo não está algemado",
+        "in_vehicle": "Não é possível roubar alguém em um veículo",
+        "cooldown": "Aguarde antes de roubar novamente",
+        "cuffing": "Algemando o alvo...",
+        "being_robbed": "Você está sendo roubado!",
+        "uncuffed_you": "Você foi solto",
+        "uncuffed_other": "Você soltou o jogador",
+        "uncuff_self_help": "Soltar-se",
+        "broke_free": "Você se libertou!",
+        "not_cuffed": "Você não está algemado"
+    }
+}

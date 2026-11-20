@@ -1,0 +1,18 @@
+{
+  "title": "ピッキング",
+  "hint_rotate": "ピックを回す",
+  "hint_push": "鍵を回す",
+  "hint_cancel": "キャンセル",
+  "picks": "ピック",
+  "condition": "状態",
+  "unlocked": "解錠",
+  "broken": "ピックが折れた",
+  "time": "時間",
+  "time_up": "時間切れ",
+  "need_lockpick": "ピックが必要です",
+  "lockpick_broke": "ピックが壊れた",
+  "slow_down": "少し待って",
+  "alert_text": "ピッキング中",
+  "skill_label": "ピッキング",
+  "skill_desc": "鍵をより速く開け、ピックが折れにくくなる。"
+}

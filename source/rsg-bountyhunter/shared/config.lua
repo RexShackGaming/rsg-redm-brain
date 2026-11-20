@@ -110,3 +110,25 @@ Config.Reputation = {
     -- office id -> rsg-reputation region id (an id that is not listed here is used as it is)
     Regions = { saintdenis = 'saint_denis' },
 }
+
+-- Reputation bounties (optional). Needs rsg-reputation; does nothing when it is not started.
+-- A player whose honor falls to the threshold is posted on the board automatically, and a hunter
+-- collects the bounty on the real player: dead, or bound (hogtied / cuffed), at a sheriff's office.
+-- The poster is removed when honor recovers, the player goes to jail or leaves, or the bounty is collected.
+Config.ReputationBounty = {
+    Enabled        = true,
+    Threshold      = -600,   -- post when honor is at or below this (-600 = the Outlaw tier in rsg-reputation)
+    ClearAbove     = -400,   -- remove the poster once honor rises above this (keep it higher than Threshold)
+    BaseReward     = 100,    -- alive reward when honor is exactly at the threshold
+    PerPoint       = 0.5,    -- extra alive reward for every honor point below the threshold
+    MaxReward      = 500,    -- alive reward cap
+    DeadMultiplier = 0.5,    -- dead pays this share of the alive reward
+    ExemptJobTypes = { 'leo' }, -- job types that are never posted (lawmen)
+    SkipJailed     = true,   -- jailed players are not posted
+    BlockSameGang  = true,   -- a hunter cannot take a bounty on a member of their own gang
+    RepostCooldownMinutes = 120, -- after being brought in, the player cannot be posted again for this long
+    TrackSeconds   = 30,     -- how often the hunter's search area follows the target (minimum 15)
+    TrackRadius    = 250.0,  -- size of the moving search area (the target is somewhere inside)
+    SweepSeconds   = 60,     -- how often every online player is re-checked (jail, decay, cooldown)
+    NotifyTarget   = true,   -- tell the player when they are posted / cleared / brought in
+}

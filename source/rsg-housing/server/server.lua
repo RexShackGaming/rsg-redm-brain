@@ -386,6 +386,14 @@ local function addColumn(tbl, col, definition)
     end
 end
 
+-- only widens a varchar column when it is currently shorter (avoids an ALTER on every start)
+local function widenColumn(tbl, col, length, definition)
+    local current = MySQL.scalar.await('SELECT CHARACTER_MAXIMUM_LENGTH FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?', { tbl, col })
+    if current and tonumber(current) < length then
+        MySQL.query.await(('ALTER TABLE `%s` MODIFY `%s` %s'):format(tbl, col, definition))
+    end
+end
+
 local function addIndex(tbl, name, columns)
     local found = MySQL.scalar.await('SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?', { tbl, name }) or 0
     if found == 0 then
@@ -416,8 +424,8 @@ local function ensureDatabase()
         addColumn('rsg_housekeys', 'expires', 'datetime DEFAULT NULL')
         addIndex('rsg_housekeys', 'idx_house_citizen', '`houseid`, `citizenid`')
         -- house ids longer than 7 characters (house100+)
-        MySQL.query.await('ALTER TABLE rsg_housing MODIFY `houseid` varchar(20) NOT NULL')
-        MySQL.query.await("ALTER TABLE rsg_housekeys MODIFY `houseid` varchar(20) NOT NULL DEFAULT '0'")
+        widenColumn('rsg_housing', 'houseid', 20, 'varchar(20) NOT NULL')
+        widenColumn('rsg_housekeys', 'houseid', 20, "varchar(20) NOT NULL DEFAULT '0'")
 
         -- houses added to Config.Houses get a database row (needs region = '...' in the house entry)
         for _, house in ipairs(Config.Houses) do

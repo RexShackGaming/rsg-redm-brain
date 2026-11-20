@@ -1,0 +1,20 @@
+{
+    "robbery": {
+        "title": "Braquage",
+        "rob": "Dévaliser",
+        "uncuff": "Détacher",
+        "need_cuffs": "Il vous faut des menottes",
+        "too_far": "Trop loin",
+        "already_cuffed": "La cible est déjà menottée",
+        "target_not_cuffed": "La cible n'est pas menottée",
+        "in_vehicle": "Impossible de voler quelqu'un dans un véhicule",
+        "cooldown": "Attendez avant de voler à nouveau",
+        "cuffing": "Menottage de la cible...",
+        "being_robbed": "Vous êtes en train d'être dévalisé !",
+        "uncuffed_you": "Vous avez été libéré",
+        "uncuffed_other": "Vous avez libéré le joueur",
+        "uncuff_self_help": "Se libérer",
+        "broke_free": "Vous vous êtes libéré !",
+        "not_cuffed": "Vous n'êtes pas menotté"
+    }
+}

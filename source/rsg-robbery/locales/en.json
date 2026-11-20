@@ -1,0 +1,20 @@
+{
+    "robbery": {
+        "title": "Robbery",
+        "rob": "Rob",
+        "uncuff": "Uncuff",
+        "need_cuffs": "You need handcuffs",
+        "too_far": "Too far away",
+        "already_cuffed": "Target is already cuffed",
+        "target_not_cuffed": "Target is not cuffed",
+        "in_vehicle": "Cannot rob someone in a vehicle",
+        "cooldown": "Wait before robbing again",
+        "cuffing": "Cuffing target...",
+        "being_robbed": "You are being robbed!",
+        "uncuffed_you": "You have been uncuffed",
+        "uncuffed_other": "You uncuffed the player",
+        "uncuff_self_help": "Uncuff yourself",
+        "broke_free": "You broke free!",
+        "not_cuffed": "You are not cuffed"
+    }
+}

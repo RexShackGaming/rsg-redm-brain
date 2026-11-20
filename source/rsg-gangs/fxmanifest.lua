@@ -6,7 +6,7 @@ lua54 'yes'
 author 'RexShack'
 name 'rsg-gangs'
 description 'Gang System for RSG Framework'
-version '3.0.0'
+version '3.4.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
@@ -23,6 +23,7 @@ server_scripts {
     'server/crafting.lua',
     'server/stash.lua',
     'server/features.lua',
+    'server/admin.lua',
     'server/versionchecker.lua',
 }
 
@@ -32,6 +33,7 @@ client_scripts {
     'client/equipment.lua',
     'client/crafting.lua',
     'client/features.lua',
+    'client/admin.lua',
 }
 
 ui_page 'html/index.html'
@@ -40,7 +42,9 @@ files {
     'locales/*.json',
     'html/index.html',
     'html/style.css',
+    'html/admin.css',
     'html/app.js',
+    'html/admin.js',
 }
 
 dependencies {
@@ -48,6 +52,7 @@ dependencies {
     'rsg-inventory',
     'rsg-target',
     'rsg-gizmo',
+    'rsg-wellpump',
     'oxmysql',
 }
 

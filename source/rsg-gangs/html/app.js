@@ -10,6 +10,15 @@
   let activeView = null;
   let craftData = null;
 
+  // like post(), but resolves with the parsed JSON the client callback answered with
+  function postJson(endpoint, data) {
+    return fetch(`https://${RESOURCE}/${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+      body: JSON.stringify(data || {}),
+    }).then((r) => r.json()).catch(() => []);
+  }
+
   function post(endpoint, data) {
     return fetch(`https://${RESOURCE}/${endpoint}`, {
       method: 'POST',
@@ -40,6 +49,7 @@
 
   function showView(name) {
     activeView = name;
+    if (typeof closeDd === 'function') closeDd();
     Object.entries(views).forEach(([key, el]) => el.classList.toggle('hidden', key !== name));
   }
 
@@ -300,19 +310,146 @@
     });
   }
 
+  // ---------- Pure HTML dropdown (native selects are never used in NUI) ----------
+  let openDd = null; // { root, menu }
+  function closeDd() {
+    if (!openDd) return;
+    openDd.root.classList.remove('open');
+    openDd.menu.classList.add('hidden');
+    openDd.root.appendChild(openDd.menu);
+    openDd = null;
+  }
+  function showDd(root, menu) {
+    closeDd();
+    const rect = root.getBoundingClientRect();
+    document.body.appendChild(menu);
+    menu.classList.remove('hidden');
+    menu.style.left = rect.left + 'px';
+    menu.style.minWidth = rect.width + 'px';
+    const height = Math.min(menu.scrollHeight, 220);
+    const below = window.innerHeight - rect.bottom;
+    menu.style.top = (below >= height + 8 || rect.top < height ? rect.bottom + 4 : rect.top - height - 4) + 'px';
+    root.classList.add('open');
+    openDd = { root, menu };
+  }
+  document.addEventListener('mousedown', (e) => {
+    if (openDd && !e.target.closest('.dd') && !e.target.closest('.dd-menu')) closeDd();
+  });
+  document.addEventListener('scroll', (e) => {
+    if (openDd && !(e.target.closest && e.target.closest('.dd-menu'))) closeDd();
+  }, true);
+
+  // options: [{ value, label }]; the picked value is read from `.dataset.value`
+  function makeDd(options, placeholder) {
+    const root = document.createElement('div');
+    root.className = 'dd';
+    root.dataset.value = '';
+    const head = document.createElement('div');
+    head.className = 'dd-value';
+    const label = document.createElement('span');
+    label.className = 'dd-label';
+    const arrow = document.createElement('span');
+    arrow.className = 'dd-arrow';
+    arrow.innerHTML = '&#9662;';
+    head.append(label, arrow);
+    const menu = document.createElement('div');
+    menu.className = 'dd-menu hidden';
+    root.append(head, menu);
+
+    const setLabel = () => {
+      const found = options.find((o) => String(o.value) === root.dataset.value);
+      label.textContent = found ? found.label : placeholder;
+      menu.querySelectorAll('.dd-opt').forEach((n) => n.classList.toggle('selected', n.dataset.value === root.dataset.value));
+    };
+    options.forEach((o) => {
+      const item = document.createElement('div');
+      item.className = 'dd-opt';
+      item.textContent = o.label;
+      item.dataset.value = String(o.value);
+      item.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        root.dataset.value = String(o.value);
+        setLabel();
+        closeDd();
+      });
+      menu.appendChild(item);
+    });
+    head.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const wasOpen = root.classList.contains('open');
+      closeDd();
+      if (!wasOpen) { setLabel(); showDd(root, menu); }
+    });
+    setLabel();
+    return root;
+  }
+
+  // ---------- Bounty tab ----------
+  let bountyKind = 'player';
+  let bountyDd = null;
+  let bountyReq = 0;
+
+  async function loadBountyTargets() {
+    const token = ++bountyReq;
+    const slot = $('bountyTargetSlot');
+    closeDd();
+    bountyDd = null;
+    slot.innerHTML = '';
+    const list = await postJson('bountyTargets', { kind: bountyKind });
+    if (token !== bountyReq) return; // a newer request replaced this one
+    const options = Array.isArray(list) ? list : [];
+    if (!options.length) {
+      const note = document.createElement('div');
+      note.className = 'empty';
+      note.textContent = t('ui_bounty_no_targets');
+      slot.appendChild(note);
+      return;
+    }
+    bountyDd = makeDd(options, t(bountyKind === 'gang' ? 'ui_bounty_pick_gang' : 'ui_bounty_pick_player'));
+    slot.appendChild(bountyDd);
+  }
+
+  function setBountyKind(kind) {
+    bountyKind = kind;
+    $('bountyKindPlayer').classList.toggle('btn-muted', kind !== 'player');
+    $('bountyKindGang').classList.toggle('btn-muted', kind !== 'gang');
+    loadBountyTargets();
+  }
+
   function renderBounty(b, canPost) {
     $('tabBtnBounty').classList.toggle('hidden', !b);
     if (!b) return;
     $('bountyLede').textContent = t('ui_bounty_lede', fmtMoney(b.min), fmtMoney(b.max));
     $('bountyCard').textContent = b.active > 0 ? t('ui_bounty_active', b.active, fmtMoney(b.total)) : t('ui_bounty_none');
-    $('bountyRow').classList.toggle('hidden', !canPost);
+
+    const kinds = (b.players ? 1 : 0) + (b.gangs ? 1 : 0);
+    $('bountyForm').classList.toggle('hidden', !canPost || kinds === 0);
+    $('bountyKindPlayer').classList.toggle('hidden', !b.players || kinds < 2);
+    $('bountyKindGang').classList.toggle('hidden', !b.gangs || kinds < 2);
+    if (bountyKind === 'player' && !b.players && b.gangs) bountyKind = 'gang';
+    if (bountyKind === 'gang' && !b.gangs && b.players) bountyKind = 'player';
+
+    const wrap = $('bountyList');
+    wrap.innerHTML = '';
+    (b.list || []).forEach((x) => {
+      const kind = t(x.type === 'gang' ? 'ui_bounty_target_gang' : 'ui_bounty_target_player');
+      wrap.appendChild(row(esc(x.target), esc(`${kind} · ${fmtMoney(x.reward)}`)));
+    });
   }
+
+  $('bountyKindPlayer').addEventListener('click', () => setBountyKind('player'));
+  $('bountyKindGang').addEventListener('click', () => setBountyKind('gang'));
+  $('tabBtnBounty').addEventListener('click', () => setBountyKind(bountyKind)); // fresh target list each time the tab opens
 
   $('bountyBtn').addEventListener('click', (e) => {
     const amount = amountOf('bountyInput');
     if (amount == null) return;
-    lockAndPost(e.currentTarget, 'postBounty', { amount });
+    const targetId = bountyDd ? bountyDd.dataset.value : '';
+    if (!targetId) { toast(t('ui_bounty_need_target'), 'error'); return; }
+    lockAndPost(e.currentTarget, 'postBounty', { amount, targetType: bountyKind, targetId });
     $('bountyInput').value = '';
+    setTimeout(loadBountyTargets, 600); // clear the pick and refresh the list once the server has answered
   });
 
   function renderRivals(list) {
@@ -508,7 +645,7 @@
       renderLog(Array.isArray(data) ? data : []);
     } else if (action === 'state') {
       state = data || { inGang: false };
-      render();
+      if (!window.rsgAdminOpen) render(); // the staff panel owns the screen while it is open
       releasePending();
     }
   });

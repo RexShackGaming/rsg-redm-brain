@@ -1,0 +1,20 @@
+{
+    "robbery": {
+        "title": "強盗",
+        "rob": "強奪する",
+        "uncuff": "拘束を解く",
+        "need_cuffs": "手錠が必要です",
+        "too_far": "遠すぎます",
+        "already_cuffed": "対象はすでに拘束されています",
+        "target_not_cuffed": "対象は拘束されていません",
+        "in_vehicle": "乗り物の中の人は強奪できません",
+        "cooldown": "次の強盗まで待ってください",
+        "cuffing": "対象を拘束中...",
+        "being_robbed": "強盗されています！",
+        "uncuffed_you": "拘束が解かれました",
+        "uncuffed_other": "プレイヤーの拘束を解きました",
+        "uncuff_self_help": "自分で拘束を解く",
+        "broke_free": "拘束から逃れた！",
+        "not_cuffed": "拘束されていません"
+    }
+}

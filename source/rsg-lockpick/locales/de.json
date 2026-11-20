@@ -1,0 +1,18 @@
+{
+  "title": "Schlossknacken",
+  "hint_rotate": "Dietrich drehen",
+  "hint_push": "Schloss drehen",
+  "hint_cancel": "Abbrechen",
+  "picks": "Dietriche",
+  "condition": "Zustand",
+  "unlocked": "Aufgeschlossen",
+  "broken": "Dietrich gebrochen",
+  "time": "Zeit",
+  "time_up": "Zeit abgelaufen",
+  "need_lockpick": "Du brauchst einen Dietrich",
+  "lockpick_broke": "Dein Dietrich ist gebrochen",
+  "slow_down": "Langsam",
+  "alert_text": "Schlossknacken im Gange",
+  "skill_label": "Schlossknacken",
+  "skill_desc": "Öffne Schlösser schneller und breche weniger Dietriche."
+}

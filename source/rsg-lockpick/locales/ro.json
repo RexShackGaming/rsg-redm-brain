@@ -1,0 +1,18 @@
+{
+  "title": "Forțarea yalei",
+  "hint_rotate": "Rotește șperaclul",
+  "hint_push": "Răsucește yala",
+  "hint_cancel": "Anulează",
+  "picks": "Șperacluri",
+  "condition": "Stare",
+  "unlocked": "Deblocat",
+  "broken": "Șperaclu rupt",
+  "time": "Timp",
+  "time_up": "Timpul a expirat",
+  "need_lockpick": "Ai nevoie de un șperaclu",
+  "lockpick_broke": "Șperaclul tău s-a rupt",
+  "slow_down": "Mai încet",
+  "alert_text": "Forțare de yală în desfășurare",
+  "skill_label": "Forțarea yalei",
+  "skill_desc": "Deschide yalele mai repede și rupe mai puține șperacluri."
+}

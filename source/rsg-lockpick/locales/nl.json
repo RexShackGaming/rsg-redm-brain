@@ -1,0 +1,18 @@
+{
+  "title": "Lockpicken",
+  "hint_rotate": "Pick draaien",
+  "hint_push": "Slot draaien",
+  "hint_cancel": "Annuleren",
+  "picks": "Picks",
+  "condition": "Conditie",
+  "unlocked": "Ontgrendeld",
+  "broken": "Pick gebroken",
+  "time": "Tijd",
+  "time_up": "Tijd is om",
+  "need_lockpick": "Je hebt een lockpick nodig",
+  "lockpick_broke": "Je lockpick is gebroken",
+  "slow_down": "Rustig aan",
+  "alert_text": "Lockpicken bezig",
+  "skill_label": "Lockpicken",
+  "skill_desc": "Open sloten sneller en breek minder picks."
+}

@@ -13,13 +13,11 @@
 ## 1. Files
 | File | Purpose |
 |---|---|
-| `fxmanifest.lua` | Manifest; depends on `rsg-core`, `rsg-inventory`, `oxmysql`, `rsg-target`, `rsg-gizmo` |
-| `shared/config.lua` | Limits, growth, items, crops, well pump |
+| `fxmanifest.lua` | Manifest; depends on `rsg-core`, `rsg-inventory`, `oxmysql`, `rsg-target`, `rsg-gizmo`, `rsg-wellpump` |
+| `shared/config.lua` | Limits, growth, items, crops |
 | `client/client.lua` | Plant props, targets, tending UI, `/myplants` |
-| `client/wellpump.lua` | Well pump placement and targets |
 | `client/utils.lua` | Client helpers (notify, busy guard, NUI focus + push-to-talk, rsg-gizmo wrapper, props) |
 | `server/server.lua` | Plants, growth simulation, tending, harvest |
-| `server/wellpump.lua` | Pump storage and filling buckets |
 | `server/utils.lua` | Server helpers (items, ownership sync, action timers, database setup, item check) |
 | `server/versionchecker.lua` | GitHub version check |
 | `install.sql` | Manual database install (only when `AutoDatabase = false`) |
@@ -33,7 +31,7 @@
 - Props change by growth stage (model and height offset per stage). Fertilised plants grow faster.
 - Tend a plant (rsg-target sphere zone, or `G` when `UseTarget = false`) to water, fertilise, harvest or remove it. The panel shows growth, water, fertiliser, health, status and time to harvest.
 - `/myplants` lists your crops nearest first with mini bars; click a far plant for a map route.
-- Portable well pumps fill buckets. A full bucket waters `bucketUses` times (default 5) before returning to an empty bucket.
+- Water comes from buckets filled at rsg-wellpump pumps. A watering calls `exports['rsg-wellpump']:UseBucket(src)`, which takes one use off the full bucket and returns an empty bucket when it runs out (default 5 uses, set in rsg-wellpump).
 - Seasons: the growth tick multiplies growth by `Config.Seasons.months[os.date('%m')]` (server real time). The server also sends each plant's `eta` (minutes to harvest) so the UI matches.
 - Rain: each growth tick reads `GlobalState.rsgWeather.weather` (set by rsg-weather) and adds `Config.RainWater[weather] * minutes` water to every plant. Regional weather translation on clients (snow, sandstorm) is not considered.
 - Pests (`Config.Pests.enabled`): infestations are in-memory only (cleared on restart). They slow growth, drain health and are cured with the **Treat** action (consumes `Config.Pests.item`).
@@ -63,12 +61,11 @@
 | `FertilizerBoost` | `1.5` | Growth multiplier when fertilised |
 | `DryDamage` / `HealthRegen` | `5` / `2` | Health per minute |
 | `DeadPlantRemoveTime` | `30` | Minutes before dead plants are removed |
-| `WaterItem` / `WaterReturnItem` / `WaterAmount` | `fullbucket` / `bucket` / `100` | Watering |
+| `WaterItem` / `WaterAmount` | `fullbucket` / `100` | Watering (`WaterItem` must match rsg-wellpump's `Config.FullItem`) |
 | `FertilizerItem` / `FertilizerAmount` | `fertilizer` / `100` | Fertilising |
 | `PlantTime`, `WaterTime`, `FertilizeTime`, `HarvestTime` | ms | Action durations |
 | `Scenarios` | table | Animations per action |
 | `Crops` | table | corn, carrot, tomato, potato, tobacco, cotton, sugarcane, wheat, weed |
-| `WellPump` | table | `item` (`tool_wellpump`), `prop`, `emptyItem`, `fullItem`, `bucketUses`, `fillTime`, `packTime`, `maxPerPlayer` (2), `minDistance`, `interactDist`, `ownerOnlyPackup` |
 
 Crop entry:
 ```lua
@@ -87,36 +84,32 @@ corn = {
 | `rsg-farming:client:plantRemove` | client event | `(id)` a plant was harvested, removed or died off |
 | `rsg-farming:server:treat` | callback | `(plantId)` treat pests (validated + action timer) |
 | `rsg-farming:client:plantMine` | client event | `(id)` sent to the planter so they know they own the new plant |
-| `rsg-farming:client:syncPumps` | client event | `(pumps, mineIds)` pump sync |
 | `rsg-farming:client:startPlacing` | client event | `(cropKey)` start the placement gizmo |
-| `rsg-farming:client:placePump` | client event | Start pump placement |
 
 | Command | Who | What |
 |---|---|---|
 | `/myplants` | everyone | List your crops |
 | `/farmlevel` | everyone | Show your farming level and XP |
 
-Seed items and the pump item are registered as useable items automatically.
+Seed items are registered as useable items automatically.
 
 ## 5. Database
 Created automatically on start while `Config.AutoDatabase = true`. To install manually set it to `false` and import `install.sql` (same schema):
 - `rsg_farming_plants`: `id`, `citizenid`, `crop`, `x`, `y`, `z`, `h`, `growth`, `water`, `fertilizer`, `health`, `dead`, `dead_time`, `planted_at`.
-- `rsg_farming_wellpumps`: `id`, `citizenid`, `x`, `y`, `z`, `h`, `placed_at`.
-
-Plants and pumps survive restarts; dead plants are removed automatically.
+Plants survive restarts; dead plants are removed automatically. Well pumps are stored by rsg-wellpump (`rsg_wellpumps`). The old `rsg_farming_wellpumps` table is no longer created or used; rsg-wellpump imports its rows once and leaves it untouched.
 
 ## 6. Security
 The server owns growth, water, fertiliser and health, checks ownership, distance, item possession and plant limits, and handles harvest rewards (dropping overflow if the inventory is full). Clients only request actions.
 
-- Placement: the client result from rsg-gizmo is untrusted; the server runs `IsPlacementValid`, spacing, per-player limit and `NoPlantZones` checks before taking the seed or pump item.
-- Ownership: clients never receive citizenids. Each player is sent the list of plant / pump ids they own and nothing else.
+- Placement: the client result from rsg-gizmo is untrusted; the server runs `IsPlacementValid`, spacing, per-player limit and `NoPlantZones` checks before taking the seed.
+- Ownership: clients never receive citizenids. Each player is sent the list of plant ids they own and nothing else.
 - Timed actions: the server starts a timer at the pre-check and only accepts the action after about 80% of the duration has passed.
-- Items: seeds, buckets and pump items are only removed after validation; if a refund or reward no longer fits it is dropped at the player's feet, never lost.
+- Items: seeds and buckets are only removed after validation; if a refund or reward no longer fits it is dropped at the player's feet, never lost.
 - Other scripts should not write to the `rsg_farming_*` tables directly.
 
 ## 7. How-tos
 - New crop: add an entry to `Config.Crops`, then add the seed and harvest items.
-- Items needed: seeds, `fullbucket`, `bucket`, `fertilizer`, `tool_wellpump` (plus `pesticide` if `Config.Pests.enabled = true`).
+- Items needed: seeds, `fullbucket`, `bucket`, `fertilizer` (plus `pesticide` if `Config.Pests.enabled = true`).
 - Language: `setr rsg:locale "de"` in server.cfg.
 
 ## 8. Troubleshooting
@@ -128,7 +121,7 @@ The server owns growth, water, fertiliser and health, checks ownership, distance
 | Weed props invisible | Keep the `stream/` folder with the resource |
 | Pests never go away | Enable `Config.Pests`, add the `pesticide` item, and use the Treat button on the plant |
 | Rain doesn't water plants | rsg-weather must be running and report a weather name listed in `Config.RainWater` |
-| Pump won't place | Check `maxPerPlayer` and `minDistance` |
+| Water does nothing / "no water" | rsg-wellpump must be started before rsg-farming, and `Config.WaterItem` must match its `Config.FullItem` |
 | `rsg-gizmo` errors on start | Ensure `rsg-gizmo` starts before `rsg-farming` |
 | Console warns about missing items | Add the listed items to `rsg-core/shared/items.lua` |
 | Can't plant in a town | A `Config.NoPlantZones` entry covers it |
@@ -157,7 +150,7 @@ Generated from the source of **rsg-farming 3.2.0**. Names, arguments and default
 
 ### Database
 
-Tables: `rsg_farming_plants`, `rsg_farming_wellpumps`.
+Tables: `rsg_farming_plants`.
 
 Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
 For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
@@ -198,7 +191,6 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.HealthRegen` | `2` | health gained per minute while watered |
 | `Config.DeadPlantRemoveTime` | `30` | minutes before a dead plant is auto-removed |
 | `Config.WaterItem` | `'fullbucket'` | consumed when watering |
-| `Config.WaterReturnItem` | `'bucket'` | given back after watering (false to disable) |
 | `Config.WaterAmount` | `100` | water added (capped at 100) |
 | `Config.FertilizerItem` | `'fertilizer'` |  |
 | `Config.FertilizerAmount` | `100` |  |
@@ -215,7 +207,6 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.HarvestTime` | `7000` |  |
 | `Config.Scenarios` | `table` |  |
 | `Config.Crops` | `table` |  |
-| `Config.WellPump` | `table` |  |
 | `Config.Skills` | `table` | slot. The Config.XP / Config.Levels above are used when rsg-skills is missing or Enabled = false. |
 | `Config.Enabled` | `true` |  |
 | `Config.Skill` | `'farming'` |  |
@@ -235,8 +226,6 @@ Server events can be fired by any client, so every handler re-validates the play
 | `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
 | `RSGCore:Client:OnPlayerUnload` | client | `` | `client/client.lua` |
 | `rsg-farming:client:startPlacing` | client | `cropKey` | `client/client.lua` |
-| `rsg-farming:client:syncPumps` | client | `` | `client/wellpump.lua` |
-| `rsg-farming:client:placePump` | client | `` | `client/wellpump.lua` |
 
 ```lua
 -- from a server script

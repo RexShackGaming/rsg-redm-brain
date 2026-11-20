@@ -104,5 +104,17 @@
     "wh_turned_in_dead": "%s (%s) entregou %s morto por $%s",
     "wh_board_refreshed": "Quadro renovado com %s cartazes.",
     "wh_test_desc": "Teste para o canal **%s**.",
-    "wh_started_desc": "rsg-bountyhunter iniciado com %s delegacias e %s esconderijos."
+    "wh_started_desc": "rsg-bountyhunter iniciado com %s delegacias e %s esconderijos.",
+    "crime_reputation": "Fora da lei notório, uma ameaça ao território",
+    "rep_posted": "Sua conduta fora da lei rendeu uma recompensa pela sua cabeça. Os caçadores de recompensas já podem te entregar.",
+    "rep_cleared": "Seu nome foi retirado do quadro de recompensas.",
+    "rep_collected": "Um caçador de recompensas entregou você.",
+    "rep_target_left": "%s deixou o território. O contrato foi cancelado.",
+    "rep_target_cleared": "%s não é mais procurado. O contrato foi cancelado.",
+    "rep_target_jailed": "%s foi preso. O contrato foi cancelado.",
+    "rep_not_secured": "O alvo deve estar morto, amarrado ou algemado no escritório.",
+    "rep_own_bounty": "Você não pode caçar a si mesmo.",
+    "rep_same_gang": "Você não pode aceitar uma recompensa sobre um membro da sua própria gangue.",
+    "crime_sponsored_bounty": "Procurado por uma gangue",
+    "gang_own_bounty": "Você não pode aceitar uma recompensa colocada pela sua própria gangue."
 }

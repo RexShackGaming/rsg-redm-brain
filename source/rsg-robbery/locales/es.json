@@ -1,0 +1,20 @@
+{
+    "robbery": {
+        "title": "Robo",
+        "rob": "Robar",
+        "uncuff": "Desatar",
+        "need_cuffs": "Necesitas esposas",
+        "too_far": "Demasiado lejos",
+        "already_cuffed": "El objetivo ya está esposado",
+        "target_not_cuffed": "El objetivo no está esposado",
+        "in_vehicle": "No puedes robar a alguien en un vehículo",
+        "cooldown": "Espera antes de robar de nuevo",
+        "cuffing": "Esposando al objetivo...",
+        "being_robbed": "¡Te están robando!",
+        "uncuffed_you": "Te han quitado las esposas",
+        "uncuffed_other": "Has liberado al jugador",
+        "uncuff_self_help": "Liberarte",
+        "broke_free": "¡Te has liberado!",
+        "not_cuffed": "No estás esposado"
+    }
+}

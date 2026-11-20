@@ -1,0 +1,20 @@
+{
+    "robbery": {
+        "title": "Rabunek",
+        "rob": "Obrabuj",
+        "uncuff": "Rozkuj",
+        "need_cuffs": "Potrzebujesz kajdanek",
+        "too_far": "Za daleko",
+        "already_cuffed": "Cel jest już skuty",
+        "target_not_cuffed": "Cel nie jest skuty",
+        "in_vehicle": "Nie możesz obrabować kogoś w pojeździe",
+        "cooldown": "Odczekaj przed kolejnym rabunkiem",
+        "cuffing": "Skuwanie celu...",
+        "being_robbed": "Jesteś okradany!",
+        "uncuffed_you": "Zostałeś rozkuty",
+        "uncuffed_other": "Rozkułeś gracza",
+        "uncuff_self_help": "Uwolnij się",
+        "broke_free": "Uwolniłeś się!",
+        "not_cuffed": "Nie jesteś skuty"
+    }
+}

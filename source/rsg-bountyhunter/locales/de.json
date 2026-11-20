@@ -104,5 +104,17 @@
     "wh_turned_in_dead": "%s (%s) hat %s tot für $%s abgeliefert",
     "wh_board_refreshed": "Tafel mit %s Steckbriefen neu gewürfelt.",
     "wh_test_desc": "Test für den Kanal **%s**.",
-    "wh_started_desc": "rsg-bountyhunter mit %s Büros und %s Verstecken gestartet."
+    "wh_started_desc": "rsg-bountyhunter mit %s Büros und %s Verstecken gestartet.",
+    "crime_reputation": "Berüchtigter Gesetzloser, eine Gefahr für das Territorium",
+    "rep_posted": "Dein gesetzloses Treiben hat dir ein Kopfgeld eingebracht. Kopfgeldjäger können dich nun einliefern.",
+    "rep_cleared": "Dein Name wurde von der Kopfgeldtafel gestrichen.",
+    "rep_collected": "Ein Kopfgeldjäger hat dich eingeliefert.",
+    "rep_target_left": "%s hat das Territorium verlassen. Der Auftrag wurde abgebrochen.",
+    "rep_target_cleared": "%s wird nicht mehr gesucht. Der Auftrag wurde abgebrochen.",
+    "rep_target_jailed": "%s wurde eingesperrt. Der Auftrag wurde abgebrochen.",
+    "rep_not_secured": "Das Ziel muss tot, gefesselt oder in Handschellen im Büro abgeliefert werden.",
+    "rep_own_bounty": "Du kannst nicht Jagd auf dich selbst machen.",
+    "rep_same_gang": "Du kannst kein Kopfgeld auf ein Mitglied deiner eigenen Gang annehmen.",
+    "crime_sponsored_bounty": "Von einer Bande gesucht",
+    "gang_own_bounty": "Du kannst kein Kopfgeld annehmen, das deine eigene Bande ausgesetzt hat."
 }

@@ -1,18 +1,18 @@
 # rsg-farming
 
-Version 3.2.0. rsg-farming
+Version 3.3.0. rsg-farming
 
-Plant, water, fertilise and harvest crops anywhere in the world, with portable well pumps to fill your water buckets. Built for **RSG-Core (RedM)** with rsg-target and oxmysql. No ox_lib required. - **Plant anywhere**: use a seed item to place a ghost crop with the standard **rsg-gizmo** placement tool. - **Live growth simulation on the server**: water and fertiliser drain over time, health drops 
+Plant, water, fertilise and harvest crops anywhere in the world, using the water buckets from rsg-wellpump. Built for **RSG-Core (RedM)** with rsg-target and oxmysql. No ox_lib required. - **Plant anywhere**: use a seed item to place a ghost crop with the standard **rsg-gizmo** placement tool. - **Live growth simulation on the server**: water and fertiliser drain over time, health drops when the p
 
 Source: https://github.com/Rexshack-RedM/rsg-farming
 
-**Dependencies:** `rsg-core`, `rsg-inventory`, `oxmysql`, `rsg-target`, `rsg-gizmo`
+**Dependencies:** `rsg-core`, `rsg-inventory`, `oxmysql`, `rsg-target`, `rsg-gizmo`, `rsg-wellpump`
 
 Has NUI (`ui_page`).
 
 ## Net events registered
 
-**client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `rsg-farming:client:placePump`, `rsg-farming:client:plantMine`, `rsg-farming:client:plantRemove`, `rsg-farming:client:plantUpdate`, `rsg-farming:client:startPlacing`, `rsg-farming:client:sync`, `rsg-farming:client:syncPumps`
+**client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `rsg-farming:client:plantMine`, `rsg-farming:client:plantRemove`, `rsg-farming:client:plantUpdate`, `rsg-farming:client:startPlacing`, `rsg-farming:client:sync`
 
 ## Event handlers
 
@@ -34,4 +34,4 @@ Has NUI (`ui_page`).
 
 ## Database tables
 
-`rsg_farming_plants`, `rsg_farming_wellpumps`
+`rsg_farming_plants`

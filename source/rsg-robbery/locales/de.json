@@ -1,0 +1,20 @@
+{
+    "robbery": {
+        "title": "Raub",
+        "rob": "Ausrauben",
+        "uncuff": "Entfesseln",
+        "need_cuffs": "Du brauchst Handschellen",
+        "too_far": "Zu weit entfernt",
+        "already_cuffed": "Ziel ist bereits gefesselt",
+        "target_not_cuffed": "Ziel ist nicht gefesselt",
+        "in_vehicle": "Du kannst niemanden in einem Fahrzeug ausrauben",
+        "cooldown": "Warte, bevor du erneut raubst",
+        "cuffing": "Fessle Ziel...",
+        "being_robbed": "Du wirst ausgeraubt!",
+        "uncuffed_you": "Deine Fesseln wurden gelöst",
+        "uncuffed_other": "Du hast den Spieler entfesselt",
+        "uncuff_self_help": "Selbst befreien",
+        "broke_free": "Du hast dich befreit!",
+        "not_cuffed": "Du bist nicht gefesselt"
+    }
+}

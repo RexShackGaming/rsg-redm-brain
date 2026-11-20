@@ -104,5 +104,17 @@
     "wh_turned_in_dead": "%s (%s) turned in %s dead for $%s",
     "wh_board_refreshed": "Board re-rolled with %s posters.",
     "wh_test_desc": "Test for the **%s** channel.",
-    "wh_started_desc": "rsg-bountyhunter started with %s offices and %s hideouts."
+    "wh_started_desc": "rsg-bountyhunter started with %s offices and %s hideouts.",
+    "crime_reputation": "Notorious outlaw, a menace to the territory",
+    "rep_posted": "Your lawless ways have earned you a bounty. Hunters can now bring you in.",
+    "rep_cleared": "Your name has been struck from the bounty board.",
+    "rep_collected": "A bounty hunter has brought you in.",
+    "rep_target_left": "%s has left the territory. The contract is cancelled.",
+    "rep_target_cleared": "%s is no longer wanted. The contract is cancelled.",
+    "rep_target_jailed": "%s has been jailed. The contract is cancelled.",
+    "rep_not_secured": "The target must be dead, hogtied or cuffed at the office.",
+    "rep_own_bounty": "You cannot hunt yourself.",
+    "rep_same_gang": "You cannot take a bounty on a member of your own gang.",
+    "crime_sponsored_bounty": "Wanted by a gang",
+    "gang_own_bounty": "You cannot take a bounty posted by your own gang."
 }

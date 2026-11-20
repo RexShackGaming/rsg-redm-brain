@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="admin.css" />
 </head>
 <body>
   <div id="app" class="hidden">
@@ -117,10 +118,16 @@
         <section id="tab-bounty" class="tab-content">
           <p class="lede" id="bountyLede"></p>
           <div id="bountyCard" class="card"></div>
-          <div class="row hidden" id="bountyRow">
+          <div class="hidden" id="bountyForm">
+            <div class="seg">
+              <button class="btn btn-small" id="bountyKindPlayer" data-i18n="ui_bounty_target_player"></button>
+              <button class="btn btn-small btn-muted" id="bountyKindGang" data-i18n="ui_bounty_target_gang"></button>
+            </div>
             <input id="bountyInput" class="input" type="number" min="1" data-i18n-placeholder="ui_amount" />
-            <button id="bountyBtn" class="btn" data-i18n="ui_bounty_post"></button>
+            <div id="bountyTargetSlot" class="bounty-field"></div>
+            <button id="bountyBtn" class="btn btn-wide" data-i18n="ui_bounty_post"></button>
           </div>
+          <div id="bountyList" class="list"></div>
         </section>
 
         <section id="tab-top" class="tab-content">
@@ -174,6 +181,86 @@
         <div id="craftRecipeList" class="list"></div>
       </div>
     </div>
+
+    <!-- STAFF ADMIN PANEL -->
+    <div id="adminView" class="panel panel-admin hidden">
+      <div class="panel-header">
+        <div class="header-text">
+          <h1 data-i18n="ui_adm_title"></h1>
+          <span class="subtitle" data-i18n="ui_adm_subtitle"></span>
+        </div>
+        <div class="header-actions">
+          <button id="admRefresh" class="icon-btn" aria-label="Refresh" data-i18n-title="ui_adm_refresh">&#8635;</button>
+          <button id="admClose" class="icon-btn" data-close aria-label="Close">&times;</button>
+        </div>
+      </div>
+      <div class="divider"><span>&#10022;</span></div>
+
+      <div class="adm-stats">
+        <div class="stat-card"><span class="stat-label" data-i18n="ui_adm_stat_gangs"></span><span id="admStatGangs" class="stat-value">0</span></div>
+        <div class="stat-card"><span class="stat-label" data-i18n="ui_adm_stat_members"></span><span id="admStatMembers" class="stat-value">0</span></div>
+        <div class="stat-card"><span class="stat-label" data-i18n="ui_adm_stat_online"></span><span id="admStatOnline" class="stat-value">0</span></div>
+        <div class="stat-card"><span class="stat-label" data-i18n="ui_adm_stat_bank"></span><span id="admStatBank" class="stat-value">$0</span></div>
+      </div>
+
+      <div class="adm-tabs">
+        <button class="adm-tab active" data-adm-tab="gangs" data-i18n="ui_adm_tab_gangs"></button>
+        <button class="adm-tab" data-adm-tab="territories" data-i18n="ui_adm_tab_territories"></button>
+        <button class="adm-tab" data-adm-tab="players" data-i18n="ui_adm_tab_players"></button>
+        <button class="adm-tab" data-adm-tab="create" data-i18n="ui_adm_tab_create"></button>
+      </div>
+
+      <div class="adm-body">
+        <section id="adm-page-gangs" class="adm-page active">
+          <div class="adm-split">
+            <aside class="adm-side">
+              <input id="admSearch" class="input" maxlength="30" data-i18n-placeholder="ui_adm_search" />
+              <div id="admGangList" class="list adm-scroll"></div>
+            </aside>
+            <div id="admGangMain" class="adm-main adm-scroll"></div>
+          </div>
+        </section>
+
+        <section id="adm-page-territories" class="adm-page">
+          <div class="adm-scroll">
+            <p class="lede" data-i18n="ui_adm_terr_lede"></p>
+            <div id="admTerrList" class="list"></div>
+          </div>
+        </section>
+
+        <section id="adm-page-players" class="adm-page">
+          <div class="adm-scroll">
+            <p class="lede" data-i18n="ui_adm_players_lede"></p>
+            <input id="admPlayerSearch" class="input adm-gap" maxlength="30" data-i18n-placeholder="ui_adm_search_players" />
+            <div id="admPlayerList" class="list"></div>
+          </div>
+        </section>
+
+        <section id="adm-page-create" class="adm-page">
+          <div class="adm-scroll adm-form">
+            <p class="lede" data-i18n="ui_adm_create_lede"></p>
+            <div class="block">
+              <label class="field-label" for="admCreateLabel" data-i18n="ui_adm_gang_name"></label>
+              <input id="admCreateLabel" class="input" maxlength="30" />
+            </div>
+            <div class="block">
+              <label class="field-label" for="admCreateId" data-i18n="ui_adm_gang_id"></label>
+              <input id="admCreateId" class="input" maxlength="50" />
+            </div>
+            <div class="block">
+              <label class="field-label" for="admCreateLeader" data-i18n="ui_adm_leader_id"></label>
+              <input id="admCreateLeader" class="input" inputmode="numeric" maxlength="5" />
+            </div>
+            <div class="block">
+              <label class="field-label" data-i18n="ui_adm_color"></label>
+              <div id="admCreateSwatches" class="swatches"></div>
+              <input id="admCreateColor" class="input adm-hex" maxlength="7" value="#e63946" />
+            </div>
+            <button id="admCreateBtn" class="btn" data-i18n="ui_adm_create_btn"></button>
+          </div>
+        </section>
+      </div>
+    </div>
   </div>
 
   <!-- CONFIRM MODAL -->
@@ -189,7 +276,22 @@
     </div>
   </div>
 
+  <!-- STAFF PANEL MODAL -->
+  <div id="admModal" class="modal-wrap hidden">
+    <div class="modal">
+      <h2 id="admModalTitle"></h2>
+      <div class="ink-divider"></div>
+      <p id="admModalText"></p>
+      <div id="admModalBody" class="adm-modal-body"></div>
+      <div class="modal-actions">
+        <button id="admModalCancel" class="btn btn-muted" data-i18n="ui_adm_cancel"></button>
+        <button id="admModalOk" class="btn" data-i18n="ui_adm_confirm"></button>
+      </div>
+    </div>
+  </div>
+
   <div id="toasts"></div>
   <script src="app.js"></script>
+  <script src="admin.js"></script>
 </body>
 </html>

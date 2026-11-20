@@ -355,7 +355,7 @@ Generated from the source of **rsg-housing 3.3.0**. Names, arguments and default
 
 Tables: `rsg_housing`, `rsg_housekeys`, `rsg_housing_props`, `rsg_housing_retrieval`.
 
-Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten. Column changes (new columns, widening `houseid` to `varchar(20)`) only run when the column is missing or too short, so a normal restart runs no `ALTER TABLE`.
 For a manual install set `Config.AutoDatabase = false` and import `installation/rsg-housing.sql` once.
 
 ```lua

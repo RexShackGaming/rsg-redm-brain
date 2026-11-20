@@ -104,5 +104,17 @@
     "wh_turned_in_dead": "%s (%s) l-a predat pe %s mort pentru $%s",
     "wh_board_refreshed": "Panoul a fost reînnoit cu %s afișe.",
     "wh_test_desc": "Test pentru canalul **%s**.",
-    "wh_started_desc": "rsg-bountyhunter a pornit cu %s birouri și %s ascunzători."
+    "wh_started_desc": "rsg-bountyhunter a pornit cu %s birouri și %s ascunzători.",
+    "crime_reputation": "Haiduc notoriu, o amenințare pentru teritoriu",
+    "rep_posted": "Faptele tale în afara legii ți-au adus o recompensă pe cap. Vânătorii de recompense te pot acum preda.",
+    "rep_cleared": "Numele tău a fost șters de pe panoul de recompense.",
+    "rep_collected": "Un vânător de recompense te-a predat.",
+    "rep_target_left": "%s a părăsit teritoriul. Contractul a fost anulat.",
+    "rep_target_cleared": "%s nu mai este căutat. Contractul a fost anulat.",
+    "rep_target_jailed": "%s a fost închis. Contractul a fost anulat.",
+    "rep_not_secured": "Ținta trebuie să fie moartă, legată sau încătușată la birou.",
+    "rep_own_bounty": "Nu poți vâna pe tine însuți.",
+    "rep_same_gang": "Nu poți accepta o recompensă pe un membru al propriei bande.",
+    "crime_sponsored_bounty": "Căutat de o bandă",
+    "gang_own_bounty": "Nu poți accepta o recompensă pusă de propria ta bandă."
 }

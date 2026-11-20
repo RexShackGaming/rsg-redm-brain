@@ -104,5 +104,17 @@
     "wh_turned_in_dead": "%s (%s) a ramené %s mort pour $%s",
     "wh_board_refreshed": "Tableau renouvelé avec %s avis.",
     "wh_test_desc": "Test pour le salon **%s**.",
-    "wh_started_desc": "rsg-bountyhunter démarré avec %s bureaux et %s planques."
+    "wh_started_desc": "rsg-bountyhunter démarré avec %s bureaux et %s planques.",
+    "crime_reputation": "Hors-la-loi notoire, une menace pour le territoire",
+    "rep_posted": "Votre conduite hors-la-loi vous a valu une prime. Les chasseurs de primes peuvent désormais vous livrer.",
+    "rep_cleared": "Votre nom a été retiré du tableau des primes.",
+    "rep_collected": "Un chasseur de primes vous a livré.",
+    "rep_target_left": "%s a quitté le territoire. Le contrat est annulé.",
+    "rep_target_cleared": "%s n'est plus recherché. Le contrat est annulé.",
+    "rep_target_jailed": "%s a été emprisonné. Le contrat est annulé.",
+    "rep_not_secured": "La cible doit être morte, ligotée ou menottée au bureau.",
+    "rep_own_bounty": "Vous ne pouvez pas vous traquer vous-même.",
+    "rep_same_gang": "Vous ne pouvez pas accepter une prime sur un membre de votre propre gang.",
+    "crime_sponsored_bounty": "Recherché par un gang",
+    "gang_own_bounty": "Vous ne pouvez pas accepter une prime posée par votre propre gang."
 }

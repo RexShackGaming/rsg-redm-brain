@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-farming'
-version '3.2.0'
+version '3.3.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
@@ -15,14 +15,12 @@ server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/utils.lua',
     'server/server.lua',
-    'server/wellpump.lua',
     'server/versionchecker.lua',
 }
 
 client_scripts {
     'client/utils.lua',
     'client/client.lua',
-    'client/wellpump.lua',
 }
 
 ui_page 'html/index.html'
@@ -44,4 +42,5 @@ dependencies {
     'oxmysql',
     'rsg-target',
     'rsg-gizmo',
+    'rsg-wellpump',
 }

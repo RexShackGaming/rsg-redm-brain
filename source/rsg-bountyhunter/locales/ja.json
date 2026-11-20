@@ -104,5 +104,17 @@
     "wh_turned_in_dead": "%s (%s) が %s を死体で引き渡し、$%s を受け取りました",
     "wh_board_refreshed": "手配書%s枚で掲示板を更新しました。",
     "wh_test_desc": "**%s** チャンネルのテストです。",
-    "wh_started_desc": "rsg-bountyhunterが事務所%s件、隠れ家%s件で開始しました。"
+    "wh_started_desc": "rsg-bountyhunterが事務所%s件、隠れ家%s件で開始しました。",
+    "crime_reputation": "悪名高き無法者、領地の脅威",
+    "rep_posted": "無法な行いのせいで賞金がかけられた。賞金稼ぎがあなたを突き出せるようになった。",
+    "rep_cleared": "あなたの名前は賞金掲示板から消された。",
+    "rep_collected": "賞金稼ぎに突き出された。",
+    "rep_target_left": "%sが領地を離れた。契約は取り消された。",
+    "rep_target_cleared": "%sはもう指名手配されていない。契約は取り消された。",
+    "rep_target_jailed": "%sは投獄された。契約は取り消された。",
+    "rep_not_secured": "標的は保安官事務所で死亡、縛られているか手錠をかけられている必要がある。",
+    "rep_own_bounty": "自分自身を追うことはできない。",
+    "rep_same_gang": "自分のギャングのメンバーの賞金は受けられない。",
+    "crime_sponsored_bounty": "ギャングによる賞金首",
+    "gang_own_bounty": "自分のギャングが掛けた賞金は受けられません。"
 }

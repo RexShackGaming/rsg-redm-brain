@@ -1,3 +1,4 @@
+local RSGCore = exports['rsg-core']:GetCoreObject()
 -- Activity log viewer, territories, upkeep and member map blips.
 local Territories = {} -- [territoryId] = gangName
 
@@ -300,7 +301,9 @@ CreateThread(function()
                     if c then list[#list + 1] = { id = m.source, name = m.name or '?', x = c.x, y = c.y, z = c.z } end
                 end
             end
-            local wagon = gang.wagon and { x = gang.wagon.x, y = gang.wagon.y, z = gang.wagon.z } or nil
+            local live = RSGGangs.WagonLiveCoords and RSGGangs.WagonLiveCoords(gang.name)
+            local wagon = live and { x = live.x, y = live.y, z = live.z }
+                or gang.wagon and { x = gang.wagon.x, y = gang.wagon.y, z = gang.wagon.z } or nil
             if #online > 1 or wagon then
                 for _, src in ipairs(online) do
                     local others = {}
@@ -342,18 +345,27 @@ CreateThread(function()
 end)
 
 ---------------------------------------------------------------------
--- Gang bounties: the gang escrows money, rsg-bountyhunter lists the poster on every board.
+-- Gang bounties: the gang escrows money and names a target (one player, or a rival gang);
+-- rsg-bountyhunter lists the poster on every board and pays the hunter who brings the target in.
 ---------------------------------------------------------------------
-local Bounties = {} -- [ref] = { id, gang, reward }
+local Bounties = {} -- [ref] = { id, gang, reward, targetType, targetKey, targetLabel }
+local posting = {}  -- [gangName] = true while a bounty is being posted (the escrow awaits the database)
 
 function RSGGangs.BountyPayload(gang)
     local cfg = Config.Bounties
     if not (cfg and cfg.enabled) or GetResourceState('rsg-bountyhunter') ~= 'started' then return nil end
-    local active, total = 0, 0
+    local list, total = {}, 0
     for _, b in pairs(Bounties) do
-        if b.gang == gang.name then active, total = active + 1, total + b.reward end
+        if b.gang == gang.name then
+            list[#list + 1] = { type = b.targetType, target = b.targetLabel, reward = b.reward }
+            total = total + b.reward
+        end
     end
-    return { min = cfg.minReward, max = cfg.maxReward, maxActive = cfg.maxActive, active = active, total = total }
+    return {
+        min = cfg.minReward, max = cfg.maxReward, maxActive = cfg.maxActive,
+        active = #list, total = total, list = list,
+        players = cfg.targetPlayers ~= false, gangs = cfg.targetGangs ~= false,
+    }
 end
 
 local function settleBounty(ref, refund)
@@ -386,43 +398,118 @@ AddEventHandler('rsg-bountyhunter:server:posterClosed', function(ref, reason, pa
     end
 end)
 
-RegisterNetEvent('rsg-gangs:server:postBounty', function(amount)
+-- Target lists for the gang UI dropdown: players are listed by character name and sent as server ids,
+-- gangs by label and sent as gang names. The server re-validates the pick when the bounty is posted.
+RSGCore.Functions.CreateCallback('rsg-gangs:server:bountyTargets', function(src, cb, kind)
+    local cfg = Config.Bounties
+    if not (cfg and cfg.enabled) or RSGGangs.OnCooldown(src, 'bountyTargets', 800) then cb({}) return end
+    local citizenid = RSGGangs.GetPlayerCitizenId(src)
+    local gang = citizenid and RSGGangs.FindGangByMember(citizenid)
+    if not gang or not RSGGangs.HasPermission(gang.members[citizenid].rank, 'bounty') then cb({}) return end
+
+    local out = {}
+    if kind == 'player' and cfg.targetPlayers ~= false then
+        for psrc, P in pairs(RSGCore.Functions.GetRSGPlayers()) do
+            local cid = P.PlayerData.citizenid
+            if psrc ~= src and cid and not gang.members[cid] then
+                out[#out + 1] = { value = psrc, label = RSGGangs.CharName(P) }
+            end
+        end
+    elseif kind == 'gang' and cfg.targetGangs ~= false then
+        for name, g in pairs(RSGGangs.Gangs) do
+            if name ~= gang.name then out[#out + 1] = { value = name, label = g.label } end
+        end
+    end
+    table.sort(out, function(x, y) return tostring(x.label):lower() < tostring(y.label):lower() end)
+    cb(out)
+end)
+
+local function postBounty(src, gang, citizenid, amount, targetType, targetId)
+    local cfg = Config.Bounties
+    local opts = { sponsorGang = gang.name }
+    local targetKey, targetLabel
+
+    if targetType == 'player' then
+        if cfg.targetPlayers == false then return end
+        local tsrc = tonumber(targetId)
+        local TPlayer = tsrc and RSGCore.Functions.GetPlayer(tsrc)
+        if not TPlayer or tsrc == src then RSGGangs.Notify(src, locale('error_bounty_target'), 'error') return end
+        local tcid = TPlayer.PlayerData.citizenid
+        if gang.members[tcid] then RSGGangs.Notify(src, locale('error_bounty_own'), 'error') return end
+        targetKey, targetLabel = 'p:' .. tcid, RSGGangs.CharName(TPlayer)
+        opts.targetCitizenid, opts.targetName = tcid, targetLabel
+    else
+        if cfg.targetGangs == false then return end
+        local tg = type(targetId) == 'string' and RSGGangs.Gangs[targetId] or nil
+        if not tg then RSGGangs.Notify(src, locale('error_bounty_target'), 'error') return end
+        if tg.name == gang.name then RSGGangs.Notify(src, locale('error_bounty_own'), 'error') return end
+        targetKey, targetLabel = 'g:' .. tg.name, tg.label
+        opts.targetGang, opts.targetName = tg.name, locale('bounty_target_gang', tg.label)
+    end
+
+    local active = 0
+    for _, b in pairs(Bounties) do
+        if b.gang == gang.name then
+            active = active + 1
+            if b.targetKey == targetKey then RSGGangs.Notify(src, locale('error_bounty_duplicate'), 'error') return end
+        end
+    end
+    if active >= cfg.maxActive then RSGGangs.Notify(src, locale('error_bounty_max', cfg.maxActive), 'error') return end
+    if gang.bank < amount then RSGGangs.Notify(src, locale('error_insufficient_gang_funds'), 'error') return end
+
+    if not RSGGangs.AdjustBank(gang, -amount) then RSGGangs.Notify(src, locale('error_generic'), 'error') return end
+    local id = MySQL.insert.await(
+        'INSERT INTO rsg_gang_bounties (gang_name, reward, target_type, target_id, target_name) VALUES (?, ?, ?, ?, ?)',
+        { gang.name, amount, targetType, opts.targetCitizenid or opts.targetGang, targetLabel })
+    local ref = id and ('gb:' .. id) or nil
+    local posted, posterId = false, nil
+    if ref then
+        opts.ref, opts.reward, opts.sponsor = ref, amount, gang.label
+        opts.expireMinutes = (cfg.expireHours or 6) * 60
+        posted, posterId = pcall(function() return exports['rsg-bountyhunter']:PostBounty(opts) end)
+    end
+    if not posted or not posterId then
+        RSGGangs.AdjustBank(gang, amount) -- give the escrow back
+        if id then MySQL.update.await('DELETE FROM rsg_gang_bounties WHERE id = ?', { id }) end
+        RSGGangs.Notify(src, locale('error_generic'), 'error')
+        return
+    end
+    Bounties[ref] = { id = id, gang = gang.name, reward = amount, targetType = targetType, targetKey = targetKey, targetLabel = targetLabel }
+    RSGGangs.AddLog(gang, citizenid, 'bounty_post', amount)
+    RSGGangs.Log('Gang bounty', ('%s posted $%s on %s (%s)'):format(gang.name, amount, targetLabel, targetType))
+    RSGGangs.Notify(src, locale('success_bounty_posted', amount, targetLabel), 'success')
+    RSGGangs.BroadcastGangUpdate(gang)
+end
+
+RegisterNetEvent('rsg-gangs:server:postBounty', function(amount, targetType, targetId)
     local src = source
     local cfg = Config.Bounties
     if not (cfg and cfg.enabled) or RSGGangs.OnCooldown(src, 'bounty', 2000) then return end
     if GetResourceState('rsg-bountyhunter') ~= 'started' then return end
+    if targetType ~= 'player' and targetType ~= 'gang' then return end
     amount = tonumber(amount)
     if not amount or amount ~= math.floor(amount) or amount < cfg.minReward or amount > cfg.maxReward then
         RSGGangs.Notify(src, locale('error_bounty_amount', cfg.minReward, cfg.maxReward), 'error')
         return
     end
     local gang, citizenid = memberContext(src, 'bounty')
-    if not gang then return end
+    if not gang or posting[gang.name] then return end
 
-    local active = 0
-    for _, b in pairs(Bounties) do
-        if b.gang == gang.name then active = active + 1 end
-    end
-    if active >= cfg.maxActive then RSGGangs.Notify(src, locale('error_bounty_max', cfg.maxActive), 'error') return end
-    if gang.bank < amount then RSGGangs.Notify(src, locale('error_insufficient_gang_funds'), 'error') return end
+    posting[gang.name] = true
+    local ok, err = pcall(postBounty, src, gang, citizenid, amount, targetType, targetId)
+    posting[gang.name] = nil
+    if not ok then print(('^1[rsg-gangs] postBounty failed: %s^7'):format(tostring(err))) end
+end)
 
-    if not RSGGangs.AdjustBank(gang, -amount) then RSGGangs.Notify(src, locale('error_generic'), 'error') return end
-    local id = MySQL.insert.await('INSERT INTO rsg_gang_bounties (gang_name, reward) VALUES (?, ?)', { gang.name, amount })
-    local ref = id and ('gb:' .. id) or nil
-    local posterId = ref and exports['rsg-bountyhunter']:PostBounty({
-        ref = ref, reward = amount, sponsor = gang.label, expireMinutes = (cfg.expireHours or 6) * 60,
-    })
-    if not posterId then
-        RSGGangs.AdjustBank(gang, amount)
-        if id then MySQL.update.await('DELETE FROM rsg_gang_bounties WHERE id = ?', { id }) end
-        RSGGangs.Notify(src, locale('error_generic'), 'error')
-        return
+-- Online members of a gang (server ids), for rsg-bountyhunter's gang-targeted bounties.
+exports('GetGangOnlineSources', function(gangName)
+    local gang = RSGGangs.Gangs[gangName]
+    if not gang then return {} end
+    local out = {}
+    for _, m in pairs(gang.members) do
+        if m.source then out[#out + 1] = m.source end
     end
-    Bounties[ref] = { id = id, gang = gang.name, reward = amount }
-    RSGGangs.AddLog(gang, citizenid, 'bounty_post', amount)
-    RSGGangs.Log('Gang bounty', ('%s posted $%s'):format(gang.name, amount))
-    RSGGangs.Notify(src, locale('success_bounty_posted', amount), 'success')
-    RSGGangs.BroadcastGangUpdate(gang)
+    return out
 end)
 
 -- The board lives in rsg-bountyhunter's memory, so escrow left over from before a restart is returned.
@@ -451,7 +538,7 @@ function RSGGangs.RivalPayload(gang)
     if not (Config.Rivalry and Config.Rivalry.enabled) then return nil end
     local out = {}
     local seen = {}
-    for rival, kills in pairs(Rivals[gang.name] or {}) do seen[rival] = true end
+    for rival in pairs(Rivals[gang.name] or {}) do seen[rival] = true end
     for other, map in pairs(Rivals) do
         if map[gang.name] then seen[other] = true end
     end
@@ -560,6 +647,7 @@ function RSGGangs.Webhook(gang, actor, action, parts)
     if not ok then text = action end
     hookQueue[#hookQueue + 1] = {
         username = cfg.Name or 'rsg-gangs',
+        allowed_mentions = { parse = {} }, -- gang labels are player text: never let them ping @everyone
         embeds = {{
             title = gang.label,
             description = (actor and (actor .. ': ') or '') .. text,
@@ -697,12 +785,6 @@ end)
 ---------------------------------------------------------------------
 local function season() return os.date('%Y-%m') end
 
-local function memberTotal(gang)
-    local n = 0
-    for _ in pairs(gang.members) do n = n + 1 end
-    return n
-end
-
 local function leaderboard()
     local cfg = Config.Leaderboard
     local rows = {}
@@ -710,7 +792,7 @@ local function leaderboard()
         local kills = 0
         for _, k in pairs(Rivals[name] or {}) do kills = kills + k end
         local turf = ownedCount(name)
-        rows[#rows + 1] = { label = gang.label, tag = gang.tag, members = memberTotal(gang),
+        rows[#rows + 1] = { label = gang.label, tag = gang.tag, members = RSGGangs.MemberCount(gang),
             turf = turf, kills = kills, score = turf * cfg.turfPoints + kills * cfg.killPoints }
     end
     table.sort(rows, function(a, b) return a.score > b.score end)
@@ -751,3 +833,43 @@ RegisterNetEvent('rsg-gangs:server:setBlips', function(enabled)
 end)
 
 AddEventHandler('playerDropped', function() blipsOff[source] = nil end)
+
+---------------------------------------------------------------------
+-- Staff panel helpers (used by server/admin.lua)
+---------------------------------------------------------------------
+RSGGangs.PushTerritories = pushRegistry
+
+function RSGGangs.AdminTerritories()
+    local out, now = {}, os.time()
+    for _, t in ipairs((Config.Territories and Config.Territories.list) or {}) do
+        local owner = Territories[t.id]
+        local raid = Raids[t.id]
+        out[#out + 1] = {
+            id = t.id, label = t.label, owner = owner, ownerLabel = owner and gangLabel(owner) or nil,
+            income = t.income or 0, claimCost = t.claimCost or 0,
+            raidBy = raid and gangLabel(raid.attacker) or nil,
+            protected = Protected[t.id] ~= nil and Protected[t.id] > now,
+            x = t.coords.x, y = t.coords.y, z = t.coords.z,
+        }
+    end
+    return out
+end
+
+-- Gives a territory to a gang, or frees it when gangName is nil. Returns true on success.
+function RSGGangs.AdminSetTerritory(id, gangName)
+    if not (Config.Territories and Config.Territories.enabled) or not territoryCfg(id) then return false end
+    if gangName then
+        if not RSGGangs.Gangs[gangName] then return false end
+        if not RSGGangs.DbOk(
+            'INSERT INTO rsg_gang_territories (territory_id, gang_name) VALUES (?, ?) ON DUPLICATE KEY UPDATE gang_name = VALUES(gang_name), claimed_at = NOW()',
+            { id, gangName }) then return false end
+        Territories[id] = gangName
+    else
+        if not RSGGangs.DbOk('DELETE FROM rsg_gang_territories WHERE territory_id = ?', { id }) then return false end
+        Territories[id] = nil
+    end
+    endRaid(id)
+    Protected[id] = nil
+    pushRegistry()
+    return true
+end

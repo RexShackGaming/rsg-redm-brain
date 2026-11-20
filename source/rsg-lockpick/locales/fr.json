@@ -1,0 +1,18 @@
+{
+  "title": "Crochetage",
+  "hint_rotate": "Tourner le crochet",
+  "hint_push": "Tourner la serrure",
+  "hint_cancel": "Annuler",
+  "picks": "Crochets",
+  "condition": "État",
+  "unlocked": "Déverrouillé",
+  "broken": "Crochet cassé",
+  "time": "Temps",
+  "time_up": "Temps écoulé",
+  "need_lockpick": "Il te faut un crochet",
+  "lockpick_broke": "Ton crochet s'est cassé",
+  "slow_down": "Doucement",
+  "alert_text": "Crochetage en cours",
+  "skill_label": "Crochetage",
+  "skill_desc": "Ouvre les serrures plus vite et casse moins de crochets."
+}

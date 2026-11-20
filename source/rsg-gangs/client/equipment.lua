@@ -26,8 +26,39 @@ local function stashForItem(itemId)
     return nil
 end
 
+local function wellPumpForItem(itemId)
+    local cfg = Config.WellPump
+    if cfg and cfg.enabled and cfg.equipmentId == itemId then return cfg end
+    return nil
+end
+
+local fillingBucket = false
+
+-- rsg-wellpump plays the bucket animation (and checks for an empty bucket); the server does the fill
+local function drinkWater()
+    if fillingBucket then return end
+    fillingBucket = true
+    CreateThread(function()
+        if exports['rsg-wellpump']:PlayDrink() then
+            TriggerServerEvent('rsg-gangs:server:drinkWater')
+        end
+        fillingBucket = false
+    end)
+end
+
+local function fillBucket()
+    if fillingBucket then return end
+    fillingBucket = true
+    CreateThread(function()
+        if exports['rsg-wellpump']:PlayFill() then
+            TriggerServerEvent('rsg-gangs:server:fillBucket')
+        end
+        fillingBucket = false
+    end)
+end
+
 ---------------------------------------------------------------------
--- Targets on the crafting station / strongbox props
+-- Targets on the crafting station / well pump / strongbox props
 ---------------------------------------------------------------------
 local function isMine(targetEntity, fallbackGang)
     if not DoesEntityExist(targetEntity) then return false end
@@ -36,12 +67,16 @@ local function isMine(targetEntity, fallbackGang)
     return owner ~= nil and owner == RSGGangsClient.gangName
 end
 
+-- `option` is one target option, or a list of them (the well pump has two)
 local function addTarget(entity, gangName, option)
     if targeted[entity] then return end
     targeted[entity] = true
-    option.distance = option.distance or Config.StationInteractDistance
-    option.canInteract = function(targetEntity) return isMine(targetEntity, gangName) end
-    RSGGangsClient.AddEntityTarget(entity, { option })
+    local list = option[1] and option or { option }
+    for _, o in ipairs(list) do
+        o.distance = o.distance or Config.StationInteractDistance
+        o.canInteract = function(targetEntity) return isMine(targetEntity, gangName) end
+    end
+    RSGGangsClient.AddEntityTarget(entity, list)
 end
 
 local function trackAndTarget(gangName, itemId, netId)
@@ -49,8 +84,9 @@ local function trackAndTarget(gangName, itemId, netId)
     knownEquipment[netId] = { gangName = gangName, itemId = itemId }
 
     local station = stationForItem(itemId)
-    local stash = not station and stashForItem(itemId) or nil
-    if not station and not stash then return end
+    local pump = not station and wellPumpForItem(itemId) or nil
+    local stash = not station and not pump and stashForItem(itemId) or nil
+    if not station and not pump and not stash then return end
 
     CreateThread(function()
         local waited = 0
@@ -69,6 +105,24 @@ local function trackAndTarget(gangName, itemId, netId)
                 label = station.targetLabel or locale('notify_target_craft'),
                 onSelect = function() TriggerEvent('rsg-gangs:client:openCraftMenu', station.id) end,
             })
+        elseif pump then
+            local options = {
+                {
+                    name = 'rsg_gangs_fill_bucket',
+                    icon = pump.targetIcon or 'fa-solid fa-droplet',
+                    label = locale('notify_target_fill_bucket'),
+                    onSelect = fillBucket,
+                },
+            }
+            if pump.drink then
+                options[#options + 1] = {
+                    name = 'rsg_gangs_drink_water',
+                    icon = pump.drinkIcon or 'fa-solid fa-glass-water',
+                    label = locale('notify_target_drink_water'),
+                    onSelect = drinkWater,
+                }
+            end
+            addTarget(entity, gangName, options)
         else
             addTarget(entity, gangName, {
                 name = 'rsg_gangs_stash_strongbox',
@@ -194,5 +248,16 @@ AddEventHandler('onResourceStop', function(resourceName)
     if resourceName ~= GetCurrentResourceName() then return end
     for entity in pairs(targeted) do
         if DoesEntityExist(entity) then RSGGangsClient.RemoveEntityTarget(entity) end
+    end
+
+    -- Props this client controls go with the resource; the server respawns them on the next start.
+    for netId in pairs(knownEquipment) do
+        if NetworkDoesNetworkIdExist(netId) then
+            local entity = NetworkGetEntityFromNetworkId(netId)
+            if entity ~= 0 and DoesEntityExist(entity) and NetworkHasControlOfEntity(entity) then
+                SetEntityAsMissionEntity(entity, true, true)
+                DeleteEntity(entity)
+            end
+        end
     end
 end)

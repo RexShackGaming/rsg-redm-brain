@@ -1,0 +1,18 @@
+{
+  "title": "Włamanie do zamka",
+  "hint_rotate": "Obróć wytrych",
+  "hint_push": "Przekręć zamek",
+  "hint_cancel": "Anuluj",
+  "picks": "Wytrychy",
+  "condition": "Stan",
+  "unlocked": "Odblokowano",
+  "broken": "Wytrych się złamał",
+  "time": "Czas",
+  "time_up": "Czas minął",
+  "need_lockpick": "Potrzebujesz wytrycha",
+  "lockpick_broke": "Twój wytrych się złamał",
+  "slow_down": "Zwolnij",
+  "alert_text": "Trwa włamanie do zamka",
+  "skill_label": "Włamywanie",
+  "skill_desc": "Otwieraj zamki szybciej i łam mniej wytrychów."
+}

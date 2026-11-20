@@ -10,6 +10,15 @@ Config.VersionCheck = true
 -- Command used to open the gang menu
 Config.Command = 'setupgang'
 
+-- Staff panel: a NUI where admins manage every gang (create, rename, bank, members, turf, equipment, upkeep).
+-- The command and every action in the panel are checked on the server against this permission.
+Config.Admin = {
+    enabled = true,
+    command = 'gangadmin',
+    permission = 'admin',  -- rsg-core permission (ACE group) allowed to use the panel
+    logLines = 100,        -- activity log rows loaded for a gang in the panel
+}
+
 -- Cost (cash) to create a new gang
 Config.CreateGangCost = 5000
 
@@ -72,9 +81,11 @@ Config.PushToTalkControls = {
 -- How close (in meters) a member has to be to their wagon, deployed equipment, crafting
 -- station or strongbox for the server to accept an action on it. Server-enforced.
 Config.WagonInteractDistance = 40.0   -- wagon menu actions: set up / pack away / reset wagon
-Config.StationInteractDistance = 6.0  -- crafting stations and the strongbox
+Config.StationInteractDistance = 6.0  -- crafting stations, the well pump and the strongbox
 
 -- Vehicle spawned in front of the founder when they create a new gang.
+Config.DebugWagon = false -- print wagon spawn/save/despawn steps to the server console
+
 Config.GangVehicle = {
     enabled = true,
     model = 'chuckwagon002x',
@@ -163,6 +174,19 @@ Config.GangEquipment = {
     },
 }
 
+-- Well pump: lets gang members fill an empty bucket at their deployed 'wellpump' equipment.
+-- The bucket items, uses, animation and fill time are set in rsg-wellpump's config (Config.EmptyItem,
+-- Config.FullItem, Config.BucketUses, Config.FillTime). Server-enforced: the member must be in the gang
+-- and standing at the gang's own deployed pump.
+Config.WellPump = {
+    enabled = true,
+    equipmentId = 'wellpump',          -- ties this to the 'wellpump' Config.GangEquipment item
+    targetIcon = 'fa-solid fa-droplet',
+    drink = true,                      -- also show a Drink Water option (amount and cooldown are set in rsg-wellpump's Config.Drink)
+    drinkIcon = 'fa-solid fa-glass-water',
+    requirePermission = false,         -- true = only ranks with the 'equipment' permission may use the pump
+}
+
 -- Crafting/cooking config
 Config.Crafting = {
     enabled = true,
@@ -176,21 +200,23 @@ Config.Crafting = {
             intro = 'Craft supplies using materials from your own saddlebag.',
             recipes = {
                 {
-                    id = 'ammo_pistol',
+                    id = 'ammo_box_pistol',
                     label = 'Pistol Ammo (x10)',
-                    output = { item = 'ammo_pistol', amount = 10 },
+                    output = { item = 'ammo_box_pistol', amount = 10 },
                     ingredients = {
-                        { item = 'metalscrap', amount = 2 },
-                        { item = 'gunpowder', amount = 1 },
+                        { item = 'resource_copper_bar', amount = 1 },
+                        { item = 'resource_lead_bar',   amount = 1 },
+                        { item = 'resource_gunpowder',  amount = 1 },
                     },
                 },
                 {
-                    id = 'ammo_rifle',
+                    id = 'ammo_box_rifle',
                     label = 'Rifle Ammo (x10)',
-                    output = { item = 'ammo_rifle', amount = 10 },
+                    output = { item = 'ammo_box_rifle', amount = 10 },
                     ingredients = {
-                        { item = 'metalscrap', amount = 3 },
-                        { item = 'gunpowder', amount = 2 },
+                        { item = 'resource_copper_bar', amount = 1 },
+                        { item = 'resource_lead_bar',   amount = 1 },
+                        { item = 'resource_gunpowder',  amount = 1 },
                     },
                 },
             },
@@ -206,17 +232,17 @@ Config.Crafting = {
                 {
                     id = 'cooked_meat',
                     label = 'Cooked Meat',
-                    output = { item = 'meat_cooked', amount = 1 },
+                    output = { item = 'cooked_meat', amount = 1 },
                     ingredients = {
-                        { item = 'meat_raw', amount = 1 },
+                        { item = 'raw_meat', amount = 1 },
                     },
                 },
                 {
                     id = 'cooked_fish',
                     label = 'Cooked Fish',
-                    output = { item = 'fish_cooked', amount = 1 },
+                    output = { item = 'cooked_fish', amount = 1 },
                     ingredients = {
-                        { item = 'fish_raw', amount = 1 },
+                        { item = 'raw_fish', amount = 1 },
                     },
                 },
             },
@@ -283,13 +309,16 @@ Config.Reputation = {
     refreshMinutes = 5,
 }
 
--- Gang bounties via rsg-bountyhunter (3.2.0+): the amount is held from the gang bank until the poster ends.
+-- Gang bounties via rsg-bountyhunter (3.4.0+): a gang funds a bounty on a player (picked from the online players)
+-- or on a rival gang for hunters to collect. The amount is held from the gang bank until the poster ends.
 Config.Bounties = {
     enabled = true,
     minReward = 500,
     maxReward = 20000,
     maxActive = 2,
     expireHours = 6,
+    targetPlayers = true, -- allow bounties on a single player
+    targetGangs = true,   -- allow bounties on a rival gang (any online member can be brought in)
 }
 
 -- Rivalries: confirmed player kills between members of different gangs (needs rsg-core 3.4.0+).

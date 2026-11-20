@@ -104,5 +104,17 @@
     "wh_turned_in_dead": "%s (%s) dostarczył %s martwego za $%s",
     "wh_board_refreshed": "Tablica wylosowana ponownie z %s listami gończymi.",
     "wh_test_desc": "Test dla kanału **%s**.",
-    "wh_started_desc": "rsg-bountyhunter uruchomiony z %s biurami i %s kryjówkami."
+    "wh_started_desc": "rsg-bountyhunter uruchomiony z %s biurami i %s kryjówkami.",
+    "crime_reputation": "Osławiony wyjęty spod prawa, zagrożenie dla terytorium",
+    "rep_posted": "Twoje bezprawne czyny przyniosły ci nagrodę za głowę. Łowcy nagród mogą cię teraz dostarczyć.",
+    "rep_cleared": "Twoje imię zostało skreślone z tablicy nagród.",
+    "rep_collected": "Łowca nagród cię dostarczył.",
+    "rep_target_left": "%s opuścił(a) terytorium. Zlecenie zostało anulowane.",
+    "rep_target_cleared": "%s nie jest już poszukiwany(a). Zlecenie zostało anulowane.",
+    "rep_target_jailed": "%s trafił(a) do więzienia. Zlecenie zostało anulowane.",
+    "rep_not_secured": "Cel musi być martwy, związany lub skuty w biurze.",
+    "rep_own_bounty": "Nie możesz polować na samego siebie.",
+    "rep_same_gang": "Nie możesz przyjąć zlecenia na członka własnego gangu.",
+    "crime_sponsored_bounty": "Poszukiwany przez gang",
+    "gang_own_bounty": "Nie możesz przyjąć listu gończego wystawionego przez twój własny gang."
 }

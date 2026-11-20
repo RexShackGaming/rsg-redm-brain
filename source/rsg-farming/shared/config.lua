@@ -50,7 +50,6 @@ Config.DeadPlantRemoveTime = 30      -- minutes before a dead plant is auto-remo
 -- tending items
 ---------------------------------
 Config.WaterItem           = 'fullbucket'  -- consumed when watering
-Config.WaterReturnItem     = 'bucket'      -- given back after watering (false to disable)
 Config.WaterAmount         = 100           -- water added (capped at 100)
 Config.FertilizerItem      = 'fertilizer'
 Config.FertilizerAmount    = 100
@@ -218,21 +217,8 @@ Config.Crops = {
 ---------------------------------
 -- well pump
 ---------------------------------
-Config.WellPump = {
-    item            = 'tool_wellpump',      -- usable item that places the pump
-    prop            = 'p_wellpumpnbx01x',
-    emptyItem       = 'bucket',             -- required to fill
-    fullItem        = 'fullbucket',         -- given after filling
-    bucketUses      = 5,                    -- waterings a full bucket gives before it turns back into 'bucket'
-    fillTime        = 6000,                 -- ms
-    packTime        = 4000,                 -- ms
-    fillScenario    = 'WORLD_HUMAN_BUCKET_FILL',
-    packScenario    = 'WORLD_HUMAN_CROUCH_INSPECT',
-    maxPerPlayer    = 2,
-    minDistance     = 2.0,                  -- min distance between two pumps
-    interactDist    = 2.0,
-    ownerOnlyPackup = true,                 -- only the placer can pack it up
-}
+-- Well pumps and the water bucket (uses, empty bucket handed back) are handled by rsg-wellpump.
+-- Pumps placed with the old farming pump are imported automatically the first time rsg-wellpump starts.
 
 -- rsg-skills integration (optional). Needs the rsg-skills resource.
 -- When rsg-skills is started it becomes the farming XP source: XP goes to the shared 'farming' skill,

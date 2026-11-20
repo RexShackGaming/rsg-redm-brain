@@ -423,27 +423,9 @@ Utils.callback('rsg-farming:server:water', function(source, plantId)
     local Player, plant, err = checkAction(source, 'water', plantId)
     if not Player then return false, err end
 
-    -- a full bucket has limited uses, stored in item metadata
-    local bucket = exports['rsg-inventory']:GetItemByName(source, Config.WaterItem)
-    if not bucket then return false, locale('no_water') end
-    local maxUses = Config.WellPump.bucketUses or 5
-    local info = bucket.info or {}
-    local uses = tonumber(info.uses) or maxUses
-
-    if not Utils.removeItem(source, Config.WaterItem, 1, bucket.slot, 'rsg-farming:water') then
-        return false, locale('no_water')
-    end
-    if uses <= 1 then
-        if Config.WaterReturnItem then
-            Utils.giveOrDrop(source, Config.WaterReturnItem, 1, nil, 'rsg-farming:water-empty')
-        end
-    else
-        local newInfo = {}
-        for k, v in pairs(info) do newInfo[k] = v end
-        newInfo.uses = uses - 1
-        newInfo.description = locale('bucket_uses', newInfo.uses, maxUses)
-        Utils.giveOrDrop(source, Config.WaterItem, 1, newInfo, 'rsg-farming:water-use', bucket.slot)
-    end
+    -- rsg-wellpump owns the bucket: it takes one use and hands back the bucket (or an empty one)
+    local usedOk = exports['rsg-wellpump']:UseBucket(source)
+    if not usedOk then return false, locale('no_water') end
 
     plant.water = clamp(plant.water + Config.WaterAmount, 0, 100)
     Dirty[plant.id] = true

@@ -1,0 +1,18 @@
+{
+  "title": "Forzar cerradura",
+  "hint_rotate": "Girar ganzúa",
+  "hint_push": "Girar cerradura",
+  "hint_cancel": "Cancelar",
+  "picks": "Ganzúas",
+  "condition": "Estado",
+  "unlocked": "Abierto",
+  "broken": "Ganzúa rota",
+  "time": "Tiempo",
+  "time_up": "Se acabó el tiempo",
+  "need_lockpick": "Necesitas una ganzúa",
+  "lockpick_broke": "Tu ganzúa se rompió",
+  "slow_down": "Más despacio",
+  "alert_text": "Forzando una cerradura",
+  "skill_label": "Forzar cerradura",
+  "skill_desc": "Abre cerraduras más rápido y rompe menos ganzúas."
+}
