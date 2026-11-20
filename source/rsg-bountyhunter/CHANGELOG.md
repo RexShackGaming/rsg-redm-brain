@@ -2,6 +2,11 @@
 
 All notable changes to rsg-bountyhunter. Newest first.
 
+## 3.2.0
+
+### Added
+- `PostBounty` server export and the `rsg-bountyhunter:server:posterClosed` event for sponsored posters (used by rsg-gangs gang bounties). Sponsored posters survive board re-rolls, return to the board when abandoned and expire on their own.
+
 ## 3.1.1
 
 ### Added

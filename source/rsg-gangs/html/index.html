@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>rsg-gangs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app" class="hidden">
+
+    <!-- NO GANG -->
+    <div id="noGangView" class="panel hidden">
+      <div class="panel-header">
+        <div class="header-text">
+          <h1 data-i18n="ui_registry_title"></h1>
+          <span class="subtitle" data-i18n="ui_registry_subtitle"></span>
+        </div>
+        <button class="icon-btn" data-close aria-label="Close">&times;</button>
+      </div>
+      <div class="divider"><span>&#10022;</span></div>
+      <div class="panel-body">
+        <p class="lede" data-i18n="ui_registry_lede"></p>
+        <label class="field-label" for="gangLabelInput" data-i18n="ui_outfit_name"></label>
+        <input id="gangLabelInput" class="input" maxlength="30" data-i18n-placeholder="ui_outfit_placeholder" />
+        <button id="createGangBtn" class="btn btn-wide"><span data-i18n="ui_found_btn"></span> <span id="createCostTag" class="cost-tag"></span></button>
+      </div>
+    </div>
+
+    <!-- GANG -->
+    <div id="gangView" class="panel hidden">
+      <div class="panel-header">
+        <div class="header-text">
+          <h1><span id="gangColorDot" class="color-dot"></span><span id="gangLabel"></span></h1>
+          <span class="subtitle" data-i18n="ui_registry_subtitle"></span>
+        </div>
+        <button class="icon-btn" data-close aria-label="Close">&times;</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="overview" data-i18n="ui_tab_overview"></button>
+        <button class="tab-btn" data-tab="members" data-i18n="ui_tab_members"></button>
+        <button class="tab-btn" data-tab="bank" data-i18n="ui_tab_bank"></button>
+        <button class="tab-btn" data-tab="equipment" data-i18n="ui_tab_equipment"></button>
+        <button class="tab-btn hidden" id="tabBtnTurf" data-tab="turf" data-i18n="ui_tab_turf"></button>
+        <button class="tab-btn hidden" id="tabBtnTop" data-tab="top" data-i18n="ui_tab_top"></button>
+        <button class="tab-btn hidden" id="tabBtnBounty" data-tab="bounty" data-i18n="ui_tab_bounty"></button>
+        <button class="tab-btn hidden" id="tabBtnLog" data-tab="log" data-i18n="ui_tab_log"></button>
+        <button class="tab-btn" data-tab="settings" data-i18n="ui_tab_settings"></button>
+      </div>
+
+      <div class="panel-body">
+        <section id="tab-overview" class="tab-content active">
+          <div class="stat-grid">
+            <div class="stat-card"><span class="stat-label" data-i18n="ui_members"></span><span id="statMembers" class="stat-value">0</span></div>
+            <div class="stat-card"><span class="stat-label" data-i18n="ui_gang_bank"></span><span id="statBank" class="stat-value">$0</span></div>
+            <div class="stat-card"><span class="stat-label" data-i18n="ui_your_rank"></span><span id="statRank" class="stat-value">-</span></div>
+            <div class="stat-card hidden" id="honorCard"><span class="stat-label" data-i18n="ui_gang_honor"></span><span id="statHonor" class="stat-value">0</span></div>
+          </div>
+          <div class="block hidden" id="wagonResetBlock">
+            <label class="field-label" data-i18n="ui_wagon_stuck"></label>
+            <button id="resetWagonBtn" class="btn btn-muted" data-i18n="ui_reset_wagon"></button>
+          </div>
+          <div class="block hidden" id="rivalsBlock">
+            <label class="field-label" data-i18n="ui_rivals"></label>
+            <div id="rivalsList" class="list"></div>
+          </div>
+          <div class="block hidden" id="upkeepBlock">
+            <label class="field-label" data-i18n="ui_upkeep"></label>
+            <div id="upkeepCard" class="card"></div>
+          </div>
+          <div class="danger-zone">
+            <button id="leaveGangBtn" class="btn btn-muted" data-i18n="ui_leave"></button>
+            <button id="disbandGangBtn" class="btn btn-danger hidden" data-i18n="ui_disband"></button>
+          </div>
+        </section>
+
+        <section id="tab-members" class="tab-content">
+          <div class="row hidden" id="inviteRow">
+            <input id="inviteInput" class="input" inputmode="numeric" data-i18n-placeholder="ui_invite_placeholder" />
+            <button id="inviteBtn" class="btn" data-i18n="ui_invite"></button>
+          </div>
+          <div id="memberList" class="list"></div>
+        </section>
+
+        <section id="tab-bank" class="tab-content">
+          <div class="bank-hero">
+            <span class="stat-label" data-i18n="ui_gang_funds"></span>
+            <span id="bankAmount" class="bank-amount">$0</span>
+          </div>
+          <div class="row">
+            <input id="depositInput" class="input" type="number" min="1" data-i18n-placeholder="ui_amount" />
+            <button id="depositBtn" class="btn" data-i18n="ui_deposit"></button>
+          </div>
+          <div class="row hidden" id="withdrawRow">
+            <input id="withdrawInput" class="input" type="number" min="1" data-i18n-placeholder="ui_amount" />
+            <button id="withdrawBtn" class="btn btn-muted" data-i18n="ui_withdraw"></button>
+          </div>
+        </section>
+
+        <section id="tab-equipment" class="tab-content">
+          <p class="lede" data-i18n="ui_equipment_lede"></p>
+          <div id="equipmentList" class="list"></div>
+          <div class="block">
+            <label class="field-label" data-i18n="ui_strongbox"></label>
+            <div id="stashTierCard" class="card"></div>
+          </div>
+        </section>
+
+        <section id="tab-turf" class="tab-content">
+          <p class="lede" data-i18n="ui_turf_lede"></p>
+          <div id="turfList" class="list"></div>
+        </section>
+
+        <section id="tab-bounty" class="tab-content">
+          <p class="lede" id="bountyLede"></p>
+          <div id="bountyCard" class="card"></div>
+          <div class="row hidden" id="bountyRow">
+            <input id="bountyInput" class="input" type="number" min="1" data-i18n-placeholder="ui_amount" />
+            <button id="bountyBtn" class="btn" data-i18n="ui_bounty_post"></button>
+          </div>
+        </section>
+
+        <section id="tab-top" class="tab-content">
+          <p class="lede" id="topLede"></p>
+          <div id="topList" class="list"></div>
+        </section>
+
+        <section id="tab-log" class="tab-content">
+          <div id="logList" class="list"></div>
+        </section>
+
+        <section id="tab-settings" class="tab-content">
+          <div class="block hidden" id="renameBlock">
+            <label class="field-label" data-i18n="ui_rename_title"></label>
+            <div class="row">
+              <input id="renameInput" class="input" maxlength="30" data-i18n-placeholder="ui_new_name" />
+              <button id="renameBtn" class="btn" data-i18n="ui_save"></button>
+            </div>
+          </div>
+          <div class="block hidden" id="tagBlock">
+            <label class="field-label" data-i18n="ui_tag"></label>
+            <div class="row">
+              <input id="tagInput" class="input" maxlength="8" />
+              <button id="tagBtn" class="btn" data-i18n="ui_save"></button>
+            </div>
+          </div>
+          <div class="block" id="blipBlock">
+            <label class="field-label" data-i18n="ui_blips_label"></label>
+            <button id="blipBtn" class="btn btn-muted"></button>
+          </div>
+          <div class="block hidden" id="colorBlock">
+            <label class="field-label" data-i18n="ui_color"></label>
+            <div id="colorSwatches" class="swatches"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- CRAFTING -->
+    <div id="craftView" class="panel hidden">
+      <div class="panel-header">
+        <div class="header-text">
+          <h1 id="craftStationLabel"></h1>
+          <span class="subtitle" data-i18n="ui_crafting"></span>
+        </div>
+        <button class="icon-btn" data-close aria-label="Close">&times;</button>
+      </div>
+      <div class="divider"><span>&#10022;</span></div>
+      <div class="panel-body">
+        <p class="lede" id="craftIntro"></p>
+        <div id="craftRecipeList" class="list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRM MODAL -->
+  <div id="modal" class="modal-wrap hidden">
+    <div class="modal">
+      <h2 id="modalTitle"></h2>
+      <div class="ink-divider"></div>
+      <p id="modalText"></p>
+      <div class="modal-actions">
+        <button id="modalCancel" class="btn btn-muted" data-i18n="ui_cancel"></button>
+        <button id="modalOk" class="btn" data-i18n="ui_confirm"></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toasts"></div>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -52,7 +52,7 @@ Make sure all four are started **before** `rsg-huntingpets` in your `server.cfg`
    ensure rsg-huntingpets
    ```
 3. Copy the carcass/scavenger item images from `installation/images/` into your inventory resource's `html/images/` folder (e.g. `rsg-inventory/html/images/`).
-4. Open `installation/rsg-core_items.lua` and add any items listed there that don't already exist in your `rsg-core` shared items file (bird/animal carcasses used as scavenged loot, plus the food item if needed).
+4. Open `installation/shared_items.lua` and add any items listed there that don't already exist in your `rsg-core` shared items file (bird/animal carcasses used as scavenged loot, plus the food item if needed).
 5. Review and adjust the config files under `shared/` to taste (see [Configuration](#configuration) below).
 6. Start/restart your server.
 

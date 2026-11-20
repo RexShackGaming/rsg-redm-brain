@@ -80,7 +80,7 @@ end
 local function fillBoard(reroll)
     local open = 0
     for id, p in pairs(Board) do
-        if not p.taken then
+        if not p.taken and not p.sponsored then
             if reroll then Board[id] = nil else open = open + 1 end
         end
     end
@@ -96,7 +96,7 @@ local function publicPosters()
         if not p.taken then
             out[#out + 1] = {
                 id = p.id, tier = p.tier, tierLabel = locale(Config.Tiers[p.tier].label),
-                name = p.name, crime = locale(p.crime), rewardAlive = p.rewardAlive, rewardDead = p.rewardDead,
+                name = p.name, crime = p.sponsored and ('%s (%s)'):format(locale(p.crime), p.sponsor) or locale(p.crime), rewardAlive = p.rewardAlive, rewardDead = p.rewardDead,
             }
         end
     end
@@ -114,7 +114,11 @@ local function endContract(src, reason, silent)
     if not c then return end
     local ent = getTargetEntity(c)
     if ent then DeleteEntity(ent) end
-    Board[c.poster.id] = nil
+    if c.poster.sponsored and reason ~= 'completed' then
+        c.poster.taken = nil -- a sponsored poster goes back on the board until it expires
+    else
+        Board[c.poster.id] = nil
+    end
     Contracts[src] = nil
     Cooldowns[c.cid] = reason ~= 'completed' and (os.time() + Config.AcceptCooldown) or nil
     if not silent then TriggerClientEvent('rsg-bountyhunter:client:endContract', src, reason) end
@@ -308,8 +312,10 @@ local function turnIn(src, officeId)
         { name = locale('wh_hunt_time'), value = locale('wh_minutes', math.floor(secs / 60)) },
     })
 
+    local closedPoster = c.poster
     endContract(src, 'completed') -- clears the contract before paying so it can't be claimed twice
     Player.Functions.AddMoney(Config.MoneyType, amount, 'rsg-bountyhunter-reward')
+    if closedPoster.ref then TriggerEvent('rsg-bountyhunter:server:posterClosed', closedPoster.ref, 'completed', amount) end
 
     dbCall(MySQL.insert.await, [[
         INSERT INTO rsg_bountyhunter (citizenid, name, completed, alive, dead, earned) VALUES (?, ?, 1, ?, ?, ?)
@@ -381,12 +387,37 @@ CreateThread(function()
                 notify(src, locale('time_warning', c.poster.name, math.ceil(left / 60)), 'warning')
             end
         end
+        for id, p in pairs(Board) do
+            if p.sponsored and not p.taken and p.expiresAt <= now then
+                Board[id] = nil
+                TriggerEvent('rsg-bountyhunter:server:posterClosed', p.ref, 'expired', 0)
+            end
+        end
         if now - lastRefresh >= Config.RefreshMinutes * 60 then
             fillBoard(true)
             lastRefresh = now
             BountyLog.Event('boardRefresh', nil, nil, locale('wh_board_refreshed', Config.BoardSize))
         end
     end
+end)
+
+-- Server export: another resource sponsors a poster. The caller escrows the money and listens for
+-- 'rsg-bountyhunter:server:posterClosed' (ref, 'completed' | 'expired', paid) to settle it.
+-- opts = { ref = any unique value, reward = alive reward, sponsor = text shown on the poster, expireMinutes = n }
+exports('PostBounty', function(opts)
+    if type(opts) ~= 'table' or opts.ref == nil then return nil end
+    local reward = math.floor(tonumber(opts.reward) or 0)
+    if reward < 1 then return nil end
+    local poster = newPoster()
+    local t = Config.Tiers[poster.tier]
+    poster.rewardAlive = reward
+    poster.rewardDead = math.floor(reward * t.deadMultiplier)
+    poster.sponsored = true
+    poster.sponsor = tostring(opts.sponsor or '?'):sub(1, 40)
+    poster.ref = opts.ref
+    poster.expiresAt = os.time() + math.max(1, tonumber(opts.expireMinutes) or 360) * 60
+    Board[poster.id] = poster
+    return poster.id
 end)
 
 -- character logout / switch / disconnect: the client loses its contract state, so drop it server-side too.

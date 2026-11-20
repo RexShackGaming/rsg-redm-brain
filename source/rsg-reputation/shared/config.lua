@@ -108,4 +108,5 @@ Config.Actions = {
     revive           = { honor = 5,   standing = 3 },
     donation         = { honor = 3,   standing = 5 },
     delivery         = { honor = 0,   standing = 2 },
+    gang_territory   = { honor = -3,  standing = -5 }, -- a gang claims turf in a town (rsg-gangs)
 }

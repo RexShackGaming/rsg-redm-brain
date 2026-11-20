@@ -104,6 +104,12 @@ The server owns the board and contracts. It checks distance to the clerk, the jo
 | Turn-in refused | Target must be within `DeliverRadius` of the office and the hunt long enough |
 | Poster gone | Another hunter took it, or the board re-rolled |
 
+## Sponsored posters (server export)
+
+`exports['rsg-bountyhunter']:PostBounty(opts)` lets another resource (rsg-gangs uses it) put a poster on every board. `opts = { ref, reward, sponsor, expireMinutes }`: `ref` is any unique value the caller uses to settle it, `reward` is the alive reward (dead pays the tier's `deadMultiplier`), `sponsor` is shown next to the crime, `expireMinutes` defaults to 360. Returns the poster id or `nil`.
+
+The caller holds the money in escrow. When the poster ends the server fires `rsg-bountyhunter:server:posterClosed(ref, reason, paid)` (server-only, not callable by clients) with reason `'completed'` (hunter was paid `paid`) or `'expired'` (nobody delivered it). A sponsored poster that is abandoned or failed goes back on the board; sponsored posters are never re-rolled.
+
 ## rsg-reputation integration
 
 `Config.Reputation = { Enabled, Action, Regions }`. After the server has paid the reward in `turnIn`, it calls `exports['rsg-reputation']:ApplyAction(src, Action, region)` where `region = Regions[office.id] or office.id`. The default `saintdenis` office id is mapped to `saint_denis`. The honor and standing amounts live in rsg-reputation's `Config.Actions`. Skipped when rsg-reputation is not started.

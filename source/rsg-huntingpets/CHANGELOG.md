@@ -2,6 +2,11 @@
 
 All notable changes to rsg-huntingpets. Newest first.
 
+## Unreleased
+
+### Fixed
+- Renamed `installation/shared_itesms.lua` to `shared_items.lua` (typo) and corrected the README reference to it.
+
 ## 3.1.2
 
 ### Added
