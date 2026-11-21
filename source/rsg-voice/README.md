@@ -16,6 +16,7 @@ Proximity voice for **RSG Framework (RedM)**, built on RedM's native Mumble voic
 - **Auto-mute** while dead or in last stand, and optionally while cuffed (read from rsg-core metadata).
 - **Admin mute**: `/voicemute [id] [minutes] [reason]` mutes on the server, so the player's client can't undo it. Mutes can be timed or permanent, carry a reason, are tied to the player's licence and are saved in the database, so they survive reconnects and server restarts. `/voiceunmute [id]` lifts them.
 - **Riding parties**: `/party` opens a menu to invite nearby riders (up to 8). Hold **[** to talk to party members within 100 m, even past your normal range. Party members show on your map, and `/partywaypoint` shares your map waypoint (with a GPS route) with the party.
+- **Radio channels** (voice only): other resources (such as `rsg-radio`) put players on a frequency with the server exports `JoinRadio` / `LeaveRadio`. Hold **O** to transmit; everyone on the channel hears you at full volume at any distance, and people next to you still hear you speak. Radio traffic shows as a green `RADIO <freq>` tag on the HUD, with a squelch burst when a transmission starts and ends and a low static hiss while someone transmits.
 - **Exports** (client and server) so other resources can read talking/range/party state and mute players, e.g. rsg-prison or rsg-hanging.
 - **State bag**: `Player(src).state.voiceRange` holds each player's current range.
 - **rsg-core** notifications, callbacks and locales in 11 languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru. No ox_lib needed.
@@ -68,6 +69,7 @@ ensure rsg-voice
 | Move the HUD | Type `/voicehud`, drag the box, then press **ENTER** / **ESC** to save or **R** to reset |
 | Hide / show the HUD | Type `/togglevoicehud` (remembered between sessions) |
 | Riding party | Type `/party` to invite nearby riders or manage your party. Hold **[** to talk to party members within 100 m |
+| Radio | Join a frequency with `rsg-radio`, then hold **O** to transmit on it |
 | Share waypoint | Set a map waypoint and type `/partywaypoint` (or use **Share Waypoint** in the party menu). Run it with no waypoint set to clear it for the party |
 
 HUD indicators:
@@ -75,6 +77,7 @@ HUD indicators:
 - **Green dot**: you are talking
 - **Red dot and struck-through label**: you are muted
 - **Amber dot and ⚑ tag**: you are talking to your party (the tag shows party size)
+- **Green dot and `RADIO <freq>` tag**: you are on a radio channel (the dot is lit while you transmit)
 
 ### Admins
 
@@ -118,6 +121,19 @@ Config.Ranges = {
 | `Config.Party.InviteRange` | `10.0` | How close (metres) a player must be to be invited |
 | `Config.Party.MaxMembers` | `8` | Max party size, leader included |
 | `Config.Party.InviteTimeout` | `30` | Seconds an invite stays valid |
+| `Config.Radio.Enabled` | `true` | Enable radio channels |
+| `Config.Radio.TalkKey` | `0xF1301666` (O) | Fallback control hash, only used when `UseKeyMapping = false` |
+| `Config.Radio.UseKeyMapping` | `true` | Bind the transmit key by name with `RegisterKeyMapping` (players can rebind it in the game's key settings). `false` uses `TalkKey` |
+| `Config.Radio.Key` | `'O'` | Default key for the key mapping (hold to transmit) |
+| `Config.Radio.NearbyHear` | `true` | Players inside your voice range also hear you while you transmit |
+| `Config.Radio.Debug` | `false` | Troubleshooting: prints the transmit key state and what is blocking it (not loaded, no channel, muted, menu focus, party talk) in the F8 console, on key changes and as a status line every 3 s, plus the names of keys the game reports as pressed |
+| `Config.Radio.MaxMembers` | `64` | Max players on one channel |
+| `Config.Radio.Static.Enabled` | `true` | Radio static sounds (synthesised in the HUD page) |
+| `Config.Radio.Static.Volume` | `0.3` | Static volume, 0.0 - 1.0 |
+| `Config.Radio.Static.Hiss` | `true` | Low hiss while someone transmits on your channel |
+| `Config.Radio.Static.Squelch` | `true` | Short noise burst at the start and end of a transmission |
+| `Config.Radio.Static.SelfHiss` | `false` | Also hear the hiss while you transmit (you always hear the squelch) |
+| `Config.TalkIcon.RadioColour` | green | Speaker icon colour for players transmitting on your channel |
 | `Config.MuteWhenDead` | `true` | Mute while dead or in last stand |
 | `Config.MuteWhenCuffed` | `false` | Mute while handcuffed |
 | `Config.SaveRange` | `true` | Remember each player's last range (client KVP) |
@@ -178,6 +194,12 @@ exports['rsg-voice']:SetMuteOverride(false, 'gag')
 -- Party
 local inParty = exports['rsg-voice']:IsInParty()
 local members = exports['rsg-voice']:GetPartyMembers() -- { { id, name, leader }, ... } or nil
+
+-- Radio
+local radio = exports['rsg-voice']:GetRadio()            -- { freq = '101', members = { serverId, ... } } or nil
+local tx    = exports['rsg-voice']:IsRadioTalking()      -- true while you hold the transmit key
+local key   = exports['rsg-voice']:GetRadioTalkKey()     -- control hash, keep it enabled in your own NUI
+AddEventHandler('rsg-voice:client:onRadioTalk', function(state) end) -- local event, fires when you start/stop transmitting
 ```
 
 ## Exports (server)
@@ -192,7 +214,18 @@ local muted = exports['rsg-voice']:IsPlayerMuted(src)
 -- Party
 local inParty = exports['rsg-voice']:IsInParty(src)
 local members, leader = exports['rsg-voice']:GetPartyMembers(src) -- { src, ... }, leaderSrc or nil
+
+-- Radio (voice only: your resource decides who may join, e.g. rsg-radio checks item, job and frequency)
+local ok, reason = exports['rsg-voice']:JoinRadio(src, '101') -- reason: 'disabled' | 'invalid' | 'full'
+exports['rsg-voice']:LeaveRadio(src)
+local freq    = exports['rsg-voice']:GetPlayerRadio(src)     -- '101' or nil
+local members = exports['rsg-voice']:GetRadioMembers('101')  -- { src, ... } or nil
+
+-- Server event, fired when a player joins, switches or leaves a channel
+AddEventHandler('rsg-voice:server:radioChanged', function(src, newFreq, oldFreq) end)
 ```
+
+A frequency is any string up to 32 characters (numbers are converted). Players are removed from their channel when they disconnect or log out. Joining a second frequency leaves the first.
 
 ### State bag
 
@@ -228,6 +261,12 @@ rsg-voice/
 ---
 
 ## Changelog
+
+### 3.1.1
+- **Radio static**: squelch burst at the start/end of a transmission and a low hiss while someone transmits, made in the HUD page. Settings in `Config.Radio.Static`.
+
+### 3.1.0
+- **Radio channels**: server exports `JoinRadio`, `LeaveRadio`, `GetPlayerRadio`, `GetRadioMembers`, client exports `GetRadio`, `IsRadioTalking`, `GetRadioTalkKey`, the `rsg-voice:server:radioChanged` event and a hold-to-transmit key (`Config.Radio`). Transmitting players are heard at full volume by their channel at any distance, even when not streamed in. New `ui_radio` locale key in all 11 languages.
 
 ### 3.0.3
 - **Muffled voices** through interiors, **speaker icon** above talking players and **saved range** between sessions.

@@ -62,5 +62,7 @@
     "cl_waypoint_arrived": "Você chegou ao ponto do grupo",
     "cl_waypoint_cooldown": "Aguarde um momento antes de compartilhar novamente",
     "cl_waypoint_blip": "Ponto do grupo (%s)",
-    "ui_party_share": "Compartilhar ponto"
+    "ui_party_share": "Compartilhar ponto",
+    "ui_radio": "RÁDIO",
+    "ui_radio_key": "Transmitir no rádio (segurar)"
 }

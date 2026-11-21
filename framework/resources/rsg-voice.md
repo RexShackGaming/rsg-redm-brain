@@ -1,6 +1,6 @@
 # rsg-voice
 
-Version 3.0.5. rsg-voice - proximity voice for RSG Framework
+Version 3.1.3. rsg-voice - proximity voice for RSG Framework
 
 Proximity voice for **RSG Framework (RedM)**, built on RedM's native Mumble voice. It adds selectable voice ranges, a draggable HUD, riding parties (group voice), automatic muting while dead or cuffed, and a server-enforced admin mute. - **Proximity voice ranges**: Whisper (2.5m), Normal (8m), Shout (20m) and Trail (35m), all configurable. - **Cycle range** with a key (default **]**) or the `/voic
 
@@ -12,15 +12,15 @@ Has NUI (`ui_page`).
 
 ## Exports (call as exports['rsg-voice']:Name)
 
-**server:** `GetPartyMembers(src)`, `IsInParty(src)`, `IsPlayerMuted(src)`, `SetPlayerMuted(src, state, reason)`
+**server:** `GetPartyMembers(src)`, `GetPlayerRadio(src)`, `GetRadioMembers(freq)`, `IsInParty(src)`, `IsPlayerMuted(src)`, `JoinRadio(src, freq)`, `LeaveRadio(src)`, `SetPlayerMuted(src, state, reason)`
 
-**client:** `GetPartyMembers()`, `GetVoiceRange()`, `IsInParty()`, `IsMuted()`, `IsPlayerTalking(sid)`, `SetMuteOverride(state, reason)`, `SetVoiceRangeIndex(i)`
+**client:** `GetPartyMembers()`, `GetRadio()`, `GetRadioTalkKey()`, `GetVoiceRange()`, `IsInParty()`, `IsMuted()`, `IsPlayerTalking(sid)`, `IsRadioTalking()`, `SetMuteOverride(state, reason)`, `SetVoiceRangeIndex(i)`
 
 ## Net events registered
 
-**server:** `rsg-voice:server:partyInvite`, `rsg-voice:server:partyKick`, `rsg-voice:server:partyLeave`, `rsg-voice:server:partyRespond`, `rsg-voice:server:partyWaypoint`
+**server:** `rsg-voice:server:partyInvite`, `rsg-voice:server:partyKick`, `rsg-voice:server:partyLeave`, `rsg-voice:server:partyRespond`, `rsg-voice:server:partyWaypoint`, `rsg-voice:server:radioTalk`
 
-**client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `RSGCore:Player:SetPlayerData`, `rsg-voice:client:muteState`, `rsg-voice:client:partyInvite`, `rsg-voice:client:partyPositions`, `rsg-voice:client:partyUpdate`, `rsg-voice:client:partyWaypoint`
+**client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `RSGCore:Player:SetPlayerData`, `rsg-voice:client:muteState`, `rsg-voice:client:partyInvite`, `rsg-voice:client:partyPositions`, `rsg-voice:client:partyUpdate`, `rsg-voice:client:partyWaypoint`, `rsg-voice:client:radioTalk`, `rsg-voice:client:radioUpdate`
 
 ## Event handlers
 
@@ -29,6 +29,10 @@ Has NUI (`ui_page`).
 ## Callbacks (RSGCore.Functions.CreateCallback)
 
 **server:** `rsg-voice:server:getParty`, `rsg-voice:server:isMuted`
+
+## Commands (RegisterCommand)
+
+**client:** `/+rsgvoice_radio`, `/-rsgvoice_radio`
 
 ## Database tables
 

@@ -62,5 +62,7 @@
     "cl_waypoint_arrived": "Je hebt de groepswaypoint bereikt",
     "cl_waypoint_cooldown": "Wacht even voordat je opnieuw deelt",
     "cl_waypoint_blip": "Groepswaypoint (%s)",
-    "ui_party_share": "Waypoint delen"
+    "ui_party_share": "Waypoint delen",
+    "ui_radio": "RADIO",
+    "ui_radio_key": "Radio zenden (vasthouden)"
 }

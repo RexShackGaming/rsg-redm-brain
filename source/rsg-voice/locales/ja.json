@@ -62,5 +62,7 @@
     "cl_waypoint_arrived": "パーティーのウェイポイントに到着しました",
     "cl_waypoint_cooldown": "少し待ってから再度共有してください",
     "cl_waypoint_blip": "パーティーのウェイポイント（%s）",
-    "ui_party_share": "ウェイポイント共有"
+    "ui_party_share": "ウェイポイント共有",
+    "ui_radio": "無線",
+    "ui_radio_key": "無線送信（長押し）"
 }

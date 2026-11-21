@@ -62,5 +62,7 @@
     "cl_waypoint_arrived": "You reached the party waypoint",
     "cl_waypoint_cooldown": "Wait a moment before sharing again",
     "cl_waypoint_blip": "Party waypoint (%s)",
-    "ui_party_share": "Share Waypoint"
+    "ui_party_share": "Share Waypoint",
+    "ui_radio": "RADIO",
+    "ui_radio_key": "Radio transmit (hold)"
 }

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --rdr-black:#000;--rdr-panel:#0a0a0a;--rdr-panel-2:#141414;--rdr-gold:#fff;--rdr-gold-dim:#5a5a5a;
+  --rdr-text:#f2f2f2;--rdr-muted:#9a9a9a;--rdr-cost-ok:#6fbf73;--rdr-cost-over:#e0554f;--rdr-shadow:rgba(0,0,0,.85);
+}
+html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden;user-select:none;font-family:'Roboto',sans-serif}
+#root{position:fixed;inset:0;pointer-events:none}
+.hidden{display:none!important}
+.panel{
+  border:1px solid var(--rdr-gold-dim);outline:1px solid rgba(0,0,0,.6);outline-offset:-5px;border-radius:3px;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.015) 0 1px,transparent 1px 3px),
+             linear-gradient(160deg,var(--rdr-panel-2),var(--rdr-panel) 60%,var(--rdr-black));
+  box-shadow:0 20px 60px var(--rdr-shadow),inset 0 0 40px rgba(0,0,0,.5);color:var(--rdr-text);
+}
+#radio{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:380px;max-height:92vh;overflow-y:auto;box-sizing:border-box;padding:18px 20px 20px;pointer-events:auto}
+#radio::-webkit-scrollbar{width:4px}#radio::-webkit-scrollbar-thumb{background:var(--rdr-gold-dim)}
+.hdr{display:flex;align-items:center;justify-content:space-between;cursor:move}
+.hdr .cbtn{cursor:pointer}
+#radio.dragging{filter:brightness(1.08)}
+#radio.dragging .hdr{cursor:grabbing}
+.hdr .sp{width:32px}
+.hdr .t{text-align:center;flex:1}
+.hdr h1{margin:0;font-size:24px;font-weight:700;text-transform:uppercase;letter-spacing:1px;text-shadow:0 2px 4px #000}
+.hdr small{display:block;margin-top:2px;font-size:10.5px;text-transform:uppercase;letter-spacing:3px;color:var(--rdr-muted)}
+.cbtn{width:32px;height:32px;border-radius:50%;border:1px solid var(--rdr-gold-dim);background:radial-gradient(circle,#2e2e2e,#0a0a0a);
+      color:var(--rdr-text);font-size:15px;cursor:pointer;transition:all .15s ease;display:flex;align-items:center;justify-content:center;flex:none}
+.cbtn:hover{border-color:var(--rdr-gold);filter:brightness(1.3)}
+.status{display:flex;align-items:center;gap:10px;margin-top:16px;padding:9px 12px;border-radius:2px;border:1px solid rgba(201,162,75,.18);
+        background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.15));font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px}
+.dot{width:12px;height:12px;border-radius:50%;border:1px solid var(--rdr-gold-dim);background:radial-gradient(circle,#2e2e2e,#0a0a0a);transition:all .15s ease;flex:none}
+.status.on .dot{background:radial-gradient(circle,#7fcf82,var(--rdr-cost-ok));box-shadow:0 0 8px var(--rdr-cost-ok);border-color:var(--rdr-cost-ok)}
+.status #stext{flex:1}
+.pill{padding:2px 6px;border:1px solid var(--rdr-gold-dim);border-radius:2px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--rdr-muted)}
+.div{display:flex;align-items:center;gap:10px;margin:16px 0 10px;font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--rdr-muted)}
+.div::before,.div::after{content:'';flex:1;height:1px}
+.div::before{background:linear-gradient(90deg,transparent,var(--rdr-gold-dim))}
+.div::after{background:linear-gradient(90deg,var(--rdr-gold-dim),transparent)}
+.tune{display:flex;align-items:center;justify-content:center;gap:12px}
+#freq{width:120px;padding:8px 10px;text-align:center;font:600 24px 'Roboto',sans-serif;letter-spacing:2px;color:var(--rdr-text);
+      background:rgba(0,0,0,.35);border:1px solid var(--rdr-gold-dim);border-radius:2px;outline:none;transition:all .15s ease}
+#freq:focus{border-color:var(--rdr-gold);box-shadow:0 0 0 2px rgba(201,162,75,.15)}
+.fhint{margin-top:8px;text-align:center;font-size:11.5px;font-style:italic;color:var(--rdr-muted);min-height:15px;transition:color .15s ease}
+.fhint.bad{color:var(--rdr-cost-over)}
+.fhint.ok{color:var(--rdr-cost-ok)}
+.row .sub{display:block;margin-top:1px;font-size:11px;font-style:italic;font-weight:400;color:var(--rdr-muted)}
+.unit{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--rdr-muted);min-width:34px}
+.cbtn.star{font-size:17px}
+.cbtn.star.on{color:#eec06a;border-color:#eec06a}
+.cbtn.star:disabled{opacity:.45;cursor:not-allowed;filter:none}
+#code{-webkit-text-security:disc}
+#flabel,#pname,#code{display:block;width:190px;margin:10px auto 0;padding:5px 8px;text-align:center;font:400 12px 'Roboto',sans-serif;color:var(--rdr-text);
+        background:rgba(0,0,0,.35);border:1px solid var(--rdr-gold-dim);border-radius:2px;outline:none;transition:all .15s ease}
+#flabel:focus,#pname:focus,#code:focus{border-color:var(--rdr-gold);box-shadow:0 0 0 2px rgba(201,162,75,.15)}
+.mini{width:26px;height:26px;font-size:12px}
+.row.off{opacity:.55}
+.row .n.click{cursor:pointer}
+.actions{display:flex;gap:8px;justify-content:center;margin-top:14px}
+.wbtn{padding:7px 14px;border:1px solid var(--rdr-gold-dim);border-radius:2px;background:linear-gradient(180deg,#2e2e2e,#141414);
+      color:var(--rdr-text);font:500 12px 'Roboto',sans-serif;text-transform:uppercase;letter-spacing:1.5px;cursor:pointer;transition:all .15s ease}
+.wbtn:hover{border-color:var(--rdr-gold);filter:brightness(1.3)}
+.wbtn.mut{background:linear-gradient(180deg,#1c1c1c,#0a0a0a);color:var(--rdr-muted)}
+.wbtn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.list{display:flex;flex-direction:column;gap:6px;max-height:96px;overflow-y:auto}
+.list::-webkit-scrollbar{width:4px}.list::-webkit-scrollbar-thumb{background:var(--rdr-gold-dim)}
+.row{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:2px;border:1px solid rgba(201,162,75,.18);
+     background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.15));transition:all .15s ease}
+.row:hover{border-color:var(--rdr-gold-dim);transform:translateX(2px)}
+.badge{min-width:30px;height:30px;padding:0 9px;box-sizing:border-box;border-radius:15px;border:1px solid var(--rdr-gold-dim);
+       background:radial-gradient(circle,#2e2e2e,#0a0a0a);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+.row .n{flex:1;font-size:14px;font-weight:500}
+.empty{padding:8px 4px;font-size:12.5px;font-style:italic;color:var(--rdr-muted);text-align:center}
+.foot{margin-top:16px;text-align:center;font-size:11.5px;font-style:italic;color:var(--rdr-muted)}
+#admin{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:780px;max-width:96vw;max-height:92vh;display:flex;flex-direction:column;box-sizing:border-box;padding:18px 20px 16px;pointer-events:auto}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.tile{padding:8px 10px;border:1px solid rgba(201,162,75,.18);border-radius:2px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.15));text-align:center}
+.tile b{display:block;font-size:22px;font-weight:700}
+.tile span{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--rdr-muted)}
+.tabs{display:flex;gap:6px;margin-top:14px}
+.tab{flex:1;padding:7px 6px;border:1px solid var(--rdr-gold-dim);border-radius:2px;background:linear-gradient(180deg,#1c1c1c,#0a0a0a);color:var(--rdr-muted);
+     font:500 11.5px 'Roboto',sans-serif;text-transform:uppercase;letter-spacing:1.5px;cursor:pointer;transition:all .15s ease}
+.tab:hover{border-color:var(--rdr-gold)}
+.tab.on{background:linear-gradient(180deg,#2e2e2e,#141414);color:var(--rdr-text);border-color:var(--rdr-gold)}
+.atools{display:flex;align-items:center;gap:10px;margin-top:10px}
+.atools input{padding:6px 8px;font:400 12.5px 'Roboto',sans-serif;color:var(--rdr-text);background:rgba(0,0,0,.35);border:1px solid var(--rdr-gold-dim);border-radius:2px;outline:none}
+.atools input:focus{border-color:var(--rdr-gold);box-shadow:0 0 0 2px rgba(201,162,75,.15)}
+#asearch{flex:1}#amin{width:64px;text-align:center}
+.atools label{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--rdr-muted)}
+.alist{margin-top:10px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;min-height:120px;max-height:52vh}
+.alist::-webkit-scrollbar{width:4px}.alist::-webkit-scrollbar-thumb{background:var(--rdr-gold-dim)}
+.row.click{cursor:pointer}
+.sub .pill{margin-right:6px;font-style:normal}
+.mrows{margin:-2px 0 2px 24px;display:flex;flex-direction:column;gap:4px}
+.mrow{display:flex;align-items:center;gap:10px;padding:6px 10px;border-left:2px solid var(--rdr-gold-dim);background:rgba(255,255,255,.02);font-size:12.5px}
+.mrow .n{flex:1}.mrow .n i{color:var(--rdr-muted)}
+.wbtn.sm{padding:4px 9px;font-size:10.5px}
+.wbtn.bad:hover{border-color:var(--rdr-cost-over)}
+.logrow{display:flex;gap:10px;font-size:12px;padding:5px 8px;border-bottom:1px solid rgba(255,255,255,.05)}
+.logrow time{color:var(--rdr-muted);min-width:58px}.logrow b{min-width:90px;font-weight:600}
+.modal{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);border-radius:3px}
+.modal .card{width:340px;padding:18px;text-align:center}
+.modal p{margin:0 0 14px;font-size:14px}
+</style>
+</head>
+<body>
+<div id="root">
+  <div id="radio" class="panel hidden">
+    <div class="hdr" id="hdr"><div class="sp"></div><div class="t"><h1 id="title"></h1><small id="subtitle"></small></div><button class="cbtn" id="x">✕</button></div>
+    <div id="status" class="status"><div class="dot"></div><span id="stext"></span><span id="members" class="pill hidden"></span></div>
+    <div class="div" id="divFreq"></div>
+    <div class="tune"><button class="cbtn" id="minus">−</button><input id="freq" inputmode="decimal" maxlength="8" autocomplete="off"><button class="cbtn" id="plus">+</button><span class="unit" id="unit"></span><button class="cbtn star" id="fav">☆</button></div>
+    <div class="fhint" id="fhint"></div>
+    <input id="flabel" maxlength="24" autocomplete="off">
+    <input id="code" type="text" maxlength="32" autocomplete="off" autocapitalize="off" spellcheck="false" class="hidden">
+    <input id="pname" maxlength="24" autocomplete="off" class="hidden">
+    <div class="actions"><button class="wbtn" id="connect"></button><button class="wbtn mut" id="disconnect"></button><button class="wbtn mut" id="ptoggle"></button><button class="wbtn hidden" id="psave"></button></div>
+    <div class="div" id="divFav"></div>
+    <div class="list" id="favs"></div>
+    <div class="div" id="divCh"></div>
+    <div class="list" id="list"></div>
+    <div class="div hidden" id="divPriv"></div>
+    <div class="list hidden" id="plist"></div>
+    <div class="foot" id="hint"></div>
+  </div>
+  <div id="admin" class="panel hidden">
+    <div class="hdr" id="ahdr"><button class="cbtn" id="arefresh">⟳</button><div class="t"><h1 id="atitle"></h1><small id="asub"></small></div><button class="cbtn" id="ax">✕</button></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="tabs" id="tabs"></div>
+    <div class="atools"><input id="asearch" maxlength="32" autocomplete="off"><label id="amlabel" for="amin"></label><input id="amin" type="number" min="1" max="1440" value="10"></div>
+    <div class="alist" id="abody"></div>
+    <div id="modal" class="modal hidden"><div class="card panel"><p id="mtext"></p><div class="actions" style="margin-top:0"><button class="wbtn" id="myes"></button><button class="wbtn mut" id="mno"></button></div></div></div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const res=typeof GetParentResourceName==='function'?GetParentResourceName():'rsg-radio';
+const post=(n,d)=>fetch(`https://${res}/${n}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d||{})}).catch(()=>{});
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let S={},st=null,pform=false;
+
+function render(){
+  if(!st)return;
+  const on=!!st.freq;
+  $('status').classList.toggle('on',on);
+  $('stext').textContent=on?`${S.on} · ${st.freq}${st.unit?' '+st.unit:''}`:S.off;
+  $('members').textContent=S.members.replace('%s',st.count||0);
+  $('members').classList.toggle('hidden',!on);
+  $('disconnect').disabled=!on;
+  hint();
+  const rows=st.channels||[];
+  $('list').innerHTML=rows.length?rows.map(c=>{
+    const act=st.freq===c.freq;
+    return `<div class="row"><span class="badge">${esc(c.freq)}</span><span class="n">${esc(c.label)}<span class="sub">${esc(S.members.replace('%s',c.count||0))}</span></span>`+
+      (act?`<span class="pill">${esc(S.active)}</span>`:`<button class="wbtn" data-f="${esc(c.freq)}">${esc(S.join)}</button>`)+`</div>`;
+  }).join(''):`<div class="empty">${esc(S.noChannels)}</div>`;
+  const pv=st.priv,pl=pv?pv.list||[]:[];
+  $('ptoggle').classList.toggle('hidden',!pv);
+  $('divPriv').classList.toggle('hidden',!pl.length);$('plist').classList.toggle('hidden',!pl.length);
+  $('plist').innerHTML=pl.map(c=>{
+    const act=st.freq===c.freq;
+    return `<div class="row"><span class="badge">${esc(c.freq)}</span><span class="n">${esc(c.name||'—')}<span class="sub">${esc(c.owner?S.privYours+' · ':'')}${esc(S.members.replace('%s',c.count||0))}</span></span>`+
+      (act?`<span class="pill">${esc(S.active)}</span>`:`<button class="wbtn" data-f="${esc(c.freq)}">${esc(S.join)}</button>`)+
+      (c.owner?`<button class="cbtn mini" data-pdel="${esc(c.freq)}" title="${esc(S.privDelete)}">✕</button>`:'')+`</div>`;
+  }).join('');
+  const favs=st.favorites||[];
+  $('favs').innerHTML=favs.length?favs.map(f=>{
+    const act=st.freq===f.freq;
+    return `<div class="row${f.usable?'':' off'}"><span class="badge">${esc(f.freq)}</span><span class="n click" data-load="${esc(f.freq)}" data-label="${esc(f.label||'')}">${esc(f.label||'—')}<span class="sub">${esc(st.unit||'')}</span></span>`+
+      (act?`<span class="pill">${esc(S.active)}</span>`:f.locked?`<button class="wbtn" data-load="${esc(f.freq)}" data-label="${esc(f.label||'')}" title="${esc(S.locked)}">🔒 ${esc(S.join)}</button>`:`<button class="wbtn" data-f="${esc(f.freq)}"${f.usable?'':` disabled title="${esc(S.restricted)}"`}>${esc(S.join)}</button>`)+
+      `<button class="cbtn mini" data-rm="${esc(f.freq)}" title="${esc(S.favRemove)}">✕</button></div>`;
+  }).join(''):`<div class="empty">${esc(S.noFavorites)}</div>`;
+}
+const scale=()=>Math.pow(10,st.dec||0);
+const step=()=>1/scale();
+const fmt=v=>Number(v).toFixed(st.dec||0);
+const withUnit=v=>fmt(v)+(st.unit?' '+st.unit:'');
+const range=tpl=>tpl.replace('%s',fmt(st.min)).replace('%s',withUnit(st.max));
+function curFreq(){const v=parseFloat($('freq').value);return isNaN(v)?null:v;}
+function setFreq(v){
+  v=Math.max(st.min,Math.min(st.max,Math.round(v*scale())/scale()));
+  $('freq').value=fmt(v);
+  hint();
+}
+// live feedback on what the typed frequency is
+function hint(){
+  const h=$('fhint');if(!st){return;}
+  const v=curFreq(),star=$('fav');
+  codeUi(pform);updatePSave();
+  h.className='fhint';star.disabled=true;star.classList.remove('on');star.textContent='☆';star.title=S.favAdd;
+  if(v===null){h.textContent=range(S.range);return;}
+  const key=fmt(v);
+  if(v<st.min||v>st.max){h.classList.add('bad');h.textContent=range(S.outOfRange);return;}
+  if((st.reserved||[]).includes(key)){h.classList.add('bad');h.textContent=S.restricted;return;}
+  star.disabled=false;
+  const lock=((st.priv&&st.priv.locked)||[]).includes(key);
+  codeUi(lock||pform);
+  if(lock){h.textContent='🔒 '+S.locked;return;}
+  const mine=((st.priv&&st.priv.list)||[]).find(c=>c.freq===key);
+  if(mine){h.classList.add('ok');h.textContent=mine.name||S.private;}
+  const isFav=(st.favorites||[]).some(f=>f.freq===key);
+  if(isFav){star.classList.add('on');star.textContent='★';star.title=S.favRemove;}
+  const ch=(st.channels||[]).find(c=>c.freq===key);
+  if(!mine&&ch){h.classList.add('ok');h.textContent=ch.label;return;}
+  if(!mine)h.textContent=range(S.range);
+}
+function codeUi(show){$('code').classList.toggle('hidden',!show);}
+function updatePSave(){
+  const v=curFreq();const own=v!==null&&((st.priv&&st.priv.list)||[]).some(c=>c.freq===fmt(v)&&c.owner);
+  const c=st.priv&&st.priv.cost||0;
+  $('psave').textContent=own?S.privUpdate:(S.privCreate+(c>0?' · '+S.privCost.replace('%s',c):''));
+}
+function connect(){const v=curFreq();if(v===null)return;post('join',{freq:v,code:$('code').value});$('code').value='';}
+function togglePriv(){pform=!pform;$('pname').classList.toggle('hidden',!pform);$('psave').classList.toggle('hidden',!pform);if(!pform){$('code').value='';$('pname').value='';}hint();}
+function savePriv(){const v=curFreq();if(v===null)return;post('savePrivate',{freq:v,name:$('pname').value,code:$('code').value});$('code').value='';}
+function toggleFav(){
+  const v=curFreq();if(v===null)return;
+  const key=fmt(v),isFav=(st.favorites||[]).some(f=>f.freq===key);
+  if(isFav)post('removeFavorite',{freq:v});else post('addFavorite',{freq:v,label:$('flabel').value});
+}
+
+$('x').onclick=()=>post('close');
+$('connect').onclick=connect;
+$('disconnect').onclick=()=>post('leave');
+$('minus').onclick=()=>{const v=curFreq();setFreq(v===null?st.min:v-step());};
+$('plus').onclick=()=>{const v=curFreq();setFreq(v===null?st.min:v+step());};
+$('fav').onclick=toggleFav;
+$('ptoggle').onclick=togglePriv;
+$('psave').onclick=savePriv;
+$('code').addEventListener('keydown',e=>{if(e.key==='Enter'){pform?savePriv():connect();}});
+$('freq').addEventListener('input',e=>{
+  let v=e.target.value.replace(/[^0-9.]/g,'');
+  if(!st.dec)v=v.replace(/\./g,'');
+  else{const i=v.indexOf('.');if(i!==-1)v=v.slice(0,i+1)+v.slice(i+1).replace(/\./g,'').slice(0,st.dec);}
+  e.target.value=v;hint();
+});
+$('freq').addEventListener('keydown',e=>{if(e.key==='Enter')connect();});
+$('flabel').addEventListener('keydown',e=>{if(e.key==='Enter')toggleFav();});
+function listClick(e){
+  const b=e.target.closest('button[data-f]');if(b){post('join',{freq:parseFloat(b.dataset.f)});return;}
+  const pd=e.target.closest('button[data-pdel]');if(pd){post('deletePrivate',{freq:parseFloat(pd.dataset.pdel)});return;}
+  const r=e.target.closest('button[data-rm]');if(r){post('removeFavorite',{freq:parseFloat(r.dataset.rm)});return;}
+  const l=e.target.closest('[data-load]');if(l){$('freq').value=l.dataset.load;$('flabel').value=l.dataset.label||'';hint();}
+}
+$('list').addEventListener('click',listClick);
+$('favs').addEventListener('click',listClick);
+$('plist').addEventListener('click',listClick);
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  if(modalOpen()){closeModal();return;}
+  if(!$('radio').classList.contains('hidden')||adminVisible())post('close');
+});
+
+// ---- Draggable panels (drag the header, double-click it to reset; position is remembered) ----
+function makeDraggable(panel,hdr,key){
+  let drag=null;
+  const clamp=(x,y)=>({x:Math.max(0,Math.min(window.innerWidth-panel.offsetWidth,x)),y:Math.max(0,Math.min(window.innerHeight-panel.offsetHeight,y))});
+  function setPos(x,y){const c=clamp(x,y);panel.style.transform='none';panel.style.left=c.x+'px';panel.style.top=c.y+'px';}
+  function reset(){panel.style.transform='';panel.style.left='';panel.style.top='';try{localStorage.removeItem(key);}catch(e){}}
+  function restore(){
+    try{const p=JSON.parse(localStorage.getItem(key)||'null');if(p&&isFinite(p.x)&&isFinite(p.y)){setPos(p.x,p.y);return;}}catch(e){}
+    reset();
+  }
+  function stop(){drag=null;panel.classList.remove('dragging');}
+  hdr.addEventListener('mousedown',e=>{
+    if(e.button!==0||e.target.closest('button'))return;
+    const r=panel.getBoundingClientRect();
+    drag={dx:e.clientX-r.left,dy:e.clientY-r.top};
+    panel.classList.add('dragging');e.preventDefault();
+  });
+  document.addEventListener('mousemove',e=>{if(drag)setPos(e.clientX-drag.dx,e.clientY-drag.dy);});
+  document.addEventListener('mouseup',()=>{
+    if(!drag)return;
+    stop();
+    const r=panel.getBoundingClientRect();
+    try{localStorage.setItem(key,JSON.stringify({x:Math.round(r.left),y:Math.round(r.top)}));}catch(e){}
+  });
+  hdr.addEventListener('dblclick',e=>{if(!e.target.closest('button'))reset();});
+  window.addEventListener('resize',()=>{if(panel.style.left){const r=panel.getBoundingClientRect();setPos(r.left,r.top);}});
+  return {restore,stop};
+}
+const radioDrag=makeDraggable($('radio'),$('hdr'),'rsg-radio:pos');
+const adminDrag=makeDraggable($('admin'),$('ahdr'),'rsg-radio:adminpos');
+
+// ---- Admin panel ----
+let AS={},AD=null,tab='channels',expanded=new Set(),timer=null,onYes=null;
+const adminVisible=()=>!$('admin').classList.contains('hidden');
+const modalOpen=()=>!$('modal').classList.contains('hidden');
+function ask(text,fn){$('mtext').textContent=text;onYes=fn;$('modal').classList.remove('hidden');}
+function closeModal(){onYes=null;$('modal').classList.add('hidden');}
+$('myes').onclick=()=>{const f=onYes;closeModal();if(f)f();};
+$('mno').onclick=closeModal;
+const who=(name,cid)=>name?esc(name):`<i>${esc(AS.offline)}</i> (${esc(cid)})`;
+const withU=f=>f+(AD&&AD.unit?' '+AD.unit:'');
+function matchCh(c,q){
+  if(!q)return true;
+  return c.freq.includes(q)||(c.label||'').toLowerCase().includes(q)||c.members.some(m=>String(m.id)===q||m.name.toLowerCase().includes(q)||String(m.cid).toLowerCase().includes(q));
+}
+function renderAdmin(){
+  if(!AD)return;
+  const st=AD.stats;
+  $('tiles').innerHTML=[['onAir',AS.stat_onair],['channels',AS.stat_channels],['private',AS.stat_private],['blocks',AS.stat_blocks]]
+    .map(([k,l])=>`<div class="tile"><b>${st[k]}</b><span>${esc(l)}</span></div>`).join('');
+  $('tabs').innerHTML=[['channels',AS.tab_channels],['private',AS.tab_private],['blocks',AS.tab_blocks],['log',AS.tab_log]]
+    .map(([k,l])=>`<button class="tab${tab===k?' on':''}" data-tab="${k}">${esc(l)}</button>`).join('');
+  const q=$('asearch').value.trim().toLowerCase();
+  $('asearch').classList.toggle('hidden',tab==='log');
+  let h='';
+  if(tab==='channels'){
+    const rows=AD.channels.filter(c=>matchCh(c,q));
+    h=rows.length?rows.map(c=>{
+      const o=expanded.has(c.freq);
+      let r=`<div class="row click" data-act="toggle" data-f="${esc(c.freq)}"><span class="badge">${esc(c.freq)}</span><span class="n">${esc(c.label||withU(c.freq))}<span class="sub"><span class="pill">${esc(AS['kind_'+c.kind])}</span>${esc(AS.members.replace('%s',c.members.length))}</span></span>`+
+        (c.members.length?`<button class="wbtn sm bad" data-act="clear" data-f="${esc(c.freq)}">${esc(AS.clear)}</button>`:'')+`<span class="pill">${o?'▾':'▸'}</span></div>`;
+      if(o){
+        r+=`<div class="mrows">`+(c.members.length?c.members.map(m=>
+          `<div class="mrow"><span class="n">[${m.id}] ${esc(m.name)} <i>· ${esc(m.cid)} · ${esc(m.job)}</i></span>`+
+          (m.blocked?`<span class="pill">${esc(AS.left.replace('%s',m.blocked))}</span>`:'')+
+          `<button class="wbtn sm" data-act="mute" data-id="${m.id}">${esc(AS.mute)}</button><button class="wbtn sm bad" data-act="kick" data-id="${m.id}">${esc(AS.kick)}</button></div>`).join('')
+          :`<div class="empty">${esc(AS.no_members)}</div>`)+`</div>`;
+      }
+      return r;
+    }).join(''):`<div class="empty">${esc(AS.none)}</div>`;
+  }else if(tab==='private'){
+    const rows=AD.private.filter(p=>!q||p.freq.includes(q)||(p.name||'').toLowerCase().includes(q)||(p.owner||'').toLowerCase().includes(q)||(p.ownerName||'').toLowerCase().includes(q));
+    h=rows.length?rows.map(p=>`<div class="row"><span class="badge">${esc(p.freq)}</span><span class="n">${esc(p.name||'—')}<span class="sub">${esc(AS.owner)}: ${who(p.ownerName,p.owner)} · ${esc(AS.members.replace('%s',p.count))} · ${esc(AS.idle.replace('%s',p.days))}</span></span>`+
+      `<button class="wbtn sm bad" data-act="del" data-f="${esc(p.freq)}">${esc(AS.delete)}</button></div>`).join(''):`<div class="empty">${esc(AS.none)}</div>`;
+  }else if(tab==='blocks'){
+    const rows=AD.mutes.filter(m=>!q||m.cid.toLowerCase().includes(q)||(m.name||'').toLowerCase().includes(q));
+    h=rows.length?rows.map(m=>`<div class="row"><span class="n">${who(m.name,m.cid)}<span class="sub">${esc(m.cid)}</span></span><span class="pill">${esc(AS.left.replace('%s',m.minutes))}</span>`+
+      `<button class="wbtn sm" data-act="unmute" data-cid="${esc(m.cid)}">${esc(AS.unmute)}</button></div>`).join(''):`<div class="empty">${esc(AS.none)}</div>`;
+  }else{
+    h=AD.log.length?AD.log.map(l=>`<div class="logrow"><time>${esc(l.time)}</time><b>${esc(l.who)}</b><span>${esc(l.text)}</span></div>`).join(''):`<div class="empty">${esc(AS.no_log)}</div>`;
+  }
+  const body=$('abody'),top=body.scrollTop;
+  body.innerHTML=h;body.scrollTop=top;
+}
+function mins(){const v=parseInt($('amin').value,10);return isFinite(v)?Math.max(1,Math.min(1440,v)):10;}
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b){tab=b.dataset.tab;renderAdmin();}});
+$('abody').addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const act=b.dataset.act;
+  if(act==='toggle'){if(e.target.closest('button'))return;const f=b.dataset.f;expanded.has(f)?expanded.delete(f):expanded.add(f);renderAdmin();return;}
+  e.stopPropagation();
+  if(act==='kick')post('adminKick',{id:+b.dataset.id});
+  else if(act==='mute')post('adminMute',{id:+b.dataset.id,minutes:mins()});
+  else if(act==='unmute')post('adminUnmute',{cid:b.dataset.cid});
+  else if(act==='clear'){const f=b.dataset.f;ask(AS.confirmClear.replace('%s',withU(f)),()=>post('adminClear',{freq:parseFloat(f)}));}
+  else if(act==='del'){const f=b.dataset.f;ask(AS.confirmDelete.replace('%s',withU(f)),()=>post('adminDeletePrivate',{freq:parseFloat(f)}));}
+});
+$('asearch').addEventListener('input',renderAdmin);
+$('arefresh').onclick=()=>post('adminRefresh');
+$('ax').onclick=()=>post('close');
+function startAdmin(){clearInterval(timer);timer=setInterval(()=>{if(adminVisible()&&!modalOpen())post('adminRefresh');},5000);}
+function stopAdmin(){clearInterval(timer);timer=null;closeModal();}
+
+window.addEventListener('message',ev=>{
+  const d=ev.data||{};
+  if(d.action==='open'){
+    S=d.strings;st=d.state;
+    $('title').textContent=S.title;$('subtitle').textContent=S.subtitle;
+    $('divFreq').textContent=S.frequency;$('divCh').textContent=S.channels;
+    $('connect').textContent=S.connect;$('disconnect').textContent=S.disconnect;
+    $('hint').textContent=S.hint;$('x').title=S.close;
+    $('freq').value=st.freq||fmt(st.min);
+    $('unit').textContent=st.unit||'';
+    $('freq').maxLength=String(Math.floor(st.max)).length+(st.dec?st.dec+1:0);
+    pform=false;$('pname').classList.add('hidden');$('psave').classList.add('hidden');$('code').classList.add('hidden');$('code').value='';$('pname').value='';
+    $('code').placeholder=S.code;$('pname').placeholder=S.pname;$('ptoggle').textContent=S.private;$('divPriv').textContent=S.privateList;
+    $('divFav').textContent=S.favorites;$('flabel').placeholder=S.favLabel;$('flabel').value='';
+    $('radio').classList.remove('hidden');
+    $('hdr').title=S.move;
+    radioDrag.restore();
+    render();
+  }else if(d.action==='adminOpen'){
+    AS=d.strings;AD=d.data;tab='channels';expanded=new Set();
+    $('atitle').textContent=AS.title;$('asub').textContent=AS.subtitle;$('ahdr').title=AS.move;
+    $('arefresh').title=AS.refresh;$('ax').title=AS.close;$('asearch').placeholder=AS.search;$('asearch').value='';
+    $('amlabel').textContent=AS.minutes;$('amin').value=AD.muteDefault||10;
+    $('myes').textContent=AS.confirm_yes;$('mno').textContent=AS.confirm_no;
+    $('admin').classList.remove('hidden');adminDrag.restore();renderAdmin();startAdmin();
+  }else if(d.action==='adminData'){
+    AD=d.data;renderAdmin();
+  }else if(d.action==='state'){
+    st=d.state;render();
+  }else if(d.action==='close'){
+    radioDrag.stop();adminDrag.stop();stopAdmin();
+    $('radio').classList.add('hidden');$('admin').classList.add('hidden');
+  }
+});
+</script>
+</body>
+</html>

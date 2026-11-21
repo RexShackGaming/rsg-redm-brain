@@ -188,6 +188,109 @@ end)
 exports('IsPlayerMuted', function(src) return isPlayerMuted(tonumber(src)) end)
 
 ---------------------------------------------------------------------
+-- Radio channels (audio only: other resources decide who may join, e.g. rsg-radio)
+---------------------------------------------------------------------
+local R                 = Config.Radio
+local radios            = {} -- [freq] = { members = { src, ... } }
+local playerRadio       = {} -- [src] = freq
+local radioTalking      = {} -- [src] = true while transmitting
+local radioTalkCooldown = {} -- [src] = GetGameTimer() when the next transmit start is allowed
+
+local function normFreq(freq)
+    if freq == nil then return nil end
+    freq = tostring(freq):sub(1, 32)
+    return freq ~= '' and freq or nil
+end
+
+local function syncRadio(freq)
+    local ch = radios[freq]
+    if not ch then return end
+    for _, m in ipairs(ch.members) do
+        TriggerClientEvent('rsg-voice:client:radioUpdate', m, { freq = freq, members = ch.members })
+    end
+end
+
+-- quiet = true skips the radioChanged event (used when switching channel)
+local function leaveRadio(src, quiet)
+    local freq = playerRadio[src]
+    local ch = freq and radios[freq]
+    playerRadio[src] = nil
+    radioTalkCooldown[src] = nil
+    if not ch then return false end
+
+    for i, m in ipairs(ch.members) do
+        if m == src then table.remove(ch.members, i) break end
+    end
+    if radioTalking[src] then
+        radioTalking[src] = nil
+        for _, m in ipairs(ch.members) do TriggerClientEvent('rsg-voice:client:radioTalk', m, src, false) end
+    end
+    if GetPlayerName(src) then TriggerClientEvent('rsg-voice:client:radioUpdate', src, nil) end
+    if #ch.members == 0 then radios[freq] = nil else syncRadio(freq) end
+    if not quiet then TriggerEvent('rsg-voice:server:radioChanged', src, nil, freq) end
+    return true
+end
+
+local function joinRadio(src, freq)
+    src, freq = tonumber(src), normFreq(freq)
+    if not R.Enabled then return false, 'disabled' end
+    if not src or not freq or not GetPlayerName(src) then return false, 'invalid' end
+    local old = playerRadio[src]
+    if old == freq then return true end
+    local ch = radios[freq]
+    if ch and #ch.members >= R.MaxMembers then return false, 'full' end
+
+    if old then leaveRadio(src, true) end
+    ch = radios[freq]
+    if not ch then
+        ch = { members = {} }
+        radios[freq] = ch
+    end
+    ch.members[#ch.members + 1] = src
+    playerRadio[src] = freq
+    syncRadio(freq)
+    TriggerEvent('rsg-voice:server:radioChanged', src, freq, old)
+    return true
+end
+
+-- exports['rsg-voice']:JoinRadio(src, freq)  -> ok, reason ('disabled' | 'invalid' | 'full')
+exports('JoinRadio', joinRadio)
+-- exports['rsg-voice']:LeaveRadio(src)       -> true if the player was on a channel
+exports('LeaveRadio', function(src) return leaveRadio(tonumber(src)) end)
+-- exports['rsg-voice']:GetPlayerRadio(src)   -> frequency string or nil
+exports('GetPlayerRadio', function(src) return playerRadio[tonumber(src)] end)
+-- exports['rsg-voice']:GetRadioMembers(freq) -> { src, ... } or nil
+exports('GetRadioMembers', function(freq)
+    local ch = radios[normFreq(freq)]
+    if not ch then return nil end
+    local list = {}
+    for i, m in ipairs(ch.members) do list[i] = m end
+    return list
+end)
+
+-- A transmitting player tells the server so the channel can raise their volume (works even when out of streaming range)
+RegisterNetEvent('rsg-voice:server:radioTalk', function(state)
+    local src = source
+    local ch = playerRadio[src] and radios[playerRadio[src]]
+    if not ch then return end
+    state = state == true
+    if state and isPlayerMuted(src) then return end
+    if (radioTalking[src] == true) == state then return end
+    local now = GetGameTimer()
+    if state then
+        if (radioTalkCooldown[src] or 0) > now then return end
+        radioTalkCooldown[src] = now + 100
+    end
+    radioTalking[src] = state or nil
+    for _, m in ipairs(ch.members) do
+        if m ~= src then TriggerClientEvent('rsg-voice:client:radioTalk', m, src, state) end
+    end
+end)
+
+AddEventHandler('playerDropped', function() leaveRadio(source) end)
+AddEventHandler('RSGCore:Server:OnPlayerUnload', function(src) leaveRadio(src) end)
+
+---------------------------------------------------------------------
 -- Riding party
 ---------------------------------------------------------------------
 local P               = Config.Party

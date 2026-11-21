@@ -62,5 +62,7 @@
     "cl_waypoint_arrived": "Ai ajuns la punctul grupului",
     "cl_waypoint_cooldown": "Așteaptă puțin înainte să partajezi din nou",
     "cl_waypoint_blip": "Punct de grup (%s)",
-    "ui_party_share": "Partajează punct"
+    "ui_party_share": "Partajează punct",
+    "ui_radio": "RADIO",
+    "ui_radio_key": "Transmitere radio (ține apăsat)"
 }

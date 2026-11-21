@@ -62,5 +62,7 @@
     "cl_waypoint_arrived": "Du hast den Gruppen-Wegpunkt erreicht",
     "cl_waypoint_cooldown": "Warte kurz, bevor du erneut teilst",
     "cl_waypoint_blip": "Gruppen-Wegpunkt (%s)",
-    "ui_party_share": "Wegpunkt teilen"
+    "ui_party_share": "Wegpunkt teilen",
+    "ui_radio": "FUNK",
+    "ui_radio_key": "Funk senden (halten)"
 }

@@ -40,6 +40,12 @@ html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden
 #v.ptalk{border-color:var(--rdr-amber)}
 #v.ptalk #ptag{color:var(--rdr-amber);border-color:var(--rdr-amber)}
 #v.ptalk #dot{background:radial-gradient(circle,#eec06a,var(--rdr-amber));box-shadow:0 0 8px var(--rdr-amber);border-color:var(--rdr-amber)}
+/* HUD radio tag */
+#rtag{display:none;padding:1px 6px;border:1px solid var(--rdr-gold-dim);border-radius:2px;font-size:10px;letter-spacing:1px;color:var(--rdr-muted)}
+#rtag.show{display:inline-block}
+#v.rtalk{border-color:var(--rdr-cost-ok)}
+#v.rtalk #rtag{color:var(--rdr-cost-ok);border-color:var(--rdr-cost-ok)}
+#v.rtalk #dot{background:radial-gradient(circle,#7fcf82,var(--rdr-cost-ok));box-shadow:0 0 8px var(--rdr-cost-ok);border-color:var(--rdr-cost-ok)}
 /* Party menu */
 #party{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:420px;padding:18px 20px 20px;pointer-events:auto}
 .hdr{display:flex;align-items:center;justify-content:space-between}
@@ -88,7 +94,7 @@ html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden
 <body>
 <div id="root">
   <div id="hint" class="panel hidden"></div>
-  <div id="v" class="panel hidden"><div id="dot"></div><span id="label"></span><div id="bars"></div><span id="ptag"></span></div>
+  <div id="v" class="panel hidden"><div id="dot"></div><span id="label"></span><div id="bars"></div><span id="ptag"></span><span id="rtag"></span></div>
   <div id="party" class="panel hidden"></div>
   <div id="invite" class="panel hidden"><h2 id="ivT"></h2><div class="ink"></div><p id="ivB"></p>
     <div class="track"><div class="fill" id="ivF"></div></div>
@@ -145,7 +151,7 @@ window.addEventListener('keydown',e=>{
 });
 
 /* ---------- Riding party ---------- */
-const party=document.getElementById('party'),ptag=document.getElementById('ptag');
+const party=document.getElementById('party'),ptag=document.getElementById('ptag'),rtag=document.getElementById('rtag');
 let S={},PD=null;
 const post=(n,b={})=>fetch(`https://${GetParentResourceName()}/${n}`,{method:'POST',body:JSON.stringify(b)}).catch(()=>{});
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -195,6 +201,8 @@ window.addEventListener('message',({data:d})=>{
     case 'partyClose':party.classList.add('hidden');break;
     case 'partyHud':ptag.textContent=d.count>1?`⚑ ${d.count}`:'';ptag.classList.toggle('show',d.count>1);break;
     case 'partyTalk':v.classList.toggle('ptalk',!!d.state);break;
+    case 'radioHud':rtag.textContent=d.text||'';rtag.classList.toggle('show',!!d.text);break;
+    case 'radioTalk':v.classList.toggle('rtalk',!!d.state);break;
   }
 });
 
@@ -216,6 +224,57 @@ window.addEventListener('message',({data:d})=>{
     inv.classList.remove('hidden');
   }else if(d.action==='inviteClose')inv.classList.add('hidden');
 });
+</script>
+<script>
+/* Radio static: squelch bursts and a low hiss, synthesised with WebAudio */
+(()=>{
+let ctx=null,buf=null,hissNode=null;const want={in:false,self:false};
+function ac(){
+  if(!ctx){
+    ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const len=ctx.sampleRate*2;buf=ctx.createBuffer(1,len,ctx.sampleRate);
+    const d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+  }
+  if(ctx.state==='suspended')ctx.resume();
+  return ctx;
+}
+function noise(){
+  const c=ac(),src=c.createBufferSource();src.buffer=buf;src.loop=true;
+  const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=500;
+  const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;
+  const g=c.createGain();g.gain.value=0;
+  src.connect(hp);hp.connect(lp);lp.connect(g);g.connect(c.destination);src.start();
+  return {src,g};
+}
+function burst(vol,ms){
+  const c=ac(),n=noise(),t=c.currentTime,end=t+ms/1000;
+  n.g.gain.setValueAtTime(0,t);n.g.gain.linearRampToValueAtTime(vol,t+0.005);
+  n.g.gain.setValueAtTime(vol,end-0.03);n.g.gain.linearRampToValueAtTime(0,end);
+  n.src.stop(end+0.05);
+}
+function hiss(on,vol){
+  const c=ac();
+  if(on){
+    if(hissNode)return;
+    hissNode=noise();const t=c.currentTime;
+    hissNode.g.gain.setValueAtTime(0,t);hissNode.g.gain.linearRampToValueAtTime(vol*0.35,t+0.06);
+  }else if(hissNode){
+    const n=hissNode;hissNode=null;const t=c.currentTime;
+    n.g.gain.cancelScheduledValues(t);n.g.gain.setValueAtTime(n.g.gain.value,t);
+    n.g.gain.linearRampToValueAtTime(0,t+0.05);n.src.stop(t+0.08);
+  }
+}
+window.addEventListener('message',e=>{
+  const d=e.data||{};
+  if(d.action!=='radioStatic')return;
+  const vol=Math.max(0,Math.min(1,+d.volume||0)),src=d.source==='self'?'self':'in';
+  try{
+    if(d.squelch)burst(vol,d.state?80:110);
+    want[src]=!!(d.state&&d.hiss);
+    hiss(want.in||want.self,vol);
+  }catch(err){}
+});
+})();
 </script>
 </body>
 </html>

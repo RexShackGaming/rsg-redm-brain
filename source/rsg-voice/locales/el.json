@@ -62,5 +62,7 @@
     "cl_waypoint_arrived": "Έφτασες στο σημείο της ομάδας",
     "cl_waypoint_cooldown": "Περίμενε λίγο πριν μοιραστείς ξανά",
     "cl_waypoint_blip": "Σημείο ομάδας (%s)",
-    "ui_party_share": "Κοινοποίηση σημείου"
+    "ui_party_share": "Κοινοποίηση σημείου",
+    "ui_radio": "ΡΑΔΙΟ",
+    "ui_radio_key": "Εκπομπή ραδιοφώνου (κράτημα)"
 }

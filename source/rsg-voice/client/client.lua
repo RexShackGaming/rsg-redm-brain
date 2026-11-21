@@ -12,6 +12,10 @@ local loaded      = false
 local hudVisible  = GetResourceKvpInt('rsg-voice:hudHidden') ~= 1
 local P           = Config.Party
 local party       = nil   -- party payload from the server (nil when not in a party)
+local RC          = Config.Radio
+local radio       = nil   -- { freq, members = { [serverId] = true } } while on a radio channel
+local radioTalkers = {}   -- [serverId] = true while they transmit on my channel
+local radioTalk   = false -- I am transmitting on the radio
 
 -- NUI focus owners: only release focus when nothing needs it
 local focus = { edit = false, menu = false, invite = false }
@@ -247,6 +251,7 @@ local function clearOverrides()
 end
 
 local function desiredVolume(sid, ped, myPos, myInterior)
+    if radioTalkers[sid] then return 1.0 end
     if party and Player(sid).state.partyTalk and isMember(sid)
         and #(myPos - GetEntityCoords(ped)) <= P.TalkRange then
         return 1.0
@@ -277,6 +282,10 @@ local function updateVolumes()
             end
         end
     end
+    for sid in pairs(radioTalkers) do -- radio talkers can be far away / not streamed in
+        seen[sid] = true
+        setVolume(sid, 1.0)
+    end
     for sid in pairs(overrides) do
         if not seen[sid] then setVolume(sid, nil) end -- left the area
     end
@@ -296,6 +305,180 @@ AddStateBagChangeHandler('partyTalk', nil, function(bagName)
     local ply = GetPlayerFromStateBagName(bagName)
     if ply == 0 or GetPlayerServerId(ply) == myServerId then return end
     SetTimeout(0, updateVolumes) -- let the bag value land first
+end)
+
+---------------------------------------------------------------------
+-- Radio channels
+-- Membership is decided by the server (JoinRadio / LeaveRadio exports). Hold RC.TalkKey to transmit.
+---------------------------------------------------------------------
+local RADIO_TARGET = 3 -- mumble voice target (party talk uses 2)
+
+-- Radio static (played by the HUD page). source: 'in' = someone on your channel, 'self' = you
+local function sendRadioStatic(source, on)
+    local S = RC.Static
+    if not S or not S.Enabled then return end
+    SendNUIMessage({
+        action = 'radioStatic', source = source, state = on, volume = S.Volume,
+        hiss = source == 'self' and S.SelfHiss or S.Hiss, squelch = S.Squelch,
+    })
+end
+
+local function sendRadioHud()
+    SendNUIMessage({
+        action = 'radioHud',
+        text   = (loaded and radio) and ('%s %s'):format(locale('ui_radio'), radio.freq) or '',
+    })
+end
+
+local function buildRadioTarget()
+    MumbleClearVoiceTarget(RADIO_TARGET)
+    if not radio then return end
+    for sid in pairs(radio.members) do
+        if sid ~= myServerId then MumbleAddVoiceTargetPlayerByServerId(RADIO_TARGET, sid) end
+    end
+    if RC.NearbyHear then -- people next to you still hear you speak
+        local myPos = GetEntityCoords(PlayerPedId())
+        local range = Ranges[currentIdx].range
+        for _, ply in ipairs(GetActivePlayers()) do
+            local sid = GetPlayerServerId(ply)
+            if sid ~= myServerId and not radio.members[sid] then
+                local ped = GetPlayerPed(ply)
+                if ped ~= 0 and #(myPos - GetEntityCoords(ped)) <= range then
+                    MumbleAddVoiceTargetPlayerByServerId(RADIO_TARGET, sid)
+                end
+            end
+        end
+    end
+end
+
+local function setRadioTalk(state)
+    if state == radioTalk then return end
+    radioTalk = state
+    if state then
+        buildRadioTarget()
+        MumbleSetVoiceTarget(RADIO_TARGET)
+    else
+        MumbleSetVoiceTarget(0)
+        MumbleClearVoiceTarget(RADIO_TARGET)
+    end
+    TriggerServerEvent('rsg-voice:server:radioTalk', state)
+    sendRadioStatic('self', state)
+    SendNUIMessage({ action = 'radioTalk', state = state })
+    TriggerEvent('rsg-voice:client:onRadioTalk', state) -- local event for other resources (animations, sounds)
+end
+
+RegisterNetEvent('rsg-voice:client:radioUpdate', function(data)
+    if GetInvokingResource() then return end -- only accept from server
+    local hadTalkers = next(radioTalkers) ~= nil
+    if not data or not data.freq then
+        radio = nil
+        radioTalkers = {}
+        if radioTalk then setRadioTalk(false) end
+    else
+        local set = {}
+        for _, sid in ipairs(data.members or {}) do set[sid] = true end
+        radio = { freq = tostring(data.freq), members = set }
+        for sid in pairs(radioTalkers) do
+            if not set[sid] then radioTalkers[sid] = nil end
+        end
+    end
+    if hadTalkers and next(radioTalkers) == nil then sendRadioStatic('in', false) end
+    sendRadioHud()
+    SetTimeout(0, updateVolumes)
+end)
+
+RegisterNetEvent('rsg-voice:client:radioTalk', function(sid, state)
+    if GetInvokingResource() then return end
+    if not radio or sid == myServerId or not radio.members[sid] then return end
+    local before = next(radioTalkers) ~= nil
+    radioTalkers[sid] = state == true or nil
+    local after = next(radioTalkers) ~= nil
+    if before ~= after then sendRadioStatic('in', after) end
+    SetTimeout(0, updateVolumes)
+end)
+
+-- Transmit key. Preferred: RegisterKeyMapping (binds by key name, rebindable in the game's key settings, does not
+-- depend on a control hash the game may not report). Fallback: the control hash in Config.Radio.TalkKey.
+local radioKeyDown = false
+if RC.UseKeyMapping then
+    RegisterCommand('+rsgvoice_radio', function() radioKeyDown = true end, false)
+    RegisterCommand('-rsgvoice_radio', function() radioKeyDown = false end, false)
+    RegisterKeyMapping('+rsgvoice_radio', locale('ui_radio_key'), 'keyboard', RC.Key or 'O')
+end
+local function radioKeyHeld()
+    if RC.UseKeyMapping then return radioKeyDown end
+    return IsControlPressed(0, RC.TalkKey)
+end
+
+-- Radio key debug (Config.Radio.Debug): prints in F8 when the transmit key state changes and what blocks it
+CreateThread(function()
+    local last, beat, lastPressed = nil, 0, ''
+    while true do
+        if RC.Debug then
+            local down     = radioKeyHeld()
+            local disabled = IsDisabledControlPressed(0, RC.TalkKey)
+            local why = 'ok'
+            if not loaded then why = 'voice not loaded'
+            elseif not RC.Enabled then why = 'Config.Radio.Enabled is false'
+            elseif not radio then why = 'not on a radio channel'
+            elseif focus.menu or focus.invite then why = 'menu has focus'
+            elseif isMuted() then why = 'muted'
+            elseif LocalPlayer.state.partyTalk then why = 'party talk active'
+            end
+            local line = ('key %s down=%s disabled-down=%s | %s | transmitting=%s'):format(
+                RC.UseKeyMapping and ('"' .. tostring(RC.Key) .. '" (key mapping)') or ('0x%X'):format(RC.TalkKey),
+                tostring(down), tostring(disabled), why, tostring(radioTalk))
+            local now = GetGameTimer()
+            if (line ~= last and (down or disabled or radioTalk or (last and last:find('down=true'))))
+                or now >= beat then
+                beat = now + 3000 -- status line every 3 s even when nothing is pressed
+                print(('^3[rsg-voice radio debug]^7 %s'):format(line))
+            end
+            last = line
+            -- key finder: names of every known key the game currently reports as pressed
+            local names = {}
+            for name, hash in pairs((RSGCore.Shared and RSGCore.Shared.Keybinds) or {}) do
+                if IsControlPressed(0, hash) or IsDisabledControlPressed(0, hash) then names[#names + 1] = name end
+            end
+            table.sort(names)
+            local pressed = table.concat(names, '+')
+            if pressed ~= lastPressed then
+                lastPressed = pressed
+                if pressed ~= '' then print(('^3[rsg-voice radio debug]^7 keys reported pressed: %s'):format(pressed)) end
+            end
+            Wait(0)
+        else
+            Wait(1000)
+        end
+    end
+end)
+
+-- Hold-to-talk key
+CreateThread(function()
+    local nextRebuild = 0
+    while true do
+        if loaded and RC.Enabled and radio then
+            local held = not focus.menu and not focus.invite and not isMuted()
+                and not LocalPlayer.state.partyTalk and radioKeyHeld()
+            if held ~= radioTalk then setRadioTalk(held) end
+            if radioTalk and GetGameTimer() >= nextRebuild then
+                nextRebuild = GetGameTimer() + 1000
+                buildRadioTarget() -- people moving in/out of your voice range
+            end
+            Wait(0)
+        else
+            if radioTalk then setRadioTalk(false) end
+            Wait(500)
+        end
+    end
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    if radioTalk then
+        MumbleSetVoiceTarget(0)
+        MumbleClearVoiceTarget(RADIO_TARGET)
+    end
 end)
 
 ---------------------------------------------------------------------
@@ -325,7 +508,8 @@ if Config.TalkIcon.Enabled then
                             local scale = 1.0 - (#(myPos - c) / T.Distance) * 0.5
                             local w = T.Size * scale
                             local pt = n.sid == myServerId and LocalPlayer.state.partyTalk or (party and Player(n.sid).state.partyTalk and isMember(n.sid))
-                            local col = pt and T.PartyColour or T.Colour
+                            local rt = radioTalkers[n.sid] or (n.sid == myServerId and radioTalk)
+                            local col = rt and T.RadioColour or (pt and T.PartyColour or T.Colour)
                             DrawSprite(T.Dict, T.Texture, x, y, w, w * 1.77, 0.0, col.r, col.g, col.b, col.a, false)
                         end
                     end
@@ -363,6 +547,15 @@ exports('GetPartyMembers', function()
     return list
 end)
 exports('IsInParty', function() return party ~= nil end)
+-- GetRadio() = { freq = 'x', members = { serverId, ... } } while on a radio channel, otherwise nil
+exports('GetRadio', function()
+    if not radio then return nil end
+    local list = {}
+    for sid in pairs(radio.members) do list[#list + 1] = sid end
+    return { freq = radio.freq, members = list }
+end)
+exports('IsRadioTalking', function() return radioTalk end)
+exports('GetRadioTalkKey', function() return RC.TalkKey end) -- so other NUIs can keep the radio key working
 
 ---------------------------------------------------------------------
 -- Riding party
@@ -619,7 +812,7 @@ local nextRangeCheck = 0
 CreateThread(function()
     while true do
         if loaded and party and #party.members > 1 then
-            local held = not focus.menu and not focus.invite and not isMuted() and IsControlPressed(0, P.TalkKey)
+            local held = not focus.menu and not focus.invite and not isMuted() and not radioTalk and IsControlPressed(0, P.TalkKey)
             if held ~= partyTalk then setPartyTalk(held) end
             if partyTalk and GetGameTimer() >= nextRangeCheck then
                 nextRangeCheck = GetGameTimer() + 1000
