@@ -64,5 +64,6 @@
     "cl_waypoint_blip": "Groepswaypoint (%s)",
     "ui_party_share": "Waypoint delen",
     "ui_radio": "RADIO",
-    "ui_radio_key": "Radio zenden (vasthouden)"
+    "ui_radio_key": "Radio zenden (vasthouden)",
+    "cl_radio_timeout": "Zendlimiet van %s seconden bereikt, laat de toets los"
 }

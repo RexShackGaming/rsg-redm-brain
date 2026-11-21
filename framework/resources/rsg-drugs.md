@@ -1,6 +1,6 @@
 # rsg-drugs
 
-Version 3.1.2. rsg-drugs
+Version 3.1.3. rsg-drugs
 
 Drug production for RSG Framework (cannabis lab: drying, processing, packing bags & bricks with hired crew) plus a built-in player & NPC addiction system with rehab. `rsg-core` (3.0.3+), `rsg-inventory`, `rsg-target`, `oxmysql`. Optional: `rsg-consume` (alcohol), `rsg-hud` (stress relief), `rsg-weapons` (re-equip after rehab), `rsg-farming` (weed seeds). No ox_lib needed. 1. `ensure rsg-drugs` (af
 
@@ -42,4 +42,4 @@ Has NUI (`ui_page`).
 
 ## Database tables
 
-`rsg_drugs_labs`
+`rsg_drugs_labs`, `rsg_drugs_state`

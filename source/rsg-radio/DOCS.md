@@ -1,4 +1,4 @@
-# rsg-radio – Docs (v3.0.0)
+# rsg-radio – Docs (v3.1.0)
 
 Technical reference for server owners and developers. For a short overview and install steps see [README.md](README.md).
 
@@ -20,6 +20,8 @@ Technical reference for server owners and developers. For a short overview and i
 15. [Troubleshooting](#15-troubleshooting)
 16. [Private channels, hotkeys, staff and admin panel](#16-private-channels-hotkeys-staff-and-admin-panel)
 17. [Known limitations](#17-known-limitations)
+18. [Features added in 3.1.0](#18-features-added-in-310)
+19. [Examples for the 3.1.0 features](#19-examples-for-the-310-features)
 
 ---
 
@@ -47,18 +49,18 @@ Requires rsg-core 3.0.3+, rsg-inventory and **rsg-voice 3.1.3+** (3.1.3 binds th
 | File | Purpose |
 |---|---|
 | `fxmanifest.lua` | Manifest; depends on `rsg-core`, `rsg-inventory`, `rsg-voice` |
-| `shared/config.lua` | Item, command, frequency format, favorites, restricted channels, key settings |
+| `shared/config.lua` | Item, command, frequency format, favorites, restricted channels and ranges, HUD, recents, incapacitation, battery, interference, volume, handheld, private channels, staff, key settings |
 | `install.sql` | Schema of `rsg_radio_private` (same as the automatic build) |
-| `server/server.lua` | Database build, private channels, staff commands, live updates, item registration/use, frequency validation, joining and leaving through rsg-voice, favorites, periodic access checks, export |
-| `client/client.lua` | Command, NUI focus with push-to-talk whitelist, NUI callbacks that forward to the server |
-| `html/index.html` | Tuning panel (NUI): frequency tuner, favorites, channel list, drag-to-move |
-| `installation/shared_items.lua` | Item line for manual install (`Config.RegisterItem = false`) |
+| `server/server.lua` | Database build, private channels, staff commands, live updates, item registration/use, frequency validation, joining and leaving through rsg-voice, favorites, recents, reserved ranges, instant and periodic access checks, downed/cuffed/hogtied handling, battery, HUD data, volume settings, exports |
+| `client/client.lua` | Command, NUI focus with push-to-talk whitelist, NUI callbacks that forward to the server, HUD, volume/mute and signal hand-over to rsg-voice, hogtied report, interference zones, handheld prop and animation |
+| `html/index.html` | Tuning panel and HUD (NUI): frequency tuner, search, favorites, recents, channel list, volume, compact mode, drag-to-move, staff panel |
+| `installation/shared_items.lua` | Item lines for manual install (`Config.RegisterItem = false`): `radio` and the optional `radio_battery` |
 | `locales/*.json` | en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru (identical keys) |
 | `CHANGELOG.md` | Version history |
 
 ## 3. Installation
 
-1. Update **rsg-voice to 3.1.3 or later**.
+1. Update **rsg-voice to 3.2.0 or later** (volume, mute, signal, call priority and the `radioTalkChanged` event this resource uses).
 2. Start order:
    ```cfg
    ensure rsg-core
@@ -91,8 +93,17 @@ Requires rsg-core 3.0.3+, rsg-inventory and **rsg-voice 3.1.3+** (3.1.3 binds th
 | `Config.TransmitKeyLabel` | `'O'` | Text of the "Hold O to transmit" hint only. Keep in line with rsg-voice `Config.Radio.Key` |
 | `Config.AllowPushToTalkWhileOpen` | `true` | While the panel is open: `SetNuiFocusKeepInput(true)` plus a control whitelist so voice keys keep working |
 | `Config.PushToTalkControls` | `{ 0x4BC9DABB }` | Controls left enabled while the panel is open (N, push-to-talk) |
+| `Config.Ranges` | `{}` | Reserved ranges: `min`, `max`, `label` (locale key) plus the channel rules `jobs`, `jobtypes`, `gangs`, `onduty`, `minGrade`, `permission`. See [18.1](#181-reserved-ranges-configranges) |
+| `Config.Hud` | table | `Enabled` (true), `Command` (`'radiohud'`, `''` = none), `Names` (`'character'`, `'callsign'`, `'id'`), `MaxRows` (8), `Left` / `Top` (18 / 18, default position in pixels) |
+| `Config.Recents` | `{ Max = 8 }` | Recent frequencies kept per character, `0` = off |
+| `Config.Incapacitated` | `{ Dead = true, Cuffed = true, Hogtied = true, Rejoin = false }` | Which states drop a player off the radio, and whether they are put back when they recover |
+| `Config.Battery` | `Enabled = false` | `DrainInterval` (60 s), `DrainPerMinute` (0.5), `TransmitDrainPerMinute` (4.0), `LowWarning` (20), `ChargeItem` (`'radio_battery'`), `ChargeAmount` (100), `ChargeItemDefinition` |
+| `Config.Interference` | `Enabled = false` | `Zones`: `{ label, coords (vector3), radius, signal (0.0-1.0), falloff (bool) }` |
+| `Config.Volume` | `{ Default = 100, Step = 5 }` | Default radio volume in percent and the slider step |
+| `Config.Handheld` | `Enabled = false` | `Model` (nil = no prop), `Bone`, `Offset`, `Rotation`, `Anim` / `AnimFemale` (`{ dict, clip, flag }`), `OnMount` |
+| `Config.Private`, `Config.Staff`, `Config.FavoriteHotkeys`, `Config.AutoDatabase`, `Config.MultiJob` | tables | See [section 16.1](#161-config-options) |
 
-Things that live in **rsg-voice** `Config.Radio`: `Enabled`, `UseKeyMapping`, `Key` (default `'O'`), `TalkKey` (fallback control hash), `NearbyHear`, `MaxMembers`, `Static` (radio sound), `Debug`.
+Things that live in **rsg-voice**: `Config.Radio` (`Enabled`, `UseKeyMapping`, `Key` default `'O'`, `TalkKey` fallback control hash, `NearbyHear`, `MaxMembers`, `Static` radio sound, `MaxTransmitSeconds` push-to-talk limit, `TransmitCooldown`, `Debug`) and `Config.Priority` (`RadioVsParty`, `Call`).
 
 ## 5. Frequencies
 
@@ -172,7 +183,7 @@ for _, f in ipairs(favs) do print(f.freq, f.label) end
 1. **Open**: the player uses the item or `/radio`. The client calls the callback `rsg-radio:server:getState`. With no item the server returns nil and the client shows "You don't have a radio". Otherwise the panel opens with NUI focus. `SetNuiFocusKeepInput(true)` and a per-frame whitelist keep push-to-talk working (rsg-voice's transmit key is bound by name and works independently).
 2. **Join**: the NUI sends the frequency to the client, which fires `rsg-radio:server:join`. The server checks the player, the item, the frequency, and channel access, then calls `exports['rsg-voice']:JoinRadio(src, key)`. rsg-voice tells every member.
 3. **Transmit**: the player holds the radio key (default O, set in rsg-voice). Everyone on the channel hears them at full volume at any distance. The voice HUD tag turns green.
-4. **Checks**: every `Config.CheckInterval` seconds the server removes connected players who lost the item (`sv_lost_radio`) or their channel access (`sv_lost_access`: job change, off duty, gang change).
+4. **Checks**: the server re-checks a connected player the moment their inventory, job, gang, duty or metadata changes (batched, 250 ms) and every `Config.CheckInterval` seconds as a fallback. Players are removed when they lost the item (`sv_lost_radio`), are downed, cuffed or hogtied (`sv_lost_incap`), have a flat battery (`sv_batt_dead`) or lost channel access (`sv_lost_access`).
 5. **Leave / cleanup**: Switch off in the panel, logout, disconnect (rsg-voice also removes players on `playerDropped` and `RSGCore:Server:OnPlayerUnload`). If something else removes the player from the channel, rsg-radio clears its record and updates the panel (`rsg-voice:server:radioChanged`).
 6. **Restarts**: if rsg-voice restarts, rsg-radio rejoins everyone after 1.5 s. If rsg-radio restarts, it adopts players still on a channel in rsg-voice, and the next check removes those without the item.
 
@@ -183,6 +194,7 @@ for _, f in ipairs(favs) do print(f.freq, f.label) end
 | Export | Returns | Notes |
 |---|---|---|
 | `exports['rsg-radio']:GetFrequency(src)` | frequency string or `nil` | The frequency the player tuned in with this radio |
+| `exports['rsg-radio']:GetBattery(src)` | number 0-100 or `nil` | The charge of the player's radio. `nil` when `Config.Battery.Enabled` is false or the player has no radio |
 
 Voice-level functions are in rsg-voice: `JoinRadio(src, freq)`, `LeaveRadio(src)`, `GetPlayerRadio(src)`, `GetRadioMembers(freq)` (server), `GetRadio()`, `IsRadioTalking()`, `GetRadioTalkKey()` (client).
 
@@ -201,7 +213,13 @@ Voice-level functions are in rsg-voice: `JoinRadio(src, freq)`, `LeaveRadio(src)
 | `rsg-radio:server:removeFavorite` | server | `freq` (number) | Valid frequency. 300 ms cooldown |
 | `rsg-radio:client:open` | client | none | Sent by the server when the item is used. Ignored if triggered by another resource |
 | `rsg-radio:client:state` | client | state or `nil` | New state for an open panel; `nil` closes it. Ignored if triggered by another resource |
-| `rsg-voice:server:radioChanged` | server (listened) | `src, newFreq, oldFreq` | Used to keep `GetFrequency` correct |
+| `rsg-radio:server:hogtied` | server | `state` (boolean) | Rejected unless a boolean. 400 ms cooldown. Only affects the sender's own radio |
+| `rsg-radio:server:setSettings` | server | `vol` (0-100), `muted` (boolean) | Clamped, ignored when unchanged. 250 ms cooldown. Stored in `metadata.radiosettings` |
+| `rsg-radio:client:hud` | client | `{ freq, unit, members, battery }` or `nil` | Server to client only. Ignored if triggered by another resource |
+| `rsg-radio:client:battery` | client | `value` (0-100) | Server to client only. Ignored if triggered by another resource |
+| `rsg-voice:server:radioChanged` | server (listened) | `src, newFreq, oldFreq` | Used to keep `GetFrequency` correct and to refresh HUDs |
+| `rsg-voice:server:radioTalkChanged` | server (listened) | `src, state` | Server-only, fired by rsg-voice after it validated the transmit change. Used for the battery's transmit drain |
+| `rsg-voice:client:radioTalk` | client (listened) | `sid, state` | Who is speaking, for the HUD |
 | `rsg-voice:client:onRadioTalk` | client (rsg-voice) | `state` (bool) | Not used by rsg-radio; available for animations or sounds |
 
 ### 9.3 State object
@@ -222,6 +240,12 @@ Returned by the callback and pushed through `rsg-radio:client:state`:
         { freq = '446.0', label = 'Camp', usable = true },
     },
     maxFavorites = 10,
+    -- added in 3.1.0
+    recents = { { freq = '155.0', label = 'Lawmen', usable = true, locked = false } },
+    ranges = { { min = '160.0', max = '169.9', label = 'Lawmen' } },  -- reserved ranges this player may use
+    reservedRanges = { { min = '170.0', max = '174.9' } },            -- reserved ranges this player may not use
+    vol = 100, muted = false, volStep = 5,                            -- radio volume (percent) and mute
+    battery = 87.5,                                                   -- nil when batteries are off
 }
 ```
 
@@ -310,9 +334,12 @@ What the server enforces on every request:
 | Player owns the item | join, addFavorite, getState |
 | Frequency is a number, not NaN or infinity, at most `Decimals` decimals, inside `Min`–`Max` | join, addFavorite, removeFavorite |
 | Channel access (job, type, gang, on duty) | join, addFavorite, periodic check |
-| Per-player cooldowns (500 ms join/leave, 300 ms favorites) | join, leave, favorites |
+| Per-player cooldowns (500 ms join/leave, 300 ms favorites, 1 s private channels, 400 ms hogtie report, 250 ms volume save) | join, leave, favorites, private, hogtied, setSettings |
+| Not downed, cuffed or hogtied; battery not flat | join, rejoin, instant and periodic checks |
+| Volume clamped to 0-100, mute is a boolean, nothing written when unchanged | setSettings |
+| Battery is read from and written to the radio item on the server only; the client only receives the number | battery |
 | Favorites count, name cleaned and length-bounded | addFavorite |
-| Radio and access re-checked every `CheckInterval` seconds | periodic check |
+| Radio and access re-checked the moment inventory, job, gang, duty or metadata changes, and every `CheckInterval` seconds as a fallback | instant check, periodic check |
 
 Other points:
 
@@ -320,13 +347,16 @@ Other points:
 - Net events from other resources are ignored for the two client events (`GetInvokingResource`).
 - The NUI escapes all text it renders (channel names, favorite names).
 - Config is validated at start. Bad channel entries are skipped with a console warning instead of breaking the resource.
+- The client-reported hogtied flag can only be used to drop the sender from their own radio; it grants nothing.
+- The HUD names come from the server (`Config.Hud.Names`), cleaned and length-bounded; the client cannot choose what others see.
 - Voice routing itself is done client-side by rsg-voice (as for party talk), so a modified client could aim its voice at players who are not on its channel. Do not use the radio for anything that must stay secret. This is a property of the voice layer, not of rsg-radio.
 - Other scripts: never call `JoinRadio` from a net event without checking the player yourself.
 
 ## 12. Performance
 
 - Client: idle at `Wait(250)`. A per-frame control whitelist runs **only** while the panel is open. The panel itself is static HTML.
-- Server: one 10-second loop over connected players (one inventory check each). State building does one `GetRadioMembers` per restricted channel, only when a panel opens or a player joins/leaves/changes favorites.
+- Server: access is re-checked on change events (batched, 250 ms per player, nothing for players not on the radio) plus a fallback loop every `CheckInterval` seconds (one inventory check per connected player). The battery loop runs every `DrainInterval` seconds and only touches connected players when `Config.Battery.Enabled`. HUD updates are batched (150 ms) per channel. Open panels are refreshed at most once per `LiveUpdateDelay`.
+- State building does one `GetRadioMembers` per restricted channel, only when a panel opens or a player joins/leaves/changes favorites.
 - Everything per-player is cleaned on `playerDropped` and `RSGCore:Server:OnPlayerUnload`.
 
 ## 13. Localisation
@@ -435,7 +465,140 @@ If `Config.Staff.Webhook` is an http(s) URL, each action is posted to it (never 
 - The panel position is stored in the client's NUI storage (per machine, not per character).
 - The character's lips do not animate while transmitting; no verified native for this is documented in the project's RedM knowledge base.
 - A transmitting player's voice is routed client-side by rsg-voice; the radio is not a secure channel.
+- Signal interference is worked out on the client. A modified client can ignore it, as it can ignore any client-side voice rule.
+- Your own signal affects what you hear and whether you can transmit. It does not make you sound worse to the others on the channel.
+- No handheld animation or prop is configured by default. The suggested clip (a neck rub, not a real radio pose) is untested in game; props are optional and their offsets are untuned.
+- Hogtied is the only incapacitation read from the client (a native, not stored by any script). A modified client can hide it; dead and cuffed come from server metadata.
+- Weather based interference is not included.
+- The push-to-talk time limit (`Config.Radio.MaxTransmitSeconds` in rsg-voice) is enforced by the client, like voice routing, so a modified client can ignore it.
+- If a player carries several radios, battery and rechargers act on the first radio stack the inventory returns.
 
 ---
 
 Support: https://buymeacoffee.com/rexshack
+
+## 18. Features added in 3.1.0
+
+Needs **rsg-voice 3.2.0+**. The changelog has the short version.
+
+### 18.1 Reserved ranges (`Config.Ranges`)
+Each entry: `min`, `max` (inside `Config.Frequency`, at most `Decimals` decimals), optional `label` (locale key) and the channel rules `jobs`, `jobtypes`, `gangs`, `onduty`, `minGrade`, `permission`. A frequency in the range follows the entry's rules, and an explicit `Config.Channels` entry on a frequency inside the range wins. Private channels cannot be created inside a range. Invalid entries are skipped with a console warning. `permission = 'admin'` lets anyone with that rsg-core permission level in, whatever their job, duty or grade (it works on `Config.Channels` entries too). Players who may use a range see it in the channel list, others get the "restricted" hint when they type a frequency in it.
+
+### 18.2 Instant access updates
+The server listens to `RSGCore:Player:SetPlayerData` (fires on every inventory and metadata change), `RSGCore:Server:OnJobUpdate`, `RSGCore:Server:OnGangUpdate` and `RSGCore:Server:SetDuty`. For players who are connected (or waiting to rejoin) it re-runs the access check 250 ms later, once per burst. The `Config.CheckInterval` sweep stays as a fallback.
+
+### 18.3 Downed, cuffed and hogtied (`Config.Incapacitated`)
+| Condition | Source |
+|---|---|
+| Downed | `metadata.isdead` (rsg-medic) |
+| Cuffed | `metadata.ishandcuffed` (rsg-lawman) |
+| Hogtied | The client checks `IsPedHogtied` every 750 ms and sends `rsg-radio:server:hogtied (bool)` when it changes (bool only, 400 ms cooldown). It only affects the sender's own radio |
+
+While true the player is removed from the radio (`sv_lost_incap`) and cannot join (`sv_incap`). `Rejoin = true` remembers the channel and puts the player back (`sv_rejoined`) once they recover, if they still have the radio and access. Each flag has its own switch (`Dead`, `Cuffed`, `Hogtied`).
+
+### 18.4 Channel HUD (`Config.Hud`)
+When rsg-voice reports a channel change the server sends every member `rsg-radio:client:hud` with `{ freq, unit, members = { { id, name } }, battery }` (batched 150 ms), or `nil` when the player left. Names: `character` (first name and last initial), `callsign` (rsg-core `metadata.callsign`, falls back to character) or `id`. The client shows who is speaking from rsg-voice's `rsg-voice:client:radioTalk` events and its own `rsg-voice:client:onRadioTalk`. The HUD starts at `Config.Hud.Left`/`Top` (top left by default). While the radio panel is open it can be dragged and a double-click resets it; the position is kept in the NUI's localStorage (`rsg-radio:hudpos`). `/radiohud` (or the name in `Config.Hud.Command`) hides it for that player (client KVP `rsg-radio:hudHidden`).
+
+### 18.5 Recents, search and compact menu
+`Config.Recents.Max` frequencies are stored in `metadata.radiorecents` (newest first, saved on every successful join). Search and the compact toggle are client side only (the compact choice is kept in the NUI storage).
+
+### 18.6 Volume and mute
+`metadata.radiosettings = { vol = 0-100, muted = bool }`. The panel applies changes at once through the client exports `SetRadioVolume(0.0-1.0)` and `SetRadioMuted(bool)` of rsg-voice, then saves them (`rsg-radio:server:setSettings (vol, muted)`, 250 ms cooldown, validated and clamped). They are applied again when the character loads and when rsg-voice restarts. Muting only silences incoming radio. The slider and mute button are per player: each player sets their own.
+
+### 18.7 Battery (`Config.Battery`)
+The charge is `info.battery` (0 to 100) on the radio item; a radio without it counts as full. While tuned in it drains `DrainPerMinute`, plus `TransmitDrainPerMinute` for the time spent transmitting (measured from rsg-voice's server-only `rsg-voice:server:radioTalkChanged (src, state)` event), applied every `DrainInterval` seconds. A notice appears at `LowWarning`, a radio at 0 is dropped (`sv_batt_dead`) and cannot connect. Using `ChargeItem` with a radio in the inventory consumes one and adds `ChargeAmount` (refunded if the write fails). Enabling batteries makes the auto-registered radio item `unique`; if you registered the item yourself set `unique = true` too. The client receives `rsg-radio:client:battery (value)` for the HUD.
+
+### 18.8 Signal interference (`Config.Interference`)
+Zones are `{ coords, radius, signal, falloff }`. The weakest zone the player stands in decides their signal (1.0 clear, 0.0 none); with `falloff` it rises from `signal` at the centre to 1.0 at the edge. The client hands it to rsg-voice with `SetRadioSignal`, which scales the incoming volume (more static the weaker it is) and blocks transmitting and hearing at 0.0.
+
+### 18.9 Handheld radio (`Config.Handheld`)
+On `rsg-voice:client:onRadioTalk(true)` the client creates a networked prop (`Model`), attaches it to `Bone` with `Offset`/`Rotation` and plays `Anim` (`dict`, `clip`, `flag`; `AnimFemale` for female peds, falls back to `Anim`). `Model` is optional: leave it `nil` for the animation only. It is removed when the key is released, the player dies, ragdolls, swims, climbs, falls, mounts (unless `OnMount`), enters a wagon, leaves the channel or the resource stops. `Anim` and `AnimFemale` are `nil` by default, so nothing plays. The suggested clip is `rub_neck_01` from `amb_wander@code_human_wander@male@generic` / `@female@generic` with flag 18 (upper body, holds the last frame), found in the RedM brain's `ingameanims_list.lua`. The megaphone (`p_cs_megaphone01x`, clip `idle_hixon` in `script_mp@moonshiner@story_missions@moon1@ig4_megaphone`, flag 31) still works as an option; its offsets are zero and must be tuned.
+
+### 18.10 Call and party priority (rsg-voice and rsg-telephone)
+rsg-voice 3.2.0 adds `Config.Priority` (call blocks radio and party voice, and `RadioVsParty = 'first' | 'radio' | 'party'`) and `Config.Radio.MaxTransmitSeconds` / `TransmitCooldown`. rsg-telephone 3.1.1 calls `exports['rsg-voice']:SetCallActive(true/false)` for the length of a call. See the rsg-voice DOCS.
+
+### 18.11 Metadata keys
+`radiofavs` (favorites), `radiorecents` (recent frequencies), `radiosettings` (volume and mute).
+
+### 18.12 New events and exports
+| Name | Side | Payload |
+|---|---|---|
+| `rsg-radio:client:hud` | client | `{ freq, unit, members, battery }` or `nil` (server only) |
+| `rsg-radio:client:battery` | client | `value` 0-100 (server only) |
+| `rsg-radio:server:hogtied` | server | `state` (boolean) |
+| `rsg-radio:server:setSettings` | server | `vol` (0-100), `muted` (boolean) |
+| `GetBattery(src)` | server export | see 9.1 |
+NUI: messages `hud`, `battery`; callbacks `setVolume {vol, muted}` (applies locally) and `saveVolume` (stores).
+
+## 19. Examples for the 3.1.0 features
+
+### 19.1 Config
+```lua
+-- Reserve 160.0-169.9 for lawmen on duty (rank 1+) and 170.0-174.9 for medics, admins can use both
+Config.Ranges = {
+    { min = 160.0, max = 169.9, label = 'range_lawman', jobtypes = { 'leo' }, onduty = true, minGrade = 1, permission = 'admin' },
+    { min = 170.0, max = 174.9, label = 'range_medic',  jobs = { 'medic' },   permission = 'admin' },
+}
+
+-- Batteries: 100% lasts ~3 hours listening, much less when talking a lot
+Config.Battery = { Enabled = true, DrainPerMinute = 0.5, TransmitDrainPerMinute = 4.0, LowWarning = 20, ChargeAmount = 100 }
+
+-- A mine shaft with no signal in the middle that clears towards the edge
+Config.Interference = {
+    Enabled = true,
+    Zones = { { label = 'Mine shaft', coords = vector3(1234.0, -567.0, 80.0), radius = 150.0, signal = 0.0, falloff = true } },
+}
+
+-- Put downed players back on their channel when they recover
+Config.Incapacitated = { Dead = true, Cuffed = true, Hogtied = true, Rejoin = true }
+
+-- HUD: top left by default, names from the rsg-core callsign
+Config.Hud = { Enabled = true, Command = 'radiohud', Names = 'callsign', MaxRows = 8, Left = 18, Top = 18 }
+```
+For the `range_*` locale keys use the existing ones or add your own to all 11 `locales/*.json`.
+
+### 19.2 Reading the battery from another script (server)
+```lua
+local charge = exports['rsg-radio']:GetBattery(src) -- 0-100, or nil when batteries are off / no radio
+if charge and charge < 10 then
+    TriggerClientEvent('RSGCore:Client:Notify', src, { title = 'Radio', description = 'Your radio is nearly flat', type = 'warning' })
+end
+```
+
+### 19.3 Reacting to a player going on or off the radio (server)
+```lua
+AddEventHandler('rsg-voice:server:radioChanged', function(src, newFreq, oldFreq)
+    if newFreq == '160.0' then
+        -- joined the lawman dispatch frequency
+    elseif oldFreq == '160.0' and not newFreq then
+        -- left it
+    end
+end)
+```
+
+### 19.4 Hooking the radio to your own signal source (client, rsg-voice exports)
+```lua
+-- e.g. a storm script lowering reception: 1.0 clear, 0.0 none (0.0 also blocks transmitting)
+exports['rsg-voice']:SetRadioSignal(0.4)
+-- ...and back to normal
+exports['rsg-voice']:SetRadioSignal(1.0)
+```
+rsg-radio hands its own signal (from `Config.Interference`) and the player's volume and mute to rsg-voice whenever one of them changes, which overwrites a value you set. Use this example only when `Config.Interference.Enabled = false`, and set the signal again after the player changes volume or mute.
+
+### 19.5 Phone calls over the radio (client, rsg-voice exports)
+```lua
+exports['rsg-voice']:SetCallActive(true)  -- radio and party voice are blocked and muted per rsg-voice Config.Priority.Call
+-- ...call ends
+exports['rsg-voice']:SetCallActive(false)
+```
+rsg-telephone 3.1.1 does this for you.
+
+### 19.6 Handheld animation only (no prop)
+```lua
+Config.Handheld = {
+    Enabled = true, Model = nil,
+    Anim       = { dict = 'amb_wander@code_human_wander@male@generic',   clip = 'rub_neck_01', flag = 18 },
+    AnimFemale = { dict = 'amb_wander@code_human_wander@female@generic', clip = 'rub_neck_01', flag = 18 },
+}
+```
+Untested in game. Flag 18 is upper body and holds the last frame; use 31 for a looping clip.

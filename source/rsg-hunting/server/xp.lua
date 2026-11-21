@@ -77,6 +77,13 @@ CreateThread(function()
                 UNIQUE KEY `cid_week` (`citizenid`, `week`)
             )]])
         end
+        if Config.AutoDatabase ~= false then
+            MySQL.query.await([[CREATE TABLE IF NOT EXISTS `hunting_weekly_state` (
+                `key` VARCHAR(50) NOT NULL,
+                `value` INT NOT NULL DEFAULT 0,
+                PRIMARY KEY (`key`)
+            )]])
+        end
     end)
     if ok then
         weeklyReady = true
@@ -230,17 +237,22 @@ local function payWeek(week)
     MySQL.update('DELETE FROM hunting_weekly WHERE week < ?', { week - (Cfg.Weekly.KeepWeeks or 4) })
 end
 
+local function setLastPaidWeek(week)
+    MySQL.prepare.await('INSERT INTO hunting_weekly_state (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)', { 'lastPaidWeek', week })
+end
+
 CreateThread(function()
     if not weeklyEnabled() then return end
     Wait(5000)
     while true do
         local current = weekNumber()
-        local last = GetResourceKvpInt('rsg-hunting:lastPaidWeek')
+        -- stored in MySQL instead of resource KVP, so no server "db" folder is created
+        local last = tonumber(MySQL.scalar.await('SELECT `value` FROM hunting_weekly_state WHERE `key` = ?', { 'lastPaidWeek' })) or 0
         if last == 0 then
-            SetResourceKvpInt('rsg-hunting:lastPaidWeek', current - 1) -- first run: nothing to pay yet
+            setLastPaidWeek(current - 1) -- first run: nothing to pay yet
         elseif last < current - 1 then
             payWeek(current - 1)
-            SetResourceKvpInt('rsg-hunting:lastPaidWeek', current - 1)
+            setLastPaidWeek(current - 1)
         end
         Wait(60000)
     end

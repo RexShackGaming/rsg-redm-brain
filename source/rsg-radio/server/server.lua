@@ -13,6 +13,14 @@ local wrongCodes   = {} -- [citizenid] = { count = n, lockUntil = GetGameTimer()
 local staffMuted   = {} -- [citizenid] = os.time() when a staff block ends
 local jobCache     = {} -- [src] = { list = {...}, expires = GetGameTimer() } jobs held (multi-job)
 local private      = {} -- [freq string] = { owner = citizenid, name, code, last = os.time() }
+local dropped      = {} -- [src] = freq string dropped because the player was downed/cuffed/hogtied (Config.Incapacitated.Rejoin)
+local hogtied      = {} -- [src] = true while the client reports the player is hogtied
+local batt         = {} -- [src] = last known battery % of the player's radio (Config.Battery)
+local hogCooldown  = {} -- [src] = GetGameTimer() when the next hogtie report is accepted
+local setCooldown  = {} -- [src] = GetGameTimer() when the next volume/mute save is accepted
+local talkStart, talkAcc = {}, {} -- battery: transmit start time and accumulated transmit seconds per player
+local recheckPending = {} -- [src] = true while an access re-check is queued
+local readBattery -- defined below (Config.Battery), used by buildState
 
 local P = Config.Private or {}
 local PRIV = false -- true once the private channel table is ready
@@ -79,6 +87,28 @@ for _, ch in ipairs(Config.Channels) do
 end
 if FREQ.Min > FREQ.Max then print('^1[rsg-radio]^7 Config.Frequency.Min is higher than Max, nobody can tune in') end
 
+-- Reserved ranges (Config.Ranges), stored as scaled integers so the comparison is exact
+local ranges = {} -- ordered list of { lo, hi, def }
+for _, r in ipairs(Config.Ranges or {}) do
+    local lo, hi = parseFreq(r.min), parseFreq(r.max)
+    if not lo or not hi or tonumber(lo) > tonumber(hi) then
+        print(('^1[rsg-radio]^7 Config.Ranges: %s to %s is not a valid range (allowed %s to %s with %d decimals), range skipped'):format(
+            tostring(r.min), tostring(r.max), FREQ.Min, FREQ.Max, DEC))
+    else
+        ranges[#ranges + 1] = { lo = math.floor(tonumber(lo) * SCALE + 0.5), hi = math.floor(tonumber(hi) * SCALE + 0.5), def = r }
+    end
+end
+
+-- The restriction that applies to a frequency: an explicit channel first, then the first reserved range that contains it
+local function defFor(key)
+    if restricted[key] then return restricted[key] end
+    local scaled = math.floor((tonumber(key) or 0) * SCALE + 0.5)
+    for _, r in ipairs(ranges) do
+        if scaled >= r.lo and scaled <= r.hi then return r.def end
+    end
+    return nil
+end
+
 local function rateLimit(store, src, ms)
     local now = GetGameTimer()
     if (store[src] or 0) > now then return true end
@@ -115,8 +145,10 @@ end
 
 local function canAccess(src, Player, def)
     if not def then return true end
-    local rules = #(def.jobs or {}) + #(def.jobtypes or {}) + #(def.gangs or {})
+    local rules = #(def.jobs or {}) + #(def.jobtypes or {}) + #(def.gangs or {}) + (def.permission and 1 or 0)
     if rules == 0 then return true end -- named but open channel
+    -- anyone with the rsg-core permission level gets in, whatever their job, duty or grade
+    if def.permission and RSGCore.Functions.HasPermission(src, def.permission) then return true end
     local job, gang = Player.PlayerData.job or {}, Player.PlayerData.gang or {}
     local duty = not def.onduty or job.onduty
 
@@ -138,7 +170,8 @@ end
 
 -- May this player use the frequency right now without typing a passcode?
 local function canUse(src, Player, key)
-    if restricted[key] then return canAccess(src, Player, restricted[key]) end
+    local def = defFor(key)
+    if def then return canAccess(src, Player, def) end
     local ch = private[key]
     if ch then
         return ch.owner == Player.PlayerData.citizenid or (unlocked[src] and unlocked[src][key]) or false
@@ -182,6 +215,33 @@ local function getFavorites(Player)
 end
 
 ---------------------------------------------------------------------
+-- Recently used frequencies (metadata 'radiorecents' = { '446.0', '155.0', ... }, newest first)
+---------------------------------------------------------------------
+local function getRecents(Player)
+    local stored = Player.PlayerData.metadata and Player.PlayerData.metadata.radiorecents
+    local list = {}
+    if type(stored) == 'table' then
+        for _, f in ipairs(stored) do
+            local key = parseFreq(tonumber(f))
+            if key then list[#list + 1] = key end
+        end
+    end
+    return list
+end
+
+local function addRecent(Player, key)
+    local max = math.floor(tonumber(Config.Recents and Config.Recents.Max) or 0)
+    if max <= 0 then return end
+    local list = getRecents(Player)
+    if list[1] == key then return end -- already the newest: nothing to save
+    local out = { key }
+    for _, f in ipairs(list) do
+        if f ~= key and #out < max then out[#out + 1] = f end
+    end
+    Player.Functions.SetMetaData('radiorecents', out)
+end
+
+---------------------------------------------------------------------
 -- State for the NUI (nil when the player has no radio)
 ---------------------------------------------------------------------
 local function numericSort(a, b) return tonumber(a) < tonumber(b) end
@@ -209,6 +269,38 @@ local function buildState(src)
         f.locked = key ~= nil and not use and private[key] ~= nil
         f.usable = use or f.locked
     end
+
+    -- recently used frequencies (same rules as favorites: a private one asks for the passcode again)
+    local favLabel = {}
+    for _, f in ipairs(favorites) do favLabel[f.freq] = f.label end
+    local recents = {}
+    for _, key in ipairs(getRecents(Player)) do
+        local def = defFor(key)
+        local label = favLabel[key]
+        if not label or label == '' then
+            if def and def.label then label = locale(def.label) elseif private[key] then label = private[key].name end
+        end
+        local use = canUse(src, Player, key)
+        local locked = not use and private[key] ~= nil
+        recents[#recents + 1] = { freq = key, label = label or '', usable = use or locked, locked = locked }
+    end
+
+    -- reserved ranges: the ones this player may use are listed, the others only make the tuner say "restricted"
+    local rangeList, rangeReserved = {}, {}
+    for _, r in ipairs(ranges) do
+        local lo, hi = fmtFreq(r.lo / SCALE), fmtFreq(r.hi / SCALE)
+        if canAccess(src, Player, r.def) then
+            rangeList[#rangeList + 1] = { min = lo, max = hi, label = r.def.label and locale(r.def.label) or '' }
+        else
+            rangeReserved[#rangeReserved + 1] = { min = lo, max = hi }
+        end
+    end
+
+    local rs = Player.PlayerData.metadata and Player.PlayerData.metadata.radiosettings
+    local vol = type(rs) == 'table' and tonumber(rs.vol) or tonumber(Config.Volume and Config.Volume.Default) or 100
+    vol = math.max(0, math.min(100, math.floor(vol + 0.5)))
+    local muted = type(rs) == 'table' and rs.muted == true or false
+    local battery = readBattery(src)
 
     local priv
     if PRIV then
@@ -238,6 +330,8 @@ local function buildState(src)
     return {
         freq = freq, channels = list, reserved = reserved, count = members and #members or 0,
         favorites = favorites, maxFavorites = Config.MaxFavorites, priv = priv,
+        recents = recents, ranges = rangeList, reservedRanges = rangeReserved,
+        vol = vol, muted = muted, volStep = tonumber(Config.Volume and Config.Volume.Step) or 5, battery = battery,
         min = FREQ.Min, max = FREQ.Max, dec = DEC, unit = UNIT,
     }
 end
@@ -262,6 +356,95 @@ end
 local function dropFromRadio(src)
     connected[src] = nil
     exports['rsg-voice']:LeaveRadio(src)
+end
+
+---------------------------------------------------------------------
+-- Downed / cuffed / hogtied players and the radio battery
+---------------------------------------------------------------------
+local IC = Config.Incapacitated or {}
+local B  = Config.Battery or {}
+
+-- Dead and cuffed come from rsg-core metadata (rsg-medic, rsg-lawman); hogtied is reported by the client
+local function incapacitated(src, Player)
+    local md = Player.PlayerData.metadata or {}
+    if IC.Dead and md.isdead then return true end
+    if IC.Cuffed and md.ishandcuffed then return true end
+    if IC.Hogtied and hogtied[src] then return true end
+    return false
+end
+
+-- The charge lives in the radio item's info (info.battery, 0-100). A radio without the field counts as full.
+-- Returns the charge and the item, or nil when batteries are off or the player has no radio.
+function readBattery(src)
+    if not B.Enabled then return nil end
+    local ok, it = pcall(function() return exports['rsg-inventory']:GetItemByName(src, Config.Item) end)
+    if not ok or type(it) ~= 'table' then return nil end
+    local v = it.info and tonumber(it.info.battery)
+    if v == nil or v ~= v then v = 100 end
+    v = math.max(0, math.min(100, v))
+    batt[src] = v
+    return v, it
+end
+
+local function writeBattery(src, value)
+    local _, it = readBattery(src)
+    if not it then return false end
+    local info = {}
+    for k, v in pairs(it.info or {}) do info[k] = v end
+    info.battery = math.floor(math.max(0, math.min(100, value)) * 10 + 0.5) / 10
+    local ok, res = pcall(function() return exports['rsg-inventory']:SetItemInfo(src, it.slot, info) end)
+    if ok and res then batt[src] = info.battery return true end
+    return false
+end
+
+---------------------------------------------------------------------
+-- Channel HUD: who is on the channel (each client works out who is speaking)
+---------------------------------------------------------------------
+local HUDC = Config.Hud or {}
+
+local function initial(str)
+    if type(str) ~= 'string' or str == '' then return '' end
+    local ok, cut = pcall(utf8.offset, str, 2)
+    return (ok and cut) and str:sub(1, cut - 1) or str
+end
+
+local function displayName(src)
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player or HUDC.Names == 'id' then return ('#%d'):format(src) end
+    local md = Player.PlayerData.metadata or {}
+    if HUDC.Names == 'callsign' and type(md.callsign) == 'string' and md.callsign ~= '' and md.callsign:lower() ~= 'no callsign' then
+        return cleanLabel(md.callsign, 16)
+    end
+    local ci = Player.PlayerData.charinfo or {}
+    local name = cleanLabel(tostring(ci.firstname or ''), 16)
+    local last = initial(tostring(ci.lastname or ''))
+    if last ~= '' then name = name .. ' ' .. last .. '.' end
+    return name ~= '' and name or ('#%d'):format(src)
+end
+
+local hudDirty, hudPending = {}, false
+local function flushHud()
+    hudPending = false
+    local dirty = hudDirty
+    hudDirty = {}
+    for freq in pairs(dirty) do
+        local members = exports['rsg-voice']:GetRadioMembers(freq)
+        if members and #members > 0 then
+            local list = {}
+            for _, m in ipairs(members) do list[#list + 1] = { id = m, name = displayName(m) } end
+            for _, m in ipairs(members) do
+                TriggerClientEvent('rsg-radio:client:hud', m, { freq = freq, unit = UNIT, members = list, battery = batt[m] })
+            end
+        end
+    end
+end
+
+local function markHud(freq)
+    if not freq then return end
+    hudDirty[freq] = true
+    if hudPending then return end
+    hudPending = true
+    SetTimeout(150, flushHud)
 end
 
 ---------------------------------------------------------------------
@@ -295,8 +478,8 @@ local function loadPrivate()
     local rows = MySQL.query.await('SELECT freq, owner, name, code, UNIX_TIMESTAMP(last_used) AS last FROM rsg_radio_private') or {}
     for _, r in ipairs(rows) do
         local key = parseFreq(tonumber(r.freq))
-        -- rows that no longer fit the frequency range or collide with a configured channel are ignored (left in the table)
-        if key and not restricted[key] and not private[key] then
+        -- rows that no longer fit the frequency range or collide with a configured channel or reserved range are ignored (left in the table)
+        if key and not restricted[key] and not defFor(key) and not private[key] then
             private[key] = { owner = r.owner, name = r.name or '', code = r.code, last = tonumber(r.last) or os.time() }
         end
     end
@@ -353,9 +536,15 @@ end
 local function tryJoin(src, Player, key, code)
     local left = muteLeft(Player)
     if left then return false, 'muted', left end
+    if incapacitated(src, Player) then return false, 'incap' end
+    if B.Enabled then
+        local charge = readBattery(src)
+        if charge and charge <= 0 then return false, 'no_battery' end
+    end
 
-    if restricted[key] then
-        if not canAccess(src, Player, restricted[key]) then return false, 'no_access' end
+    local def = defFor(key)
+    if def then
+        if not canAccess(src, Player, def) then return false, 'no_access' end
     elseif private[key] then
         local ch = private[key]
         if not (ch.owner == Player.PlayerData.citizenid or (unlocked[src] and unlocked[src][key])) then
@@ -382,11 +571,14 @@ local function tryJoin(src, Player, key, code)
     local ok, reason = exports['rsg-voice']:JoinRadio(src, key)
     if not ok then return false, reason == 'full' and 'full' or 'invalid' end
     connected[src] = key
+    dropped[src] = nil
     touchPrivate(key)
+    addRecent(Player, key)
     return true
 end
 
-local JOIN_FAIL = { no_access = 'sv_no_access', full = 'sv_full', invalid = 'sv_invalid_freq', bad_code = 'sv_priv_bad_code' }
+local JOIN_FAIL = { no_access = 'sv_no_access', full = 'sv_full', invalid = 'sv_invalid_freq', bad_code = 'sv_priv_bad_code',
+    incap = 'sv_incap', no_battery = 'sv_batt_dead' }
 local function failJoin(src, reason, extra)
     if reason == 'muted' then return notify(src, 'sv_staff_muted_left', 'error', extra) end
     if reason == 'locked_out' then return notify(src, 'sv_priv_locked_out', 'error', extra) end
@@ -414,11 +606,40 @@ CreateThread(function()
     if Config.RegisterItem and not RSGCore.Shared.Items[Config.Item] then
         local def = { name = Config.Item }
         for k, v in pairs(Config.ItemDefinition) do def[k] = v end
+        if B.Enabled then def.unique = true end -- every radio keeps its own charge
         exports['rsg-core']:AddItem(Config.Item, def)
     end
     RSGCore.Functions.CreateUseableItem(Config.Item, function(source)
         TriggerClientEvent('rsg-radio:client:open', source)
     end)
+
+    -- Battery pack: recharges the radio in the player's inventory
+    if B.Enabled and B.ChargeItem then
+        if Config.RegisterItem and not RSGCore.Shared.Items[B.ChargeItem] then
+            local def = { name = B.ChargeItem }
+            for k, v in pairs(B.ChargeItemDefinition or {}) do def[k] = v end
+            exports['rsg-core']:AddItem(B.ChargeItem, def)
+        end
+        local chargeCd = {}
+        RSGCore.Functions.CreateUseableItem(B.ChargeItem, function(source)
+            local src = source
+            if rateLimit(chargeCd, src, 1000) then return end
+            local Player = RSGCore.Functions.GetPlayer(src)
+            if not Player then return end
+            local v = readBattery(src)
+            if not v then return notify(src, 'cl_no_radio', 'error') end
+            if v >= 99.95 then return notify(src, 'sv_batt_full', 'inform') end
+            if not exports['rsg-inventory']:RemoveItem(src, B.ChargeItem, 1, nil, 'radio-recharge') then return end
+            local nv = math.min(100, v + (tonumber(B.ChargeAmount) or 100))
+            if not writeBattery(src, nv) then
+                exports['rsg-inventory']:AddItem(src, B.ChargeItem, 1, nil, nil, 'radio-recharge-refund')
+                return
+            end
+            notify(src, 'sv_batt_charged', 'success', ('%d%%'):format(math.floor(nv)))
+            TriggerClientEvent('rsg-radio:client:battery', src, nv)
+            if panelOpen[src] then pushState(src) end
+        end)
+    end
 
     -- Adopt players already on a channel (rsg-radio restarted while rsg-voice kept running)
     if GetResourceState('rsg-voice') == 'started' then
@@ -569,7 +790,7 @@ RegisterNetEvent('rsg-radio:server:savePrivate', function(freq, name, code)
 
     local key = parseFreq(freq)
     if not key then return notify(src, 'sv_invalid_freq', 'error') end
-    if restricted[key] then return notify(src, 'sv_priv_reserved', 'error') end
+    if defFor(key) then return notify(src, 'sv_priv_reserved', 'error') end
     name = cleanLabel(name, P.NameLength)
     if type(code) ~= 'string' or #code < P.CodeMin or #code > P.CodeMax or not code:match('^%w+$') then
         return notify(src, 'sv_priv_bad_format', 'error', P.CodeMin, P.CodeMax)
@@ -625,11 +846,14 @@ end)
 -- Channel changes, restarts, cleanup
 ---------------------------------------------------------------------
 -- Another resource (or rsg-voice itself) changed a player's channel
-AddEventHandler('rsg-voice:server:radioChanged', function(src, newFreq)
+AddEventHandler('rsg-voice:server:radioChanged', function(src, newFreq, oldFreq)
     if newFreq == nil and connected[src] then
         connected[src] = nil
         if GetPlayerName(src) then pushState(src) end
     end
+    if newFreq == nil and GetPlayerName(src) then TriggerClientEvent('rsg-radio:client:hud', src, nil) end
+    markHud(newFreq)
+    markHud(oldFreq)
     markDirty()
 end)
 
@@ -643,37 +867,148 @@ AddEventHandler('onResourceStart', function(res)
     end)
 end)
 
+-- Does this player still have the right to be on their channel? Leaves them off it if not.
+-- Also puts a recovered player back on their channel when Config.Incapacitated.Rejoin is on.
+local function checkMember(src)
+    local Player = RSGCore.Functions.GetPlayer(src)
+    local freq = connected[src]
+    if freq then
+        local reason, remember
+        if not Player then
+            reason = false
+        elseif not hasRadio(src) then
+            reason = 'sv_lost_radio'
+        elseif incapacitated(src, Player) then
+            reason, remember = 'sv_lost_incap', true
+        elseif B.Enabled and (readBattery(src) or 100) <= 0 then
+            reason = 'sv_batt_dead'
+        elseif not canUse(src, Player, freq) then
+            reason = 'sv_lost_access'
+        end
+        if reason ~= nil then
+            dropFromRadio(src)
+            if remember and IC.Rejoin then dropped[src] = freq end
+            if reason then
+                notify(src, reason, 'error')
+                pushState(src)
+            end
+        end
+    elseif dropped[src] then
+        if not Player then
+            dropped[src] = nil
+        elseif not incapacitated(src, Player) then
+            local key = dropped[src]
+            dropped[src] = nil
+            if hasRadio(src) and tryJoin(src, Player, key) then
+                notify(src, 'sv_rejoined', 'inform', withUnit(key))
+                pushState(src)
+            end
+        end
+    end
+end
+
+-- Job, duty, gang, item and metadata changes are checked the moment they happen (batched per player)
+local function scheduleRecheck(src)
+    src = tonumber(src)
+    if not src or recheckPending[src] or not (connected[src] or dropped[src]) then return end
+    recheckPending[src] = true
+    SetTimeout(250, function()
+        recheckPending[src] = nil
+        if connected[src] or dropped[src] then checkMember(src) end
+    end)
+end
+
 local function cleanup(src)
-    connected[src] = nil
+    connected[src], dropped[src], hogtied[src], batt[src] = nil, nil, nil, nil
     cooldown[src], favCooldown[src], privCooldown[src] = nil, nil, nil
+    hogCooldown[src], setCooldown[src], recheckPending[src] = nil, nil, nil
+    talkStart[src], talkAcc[src] = nil, nil
     panelOpen[src], unlocked[src], jobCache[src] = nil, nil, nil
 end
 AddEventHandler('playerDropped', function() cleanup(source) end)
 AddEventHandler('RSGCore:Server:OnPlayerUnload', cleanup)
-AddEventHandler('RSGCore:Server:OnJobUpdate', function(src) jobCache[src] = nil end)
+AddEventHandler('RSGCore:Server:OnJobUpdate', function(src) jobCache[src] = nil scheduleRecheck(src) end)
+AddEventHandler('RSGCore:Server:OnGangUpdate', function(src) scheduleRecheck(src) end)
+AddEventHandler('RSGCore:Server:SetDuty', function(src) scheduleRecheck(src) end)
+-- fires on every inventory and metadata change (radio lost, downed, cuffed...)
+AddEventHandler('RSGCore:Player:SetPlayerData', function(pd)
+    if type(pd) == 'table' and pd.source then scheduleRecheck(pd.source) end
+end)
 
--- Radio lost (dropped, stolen, sold) or access lost (job change, off duty): leave the channel
+-- The client reports hogtied (it is not stored in any server-side data). Only affects the player's own radio.
+RegisterNetEvent('rsg-radio:server:hogtied', function(state)
+    local src = source
+    if type(state) ~= 'boolean' or rateLimit(hogCooldown, src, 400) then return end
+    hogtied[src] = state or nil
+    scheduleRecheck(src)
+end)
+
+-- Radio volume and mute (stored per character, applied by the client through rsg-voice)
+RegisterNetEvent('rsg-radio:server:setSettings', function(vol, muted)
+    local src = source
+    if rateLimit(setCooldown, src, 250) then return end
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player then return end
+    vol = tonumber(vol)
+    if not vol or vol ~= vol then return end
+    vol = math.max(0, math.min(100, math.floor(vol + 0.5)))
+    muted = muted == true
+    local cur = Player.PlayerData.metadata and Player.PlayerData.metadata.radiosettings
+    if type(cur) == 'table' and tonumber(cur.vol) == vol and (cur.muted == true) == muted then return end -- unchanged: no write
+    Player.Functions.SetMetaData('radiosettings', { vol = vol, muted = muted })
+end)
+
+-- Battery: count the time spent transmitting (rsg-voice's own transmit event, sent by the client)
+AddEventHandler('rsg-voice:server:radioTalkChanged', function(src, state)
+    src = tonumber(src)
+    if not src or not B.Enabled or not connected[src] then return end
+    local now = GetGameTimer()
+    if state == true then
+        talkStart[src] = talkStart[src] or now
+    elseif talkStart[src] then
+        talkAcc[src] = (talkAcc[src] or 0) + (now - talkStart[src]) / 1000
+        talkStart[src] = nil
+    end
+end)
+
 CreateThread(function()
+    local interval = math.max(10, tonumber(B.DrainInterval) or 60)
+    local low = tonumber(B.LowWarning) or 20
     while true do
-        Wait(CHECK_MS)
-        for src, freq in pairs(connected) do
-            local Player = RSGCore.Functions.GetPlayer(src)
-            local reason
-            if not Player then
-                reason = false
-            elseif not hasRadio(src) then
-                reason = 'sv_lost_radio'
-            elseif not canUse(src, Player, freq) then
-                reason = 'sv_lost_access'
-            end
-            if reason ~= nil then
-                dropFromRadio(src)
-                if reason then
-                    notify(src, reason, 'error')
-                    pushState(src)
+        Wait(interval * 1000)
+        if B.Enabled then
+            local now = GetGameTimer()
+            local list = {}
+            for src in pairs(connected) do list[#list + 1] = src end
+            for _, src in ipairs(list) do
+                local v = readBattery(src)
+                if v then
+                    local talk = talkAcc[src] or 0
+                    talkAcc[src] = nil
+                    if talkStart[src] then talk = talk + (now - talkStart[src]) / 1000 talkStart[src] = now end
+                    local drain = (tonumber(B.DrainPerMinute) or 0) * interval / 60 + (tonumber(B.TransmitDrainPerMinute) or 0) * talk / 60
+                    if drain > 0 then
+                        local nv = math.max(0, v - drain)
+                        if writeBattery(src, nv) then
+                            TriggerClientEvent('rsg-radio:client:battery', src, nv)
+                            if nv > 0 and nv <= low and v > low then notify(src, 'sv_batt_low', 'inform', ('%d%%'):format(math.floor(nv))) end
+                            if panelOpen[src] then pushState(src) end
+                        end
+                    end
                 end
             end
         end
+    end
+end)
+
+-- Fallback sweep: everything above is also checked the moment it changes (scheduleRecheck), this catches the rest
+CreateThread(function()
+    while true do
+        Wait(CHECK_MS)
+        local list = {}
+        for src in pairs(connected) do list[#list + 1] = src end
+        for src in pairs(dropped) do list[#list + 1] = src end
+        for _, src in ipairs(list) do checkMember(src) end
     end
 end)
 
@@ -937,3 +1272,5 @@ AddEventHandler('playerDropped', function() adminCooldown[source] = nil end)
 ---------------------------------------------------------------------
 -- exports['rsg-radio']:GetFrequency(src) -> frequency string or nil
 exports('GetFrequency', function(src) return connected[tonumber(src)] end)
+-- exports['rsg-radio']:GetBattery(src) -> battery % of the player's radio, or nil when batteries are off / no radio
+exports('GetBattery', function(src) return (readBattery(tonumber(src))) end)

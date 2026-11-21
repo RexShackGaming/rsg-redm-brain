@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-radio - field radio (frequencies, job channels) on top of rsg-voice'
-version '3.0.0'
+version '3.1.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',

@@ -1,4 +1,4 @@
-# rsg-fishmonger – Docs (v3.1.0)
+# rsg-fishmonger – Docs (v3.1.1)
 
 ## Contents
 1. Files
@@ -48,6 +48,7 @@
 | `OpeningHours` | table | `enabled`, `open` (6), `close` (22); wraps past midnight; per-location `hours` override |
 | `Demand` | table | `enabled`, `min` 0.80, `max` 1.25; `demand = false` on a location for base price |
 | `Bonus` | table | `jobs` (job → fraction) and `rep` (`name`, `perPoint`, `max` 0.15, `gainPerFish`) |
+| `AutoDatabase` | boolean | `true` creates `rsg_fishmonger_stock` on start; `false` = import `install.sql` yourself |
 | `DailyStock` | table | `enabled`, `perLocation` (200); per-location `stock` (0 = unlimited) |
 | `Shop` | table | `enabled`, `persistentStock`, `items` (`name`, `price`, `amount`) |
 | `Fish` | table | fish model → `{ price, fillets, fillet? }` |
@@ -100,7 +101,11 @@ Generated from the source of **rsg-fishmonger 3.1.0**. Names, arguments and defa
 
 ### Dependencies
 
-`rsg-core`, `rsg-inventory`, `rsg-target`
+`rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
+
+### Database
+
+`rsg_fishmonger_stock`: `location` (primary key, the location `key`), `day` (`YYYY-MM-DD` of the last sale), `sold` (fish sold that day). The server keeps a copy in memory and writes every sale through. Created automatically while `Config.AutoDatabase = true`; otherwise import `install.sql`. No resource KVP is used, so the server creates no `db` folder.
 
 ### Configuration
 

@@ -74,7 +74,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-prison](rsg-prison.md) | Prison system for RedM servers using RSG Core. - [rsg-core](https://github.com/Rexshack-RedM/rsg-core) - [ | 1 | 12 |
 | [rsg-queue](rsg-queue.md) | rsg-queue - connect queue with VIP priority, reserved slots and crash grace | 7 | 1 |
 | [rsg-radialmenu](rsg-radialmenu.md) | Radial interaction menu for RedM using RSG Core. A fast, themed radial menu with nested submenus, job-spec | 2 | 7 |
-| [rsg-radio](rsg-radio.md) | rsg-radio - field radio (frequencies, job channels) on top of rsg-voice | 1 | 14 |
+| [rsg-radio](rsg-radio.md) | rsg-radio - field radio (frequencies, job channels) on top of rsg-voice | 2 | 21 |
 | [rsg-railroad](rsg-railroad.md) | Advanced train management system for RedM (rsg-core). Buy railroad companies, hire drivers, manage trains, run | 0 | 35 |
 | [rsg-ranch](rsg-ranch.md) | A complete livestock ranching system for RedM servers running the RSG Framework. Buy a ranch, hire sta | 31 | 100 |
 | [rsg-reputation](rsg-reputation.md) | Honor and regional standing (fame and infamy) for RSG Framework | 22 | 4 |
@@ -97,7 +97,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-trams](rsg-trams.md) | rsg-trams - Saint Denis trolley network (one trolley per track) | 0 | 3 |
 | [rsg-trapdoors](rsg-trapdoors.md) | Version 2.1.0 · Full developer reference: [DOCS.md](DOCS.md) Synced, animated trapdoors for RSG-Core (Re | 1 | 1 |
 | [rsg-treasure](rsg-treasure.md) | Treasure map hunting for RSG Framework | 1 | 5 |
-| [rsg-voice](rsg-voice.md) | rsg-voice - proximity voice for RSG Framework | 18 | 16 |
+| [rsg-voice](rsg-voice.md) | rsg-voice - proximity voice for RSG Framework | 26 | 16 |
 | [rsg-wagons](rsg-wagons.md) | rsg-wagons - wagon store with full NUI catalogue, 3D preview and wagon ownership | 2 | 8 |
 | [rsg-wardrobe](rsg-wardrobe.md) | Version 3.2.0 · RSG Framework (RedM) Take individual clothing items off and put them back on from a wardro | 9 | 9 |
 | [rsg-weaponcomp](rsg-weaponcomp.md) | Weapon customisation for RSG Framework (RedM). Players place a portable gunsmith workbench, then use it to | 1 | 18 |

@@ -100,6 +100,8 @@ Config.Radio = {
     TalkKey    = 0xF1301666, -- only used when UseKeyMapping = false: control hash of O (RSGCore.Shared.Keybinds). Some setups never report it
     NearbyHear = true,       -- players inside your voice range also hear you while you transmit
     MaxMembers = 64,         -- players per channel
+    MaxTransmitSeconds = 0,  -- longest single transmission in seconds (0 = unlimited). At the limit the key must be released
+    TransmitCooldown   = 3,  -- seconds before the player can transmit again after hitting the limit
     Debug      = false,      -- print the transmit key state and what blocks it in the F8 console (set true to troubleshoot)
 
     -- Radio static, synthesised in the HUD page (no game sounds needed)
@@ -109,5 +111,21 @@ Config.Radio = {
         Hiss     = true,  -- low static while someone transmits on your channel
         Squelch  = true,  -- short noise burst when a transmission starts and ends
         SelfHiss = false, -- also hear static while you transmit (you always hear the squelch)
+    },
+}
+
+-- Who wins when voice channels overlap
+Config.Priority = {
+    -- When the radio key and the party talk key are held together:
+    -- 'first' = whichever was pressed first keeps the line, 'radio' = radio takes over, 'party' = riding-party voice takes over
+    RadioVsParty = 'first',
+
+    -- A phone call (rsg-telephone) takes priority over radio and party voice while it is running
+    Call = {
+        Enabled            = true,
+        BlockRadioTransmit = true, -- cannot transmit on the radio during a call
+        BlockPartyTransmit = true, -- cannot talk to the riding party during a call
+        MuteIncomingRadio  = true, -- radio transmissions are not heard during a call
+        MutePartyVoice     = true, -- party talk is not heard during a call
     },
 }

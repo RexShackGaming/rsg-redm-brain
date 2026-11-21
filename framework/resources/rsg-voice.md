@@ -1,6 +1,6 @@
 # rsg-voice
 
-Version 3.1.3. rsg-voice - proximity voice for RSG Framework
+Version 3.2.0. rsg-voice - proximity voice for RSG Framework
 
 Proximity voice for **RSG Framework (RedM)**, built on RedM's native Mumble voice. It adds selectable voice ranges, a draggable HUD, riding parties (group voice), automatic muting while dead or cuffed, and a server-enforced admin mute. - **Proximity voice ranges**: Whisper (2.5m), Normal (8m), Shout (20m) and Trail (35m), all configurable. - **Cycle range** with a key (default **]**) or the `/voic
 
@@ -14,7 +14,7 @@ Has NUI (`ui_page`).
 
 **server:** `GetPartyMembers(src)`, `GetPlayerRadio(src)`, `GetRadioMembers(freq)`, `IsInParty(src)`, `IsPlayerMuted(src)`, `JoinRadio(src, freq)`, `LeaveRadio(src)`, `SetPlayerMuted(src, state, reason)`
 
-**client:** `GetPartyMembers()`, `GetRadio()`, `GetRadioTalkKey()`, `GetVoiceRange()`, `IsInParty()`, `IsMuted()`, `IsPlayerTalking(sid)`, `IsRadioTalking()`, `SetMuteOverride(state, reason)`, `SetVoiceRangeIndex(i)`
+**client:** `GetPartyMembers()`, `GetRadio()`, `GetRadioSignal()`, `GetRadioTalkKey()`, `GetRadioVolume()`, `GetVoiceRange()`, `IsCallActive()`, `IsInParty()`, `IsMuted()`, `IsPlayerTalking(sid)`, `IsRadioMuted()`, `IsRadioTalking()`, `SetCallActive(state)`, `SetMuteOverride(state, reason)`, `SetRadioMuted(state)`, `SetRadioSignal(q)`, `SetRadioVolume(v)`, `SetVoiceRangeIndex(i)`
 
 ## Net events registered
 

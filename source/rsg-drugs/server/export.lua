@@ -1,4 +1,4 @@
--- Brick export market. State persists in resource KVP (no SQL).
+-- Brick export market. State persists in MySQL (rsg_drugs_state), not resource KVP, so no server "db" folder is created.
 if not Config.Export.Enabled then return end
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
@@ -8,16 +8,18 @@ local function Callback(name, fn)
 end
 
 local E = Config.Export
-local KVP = 'rsg-drugs:market'
+local STATE_KEY = 'market'
 local NpcPos = vector3(E.NPC.coords.x, E.NPC.coords.y, E.NPC.coords.z)
 local lastSale = {}
 
-local Market = json.decode(GetResourceKvpString(KVP) or 'null') or {}
-Market.stock   = tonumber(Market.stock) or 0
-Market.demand  = tonumber(Market.demand) or 1.0
-Market.history = type(Market.history) == 'table' and Market.history or {}
+-- defaults until the saved market has been loaded from the database (see MySQL.ready below)
+local Market = { stock = 0, demand = 1.0, history = {} }
+local marketLoaded = false
 
-local function save() SetResourceKvp(KVP, json.encode(Market)) end
+local function save()
+    if not marketLoaded then return end -- never overwrite the saved market with defaults
+    MySQL.prepare('INSERT INTO rsg_drugs_state (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)', { STATE_KEY, json.encode(Market) })
+end
 
 -- price of the next brick with `stock` already held
 local function priceAt(stock)
@@ -36,7 +38,22 @@ local function pushHistory()
     Market.history[#Market.history + 1] = priceAt(Market.stock)
     while #Market.history > E.History do table.remove(Market.history, 1) end
 end
-if #Market.history == 0 then pushHistory() end
+
+MySQL.ready(function()
+    if Config.AutoDatabase ~= false then -- set false and import installation/install.sql for a manual install
+        MySQL.query.await('CREATE TABLE IF NOT EXISTS `rsg_drugs_state` (`key` VARCHAR(50) NOT NULL, `value` LONGTEXT NOT NULL, PRIMARY KEY (`key`))')
+    end
+    local raw = MySQL.scalar.await('SELECT `value` FROM rsg_drugs_state WHERE `key` = ?', { STATE_KEY })
+    local ok, saved = pcall(json.decode, raw or 'null')
+    if ok and type(saved) == 'table' then
+        Market.stock   = tonumber(saved.stock) or 0
+        Market.demand  = tonumber(saved.demand) or 1.0
+        Market.history = type(saved.history) == 'table' and saved.history or {}
+    end
+    if #Market.history == 0 then pushHistory() end
+    marketLoaded = true
+    save()
+end)
 
 local function notify(src, desc, ntype)
     TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('export_title'), description = desc, type = ntype or 'inform' })

@@ -285,6 +285,8 @@ RegisterNetEvent('rsg-voice:server:radioTalk', function(state)
     for _, m in ipairs(ch.members) do
         if m ~= src then TriggerClientEvent('rsg-voice:client:radioTalk', m, src, state) end
     end
+    -- server-only, after validation (rsg-radio uses it for battery drain)
+    TriggerEvent('rsg-voice:server:radioTalkChanged', src, state)
 end)
 
 AddEventHandler('playerDropped', function() leaveRadio(source) end)

@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-trams - Saint Denis trolley network (one trolley per track)'
-version '3.1.1'
+version '3.1.2'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
@@ -17,6 +17,7 @@ client_scripts {
 }
 
 server_scripts {
+    '@oxmysql/lib/MySQL.lua',
     'server/server.lua',
     'server/versionchecker.lua'
 }
@@ -26,5 +27,6 @@ files {
 }
 
 dependencies {
-    'rsg-core'
+    'rsg-core',
+    'oxmysql'
 }

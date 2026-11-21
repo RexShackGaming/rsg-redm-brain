@@ -1,8 +1,8 @@
 # rsg-telephone
 
-Version 3.1.0. rsg-telephone - persistent telephone props with private voice calls
+Version 3.1.1. rsg-telephone - persistent telephone props with private voice calls
 
-Persistent telephone props with private voice calls for the RSG Framework (RedM). **Version 3.1.0** Admins place wall or desk phones that survive restarts; each phone gets a number. Players dial from a phone (keypad or directory), the far phone rings for anyone nearby, and answering opens a private voice line between the two callers. Public phones work as coin-operated payphones, and phones can be
+Persistent telephone props with private voice calls for the RSG Framework (RedM). **Version 3.1.1** Admins place wall or desk phones that survive restarts; each phone gets a number. Players dial from a phone (keypad or directory), the far phone rings for anyone nearby, and answering opens a private voice line between the two callers. Public phones work as coin-operated payphones, and phones can be
 
 Source: https://github.com/Rexshack-RedM/rsg-telephone
 

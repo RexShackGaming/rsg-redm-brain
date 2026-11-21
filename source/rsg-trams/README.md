@@ -16,20 +16,20 @@ Saint Denis trolleys for RSG Framework, with **one trolley on the Saint Denis lo
 - No ox_lib: rsg-core locales, notify and commands. Languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
 
 ## Requirements
-- rsg-core, OneSync
+- rsg-core, oxmysql, OneSync
 
 ## Install
 1. Drop `rsg-trams` into `resources/[framework]`.
 2. `ensure rsg-trams` after `rsg-core`.
 3. Optional: `setr rsg:locale "en"` in server.cfg for the language.
 
-No database is used.
+The `rsg_trams_state` table (remembers the `/trams` on/off setting) is created automatically on first start. To install by hand, set `Config.AutoDatabase = false` and import `install.sql`.
 
 ## Admin command
 | Command | Description |
 |---|---|
 | `/trams` | Status of every track (running / spawning / off) |
-| `/trams loop <on\|off>` | Turn the loop on or off (saved with resource KVP) |
+| `/trams loop <on\|off>` | Turn the loop on or off (saved in the database) |
 | `/trams reset` | Remove all trolleys; they respawn on the next check |
 
 Permission: `Config.AdminPermission` (rsg-core permission, default `admin`).

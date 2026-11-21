@@ -58,17 +58,22 @@ Whichever client owns a trolley runs obstacle braking and keeps the driver prote
 
 ## Technical reference
 
-Generated from the source of **rsg-trams 3.1.1**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-trams 3.1.2**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 
-`rsg-core`
+`rsg-core`, `oxmysql`
+
+### Database
+
+`rsg_trams_state`: `key` (primary key, `track:<id>`), `value` (`on` or `off`). Stores the `/trams` admin toggle per track. Created automatically while `Config.AutoDatabase = true`; otherwise import `install.sql`. No resource KVP is used, so the server creates no `db` folder.
 
 ### Configuration
 
 | Option | Default | Notes |
 |---|---|---|
 | `Config.Debug` | `false` |  |
+| `Config.AutoDatabase` | `true` | Create `rsg_trams_state` on start; `false` = import `install.sql` yourself |
 | `Config.Tracks` | `table` |  |
 | `Config.TrolleyModels` | `{ 'trolley01x' }` | trolley is spawned (only one trolley in the world at any time). |
 | `Config.AdminPermission` | `'admin'` | rsg-core permission for /trams |

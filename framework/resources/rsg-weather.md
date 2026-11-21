@@ -1,6 +1,6 @@
 # rsg-weather
 
-Version 3.1.2. rsg-weather - time, weather and wind sync for RSG Framework (weathersync compatible)
+Version 3.1.3. rsg-weather - time, weather and wind sync for RSG Framework (weathersync compatible)
 
 Time, weather and wind sync for **RSG Framework** (RedM), with no ox_lib dependency (locales, notify, callbacks and commands all use rsg-core). A drop-in replacement for `weathersync` — every old export and event keeps working. - Server-authoritative time, weather and wind synced to all players through `GlobalState` (late joiners are in sync instantly)
 

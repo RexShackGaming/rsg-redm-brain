@@ -812,13 +812,16 @@ CreateThread(function()
     local cfg = Config.Leaderboard
     if not (cfg and cfg.enabled and cfg.monthlyReset) then return end
     while true do
-        local saved, now = GetResourceKvpString('rsg_gangs:season'), season()
+        -- stored in MySQL instead of resource KVP, so no server "db" folder is created
+        local saved, now = MySQL.scalar.await('SELECT `value` FROM rsg_gang_state WHERE `key` = ?', { 'season' }), season()
         if saved and saved ~= now then
             MySQL.update.await('DELETE FROM rsg_gang_rivals')
             for k in pairs(Rivals) do Rivals[k] = nil end
             print(('^2[rsg-gangs] new season %s: rivalry kills reset^7'):format(now))
         end
-        if saved ~= now then SetResourceKvp('rsg_gangs:season', now) end
+        if saved ~= now then
+            MySQL.prepare.await('INSERT INTO rsg_gang_state (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)', { 'season', now })
+        end
         Wait(10 * 60 * 1000)
     end
 end)

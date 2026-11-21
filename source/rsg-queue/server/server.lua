@@ -5,7 +5,7 @@ local Connecting = {}  -- [license] = expiry time (admitted, still loading in)
 local Grace      = {}  -- [license] = expiry time (dropped recently)
 local VipCache   = {}  -- [identifier] = { tier, name, expires }
 local Ready      = false
-local Maintenance = GetResourceKvpInt('maintenance') == 1
+local Maintenance = false -- loaded from the database on start (rsg_queue_state)
 local AdmitTimes = {}  -- recent admit timestamps (os.time) for the wait estimate
 local LastTier   = {}  -- [license] = tier the player was admitted with (for rewards)
 local DiscordCache = {} -- [discord id] = { tier, expires }
@@ -47,8 +47,16 @@ CREATE TABLE IF NOT EXISTS `rsg_queue_rewards` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ]]
 
+local SCHEMA_STATE = [[
+CREATE TABLE IF NOT EXISTS `rsg_queue_state` (
+    `key` VARCHAR(50) NOT NULL,
+    `value` VARCHAR(100) NOT NULL,
+    PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+]]
+
 local function ensureDatabase()
-    local ok, err = pcall(function() MySQL.query.await(SCHEMA) MySQL.query.await(SCHEMA_REWARDS) end)
+    local ok, err = pcall(function() MySQL.query.await(SCHEMA) MySQL.query.await(SCHEMA_REWARDS) MySQL.query.await(SCHEMA_STATE) end)
     if not ok then
         print('^1[rsg-queue] database setup failed: ' .. tostring(err) .. '^7')
         return false
@@ -456,7 +464,8 @@ end)
 ---------------------------------
 local function setMaintenance(on, by)
     Maintenance = on and true or false
-    SetResourceKvpInt('maintenance', Maintenance and 1 or 0)
+    -- stored in MySQL instead of resource KVP, so no server "db" folder is created
+    MySQL.prepare('INSERT INTO rsg_queue_state (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)', { 'maintenance', Maintenance and '1' or '0' })
     log('Maintenance', ('%s turned maintenance %s'):format(by, Maintenance and 'ON' or 'OFF'))
     return true, locale(Maintenance and 'maint_on' or 'maint_off')
 end
@@ -673,6 +682,7 @@ CreateThread(function()
     if Config.AutoDatabase and not ensureDatabase() then return end
     local ok, err = pcall(loadVips)
     if not ok then return print('^1[rsg-queue] could not load VIPs: ' .. tostring(err) .. '^7') end
+    Maintenance = MySQL.scalar.await('SELECT `value` FROM rsg_queue_state WHERE `key` = ?', { 'maintenance' }) == '1'
     Ready = true
     while true do
         Wait(Config.VipRefresh * 1000)

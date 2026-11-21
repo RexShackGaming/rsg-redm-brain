@@ -2,6 +2,11 @@
 
 All notable changes to rsg-drugs. Newest first.
 
+## 3.1.3
+
+### Changed
+- The brick export market is now saved in a new `rsg_drugs_state` table (created automatically, also in `installation/install.sql`) instead of resource KVP, so the server no longer creates a `db` folder. The previous KVP market is not migrated: the market starts fresh (empty stock, normal demand) after this update.
+
 ## 3.1.2
 
 ### Added

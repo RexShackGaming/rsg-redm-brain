@@ -23,12 +23,22 @@ local function sortedTracks()
     return list
 end
 
-for id, t in pairs(Config.Tracks) do
-    local saved = GetResourceKvpString('rsg-trams:track:' .. id)
-    if saved == 'on' then enabled[id] = true
-    elseif saved == 'off' then enabled[id] = false
-    else enabled[id] = t.enabled ~= false end
-end
+for id, t in pairs(Config.Tracks) do enabled[id] = t.enabled ~= false end
+
+-- Admin on/off toggles are stored in MySQL instead of resource KVP, so no server "db" folder is created
+MySQL.ready(function()
+    if Config.AutoDatabase ~= false then -- set false and import install.sql for a manual install
+        MySQL.query.await('CREATE TABLE IF NOT EXISTS `rsg_trams_state` (`key` VARCHAR(60) NOT NULL, `value` VARCHAR(10) NOT NULL, PRIMARY KEY (`key`))')
+    end
+    local rows = MySQL.query.await('SELECT `key`, `value` FROM rsg_trams_state') or {}
+    for _, r in ipairs(rows) do
+        local id = r.key:match('^track:(.+)$')
+        if id and Config.Tracks[id] then
+            if r.value == 'on' then enabled[id] = true
+            elseif r.value == 'off' then enabled[id] = false end
+        end
+    end
+end)
 
 local function entityFromNet(netId)
     if not netId then return 0 end
@@ -282,7 +292,7 @@ RSGCore.Commands.Add('trams', locale('cmd_help'), {
     end
 
     enabled[track] = state == 'on'
-    SetResourceKvp('rsg-trams:track:' .. track, state)
+    MySQL.prepare('INSERT INTO rsg_trams_state (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)', { 'track:' .. track, state })
     if not enabled[track] then removeTrack(track) end
     notify(src, locale(enabled[track] and 'cmd_on' or 'cmd_off', track), 'success')
 end, Config.AdminPermission or 'admin')

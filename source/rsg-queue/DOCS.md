@@ -56,7 +56,7 @@ VIPs are matched against **every** identifier the player has, so one row can use
 | `IsVip(identifier)` | identifier | `false` (none or expired) or `true, tier, expiresUnix|nil` (cache) |
 | `GetQueueSize()` | | number waiting |
 | `GetQueue()` | | `{ name, tier, priority, joined }[]` in queue order |
-| `SetMaintenance(on)` | boolean | `ok, message` (saved with resource KVP, survives restarts) |
+| `SetMaintenance(on)` | boolean | `ok, message` (saved in the `rsg_queue_state` table, survives restarts) |
 | `IsMaintenance()` | | boolean |
 
 ```lua
@@ -94,7 +94,13 @@ Adding a VIP that already exists updates its tier and expiry (it does not stack 
 | `license` | VARCHAR(80) | Primary key, Rockstar license |
 | `last_claim` | DATETIME | Last VIP reward paid |
 
-Maintenance state is stored in resource KVP (`maintenance`), not the database.
+`rsg_queue_state`
+| Column | Type | Notes |
+|---|---|---|
+| `key` | VARCHAR(50) | Primary key (`maintenance`) |
+| `value` | VARCHAR(100) | `1` = maintenance on, `0` = off |
+
+Maintenance state lives in MySQL, not resource KVP, so the server never creates a `db` folder.
 
 ## Security model
 - Priority is decided only on the server from the database, aces and the server's own records. Nothing comes from the client.
@@ -138,7 +144,7 @@ Support the Project : https://rexshack.tebex.store/
 
 ## Technical reference
 
-Generated from the source of **rsg-queue 3.0.2**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-queue 3.0.3**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 

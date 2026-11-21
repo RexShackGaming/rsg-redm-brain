@@ -23,6 +23,7 @@ Config.Tracks = {
 Config.TrolleyModels = { 'trolley01x' }
 
 Config.AdminPermission = 'admin' -- rsg-core permission for /trams
+Config.AutoDatabase = true -- create the rsg_trams_state table on start; set false and import install.sql to install manually
 
 Config.CruiseSpeed     = 3.5   -- func_775
 Config.MaxSpeed        = 6.0   -- func_779

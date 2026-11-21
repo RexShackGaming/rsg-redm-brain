@@ -2,7 +2,7 @@
 
 Player-run gangs ("outfits") for the RSG Framework: ranks and permissions, a shared bank, a chuck wagon that acts as the gang base, deployable camp equipment, crafting stations and an upgradable strongbox stash.
 
-Version 3.1.1. Full reference: [DOCS.md](DOCS.md).
+Version 3.4.1. Full reference: [DOCS.md](DOCS.md).
 
 ## Dependencies
 
@@ -55,7 +55,7 @@ ensure rsg-wellpump
 ensure rsg-gangs
 ```
 
-3. Database: the seven tables (`rsg_gangs`, `rsg_gang_members`, `rsg_gang_equipment`, `rsg_gang_logs`, `rsg_gang_territories`, `rsg_gang_bounties`, `rsg_gang_rivals`) are created automatically on first start. To install by hand, set `Config.AutoDatabase = false` and import `installation/rsg-gangs.sql`.
+3. Database: the eight tables (`rsg_gangs`, `rsg_gang_members`, `rsg_gang_equipment`, `rsg_gang_logs`, `rsg_gang_territories`, `rsg_gang_bounties`, `rsg_gang_rivals`, `rsg_gang_state`) are created automatically on first start. To install by hand, set `Config.AutoDatabase = false` and import `installation/rsg-gangs.sql`.
    - Upgrading from 2.0.x: the new `name` column on `rsg_gang_members` is added automatically. By hand, run the `ALTER TABLE` line at the bottom of `installation/rsg-gangs.sql`.
 4. Make sure every item used by your crafting recipes exists in your items list (the server prints a warning on start for any that do not).
 5. Set your language with `setr rsg:locale en` (any of the languages above).

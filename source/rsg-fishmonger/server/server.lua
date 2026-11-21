@@ -84,21 +84,33 @@ local function bonusFor(Player)
 end
 
 ---------------------------------
--- daily stock (resource KVP, survives restarts, resets each real day)
+-- daily stock (MySQL, survives restarts, resets each real day)
+-- Stored in MySQL instead of resource KVP, so no server "db" folder is created
 ---------------------------------
-local function stockKey(loc) return 'stock:' .. loc.key end
+local stockCache = {} -- [loc.key] = { day = 'YYYY-MM-DD', sold = n }, mirrors rsg_fishmonger_stock
 
 local function getSold(loc)
-    local raw = GetResourceKvpString(stockKey(loc))
-    if not raw then return 0 end
-    local ok, d = pcall(json.decode, raw)
-    if ok and type(d) == 'table' and d.day == today() then return tonumber(d.sold) or 0 end
+    local d = stockCache[loc.key]
+    if d and d.day == today() then return d.sold end
     return 0
 end
 
 local function addSold(loc, n)
-    SetResourceKvp(stockKey(loc), json.encode({ day = today(), sold = getSold(loc) + n }))
+    local day = today()
+    local sold = getSold(loc) + n
+    stockCache[loc.key] = { day = day, sold = sold }
+    MySQL.prepare('INSERT INTO rsg_fishmonger_stock (`location`, `day`, `sold`) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `day` = VALUES(`day`), `sold` = VALUES(`sold`)', { loc.key, day, sold })
 end
+
+MySQL.ready(function()
+    if Config.AutoDatabase ~= false then -- set false and import install.sql for a manual install
+        MySQL.query.await('CREATE TABLE IF NOT EXISTS `rsg_fishmonger_stock` (`location` VARCHAR(50) NOT NULL, `day` VARCHAR(10) NOT NULL, `sold` INT NOT NULL DEFAULT 0, PRIMARY KEY (`location`))')
+    end
+    local rows = MySQL.query.await('SELECT `location`, `day`, `sold` FROM rsg_fishmonger_stock') or {}
+    for _, r in ipairs(rows) do
+        if not stockCache[r.location] then stockCache[r.location] = { day = r.day, sold = tonumber(r.sold) or 0 } end
+    end
+end)
 
 -- nil = unlimited
 local function stockLeft(loc)

@@ -2,6 +2,18 @@
 
 All notable changes to rsg-voice. Newest first.
 
+## 3.2.0
+
+### Added
+- **Radio listening settings** for rsg-radio: client exports `SetRadioVolume`, `GetRadioVolume`, `SetRadioMuted`, `IsRadioMuted`, `SetRadioSignal`, `GetRadioSignal`. Volume, mute and signal scale what you hear on the radio; signal 0.0 also blocks transmitting. The radio static follows them.
+- **Transmit time limit**: `Config.Radio.MaxTransmitSeconds` (0 = unlimited) and `Config.Radio.TransmitCooldown`. New locale key `cl_radio_timeout` (all 11 languages).
+- **Call priority**: `SetCallActive` / `IsCallActive` exports and `Config.Priority.Call`. During a phone call radio and party transmit are blocked and incoming radio and party voice are muted. rsg-telephone 3.1.1 reports its calls.
+- **Radio or party priority**: `Config.Priority.RadioVsParty` (`'first'` keeps the old behaviour, `'radio'`, `'party'`).
+
+### Fixed
+- New server-only event `rsg-voice:server:radioTalkChanged (src, state)`, fired after a transmit change is validated, so other resources do not have to listen to the client-facing `radioTalk` net event (which logged "not safe for net").
+- Letting go of one channel (radio, party) no longer resets the voice target while the other channel or a phone call is using it.
+
 ## 3.1.3
 
 ### Fixed

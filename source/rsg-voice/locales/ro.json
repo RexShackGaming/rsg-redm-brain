@@ -64,5 +64,6 @@
     "cl_waypoint_blip": "Punct de grup (%s)",
     "ui_party_share": "Partajează punct",
     "ui_radio": "RADIO",
-    "ui_radio_key": "Transmitere radio (ține apăsat)"
+    "ui_radio_key": "Transmitere radio (ține apăsat)",
+    "cl_radio_timeout": "Ai atins limita de transmisie de %s secunde, eliberează tasta"
 }

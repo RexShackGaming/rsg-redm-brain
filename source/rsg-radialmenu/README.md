@@ -3,7 +3,7 @@
 # 🧭 rsg-radialmenu
 **Radial interaction menu for RedM using RSG Core.**
 
-![Version](https://img.shields.io/badge/version-3.2.0-red)
+![Version](https://img.shields.io/badge/version-3.3.0-red)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 
 A fast, themed radial menu with nested submenus, job-specific actions, synced walk styles and an export API so other resources can add their own options.
@@ -50,7 +50,8 @@ A fast, themed radial menu with nested submenus, job-specific actions, synced wa
 
 | Option | Default | Description |
 |---|---|---|
-| `Config.Keybind` | `'F6'` | Key from `RSGCore.Shared.Keybinds` |
+| `Config.Keybind` | `'F6'` | Key from `RSGCore.Shared.Keybinds`. In tap mode it is only the default: players can rebind it in the game's key settings |
+| `Config.UseKeyMapping` | `true` | Tap mode only (`HoldToOpen = false`): register the key with `RegisterKeyMapping` through rsg-core `RegisterKey` (needs rsg-core 3.5.0+). Hold mode always polls `Config.Keybind` because the NUI watches that key's release |
 | `Config.HoldToOpen` | `true` | `true` = hold key, release the keybind to close · `false` = tap to open, close with `Esc` / centre button |
 | `Config.EmergencyCooldown` | `60` | Seconds between emergency button presses |
 | `Config.WalkstyleCooldown` | `2` | Seconds between walk style changes (server enforced) |

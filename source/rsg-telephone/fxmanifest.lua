@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-telephone - persistent telephone props with private voice calls'
-version '3.1.0'
+version '3.1.1'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',

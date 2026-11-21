@@ -18,7 +18,7 @@ Resources should change weather via `exports['rsg-weather']:setWeather(type, tra
 
 ## Technical reference
 
-Generated from the source of **rsg-weather 3.1.1**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-weather 3.1.3**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 

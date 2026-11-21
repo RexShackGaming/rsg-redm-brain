@@ -2,6 +2,11 @@
 
 All notable changes to rsg-hunting. Newest first.
 
+## 3.3.2
+
+### Changed
+- The "last paid week" marker for weekly rewards is now stored in a new `hunting_weekly_state` table (created automatically, also in `install.sql`) instead of resource KVP, so the server no longer creates a `db` folder. After updating, the first start re-seeds the marker, so a weekly payout that was still pending at that moment is skipped once.
+
 ## 3.3.1
 
 ### Added

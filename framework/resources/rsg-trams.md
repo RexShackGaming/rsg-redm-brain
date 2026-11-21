@@ -1,12 +1,12 @@
 # rsg-trams
 
-Version 3.1.1. rsg-trams - Saint Denis trolley network (one trolley per track)
+Version 3.1.2. rsg-trams - Saint Denis trolley network (one trolley per track)
 
 Saint Denis trolleys for RSG Framework, with **one trolley on the Saint Denis loop**. - One networked trolley on the Saint Denis loop (upper and inner tracks removed), with map blips - Only one trolley ever: if a trolley already exists anywhere, no new one is spawned (a lost one is re-adopted)
 
 Source: https://github.com/Rexshack-RedM/rsg-trams
 
-**Dependencies:** `rsg-core`
+**Dependencies:** `rsg-core`, `oxmysql`
 
 ## Net events registered
 
@@ -21,3 +21,7 @@ Source: https://github.com/Rexshack-RedM/rsg-trams
 ## Public (table) functions
 
 **client/dataview.lua:** `DataView.ArrayBuffer(length)`, `DataView.Wrap(blob)`, `DataView:Buffer()`, `DataView:ByteLength()`, `DataView:ByteOffset()`, `DataView:SubView(offset)`
+
+## Database tables
+
+`rsg_trams_state`

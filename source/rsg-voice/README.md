@@ -236,6 +236,9 @@ local range = Player(serverId).state.voiceRange
 
 ---
 
+## Priority and radio limits
+`Config.Priority` lets a phone call (rsg-telephone) take priority over radio and party voice, and lets you choose whether the radio or the riding party wins when both keys are held (`RadioVsParty`). `Config.Radio.MaxTransmitSeconds` limits one transmission (0 = unlimited). rsg-radio uses the new client exports `SetRadioVolume`, `SetRadioMuted` and `SetRadioSignal`; rsg-telephone uses `SetCallActive`. See [DOCS.md](DOCS.md).
+
 ## Localisation
 
 Locale files are in `locales/*.json`. Set the server language with `setr rsg:locale <code>` (falls back to `ox:locale`, then `en`).
@@ -261,6 +264,9 @@ rsg-voice/
 ---
 
 ## Changelog
+
+### 3.2.0
+- **Radio volume, mute and signal** exports for rsg-radio, a **transmit time limit**, **call priority** (rsg-telephone) and a **radio or party priority** setting. New locale key `cl_radio_timeout` in all 11 languages.
 
 ### 3.1.1
 - **Radio static**: squelch burst at the start/end of a transmission and a low hiss while someone transmits, made in the HUD page. Settings in `Config.Radio.Static`.

@@ -1,4 +1,4 @@
-# rsg-hunting – Docs (v3.3.0)
+# rsg-hunting – Docs (v3.3.2)
 
 ## Contents
 1. Files
@@ -83,6 +83,7 @@ Perks are not cumulative: each level lists its full perk set. Webhook URLs are i
 `install.sql` (created automatically on start):
 - `hunting_weekly`: `citizenid`, `week`, `name`, `xp` (primary key `citizenid`, `week`).
 - `hunting_weekly_rewards`: `id`, `citizenid`, `week`, `rank`, `cash`, `claimed`.
+- `hunting_weekly_state`: `key` (primary key, `lastPaidWeek`), `value` (INT, last week that was paid out). Kept in MySQL instead of resource KVP so the server creates no `db` folder.
 
 Trapper stock is saved in `vendor_stock.json`.
 
@@ -118,7 +119,7 @@ Support the Project : https://rexshack.tebex.store/
 
 ## Technical reference
 
-Generated from the source of **rsg-hunting 3.3.0**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-hunting 3.3.2**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 
@@ -126,7 +127,7 @@ Generated from the source of **rsg-hunting 3.3.0**. Names, arguments and default
 
 ### Database
 
-Tables: `hunting_weekly`, `hunting_weekly_rewards`.
+Tables: `hunting_weekly`, `hunting_weekly_rewards`, `hunting_weekly_state`.
 
 Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
 For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.

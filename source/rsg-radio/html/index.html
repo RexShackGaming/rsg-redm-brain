@@ -106,13 +106,47 @@ html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden
 .modal{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);border-radius:3px}
 .modal .card{width:340px;padding:18px;text-align:center}
 .modal p{margin:0 0 14px;font-size:14px}
+
+/* volume, search, recents, compact, HUD */
+.pill.low{color:var(--rdr-cost-over);border-color:var(--rdr-cost-over)}
+.vol{display:flex;align-items:center;gap:10px;margin-top:10px}
+.vol.off input{opacity:.4}
+.vol input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:rgba(0,0,0,.45);border:1px solid var(--rdr-gold-dim);outline:none;cursor:pointer}
+.vol input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle,#fff,#9a9a9a);border:1px solid #000;cursor:pointer}
+.vol .vv{min-width:46px;text-align:right;font-size:12px;font-weight:600;color:var(--rdr-muted)}
+#search{display:block;width:100%;box-sizing:border-box;margin-top:14px;padding:6px 10px;font:400 12.5px 'Roboto',sans-serif;color:var(--rdr-text);
+        background:rgba(0,0,0,.35);border:1px solid var(--rdr-gold-dim);border-radius:2px;outline:none;transition:all .15s ease}
+#search:focus{border-color:var(--rdr-gold);box-shadow:0 0 0 2px rgba(201,162,75,.15)}
+#radio.compact{width:300px;padding:12px 14px 14px}
+#radio.compact .hdr small,#radio.compact .fhint,#radio.compact .foot,#radio.compact .row .sub{display:none}
+#radio.compact .hdr h1{font-size:19px}
+#radio.compact .status{margin-top:10px;padding:6px 10px}
+#radio.compact .div{margin:10px 0 6px}
+#radio.compact .list{max-height:70px}
+#radio.compact #freq{font-size:20px;width:100px}
+.hud{position:absolute;left:var(--hl,18px);top:var(--ht,18px);min-width:150px;max-width:230px;padding:7px 10px 8px;border:1px solid var(--rdr-gold-dim);border-radius:3px;
+     background:linear-gradient(160deg,rgba(20,20,20,.88),rgba(0,0,0,.88));box-shadow:0 6px 18px rgba(0,0,0,.6);color:var(--rdr-text);font-size:12px;pointer-events:none}
+.hud.movable{pointer-events:auto;cursor:move}
+.hud.dragging{opacity:.8}
+.hud .hh{display:flex;gap:8px;align-items:center;margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.08);
+         font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--rdr-muted)}
+.hud .hh .f{flex:1;color:var(--rdr-text)}
+.hud .hh .bad{color:var(--rdr-cost-over)}
+.hud .hm{display:flex;align-items:center;gap:7px;padding:2px 0;color:var(--rdr-muted);transition:color .15s ease}
+.hud .hm i{width:7px;height:7px;border-radius:50%;background:#2e2e2e;border:1px solid var(--rdr-gold-dim);flex:none}
+.hud .hm.talk{color:var(--rdr-text);font-weight:600}
+.hud .hm.talk i{background:var(--rdr-cost-ok);border-color:var(--rdr-cost-ok);box-shadow:0 0 6px var(--rdr-cost-ok)}
+.hud .hm.me{font-style:italic}
+.hud .hmore{padding-top:2px;font-size:11px;color:var(--rdr-muted)}
 </style>
 </head>
 <body>
 <div id="root">
+  <div id="hud" class="hud hidden"></div>
   <div id="radio" class="panel hidden">
-    <div class="hdr" id="hdr"><div class="sp"></div><div class="t"><h1 id="title"></h1><small id="subtitle"></small></div><button class="cbtn" id="x">✕</button></div>
-    <div id="status" class="status"><div class="dot"></div><span id="stext"></span><span id="members" class="pill hidden"></span></div>
+    <div class="hdr" id="hdr"><button class="cbtn" id="cmp">⇕</button><div class="t"><h1 id="title"></h1><small id="subtitle"></small></div><button class="cbtn" id="x">✕</button></div>
+    <div id="status" class="status"><div class="dot"></div><span id="stext"></span><span id="members" class="pill hidden"></span><span id="batt" class="pill hidden"></span></div>
+    <div class="vol hidden" id="vol"><button class="cbtn mini" id="mute">🔊</button><input type="range" id="vslider" min="0" max="100" step="5"><span class="vv" id="vval"></span></div>
     <div class="div" id="divFreq"></div>
     <div class="tune"><button class="cbtn" id="minus">−</button><input id="freq" inputmode="decimal" maxlength="8" autocomplete="off"><button class="cbtn" id="plus">+</button><span class="unit" id="unit"></span><button class="cbtn star" id="fav">☆</button></div>
     <div class="fhint" id="fhint"></div>
@@ -120,8 +154,11 @@ html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden
     <input id="code" type="text" maxlength="32" autocomplete="off" autocapitalize="off" spellcheck="false" class="hidden">
     <input id="pname" maxlength="24" autocomplete="off" class="hidden">
     <div class="actions"><button class="wbtn" id="connect"></button><button class="wbtn mut" id="disconnect"></button><button class="wbtn mut" id="ptoggle"></button><button class="wbtn hidden" id="psave"></button></div>
+    <input id="search" maxlength="24" autocomplete="off" spellcheck="false">
     <div class="div" id="divFav"></div>
     <div class="list" id="favs"></div>
+    <div class="div hidden" id="divRec"></div>
+    <div class="list hidden" id="recs"></div>
     <div class="div" id="divCh"></div>
     <div class="list" id="list"></div>
     <div class="div hidden" id="divPriv"></div>
@@ -152,14 +189,25 @@ function render(){
   $('members').textContent=S.members.replace('%s',st.count||0);
   $('members').classList.toggle('hidden',!on);
   $('disconnect').disabled=!on;
+  const bt=st.battery;
+  $('batt').classList.toggle('hidden',bt==null);
+  if(bt!=null){$('batt').textContent='🔋 '+Math.round(bt)+'%';$('batt').classList.toggle('low',bt<=20);}
+  if(st.vol!=null){
+    $('vol').classList.remove('hidden');$('vslider').step=st.volStep||5;
+    if(Date.now()>volHold){vs={vol:st.vol,muted:!!st.muted};$('vslider').value=vs.vol;vui(vs.vol,vs.muted);}
+  }else $('vol').classList.add('hidden');
   hint();
-  const rows=st.channels||[];
-  $('list').innerHTML=rows.length?rows.map(c=>{
+  const q=($('search').value||'').trim().toLowerCase();
+  const m=(...a)=>!q||a.join(' ').toLowerCase().includes(q);
+  const rows=(st.channels||[]).filter(c=>m(c.freq,c.label));
+  const rr=(st.ranges||[]).filter(r=>m(r.min,r.max,r.label));
+  const rangeRows=rr.map(r=>`<div class="row"><span class="badge">${esc(r.min)}–${esc(r.max)}</span><span class="n">${esc(r.label||S.rangeOpen)}<span class="sub">${esc(S.rangeOpen)}</span></span></div>`).join('');
+  $('list').innerHTML=(rows.length||rr.length)?rangeRows+rows.map(c=>{
     const act=st.freq===c.freq;
     return `<div class="row"><span class="badge">${esc(c.freq)}</span><span class="n">${esc(c.label)}<span class="sub">${esc(S.members.replace('%s',c.count||0))}</span></span>`+
       (act?`<span class="pill">${esc(S.active)}</span>`:`<button class="wbtn" data-f="${esc(c.freq)}">${esc(S.join)}</button>`)+`</div>`;
-  }).join(''):`<div class="empty">${esc(S.noChannels)}</div>`;
-  const pv=st.priv,pl=pv?pv.list||[]:[];
+  }).join(''):`<div class="empty">${esc(q?S.noMatch:S.noChannels)}</div>`;
+  const pv=st.priv,pl=(pv?pv.list||[]:[]).filter(c=>m(c.freq,c.name));
   $('ptoggle').classList.toggle('hidden',!pv);
   $('divPriv').classList.toggle('hidden',!pl.length);$('plist').classList.toggle('hidden',!pl.length);
   $('plist').innerHTML=pl.map(c=>{
@@ -168,14 +216,29 @@ function render(){
       (act?`<span class="pill">${esc(S.active)}</span>`:`<button class="wbtn" data-f="${esc(c.freq)}">${esc(S.join)}</button>`)+
       (c.owner?`<button class="cbtn mini" data-pdel="${esc(c.freq)}" title="${esc(S.privDelete)}">✕</button>`:'')+`</div>`;
   }).join('');
-  const favs=st.favorites||[];
+  const favs=(st.favorites||[]).filter(f=>m(f.freq,f.label));
   $('favs').innerHTML=favs.length?favs.map(f=>{
     const act=st.freq===f.freq;
     return `<div class="row${f.usable?'':' off'}"><span class="badge">${esc(f.freq)}</span><span class="n click" data-load="${esc(f.freq)}" data-label="${esc(f.label||'')}">${esc(f.label||'—')}<span class="sub">${esc(st.unit||'')}</span></span>`+
       (act?`<span class="pill">${esc(S.active)}</span>`:f.locked?`<button class="wbtn" data-load="${esc(f.freq)}" data-label="${esc(f.label||'')}" title="${esc(S.locked)}">🔒 ${esc(S.join)}</button>`:`<button class="wbtn" data-f="${esc(f.freq)}"${f.usable?'':` disabled title="${esc(S.restricted)}"`}>${esc(S.join)}</button>`)+
       `<button class="cbtn mini" data-rm="${esc(f.freq)}" title="${esc(S.favRemove)}">✕</button></div>`;
-  }).join(''):`<div class="empty">${esc(S.noFavorites)}</div>`;
+  }).join(''):`<div class="empty">${esc(q?S.noMatch:S.noFavorites)}</div>`;
+  const allRecs=st.recents||[],recs=allRecs.filter(f=>m(f.freq,f.label));
+  $('divRec').classList.toggle('hidden',!allRecs.length);$('recs').classList.toggle('hidden',!allRecs.length);
+  $('recs').innerHTML=recs.length?recs.map(f=>{
+    const act=st.freq===f.freq,isFav=(st.favorites||[]).some(x=>x.freq===f.freq);
+    return `<div class="row${f.usable?'':' off'}"><span class="badge">${esc(f.freq)}</span><span class="n click" data-load="${esc(f.freq)}" data-label="${esc(f.label||'')}">${esc(f.label||'—')}<span class="sub">${esc(st.unit||'')}</span></span>`+
+      (act?`<span class="pill">${esc(S.active)}</span>`:f.locked?`<button class="wbtn" data-load="${esc(f.freq)}" data-label="${esc(f.label||'')}" title="${esc(S.locked)}">🔒 ${esc(S.join)}</button>`:`<button class="wbtn" data-f="${esc(f.freq)}"${f.usable?'':` disabled title="${esc(S.restricted)}"`}>${esc(S.join)}</button>`)+
+      (!isFav&&f.usable?`<button class="cbtn mini" data-addrec="${esc(f.freq)}" data-label="${esc(f.label||'')}" title="${esc(S.favAdd)}">☆</button>`:'')+`</div>`;
+  }).join(''):`<div class="empty">${esc(S.noMatch)}</div>`;
 }
+let vs={vol:100,muted:false},volHold=0,volTimer=null;
+function vui(vol,muted){$('vval').textContent=muted?S.muted:vol+'%';$('mute').textContent=muted?'🔇':'🔊';$('vol').classList.toggle('off',!!muted);}
+function volSend(){
+  vui(vs.vol,vs.muted);post('setVolume',vs);volHold=Date.now()+1500;
+  clearTimeout(volTimer);volTimer=setTimeout(()=>post('saveVolume',vs),400);
+}
+function applyCompact(on){$('radio').classList.toggle('compact',on);try{localStorage.setItem('rsg-radio:compact',on?'1':'0');}catch(e){}}
 const scale=()=>Math.pow(10,st.dec||0);
 const step=()=>1/scale();
 const fmt=v=>Number(v).toFixed(st.dec||0);
@@ -196,7 +259,8 @@ function hint(){
   if(v===null){h.textContent=range(S.range);return;}
   const key=fmt(v);
   if(v<st.min||v>st.max){h.classList.add('bad');h.textContent=range(S.outOfRange);return;}
-  if((st.reserved||[]).includes(key)){h.classList.add('bad');h.textContent=S.restricted;return;}
+  const inReserved=(st.reservedRanges||[]).some(r=>v>=parseFloat(r.min)-1e-9&&v<=parseFloat(r.max)+1e-9)&&!(st.channels||[]).some(c=>c.freq===key);
+  if((st.reserved||[]).includes(key)||inReserved){h.classList.add('bad');h.textContent=S.restricted;return;}
   star.disabled=false;
   const lock=((st.priv&&st.priv.locked)||[]).includes(key);
   codeUi(lock||pform);
@@ -225,6 +289,10 @@ function toggleFav(){
 }
 
 $('x').onclick=()=>post('close');
+$('cmp').onclick=()=>applyCompact(!$('radio').classList.contains('compact'));
+$('search').addEventListener('input',render);
+$('vslider').addEventListener('input',e=>{vs.vol=+e.target.value;volSend();});
+$('mute').onclick=()=>{vs.muted=!vs.muted;volSend();};
 $('connect').onclick=connect;
 $('disconnect').onclick=()=>post('leave');
 $('minus').onclick=()=>{const v=curFreq();setFreq(v===null?st.min:v-step());};
@@ -245,10 +313,12 @@ function listClick(e){
   const b=e.target.closest('button[data-f]');if(b){post('join',{freq:parseFloat(b.dataset.f)});return;}
   const pd=e.target.closest('button[data-pdel]');if(pd){post('deletePrivate',{freq:parseFloat(pd.dataset.pdel)});return;}
   const r=e.target.closest('button[data-rm]');if(r){post('removeFavorite',{freq:parseFloat(r.dataset.rm)});return;}
+  const ar=e.target.closest('button[data-addrec]');if(ar){post('addFavorite',{freq:parseFloat(ar.dataset.addrec),label:ar.dataset.label||''});return;}
   const l=e.target.closest('[data-load]');if(l){$('freq').value=l.dataset.load;$('flabel').value=l.dataset.label||'';hint();}
 }
 $('list').addEventListener('click',listClick);
 $('favs').addEventListener('click',listClick);
+$('recs').addEventListener('click',listClick);
 $('plist').addEventListener('click',listClick);
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
@@ -284,8 +354,13 @@ function makeDraggable(panel,hdr,key){
   window.addEventListener('resize',()=>{if(panel.style.left){const r=panel.getBoundingClientRect();setPos(r.left,r.top);}});
   return {restore,stop};
 }
+const hudEl=$('hud');
 const radioDrag=makeDraggable($('radio'),$('hdr'),'rsg-radio:pos');
 const adminDrag=makeDraggable($('admin'),$('ahdr'),'rsg-radio:adminpos');
+// The HUD is moved by dragging it while the panel is open (the mouse is only available then); double-click resets it
+const hudDrag=makeDraggable(hudEl,hudEl,'rsg-radio:hudpos');hudDrag.restore();
+new MutationObserver(()=>hudEl.classList.toggle('movable',!$('radio').classList.contains('hidden')||adminVisible()))
+  .observe($('radio'),{attributes:true,attributeFilter:['class']});
 
 // ---- Admin panel ----
 let AS={},AD=null,tab='channels',expanded=new Set(),timer=null,onYes=null;
@@ -359,6 +434,23 @@ $('ax').onclick=()=>post('close');
 function startAdmin(){clearInterval(timer);timer=setInterval(()=>{if(adminVisible()&&!modalOpen())post('adminRefresh');},5000);}
 function stopAdmin(){clearInterval(timer);timer=null;closeModal();}
 
+// ---- Channel HUD (members and who is speaking), visible without the panel ----
+function renderHud(d){
+  if(!d.show){hudEl.classList.add('hidden');return;}
+  hudEl.classList.remove('hidden');
+  hudEl.style.setProperty('--hl',(d.left==null?18:d.left)+'px');
+  hudEl.style.setProperty('--ht',(d.top==null?18:d.top)+'px');
+  const ms=(d.members||[]).slice().sort((a,b)=>(b.talk-a.talk)||String(a.name).localeCompare(String(b.name)));
+  const max=Math.max(1,d.max||8),shown=ms.slice(0,max),more=ms.length-shown.length;
+  const sig=d.signal==null?1:d.signal;
+  let head=`<span class="f">${esc(d.freq)}${d.unit?' '+esc(d.unit):''}</span>`;
+  if(d.muted)head+='<span>🔇</span>';
+  if(d.battery!=null)head+=`<span class="${d.battery<=20?'bad':''}">🔋${Math.round(d.battery)}%</span>`;
+  if(sig<=0)head+=`<span class="bad">${esc(d.txt.noSignal)}</span>`;
+  else if(sig<1)head+=`<span class="bad">${esc(d.txt.weakSignal)}</span>`;
+  hudEl.innerHTML=`<div class="hh">${head}</div>`+shown.map(m=>`<div class="hm${m.talk?' talk':''}${m.id===d.me?' me':''}"><i></i>${esc(m.name)}</div>`).join('')+(more>0?`<div class="hmore">+${more}</div>`:'');
+}
+
 window.addEventListener('message',ev=>{
   const d=ev.data||{};
   if(d.action==='open'){
@@ -373,6 +465,9 @@ window.addEventListener('message',ev=>{
     pform=false;$('pname').classList.add('hidden');$('psave').classList.add('hidden');$('code').classList.add('hidden');$('code').value='';$('pname').value='';
     $('code').placeholder=S.code;$('pname').placeholder=S.pname;$('ptoggle').textContent=S.private;$('divPriv').textContent=S.privateList;
     $('divFav').textContent=S.favorites;$('flabel').placeholder=S.favLabel;$('flabel').value='';
+    $('divRec').textContent=S.recents;$('search').placeholder=S.search;$('search').value='';
+    $('cmp').title=S.compact;$('mute').title=S.mute;$('vslider').title=S.volume;volHold=0;
+    try{$('radio').classList.toggle('compact',localStorage.getItem('rsg-radio:compact')==='1');}catch(e){}
     $('radio').classList.remove('hidden');
     $('hdr').title=S.move;
     radioDrag.restore();
@@ -386,6 +481,10 @@ window.addEventListener('message',ev=>{
     $('admin').classList.remove('hidden');adminDrag.restore();renderAdmin();startAdmin();
   }else if(d.action==='adminData'){
     AD=d.data;renderAdmin();
+  }else if(d.action==='hud'){
+    renderHud(d);
+  }else if(d.action==='battery'){
+    if(st){st.battery=d.value;render();}
   }else if(d.action==='state'){
     st=d.state;render();
   }else if(d.action==='close'){

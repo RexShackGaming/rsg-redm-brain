@@ -45,6 +45,7 @@ A fishmonger system for **RSG-Core (RedM)**. Players visit a fishmonger NPC in a
 | [rsg-core](https://github.com/Rexshack-RedM/rsg-core) | Framework |
 | [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory) | Needs a recent build with the `AddItem`, `RemoveItem` and `CanAddItem` exports |
 | [rsg-target](https://github.com/Rexshack-RedM/rsg-target) | NPC interaction |
+| [oxmysql](https://github.com/overextended/oxmysql) | Saves the daily stock (`rsg_fishmonger_stock`, created automatically; set `Config.AutoDatabase = false` and import `install.sql` to install by hand) |
 | [rsg-weather](https://github.com/Rexshack-RedM/rsg-weather) | Optional, only for opening hours |
 
 No ox_lib required: callbacks, notifications, locales and commands all use rsg-core.
@@ -60,6 +61,7 @@ No ox_lib required: callbacks, notifications, locales and commands all use rsg-c
    ```cfg
    ensure rsg-core
    ensure rsg-inventory
+   ensure oxmysql
    ensure rsg-target
    ensure rsg-fishmonger
    ```
@@ -227,6 +229,9 @@ rsg-fishmonger/
 ---
 
 ## Changelog
+
+### 3.1.1
+- Daily stock is now saved in the `rsg_fishmonger_stock` table instead of resource KVP, so the server no longer creates a `db` folder. Adds the `oxmysql` dependency and `Config.AutoDatabase`. Today's sold counts from before the update are not migrated.
 
 ### 3.1.0
 - Optional rsg-skills integration: fishing `sell_bonus` perk adds to the seller bonus (`Config.Bonus.skill`).

@@ -88,6 +88,8 @@ Config.DailyStock = {
     perLocation = 200,
 }
 
+Config.AutoDatabase = true -- create the rsg_fishmonger_stock table on start; set false and import install.sql to install manually
+
 ---------------------------------
 -- fishing supplies shop (rsg-inventory shop, one per location)
 -- bait names match rsg-fishing's Config.Baits; missing items are skipped by rsg-inventory

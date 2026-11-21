@@ -1,6 +1,6 @@
 # rsg-core
 
-Version 3.4.0. rsg-core
+Version 3.5.0. rsg-core
 
 The core framework for RSG RedM servers: players, characters, money, jobs (with built-in multi-job), gangs, permissions, commands, callbacks, notifications and shared data. Documentation: https://rsgcore.com/docs - [oxmysql](https://github.com/overextended/oxmysql)
 
@@ -36,6 +36,10 @@ Has NUI (`ui_page`).
 
 **server:** `/addpermission`, `/cid`, `/closeserver`, `/dv`, `/dvall`, `/dvo`, `/dvp`, `/gang`, `/givemoney`, `/id`, `/job`, `/me`, `/myjobs`, `/noclip`, `/ooc`, `/openserver`, `/removejob`, `/removepermission`, `/setgang`, `/setjob`, `/setmoney`, `/togglepvp`, `/tp`, `/tpm`, `/vehicle`
 
+## Commands (RegisterCommand)
+
+**client:** `/+`, `/-`
+
 ## Server events it triggers in other resources
 
 **client:** `RSGCore:Server:KickCSRF`, `RSGCore:Server:ReportDeath`, `RSGCore:Server:TriggerCallbackId`, `RSGCore:Server:TriggerClientCallback`, `RSGCore:ToggleDuty`, `RSGCore:UpdatePlayer`, `rsg-multijob:server:changeJob`, `rsg-multijob:server:deleteJob`
@@ -43,6 +47,8 @@ Has NUI (`ui_page`).
 ## Public (table) functions
 
 **client/functions.lua:** `RSGCore.Functions.CreateClientCallback(name, cb)`, `RSGCore.Functions.TriggerClientCallback(name, cb, ...)`, `RSGCore.Functions.TriggerCallback(name, cb, ...)`, `RSGCore.Functions.AwaitCallback(name, timeout, ...)`, `RSGCore.Debug(...)`, `RSGCore.Functions.GetPlayerData(cb)`, `RSGCore.Functions.GetCoords(entity)`, `RSGCore.Functions.HasItem(items, amount)`, `RSGCore.Functions.LookAtEntity(entity, timeout, speed)`, `RSGCore.Functions.PlayAnim(animDict, animName, upperbodyOnly, duration)`, `RSGCore.Functions.GetVehicles()`, `RSGCore.Functions.GetObjects()`, `RSGCore.Functions.GetPlayers()`, `RSGCore.Functions.GetPlayersFromCoords(coords, distance)`, `RSGCore.Functions.GetClosestPlayer(coords)`, `RSGCore.Functions.GetPeds(ignoreList)`, `RSGCore.Functions.GetClosestPed(coords, ignoreList)`, `RSGCore.Functions.GetClosestVehicle(coords)`, `RSGCore.Functions.GetClosestObject(coords)`, `RSGCore.Functions.SpawnVehicle(model, cb, coords, isnetworked, teleportInto)`, `RSGCore.Functions.DeleteVehicle(vehicle)`, `RSGCore.Functions.DrawText(x, y, width, height, scale, r, g, b, a, text)`, `RSGCore.Functions.DrawText3D(x, y, z, text)`, `RSGCore.Functions.GetClosestBone(entity, list)`, `RSGCore.Functions.GetBoneDistance(entity, boneType, boneIndex)`, `RSGCore.Functions.AttachProp(ped, model, boneId, x, y, z, xR, yR, zR, vertex)`, `RSGCore.Functions.SpawnClear(coords, radius)`, `RSGCore.Functions.StartParticleAtCoord(dict, ptName, looped, coords, rot, scale, alpha, color, duration)`, `RSGCore.Functions.StartParticleOnEntity(dict, ptName, looped, entity, bone, offset, rot, scale, alpha, color, evolution, duration)`, `RSGCore.Functions.GetCardinalDirection(entity)`, `RSGCore.Functions.GetCurrentTime()`, `RSGCore.Functions.GetGroundZCoord(coords)`, `RSGCore.Functions.GetGroundHash(entity)`, `RSGCore.Functions.Notify(title, text, notifyType, duration, icon)`
+
+**client/keys.lua:** `RSGCore.Functions.RegisterKey(name, description, defaultKey, onPress, onRelease, opts)`, `RSGCore.Functions.UnregisterKey(name)`
 
 **client/lib.lua:** `RSGCore.Functions.RequestModel(model, timeout)`, `RSGCore.Functions.RequestAnimDict(dict, timeout)`, `RSGCore.Functions.RequestAnimSet(set, timeout)`, `RSGCore.Functions.RequestNamedPtfxAsset(asset, timeout)`, `RSGCore.Functions.PlayAnimOnPed(ped, dict, name, blendIn, blendOut, duration, flag, rate, lockX, lockY, lockZ)`, `RSGCore.Functions.RequestStreamedTextureDict(dict, timeout)`, `RSGCore.Functions.Raycast(from, to, flags, ignore)`, `RSGCore.Functions.RaycastCamera(flags, ignore, distance)`, `RSGCore.Functions.GetNearbyPeds(coords, maxDistance)`, `RSGCore.Functions.GetNearbyVehicles(coords, maxDistance, includePlayerVehicle)`, `RSGCore.Functions.GetNearbyObjects(coords, maxDistance)`
 

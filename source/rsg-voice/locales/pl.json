@@ -64,5 +64,6 @@
     "cl_waypoint_blip": "Punkt drużyny (%s)",
     "ui_party_share": "Udostępnij punkt",
     "ui_radio": "RADIO",
-    "ui_radio_key": "Nadawanie przez radio (przytrzymaj)"
+    "ui_radio_key": "Nadawanie przez radio (przytrzymaj)",
+    "cl_radio_timeout": "Osiągnięto limit nadawania (%s s), puść klawisz"
 }

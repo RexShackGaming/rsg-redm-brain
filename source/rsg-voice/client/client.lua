@@ -16,6 +16,12 @@ local RC          = Config.Radio
 local radio       = nil   -- { freq, members = { [serverId] = true } } while on a radio channel
 local radioTalkers = {}   -- [serverId] = true while they transmit on my channel
 local radioTalk   = false -- I am transmitting on the radio
+local radioVol    = 1.0   -- how loud radio transmissions are for me (SetRadioVolume, saved per player by rsg-radio)
+local radioMuted  = false -- I muted the radio (SetRadioMuted)
+local radioSignal = 1.0   -- 1.0 clear ... 0.0 no signal (SetRadioSignal): scales what I hear, 0.0 also blocks my transmit
+local callActive  = false -- a phone call is running (SetCallActive, set by rsg-telephone)
+local PR          = Config.Priority or {}
+local radioTalkStart, radioLocked, radioCooldownUntil = 0, false, 0 -- transmit time limit
 
 -- NUI focus owners: only release focus when nothing needs it
 local focus = { edit = false, menu = false, invite = false }
@@ -250,10 +256,22 @@ local function clearOverrides()
     overrides = {}
 end
 
+-- a running phone call takes priority over radio and party voice (Config.Priority.Call)
+local function callBlocks(key)
+    return callActive and PR.Call ~= nil and PR.Call.Enabled ~= false and PR.Call[key] ~= false
+end
+
+-- volume of radio transmissions for me: 0.0 when muted, during a call that mutes them, or without signal
+local function radioGain()
+    if radioMuted or radioSignal <= 0.0 or callBlocks('MuteIncomingRadio') then return 0.0 end
+    return radioVol * radioSignal
+end
+
 local function desiredVolume(sid, ped, myPos, myInterior)
-    if radioTalkers[sid] then return 1.0 end
+    if radioTalkers[sid] then return radioGain() end
     if party and Player(sid).state.partyTalk and isMember(sid)
         and #(myPos - GetEntityCoords(ped)) <= P.TalkRange then
+        if callBlocks('MutePartyVoice') then return 0.0 end
         return 1.0
     end
     if Config.Muffle.Enabled and GetInteriorFromEntity(ped) ~= myInterior
@@ -284,7 +302,7 @@ local function updateVolumes()
     end
     for sid in pairs(radioTalkers) do -- radio talkers can be far away / not streamed in
         seen[sid] = true
-        setVolume(sid, 1.0)
+        setVolume(sid, radioGain())
     end
     for sid in pairs(overrides) do
         if not seen[sid] then setVolume(sid, nil) end -- left the area
@@ -317,8 +335,11 @@ local RADIO_TARGET = 3 -- mumble voice target (party talk uses 2)
 local function sendRadioStatic(source, on)
     local S = RC.Static
     if not S or not S.Enabled then return end
+    if source == 'in' and on and radioGain() <= 0.0 then return end -- muted, no signal or in a call: stay silent
+    local vol = S.Volume
+    if source == 'in' then vol = math.min(1.0, S.Volume * math.max(0.25, radioVol) + (1.0 - radioSignal) * 0.4) end
     SendNUIMessage({
-        action = 'radioStatic', source = source, state = on, volume = S.Volume,
+        action = 'radioStatic', source = source, state = on, volume = vol,
         hiss = source == 'self' and S.SelfHiss or S.Hiss, squelch = S.Squelch,
     })
 end
@@ -358,7 +379,8 @@ local function setRadioTalk(state)
         buildRadioTarget()
         MumbleSetVoiceTarget(RADIO_TARGET)
     else
-        MumbleSetVoiceTarget(0)
+        -- party talk or a phone call may own the voice target now: leave it alone
+        if not callActive and not LocalPlayer.state.partyTalk then MumbleSetVoiceTarget(0) end
         MumbleClearVoiceTarget(RADIO_TARGET)
     end
     TriggerServerEvent('rsg-voice:server:radioTalk', state)
@@ -458,8 +480,21 @@ CreateThread(function()
     local nextRebuild = 0
     while true do
         if loaded and RC.Enabled and radio then
-            local held = not focus.menu and not focus.invite and not isMuted()
-                and not LocalPlayer.state.partyTalk and radioKeyHeld()
+            local now = GetGameTimer()
+            local keyDown = radioKeyHeld()
+            if not keyDown then radioLocked = false end
+            local held = keyDown and not radioLocked and now >= radioCooldownUntil
+                and not focus.menu and not focus.invite and not isMuted()
+                and (PR.RadioVsParty == 'radio' or not LocalPlayer.state.partyTalk)
+                and not callBlocks('BlockRadioTransmit') and radioSignal > 0.0
+            if held and not radioTalk then radioTalkStart = now end
+            local maxSec = tonumber(RC.MaxTransmitSeconds) or 0
+            if held and radioTalk and maxSec > 0 and now - radioTalkStart >= maxSec * 1000 then
+                held = false
+                radioLocked = true -- the key has to be released first
+                radioCooldownUntil = now + (tonumber(RC.TransmitCooldown) or 0) * 1000
+                notify('cl_radio_timeout', 'inform', maxSec)
+            end
             if held ~= radioTalk then setRadioTalk(held) end
             if radioTalk and GetGameTimer() >= nextRebuild then
                 nextRebuild = GetGameTimer() + 1000
@@ -555,6 +590,19 @@ exports('GetRadio', function()
     return { freq = radio.freq, members = list }
 end)
 exports('IsRadioTalking', function() return radioTalk end)
+-- Radio listening settings and call priority (rsg-radio and rsg-telephone call these)
+local function refreshVolumes() SetTimeout(0, function() if loaded then updateVolumes() end end) end
+exports('SetRadioVolume', function(v) v = tonumber(v) if v then radioVol = math.max(0.0, math.min(1.0, v)) refreshVolumes() end end)
+exports('GetRadioVolume', function() return radioVol end)
+exports('SetRadioMuted', function(state) radioMuted = state == true refreshVolumes() end)
+exports('IsRadioMuted', function() return radioMuted end)
+exports('SetRadioSignal', function(q) q = tonumber(q) if q then radioSignal = math.max(0.0, math.min(1.0, q)) refreshVolumes() end end)
+exports('GetRadioSignal', function() return radioSignal end)
+exports('SetCallActive', function(state) callActive = state == true refreshVolumes() end)
+exports('IsCallActive', function() return callActive end)
+RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
+    radioVol, radioMuted, radioSignal, callActive = 1.0, false, 1.0, false
+end)
 exports('GetRadioTalkKey', function() return RC.TalkKey end) -- so other NUIs can keep the radio key working
 
 ---------------------------------------------------------------------
@@ -588,7 +636,7 @@ local function setPartyTalk(state)
         buildTarget()
         MumbleSetVoiceTarget(PARTY_TARGET)
     else
-        MumbleSetVoiceTarget(0)
+        if not radioTalk and not callActive then MumbleSetVoiceTarget(0) end
         MumbleClearVoiceTarget(PARTY_TARGET)
     end
     LocalPlayer.state:set('partyTalk', state, true)
@@ -812,7 +860,8 @@ local nextRangeCheck = 0
 CreateThread(function()
     while true do
         if loaded and party and #party.members > 1 then
-            local held = not focus.menu and not focus.invite and not isMuted() and not radioTalk and IsControlPressed(0, P.TalkKey)
+            local held = not focus.menu and not focus.invite and not isMuted() and (PR.RadioVsParty == 'party' or not radioTalk)
+                and not callBlocks('BlockPartyTransmit') and IsControlPressed(0, P.TalkKey)
             if held ~= partyTalk then setPartyTalk(held) end
             if partyTalk and GetGameTimer() >= nextRangeCheck then
                 nextRangeCheck = GetGameTimer() + 1000

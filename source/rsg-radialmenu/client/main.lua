@@ -148,7 +148,17 @@ local function setRadialState(open)
     end
 end
 
+-- Tap mode can use a rebindable key (rsg-core RegisterKey). Hold mode keeps polling the control: the NUI
+-- watches the release of Config.Keybind by name while it has focus, so that key must not be rebound.
+local mapped = Config.UseKeyMapping and not Config.HoldToOpen
+if mapped then
+    RSGCore.Functions.RegisterKey('rsgradialmenu_open', locale('key_open'), Config.Keybind, nil, function()
+        if not inRadialMenu and canUseMenu() then setRadialState(true) end
+    end)
+end
+
 CreateThread(function()
+    if mapped then return end
     local key = RSGCore.Shared.Keybinds[Config.Keybind]
     if not key then
         print(('^1[%s] Config.Keybind "%s" is not a key in RSGCore.Shared.Keybinds, the menu cannot be opened^7'):format(GetCurrentResourceName(), tostring(Config.Keybind)))

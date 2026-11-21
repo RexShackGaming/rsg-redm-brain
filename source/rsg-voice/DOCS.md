@@ -1,4 +1,4 @@
-# rsg-voice – Docs (v3.1.3)
+# rsg-voice – Docs (v3.2.0)
 
 ## Contents
 1. Files
@@ -51,6 +51,8 @@ Proximity voice on RedM's native Mumble voice.
 | `Muffle` | table | `Enabled`, `Volume` (0.35), `Interval` |
 | `TalkIcon` | table | `Enabled`, `Distance`, `ShowSelf`, texture, size, colours |
 | `Radio` | table | `Enabled`, `UseKeyMapping` (`true`), `Key` (`'O'`), `TalkKey` (`0xF1301666`, fallback), `NearbyHear` (`true`), `MaxMembers` (`64`), `Debug` (`false`), `Static` (`Enabled`, `Volume` 0.3, `Hiss`, `Squelch`, `SelfHiss`) |
+| `Radio.MaxTransmitSeconds` / `Radio.TransmitCooldown` | `0` / `3` | Longest single transmission (0 = unlimited) and the wait after hitting it |
+| `Priority` | table | `RadioVsParty` (`'first'`, `'radio'`, `'party'`) and `Call` (`Enabled`, `BlockRadioTransmit`, `BlockPartyTransmit`, `MuteIncomingRadio`, `MutePartyVoice`), see [Priority](#priority) |
 | `Party` | table | `Enabled`, `Command`, `TalkKey`, `TalkRange` (100), `InviteRange` (10), `MaxMembers` (8), `InviteTimeout` (30), `Blips`, `Waypoint` |
 
 ## 4. Exports, events and commands
@@ -66,6 +68,15 @@ Proximity voice on RedM's native Mumble voice.
 | `GetRadio()` | `{ freq, members = { serverId, ... } }` or nil |
 | `IsRadioTalking()` | bool, true while the transmit key is held |
 | `GetRadioTalkKey()` | Control hash of the transmit key (keep it enabled in your own NUI) |
+| `SetRadioVolume(v)` / `GetRadioVolume()` | Radio volume for this player, `0.0`-`1.0` (rsg-radio sets it from the saved settings) |
+| `SetRadioMuted(state)` / `IsRadioMuted()` | Mute incoming radio (transmitting still works) |
+| `SetRadioSignal(q)` / `GetRadioSignal()` | Radio signal `0.0`-`1.0`: scales incoming radio, `0.0` also blocks transmitting |
+| `SetCallActive(state)` / `IsCallActive()` | A phone call is running (rsg-telephone). Applies `Config.Priority.Call` |
+
+### Priority
+- **Call**: while `SetCallActive(true)`, radio and party transmit are blocked, incoming radio and party voice are muted (each switch in `Config.Priority.Call`). Letting go of radio or party no longer resets the voice target while a call is active.
+- **Radio vs party**: `Config.Priority.RadioVsParty`. `'first'` is the old behaviour (the key pressed first keeps the line), `'radio'` and `'party'` let that channel take over when both keys are held.
+- **Transmit limit**: `Config.Radio.MaxTransmitSeconds` ends a transmission after that many seconds; the key must be released and `TransmitCooldown` seconds must pass.
 
 ### Server exports
 | Export | Notes |

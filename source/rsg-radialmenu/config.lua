@@ -6,6 +6,7 @@ Config = {}
 ---------------------------------------------------------------------
 Config.Keybind            = 'F6'
 Config.HoldToOpen         = true  -- true: hold key, release to close | false: tap to open
+Config.UseKeyMapping      = true  -- tap mode only (HoldToOpen = false): rebindable key via rsg-core RegisterKey. Hold mode always polls Config.Keybind
 Config.EmergencyCooldown  = 60    -- seconds between emergency button presses
 Config.WalkstyleCooldown  = 2     -- seconds between walkstyle changes (server enforced)
 

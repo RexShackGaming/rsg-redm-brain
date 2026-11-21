@@ -97,7 +97,7 @@ Support: https://rexshack.tebex.store
 
 ## Technical reference
 
-Generated from the source of **rsg-radialmenu 3.2.1**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-radialmenu 3.3.0**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 
@@ -107,7 +107,8 @@ Generated from the source of **rsg-radialmenu 3.2.1**. Names, arguments and defa
 
 | Option | Default | Notes |
 |---|---|---|
-| `Config.Keybind` | `'F6'` |  |
+| `Config.Keybind` | `'F6'` | Key name. In tap mode it is the default of a rebindable key |
+| `Config.UseKeyMapping` | `true` | Tap mode only: rebindable key via rsg-core `RegisterKey` (rsg-core 3.5.0+). Hold mode polls `Config.Keybind`, because the NUI detects its release by key name and a rebound key would never close the menu |
 | `Config.HoldToOpen` | `true` | true: hold key, release to close \| false: tap to open |
 | `Config.EmergencyCooldown` | `60` | seconds between emergency button presses |
 | `Config.WalkstyleCooldown` | `2` | seconds between walkstyle changes (server enforced) |

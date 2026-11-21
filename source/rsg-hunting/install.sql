@@ -18,3 +18,9 @@ CREATE TABLE IF NOT EXISTS `hunting_weekly_rewards` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `cid_week` (`citizenid`, `week`)
 );
+
+CREATE TABLE IF NOT EXISTS `hunting_weekly_state` (
+    `key` VARCHAR(50) NOT NULL,
+    `value` INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (`key`)
+);

@@ -233,6 +233,11 @@ local SCHEMA = {
         KEY `gang_name` (`gang_name`),
         CONSTRAINT `fk_gang_territory_gang` FOREIGN KEY (`gang_name`) REFERENCES `rsg_gangs` (`name`) ON DELETE CASCADE ON UPDATE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]],
+    [[CREATE TABLE IF NOT EXISTS `rsg_gang_state` (
+        `key` varchar(50) NOT NULL,
+        `value` varchar(100) NOT NULL,
+        PRIMARY KEY (`key`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]],
 }
 
 -- Columns added after 2.0.x: { table, column, definition }. Added only when missing.

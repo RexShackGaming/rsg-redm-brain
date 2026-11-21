@@ -1,8 +1,8 @@
 # rsg-gangs
 
-Version 3.4.0. Gang System for RSG Framework
+Version 3.4.1. Gang System for RSG Framework
 
-Player-run gangs ("outfits") for the RSG Framework: ranks and permissions, a shared bank, a chuck wagon that acts as the gang base, deployable camp equipment, crafting stations and an upgradable strongbox stash. Version 3.1.1. Full reference: [DOCS.md](DOCS.md). - rsg-core
+Player-run gangs ("outfits") for the RSG Framework: ranks and permissions, a shared bank, a chuck wagon that acts as the gang base, deployable camp equipment, crafting stations and an upgradable strongbox stash. Version 3.4.1. Full reference: [DOCS.md](DOCS.md). - rsg-core
 
 Source: https://github.com/Rexshack-RedM/rsg-gangs
 
@@ -42,4 +42,4 @@ Has NUI (`ui_page`).
 
 ## Database tables
 
-`rsg_gang_bounties`, `rsg_gang_equipment`, `rsg_gang_logs`, `rsg_gang_members`, `rsg_gang_rivals`, `rsg_gang_territories`, `rsg_gangs`
+`rsg_gang_bounties`, `rsg_gang_equipment`, `rsg_gang_logs`, `rsg_gang_members`, `rsg_gang_rivals`, `rsg_gang_state`, `rsg_gang_territories`, `rsg_gangs`

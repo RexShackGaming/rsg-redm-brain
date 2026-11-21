@@ -1,6 +1,6 @@
 # rsg-telephone
 
-Persistent telephone props with private voice calls for the RSG Framework (RedM). **Version 3.1.0**
+Persistent telephone props with private voice calls for the RSG Framework (RedM). **Version 3.1.1**
 
 Admins place wall or desk phones that survive restarts; each phone gets a number. Players dial from a phone (keypad or directory), the far phone rings for anyone nearby, and answering opens a private voice line between the two callers. Public phones work as coin-operated payphones, and phones can be reserved for a job.
 
@@ -108,6 +108,8 @@ All options live in `shared/config.lua`. Values are validated and clamped at sta
 | `Config.Voice.KeepProximity` | `true` | People next to you still hear you while you are on the phone |
 | `Config.Voice.Volume` | `1.0` | Volume of the person on the other end |
 | `Config.Voice.Refresh` | `1000` | Milliseconds between re-applying the voice target |
+
+With rsg-voice 3.2.0+ a running call also takes priority over radio and party voice (see `Config.Priority` in rsg-voice).
 
 If you also run pma-voice or another voice script, set `Config.Voice.DefaultTarget` to the target it uses (pma-voice = `1`) and keep `Config.Voice.Target` on a free slot.
 

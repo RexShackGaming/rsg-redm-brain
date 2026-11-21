@@ -64,5 +64,6 @@
     "cl_waypoint_blip": "Punto del grupo (%s)",
     "ui_party_share": "Compartir punto",
     "ui_radio": "RADIO",
-    "ui_radio_key": "Transmitir por radio (mantener)"
+    "ui_radio_key": "Transmitir por radio (mantener)",
+    "cl_radio_timeout": "Límite de transmisión de %s segundos alcanzado, suelta la tecla"
 }

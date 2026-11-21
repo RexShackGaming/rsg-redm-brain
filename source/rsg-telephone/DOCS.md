@@ -1,6 +1,6 @@
 # rsg-telephone — Developer & Server-Owner Documentation
 
-Reference for **rsg-telephone 3.1.0** on RSG-Core (RedM). For installation, features and the config table, see [README.md](README.md).
+Reference for **rsg-telephone 3.1.1** on RSG-Core (RedM). For installation, features and the config table, see [README.md](README.md).
 
 ## Contents
 
@@ -23,7 +23,7 @@ Reference for **rsg-telephone 3.1.0** on RSG-Core (RedM). For installation, feat
 
 | File | Purpose |
 |---|---|
-| `fxmanifest.lua` | Resource metadata, dependencies, script order, NUI page and locale files. Version `3.1.0`. |
+| `fxmanifest.lua` | Resource metadata, dependencies, script order, NUI page and locale files. Version `3.1.1`. |
 | `shared/config.lua` | All tunable options. Runs after `@rsg-core/shared/locale.lua`, so model labels can use `locale()`. Ends with guards that clamp invalid values. |
 | `client/client.lua` | Prop streaming, interior room assignment, rsg-target options, NUI phone screen, bell/audio positioning, Mumble voice line, placement through rsg-gizmo, admin panel NUI. |
 | `server/server.lua` | Authoritative phone registry, database load/save, payphone money, call lifecycle and watchdog, job checks, ownership, admin callbacks, commands. |
@@ -442,6 +442,7 @@ Copy `locales/en.json` to `locales/<code>.json`, translate the values, keep ever
 | No phones appear | `Config.AutoDatabase` failed and the table is missing, or rows have invalid coordinates (check the server console). Confirm the player is within `Config.SpawnDistance`. |
 | Props do not render inside a building | The phone was placed before room support or with `room = 0` and no player in the interior. Re-place it with rsg-gizmo while inside, or set `room` in the DB. |
 | Cannot target a phone | `rsg-target` must be started. Increase `Config.UseDistance` if needed. |
+| Radio or party voice cuts into calls | Update rsg-voice to 3.2.0+. The client tells it a call is running with `exports['rsg-voice']:SetCallActive(true)` while the voice line is open; `Config.Priority.Call` in rsg-voice decides what is blocked |
 | No voice on calls | `Config.Voice.Target` conflicts with another voice script; choose a free slot. If using pma-voice, set `Config.Voice.DefaultTarget = 1`. Check push-to-talk still works while the phone UI is open. |
 | Phone does not ring | The destination must exist, be placed (`stored = 0`) and not already in a call. Ringing is only heard within `Config.RingDistance`. |
 | Call ends when walking away | Increase `Config.MaxCallDistance`. The server checks distance every 2 seconds. |
@@ -461,7 +462,7 @@ Support the Project : https://rexshack.tebex.store/
 
 ## Technical reference
 
-Generated from the source of **rsg-telephone 3.1.0**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-telephone 3.1.1**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 

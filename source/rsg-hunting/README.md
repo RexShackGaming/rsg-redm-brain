@@ -170,7 +170,7 @@ Level titles (`Config.HuntingXP.Levels[].label`), vendor/butcher names and butch
 
 ## Database
 
-Tables (`hunting_weekly`, `hunting_weekly_rewards`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `install.sql` once.
+Tables (`hunting_weekly`, `hunting_weekly_rewards`, `hunting_weekly_state`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `install.sql` once.
 
 ---
 ## rsg-skills integration

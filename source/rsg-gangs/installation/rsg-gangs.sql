@@ -92,3 +92,9 @@ CREATE TABLE IF NOT EXISTS `rsg_gang_rivals` (
   CONSTRAINT `fk_gang_rival_gang` FOREIGN KEY (`gang_name`) REFERENCES `rsg_gangs` (`name`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_gang_rival_other` FOREIGN KEY (`rival_name`) REFERENCES `rsg_gangs` (`name`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `rsg_gang_state` (
+  `key` varchar(50) NOT NULL,
+  `value` varchar(100) NOT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

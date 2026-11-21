@@ -134,6 +134,11 @@ end
 ----------------------------------------------------------------
 -- built-in voice line (Mumble natives)
 ----------------------------------------------------------------
+-- tell rsg-voice a call is running so radio and party voice do not cut in (ignored by older rsg-voice versions)
+local function setVoiceCall(state)
+    pcall(function() exports['rsg-voice']:SetCallActive(state) end)
+end
+
 local VoicePartner = nil
 local voiceToken = 0
 
@@ -151,6 +156,7 @@ end
 
 function stopVoice()
     if not VoicePartner then return end
+    setVoiceCall(false)
     MumbleSetVolumeOverrideByServerId(VoicePartner, -1.0)
     MumbleClearVoiceTarget(Config.Voice.Target)
     MumbleSetVoiceTarget(Config.Voice.DefaultTarget)
@@ -160,6 +166,7 @@ end
 RegisterNetEvent('rsg-telephone:client:startVoice', function(partner)
     VoicePartner = tonumber(partner)
     if not VoicePartner then return end
+    setVoiceCall(true)
     applyLine()
     voiceToken = voiceToken + 1
     local token = voiceToken -- only one refresh loop alive at a time

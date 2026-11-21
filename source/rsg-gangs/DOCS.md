@@ -1,6 +1,6 @@
 # rsg-gangs documentation
 
-For server owners and developers. Version 3.1.1.
+For server owners and developers. Version 3.4.1.
 
 ## Contents
 
@@ -146,6 +146,7 @@ Tables are created on start when `Config.AutoDatabase = true`. `ensureDatabase` 
 | `rsg_gang_equipment` | `id`, `gang_name`, `item_id`, `x`, `y`, `z`, `heading`, `created_at` |
 | `rsg_gang_logs` | `id`, `gang_name`, `citizenid`, `actor`, `action`, `detail`, `created_at` |
 | `rsg_gang_rivals` | `gang_name`, `rival_name`, `kills` (kills by the first gang against the second) |
+| `rsg_gang_state` | `key` (primary key, `season`), `value` (current leaderboard season, e.g. `2026-11`) |
 | `rsg_gang_bounties` | `id`, `gang_name`, `reward`, `target_type` (`player` or `gang`), `target_id` (citizenid or gang name), `target_name`, `created_at` (escrow ledger) |
 | `rsg_gang_territories` | `territory_id` (key), `gang_name`, `claimed_at` |
 
@@ -317,7 +318,7 @@ Drinking works the same way: the client calls `exports['rsg-wellpump']:PlayDrink
 - **Rivalries.** Listens to the server-only `RSGCore:Server:OnPlayerKilled`. A kill between members of two different gangs adds 1 to `rsg_gang_rivals`; the same killer and victim count once per `pairCooldownSeconds`.
 - **Bounties.** A bounty always names a target: one online player, or a rival gang. In the gang UI the member enters the amount, picks Player or Rival gang, and chooses the target from an HTML dropdown filled by the `rsg-gangs:server:bountyTargets` callback (players are listed by character name and sent back as server ids, gangs by label and sent back as gang names; the callback needs `bounty`). `postBounty(amount, targetType, targetId)` needs `bounty` and checks, on the server: the amount range, that the target still exists, that it is not the player themselves or anyone in the posting gang, that the gang has no bounty on that target already, `maxActive`, and the bank balance. Posts from one gang are serialised so two members cannot slip past `maxActive`. The amount moves from the bank into escrow (`rsg_gang_bounties`) and `rsg-bountyhunter:PostBounty` is called inside a `pcall` with `targetCitizenid` (player) or `targetGang` (gang), `targetName` and `sponsorGang`; if it fails the escrow is returned. A hunter follows a moving search area on the map and brings the target (or, for a gang bounty, any online member of that gang) to a sheriff's office dead, hogtied or cuffed. Members of the posting gang cannot take their own bounty, and a hunter cannot take a bounty on their own gang. When the poster closes, rsg-bountyhunter fires the server-only event `rsg-bountyhunter:server:posterClosed(ref, reason, paid)`: on `completed` the unpaid remainder returns to the bank, otherwise the full amount does. Escrow left over from a restart is refunded on start. rsg-bountyhunter reads gang membership through the `GetPlayerGang` and `GetGangOnlineSources` exports.
 - **Tags.** `setTag(tag)` needs `rename`; it upper-cases, strips non-alphanumerics and checks `minLength`..`maxLength`.
-- **Leaderboard.** Score = turf x `turfPoints` + rival kills x `killPoints`. With `monthlyReset`, the first check in a new calendar month clears `rsg_gang_rivals` (season stored in a server KVP).
+- **Leaderboard.** Score = turf x `turfPoints` + rival kills x `killPoints`. With `monthlyReset`, the first check in a new calendar month clears `rsg_gang_rivals` (the current season is stored in the `rsg_gang_state` table, not in resource KVP).
 - **Webhook.** `server/sv_config.lua` is server-only so the URL never reaches players. Messages are queued (one per 1.5 s, 50 max) and sent with `allowed_mentions = { parse = {} }`, so gang names cannot ping anyone. Only actions listed in `SvConfig.Webhook.Actions` are sent.
 
 ---

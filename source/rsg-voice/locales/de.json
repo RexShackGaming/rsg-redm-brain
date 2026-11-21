@@ -64,5 +64,6 @@
     "cl_waypoint_blip": "Gruppen-Wegpunkt (%s)",
     "ui_party_share": "Wegpunkt teilen",
     "ui_radio": "FUNK",
-    "ui_radio_key": "Funk senden (halten)"
+    "ui_radio_key": "Funk senden (halten)",
+    "cl_radio_timeout": "Sendelimit von %s Sekunden erreicht, lass die Taste los"
 }

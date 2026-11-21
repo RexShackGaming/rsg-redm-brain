@@ -14,7 +14,7 @@ Drug production for RSG Framework (cannabis lab: drying, processing, packing bag
 Players at **Distributor or higher** (`Config.Export.MinLevel`) can sell `weed_brick` to a buyer NPC (`Config.Export.NPC`, rsg-target *Talk business*). Settings: `shared/config_export.lua`.
 - **Price follows supply**: an empty market pays `MaxPrice` (default $3,000); as the buyer's stock approaches `Saturation` (40 bricks) the price slides towards `MinPrice` ($800). Every brick sold raises his stock, so a big dump earns less per brick (each brick in a deal is priced in turn).
 - **Recovers over time**: every `TickMinutes` the buyer offloads around `DrainPerHour` bricks/hour (±30%) and demand drifts randomly between `DemandMin`–`DemandMax`, so prices rise and fall realistically.
-- The market is shared by all players and saved in resource KVP (survives restarts, no SQL).
+- The market is shared by all players and saved in the `rsg_drugs_state` database table (survives restarts; created automatically).
 - NUI shows the current price with trend, a price chart of recent market updates, a demand bar (Hungry → Steady → Saturated → Flooded) and an exact payout preview. Max `MaxPerSale` bricks per deal, `Cooldown` between deals.
 - After a deal the panel closes and the same handover animation as NPC bag sales plays (`Config.Addiction.Selling.Anim`).
 - Server-side checks: distance to the buyer, level, item count, cooldown; payout computed on the server. Each exported brick gives `Config.XP.Sell.weed_brick` XP (60).

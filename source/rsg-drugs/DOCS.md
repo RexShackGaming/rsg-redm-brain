@@ -1,4 +1,4 @@
-# rsg-drugs – Docs (v3.1.0)
+# rsg-drugs – Docs (v3.1.3)
 
 ## Contents
 1. Files
@@ -44,7 +44,7 @@
 ### Brick export (demand market)
 - Players at **Distributor or higher** (`Config.Export.MinLevel`) sell `weed_brick` to a buyer NPC (*Talk business*).
 - Price follows supply: an empty market pays `MaxPrice`, sliding to `MinPrice` as buyer stock nears `Saturation`. Stock drains over time and demand drifts between `DemandMin` and `DemandMax`.
-- The market is shared by all players and saved in resource KVP (no SQL).
+- The market is shared by all players and saved in the `rsg_drugs_state` table (no resource KVP, so no server `db` folder).
 - Move the default buyer coords (`Config.Export.NPC.coords`) to your own location.
 
 ### Reputation (XP)
@@ -108,7 +108,10 @@ exports['rsg-drugs']:AddXP(src, 25, 'delivery')
 ```
 
 ## 5. Database
-`rsg_drugs_labs`: `citizenid` (primary key), `data` (LONGTEXT JSON for the lab). Import `installation/install.sql`, and add `installation/shared_items.lua` to your items file. Addiction and XP live in player metadata; the export market lives in resource KVP.
+`rsg_drugs_labs`: `citizenid` (primary key), `data` (LONGTEXT JSON for the lab).
+`rsg_drugs_state`: `key` (primary key, currently `market`), `value` (LONGTEXT JSON of the export market: stock, demand, price history).
+
+Both tables are created automatically (`Config.AutoDatabase`). To install manually set it to `false`, import `installation/install.sql`, and add `installation/shared_items.lua` to your items file. Addiction and XP live in player metadata; the export market lives in `rsg_drugs_state`.
 
 ## 6. Discord logs
 Set URLs in `server/config_discord.lua` (`ConfigDiscord.Webhooks` per category, or `ConfigDiscord.Default` for one channel; `false` turns a category off). Categories: `lab`, `sales`, `export`, `xp`, `rehab`, `admin`, `security`. Logs are queued and batched (up to 10 embeds per message every `FlushSeconds`) with back-off on Discord rate limits. `MinDeposit` / `MinWithdraw` filter small transactions.
