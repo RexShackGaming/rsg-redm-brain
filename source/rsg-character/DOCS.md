@@ -2,7 +2,7 @@
 
 This document explains how rsg-character works under the hood, so you can configure it confidently, troubleshoot problems and build other resources on top of it. For a quick install guide see [README.md](README.md).
 
-**Version:** 3.3.0 · **Framework:** RSG-Core · **Lua:** 5.4
+**Version:** 3.4.0 · **Framework:** RSG-Core · **Lua:** 5.4
 
 ---
 
@@ -47,7 +47,9 @@ rsg-character/
 │   ├── sv_appearance.lua -- routing buckets, creator sessions, SaveSkin, createCharacter, appearance callbacks
 │   ├── sv_admin.lua      -- /charinfo, /resetskin, /changename
 │   ├── sv_clothing.lua   -- buy outfit, wear/delete outfit, outfit callbacks, DB migration
-│   ├── sv_database.lua   -- builds playerskins / playeroutfit tables (RSG.AutoDatabase)
+│   ├── sv_delete.lua     -- soft delete, restore, purge, /restorechar, /deletedchars
+│   ├── sv_slots.lua      -- database slots (playerslots), /addslot, /setslots, /charslots
+│   ├── sv_database.lua   -- builds and upgrades the tables (RSG.AutoDatabase)
 │   ├── sv_logout.lua     -- /logout command
 │   ├── webhook.lua       -- Discord webhook queue
 │   └── versionchecker.lua
@@ -87,37 +89,56 @@ Key points:
 
 ## 3. Database
 
-The script uses two tables alongside rsg-core's `players` table.
+The script uses five tables alongside rsg-core's `players` table.
 
 ### `playerskins`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | INT, PK | |
-| `citizenid` | VARCHAR(255) | Indexed |
+| `citizenid` | VARCHAR(255) | Unique key `uq_playerskins_citizenid` |
 | `skin` | LONGTEXT | JSON: body, face features, overlays, hair, `sex` (`1` male, `2` female) |
 | `clothes` | LONGTEXT | JSON: clothing per category (`{ hats = { model = n, texture = n }, ... }`) |
 
-One row per character. If more than one row exists, the newest (`ORDER BY id DESC`) is used.
+One row per character (enforced by the unique key; `SaveSkin` uses `ON DUPLICATE KEY UPDATE`). Code still reads the newest row (`ORDER BY id DESC`) in case the key could not be added.
 
 ### `playeroutfit`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | INT, PK | Outfit id used by wear/delete |
-| `citizenid` | VARCHAR(255) | Indexed |
+| `citizenid` | VARCHAR(255) | Indexed with `is_default` (`citizen_default`) |
 | `name` | VARCHAR(255) | Player-entered (trimmed to 40 chars) or auto-generated |
 | `clothes` | LONGTEXT | Same JSON format as `playerskins.clothes` |
 | `is_default` | TINYINT(1) | `1` = the protected Default outfit |
 
+### `playerslots`
+| Column | Type | Notes |
+|---|---|---|
+| `license` | VARCHAR(255), PK | Player license |
+| `extra_slots` | INT | Slots on top of `RSG.MaxCharacterSlots` |
+| `updated_at` | TIMESTAMP | Updated automatically |
+
+### `rsg_character_names`
+One row per character (`citizenid`, `firstname`, `lastname`, indexed on the name pair). Used by the unique-name check so `players` is never scanned. Filled for existing characters on start and kept up to date by the creator and `/changename`. If another resource renames a character directly in `players.charinfo`, call `RSG.SetCharacterName` or run `/changename` to refresh the row.
+
+### `rsg_character_deleted`
+Characters hidden by a soft delete: `citizenid` (PK), `license`, `original_cid` (their old slot), `deleted_at`, `purge_at` (unix seconds). While a character is listed here its `players.cid` is moved out of the slot range (`cid + 1000`), which hides it and frees the slot.
+
 ### Automatic setup and migration
 On `MySQL.ready` the script:
 0. When `RSG.AutoDatabase = true`, runs the `CREATE TABLE IF NOT EXISTS` statements from `server/sv_database.lua` (printing a green "database tables ready" or a red error). Set it to `false` and import `install.sql` to install manually.
-1. Adds `is_default` to `playeroutfit` if missing.
+1. Adds `is_default` to `playeroutfit` if missing, then the `citizen_default` index.
+1b. Adds the unique key to `playerskins` (skipped when a unique key on `citizenid` already exists, as in the txAdmin recipe). Older duplicate rows are removed first when `RSG.DedupeSkins = true` (only the newest row per character was ever read); otherwise the key is skipped with a console warning.
+1c. Fills `rsg_character_names` for characters that are not in it yet.
 2. Creates a Default outfit for every character that has clothes but no Default yet, and prints how many it created.
 
 This runs on every start and is safe to repeat.
 
-### What deleting a character removes
-`RSGCore.Player.DeleteCharacter` (players row and rsg-core data) plus that citizenid's rows in `playerskins` and `playeroutfit`.
+### What deleting a character does
+With `RSG.Delete.SoftDelete = true` (default) the character is only **hidden** for `RSG.Delete.GraceDays` days: it gets a row in `rsg_character_deleted`, its `cid` is moved out of the slot range, and nothing else is touched. After the grace period (checked at start and every `RSG.Delete.PurgeInterval` minutes) it is removed for good with `RSGCore.Player.ForceDeleteCharacter` plus its `playerskins`, `playeroutfit` and `rsg_character_names` rows. `/restorechar [citizenid]` puts it back into its old slot (or the first free one) before that.
+
+With `SoftDelete = false` everything is removed at once (`RSGCore.Player.DeleteCharacter` and the same extra rows).
+
+A hidden character still exists in `players`: other resources that list characters by license or citizenid (banks, gangs, MDT) can still see it until it is purged.
 
 ---
 
@@ -130,7 +151,7 @@ rsg-character assumes the client can't be trusted. Server-side protections:
 | Character select | Only for logged-out players. Selecting a citizenid the license doesn't own **drops the player** (exploit attempt). |
 | Slot creation | `cid` must be a whole number between 1 and `MaxCharacterSlots`, and free for that license. |
 | Creator | Server-owned `CreatorSessions[src]`. `SaveSkin` and `createCharacter` are ignored without a session; a new character can only be created once per session and must match the session's `cid`. |
-| Identity | First/last name: 2–20 chars, pattern `^%u%l+$` (e.g. `Arthur`), not in `ProfanityWords`. Nationality must match a configured nationality in any locale. Birth date must be inside `RSG.Birthdate`. |
+| Identity | First/last name: `RSG.IsValidName` (shared): `RSG.NameRules` length, letters incl. accents, apostrophes/hyphens between letters, limited capitals, whole-name and substring blocklists, reserved names. Nationality must match a configured nationality in any locale. Birth date must be inside the range from `RSG.GetBirthdateRange()` (`Min`/`Max` narrowed by `MinAge`/`MaxAge`). |
 | Gender | Taken from the character record, never from the client. |
 | Skin data | Max 150 keys, string keys ≤ 32 chars, number values (or tables of numbers). Encoded JSON capped at 32 KB. |
 | Clothing | `ValidateClothesData` checks every item against the real clothing list for the character's gender. Price is recalculated on the server (`CalculatePrice`) from what changed. |
@@ -139,8 +160,10 @@ rsg-character assumes the client can't be trusted. Server-side protections:
 | Cooldowns | Buy 2 s, wear/delete 1 s, delete character 3 s, `/logout` configurable. |
 | Routing buckets | The script only resets a bucket **it** assigned, and restores the bucket the player was in before (never blindly bucket 0), so it can't be used to escape jail or other instances. |
 | Double requests | Selecting a character is ignored while a login is running; `/logout` is ignored while a logout is running. Rejected or failed requests send `CharSelectFailed` so the client never hangs on the loading screen. |
-| Character slots | Slots are `RSG.MaxCharacterSlots` plus the best matching `RSG.SlotRules` ACE rule, resolved on the server for every slot list and create request. |
-| Unique names | `RSG.NameExists` is checked by the `isNameAvailable` callback (creator session only) and again in `createCharacter`. |
+| Character slots | Slots are `RSG.MaxCharacterSlots` + the license's `playerslots` extra, raised by the best matching `RSG.SlotRules` ACE rule (the larger value wins), limited by `RSG.Slots.Cap`. Resolved on the server for every slot list and create request. |
+| Character delete | Needs `RSG.Delete.Enabled`, ownership, a 3 s cooldown and (with `ConfirmName`) the typed first name, re-checked on the server. Soft-deleted characters cannot be selected (`RSG.IsPendingDeletion`). |
+| Spawn choice | After character select the server remembers that a spawn menu was offered and the client asks `rsg-character:server:chooseSpawn` for the coordinates of its choice; a choice that was not offered, or a second answer, is refused. The client still moves its own ped, so this is a consistency check, not anti-teleport. |
+| Unique names | `RSG.NameExists` (indexed `rsg_character_names` table) is checked by the `isNameAvailable` callback (creator session only) and again in `createCharacter`. |
 | Outfit sharing | Server checks ownership, same body type, distance (re-checked after the prompt), per-player cooldown, one pending offer per receiver and the 30-outfit limit. The receiver must accept (client callback with timeout); the copy is re-validated with `ValidateClothesData`. |
 | Admin commands | Registered with rsg-core's permission level (`RSG.AdminCommands.Permission`); every action can be logged to the `admin_action` webhook. |
 | Outfit names | HTML/control characters are stripped, max 40 chars; the client also escapes names before showing them. |
@@ -192,7 +215,7 @@ If a new clothing category clips, add it to `CLOTHING_ORDER` in the right layer.
 
 ## 7. Spawning
 
-- `RSG.SpawnLocations` builds the spawn cards. Card `image` paths are relative to `html/`.
+- `RSG.SpawnLocations` builds the spawn cards. Card `image` paths are relative to `html/`. The client sends the card the player picked (`last` or `preset_<n>`) to the server callback `rsg-character:server:chooseSpawn`, which answers with the coordinates only if that menu was offered.
 - The spawn screen shows for **new characters** and for characters whose saved position is invalid. With `RSG.SpawnMenuWithLastLocation = true` it also shows for returning characters, with a **Last Location** card first.
 - `RSG.SpawnChecks` is a safety net on `RSGCore:Client:OnPlayerLoaded`: anyone loading within `Radius` of a `badSpawn` point (by default the character select lineup) is moved to `moveTo`. Add more groups if players end up somewhere they shouldn't:
 
@@ -213,7 +236,7 @@ If you move `RSG.CharSelectLocation`, update `badSpawn` to match.
 ## 8. Logout
 
 `/logout` (name set by `RSG.Logout.Command`) is registered through `RSGCore.Commands.Add`:
-1. Blocked during a creator session, during the cooldown, and (if `BlockWhenDead`) when `metadata.isdead` or `metadata.inlaststand` is set.
+1. Blocked during a creator session, during the cooldown, and (unless forced by the `LogoutToCharacterSelect` export): when `BlockWhenDead` and `metadata.isdead` / `inlaststand` is set; when `BlockWhenCuffed` and `metadata.ishandcuffed` is set; when `BlockWhenJailed` and `metadata.injail` is above 0; and for `CombatCooldown` seconds after the client reported damage or weapon fire (`rsg-character:server:combatActivity`, sent at most every 4 s). A modified client can skip the report, so treat the combat rule as a fair-play measure, not anti-cheat.
 2. Client fades out (`rsg-character:client:BeginLogout`).
 3. `Player.Functions.Save()` then `RSGCore.Player.Logout(src)`.
 4. `character_logout` webhook is sent and character select opens.
@@ -229,13 +252,14 @@ Set `RSG.Logout.Enabled = false` to remove the command.
 | Category | Fired when |
 |---|---|
 | `character_created` | New character created (name, citizenid, gender, nationality, birth date) |
-| `character_deleted` | Character deleted |
+| `character_deleted` | Character deleted (or hidden); also used when a hidden character is purged after the grace period |
+| `character_restored` | `/restorechar` / `RestoreCharacter` brought a character back |
 | `character_selected` | Character selected at character select |
 | `character_logout` | `/logout` used |
 | `appearance_saved` | Creator saved |
 | `outfit_purchased` | Clothing bought (price, outfit name) |
 
-Every embed also includes the player's identity fields (name and identifiers). Other server files in this resource can call `RSG.SendWebhook` with their own categories after adding them to `RSG.Webhooks`.
+All categories ship with `enabled = false`. Every embed also includes the player's identity fields (name and identifiers). Other server files in this resource can call `RSG.SendWebhook` with their own categories after adding them to `RSG.Webhooks`.
 
 ---
 
@@ -334,7 +358,13 @@ Called from another server script: `exports['rsg-character']:Name(...)`.
 
 | Export | Returns | Description |
 |---|---|---|
-| `GetMaxSlots(src)` | number | Slots this player may use: `RSG.MaxCharacterSlots` plus the best matching `RSG.SlotRules` entry. |
+| `GetMaxSlots(src)` | number | Slots this player may use: `RSG.MaxCharacterSlots` + the license's extra slots, raised by the best matching `RSG.SlotRules` entry, limited by `RSG.Slots.Cap`. |
+| `GetExtraSlots(license)` | number | Extra slots stored for a license. |
+| `AddExtraSlots(license, amount)` | `extra` or `nil, reason` | Adds (or, with a negative number, removes) extra slots; the result is clamped to `0 .. Cap - MaxCharacterSlots`. Reasons: `invalid_license`, `invalid_amount`, `database`. |
+| `SetExtraSlots(license, extra)` | `extra` or `nil, reason` | Sets the extra slots exactly (same clamping). |
+| `GetDeletedCharacters(license?)` | `{ citizenid, license, firstname, lastname, deleted_at, purge_at }[]` | Characters in their deletion grace period (all, or one license). |
+| `RestoreCharacter(citizenid)` | `true, cid` or `false, reason` | Restores a hidden character. Reasons: `not_found`, `no_slot`. |
+| `PurgeDeletedCharacters()` | number | Permanently removes every hidden character whose grace period is over; returns how many. |
 | `IsInCreator(src)` | boolean | `true` while the player has a server-opened creator session. |
 | `IsNameAvailable(first, last)` | boolean | `true` when no character uses that name (always `true` if `RSG.UniqueNames = false`). |
 | `GetAppearance(citizenid)` | `{ skin, clothes }` or `nil` | Saved appearance of any character, online or offline. |
@@ -355,7 +385,10 @@ These are **local server events** (not net events, clients cannot trigger them).
 |---|---|---|
 | `rsg-character:server:characterSelected` | `src, citizenid` | A character was selected and logged in. |
 | `rsg-character:server:characterCreated` | `src, citizenid, cid` | A new character was created (appearance is saved afterwards). |
-| `rsg-character:server:characterDeleted` | `src, citizenid` | A character was deleted from character select. |
+| `rsg-character:server:characterDeleted` | `src, citizenid, pending` | A character was deleted from character select. `pending = true` when it is only hidden and can still be restored. |
+| `rsg-character:server:characterRestored` | `citizenid, license, cid` | A hidden character was restored. |
+| `rsg-character:server:characterPurged` | `citizenid, license` | A hidden character was removed for good after the grace period. |
+| `rsg-character:server:slotsChanged` | `license, extra` | The extra slots of a license changed (`/addslot`, `/setslots`, exports). |
 | `rsg-character:server:characterLoggedOut` | `src, citizenid` | `/logout` or `LogoutToCharacterSelect` finished. |
 | `rsg-character:server:appearanceSaved` | `src, citizenid, isNew` | The creator saved a skin. |
 | `rsg-character:server:appearanceReset` | `citizenid` | `ResetAppearance` / `/resetskin` ran. |
@@ -380,6 +413,7 @@ end)
 | `rsg-character:server:LoadClothes` | server | The caller's current clothes table. |
 | `rsg-character:server:wearOutfit` (`id`) | server | Clothes of that outfit (re-validated), or `nil`. Needs a cloakroom nearby unless `WardrobeTarget.enabled`. |
 | `rsg-character:server:isNameAvailable` (`first`, `last`) | server | boolean. Only answers during a new-character creator session. |
+| `rsg-character:server:chooseSpawn` (`value`) | server | `{ x, y, z, w, fromMenu }` for `last` or `preset_<n>`, or `nil` when no spawn menu was offered / the choice is invalid. One answer per offered menu. |
 | `rsg-character:client:confirmShare` (`fromName`, `outfitName`) | client | boolean; asked of the receiver of an outfit share. |
 
 ```lua
@@ -396,7 +430,8 @@ Listed for auditing and anti-cheat rules. Every one validates `source`, argument
 |---|---|
 | `rsg-character:server:RequestCharacterSlots` | Logged-out players only. |
 | `rsg-character:server:SelectCharacterSlot` (`citizenid`) | Logged-out, license must own the citizenid (else the player is dropped), one login at a time. |
-| `rsg-character:server:DeleteCharacterSlot` (`citizenid`) | Logged-out, ownership, 3 s cooldown. |
+| `rsg-character:server:DeleteCharacterSlot` (`citizenid`, `typedName`) | Logged-out, `RSG.Delete.Enabled`, ownership, not already pending, 3 s cooldown, typed first name when `ConfirmName`. |
+| `rsg-character:server:combatActivity` | Logged-in players only; only refreshes the caller's own combat timestamp for `/logout`. |
 | `rsg-character:server:RequestCreateCharacterSlot` (`cid`, `sex`) | Logged-out, `cid` within `GetMaxSlots`, slot free. |
 | `rsg-multicharacter:server:createCharacter` (`data`) | Needs a server-opened creator session; name, nationality, birth date, uniqueness and `cid` re-validated. Event name kept for compatibility. |
 | `rsg-character:server:SaveSkin` (`skin`, `clothes`) | Needs a creator session; schema, size and clothing hashes validated; gender taken from the character record. |
@@ -466,11 +501,14 @@ local id, reason = exports['rsg-character']:AddOutfit(citizenid, 'Sunday Best', 
 
 ---
 
-## 12b. Admin commands, extra slots and unique names
+## 12b. Admin commands, extra slots, deleted characters and unique names
 
 - `/charinfo [id]`, `/resetskin [id]`, `/changename [id] [first] [last]` (names and permission in `RSG.AdminCommands`). `/resetskin` deletes `playerskins` rows and the Default outfit; the player must `/logout` (or reconnect) so the creator opens.
-- Extra slots: `RSG.SlotRules = { { slots = 6, ace = 'rsgchar.slots6' } }` and `add_ace group.vip rsgchar.slots6 allow`. Characters stored in a slot above the player's current allowance are hidden, not deleted.
-- `RSG.UniqueNames` compares first + last name against `players.charinfo` (case-insensitive with the default collation).
+- **Extra slots from the database:** `/addslot [id] [amount]`, `/setslots [id] [extra]`, `/charslots [id]` (names and permission in `RSG.Slots`). Stored per license in `playerslots`, limited by `RSG.Slots.Cap`. The player sees the new slots the next time character select opens (`/logout`). From scripts use `exports['rsg-character']:AddExtraSlots(license, amount)` (for example from a store webhook handler).
+- **Extra slots by ACE:** `RSG.SlotRules = { { slots = 6, ace = 'rsgchar.slots6' } }` and `add_ace group.vip rsgchar.slots6 allow`. The larger of the ACE value and `MaxCharacterSlots + extra` applies. Characters stored in a slot above the player's current allowance are hidden, not deleted.
+- **Deleted characters:** `/deletedchars [id]` lists characters waiting for deletion (days left), `/restorechar [citizenid]` restores one into its old slot or the first free slot (`no_slot` if the player has none free; give them a slot first). Both exist only while `RSG.Delete.SoftDelete = true`.
+- `RSG.UniqueNames` compares first + last name through the `rsg_character_names` table (case-insensitive with the default collation).
+- **Names:** edit `RSG.NameRules`. `BlockedSubstrings` match anywhere in a name, so keep entries long and unambiguous; short words belong in `ProfanityWords` (whole-name match). `ReservedNames` blocks full `first last` combinations.
 
 ## 13. Troubleshooting
 
@@ -482,10 +520,14 @@ local id, reason = exports['rsg-character']:AddOutfit(citizenid, 'Sunday Best', 
 | Players naked or wrong body after login | Old/legacy skin row. Ask them to use `/loadskin`; if still wrong, delete their `playerskins` row so the creator opens on next select. |
 | Clothing clips | Category missing from `CLOTHING_ORDER` or in the wrong layer. |
 | Webhook warning in console | Category enabled but URL still the placeholder. Add a URL or set `enabled = false`. |
-| Can't create a character: "missing info" | Name doesn't match the rules (capital first, letters only, 2–20) or birth date out of range. |
+| Can't create a character: "missing info" | Name doesn't match `RSG.NameRules` (capital first, letters/apostrophe/hyphen, 2–20, not blocked or reserved) or the birth date is outside the age range. |
 | Kicked when selecting a character | The citizenid doesn't belong to that license (exploit protection) — often caused by license changes (e.g. Steam vs Rockstar). |
 | Creator says the name is taken | Another character already uses that first + last name. Set `RSG.UniqueNames = false` to allow duplicates. |
-| Extra slots not showing | The ACE isn't granted to the player (`add_ace ... rsgchar.slotsN allow`), or `RSG.SlotRules` has a different ACE name. |
+| Extra slots not showing | The ACE isn't granted to the player (`add_ace ... rsgchar.slotsN allow`), `RSG.SlotRules` has a different ACE name, or the total hits `RSG.Slots.Cap`. Slots from `/addslot` show after the next `/logout`. |
+| Deleted character is gone from select but still exists | It is in its grace period (`/deletedchars`). Restore it with `/restorechar [citizenid]` or wait for the purge. Set `RSG.Delete.SoftDelete = false` for immediate deletion. |
+| `/restorechar` says no slot | The license has no free slot (a new character took the old one). Raise the player's slots with `/addslot`, then restore again. |
+| `/logout` refuses | Dead, handcuffed, jailed or in a fight within `RSG.Logout.CombatCooldown` seconds. |
+| Console: playerskins unique key skipped | Duplicate rows exist and `RSG.DedupeSkins = false`. Remove duplicates or set it to `true` and restart. |
 | Wardrobe prop does nothing | rsg-target not started, or `WardrobeTarget.enabled = false`. |
 | Spawn card image blank | Image path wrong or missing from `html/img/spawn/`. |
 | Spawn at character select scene | Add/adjust `RSG.SpawnChecks`. |
@@ -506,22 +548,25 @@ All options live in `shared/config.lua` (`RSG` table). Texts come from `locales/
 | Option | Default | Description |
 |---|---|---|
 | `Debug` | `false` | Extra client console output. |
-| `AutoDatabase` | `true` | Create `playerskins` / `playeroutfit` on start; `false` = import `install.sql` manually. |
+| `AutoDatabase` | `true` | Create and upgrade the five tables on start; `false` = import `install.sql` manually. |
 | `AllowPushToTalkWhileOpen` | `true` | Block game controls while a NUI is open, except `PushToTalkControls`. |
 | `PushToTalkControls` | `{ 0x4BC9DABB }` | Control hashes that stay enabled while the NUI has focus. |
-| `ProfanityWords` | table | Lowercase words rejected as first/last name. |
+| `DedupeSkins` | `true` | Remove older duplicate `playerskins` rows when adding the unique key. |
+| `NameRules` | table | `MinLength`, `MaxLength`, `AllowSpaces`, `MaxCapitals`, `ProfanityWords`, `BlockedSubstrings`, `ReservedNames`. `RSG.ProfanityWords` is kept as an alias of `NameRules.ProfanityWords`. |
 | `MaxCharacterSlots` | `4` | Base slots per license. |
-| `SlotRules` | `{}` | `{ slots = n, ace = 'name' }` entries; highest allowed wins. |
+| `SlotRules` | `{}` | `{ slots = n, ace = 'name' }` entries; highest allowed wins; the larger of this and the database slots applies. |
+| `Slots` | table | `Cap` (8), `Permission`, `Add`, `Set`, `Info` command names. |
+| `Delete` | table | `Enabled`, `ConfirmName`, `SoftDelete`, `GraceDays` (7), `PurgeInterval` (60 min), `Restore`, `List`, `Permission`. |
 | `UniqueNames` | `true` | One character per first + last name. |
 | `SpawnMenuWithLastLocation` | `false` | Show the spawn menu (with Last Location) for returning characters. |
 | `AdminCommands` | table | `Enabled`, `Permission`, `CharInfo`, `ResetSkin`, `ChangeName`. |
 | `OutfitSharing` | table | `Enabled`, `MaxDistance` (m), `Cooldown` (s), `AcceptTimeout` (s). |
-| `Birthdate` | table | `Min`, `Max`, `Default` (`YYYY-MM-DD`). |
-| `Logout` | table | `Enabled`, `Command`, `Cooldown` (s), `BlockWhenDead`. |
+| `Birthdate` | table | `Min`, `Max`, `Default` (`YYYY-MM-DD`), `GameYear`, `MinAge`, `MaxAge`. |
+| `Logout` | table | `Enabled`, `Command`, `Cooldown` (s), `BlockWhenDead`, `BlockWhenCuffed`, `BlockWhenJailed`, `CombatCooldown` (s). |
 | `Nationalities` | list | Locale keys under `nationalities`. |
 | `StarterItems` | list | `{ item, amount }` given once to a new character. |
 | `CharSelectLocation` | table | `coords` (vector4), `spacing`, `camera = { back, height, fov }`. |
-| `Webhooks` | table | Per category (`character_created`, `character_deleted`, `character_selected`, `character_logout`, `admin_action`, `appearance_saved`, `outfit_purchased`): `enabled`, `url`, `name`, `avatar`, `color`. |
+| `Webhooks` | table | Per category (`character_created`, `character_deleted`, `character_restored`, `character_selected`, `character_logout`, `admin_action`, `appearance_saved`, `outfit_purchased`): `enabled`, `url`, `name`, `avatar`, `color`. |
 | `SpawnLocations` | list | `label`, `coords` (vector4), `image` (path under `html/`). |
 | `SpawnChecks` | table | `badSpawn` points, `moveTo`, `Radius`. |
 | `Prompt` | table | Control hashes used by the creator (gender, confirm, camera, rotate, zoom). |
@@ -545,7 +590,7 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 ## Technical reference
 
-Generated from the source of **rsg-character 3.3.0**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-character 3.4.0**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 
@@ -553,7 +598,7 @@ Generated from the source of **rsg-character 3.3.0**. Names, arguments and defau
 
 ### Database
 
-Tables: `playerskins`, `playeroutfit`.
+Tables: `playerskins`, `playeroutfit`, `playerslots`, `rsg_character_names`, `rsg_character_deleted`.
 
 Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
 For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
@@ -570,6 +615,12 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | Export | Arguments | File |
 |---|---|---|
 | `GetMaxSlots` | `src` | `server/sv_api.lua` |
+| `GetExtraSlots` | `license` | `server/sv_slots.lua` |
+| `SetExtraSlots` | `license, extra` | `server/sv_slots.lua` |
+| `AddExtraSlots` | `license, amount` | `server/sv_slots.lua` |
+| `GetDeletedCharacters` | `license` | `server/sv_delete.lua` |
+| `RestoreCharacter` | `citizenid` | `server/sv_delete.lua` |
+| `PurgeDeletedCharacters` | `` | `server/sv_delete.lua` |
 | `IsInCreator` | `src` | `server/sv_api.lua` |
 | `IsNameAvailable` | `firstname, lastname` | `server/sv_api.lua` |
 | `GetAppearance` | `citizenid` | `server/sv_api.lua` |
@@ -615,6 +666,7 @@ local result = exports['rsg-character']:GetMaxSlots(src)
 | `rsg-character:server:getAppearance` | server | `src, cb` | `server/sv_appearance.lua` |
 | `rsg-multicharacter:server:getAppearance` | server | `src, cb` | `server/sv_appearance.lua` |
 | `rsg-character:server:isNameAvailable` | server | `src, cb, firstname, lastname` | `server/sv_appearance.lua` |
+| `rsg-character:server:chooseSpawn` | server | `src, cb, value` | `server/sv_appearance.lua` |
 | `rsg-character:server:wearOutfit` | server | `src, cb, id` | `server/sv_clothing.lua` |
 | `rsg-character:server:LoadClothes` | server | `src, cb` | `server/sv_clothing.lua` |
 | `rsg-character:server:getOutfits` | server | `src, cb` | `server/sv_clothing.lua` |
@@ -647,7 +699,8 @@ Server events can be fired by any client, so every handler re-validates the play
 | `rsg-multicharacter:server:createCharacter` | server | `newData` | `server/sv_appearance.lua` |
 | `rsg-character:server:RequestCharacterSlots` | server | `` | `server/sv_charselect.lua` |
 | `rsg-character:server:SelectCharacterSlot` | server | `citizenid` | `server/sv_charselect.lua` |
-| `rsg-character:server:DeleteCharacterSlot` | server | `citizenid` | `server/sv_charselect.lua` |
+| `rsg-character:server:DeleteCharacterSlot` | server | `citizenid, typedName` | `server/sv_charselect.lua` |
+| `rsg-character:server:combatActivity` | server | `` | `server/sv_logout.lua` |
 | `rsg-character:server:RequestCreateCharacterSlot` | server | `cid, selectedSex` | `server/sv_charselect.lua` |
 | `rsg-character:server:saveOutfit` | server | `newClothes, _, outfitName` | `server/sv_clothing.lua` |
 | `rsg-character:server:DeleteOutfit` | server | `id` | `server/sv_clothing.lua` |
@@ -665,6 +718,8 @@ TriggerClientEvent('rsg-character:client:ReceiveCharacterSlots', source, slots)
 | Command | Notes | File |
 |---|---|---|
 | `/loadskin` |  | `client/creator.lua` |
+| `/restorechar`, `/deletedchars` | admin; names in `RSG.Delete` | `server/sv_delete.lua` |
+| `/addslot`, `/setslots`, `/charslots` | admin; names in `RSG.Slots` | `server/sv_slots.lua` |
 
 ### Locales
 

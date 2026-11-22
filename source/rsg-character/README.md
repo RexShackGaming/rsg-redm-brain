@@ -11,7 +11,8 @@ Character selection, character creation, clothing stores, wardrobe and spawn sel
 ### Character Select
 - In-world select screen: your characters' peds line up at a configurable location, with the camera framing every slot automatically.
 - Multiple character slots per player license (default **4**, configurable).
-- Create, play and delete characters. Deleting a character also removes its skin and saved outfits.
+- Extra slots can be granted from the database (`/addslot`, store webhooks) as well as by ACE permission.
+- Create, play and delete characters. Deleting asks for the character's first name and hides the character for a grace period (default 7 days) before removing it and its skin and outfits; staff can restore it with `/restorechar`.
 
 ### Character Creator
 - Male / female selection.
@@ -20,7 +21,7 @@ Character selection, character creation, clothing stores, wardrobe and spawn sel
 - Hair and beard styles and colours.
 - Overlays: scars, freckles, moles, spots, ageing, eye shadow, blush, lipstick and eyeliner, each with colour and opacity.
 - Identity form: first name, last name, nationality dropdown and a Day / Month / Year birth date picker (range set in config).
-- Names, nationality and birth date are all checked on the server; a profanity filter blocks bad names.
+- Names, nationality and birth date are all checked on the server. Names may use accents, apostrophes and hyphens (O'Brien, Mary-Jane); a blocklist and a reserved-name list keep bad names out.
 - Starter items given once to each new character.
 
 ### Clothing Stores & Wardrobe
@@ -38,9 +39,9 @@ Character selection, character creation, clothing stores, wardrobe and spawn sel
 - New characters pick a spawn; returning characters spawn back where they logged out.
 
 ### Other
-- `/logout` saves the character and returns to character select (cooldown, blocked while dead).
+- `/logout` saves the character and returns to character select (cooldown; blocked while dead, handcuffed, jailed or right after a fight).
 - `/loadskin` reloads your appearance if something looks wrong.
-- Discord webhook logging: character created, deleted, selected, logout, appearance saved and outfit purchased (rate-limit aware).
+- Discord webhook logging: character created, deleted, restored, selected, logout, appearance saved and outfit purchased (rate-limit aware; all off by default).
 - Locales: en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru.
 - No ox_lib dependency — uses rsg-core notify, callbacks, locales and `require`.
 - Exports, events and callbacks for other resources.
@@ -59,7 +60,7 @@ Character selection, character creation, clothing stores, wardrobe and spawn sel
 ## Installation
 
 1. Download the resource and place the `rsg-character` folder in your resources (e.g. `resources/[rsg]/rsg-character`). Keep the folder name `rsg-character` — NUI image paths use it.
-2. Database: the `playerskins` and `playeroutfit` tables are **created automatically** on first start (`RSG.AutoDatabase = true`). To install manually instead, set `RSG.AutoDatabase = false` and import `install.sql`.
+2. Database: the `playerskins`, `playeroutfit`, `playerslots`, `rsg_character_names` and `rsg_character_deleted` tables are **created automatically** on first start (`RSG.AutoDatabase = true`). To install manually instead, set `RSG.AutoDatabase = false` and import `install.sql`.
 
    On start the script also adds the `is_default` column if it's missing and gives every existing character a **Default** outfit copied from what they're wearing.
 
@@ -91,7 +92,10 @@ Everything is in `shared/config.lua`.
 | Option | Description |
 |---|---|
 | `RSG.Debug` | Prints extra debug info to the client console. |
-| `RSG.SlotRules` | Extra character slots by ACE permission: `{ slots = 6, ace = 'rsgchar.slots6' }`. The highest matching rule wins; empty by default. |
+| `RSG.SlotRules` | Extra character slots by ACE permission: `{ slots = 6, ace = 'rsgchar.slots6' }`. The highest matching rule wins; empty by default. The larger of this and the database slots applies. |
+| `RSG.Slots` | Database slots: `Cap` (hard limit per license), `Permission`, and the command names `Add` (`/addslot`), `Set` (`/setslots`), `Info` (`/charslots`). |
+| `RSG.Delete` | `Enabled`, `ConfirmName`, `SoftDelete`, `GraceDays`, `PurgeInterval` (minutes), `Restore` (`/restorechar`), `List` (`/deletedchars`), `Permission`. |
+| `RSG.DedupeSkins` | Remove older duplicate `playerskins` rows when adding the unique key (default `true`). |
 | `RSG.UniqueNames` | Only one character per first + last name (checked in the creator and again on the server). Default `true`. |
 | `RSG.SpawnMenuWithLastLocation` | Show a "Last Location" card in the spawn menu instead of spawning returning characters automatically. Default `false`. |
 | `RSG.AdminCommands` | `Enabled`, `Permission`, and the command names for `/charinfo`, `/resetskin`, `/changename`. |
@@ -100,9 +104,9 @@ Everything is in `shared/config.lua`.
 | `RSG.AllowPushToTalkWhileOpen` | While a menu/NUI is open, game controls are blocked but push-to-talk keeps working (default `true`). |
 | `RSG.PushToTalkControls` | Control hashes that stay enabled while the NUI is open (default `INPUT_PUSH_TO_TALK`). |
 | `RSG.MaxCharacterSlots` | Character slots per player license (default `4`). |
-| `RSG.Birthdate` | `Min`, `Max` and `Default` birth dates (`YYYY-MM-DD`), checked on client and server. |
-| `RSG.Logout` | `/logout` settings: `Enabled`, `Command`, `Cooldown` (seconds), `BlockWhenDead`. |
-| `RSG.ProfanityWords` | Words blocked as names: `['word'] = true` (lowercase). |
+| `RSG.Birthdate` | `Min`, `Max` and `Default` birth dates (`YYYY-MM-DD`), plus `GameYear`, `MinAge`, `MaxAge` which narrow the range. Checked on client and server. |
+| `RSG.Logout` | `/logout` settings: `Enabled`, `Command`, `Cooldown` (seconds), `BlockWhenDead`, `BlockWhenCuffed`, `BlockWhenJailed`, `CombatCooldown` (seconds, `0` = off). |
+| `RSG.NameRules` | `MinLength`, `MaxLength`, `AllowSpaces`, `MaxCapitals`, `ProfanityWords` (whole-name matches), `BlockedSubstrings`, `ReservedNames` (full `first last`, lowercase). `RSG.ProfanityWords` still points at the first list. |
 | `RSG.Nationalities` | Locale keys for the nationality dropdown. Names live under `nationalities` in `locales/*.json`. |
 | `RSG.StarterItems` | Items given once to a new character: `{ item = 'bread', amount = 2 }`. Unknown items are skipped. |
 | `RSG.CharSelectLocation` | `coords` (vector4) where peds line up, `spacing` between them, and `camera` (`back`, `height`, `fov`). |
@@ -139,7 +143,7 @@ Add an entry to `RSG.Zones1` (stand in the spot and grab coords in-game):
 ```
 
 ### Webhooks
-Replace the placeholder `https://discord.com/api/webhooks/XXXXXXXX/XXXXXXXX` URLs with your own. An enabled category without a real URL prints a single console warning instead of erroring. Set `enabled = false` to turn a category off.
+Replace the placeholder `https://discord.com/api/webhooks/XXXXXXXX/XXXXXXXX` URLs with your own. All categories are off by default; set `enabled = true` for the ones you fill in. An enabled category without a real URL prints a single console warning instead of erroring.
 
 ---
 
@@ -149,7 +153,7 @@ Replace the placeholder `https://discord.com/api/webhooks/XXXXXXXX/XXXXXXXX` URL
 1. **Join the server.** The character select screen opens with your characters lined up.
 2. **Choose a slot.** Click a character to play, or an empty slot to create one.
 3. **Create.** Pick male or female, shape body and face, choose hair and makeup, then enter your name, nationality and birth date. Use the on-screen prompts to move the camera, rotate and zoom.
-   - Names must be 2–20 letters, start with a capital and contain no spaces (e.g. `Arthur`).
+   - Names must be 2–20 characters, start with a capital and use letters, apostrophes or hyphens (e.g. `Arthur`, `O'Brien`, `Mary-Jane`).
 4. **Spawn.** New characters choose a town from the spawn cards. Existing characters return to where they logged out.
 5. **Shop for clothes.** Head to a clothing store blip, stand at the prompt and press the open key. Browse categories, try items on, then pay in cash and name the outfit.
 6. **Change outfits.** At a cloakroom or any wardrobe/dresser prop (target it), wear or delete saved outfits.
@@ -160,13 +164,18 @@ Replace the placeholder `https://discord.com/api/webhooks/XXXXXXXX/XXXXXXXX` URL
 | `/charinfo [id]` | `RSG.AdminCommands.Permission` | Shows name, citizenid, slot, whether a skin exists and the outfit count. |
 | `/resetskin [id]` | same | Deletes the character's appearance (and Default outfit) so the creator opens on their next login (`/logout`). |
 | `/changename [id] [first] [last]` | same | Renames a character (same name rules and uniqueness check as the creator). |
+| `/restorechar [citizenid]` | `RSG.Delete.Permission` | Brings a deleted character back into a free slot while it is still in the grace period. |
+| `/deletedchars [id]` | same | Lists characters waiting for deletion (of an online player's license, or all of them). |
+| `/addslot [id] [amount]` | `RSG.Slots.Permission` | Adds extra character slots to a player's license. |
+| `/setslots [id] [extra]` | same | Sets the player's extra slots to an exact number. |
+| `/charslots [id]` | same | Shows extra and total slots. |
 
-Use `add_ace group.admin rsgchar.slots6 allow`-style ACE entries to unlock extra slots from `RSG.SlotRules`.
+Use `add_ace group.admin rsgchar.slots6 allow`-style ACE entries to unlock extra slots from `RSG.SlotRules`, or grant slots with `/addslot` (stored in the database, no restart needed). Command names are set in `RSG.Slots` and `RSG.Delete`.
 
 ### Commands
 | Command | Description |
 |---|---|
-| `/logout` | Saves your character and returns you to character select. Has a cooldown and is blocked while dead or downed. |
+| `/logout` | Saves your character and returns you to character select. Has a cooldown and is blocked while dead, downed, handcuffed, jailed or right after taking damage or firing a weapon. |
 | `/loadskin` | Reloads your saved skin and clothing. Blocked while dead, cuffed, hogtied, lassoed, dragged, ragdolled, falling or jailed. |
 
 ---
@@ -215,7 +224,7 @@ local busy = exports['rsg-character']:IsCothingActive()
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md) for the full history. Latest: **3.3.0** - developer API (server exports, hook events, client exports) and a full DOCS.md rewrite of the API section.
+See [CHANGELOG.md](CHANGELOG.md) for the full history. Latest: **3.4.0** - safer character deletion with a grace period and restore, database-driven extra slots, tougher `/logout` rules, better name rules and database indexes.
 
 ---
 

@@ -191,7 +191,7 @@
     "save_outfit_2_input_label": "Outfit Name",
     "invalid_character_name": {
         "title": "Error",
-        "description": "Input must start with a capital letter, and only letters are allowed."
+        "description": "Must start with a capital letter. Only letters, apostrophes and hyphens are allowed."
     },
     "loadskin_blocked": {
         "title": "Can't Reload Appearance",
@@ -278,7 +278,10 @@
         "title": "Logout",
         "help": "Save and return to character selection",
         "cooldown": "You must wait before logging out again",
-        "dead": "You cannot log out while dead or downed"
+        "dead": "You cannot log out while dead or downed",
+        "cuffed": "You cannot log out while handcuffed",
+        "jailed": "You cannot log out while in jail",
+        "combat": "You cannot log out right after a fight"
     },
     "charselect": {
         "title": "Select Character",
@@ -297,8 +300,14 @@
             "desc": "That character slot was just taken - pick another."
         },
         "delete": {
-            "confirm_header": "Delete this character? This cannot be undone.",
-            "loading": "Deleting character..."
+            "confirm_header": "Delete this character?",
+            "loading": "Deleting character...",
+            "title": "Delete Character",
+            "disabled": "Deleting characters is turned off on this server.",
+            "name_mismatch": "The name you typed does not match this character. Nothing was deleted.",
+            "confirm_name_header": "Confirm Deletion",
+            "confirm_name_label": "Type %s to confirm",
+            "pending": "The character is hidden and will be removed for good in %s days. Ask staff if you want it back."
         },
         "info": {
             "job": "Job",
@@ -399,6 +408,14 @@
         "admin_action": {
             "title": "Admin Action",
             "description": "`/%s` used on `%s`"
+        },
+        "character_purged": {
+            "title": "Character Removed",
+            "description": "**%s %s** (citizen ID **%s**) was permanently removed after the grace period."
+        },
+        "character_restored": {
+            "title": "Character Restored",
+            "description": "Citizen ID **%s** was restored into slot **%s**."
         }
     },
     "spawn_locations": {
@@ -465,10 +482,27 @@
         "charinfo": "%s %s | CitizenID: %s | Slot: %s | Skin: %s | Outfits: %s",
         "skin_reset_done": "Appearance reset for %s %s. They must relog (/logout) to open the creator.",
         "skin_reset_target": "An admin reset your appearance. Relog (/logout) to recreate it.",
-        "name_invalid": "Invalid name. Use letters only with a capital first letter (e.g. Arthur).",
+        "name_invalid": "Invalid name. Use letters with a capital first letter; apostrophes and hyphens are allowed (e.g. O'Brien).",
         "name_taken": "That name is already used by another character.",
         "name_changed": "Name changed to %s %s.",
-        "name_changed_target": "Your character's name was changed to %s %s."
+        "name_changed_target": "Your character's name was changed to %s %s.",
+        "restorechar_help": "Restore a deleted character (Admin only)",
+        "deletedchars_help": "List characters waiting for deletion (Admin only)",
+        "arg_citizenid": "Citizen ID",
+        "restore_not_found": "No deleted character with that citizen ID.",
+        "restore_no_slot": "The player has no free character slot to restore it into.",
+        "restored": "Character %s restored into slot %s.",
+        "deleted_none": "No characters are waiting for deletion.",
+        "deleted_line": "%s: %s %s (removed in %s days)",
+        "addslot_help": "Give a player extra character slots (Admin only)",
+        "setslots_help": "Set a player's extra character slots (Admin only)",
+        "charslots_help": "Show a player's character slots (Admin only)",
+        "arg_amount": "Slots to add",
+        "arg_extra": "Extra slots",
+        "slots_invalid": "Invalid number of slots.",
+        "slots_changed": "%s %s now has %s extra slots (%s in total).",
+        "slots_changed_target": "You now have %s character slots. Use /logout to see them.",
+        "slots_info": "%s %s: %s extra slots, %s in total."
     },
     "outfit_share": {
         "no_player": "No player nearby to share with.",

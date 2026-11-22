@@ -191,7 +191,7 @@
     "save_outfit_2_input_label": "Nome do traje",
     "invalid_character_name": {
         "title": "Erro",
-        "description": "Deve começar com letra maiúscula e só são permitidas letras."
+        "description": "Deve começar com letra maiúscula. Só são permitidas letras, apóstrofos e hífens."
     },
     "loadskin_blocked": {
         "title": "Não é possível recarregar a aparência",
@@ -278,7 +278,10 @@
         "title": "Logout",
         "help": "Save and return to character selection",
         "cooldown": "You must wait before logging out again",
-        "dead": "You cannot log out while dead or downed"
+        "dead": "Você não pode sair enquanto estiver morto ou caído",
+        "cuffed": "Você não pode sair enquanto estiver algemado",
+        "jailed": "Você não pode sair enquanto estiver preso",
+        "combat": "Você não pode sair logo após uma luta"
     },
     "charselect": {
         "title": "Selecionar personagem",
@@ -297,8 +300,14 @@
             "desc": "Esse espaço acabou de ser ocupado - escolha outro."
         },
         "delete": {
-            "confirm_header": "Excluir este personagem? Não pode ser desfeito.",
-            "loading": "Excluindo personagem..."
+            "confirm_header": "Excluir este personagem?",
+            "loading": "Excluindo personagem...",
+            "title": "Excluir personagem",
+            "disabled": "A exclusão de personagens está desativada neste servidor.",
+            "name_mismatch": "O nome digitado não corresponde a este personagem. Nada foi excluído.",
+            "confirm_name_header": "Confirmar exclusão",
+            "confirm_name_label": "Digite %s para confirmar",
+            "pending": "O personagem está oculto e será removido de vez em %s dias. Fale com a equipe se quiser recuperá-lo."
         },
         "info": {
             "job": "Emprego",
@@ -399,6 +408,14 @@
         "admin_action": {
             "title": "Ação de admin",
             "description": "`/%s` usado em `%s`"
+        },
+        "character_purged": {
+            "title": "Personagem removido",
+            "description": "**%s %s** (ID de cidadão **%s**) foi removido de vez após o período de carência."
+        },
+        "character_restored": {
+            "title": "Personagem restaurado",
+            "description": "O ID de cidadão **%s** foi restaurado no espaço **%s**."
         }
     },
     "spawn_locations": {
@@ -465,10 +482,27 @@
         "charinfo": "%s %s | CitizenID: %s | Slot: %s | Aparência: %s | Looks: %s",
         "skin_reset_done": "Aparência de %s %s redefinida. O jogador precisa relogar (/logout) para abrir o criador.",
         "skin_reset_target": "Um admin redefiniu sua aparência. Relogue (/logout) para recriá-la.",
-        "name_invalid": "Nome inválido. Use apenas letras com a inicial maiúscula (ex.: Arthur).",
+        "name_invalid": "Nome inválido. Use letras com a inicial maiúscula; apóstrofos e hífens são permitidos (ex.: O'Brien).",
         "name_taken": "Esse nome já é usado por outro personagem.",
         "name_changed": "Nome alterado para %s %s.",
-        "name_changed_target": "O nome do seu personagem foi alterado para %s %s."
+        "name_changed_target": "O nome do seu personagem foi alterado para %s %s.",
+        "restorechar_help": "Restaurar um personagem excluído (somente admin)",
+        "deletedchars_help": "Listar personagens aguardando exclusão (somente admin)",
+        "arg_citizenid": "ID de cidadão",
+        "restore_not_found": "Nenhum personagem excluído com esse ID de cidadão.",
+        "restore_no_slot": "O jogador não tem espaço livre para restaurar o personagem.",
+        "restored": "Personagem %s restaurado no espaço %s.",
+        "deleted_none": "Nenhum personagem aguardando exclusão.",
+        "deleted_line": "%s: %s %s (removido em %s dias)",
+        "addslot_help": "Dar espaços extras de personagem a um jogador (somente admin)",
+        "setslots_help": "Definir os espaços extras de personagem de um jogador (somente admin)",
+        "charslots_help": "Mostrar os espaços de personagem de um jogador (somente admin)",
+        "arg_amount": "Espaços a adicionar",
+        "arg_extra": "Espaços extras",
+        "slots_invalid": "Número de espaços inválido.",
+        "slots_changed": "%s %s agora tem %s espaços extras (%s no total).",
+        "slots_changed_target": "Você agora tem %s espaços de personagem. Use /logout para vê-los.",
+        "slots_info": "%s %s: %s espaços extras, %s no total."
     },
     "outfit_share": {
         "no_player": "Nenhum jogador por perto.",

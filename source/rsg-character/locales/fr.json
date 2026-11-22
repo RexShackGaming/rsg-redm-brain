@@ -191,7 +191,7 @@
     "save_outfit_2_input_label": "Nom de la tenue",
     "invalid_character_name": {
         "title": "Erreur",
-        "description": "La saisie doit commencer par une majuscule et ne contenir que des lettres."
+        "description": "Doit commencer par une majuscule. Seuls les lettres, apostrophes et traits d'union sont autorisés."
     },
     "loadskin_blocked": {
         "title": "Impossible de recharger l'apparence",
@@ -278,7 +278,10 @@
         "title": "Logout",
         "help": "Save and return to character selection",
         "cooldown": "You must wait before logging out again",
-        "dead": "You cannot log out while dead or downed"
+        "dead": "Tu ne peux pas te déconnecter si tu es mort ou à terre",
+        "cuffed": "Tu ne peux pas te déconnecter tant que tu es menotté",
+        "jailed": "Tu ne peux pas te déconnecter tant que tu es en prison",
+        "combat": "Tu ne peux pas te déconnecter juste après un combat"
     },
     "charselect": {
         "title": "Choisir un personnage",
@@ -297,8 +300,14 @@
             "desc": "Cet emplacement vient d'être pris - choisis-en un autre."
         },
         "delete": {
-            "confirm_header": "Supprimer ce personnage ? Action irréversible.",
-            "loading": "Suppression du personnage..."
+            "confirm_header": "Supprimer ce personnage ?",
+            "loading": "Suppression du personnage...",
+            "title": "Supprimer le personnage",
+            "disabled": "La suppression de personnages est désactivée sur ce serveur.",
+            "name_mismatch": "Le nom saisi ne correspond pas à ce personnage. Rien n'a été supprimé.",
+            "confirm_name_header": "Confirmer la suppression",
+            "confirm_name_label": "Saisis %s pour confirmer",
+            "pending": "Le personnage est masqué et sera supprimé définitivement dans %s jours. Contacte le staff si tu veux le récupérer."
         },
         "info": {
             "job": "Métier",
@@ -399,6 +408,14 @@
         "admin_action": {
             "title": "Action d'admin",
             "description": "`/%s` utilisé sur `%s`"
+        },
+        "character_purged": {
+            "title": "Personnage supprimé définitivement",
+            "description": "**%s %s** (ID citoyen **%s**) a été supprimé définitivement après le délai de grâce."
+        },
+        "character_restored": {
+            "title": "Personnage restauré",
+            "description": "L'ID citoyen **%s** a été restauré dans l'emplacement **%s**."
         }
     },
     "spawn_locations": {
@@ -465,10 +482,27 @@
         "charinfo": "%s %s | CitizenID : %s | Emplacement : %s | Apparence : %s | Tenues : %s",
         "skin_reset_done": "Apparence de %s %s réinitialisée. Le joueur doit se reconnecter (/logout) pour ouvrir le créateur.",
         "skin_reset_target": "Un admin a réinitialisé ton apparence. Reconnecte-toi (/logout) pour la recréer.",
-        "name_invalid": "Nom invalide. Uniquement des lettres, première lettre en majuscule (ex. Arthur).",
+        "name_invalid": "Nom invalide. Des lettres, première lettre en majuscule ; apostrophes et traits d'union autorisés (ex. O'Brien).",
         "name_taken": "Ce nom est déjà utilisé par un autre personnage.",
         "name_changed": "Nom changé en %s %s.",
-        "name_changed_target": "Le nom de ton personnage a été changé en %s %s."
+        "name_changed_target": "Le nom de ton personnage a été changé en %s %s.",
+        "restorechar_help": "Restaurer un personnage supprimé (admin uniquement)",
+        "deletedchars_help": "Lister les personnages en attente de suppression (admin uniquement)",
+        "arg_citizenid": "ID citoyen",
+        "restore_not_found": "Aucun personnage supprimé avec cet ID citoyen.",
+        "restore_no_slot": "Le joueur n'a aucun emplacement libre pour le restaurer.",
+        "restored": "Personnage %s restauré dans l'emplacement %s.",
+        "deleted_none": "Aucun personnage en attente de suppression.",
+        "deleted_line": "%s : %s %s (suppression dans %s jours)",
+        "addslot_help": "Donner des emplacements de personnage supplémentaires à un joueur (admin uniquement)",
+        "setslots_help": "Définir les emplacements de personnage supplémentaires d'un joueur (admin uniquement)",
+        "charslots_help": "Afficher les emplacements de personnage d'un joueur (admin uniquement)",
+        "arg_amount": "Emplacements à ajouter",
+        "arg_extra": "Emplacements supplémentaires",
+        "slots_invalid": "Nombre d'emplacements invalide.",
+        "slots_changed": "%s %s a maintenant %s emplacements supplémentaires (%s au total).",
+        "slots_changed_target": "Tu as maintenant %s emplacements de personnage. Utilise /logout pour les voir.",
+        "slots_info": "%s %s : %s emplacements supplémentaires, %s au total."
     },
     "outfit_share": {
         "no_player": "Aucun joueur à proximité.",

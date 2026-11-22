@@ -290,7 +290,7 @@ MySQL.ready(function()
     print(('[Auction] Loaded %d active auctions from the database'):format(active))
 end)
 
--- Hourly prune (native thread; SetInterval was an ox_lib helper)
+-- Hourly prune (native thread)
 CreateThread(function()
     while true do
         Wait(3600000)

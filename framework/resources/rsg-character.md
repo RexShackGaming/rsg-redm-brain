@@ -1,6 +1,6 @@
 # rsg-character
 
-Version 3.3.0. rsg-character
+Version 3.4.0. rsg-character
 
 Character selection, character creation, clothing stores, wardrobe and spawn selection for **RSG-Core** (RedM). > Server owners and developers: see **[DOCS.md](DOCS.md)** for the full flow, database layout, security model, exports and how to extend the script. - In-world select screen: your characters' peds line up at a configurable location, with the camera framing every slot automatically.
 
@@ -12,13 +12,13 @@ Has NUI (`ui_page`).
 
 ## Exports (call as exports['rsg-character']:Name)
 
-**server:** `AddOutfit(citizenid, name, clothes)`, `ChangeCharacterName(citizenid, firstname, lastname)`, `GetAppearance(citizenid)`, `GetMaxSlots(src)`, `GetOutfits(citizenid)`, `IsInCreator(src)`, `IsNameAvailable(firstname, lastname)`, `LogoutToCharacterSelect(src)`, `ResetAppearance(citizenid)`, `SetClothes(src, clothes, save)`
+**server:** `AddExtraSlots(license, amount)`, `AddOutfit(citizenid, name, clothes)`, `ChangeCharacterName(citizenid, firstname, lastname)`, `GetAppearance(citizenid)`, `GetDeletedCharacters(license)`, `GetExtraSlots(license)`, `GetMaxSlots(src)`, `GetOutfits(citizenid)`, `IsInCreator(src)`, `IsNameAvailable(firstname, lastname)`, `LogoutToCharacterSelect(src)`, `PurgeDeletedCharacters()`, `ResetAppearance(citizenid)`, `RestoreCharacter(citizenid)`, `SetClothes(src, clothes, save)`, `SetExtraSlots(license, extra)`
 
 **client:** `ApplySkin()`, `ApplySkinMultiChar(SkinData, Target, ClothesData)`, `GetBodyComponents()`, `GetBodyCurrentComponentHash(name)`, `GetClothesCache(name)`, `GetClothesComponentId(name)`, `GetClothesCurrentComponentHash(name)`, `GetComponentId(name)`, `GetComponentsMax(name)`, `GetMaxTexturesForModel(category, model, isClothing)`, `IsCothingActive()`, `IsInCharacterSelect()`, `IsInCreator()`, `OpenWardrobe()`, `SetBeard(target, data)`, `SetFaceOverlays(target, data)`, `SetHair(target, data)`
 
 ## Net events registered
 
-**server:** `rsg-character:server:DeleteCharacterSlot`, `rsg-character:server:DeleteOutfit`, `rsg-character:server:RequestCharacterSlots`, `rsg-character:server:RequestCreateCharacterSlot`, `rsg-character:server:SaveSkin`, `rsg-character:server:SelectCharacterSlot`, `rsg-character:server:SetPlayerBucket`, `rsg-character:server:ShareOutfit`, `rsg-character:server:saveOutfit`, `rsg-multicharacter:server:createCharacter`
+**server:** `rsg-character:server:DeleteCharacterSlot`, `rsg-character:server:DeleteOutfit`, `rsg-character:server:RequestCharacterSlots`, `rsg-character:server:RequestCreateCharacterSlot`, `rsg-character:server:SaveSkin`, `rsg-character:server:SelectCharacterSlot`, `rsg-character:server:SetPlayerBucket`, `rsg-character:server:ShareOutfit`, `rsg-character:server:combatActivity`, `rsg-character:server:saveOutfit`, `rsg-multicharacter:server:createCharacter`
 
 **client:** `RSGCore:Client:OnPlayerLoaded`, `rsg-character:client:ApplyClothes`, `rsg-character:client:ApplySkin`, `rsg-character:client:BeginLogout`, `rsg-character:client:CharSelectFailed`, `rsg-character:client:OpenCharSelect`, `rsg-character:client:OpenCreator`, `rsg-character:client:OpenSpawnSelect`, `rsg-character:client:ReceiveCharacterSlots`, `rsg-character:client:outfits`
 
@@ -28,7 +28,7 @@ Has NUI (`ui_page`).
 
 ## Callbacks (RSGCore.Functions.CreateCallback)
 
-**server:** `rsg-character:server:LoadClothes`, `rsg-character:server:getAppearance`, `rsg-character:server:getOutfits`, `rsg-character:server:isNameAvailable`, `rsg-character:server:wearOutfit`, `rsg-multicharacter:server:getAppearance`
+**server:** `rsg-character:server:LoadClothes`, `rsg-character:server:chooseSpawn`, `rsg-character:server:getAppearance`, `rsg-character:server:getOutfits`, `rsg-character:server:isNameAvailable`, `rsg-character:server:wearOutfit`, `rsg-multicharacter:server:getAppearance`
 
 ## Commands (RegisterCommand)
 
@@ -44,7 +44,7 @@ Has NUI (`ui_page`).
 
 **server/sv_api.lua:** `RSG.GetGender(citizenid)`, `RSG.ResetAppearance(citizenid)`, `RSG.ChangeName(citizenid, firstname, lastname)`
 
-**server/sv_appearance.lua:** `RSG.SetPrivateBucket(src)`, `RSG.ResetBucket(src)`, `RSG.NotifyLoginFailed(src)`, `RSG.OpenCreatorFor(src, data)`, `RSG.LoadSkinForSource(src)`, `RSG.NameExists(firstname, lastname, excludeCitizenid)`
+**server/sv_appearance.lua:** `RSG.SetPrivateBucket(src)`, `RSG.ResetBucket(src)`, `RSG.NotifyLoginFailed(src)`, `RSG.OfferSpawn(src, lastPos, isNewCharacter)`, `RSG.OpenCreatorFor(src, data)`, `RSG.LoadSkinForSource(src)`, `RSG.NameExists(firstname, lastname, excludeCitizenid)`, `RSG.SetCharacterName(citizenid, firstname, lastname)`, `RSG.RemoveCharacterName(citizenid)`
 
 **server/sv_charselect.lua:** `RSG.GetMaxSlots(src)`
 
@@ -52,10 +52,14 @@ Has NUI (`ui_page`).
 
 **server/sv_database.lua:** `RSG.EnsureDatabase()`
 
+**server/sv_delete.lua:** `RSG.IsPendingDeletion(citizenid)`, `RSG.HardDeleteCharacter(citizenid)`, `RSG.SoftDeleteCharacter(citizenid, license)`, `RSG.RestoreCharacter(citizenid)`, `RSG.GetDeletedCharacters(license)`
+
+**server/sv_slots.lua:** `RSG.GetExtraSlots(license)`, `RSG.GetMaxSlotsForLicense(license)`, `RSG.SetExtraSlots(license, extra)`, `RSG.AddExtraSlots(license, amount)`
+
 **server/webhook.lua:** `RSG.SendWebhook(category, embed)`, `RSG.WebhookIdentityFields(_source)`
 
-**shared/functions.lua:** `RSG.IsValidBirthdate(date)`
+**shared/functions.lua:** `RSG.GetBirthdateRange()`, `RSG.IsValidBirthdate(date)`, `RSG.IsValidName(name)`, `RSG.IsReservedName(firstname, lastname)`
 
 ## Database tables
 
-`playeroutfit`, `playerskins`
+`playeroutfit`, `playerskins`, `playerslots`, `rsg_character_deleted`, `rsg_character_names`

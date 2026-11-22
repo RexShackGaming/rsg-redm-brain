@@ -191,7 +191,7 @@
     "save_outfit_2_input_label": "Outfitname",
     "invalid_character_name": {
         "title": "Fehler",
-        "description": "Die Eingabe muss mit einem Großbuchstaben beginnen und darf nur Buchstaben enthalten."
+        "description": "Muss mit einem Großbuchstaben beginnen. Erlaubt sind nur Buchstaben, Apostrophe und Bindestriche."
     },
     "loadskin_blocked": {
         "title": "Aussehen kann nicht neu geladen werden",
@@ -278,7 +278,10 @@
         "title": "Logout",
         "help": "Save and return to character selection",
         "cooldown": "You must wait before logging out again",
-        "dead": "You cannot log out while dead or downed"
+        "dead": "Du kannst dich nicht ausloggen, solange du tot oder kampfunfähig bist",
+        "cuffed": "Du kannst dich nicht ausloggen, solange du gefesselt bist",
+        "jailed": "Du kannst dich nicht ausloggen, solange du im Gefängnis bist",
+        "combat": "Du kannst dich nach einem Kampf nicht sofort ausloggen"
     },
     "charselect": {
         "title": "Charakter wählen",
@@ -297,8 +300,14 @@
             "desc": "Dieser Charakterplatz wurde gerade belegt - wähle einen anderen."
         },
         "delete": {
-            "confirm_header": "Diesen Charakter löschen? Dies kann nicht rückgängig gemacht werden.",
-            "loading": "Charakter wird gelöscht..."
+            "confirm_header": "Diesen Charakter löschen?",
+            "loading": "Charakter wird gelöscht...",
+            "title": "Charakter löschen",
+            "disabled": "Das Löschen von Charakteren ist auf diesem Server deaktiviert.",
+            "name_mismatch": "Der eingegebene Name passt nicht zu diesem Charakter. Es wurde nichts gelöscht.",
+            "confirm_name_header": "Löschen bestätigen",
+            "confirm_name_label": "Gib %s zur Bestätigung ein",
+            "pending": "Der Charakter ist ausgeblendet und wird in %s Tagen endgültig entfernt. Frag das Team, wenn du ihn zurückhaben willst."
         },
         "info": {
             "job": "Beruf",
@@ -399,6 +408,14 @@
         "admin_action": {
             "title": "Admin-Aktion",
             "description": "`/%s` verwendet bei `%s`"
+        },
+        "character_purged": {
+            "title": "Charakter entfernt",
+            "description": "**%s %s** (Bürger-ID **%s**) wurde nach Ablauf der Frist endgültig entfernt."
+        },
+        "character_restored": {
+            "title": "Charakter wiederhergestellt",
+            "description": "Bürger-ID **%s** wurde auf Platz **%s** wiederhergestellt."
         }
     },
     "spawn_locations": {
@@ -465,10 +482,27 @@
         "charinfo": "%s %s | CitizenID: %s | Slot: %s | Skin: %s | Outfits: %s",
         "skin_reset_done": "Aussehen von %s %s zurückgesetzt. Der Spieler muss sich neu einloggen (/logout), um den Creator zu öffnen.",
         "skin_reset_target": "Ein Admin hat dein Aussehen zurückgesetzt. Logge dich neu ein (/logout), um es neu zu erstellen.",
-        "name_invalid": "Ungültiger Name. Nur Buchstaben mit großem Anfangsbuchstaben (z. B. Arthur).",
+        "name_invalid": "Ungültiger Name. Buchstaben mit großem Anfangsbuchstaben; Apostroph und Bindestrich sind erlaubt (z. B. O'Brien).",
         "name_taken": "Dieser Name wird bereits von einem anderen Charakter verwendet.",
         "name_changed": "Name geändert zu %s %s.",
-        "name_changed_target": "Der Name deines Charakters wurde zu %s %s geändert."
+        "name_changed_target": "Der Name deines Charakters wurde zu %s %s geändert.",
+        "restorechar_help": "Gelöschten Charakter wiederherstellen (nur Admin)",
+        "deletedchars_help": "Zur Löschung vorgemerkte Charaktere auflisten (nur Admin)",
+        "arg_citizenid": "Bürger-ID",
+        "restore_not_found": "Kein gelöschter Charakter mit dieser Bürger-ID.",
+        "restore_no_slot": "Der Spieler hat keinen freien Charakterplatz für die Wiederherstellung.",
+        "restored": "Charakter %s wurde auf Platz %s wiederhergestellt.",
+        "deleted_none": "Keine Charaktere warten auf die Löschung.",
+        "deleted_line": "%s: %s %s (Entfernung in %s Tagen)",
+        "addslot_help": "Einem Spieler zusätzliche Charakterplätze geben (nur Admin)",
+        "setslots_help": "Zusätzliche Charakterplätze eines Spielers festlegen (nur Admin)",
+        "charslots_help": "Charakterplätze eines Spielers anzeigen (nur Admin)",
+        "arg_amount": "Hinzuzufügende Plätze",
+        "arg_extra": "Zusätzliche Plätze",
+        "slots_invalid": "Ungültige Anzahl an Plätzen.",
+        "slots_changed": "%s %s hat jetzt %s zusätzliche Plätze (insgesamt %s).",
+        "slots_changed_target": "Du hast jetzt %s Charakterplätze. Nutze /logout, um sie zu sehen.",
+        "slots_info": "%s %s: %s zusätzliche Plätze, insgesamt %s."
     },
     "outfit_share": {
         "no_player": "Kein Spieler in der Nähe zum Teilen.",

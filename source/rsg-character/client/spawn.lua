@@ -145,18 +145,22 @@ OpenSpawnMenu = function(lastPos)
         elements = BuildSpawnElements(lastPos),
     })
 
-    if value == 'last' and lastPos then
-        UI.ShowLoadingScreen(locale('spawn.loading'))
-        TeleportToSpawn(lastPos, lastPos.w, false)
-        return
+    if not value then return end
+
+    -- the server answers with the coordinates it allows for that choice
+    local dest = RSGCore.Functions.AwaitCallback('rsg-character:server:chooseSpawn', 10000, value)
+    if not dest then
+        RSGCore.Functions.Notify({
+            title = locale('charselect.login_failed.title'),
+            description = locale('charselect.login_failed.description'),
+            type = 'error',
+            duration = 5000,
+        })
+        return OpenSpawnMenu(lastPos)
     end
 
-    local idx = value and tonumber(value:match('^preset_(%d+)$'))
-    local loc = idx and RSG.SpawnLocations[idx]
-    if loc then
-        UI.ShowLoadingScreen(locale('spawn.loading'))
-        TeleportToSpawn(loc.coords, loc.coords.w, true)
-    end
+    UI.ShowLoadingScreen(locale('spawn.loading'))
+    TeleportToSpawn(vector3(dest.x, dest.y, dest.z), dest.w, dest.fromMenu)
 end
 
 RegisterNetEvent('rsg-character:client:OpenSpawnSelect', function(lastPos, isNewCharacter)

@@ -191,7 +191,7 @@
     "save_outfit_2_input_label": "衣装名",
     "invalid_character_name": {
         "title": "エラー",
-        "description": "大文字で始まり、英字のみ使用できます。"
+        "description": "大文字で始めてください。使用できるのは文字、アポストロフィ、ハイフンのみです。"
     },
     "loadskin_blocked": {
         "title": "外見を再読み込みできません",
@@ -278,7 +278,10 @@
         "title": "Logout",
         "help": "Save and return to character selection",
         "cooldown": "You must wait before logging out again",
-        "dead": "You cannot log out while dead or downed"
+        "dead": "死亡中またはダウン中はログアウトできません",
+        "cuffed": "手錠をかけられている間はログアウトできません",
+        "jailed": "投獄中はログアウトできません",
+        "combat": "戦闘の直後はログアウトできません"
     },
     "charselect": {
         "title": "キャラクター選択",
@@ -297,8 +300,14 @@
             "desc": "そのスロットは使用されたばかりです - 別のスロットを選んでください。"
         },
         "delete": {
-            "confirm_header": "このキャラクターを削除しますか？元に戻せません。",
-            "loading": "キャラクターを削除中..."
+            "confirm_header": "このキャラクターを削除しますか？",
+            "loading": "キャラクターを削除中...",
+            "title": "キャラクター削除",
+            "disabled": "このサーバーではキャラクターの削除は無効になっています。",
+            "name_mismatch": "入力した名前がこのキャラクターと一致しません。何も削除されていません。",
+            "confirm_name_header": "削除の確認",
+            "confirm_name_label": "確認のため %s と入力してください",
+            "pending": "このキャラクターは非表示になり、%s日後に完全に削除されます。戻したい場合はスタッフに連絡してください。"
         },
         "info": {
             "job": "職業",
@@ -399,6 +408,14 @@
         "admin_action": {
             "title": "管理者の操作",
             "description": "`/%s` を `%s` に使用"
+        },
+        "character_purged": {
+            "title": "キャラクターを完全削除",
+            "description": "**%s %s**（市民ID **%s**）は猶予期間の経過後に完全に削除されました。"
+        },
+        "character_restored": {
+            "title": "キャラクターを復元",
+            "description": "市民ID **%s** をスロット **%s** に復元しました。"
         }
     },
     "spawn_locations": {
@@ -465,10 +482,27 @@
         "charinfo": "%s %s | CitizenID: %s | スロット: %s | 外見: %s | 衣装: %s",
         "skin_reset_done": "%s %s の外見をリセットしました。クリエイターを開くには再ログイン（/logout）が必要です。",
         "skin_reset_target": "管理者があなたの外見をリセットしました。再ログイン（/logout）して作り直してください。",
-        "name_invalid": "無効な名前です。先頭が大文字の英字のみ使用できます（例: Arthur）。",
+        "name_invalid": "無効な名前です。先頭が大文字の文字を使用してください。アポストロフィとハイフンも使用できます（例: O'Brien）。",
         "name_taken": "その名前は別のキャラクターが使用しています。",
         "name_changed": "名前を %s %s に変更しました。",
-        "name_changed_target": "あなたのキャラクター名が %s %s に変更されました。"
+        "name_changed_target": "あなたのキャラクター名が %s %s に変更されました。",
+        "restorechar_help": "削除されたキャラクターを復元（管理者のみ）",
+        "deletedchars_help": "削除待ちのキャラクターを一覧表示（管理者のみ）",
+        "arg_citizenid": "市民ID",
+        "restore_not_found": "その市民IDの削除済みキャラクターはありません。",
+        "restore_no_slot": "復元できる空きスロットがプレイヤーにありません。",
+        "restored": "キャラクター %s をスロット %s に復元しました。",
+        "deleted_none": "削除待ちのキャラクターはありません。",
+        "deleted_line": "%s: %s %s（%s日後に削除）",
+        "addslot_help": "プレイヤーにキャラクタースロットを追加（管理者のみ）",
+        "setslots_help": "プレイヤーの追加キャラクタースロット数を設定（管理者のみ）",
+        "charslots_help": "プレイヤーのキャラクタースロットを表示（管理者のみ）",
+        "arg_amount": "追加するスロット数",
+        "arg_extra": "追加スロット数",
+        "slots_invalid": "スロット数が無効です。",
+        "slots_changed": "%s %s の追加スロットは %s になりました（合計 %s）。",
+        "slots_changed_target": "キャラクタースロットが %s 個になりました。/logout で確認できます。",
+        "slots_info": "%s %s: 追加スロット %s 個、合計 %s 個。"
     },
     "outfit_share": {
         "no_player": "近くに共有できるプレイヤーがいません。",

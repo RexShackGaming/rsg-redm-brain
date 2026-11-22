@@ -6,17 +6,45 @@ RSG.Debug = false
 -- Set to false to import install.sql manually instead.
 RSG.AutoDatabase = true
 
+-- When adding the unique key to playerskins, delete older duplicate rows (the newest row per character is the one
+-- the script always used). false keeps them and skips the unique key if duplicates exist.
+RSG.DedupeSkins = true
+
 -- While the NUI has focus, game controls are blocked but push-to-talk keeps working.
 RSG.AllowPushToTalkWhileOpen = true
 RSG.PushToTalkControls = {
     0x4BC9DABB, -- INPUT_PUSH_TO_TALK
 }
 
-RSG.ProfanityWords = {
-    ['bad word'] = true,
-    ['dick'] = true,
-    ['ass'] = true
+-- Name rules for the character creator (checked on the client and again on the server).
+-- Letters, accents, apostrophes (O'Brien) and hyphens (Mary-Jane) are allowed; internal capitals
+-- are allowed for names like McGregor or DeLuca.
+RSG.NameRules = {
+    MinLength = 2,
+    MaxLength = 20,
+    AllowSpaces = false,    -- true allows one space between name parts (De La Cruz)
+    MaxCapitals = 3,        -- capital letters allowed in one name (McGregor = 2)
+    -- whole-name matches (lowercase). Short words belong here, not in BlockedSubstrings
+    ProfanityWords = {
+        ['bad word'] = true,
+        ['ass'] = true,
+    },
+    -- rejected when found anywhere inside a name (lowercase). Keep these long and unambiguous
+    BlockedSubstrings = {
+        'fuck', 'shit', 'cunt', 'bitch', 'whore', 'nigg', 'faggot', 'retard',
+        'hitler', 'nazi', 'admin', 'moderator', 'staff',
+    },
+    -- full "first last" names nobody may use (lowercase)
+    ReservedNames = {
+        ['arthur morgan'] = true,
+        ['john marston'] = true,
+        ['dutch van der linde'] = true,
+        ['micah bell'] = true,
+        ['sadie adler'] = true,
+    },
 }
+-- kept for older resources that read it; same table as RSG.NameRules.ProfanityWords
+RSG.ProfanityWords = RSG.NameRules.ProfanityWords
 
 -- Character select: how many character slots each player license gets
 RSG.MaxCharacterSlots = 4
@@ -52,11 +80,15 @@ RSG.OutfitSharing = {
     AcceptTimeout = 15,   -- seconds the other player has to answer
 }
 
--- Character creator: allowed birthdate range (YYYY-MM-DD), checked on client and server
+-- Character creator: allowed birthdate range (YYYY-MM-DD), checked on client and server.
+-- GameYear is the in-game year; MinAge / MaxAge narrow the range further (set both to nil to use Min/Max only).
 RSG.Birthdate = {
     Min = '1750-01-01',
     Max = '1900-12-31',
     Default = '1870-01-01',
+    GameYear = 1899,
+    MinAge = 16,
+    MaxAge = 85,
 }
 
 -- /logout: saves the current character and returns the player to character select
@@ -65,6 +97,32 @@ RSG.Logout = {
     Command = 'logout',
     Cooldown = 30,        -- seconds between uses per player
     BlockWhenDead = true, -- can't log out while dead / downed
+    BlockWhenCuffed = true, -- can't log out while handcuffed (metadata.ishandcuffed)
+    BlockWhenJailed = true, -- can't log out while jailed (metadata.injail)
+    CombatCooldown = 30,  -- seconds after taking damage or firing a weapon before /logout works (0 = off)
+}
+
+-- Deleting a character from character select.
+RSG.Delete = {
+    Enabled = true,        -- false hides the delete button and rejects delete requests
+    ConfirmName = true,    -- the player must type the character's first name to confirm
+    SoftDelete = true,     -- true: hide the character for GraceDays and let staff restore it; false: delete at once
+    GraceDays = 7,         -- days before a soft-deleted character is permanently removed
+    PurgeInterval = 60,    -- minutes between purge checks (also runs at start)
+    Restore = 'restorechar',   -- /restorechar [citizenid]
+    List = 'deletedchars',     -- /deletedchars [id]  (lists pending deletions of an online player's license)
+    Permission = 'admin',
+}
+
+-- Extra character slots stored in the database (table playerslots, one row per license), on top of
+-- MaxCharacterSlots. Granted with /addslot or the AddExtraSlots export (e.g. from a store webhook).
+-- RSG.SlotRules (ACE) still works; the larger of the two applies.
+RSG.Slots = {
+    Cap = 8,               -- hard limit on slots per license, whatever the database says
+    Permission = 'admin',
+    Add = 'addslot',       -- /addslot [id] [amount]
+    Set = 'setslots',      -- /setslots [id] [extra]
+    Info = 'charslots',    -- /charslots [id]
 }
 
 -- Nationalities offered as a dropdown in the character creator (period-appropriate
@@ -117,16 +175,17 @@ RSG.CharSelectLocation = {
 -- and flip `enabled` to true (categories left blank print a warning to the
 -- server console instead of erroring). `color` is a standard Discord embed
 -- decimal color code.
+-- (every category ships disabled so no placeholder URL is called; enable the ones you fill in)
 RSG.Webhooks = {
     ['character_created'] = {
-        enabled = true,
+        enabled = false,
         url = 'https://discord.com/api/webhooks/XXXXXXXX/XXXXXXXX',
         name = 'Character Logs',
         avatar = '',
         color = 3066993, -- green
     },
     ['character_deleted'] = {
-        enabled = true,
+        enabled = false,
         url = 'https://discord.com/api/webhooks/XXXXXXXX/XXXXXXXX',
         name = 'Character Logs',
         avatar = '',
@@ -153,15 +212,22 @@ RSG.Webhooks = {
         avatar = '',
         color = 16711680, -- red
     },
+    ['character_restored'] = {
+        enabled = false,
+        url = 'https://discord.com/api/webhooks/XXXXXXXX/XXXXXXXX',
+        name = 'Character Logs',
+        avatar = '',
+        color = 3066993, -- green
+    },
     ['appearance_saved'] = {
-        enabled = true,
+        enabled = false,
         url = 'https://discord.com/api/webhooks/XXXXXXXX/XXXXXXXX',
         name = 'Character Logs',
         avatar = '',
         color = 10181046, -- purple
     },
     ['outfit_purchased'] = {
-        enabled = true,
+        enabled = false,
         url = 'https://discord.com/api/webhooks/XXXXXXXX/XXXXXXXX',
         name = 'Character Logs',
         avatar = '',

@@ -87,7 +87,7 @@ RegisterNetEvent('rsg-mdt:client:finePaymentResult', function(data)
 end)
 
 -- ============================================
--- Fines Clerk NUI (replaces ox_lib context menu / alert dialogs)
+-- Fines Clerk NUI (context menu and confirm dialogs)
 -- ============================================
 local clerkOpen = false
 local clerkName = nil

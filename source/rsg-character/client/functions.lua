@@ -1239,3 +1239,27 @@ function RandomizeCreatorAppearance(target)
         if token == RandomizeToken then LoadOverlays(target, CreatorCache) end
     end)
 end
+
+---------------------------------------------------------------------------
+-- Combat report for /logout (RSG.Logout.CombatCooldown): tells the server when this player took damage or fired
+---------------------------------------------------------------------------
+CreateThread(function()
+    if not RSG.Logout or not RSG.Logout.Enabled or (tonumber(RSG.Logout.CombatCooldown) or 0) <= 0 then return end
+    local lastHealth, lastSent = nil, 0
+    while true do
+        Wait(500)
+        local playerData = RSGCore.Functions.GetPlayerData()
+        if playerData and playerData.citizenid then
+            local ped = PlayerPedId()
+            local health = GetEntityHealth(ped)
+            local hurt = lastHealth ~= nil and health < lastHealth and health > 0
+            lastHealth = health
+            if (hurt or IsPedShooting(ped)) and GetGameTimer() - lastSent > 4000 then
+                lastSent = GetGameTimer()
+                TriggerServerEvent('rsg-character:server:combatActivity')
+            end
+        else
+            lastHealth = nil
+        end
+    end
+end)

@@ -191,7 +191,7 @@
     "save_outfit_2_input_label": "Numele ținutei",
     "invalid_character_name": {
         "title": "Eroare",
-        "description": "Textul trebuie să înceapă cu majusculă și poate conține doar litere."
+        "description": "Trebuie să înceapă cu majusculă. Sunt permise doar litere, apostrofuri și cratime."
     },
     "loadskin_blocked": {
         "title": "Nu se poate reîncărca aspectul",
@@ -278,7 +278,10 @@
         "title": "Logout",
         "help": "Save and return to character selection",
         "cooldown": "You must wait before logging out again",
-        "dead": "You cannot log out while dead or downed"
+        "dead": "Nu te poți deconecta cât timp ești mort sau doborât",
+        "cuffed": "Nu te poți deconecta cât timp ești încătușat",
+        "jailed": "Nu te poți deconecta cât timp ești în închisoare",
+        "combat": "Nu te poți deconecta imediat după o luptă"
     },
     "charselect": {
         "title": "Alege personajul",
@@ -297,8 +300,14 @@
             "desc": "Slotul tocmai a fost ocupat - alege altul."
         },
         "delete": {
-            "confirm_header": "Ștergi acest personaj? Acțiunea nu poate fi anulată.",
-            "loading": "Se șterge personajul..."
+            "confirm_header": "Ștergi acest personaj?",
+            "loading": "Se șterge personajul...",
+            "title": "Ștergere personaj",
+            "disabled": "Ștergerea personajelor este dezactivată pe acest server.",
+            "name_mismatch": "Numele introdus nu se potrivește cu acest personaj. Nu s-a șters nimic.",
+            "confirm_name_header": "Confirmă ștergerea",
+            "confirm_name_label": "Scrie %s pentru a confirma",
+            "pending": "Personajul este ascuns și va fi eliminat definitiv în %s zile. Cere ajutorul echipei dacă îl vrei înapoi."
         },
         "info": {
             "job": "Ocupație",
@@ -399,6 +408,14 @@
         "admin_action": {
             "title": "Acțiune admin",
             "description": "`/%s` folosit pe `%s`"
+        },
+        "character_purged": {
+            "title": "Personaj eliminat",
+            "description": "**%s %s** (ID cetățean **%s**) a fost eliminat definitiv după perioada de grație."
+        },
+        "character_restored": {
+            "title": "Personaj restaurat",
+            "description": "ID-ul de cetățean **%s** a fost restaurat în slotul **%s**."
         }
     },
     "spawn_locations": {
@@ -465,10 +482,27 @@
         "charinfo": "%s %s | CitizenID: %s | Slot: %s | Aspect: %s | Ținute: %s",
         "skin_reset_done": "Aspectul lui %s %s a fost resetat. Jucătorul trebuie să se reconecteze (/logout) pentru a deschide editorul.",
         "skin_reset_target": "Un admin ți-a resetat aspectul. Reconectează-te (/logout) pentru a-l recrea.",
-        "name_invalid": "Nume invalid. Doar litere, cu inițiala majusculă (ex. Arthur).",
+        "name_invalid": "Nume invalid. Litere cu inițiala majusculă; sunt permise apostroful și cratima (ex. O'Brien).",
         "name_taken": "Acest nume este deja folosit de alt personaj.",
         "name_changed": "Numele a fost schimbat în %s %s.",
-        "name_changed_target": "Numele personajului tău a fost schimbat în %s %s."
+        "name_changed_target": "Numele personajului tău a fost schimbat în %s %s.",
+        "restorechar_help": "Restaurează un personaj șters (doar admin)",
+        "deletedchars_help": "Listează personajele care așteaptă ștergerea (doar admin)",
+        "arg_citizenid": "ID cetățean",
+        "restore_not_found": "Niciun personaj șters cu acest ID cetățean.",
+        "restore_no_slot": "Jucătorul nu are niciun slot liber pentru restaurare.",
+        "restored": "Personajul %s a fost restaurat în slotul %s.",
+        "deleted_none": "Niciun personaj nu așteaptă ștergerea.",
+        "deleted_line": "%s: %s %s (eliminare în %s zile)",
+        "addslot_help": "Oferă unui jucător sloturi de personaj suplimentare (doar admin)",
+        "setslots_help": "Setează sloturile de personaj suplimentare ale unui jucător (doar admin)",
+        "charslots_help": "Afișează sloturile de personaj ale unui jucător (doar admin)",
+        "arg_amount": "Sloturi de adăugat",
+        "arg_extra": "Sloturi suplimentare",
+        "slots_invalid": "Număr de sloturi invalid.",
+        "slots_changed": "%s %s are acum %s sloturi suplimentare (%s în total).",
+        "slots_changed_target": "Ai acum %s sloturi de personaj. Folosește /logout ca să le vezi.",
+        "slots_info": "%s %s: %s sloturi suplimentare, %s în total."
     },
     "outfit_share": {
         "no_player": "Niciun jucător în apropiere.",

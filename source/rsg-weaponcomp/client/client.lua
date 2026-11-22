@@ -1181,7 +1181,7 @@ CreateThread(function()
             if not active[propid] then despawnProp(propid) end
         end
 
-        -- optional workbench name text (replaces the old ox_lib sphere zone)
+        -- optional workbench name text
         if Config.gunZoneActive and Config.showTextZone then
             if inZone and shownTextFor ~= inZone.propid then
                 exports['rsg-core']:DrawText(tostring(inZone.gunsitename or locale('cl_gunsmith')), 'left')

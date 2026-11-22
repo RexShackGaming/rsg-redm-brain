@@ -191,7 +191,7 @@
     "save_outfit_2_input_label": "Nombre del atuendo",
     "invalid_character_name": {
         "title": "Error",
-        "description": "Debe empezar por mayúscula y solo se permiten letras."
+        "description": "Debe empezar por mayúscula. Solo se permiten letras, apóstrofos y guiones."
     },
     "loadskin_blocked": {
         "title": "No se puede recargar la apariencia",
@@ -278,7 +278,10 @@
         "title": "Logout",
         "help": "Save and return to character selection",
         "cooldown": "You must wait before logging out again",
-        "dead": "You cannot log out while dead or downed"
+        "dead": "No puedes cerrar sesión estando muerto o derribado",
+        "cuffed": "No puedes cerrar sesión mientras estés esposado",
+        "jailed": "No puedes cerrar sesión mientras estés en la cárcel",
+        "combat": "No puedes cerrar sesión justo después de un combate"
     },
     "charselect": {
         "title": "Seleccionar personaje",
@@ -297,8 +300,14 @@
             "desc": "Esa ranura acaba de ocuparse - elige otra."
         },
         "delete": {
-            "confirm_header": "¿Borrar este personaje? No se puede deshacer.",
-            "loading": "Borrando personaje..."
+            "confirm_header": "¿Borrar este personaje?",
+            "loading": "Borrando personaje...",
+            "title": "Borrar personaje",
+            "disabled": "El borrado de personajes está desactivado en este servidor.",
+            "name_mismatch": "El nombre que escribiste no coincide con este personaje. No se borró nada.",
+            "confirm_name_header": "Confirmar borrado",
+            "confirm_name_label": "Escribe %s para confirmar",
+            "pending": "El personaje está oculto y se eliminará definitivamente en %s días. Pide al personal que lo recupere si lo quieres de vuelta."
         },
         "info": {
             "job": "Trabajo",
@@ -399,6 +408,14 @@
         "admin_action": {
             "title": "Acción de admin",
             "description": "`/%s` usado en `%s`"
+        },
+        "character_purged": {
+            "title": "Personaje eliminado",
+            "description": "**%s %s** (ID de ciudadano **%s**) se eliminó definitivamente tras el periodo de espera."
+        },
+        "character_restored": {
+            "title": "Personaje restaurado",
+            "description": "El ID de ciudadano **%s** se restauró en la ranura **%s**."
         }
     },
     "spawn_locations": {
@@ -465,10 +482,27 @@
         "charinfo": "%s %s | CitizenID: %s | Ranura: %s | Apariencia: %s | Conjuntos: %s",
         "skin_reset_done": "Apariencia de %s %s restablecida. Debe reconectarse (/logout) para abrir el creador.",
         "skin_reset_target": "Un admin restableció tu apariencia. Reconéctate (/logout) para recrearla.",
-        "name_invalid": "Nombre no válido. Solo letras con la primera en mayúscula (p. ej. Arthur).",
+        "name_invalid": "Nombre no válido. Letras con la primera en mayúscula; se permiten apóstrofos y guiones (p. ej. O'Brien).",
         "name_taken": "Ese nombre ya lo usa otro personaje.",
         "name_changed": "Nombre cambiado a %s %s.",
-        "name_changed_target": "El nombre de tu personaje se cambió a %s %s."
+        "name_changed_target": "El nombre de tu personaje se cambió a %s %s.",
+        "restorechar_help": "Restaurar un personaje borrado (solo admin)",
+        "deletedchars_help": "Listar personajes pendientes de borrado (solo admin)",
+        "arg_citizenid": "ID de ciudadano",
+        "restore_not_found": "No hay ningún personaje borrado con ese ID de ciudadano.",
+        "restore_no_slot": "El jugador no tiene ninguna ranura libre para restaurarlo.",
+        "restored": "Personaje %s restaurado en la ranura %s.",
+        "deleted_none": "No hay personajes pendientes de borrado.",
+        "deleted_line": "%s: %s %s (se elimina en %s días)",
+        "addslot_help": "Dar ranuras de personaje extra a un jugador (solo admin)",
+        "setslots_help": "Establecer las ranuras de personaje extra de un jugador (solo admin)",
+        "charslots_help": "Mostrar las ranuras de personaje de un jugador (solo admin)",
+        "arg_amount": "Ranuras a añadir",
+        "arg_extra": "Ranuras extra",
+        "slots_invalid": "Número de ranuras no válido.",
+        "slots_changed": "%s %s ahora tiene %s ranuras extra (%s en total).",
+        "slots_changed_target": "Ahora tienes %s ranuras de personaje. Usa /logout para verlas.",
+        "slots_info": "%s %s: %s ranuras extra, %s en total."
     },
     "outfit_share": {
         "no_player": "No hay ningún jugador cerca.",

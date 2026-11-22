@@ -191,7 +191,7 @@
     "save_outfit_2_input_label": "Outfitnaam",
     "invalid_character_name": {
         "title": "Fout",
-        "description": "Invoer moet met een hoofdletter beginnen en mag alleen letters bevatten."
+        "description": "Moet met een hoofdletter beginnen. Alleen letters, apostroffen en koppeltekens zijn toegestaan."
     },
     "loadskin_blocked": {
         "title": "Kan uiterlijk niet herladen",
@@ -278,7 +278,10 @@
         "title": "Logout",
         "help": "Save and return to character selection",
         "cooldown": "You must wait before logging out again",
-        "dead": "You cannot log out while dead or downed"
+        "dead": "Je kunt niet uitloggen terwijl je dood of neergeslagen bent",
+        "cuffed": "Je kunt niet uitloggen terwijl je geboeid bent",
+        "jailed": "Je kunt niet uitloggen terwijl je in de gevangenis zit",
+        "combat": "Je kunt niet uitloggen direct na een gevecht"
     },
     "charselect": {
         "title": "Kies personage",
@@ -297,8 +300,14 @@
             "desc": "Dat slot is net bezet - kies een ander."
         },
         "delete": {
-            "confirm_header": "Dit personage verwijderen? Dit kan niet ongedaan worden gemaakt.",
-            "loading": "Personage verwijderen..."
+            "confirm_header": "Dit personage verwijderen?",
+            "loading": "Personage verwijderen...",
+            "title": "Personage verwijderen",
+            "disabled": "Personages verwijderen staat uit op deze server.",
+            "name_mismatch": "De ingevoerde naam komt niet overeen met dit personage. Er is niets verwijderd.",
+            "confirm_name_header": "Verwijderen bevestigen",
+            "confirm_name_label": "Typ %s om te bevestigen",
+            "pending": "Het personage is verborgen en wordt over %s dagen definitief verwijderd. Vraag het team als je het terug wilt."
         },
         "info": {
             "job": "Baan",
@@ -399,6 +408,14 @@
         "admin_action": {
             "title": "Admin-actie",
             "description": "`/%s` gebruikt op `%s`"
+        },
+        "character_purged": {
+            "title": "Personage verwijderd",
+            "description": "**%s %s** (burger-ID **%s**) is na de bedenktijd definitief verwijderd."
+        },
+        "character_restored": {
+            "title": "Personage hersteld",
+            "description": "Burger-ID **%s** is hersteld in slot **%s**."
         }
     },
     "spawn_locations": {
@@ -465,10 +482,27 @@
         "charinfo": "%s %s | CitizenID: %s | Slot: %s | Uiterlijk: %s | Outfits: %s",
         "skin_reset_done": "Uiterlijk van %s %s gereset. De speler moet opnieuw inloggen (/logout) om de creator te openen.",
         "skin_reset_target": "Een admin heeft je uiterlijk gereset. Log opnieuw in (/logout) om het opnieuw te maken.",
-        "name_invalid": "Ongeldige naam. Alleen letters met een hoofdletter vooraan (bijv. Arthur).",
+        "name_invalid": "Ongeldige naam. Letters met een hoofdletter vooraan; apostrof en koppelteken zijn toegestaan (bijv. O'Brien).",
         "name_taken": "Die naam wordt al door een ander personage gebruikt.",
         "name_changed": "Naam gewijzigd naar %s %s.",
-        "name_changed_target": "De naam van je personage is gewijzigd naar %s %s."
+        "name_changed_target": "De naam van je personage is gewijzigd naar %s %s.",
+        "restorechar_help": "Een verwijderd personage herstellen (alleen admin)",
+        "deletedchars_help": "Personages tonen die op verwijdering wachten (alleen admin)",
+        "arg_citizenid": "Burger-ID",
+        "restore_not_found": "Geen verwijderd personage met dat burger-ID.",
+        "restore_no_slot": "De speler heeft geen vrij slot om het in te herstellen.",
+        "restored": "Personage %s hersteld in slot %s.",
+        "deleted_none": "Er wachten geen personages op verwijdering.",
+        "deleted_line": "%s: %s %s (verwijdering over %s dagen)",
+        "addslot_help": "Een speler extra personageslots geven (alleen admin)",
+        "setslots_help": "De extra personageslots van een speler instellen (alleen admin)",
+        "charslots_help": "De personageslots van een speler tonen (alleen admin)",
+        "arg_amount": "Toe te voegen slots",
+        "arg_extra": "Extra slots",
+        "slots_invalid": "Ongeldig aantal slots.",
+        "slots_changed": "%s %s heeft nu %s extra slots (%s in totaal).",
+        "slots_changed_target": "Je hebt nu %s personageslots. Gebruik /logout om ze te zien.",
+        "slots_info": "%s %s: %s extra slots, %s in totaal."
     },
     "outfit_share": {
         "no_player": "Geen speler in de buurt.",

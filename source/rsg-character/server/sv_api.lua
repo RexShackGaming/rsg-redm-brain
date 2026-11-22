@@ -32,7 +32,7 @@ end
 -- rename a character (online or offline). Returns ok, reason ('invalid_name' | 'name_taken' | 'not_found')
 function RSG.ChangeName(citizenid, firstname, lastname)
     if type(citizenid) ~= 'string' then return false, 'not_found' end
-    if not RSG.IsValidName(firstname) or not RSG.IsValidName(lastname) then return false, 'invalid_name' end
+    if not RSG.IsValidName(firstname) or not RSG.IsValidName(lastname) or RSG.IsReservedName(firstname, lastname) then return false, 'invalid_name' end
     if RSG.NameExists(firstname, lastname, citizenid) then return false, 'name_taken' end
 
     local Player = RSGCore.Functions.GetPlayerByCitizenId(citizenid)
@@ -47,6 +47,7 @@ function RSG.ChangeName(citizenid, firstname, lastname)
         info.firstname, info.lastname = firstname, lastname
         MySQL.update.await('UPDATE players SET charinfo = ? WHERE citizenid = ?', { json.encode(info), citizenid })
     end
+    RSG.SetCharacterName(citizenid, firstname, lastname)
     TriggerEvent('rsg-character:server:nameChanged', citizenid, firstname, lastname)
     return true
 end

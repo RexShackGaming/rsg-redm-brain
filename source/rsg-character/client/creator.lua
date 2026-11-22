@@ -319,8 +319,7 @@ RegisterCommand('loadskin', function()
 end, false)
 
 local function checkStrings(input)
-    if type(input) ~= 'string' or RSG.ProfanityWords[input:lower()]
-        or #input < 2 or #input > 20 or not input:match('^%u%l+$') then
+    if not RSG.IsValidName(input) then
         RSGCore.Functions.Notify({ title = locale('invalid_character_name.title'), description = locale('invalid_character_name.description'), type = 'error', duration = 7000 })
         return false
     end
@@ -546,14 +545,14 @@ function FirstMenu()
                         label = locale('creator.birthdate.input.label'),
                         format = 'YYYY-MM-DD',
                         returnString = true,
-                        min = RSG.Birthdate.Min,
-                        max = RSG.Birthdate.Max,
+                        min = select(1, RSG.GetBirthdateRange()),
+                        max = select(2, RSG.GetBirthdateRange()),
                         default = Birthdate or RSG.Birthdate.Default
                     }
                 })
                 if not dialog then return false end
                 if not RSG.IsValidBirthdate(dialog[1]) then
-                    RSGCore.Functions.Notify({ title = locale('creator.birthdate.input.header'), description = locale('creator.birthdate.invalid', RSG.Birthdate.Min, RSG.Birthdate.Max), type = 'error', duration = 7000 })
+                    RSGCore.Functions.Notify({ title = locale('creator.birthdate.input.header'), description = locale('creator.birthdate.invalid', RSG.GetBirthdateRange()), type = 'error', duration = 7000 })
                     return false
                 end
                 Birthdate = dialog[1]

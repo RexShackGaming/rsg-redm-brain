@@ -2,10 +2,20 @@ RSGCore = RSGCore or exports['rsg-core']:GetCoreObject()
 
 local lastLogout = {}
 local loggingOut = {} -- [src] = true while a logout is running
+local lastCombat = {} -- [src] = os.time() of the last combat report from the client
 
 AddEventHandler('playerDropped', function()
     lastLogout[source] = nil
     loggingOut[source] = nil
+    lastCombat[source] = nil
+end)
+
+-- The client reports damage taken / weapon fire (at most every few seconds). A modified client can skip
+-- reporting, so this only stops honest players from using /logout to leave a fight.
+RegisterNetEvent('rsg-character:server:combatActivity', function()
+    local src = source
+    if not RSGCore.Functions.GetPlayer(src) then return end
+    lastCombat[src] = os.time()
 end)
 
 local function Notify(src, key, ntype)
@@ -31,9 +41,24 @@ local function DoLogout(src, force)
     end
 
     local meta = Player.PlayerData.metadata or {}
-    if not force and RSG.Logout.BlockWhenDead and (meta.isdead or meta.inlaststand) then
-        Notify(src, 'logout.dead')
-        return
+    if not force then
+        if RSG.Logout.BlockWhenDead and (meta.isdead or meta.inlaststand) then
+            Notify(src, 'logout.dead')
+            return
+        end
+        if RSG.Logout.BlockWhenCuffed and meta.ishandcuffed then
+            Notify(src, 'logout.cuffed')
+            return
+        end
+        if RSG.Logout.BlockWhenJailed and (tonumber(meta.injail) or 0) > 0 then
+            Notify(src, 'logout.jailed')
+            return
+        end
+        local combatWindow = tonumber(RSG.Logout.CombatCooldown) or 0
+        if combatWindow > 0 and lastCombat[src] and now - lastCombat[src] < combatWindow then
+            Notify(src, 'logout.combat')
+            return
+        end
     end
 
     lastLogout[src] = now

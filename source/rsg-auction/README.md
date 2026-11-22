@@ -201,7 +201,7 @@ Only `https://discord.com/api/webhooks/` URLs are accepted. Failed sends are ret
 
 ### Locales
 
-All text, game and UI, lives in `locales/<lang>.json` (rsg-core locale loader, ox_lib-compatible JSON). Keys starting with `ui.` are sent to the NUI when it opens, so translations need **no UI rebuild**; `web/locales.ts` only holds the English fallback. Shipped languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Pick one with `setr rsg:locale "de"` in your `server.cfg`.
+All text, game and UI, lives in `locales/<lang>.json` (rsg-core locale loader, JSON). Keys starting with `ui.` are sent to the NUI when it opens, so translations need **no UI rebuild**; `web/locales.ts` only holds the English fallback. Shipped languages: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Pick one with `setr rsg:locale "de"` in your `server.cfg`.
 
 ---
 

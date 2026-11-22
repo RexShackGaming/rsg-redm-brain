@@ -6,15 +6,18 @@ local function SafeDecode(value)
     return ok and decoded or nil
 end
 
--- base slots plus the best matching ACE rule from RSG.SlotRules
+-- base slots + extra slots from the database (playerslots), raised by the best matching ACE rule
+-- from RSG.SlotRules; the larger value applies and RSG.Slots.Cap limits it
 function RSG.GetMaxSlots(src)
-    local maxSlots = RSG.MaxCharacterSlots or 4
+    local base = RSG.MaxCharacterSlots or 4
+    local license = RSGCore.Functions.GetIdentifier(src, 'license')
+    local maxSlots = base + (license and RSG.GetExtraSlots(license) or 0)
     for _, rule in ipairs(RSG.SlotRules or {}) do
         if rule.slots and rule.slots > maxSlots and rule.ace and IsPlayerAceAllowed(src, rule.ace) then
             maxSlots = rule.slots
         end
     end
-    return maxSlots
+    return math.min(maxSlots, math.max((RSG.Slots and RSG.Slots.Cap) or 8, base))
 end
 
 local function GetCharacterSlots(license, maxSlots)
@@ -116,6 +119,12 @@ local function SelectCharacter(src, citizenid)
         return
     end
 
+    -- a character waiting for deletion can not be played (the client never lists it; this blocks crafted requests)
+    if RSG.IsPendingDeletion(citizenid) then
+        TriggerClientEvent('rsg-character:client:CharSelectFailed', src)
+        return
+    end
+
     if not RSGCore.Player.Login(src, citizenid) then
         TriggerClientEvent('rsg-character:client:CharSelectFailed', src)
         return
@@ -148,7 +157,7 @@ local function SelectCharacter(src, citizenid)
         and (math.abs(pos.x) > 1.0 or math.abs(pos.y) > 1.0 or math.abs(pos.z) > 1.0)
 
     TriggerEvent('rsg-character:server:characterSelected', src, citizenid)
-    TriggerClientEvent('rsg-character:client:OpenSpawnSelect', src, isValidPos and pos or nil)
+    RSG.OfferSpawn(src, isValidPos and pos or nil)
 end
 
 RegisterNetEvent('rsg-character:server:SelectCharacterSlot', function(citizenid)
@@ -163,9 +172,16 @@ RegisterNetEvent('rsg-character:server:SelectCharacterSlot', function(citizenid)
     end
 end)
 
-RegisterNetEvent('rsg-character:server:DeleteCharacterSlot', function(citizenid)
+local function DeleteNotify(src, key)
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
+        title = locale('charselect.delete.title'), description = locale(key), type = 'error', duration = 6000,
+    })
+end
+
+RegisterNetEvent('rsg-character:server:DeleteCharacterSlot', function(citizenid, typedName)
     local src = source
     if RSGCore.Functions.GetPlayer(src) then return end
+    local cfg = RSG.Delete or {}
     local now = GetGameTimer()
     if deleteCooldown[src] and now - deleteCooldown[src] < 3000 then
         TriggerClientEvent('rsg-character:client:CharSelectFailed', src)
@@ -173,8 +189,13 @@ RegisterNetEvent('rsg-character:server:DeleteCharacterSlot', function(citizenid)
     end
     deleteCooldown[src] = now
 
+    if cfg.Enabled == false then
+        DeleteNotify(src, 'charselect.delete.disabled')
+        return SendSlots(src)
+    end
+
     local license = RSGCore.Functions.GetIdentifier(src, 'license')
-    if not license or not OwnsCharacter(license, citizenid) then
+    if not license or not OwnsCharacter(license, citizenid) or RSG.IsPendingDeletion(citizenid) then
         TriggerClientEvent('rsg-character:client:CharSelectFailed', src)
         return
     end
@@ -182,9 +203,28 @@ RegisterNetEvent('rsg-character:server:DeleteCharacterSlot', function(citizenid)
     local charRow = MySQL.single.await('SELECT charinfo FROM players WHERE citizenid = ?', { citizenid })
     local info = charRow and SafeDecode(charRow.charinfo) or {}
 
-    RSGCore.Player.DeleteCharacter(src, citizenid)
-    MySQL.update('DELETE FROM playerskins WHERE citizenid = ?', { citizenid })
-    MySQL.update('DELETE FROM playeroutfit WHERE citizenid = ?', { citizenid })
+    -- the player has to type the first name; checked here, not only in the NUI
+    if cfg.ConfirmName then
+        local expected = tostring(info.firstname or ''):lower()
+        if type(typedName) ~= 'string' or expected == '' or typedName:lower():gsub('^%s+', ''):gsub('%s+$', '') ~= expected then
+            DeleteNotify(src, 'charselect.delete.name_mismatch')
+            return SendSlots(src)
+        end
+    end
+
+    local pending = false
+    if cfg.SoftDelete then
+        pending = RSG.SoftDeleteCharacter(citizenid, license)
+        if not pending then
+            TriggerClientEvent('rsg-character:client:CharSelectFailed', src)
+            return
+        end
+    else
+        RSGCore.Player.DeleteCharacter(src, citizenid)
+        MySQL.update('DELETE FROM playerskins WHERE citizenid = ?', { citizenid })
+        MySQL.update('DELETE FROM playeroutfit WHERE citizenid = ?', { citizenid })
+        RSG.RemoveCharacterName(citizenid)
+    end
 
     local identityFields = RSG.WebhookIdentityFields(src)
     RSG.SendWebhook('character_deleted', {
@@ -194,7 +234,17 @@ RegisterNetEvent('rsg-character:server:DeleteCharacterSlot', function(citizenid)
         fields = { identityFields[1], identityFields[2] },
     })
 
-    TriggerEvent('rsg-character:server:characterDeleted', src, citizenid)
+    -- pending = true when the character is only hidden and can still be restored (see /restorechar)
+    TriggerEvent('rsg-character:server:characterDeleted', src, citizenid, pending)
+
+    if pending then
+        TriggerClientEvent('RSGCore:Client:Notify', src, {
+            title = locale('charselect.delete.title'),
+            description = locale('charselect.delete.pending', cfg.GraceDays or 7),
+            type = 'inform',
+            duration = 8000,
+        })
+    end
 
     Wait(300)
     SendSlots(src)

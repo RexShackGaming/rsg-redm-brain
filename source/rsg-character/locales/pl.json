@@ -191,7 +191,7 @@
     "save_outfit_2_input_label": "Nazwa stroju",
     "invalid_character_name": {
         "title": "Błąd",
-        "description": "Tekst musi zaczynać się wielką literą i zawierać tylko litery."
+        "description": "Musi zaczynać się wielką literą. Dozwolone są tylko litery, apostrofy i myślniki."
     },
     "loadskin_blocked": {
         "title": "Nie można przeładować wyglądu",
@@ -278,7 +278,10 @@
         "title": "Logout",
         "help": "Save and return to character selection",
         "cooldown": "You must wait before logging out again",
-        "dead": "You cannot log out while dead or downed"
+        "dead": "Nie możesz się wylogować, gdy jesteś martwy lub powalony",
+        "cuffed": "Nie możesz się wylogować w kajdankach",
+        "jailed": "Nie możesz się wylogować, gdy siedzisz w więzieniu",
+        "combat": "Nie możesz się wylogować zaraz po walce"
     },
     "charselect": {
         "title": "Wybierz postać",
@@ -297,8 +300,14 @@
             "desc": "Ten slot właśnie został zajęty - wybierz inny."
         },
         "delete": {
-            "confirm_header": "Usunąć tę postać? Tego nie można cofnąć.",
-            "loading": "Usuwanie postaci..."
+            "confirm_header": "Usunąć tę postać?",
+            "loading": "Usuwanie postaci...",
+            "title": "Usuwanie postaci",
+            "disabled": "Usuwanie postaci jest wyłączone na tym serwerze.",
+            "name_mismatch": "Wpisane imię nie pasuje do tej postaci. Nic nie zostało usunięte.",
+            "confirm_name_header": "Potwierdź usunięcie",
+            "confirm_name_label": "Wpisz %s, aby potwierdzić",
+            "pending": "Postać jest ukryta i zostanie trwale usunięta za %s dni. Poproś obsługę, jeśli chcesz ją odzyskać."
         },
         "info": {
             "job": "Praca",
@@ -399,6 +408,14 @@
         "admin_action": {
             "title": "Akcja administratora",
             "description": "Użyto `/%s` na `%s`"
+        },
+        "character_purged": {
+            "title": "Postać usunięta",
+            "description": "**%s %s** (ID obywatela **%s**) została trwale usunięta po okresie karencji."
+        },
+        "character_restored": {
+            "title": "Postać przywrócona",
+            "description": "ID obywatela **%s** przywrócono do slotu **%s**."
         }
     },
     "spawn_locations": {
@@ -465,10 +482,27 @@
         "charinfo": "%s %s | CitizenID: %s | Slot: %s | Wygląd: %s | Stroje: %s",
         "skin_reset_done": "Zresetowano wygląd postaci %s %s. Gracz musi zalogować się ponownie (/logout), aby otworzyć kreator.",
         "skin_reset_target": "Administrator zresetował Twój wygląd. Zaloguj się ponownie (/logout), aby stworzyć go od nowa.",
-        "name_invalid": "Nieprawidłowe imię. Tylko litery, pierwsza wielka (np. Arthur).",
+        "name_invalid": "Nieprawidłowe imię. Litery, pierwsza wielka; dozwolone są apostrofy i myślniki (np. O'Brien).",
         "name_taken": "To imię i nazwisko jest już używane przez inną postać.",
         "name_changed": "Zmieniono imię i nazwisko na %s %s.",
-        "name_changed_target": "Imię i nazwisko Twojej postaci zmieniono na %s %s."
+        "name_changed_target": "Imię i nazwisko Twojej postaci zmieniono na %s %s.",
+        "restorechar_help": "Przywróć usuniętą postać (tylko admin)",
+        "deletedchars_help": "Pokaż postacie oczekujące na usunięcie (tylko admin)",
+        "arg_citizenid": "ID obywatela",
+        "restore_not_found": "Brak usuniętej postaci o tym ID obywatela.",
+        "restore_no_slot": "Gracz nie ma wolnego slotu, do którego można przywrócić postać.",
+        "restored": "Postać %s przywrócono do slotu %s.",
+        "deleted_none": "Żadne postacie nie oczekują na usunięcie.",
+        "deleted_line": "%s: %s %s (usunięcie za %s dni)",
+        "addslot_help": "Daj graczowi dodatkowe sloty postaci (tylko admin)",
+        "setslots_help": "Ustaw dodatkowe sloty postaci gracza (tylko admin)",
+        "charslots_help": "Pokaż sloty postaci gracza (tylko admin)",
+        "arg_amount": "Sloty do dodania",
+        "arg_extra": "Dodatkowe sloty",
+        "slots_invalid": "Nieprawidłowa liczba slotów.",
+        "slots_changed": "%s %s ma teraz %s dodatkowych slotów (łącznie %s).",
+        "slots_changed_target": "Masz teraz %s slotów postaci. Użyj /logout, aby je zobaczyć.",
+        "slots_info": "%s %s: %s dodatkowych slotów, łącznie %s."
     },
     "outfit_share": {
         "no_player": "Brak graczy w pobliżu.",

@@ -1,5 +1,5 @@
--- rsg-core callback bridge (replaces ox_lib lib.callback.register).
--- Handlers keep the ox_lib style of returning values; the bridge passes them to cb().
+-- rsg-core callback bridge.
+-- Handlers return their values; the bridge passes them to cb().
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
 if IsDuplicityVersion() then

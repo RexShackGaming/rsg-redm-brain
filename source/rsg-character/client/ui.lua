@@ -241,6 +241,7 @@ local function BuildLocaleStrings()
             cash = locale('charselect.info.cash'),
             play = locale('charselect.info.play'),
             delete = locale('charselect.info.delete'),
+            canDelete = not RSG.Delete or RSG.Delete.Enabled ~= false,
             create = locale('charselect.info.create'),
             genderMale = locale('charselect.gender.male'),
             genderFemale = locale('charselect.gender.female'),

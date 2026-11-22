@@ -347,7 +347,7 @@ RegisterNUICallback('transfer', function(data, cb)
     if ok then refreshShop() end
 end)
 
--- someone offers us a boat: answered in our own NUI (no ox_lib dialog)
+-- someone offers us a boat: answered in our own NUI
 local function answerOffer(accepted)
     if not offerCb then return end
     local cb = offerCb

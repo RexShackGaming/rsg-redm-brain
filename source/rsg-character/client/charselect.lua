@@ -332,17 +332,46 @@ end
 
 local function HandleDeletePed(entry)
     if sceneInputPaused then return end
+    local cfg = RSG.Delete or {}
+    if cfg.Enabled == false then
+        RSGCore.Functions.Notify({
+            title = locale('charselect.delete.title'),
+            description = locale('charselect.delete.disabled'),
+            type = 'error',
+            duration = 5000,
+        })
+        return
+    end
     sceneInputPaused = true
     local confirmed = UI.alertDialog({
         header = locale('charselect.delete.confirm_header'),
         cancel = true,
     })
+
+    local typedName
+    if confirmed == 'confirm' and cfg.ConfirmName then
+        local firstname = entry.slot.firstname or ''
+        local dialog = UI.inputDialog(locale('charselect.delete.confirm_name_header'), {
+            {
+                type = 'input',
+                required = true,
+                label = locale('charselect.delete.confirm_name_label', firstname),
+                placeholder = firstname,
+            },
+        })
+        if dialog and type(dialog[1]) == 'string' then
+            typedName = dialog[1]
+        else
+            confirmed = nil
+        end
+    end
+
     if confirmed == 'confirm' then
         DoScreenFadeOut(250)
         Wait(250)
         UI.ShowLoadingScreen(locale('charselect.delete.loading'))
         pendingDeleteLoading = true
-        TriggerServerEvent('rsg-character:server:DeleteCharacterSlot', entry.slot.citizenid)
+        TriggerServerEvent('rsg-character:server:DeleteCharacterSlot', entry.slot.citizenid, typedName)
     else
         sceneInputPaused = false
         UI.SetFocus(true)

@@ -74,6 +74,39 @@ AddEventHandler('playerDropped', function()
 end)
 
 ---------------------------------------------------------------------------
+-- Spawn select: the server decides where the player may spawn
+---------------------------------------------------------------------------
+local spawnOffers = {} -- [src] = { pos = vector4|table|nil } while a spawn menu is open
+
+function RSG.OfferSpawn(src, lastPos, isNewCharacter)
+    spawnOffers[src] = { pos = lastPos }
+    TriggerClientEvent('rsg-character:client:OpenSpawnSelect', src, lastPos, isNewCharacter)
+end
+
+-- 'last' or 'preset_<n>' -> coordinates, only while an offer is open (one answer per offer)
+RSGCore.Functions.CreateCallback('rsg-character:server:chooseSpawn', function(src, cb, value)
+    local offer = spawnOffers[src]
+    if not offer or type(value) ~= 'string' then return cb(nil) end
+
+    if value == 'last' then
+        local pos = offer.pos
+        if not pos or not RSG.SpawnMenuWithLastLocation then return cb(nil) end
+        spawnOffers[src] = nil
+        return cb({ x = pos.x, y = pos.y, z = pos.z, w = pos.w or 0.0, fromMenu = false })
+    end
+
+    local idx = tonumber(value:match('^preset_(%d+)$'))
+    local loc = idx and RSG.SpawnLocations and RSG.SpawnLocations[idx]
+    if not loc then return cb(nil) end
+    spawnOffers[src] = nil
+    cb({ x = loc.coords.x, y = loc.coords.y, z = loc.coords.z, w = loc.coords.w, fromMenu = true })
+end)
+
+AddEventHandler('playerDropped', function()
+    spawnOffers[source] = nil
+end)
+
+---------------------------------------------------------------------------
 -- Creator sessions
 ---------------------------------------------------------------------------
 function RSG.OpenCreatorFor(src, data)
@@ -129,7 +162,8 @@ RegisterNetEvent('rsg-character:server:SaveSkin', function(skin, clothes)
     local citizenid = Player.PlayerData.citizenid
     local affected = MySQL.update.await('UPDATE playerskins SET skin = ?, clothes = ? WHERE citizenid = ?', { encodedSkin, encodedClothes, citizenid })
     if not affected or affected == 0 then
-        MySQL.insert.await('INSERT INTO playerskins (citizenid, skin, clothes) VALUES (?, ?, ?)', { citizenid, encodedSkin, encodedClothes })
+        -- ON DUPLICATE KEY UPDATE: two near-simultaneous saves can never leave two rows (needs the unique key from sv_database.lua)
+        MySQL.insert.await('INSERT INTO playerskins (citizenid, skin, clothes) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE skin = VALUES(skin), clothes = VALUES(clothes)', { citizenid, encodedSkin, encodedClothes })
     end
 
     -- first-time creation: store the chosen clothes as the protected "Default" wardrobe outfit
@@ -144,7 +178,7 @@ RegisterNetEvent('rsg-character:server:SaveSkin', function(skin, clothes)
     CreatorSessions[src] = nil
     RSG.ResetBucket(src)
     TriggerEvent('rsg-character:server:appearanceSaved', src, citizenid, isNew)
-    TriggerClientEvent('rsg-character:client:OpenSpawnSelect', src, nil, isNew)
+    RSG.OfferSpawn(src, nil, isNew)
 
     local identityFields = RSG.WebhookIdentityFields(src)
     RSG.SendWebhook('appearance_saved', {
@@ -234,15 +268,23 @@ local function IsValidNationality(value)
     return validNationality[value] == true
 end
 
-local function IsValidName(name)
-    return type(name) == 'string' and #name >= 2 and #name <= 20
-        and name:match('^%u%l+$') ~= nil and not RSG.ProfanityWords[name:lower()]
-end
+-- name rules live in shared/functions.lua (RSG.IsValidName / RSG.IsReservedName)
+local IsValidName = RSG.IsValidName
 
-RSG.IsValidName = IsValidName
+-- one row per character in rsg_character_names (indexed), so the uniqueness check never scans `players`
+local function NamesTableOk()
+    return RSG.NamesTableReady ~= false
+end
 
 function RSG.NameExists(firstname, lastname, excludeCitizenid)
     if not RSG.UniqueNames then return false end
+    if NamesTableOk() then
+        local ok, found = pcall(MySQL.scalar.await,
+            'SELECT 1 FROM rsg_character_names WHERE firstname = ? AND lastname = ? AND citizenid <> ? LIMIT 1',
+            { firstname, lastname, excludeCitizenid or '' })
+        if ok then return found ~= nil end
+        RSG.NamesTableReady = false -- table missing (manual install without install.sql): fall back below
+    end
     return MySQL.scalar.await([[
         SELECT 1 FROM players
         WHERE JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.firstname')) = ?
@@ -252,10 +294,23 @@ function RSG.NameExists(firstname, lastname, excludeCitizenid)
     ]], { firstname, lastname, excludeCitizenid or '' }) ~= nil
 end
 
+function RSG.SetCharacterName(citizenid, firstname, lastname)
+    if not NamesTableOk() or type(citizenid) ~= 'string' then return end
+    pcall(MySQL.query.await,
+        'INSERT INTO rsg_character_names (citizenid, firstname, lastname) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE firstname = VALUES(firstname), lastname = VALUES(lastname)',
+        { citizenid, firstname, lastname })
+end
+
+function RSG.RemoveCharacterName(citizenid)
+    if not NamesTableOk() or type(citizenid) ~= 'string' then return end
+    pcall(MySQL.query.await, 'DELETE FROM rsg_character_names WHERE citizenid = ?', { citizenid })
+end
+
 -- the creator asks before the player spends time on the appearance steps
 RSGCore.Functions.CreateCallback('rsg-character:server:isNameAvailable', function(src, cb, firstname, lastname)
     local session = CreatorSessions[src]
     if not session or not session.isNew or not IsValidName(firstname) or not IsValidName(lastname) then return cb(false) end
+    if RSG.IsReservedName(firstname, lastname) then return cb(false) end
     cb(not RSG.NameExists(firstname, lastname))
 end)
 
@@ -270,6 +325,7 @@ RegisterNetEvent('rsg-multicharacter:server:createCharacter', function(newData)
     if not cid or cid ~= session.cid then return end
 
     if not IsValidName(newData.firstname) or not IsValidName(newData.lastname)
+        or RSG.IsReservedName(newData.firstname, newData.lastname)
         or not IsValidNationality(newData.nationality) or not RSG.IsValidBirthdate(newData.birthdate) then
         -- never fail silently: the client has already closed the creator
         CreatorSessions[src] = nil
@@ -321,6 +377,8 @@ RegisterNetEvent('rsg-multicharacter:server:createCharacter', function(newData)
         TriggerClientEvent('rsg-character:client:OpenCharSelect', src)
         return
     end
+
+    RSG.SetCharacterName(Player.PlayerData.citizenid, newData.firstname, newData.lastname)
 
     for _, entry in ipairs(RSG.StarterItems or {}) do
         local itemName, amount = entry.item, tonumber(entry.amount) or 1

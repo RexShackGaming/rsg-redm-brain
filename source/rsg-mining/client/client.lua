@@ -58,7 +58,7 @@ local function updateUI(data)
     SendNUIMessage({ action = 'update', data = data })
 end
 
--- lease confirmation shown in our own NUI (replaces ox_lib alertDialog)
+-- lease confirmation shown in our own NUI
 local confirmPromise
 local function askConfirm(title, text)
     confirmPromise = promise.new()

@@ -65,6 +65,7 @@
 
     let charInfoPlayLabel = "Play";
     let charInfoCreateLabel = "Create";
+    let charInfoCanDelete = true;
 
     function applyLocale(msg) {
         const s = (msg && msg.strings) || {};
@@ -90,6 +91,7 @@
             if (charInfoCashLabel && typeof s.charInfo.cash === "string") charInfoCashLabel.textContent = s.charInfo.cash;
             if (typeof s.charInfo.play === "string") charInfoPlayLabel = s.charInfo.play;
             if (typeof s.charInfo.create === "string") charInfoCreateLabel = s.charInfo.create;
+            if (typeof s.charInfo.canDelete === "boolean") charInfoCanDelete = s.charInfo.canDelete;
             if (charInfoGenderMale && typeof s.charInfo.genderMale === "string") charInfoGenderMale.textContent = s.charInfo.genderMale;
             if (charInfoGenderFemale && typeof s.charInfo.genderFemale === "string") charInfoGenderFemale.textContent = s.charInfo.genderFemale;
             if (charInfoDelete && typeof s.charInfo.delete === "string") charInfoDelete.textContent = s.charInfo.delete;
@@ -324,7 +326,7 @@
             charInfoBirthdate.textContent = msg.birthdate || "";
             charInfoNationality.textContent = msg.nationality || "";
             charInfoCash.textContent = msg.cash || "";
-            show(charInfoDelete);
+            if (charInfoCanDelete) show(charInfoDelete); else hide(charInfoDelete);
             charInfoPlay.textContent = charInfoPlayLabel;
             hide(charInfoGenderRow);
         }

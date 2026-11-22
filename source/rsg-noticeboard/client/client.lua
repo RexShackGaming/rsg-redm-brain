@@ -178,7 +178,7 @@ end
 RegisterNetEvent('rsg-noticeboard:client:expiryWarning', function(n)
     RSGCore.Functions.Notify({ title = locale('cl_expiry_title'), description = locale('sv_warn'):format(n.title), type = 'warning', duration = 10000 })
     if nuiOpen then return end
-    -- renew prompt runs in our own NUI (replaces ox_lib alertDialog + context menu)
+    -- renew prompt runs in our own NUI
     openNui('expiryRenew', {
         id = n.id,
         title = locale('cl_expiry_title'),
