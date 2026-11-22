@@ -2,6 +2,10 @@
 
 All notable changes to rsg-housing. Format based on Keep a Changelog.
 
+## [3.3.2] - 2026-11-22
+### Changed
+- The governor payout (`Config.EnableGovernor`) now pays the job's rsg-society account (`exports['rsg-society']:AddMoney`) instead of rsg-bossmenu, which rsg-society replaces. `Config.GovernorJobs` is unchanged.
+
 ## [3.3.1] - 2026-11-20
 ### Fixed
 - The automatic database setup no longer runs `ALTER TABLE ... MODIFY houseid` on every start (oxmysql logged it as a slow query). The `houseid` columns are only widened to `varchar(20)` when they are currently shorter.

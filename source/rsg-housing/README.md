@@ -37,7 +37,7 @@ Optional (features switch off cleanly if they aren't running):
 - [rsg-character](https://github.com/Rexshack-RedM/rsg-character) – saved outfits for the wardrobe
 - [rsg-wardrobe](https://github.com/Rexshack-RedM/rsg-wardrobe) – cleanly changes the player into an outfit
 - [rsg-telegram](https://github.com/Rexshack-RedM/rsg-telegram) – mailbox and rent telegrams
-- rsg-bossmenu – only if `Config.EnableGovernor = true` (the old `EnableGovenor` name still works)
+- rsg-society – only if `Config.EnableGovernor = true` (the old `EnableGovenor` name still works)
 - rsg-log – eviction logs
 
 ## Installation
@@ -110,7 +110,7 @@ Storage weights are in grams like rsg-inventory (1000 = 1 kg). rsg-inventory cap
 
 ### Governor accounts
 
-With `EnableGovernor = true` (the old `EnableGovenor` name still works), rent and storage upgrades are paid to the rsg-bossmenu job set for the house's region in `GovernorJobs` (`govenor1` – `govenor5` by default). Those jobs must exist in your job setup.
+With `EnableGovernor = true` (the old `EnableGovenor` name still works), rent and storage upgrades are paid to the rsg-society job account set for the house's region in `GovernorJobs` (`govenor1` – `govenor5` by default). Those jobs must exist in your job setup.
 
 ## Languages
 

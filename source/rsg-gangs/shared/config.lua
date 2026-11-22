@@ -35,24 +35,24 @@ Config.MaxBankBalance = 2000000000
 -- How long (seconds) a gang invite stays valid before it expires.
 Config.InviteExpireSeconds = 120
 
--- Ranks available to every gang, in ascending order of power.
--- 'weight' determines hierarchy (higher = more powerful) and must be unique and consecutive (0, 1, 2, ...).
--- 'isLeader' rank can disband the gang and cannot be kicked.
--- Permissions: invite, kick, promote, demote, deposit, withdraw, upgrade (stash upgrades, claim/abandon/raid territories),
---              bounty (post gang bounties), rename (also sets the gang tag),
---              disband, rename, setcolor, equipment (wagon, camp equipment, crafting, stash).
+-- Ranks, permissions, members and the bank now belong to rsg-society (version 3.1.0 or newer).
+-- Each gang's ranks (names, order, what each rank may do) are edited in rsg-society's menu on the Ranks tab.
+-- Rank "weight" below means the rank level: 0 is the lowest rank of a gang, the boss rank is the highest.
+--
+-- This list is only used by the staff panel (/gangadmin) as the choices for adding a member or
+-- changing a rank. The level numbers must match the ranks your gangs have in rsg-society (its default
+-- ranks are Recruit, Member, Officer, Co-Leader, Leader = levels 0 to 4). The leader rank is never offered.
 Config.Ranks = {
-    { name = 'recruit',   label = 'Recruit',    weight = 0, permissions = {} },
-    { name = 'member',    label = 'Member',     weight = 1, permissions = { 'withdraw', 'equipment' } },
-    { name = 'officer',   label = 'Officer',    weight = 2, permissions = { 'invite', 'kick', 'withdraw', 'deposit', 'equipment' } },
-    { name = 'coleader',  label = 'Co-Leader',  weight = 3, permissions = { 'invite', 'kick', 'promote', 'demote', 'withdraw', 'deposit', 'upgrade', 'bounty', 'equipment' } },
-    { name = 'leader',    label = 'Leader',     weight = 4, permissions = { 'invite', 'kick', 'promote', 'demote', 'withdraw', 'deposit', 'upgrade', 'bounty', 'disband', 'rename', 'setcolor', 'equipment' }, isLeader = true },
+    { name = 'recruit',   label = 'Recruit',    weight = 0 },
+    { name = 'member',    label = 'Member',     weight = 1 },
+    { name = 'officer',   label = 'Officer',    weight = 2 },
+    { name = 'coleader',  label = 'Co-Leader',  weight = 3 },
+    { name = 'leader',    label = 'Leader',     weight = 4, isLeader = true },
 }
 
--- Default rank assigned to the gang creator
-Config.DefaultLeaderRank = 'leader'
--- Default rank assigned to invited members
-Config.DefaultJoinRank = 'recruit'
+-- Permissions are the rsg-society permissions of the rank (Ranks tab):
+--   invite = hire, kick = fire, promote/demote = promote, deposit, withdraw, rename and setcolor = settings,
+--   upgrade (stash upgrades, claim/abandon/raid territories), bounty, disband, equipment (wagon, camp equipment, crafting, stash).
 
 -- Colors members can choose for their gang tag (hex)
 Config.GangColors = {

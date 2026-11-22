@@ -25,7 +25,7 @@ RegisterNetEvent('rsg-gangs:server:openGangStash', function()
     if not gang then RSGGangs.Notify(src, locale('error_no_gang'), 'error') return end
 
     local minWeight = Config.GangStash.minWeight or 0
-    if RSGGangs.RankWeight(gang.members[citizenid].rank) < minWeight then
+    if RSGGangs.RankWeight(gang, citizenid) < minWeight then
         RSGGangs.Notify(src, locale('error_stash_rank'), 'error')
         return
     end
@@ -68,7 +68,7 @@ RegisterNetEvent('rsg-gangs:server:upgradeGangStash', function()
     if not gang then RSGGangs.Notify(src, locale('error_no_gang'), 'error') return end
 
     -- Upgrading spends gang money, so it has its own permission (not 'withdraw').
-    if not RSGGangs.HasPermission(gang.members[citizenid].rank, 'upgrade') then
+    if not RSGGangs.HasPermission(gang, citizenid, 'upgrade') then
         RSGGangs.Notify(src, locale('error_no_permission'), 'error')
         return
     end
@@ -86,17 +86,16 @@ RegisterNetEvent('rsg-gangs:server:upgradeGangStash', function()
         return
     end
 
-    -- Charge and change tier in one statement so a failure cannot take money without the upgrade.
-    local affected = MySQL.update.await(
-        'UPDATE rsg_gangs SET bank = bank - ?, stash_tier = ? WHERE name = ? AND bank >= ?',
-        { cost, nextTier.id, gang.name, cost }
-    )
-    if not affected or affected < 1 then
+    -- The money comes out of the rsg-society account first; if the tier cannot be saved it is paid back.
+    if not RSGGangs.AdjustBank(gang, -cost) then
         RSGGangs.Notify(src, locale('error_generic'), 'error')
         return
     end
-
-    gang.bank = gang.bank - cost
+    if not RSGGangs.DbOk('UPDATE rsg_gangs SET stash_tier = ? WHERE name = ?', { nextTier.id, gang.name }) then
+        RSGGangs.AdjustBank(gang, cost)
+        RSGGangs.Notify(src, locale('error_generic'), 'error')
+        return
+    end
     gang.stashTier = nextTier.id
 
     RSGGangs.Log('Gang stash upgraded', ('%s upgraded to %s by %s'):format(gang.name, nextTier.id, citizenid))

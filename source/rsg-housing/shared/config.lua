@@ -85,8 +85,8 @@ Config.OwnedHouseBlips   = false -- when true, only your own rented house shows 
 Config.PurgeStorageOnLeave = true -- true: storage is deleted when a tenant moves out. false: it is kept for Config.RetrievalDays (see below)
 Config.RetrievalDays     = 3     -- days an evicted / departed tenant can collect their belongings with /housebelongings at the house (0 = delete straight away)
 Config.EndTenancyRefundPercent = 0 -- % of the unused rent refunded when a tenant ends the tenancy early (0 = no refund)
-Config.EnableGovernor    = false -- when true, rent and storage upgrades are paid into the region's governor boss account (rsg-bossmenu). The old name Config.EnableGovenor still works
-Config.GovernorJobs      = {      -- region (rsg_housing.region) -> rsg-bossmenu job that receives the money
+Config.EnableGovernor    = false -- when true, rent and storage upgrades are paid into the region's governor society account (rsg-society). The old name Config.EnableGovenor still works
+Config.GovernorJobs      = {      -- region (rsg_housing.region) -> rsg-society job account that receives the money
     newhanover    = 'govenor1',
     westelizabeth = 'govenor2',
     newaustin     = 'govenor3',

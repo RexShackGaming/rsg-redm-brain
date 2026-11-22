@@ -1,6 +1,6 @@
 # rsg-gangs documentation
 
-For server owners and developers. Version 3.4.1.
+For server owners and developers. Version 3.5.0.
 
 ## Contents
 
@@ -24,7 +24,9 @@ For server owners and developers. Version 3.4.1.
 
 ## 1. Overview and architecture
 
-rsg-gangs keeps all gang state on the server (`RSGGangs.Gangs` in `server/main.lua`) and mirrors it to the database. The NUI and the client scripts only send requests; every request is validated again on the server (membership, rank permission, distance, amounts, cooldown).
+**rsg-society owns who is in a gang.** A gang's name, label, colour, tag, owner, ranks, permissions, members and bank all live in rsg-society (3.1.0 or newer). rsg-gangs keeps the gameplay on top of it: the wagon, camp equipment, crafting, strongbox, territories, raids, upkeep, bounties, rivals, leaderboard and the staff panel. It reads the society data on demand (label, colour, tag, owner and bank are never copied) and keeps an in-memory list of members that rsg-society's events keep current. Members, ranks and money can be changed in either menu and both stay in step.
+
+rsg-gangs keeps its own gameplay state on the server (`RSGGangs.Gangs` in `server/main.lua`) and mirrors it to the database. The NUI and the client scripts only send requests; every request is validated again on the server (membership, rank permission, distance, amounts, cooldown).
 
 ```
  NUI (html/)  ->  client/*.lua  ->  server net event / callback  ->  validation  ->  memory + database
@@ -39,7 +41,7 @@ Props and the wagon are created by a **player's client** (not the server), and t
 | Wagon | nearest player within `Config.RespawnProximityRadius` | one registry entry per gang, kept alive by heartbeats | clients, when the server sends `despawnGangWagon` |
 | Camp equipment | nearest player within `Config.RespawnProximityRadius` | `equipmentEntities[gang][item][instance] = netId` | server `DeleteEntity` plus the owning client on stop |
 
-Dependencies: `rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-gizmo`, `rsg-wellpump`, `oxmysql`. Optional integrations: `rsg-log`, `rsg-reputation`, `rsg-bountyhunter`. No ox_lib and no ox_target.
+Dependencies: `rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-gizmo`, `rsg-wellpump`, `rsg-society`, `oxmysql`. Optional integrations: `rsg-log`, `rsg-reputation`, `rsg-bountyhunter`. No ox_lib and no ox_target.
 
 ---
 
@@ -86,8 +88,7 @@ Everything is in `shared/config.lua` unless stated.
 | `Config.MaxMembers` | `15` | Member limit (`0` = unlimited) |
 | `Config.MaxBankBalance` | `2000000000` | Largest bank balance (database column is a signed 32-bit int) |
 | `Config.InviteExpireSeconds` | `120` | How long an invite stays valid |
-| `Config.Ranks` | 5 ranks | `name`, `label`, `weight`, `permissions`, `isLeader` |
-| `Config.DefaultLeaderRank` / `DefaultJoinRank` | `'leader'` / `'recruit'` | Rank of the founder and of new members |
+| `Config.Ranks` | 5 ranks | Only the staff panel's rank choices (`name`, `label`, `weight` = rank level, `isLeader`). The real ranks and permissions are set per gang in rsg-society |
 | `Config.GangColors` | 10 hex colours | Colours a gang can pick |
 | `Config.Notify.duration` | `5000` | Notification length in ms |
 | `Config.Logging` | disabled | `enabled`, `channel` (needs rsg-log) |
@@ -141,8 +142,8 @@ Tables are created on start when `Config.AutoDatabase = true`. `ensureDatabase` 
 
 | Table | Columns |
 |---|---|
-| `rsg_gangs` | `name` (key), `label`, `color`, `bank`, `owner`, `created_at`, `wagon_x/y/z/heading`, `stash_tier`, `stash_id`, `upkeep_due` (unix time), `upkeep_missed`, `tag` |
-| `rsg_gang_members` | `citizenid` (key), `gang_name`, `rank`, `name`, `joined_at` |
+| `rsg_gangs` | `name` (key, the same as the rsg-society gang name), `wagon_x/y/z/heading`, `stash_tier`, `stash_id`, `upkeep_due` (unix time), `upkeep_missed`, `created_at`. `label`, `color`, `owner` and `tag` are only a mirror of rsg-society and `bank` is no longer used (the money is in rsg-society). The row is the anchor that the equipment, logs, territories, bounties and rivals tables point at |
+| `rsg_gang_members` | Retired. Kept only so rsg-society can import old members once. rsg-gangs no longer reads or writes it |
 | `rsg_gang_equipment` | `id`, `gang_name`, `item_id`, `x`, `y`, `z`, `heading`, `created_at` |
 | `rsg_gang_logs` | `id`, `gang_name`, `citizenid`, `actor`, `action`, `detail`, `created_at` |
 | `rsg_gang_rivals` | `gang_name`, `rival_name`, `kills` (kills by the first gang against the second) |
@@ -158,33 +159,27 @@ The wagon's saved parking spot is `rsg_gangs.wagon_x/y/z/heading`.
 
 ## 5. Ranks and permissions
 
-Ranks are in `Config.Ranks` (`name`, `label`, `weight`, `isLeader`, `permissions`). Weights must be consecutive from 0 because promote and demote step by one.
+Ranks and what they may do are set per gang in rsg-society (Ranks tab). A rank's **level** is its `weight` here (0 is the lowest, the boss rank is the highest) and a rank's name is whatever the gang called it. rsg-gangs asks rsg-society for every permission check; the boss rank always has every permission.
 
-| Permission | Allows |
-|---|---|
-| `invite` | Invite players |
-| `kick` | Kick lower-ranked members |
-| `promote`, `demote` | Change the rank of lower-ranked members |
-| `deposit`, `withdraw` | Gang bank |
-| `upgrade` | Strongbox upgrades, claim, abandon and raid territories |
-| `bounty` | Post gang bounties |
-| `rename` | Rename the gang and set its tag |
-| `setcolor` | Change the gang colour |
-| `disband` | Disband the gang |
-| `equipment` | Wagon reset, set up and pack away camp equipment, crafting |
+| rsg-gangs permission | rsg-society permission | Allows |
+|---|---|---|
+| `invite` | `hire` | Invite players |
+| `kick` | `fire` | Kick lower-ranked members |
+| `promote`, `demote` | `promote` | Change the rank of lower-ranked members |
+| `deposit`, `withdraw` | `deposit`, `withdraw` | Gang bank |
+| `upgrade` | `upgrade` | Strongbox upgrades, claim, abandon and raid territories |
+| `bounty` | `bounty` | Post gang bounties |
+| `rename`, `setcolor` | `settings` | Rename the gang, set its tag, change its colour |
+| `disband` | `disband` | Disband the gang |
+| `equipment` | `equipment` | Wagon reset, set up and pack away camp equipment, crafting |
 
 Rules enforced on the server:
 
-- You can only kick, promote or demote members of a lower weight than your own, and a promotion can never reach your own weight.
+- You can only kick, promote or demote members of a lower rank level than your own, and a promotion can never reach your own level.
 - The leader cannot leave while others remain; use leadership transfer first. The last member leaving removes the gang, its wagon and its equipment.
 - Opening the strongbox needs `Config.GangStash.minWeight`.
 
-Example of a custom rank:
-
-```lua
-{ name = 'quartermaster', label = 'Quartermaster', weight = 2,
-  permissions = { 'withdraw', 'deposit', 'equipment', 'upgrade' } },
-```
+To make a new rank (for example a Quartermaster who may use equipment and upgrade), open rsg-society's menu, go to the Ranks tab and tick `equipment`, `upgrade`, `deposit` and `withdraw` for it.
 
 ---
 
@@ -327,13 +322,13 @@ Drinking works the same way: the client calls `exports['rsg-wellpump']:PlayDrink
 
 | Export | Returns |
 |---|---|
-| `GetPlayerGang(citizenid)` | `{ name, label, color, rank }` or `nil` |
+| `GetPlayerGang(citizenid)` | `{ name, label, color, rank, level }` or `nil` (`rank` is the rank name from rsg-society, `level` its number) |
 | `GetGangData(gangName)` | Full gang payload (label, color, bank, members, equipment, stash tiers, territories, ...) or `nil` |
 | `IsGangLeader(citizenid)` | boolean |
 | `HasGangPermission(citizenid, permission)` | boolean |
 | `GetGangMembers(gangName)` | List of `{ citizenid, name, rank, rankLabel, weight, online }` or `nil` |
-| `GetGangBank(gangName)` | Balance or `nil` |
-| `AddGangBank(gangName, amount, reason?)` | `true` on success (whole positive amount, capped by `Config.MaxBankBalance`) |
+| `GetGangBank(gangName)` | Balance or `nil` (the rsg-society account balance) |
+| `AddGangBank(gangName, amount, reason?)` | `true` on success (whole positive amount, capped by `Config.MaxBankBalance`); recorded in the rsg-society ledger |
 | `RemoveGangBank(gangName, amount, reason?)` | `true` on success (fails when funds are short) |
 | `GetGangTag(serverId)` | The player's gang tag or `nil` |
 | `GetGangOnlineSources(gangName)` | List of server ids of the gang's online members (empty if the gang does not exist); used by rsg-bountyhunter for gang bounties |

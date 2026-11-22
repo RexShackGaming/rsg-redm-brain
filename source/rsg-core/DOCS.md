@@ -1,6 +1,6 @@
 # rsg-core Developer Documentation
 
-> Version **3.5.0** · RedM · Lua 5.4 · Depends only on `oxmysql`
+> Version **3.5.1** · RedM · Lua 5.4 · Depends only on `oxmysql`
 > rsg-core has no **ox_lib** dependency and no ox_lib compatibility code: notifications, callbacks, progress bars, text UI, prompts, locales, `require` and asset loaders are all built in.
 
 ---
@@ -419,7 +419,7 @@ end
 
 - `bank` is kept for compatibility; **rsg-banking v3** forwards it to the player's home branch. Old `valbank`/`rhobank`/`blkbank`/`armbank` types are removed.
 - **Money items:** with `EnableMoneyItems = true`, `cash` and `bloodmoney` are mirrored as inventory items and kept in sync automatically (`server/moneyitems.lua`). Gold items are controlled by `RSGConfig.Gold.EnableGoldItems` + `Money.GoldItem`.
-- Paychecks every `PayCheckTimeOut` minutes use the grade `payment`; `offDutyPay` on the job decides if off-duty players are paid. `PayCheckSociety` is **not supported** with rsg-banking v3.
+- Paychecks every `PayCheckTimeOut` minutes use the grade `payment`; `offDutyPay` on the job decides if off-duty players are paid. With `PayCheckSociety = true` and rsg-society started, wages come out of the society account and are skipped when it is empty.
 - Hook changes: `RSGCore:Server:OnMoneyChange (src, moneytype, amount, operation, reason)` — `operation` is `'add' | 'remove' | 'set'`.
 - Amounts must be finite numbers `>= 0`. With `DontAllowMinus`, `RemoveMoney` returns `false` and changes nothing when the player cannot afford it.
 
@@ -565,7 +565,6 @@ local ok, err, holders = exports['rsg-core']:DeleteJobDefinition('ranchhand')
 | `rsg-multijob:client:openAdmin` | client | Opens the `/jobadmin` panel (server checks permission first) |
 | `rsg-multijob:server:changeJob` | server (net) | `(job)` sent by the menu to switch the active job. Cooldown and ownership are validated server-side |
 | `rsg-multijob:server:deleteJob` | server (net) | `(job)` sent by the menu to drop a held job |
-| `rsg-bossmenu:server:FireEmployee` | server (net) | `(target)`. Used by boss menus to remove the boss's job from an employee |
 
 ```lua
 -- run code once the job table is ready
@@ -603,11 +602,11 @@ end)
 | `Enabled` | Master switch for all job webhook logging |
 | `DefaultURL` | Used by any event without its own `URL` |
 | `BotName`, `BotAvatar`, `FooterText`, `FooterIcon`, `DefaultColor` | Embed styling |
-| `Events.<Name>` | `{ Enabled, URL, Title, Color }` per event: `JobAdded`, `JobSwitched`, `JobDeleted`, `JobRemovedByAdmin`, `JobCreated`, `JobUpdated`, `JobDefinitionDeleted`, `EmployeeFired` |
+| `Events.<Name>` | `{ Enabled, URL, Title, Color }` per event: `JobAdded`, `JobSwitched`, `JobDeleted`, `JobRemovedByAdmin`, `JobCreated`, `JobUpdated`, `JobDefinitionDeleted` |
 
 ```lua
--- send "Employee Fired" to its own channel and silence "Job Switched"
-MultiJobWebhookConfig.Events.EmployeeFired.URL = 'https://discord.com/api/webhooks/...'
+-- send "Job Removed By Admin" to its own channel and silence "Job Switched"
+MultiJobWebhookConfig.Events.JobRemovedByAdmin.URL = 'https://discord.com/api/webhooks/...'
 MultiJobWebhookConfig.Events.JobSwitched.Enabled = false
 ```
 
@@ -1850,7 +1849,6 @@ Server events can be fired by any client, so every handler re-validates the play
 | `RSGCore:Server:OnPlayerLoaded` | server | `` | `server/moneyitems.lua` |
 | `rsg-multijob:server:changeJob` | server | `job` | `server/multijob/server.lua` |
 | `rsg-multijob:server:deleteJob` | server | `job` | `server/multijob/server.lua` |
-| `rsg-bossmenu:server:FireEmployee` | server | `target` | `server/multijob/server.lua` |
 
 ```lua
 -- from a client script

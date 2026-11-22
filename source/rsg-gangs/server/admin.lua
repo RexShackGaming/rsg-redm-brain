@@ -54,9 +54,9 @@ local function wholeNumber(value, min, max)
     return n
 end
 
-local function rankLabel(name)
-    local rank = RSGGangs.GetRankData(name)
-    return rank and rank.label or name
+local function rankLabel(gang, level)
+    local info = gang and RSGGangs.RankInfo(gang.name, level)
+    return info and info.name or tostring(level)
 end
 
 local function playerBySource(id)
@@ -106,7 +106,7 @@ end
 local function rankList()
     local out = {}
     for _, rank in ipairs(Config.Ranks) do
-        out[#out + 1] = { name = rank.name, label = rank.label, weight = rank.weight, isLeader = rank.isLeader == true }
+        out[#out + 1] = { name = tostring(rank.weight), label = rank.label, weight = rank.weight, isLeader = rank.isLeader == true }
     end
     return out
 end
@@ -147,10 +147,10 @@ local function detail(gang)
     for citizenid, m in pairs(gang.members) do
         local Player = RSGCore.Functions.GetPlayerByCitizenId(citizenid)
         m.source = Player and Player.PlayerData.source or nil
-        local rank = RSGGangs.GetRankData(m.rank)
+        local info = RSGGangs.RankInfo(gang.name, m.level)
         members[#members + 1] = {
-            citizenid = citizenid, name = m.name or citizenid, rank = m.rank, rankLabel = rank and rank.label or m.rank,
-            weight = RSGGangs.RankWeight(m.rank), isLeader = rank ~= nil and rank.isLeader == true,
+            citizenid = citizenid, name = m.name or citizenid, rank = tostring(m.level), rankLabel = info and info.name or tostring(m.level),
+            weight = m.level, isLeader = info ~= nil and info.boss == true,
             online = m.source ~= nil, source = m.source, isOwner = citizenid == gang.owner,
         }
     end
@@ -213,8 +213,8 @@ H.players = function()
         out[#out + 1] = {
             id = src, citizenid = citizenid, name = RSGGangs.CharName(Player),
             gang = gang and gang.name or nil, gangLabel = gang and gang.label or nil,
-            rank = gang and gang.members[citizenid].rank or nil,
-            rankLabel = gang and rankLabel(gang.members[citizenid].rank) or nil,
+            rank = gang and tostring(gang.members[citizenid].level) or nil,
+            rankLabel = gang and rankLabel(gang, gang.members[citizenid].level) or nil,
         }
     end
     table.sort(out, function(a, b) return a.id < b.id end)
@@ -225,25 +225,22 @@ H.createGang = function(src, p)
     local label = RSGGangs.CleanLabel(p.label)
     if not label then return fail('error_invalid_name', Config.MinNameLength, Config.MaxNameLength) end
 
-    local rawName = (type(p.name) == 'string' and p.name ~= '') and p.name or label
-    local name = RSGGangs.SanitizeGangName(rawName)
-    if not name or #name < Config.MinNameLength or #name > 50 then
-        return fail('error_invalid_name', Config.MinNameLength, 50)
-    end
-    if RSGGangs.Gangs[name] then return fail('error_gang_exists') end
-
     local color = hexColor(p.color) or Config.GangColors[1]
 
-    local leader
+    local leader, owner
     if p.leader ~= nil and p.leader ~= '' then
         leader = playerBySource(p.leader)
         if not leader then return fail('error_player_not_found') end
         if RSGGangs.FindGangByMember(leader.PlayerData.citizenid) then return fail('error_player_already_gang') end
+        owner = leader.PlayerData.citizenid
     end
 
-    local owner = leader and leader.PlayerData.citizenid or 'SYSTEM'
-    local gang = RSGGangs.CreateGangRecord(name, label, color, owner, leader)
-    if not gang then return fail('error_generic') end
+    -- rsg-society creates the gang; its id is made from the label
+    local gang, reason = RSGGangs.CreateGangRecord(label, color, owner)
+    if not gang then
+        if reason == 'sv_err_gang_taken' then return fail('error_gang_exists') end
+        return fail('error_generic')
+    end
 
     if leader then
         RSGGangs.Notify(leader.PlayerData.source, locale('success_gang_created', label), 'success')
@@ -271,8 +268,8 @@ H.renameGang = function(src, p)
     if not gang then return fail('error_gang_not_found') end
     local label = RSGGangs.CleanLabel(p.label)
     if not label then return fail('error_invalid_name', Config.MinNameLength, Config.MaxNameLength) end
-    if not RSGGangs.DbOk('UPDATE rsg_gangs SET label = ? WHERE name = ?', { label, gang.name }) then return fail('error_generic') end
-    gang.label = label
+    local saved, reason = RSGGangs.SetGangInfo(gang, { label = label })
+    if not saved then return fail(reason == 'sv_err_gang_taken' and 'error_gang_exists' or 'error_generic') end
     if RSGGangs.PushTerritories then RSGGangs.PushTerritories() end
     RSGGangs.BroadcastGangUpdate(gang)
     return done(src, gang, 'admin_renamed', label)
@@ -288,8 +285,7 @@ H.setTag = function(src, p)
         return fail('error_tag_invalid', tags.minLength or 2, tags.maxLength or 5)
     end
     local value = tag ~= '' and tag or nil
-    if not RSGGangs.DbOk('UPDATE rsg_gangs SET tag = ? WHERE name = ?', { value, gang.name }) then return fail('error_generic') end
-    gang.tag = value
+    if not RSGGangs.SetGangInfo(gang, { tag = value or '' }) then return fail('error_generic') end
     RSGGangs.BroadcastGangUpdate(gang)
     return done(src, gang, 'admin_tag_set', value or '-')
 end
@@ -299,8 +295,8 @@ H.setColor = function(src, p)
     if not gang then return fail('error_gang_not_found') end
     local color = hexColor(p.color)
     if not color then return fail('admin_err_color') end
-    if not RSGGangs.DbOk('UPDATE rsg_gangs SET color = ? WHERE name = ?', { color, gang.name }) then return fail('error_generic') end
-    gang.color = color
+    -- rsg-society only accepts the colours from its own palette
+    if not RSGGangs.SetGangInfo(gang, { color = color }) then return fail('admin_err_color') end
     RSGGangs.BroadcastGangUpdate(gang)
     return done(src, gang, 'admin_color_set')
 end
@@ -349,14 +345,14 @@ H.addMember = function(src, p)
     local Player = playerBySource(p.serverId)
     if not Player then return fail('error_player_not_found') end
 
-    local rank = type(p.rank) == 'string' and p.rank or Config.DefaultJoinRank
-    local rankData = RSGGangs.GetRankData(rank)
-    if not rankData then return fail('error_invalid_rank') end
-    if rankData.isLeader then return fail('admin_err_leader_rank') end
+    local level = RSGGangs.ResolveLevel(gang.name, p.rank)
+    if not level then return fail('error_invalid_rank') end
+    local top = RSGGangs.TopLevels(gang.name)
+    if top and level >= top then return fail('admin_err_leader_rank') end
     if RSGGangs.FindGangByMember(Player.PlayerData.citizenid) then return fail('error_player_already_gang') end
     if Config.MaxMembers > 0 and RSGGangs.MemberCount(gang) >= Config.MaxMembers then return fail('error_max_members') end
 
-    if not RSGGangs.InsertMember(gang, Player, rank) then return fail('error_generic') end
+    if not RSGGangs.InsertMember(gang, Player, level) then return fail('error_generic') end
     local target = Player.PlayerData.source
     RSGGangs.Notify(target, locale('success_joined_gang', gang.label), 'success')
     RSGGangs.AddLog(gang, Player.PlayerData.citizenid, 'joined')
@@ -371,12 +367,7 @@ H.removeMember = function(src, p)
     local member = type(citizenid) == 'string' and gang.members[citizenid]
     if not member then return fail('error_target_not_in_gang') end
 
-    if not RSGGangs.DbOk('DELETE FROM rsg_gang_members WHERE citizenid = ?', { citizenid }) then return fail('error_generic') end
-    RSGGangs.RemoveMember(gang, citizenid)
-    if gang.owner == citizenid then
-        gang.owner = 'SYSTEM'
-        RSGGangs.DbOk('UPDATE rsg_gangs SET owner = ? WHERE name = ?', { 'SYSTEM', gang.name })
-    end
+    if not RSGGangs.RemoveMember(gang, citizenid) then return fail('error_generic') end
 
     local Player = RSGCore.Functions.GetPlayerByCitizenId(citizenid)
     if Player then
@@ -394,21 +385,22 @@ H.setRank = function(src, p)
     local member = type(p.citizenid) == 'string' and gang.members[p.citizenid]
     if not member then return fail('error_target_not_in_gang') end
 
-    local newRank = RSGGangs.GetRankData(p.rank)
-    if not newRank then return fail('error_invalid_rank') end
-    if newRank.isLeader then return fail('admin_err_leader_rank') end
-    local current = RSGGangs.GetRankData(member.rank)
-    if current and current.isLeader then return fail('admin_err_leader_locked') end
-    if member.rank == newRank.name then return { ok = true, message = locale('admin_rank_set', member.name or p.citizenid, newRank.label) } end
+    local level = RSGGangs.ResolveLevel(gang.name, p.rank)
+    local newInfo = level and RSGGangs.RankInfo(gang.name, level)
+    if not newInfo then return fail('error_invalid_rank') end
+    if newInfo.boss then return fail('admin_err_leader_rank') end
+    local current = RSGGangs.RankInfo(gang.name, member.level)
+    if current and current.boss then return fail('admin_err_leader_locked') end
+    if member.level == level then return { ok = true, message = locale('admin_rank_set', member.name or p.citizenid, newInfo.name) } end
 
-    if not RSGGangs.DbOk('UPDATE rsg_gang_members SET rank = ? WHERE citizenid = ?', { newRank.name, p.citizenid }) then
-        return fail('error_generic')
-    end
-    member.rank = newRank.name
+    local ok, res = pcall(function() return exports['rsg-society']:SetMemberLevel(gang.name, p.citizenid, level) end)
+    if not ok or not res then return fail('error_generic') end
+    RSGGangs.SyncMembers(gang)
+
     local Player = RSGCore.Functions.GetPlayerByCitizenId(p.citizenid)
-    if Player then RSGGangs.Notify(Player.PlayerData.source, locale('admin_notify_rank', newRank.label), 'inform') end
+    if Player then RSGGangs.Notify(Player.PlayerData.source, locale('admin_notify_rank', newInfo.name), 'inform') end
     RSGGangs.BroadcastGangUpdate(gang)
-    return done(src, gang, 'admin_rank_set', member.name or p.citizenid, newRank.label)
+    return done(src, gang, 'admin_rank_set', member.name or p.citizenid, newInfo.name)
 end
 
 H.transferLeader = function(src, p)
@@ -417,28 +409,19 @@ H.transferLeader = function(src, p)
     local member = type(p.citizenid) == 'string' and gang.members[p.citizenid]
     if not member then return fail('error_target_not_in_gang') end
 
-    local leaderRank = RSGGangs.GetRankData(Config.DefaultLeaderRank)
-    local stepDown = leaderRank and RSGGangs.RankByWeight(leaderRank.weight - 1)
-    if not leaderRank or not stepDown then return fail('error_rank_limit') end
-    if member.rank == leaderRank.name and gang.owner == p.citizenid then return fail('error_generic') end
+    local top, below = RSGGangs.TopLevels(gang.name)
+    if not top or not below then return fail('error_rank_limit') end
+    if member.level == top and gang.owner == p.citizenid then return fail('error_generic') end
 
-    local queries = {
-        { query = 'UPDATE rsg_gang_members SET rank = ? WHERE citizenid = ?', values = { leaderRank.name, p.citizenid } },
-        { query = 'UPDATE rsg_gangs SET owner = ? WHERE name = ?', values = { p.citizenid, gang.name } },
-    }
-    local demoted = {}
+    local ok, errKey = RSGGangs.HandOverLeadership(gang, p.citizenid, nil)
+    if not ok then return fail(errKey) end
+    -- anyone else still on the top rank steps down one rank
     for citizenid, m in pairs(gang.members) do
-        local rank = RSGGangs.GetRankData(m.rank)
-        if citizenid ~= p.citizenid and rank and rank.isLeader then
-            demoted[#demoted + 1] = citizenid
-            queries[#queries + 1] = { query = 'UPDATE rsg_gang_members SET rank = ? WHERE citizenid = ?', values = { stepDown.name, citizenid } }
+        if citizenid ~= p.citizenid and m.level == top then
+            pcall(function() exports['rsg-society']:SetMemberLevel(gang.name, citizenid, below) end)
         end
     end
-    if not RSGGangs.DbTransaction(queries) then return fail('error_generic') end
-
-    member.rank = leaderRank.name
-    gang.owner = p.citizenid
-    for _, citizenid in ipairs(demoted) do gang.members[citizenid].rank = stepDown.name end
+    RSGGangs.SyncMembers(gang)
 
     local Player = RSGCore.Functions.GetPlayerByCitizenId(p.citizenid)
     if Player then RSGGangs.Notify(Player.PlayerData.source, locale('notify_now_leader', gang.label), 'inform') end

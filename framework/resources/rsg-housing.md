@@ -1,6 +1,6 @@
 # rsg-housing
 
-Version 3.3.1. rsg-housing
+Version 3.3.2. rsg-housing
 
 Monthly house rentals for the RSG Framework (RedM). Players rent a house directly at the property, pay rent every calendar month and are evicted if they don't pay. Everything is managed from an NUI panel at the house. - **Rent at the property.** Walk up to a house, press **[J]**, and rent it. The first month is paid up front in cash. - **Calendar-month rent.** Rent is due on the same day each mont
 

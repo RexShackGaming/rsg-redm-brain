@@ -177,7 +177,7 @@ RegisterNetEvent('rsg-gangs:server:resetWagon', function()
     local gang, citizenid = memberGang(src)
     if not gang then RSGGangs.Notify(src, locale('error_no_gang'), 'error') return end
 
-    if not RSGGangs.HasPermission(gang.members[citizenid].rank, 'equipment') then
+    if not RSGGangs.HasPermission(gang, citizenid, 'equipment') then
         RSGGangs.Notify(src, locale('error_no_permission'), 'error')
         return
     end

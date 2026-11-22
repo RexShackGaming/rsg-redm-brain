@@ -150,7 +150,7 @@ RegisterNetEvent('rsg-gangs:server:deployEquipment', function(itemId)
     local gang, citizenid = memberGang(src)
     if not gang then RSGGangs.Notify(src, locale('error_no_gang'), 'error') return end
 
-    if not RSGGangs.HasPermission(gang.members[citizenid].rank, 'equipment') then
+    if not RSGGangs.HasPermission(gang, citizenid, 'equipment') then
         RSGGangs.Notify(src, locale('error_no_permission'), 'error')
         return
     end
@@ -206,7 +206,7 @@ RegisterNetEvent('rsg-gangs:server:equipmentPlaced', function(itemId, coords, he
     if not RSGGangs.ConsumeGrant(src, 'place:' .. key) then return end
     clearPlacement(gang.name, itemId, src)
 
-    if not RSGGangs.HasPermission(gang.members[citizenid].rank, 'equipment') then return end
+    if not RSGGangs.HasPermission(gang, citizenid, 'equipment') then return end
 
     local cfg = getEquipmentConfig(itemId)
     local wagon = wagonReference(gang)
@@ -300,7 +300,7 @@ RegisterNetEvent('rsg-gangs:server:packEquipment', function(itemId)
     local gang, citizenid = memberGang(src)
     if not gang then RSGGangs.Notify(src, locale('error_no_gang'), 'error') return end
 
-    if not RSGGangs.HasPermission(gang.members[citizenid].rank, 'equipment') then
+    if not RSGGangs.HasPermission(gang, citizenid, 'equipment') then
         RSGGangs.Notify(src, locale('error_no_permission'), 'error')
         return
     end

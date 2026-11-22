@@ -29,7 +29,7 @@ Monthly house rentals for the RSG Framework (RedM). This file documents everythi
 | `rsg-gizmo` | Placing and moving furniture |
 | `rsg-telegram` (optional) | Rent telegrams and the house mailbox (`Config.TelegramResource`) |
 | `rsg-wardrobe` / `rsg-character` (optional) | Wardrobe at the house (`Config.WardrobeResource`) |
-| `rsg-bossmenu` (optional) | Only when `Config.EnableGovernor = true` |
+| `rsg-society` (optional) | Only when `Config.EnableGovernor = true` |
 | `rsg-log` (optional) | Admin and eviction logs |
 
 There is **no ox_lib dependency**. Everything comes from rsg-core:
@@ -89,7 +89,7 @@ Without `region` the console warns that the house has no row and cannot be rente
 - **Belongings.** When a tenancy ends by eviction, by an admin without "delete storage", or by the tenant when `Config.PurgeStorageOnLeave = false`, the items are moved to a retrieval stash `houseret_<citizenid>_<houseid>`. The old tenant opens it with `/housebelongings` at the old house for `Config.RetrievalDays` days. `RetrievalDays = 0` deletes storage immediately.
 - **Decorating.** Tenants place furniture from `Config.DecorProps` with rsg-gizmo. The client only sends a prop `key`; model and price come from the server config. Placement is checked on the server (tenant, key exists, within `Config.PropPlaceRadius` of the menu spot, gizmo validity, cash, `Config.MaxPropsPerHouse` counted inside the INSERT). Furniture is stored in `rsg_housing_props`, spawned locally for players within `Config.PropStreamDistance`, and deleted when the tenancy ends.
 - **At Home.** In-memory flag that changes the house blip for everyone; cleared automatically when the tenant logs off or moves `Config.HomeAutoAwayDistance` away.
-- **Governor income.** With `Config.EnableGovernor`, rent and storage upgrades are paid to the rsg-bossmenu job of the house's region (`Config.GovernorJobs`).
+- **Governor income.** With `Config.EnableGovernor`, rent and storage upgrades are paid to the rsg-society job account of the house's region (`Config.GovernorJobs`).
 - **Push-to-talk.** Every open/close of a panel goes through `applyNuiFocus(enable)`. With `Config.AllowPushToTalkWhileOpen`, `SetNuiFocusKeepInput` is on and all controls on groups 0–2 are disabled except `Config.PushToTalkControls`.
 
 ## Configuration reference
@@ -128,7 +128,7 @@ Single-value options in `shared/config.lua` (defaults are generated from the fil
 | `PurgeStorageOnLeave` | `true` | true: storage is deleted when a tenant moves out. false: it is kept for Config.RetrievalDays (see below) |
 | `RetrievalDays` | `3` | days an evicted / departed tenant can collect their belongings with /housebelongings at the house (0 = delete straight away) |
 | `EndTenancyRefundPercent` | `0` | % of the unused rent refunded when a tenant ends the tenancy early (0 = no refund) |
-| `EnableGovernor` | `false` | when true, rent and storage upgrades are paid into the region's governor boss account (rsg-bossmenu). The old name Config.EnableGovenor still works |
+| `EnableGovernor` | `false` | when true, rent and storage upgrades are paid into the region's governor society account (rsg-society). The old name Config.EnableGovenor still works |
 | `Decorating` | `true` |  |
 | `MaxPropsPerHouse` | `25` |  |
 | `PropPlaceRadius` | `40.0` | furniture must be within this distance of the house menu spot (server checked) |
@@ -143,7 +143,7 @@ Structured options:
 
 **`Config.StorageTiers`** – list of `{ key, slots, weight, price }`. `weight` is in grams like rsg-inventory. Tier 1 is included with the tenancy; `key` also selects the locale `storage_tier_<key>`. rsg-inventory caps stashes at its own `Config.Stash.MaxSlots` / `MaxWeight`.
 
-**`Config.GovernorJobs`** – `region -> rsg-bossmenu job`. The regions are the `region` values in `rsg_housing`.
+**`Config.GovernorJobs`** – `region -> rsg-society job`. The regions are the `region` values in `rsg_housing`.
 
 **`Config.DecorProps`** – list of `{ key, label, model, price }`. `key` is stored in the database, so don't rename it once used. Models were checked against `femga/rdr3_discoveries` `objects/object_list.lua`; add your own after checking the model name.
 
@@ -402,8 +402,8 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.PurgeStorageOnLeave` | `true` | true: storage is deleted when a tenant moves out. false: it is kept for Config.RetrievalDays (see below) |
 | `Config.RetrievalDays` | `3` | days an evicted / departed tenant can collect their belongings with /housebelongings at the house (0 = delete  |
 | `Config.EndTenancyRefundPercent` | `0` | % of the unused rent refunded when a tenant ends the tenancy early (0 = no refund) |
-| `Config.EnableGovernor` | `false` | when true, rent and storage upgrades are paid into the region's governor boss account (rsg-bossmenu). The old  |
-| `Config.GovernorJobs` | `table` | region (rsg_housing.region) -> rsg-bossmenu job that receives the money |
+| `Config.EnableGovernor` | `false` | when true, rent and storage upgrades are paid into the region's governor society account (rsg-society). The old  |
+| `Config.GovernorJobs` | `table` | region (rsg_housing.region) -> rsg-society job account that receives the money |
 | `Config.Decorating` | `true` |  |
 | `Config.MaxPropsPerHouse` | `25` |  |
 | `Config.PropPlaceRadius` | `40.0` | furniture must be within this distance of the house menu spot (server checked) |

@@ -161,8 +161,8 @@ local function payGovernor(region, amount, houseid, reason)
     local enabled = Config.EnableGovernor
     if enabled == nil then enabled = Config.EnableGovenor end
     if enabled and job and amount > 0 then
-        local ok = pcall(function() exports['rsg-bossmenu']:AddMoney(job, amount) end)
-        if not ok then print('^1[rsg-housing] could not pay the governor account (is rsg-bossmenu started?)^7') end
+        local ok, paid = pcall(function() return exports['rsg-society']:AddMoney(job, amount, 'rsg-housing ' .. (reason or 'rent')) end)
+        if not ok or not paid then print('^1[rsg-housing] could not pay the governor account (is rsg-society started?)^7') end
     end
 end
 

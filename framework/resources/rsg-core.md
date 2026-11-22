@@ -1,6 +1,6 @@
 # rsg-core
 
-Version 3.5.0. rsg-core
+Version 3.5.1. rsg-core
 
 The core framework for RSG RedM servers: players, characters, money, jobs (with built-in multi-job), gangs, permissions, commands, callbacks, notifications and shared data. Documentation: https://rsgcore.com/docs - [oxmysql](https://github.com/overextended/oxmysql)
 
@@ -20,7 +20,7 @@ Has NUI (`ui_page`).
 
 ## Net events registered
 
-**server:** `RSGCore:CallCommand`, `RSGCore:Server:CloseServer`, `RSGCore:Server:KickCSRF`, `RSGCore:Server:OnPlayerLoaded`, `RSGCore:Server:OpenServer`, `RSGCore:Server:ReportDeath`, `RSGCore:Server:SetMetaData`, `RSGCore:Server:TriggerCallback`, `RSGCore:Server:TriggerCallbackId`, `RSGCore:Server:TriggerClientCallback`, `RSGCore:ToggleDuty`, `RSGCore:UpdatePlayer`, `rsg-bossmenu:server:FireEmployee`, `rsg-multijob:server:changeJob`, `rsg-multijob:server:deleteJob`
+**server:** `RSGCore:CallCommand`, `RSGCore:Server:CloseServer`, `RSGCore:Server:KickCSRF`, `RSGCore:Server:OnPlayerLoaded`, `RSGCore:Server:OpenServer`, `RSGCore:Server:ReportDeath`, `RSGCore:Server:SetMetaData`, `RSGCore:Server:TriggerCallback`, `RSGCore:Server:TriggerCallbackId`, `RSGCore:Server:TriggerClientCallback`, `RSGCore:ToggleDuty`, `RSGCore:UpdatePlayer`, `rsg-multijob:server:changeJob`, `rsg-multijob:server:deleteJob`
 
 **client:** `RSGCore:Client:Notify`, `RSGCore:Client:OnJobUpdate`, `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `RSGCore:Client:OnSharedUpdate`, `RSGCore:Client:OnSharedUpdateMultiple`, `RSGCore:Client:PvpHasToggled`, `RSGCore:Client:TriggerCallback`, `RSGCore:Client:TriggerCallbackId`, `RSGCore:Client:TriggerClientCallback`, `RSGCore:Command:DeleteVehicle`, `RSGCore:Command:GoToMarker`, `RSGCore:Command:ShowMe3D`, `RSGCore:Command:SpawnVehicle`, `RSGCore:Command:TeleportToCoords`, `RSGCore:Command:TeleportToPlayer`, `RSGCore:Command:ToggleNoClip`, `RSGCore:Notify`, `RSGCore:Player:SetPlayerData`, `RSGCore:Player:UpdatePlayerData`, `rsg-core:client:CancelProgress`, `rsg-core:client:ChangeText`, `rsg-core:client:DrawText`, `rsg-core:client:HideText`, `rsg-core:client:KeyPressed`, `rsg-multijob:client:openAdmin`, `rsg-multijob:client:openmenu`, `rsg-multijob:client:refreshJobs`
 

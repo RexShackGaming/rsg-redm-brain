@@ -43,13 +43,14 @@ RSGCore.Commands.Add('creategangadmin', locale('cmd_create_help'), {
         return
     end
 
-    local gang = RSGGangs.CreateGangRecord(gangName, label, Config.GangColors[1], 'SYSTEM', nil)
+    -- rsg-society makes the gang id from the label, so <name> only has to be valid
+    local gang = RSGGangs.CreateGangRecord(label, Config.GangColors[1], nil)
     if not gang then
         RSGGangs.Notify(source, locale('error_generic'), 'error')
         return
     end
 
-    RSGGangs.Log('Gang created (admin)', ('%s (%s) by source %s'):format(label, gangName, source))
+    RSGGangs.Log('Gang created (admin)', ('%s (%s) by source %s'):format(label, gang.name, source))
     RSGGangs.Notify(source, locale('notify_admin_gang_created', label), 'success')
 end, 'admin')
 
@@ -84,8 +85,8 @@ RSGCore.Commands.Add('addgangmember', locale('cmd_addmember_help'), {
     if not Player then RSGGangs.Notify(source, locale('error_player_not_found'), 'error') return end
     if not gang then RSGGangs.Notify(source, locale('error_gang_not_found'), 'error') return end
 
-    local rank = args[3] or Config.DefaultJoinRank
-    if not RSGGangs.GetRankData(rank) then
+    local rank = RSGGangs.ResolveLevel(gang.name, args[3]) -- a rank level or a rank name; empty = lowest rank
+    if not rank then
         RSGGangs.Notify(source, locale('error_invalid_rank'), 'error')
         return
     end

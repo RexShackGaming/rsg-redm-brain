@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Society</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="root" class="hidden">
+        <div class="panel" id="panel">
+            <div class="header">
+                <div class="header-spacer"></div>
+                <div class="header-content">
+                    <h1 id="title"></h1>
+                    <p id="subtitle"></p>
+                </div>
+                <button class="circle-btn" id="btn-close" title="Close" data-i18n-title="ui_close">
+                    <span class="x-icon"></span>
+                </button>
+            </div>
+            <div class="section-divider"><span>&#10022;</span></div>
+            <div class="tabs" id="tabs"></div>
+            <div class="content" id="content"></div>
+        </div>
+    </div>
+
+    <div id="modal-layer" class="hidden">
+        <div class="modal" id="modal">
+            <h2 id="modal-title"></h2>
+            <div class="ink-divider"></div>
+            <div id="modal-body"></div>
+            <div class="modal-actions" id="modal-actions"></div>
+        </div>
+    </div>
+
+    <div id="toasts"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

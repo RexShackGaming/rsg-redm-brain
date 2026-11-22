@@ -6,9 +6,10 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 ---------------------------------------------------------------------
 RSGGangs = {}
 
--- Gangs[name] = { name, label, color, bank, owner, stashTier, stashId, wagon = {x,y,z,heading}|nil,
---                 members = { [citizenid] = { rank, source|nil, name } },
+-- Gangs[name] = { name, members = { [citizenid] = { rank = "<level>", level, source|nil, name } },
+--                 wagon = {x,y,z,heading}|nil, stashTier, stashId, upkeepDue, upkeepMissed,
 --                 equipment = { [itemId] = { { id, x, y, z, heading }, ... } } }
+-- label, color, tag, owner and bank are read from rsg-society whenever they are accessed (see gangMeta).
 local Gangs = {}
 local memberIndex = {} -- [citizenid] = gangName (O(1) lookup instead of scanning every gang)
 
@@ -296,41 +297,99 @@ local function dbTransaction(queries)
 end
 
 ---------------------------------------------------------------------
--- Ranks
+-- Ranks and permissions (owned by rsg-society)
 ---------------------------------------------------------------------
-local rankByName, rankByWeight, permissionSets, rankPayload = {}, {}, {}, {}
+-- Every gang's ranks live in rsg-society as levels 0..n. A member's `rank` here is that level as a
+-- string, which is also the rank `name` the NUI works with; its label is the rank name set in rsg-society.
+-- rsg-gangs permission names -> rsg-society permission names.
+local PERMISSION_MAP = {
+    invite = 'hire', kick = 'fire', promote = 'promote', demote = 'promote',
+    deposit = 'deposit', withdraw = 'withdraw', upgrade = 'upgrade', bounty = 'bounty',
+    disband = 'disband', rename = 'settings', setcolor = 'settings', equipment = 'equipment',
+}
+local PERMISSION_ORDER = {
+    'invite', 'kick', 'promote', 'demote', 'deposit', 'withdraw', 'upgrade', 'bounty', 'disband', 'rename', 'setcolor', 'equipment',
+}
 
-for _, rank in ipairs(Config.Ranks) do
-    rankByName[rank.name] = rank
-    rankByWeight[rank.weight] = rank
-    local set = {}
-    for _, perm in ipairs(rank.permissions or {}) do set[perm] = true end
-    permissionSets[rank.name] = set
-    rankPayload[#rankPayload + 1] = { name = rank.name, label = rank.label, weight = rank.weight, isLeader = rank.isLeader == true }
+local rankCache = {} -- [gangName] = { t, list = { { level, name, boss } ... } }
+
+local function ranksOf(gangName)
+    local cached = rankCache[gangName]
+    local now = GetGameTimer()
+    if cached and now - cached.t < 3000 then return cached.list end
+    local ok, list = pcall(function() return exports['rsg-society']:GetRanks(gangName) end)
+    if ok and type(list) == 'table' then
+        rankCache[gangName] = { t = now, list = list }
+        return list
+    end
+    return cached and cached.list or {}
 end
 
-local function getRankData(rankName)
-    return rankByName[rankName]
+local function rankInfo(gangName, level)
+    level = tonumber(level)
+    for _, rank in ipairs(ranksOf(gangName)) do
+        if rank.level == level then return rank end
+    end
+    return nil
 end
 
-local function hasPermission(rankName, permission)
-    local set = permissionSets[rankName]
-    return set ~= nil and set[permission] == true
+-- Level of a member inside their gang (-1 when they are not a member)
+local function rankWeight(gang, citizenid)
+    local member = gang and gang.members[citizenid]
+    return member and member.level or -1
 end
 
-local function rankWeight(rankName)
-    local rank = rankByName[rankName]
-    return rank and rank.weight or -1
+local function isBossRank(gang, citizenid)
+    local member = gang and gang.members[citizenid]
+    local info = member and rankInfo(gang.name, member.level)
+    return info ~= nil and info.boss == true
 end
 
-local function canViewLog(rankName)
+local function hasPermission(gang, citizenid, permission)
+    if not gang or not gang.members[citizenid] then return false end
+    local mapped = PERMISSION_MAP[permission] or permission
+    local ok, res = pcall(function() return exports['rsg-society']:HasPermission(citizenid, gang.name, mapped) end)
+    return ok and res == true
+end
+
+local function canViewLog(gang, citizenid)
     local cfg = Config.ActivityLog
-    return cfg ~= nil and cfg.enabled == true and rankWeight(rankName) >= (cfg.minWeight or 0)
+    return cfg ~= nil and cfg.enabled == true and rankWeight(gang, citizenid) >= (cfg.minWeight or 0)
 end
 
-local function permissionList(rankName)
-    local rank = rankByName[rankName]
-    return rank and rank.permissions or {}
+local function permissionList(gang, citizenid)
+    local out = {}
+    for _, perm in ipairs(PERMISSION_ORDER) do
+        if hasPermission(gang, citizenid, perm) then out[#out + 1] = perm end
+    end
+    return out
+end
+
+-- Highest rank level, and the level just below it (leadership transfers use these)
+local function topLevels(gangName)
+    local top, below = nil, nil
+    for _, rank in ipairs(ranksOf(gangName)) do
+        if rank.boss and (not top or rank.level > top) then top = rank.level end
+    end
+    for _, rank in ipairs(ranksOf(gangName)) do
+        if top and rank.level < top and (not below or rank.level > below) then below = rank.level end
+    end
+    return top, below
+end
+
+-- Turns a rank typed by an admin (a level number or a rank name) into a level for one gang
+local function resolveLevel(gangName, value)
+    if value == nil then return 0 end
+    local number = tonumber(value)
+    if number then
+        number = math.floor(number)
+        return rankInfo(gangName, number) and number or nil
+    end
+    local wanted = tostring(value):lower()
+    for _, rank in ipairs(ranksOf(gangName)) do
+        if tostring(rank.name):lower() == wanted then return rank.level end
+    end
+    return nil
 end
 
 ---------------------------------------------------------------------
@@ -338,20 +397,6 @@ end
 ---------------------------------------------------------------------
 local function validateConfig()
     local function warn(msg) print(('^3[rsg-gangs] config: %s^7'):format(msg)) end
-
-    local seenName, seenWeight, hasLeader = {}, {}, false
-    for _, rank in ipairs(Config.Ranks) do
-        if seenName[rank.name] then warn(('duplicate rank name "%s"'):format(rank.name)) end
-        if seenWeight[rank.weight] then warn(('duplicate rank weight %s'):format(rank.weight)) end
-        seenName[rank.name], seenWeight[rank.weight] = true, true
-        if rank.isLeader then hasLeader = true end
-    end
-    if not hasLeader then warn('no rank has isLeader = true') end
-    if not rankByName[Config.DefaultLeaderRank] then warn('Config.DefaultLeaderRank is not a defined rank') end
-    if not rankByName[Config.DefaultJoinRank] then warn('Config.DefaultJoinRank is not a defined rank') end
-    for weight = 0, #Config.Ranks - 1 do
-        if not rankByWeight[weight] then warn('rank weights must be consecutive starting at 0 (promote/demote step by one)') break end
-    end
 
     local equipmentIds = {}
     for _, cfg in ipairs(Config.GangEquipment) do
@@ -446,26 +491,98 @@ local function stashTierIndex(tierId)
 end
 
 ---------------------------------------------------------------------
--- Loading
+-- Loading (gang identity, members, ranks and bank come from rsg-society)
 ---------------------------------------------------------------------
-local function loadGangs()
-    for key in pairs(Gangs) do Gangs[key] = nil end
-    for key in pairs(memberIndex) do memberIndex[key] = nil end
+-- label, colour, tag, owner and bank are never stored on the gang table: they are read from
+-- rsg-society on demand (with a short cache), so a change made in its menu shows up here at once.
+local liveCache = {} -- [gangName] = { t, info }
+local LIVE_FIELDS = { label = true, color = true, tag = true, owner = true, bank = true }
 
-    local gangRows = MySQL.query.await('SELECT * FROM rsg_gangs', {}) or {}
-    for _, row in ipairs(gangRows) do
+local function societyInfo(gangName)
+    local cached = liveCache[gangName]
+    local now = GetGameTimer()
+    if cached and now - cached.t < 1500 then return cached.info end
+    local ok, info = pcall(function() return exports['rsg-society']:GetSociety(gangName) end)
+    if ok and type(info) == 'table' then
+        liveCache[gangName] = { t = now, info = info }
+        return info
+    end
+    return cached and cached.info or nil
+end
+
+local function forgetLive(gangName)
+    liveCache[gangName] = nil
+    rankCache[gangName] = nil
+end
+
+local gangMeta = {
+    __index = function(gang, key)
+        if not LIVE_FIELDS[key] then return nil end
+        local info = societyInfo(rawget(gang, 'name'))
+        if not info then return key == 'bank' and 0 or nil end
+        if key == 'bank' then return info.balance or 0 end
+        return info[key]
+    end,
+    __newindex = function(gang, key, value)
+        if LIVE_FIELDS[key] then return end -- owned by rsg-society, change it there
+        rawset(gang, key, value)
+    end,
+}
+
+-- Creates / refreshes the row that anchors this gang's own data (wagon, equipment, turf, bounties...).
+local function ensureGangRow(name, info)
+    local color = info.color
+    if type(color) ~= 'string' or not color:match('^#%x%x%x%x%x%x$') then color = '#e63946' end
+    local label = tostring(info.label or name):sub(1, 50)
+    local owner = type(info.owner) == 'string' and info.owner ~= '' and info.owner or 'SYSTEM'
+    return dbOk([[
+        INSERT INTO rsg_gangs (name, label, color, owner, stash_id) VALUES (?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE label = VALUES(label), color = VALUES(color), owner = VALUES(owner)
+    ]], { name, label, color, owner, generateUUID() })
+end
+
+-- Reads the members of one gang from rsg-society into memory
+local function syncMembers(gang)
+    for citizenid in pairs(gang.members) do
+        if memberIndex[citizenid] == gang.name then memberIndex[citizenid] = nil end
+    end
+    gang.members = {}
+
+    local ok, list = pcall(function() return exports['rsg-society']:GetMembers(gang.name) end)
+    if not ok or type(list) ~= 'table' then return end
+    for _, row in ipairs(list) do
+        local member = { rank = tostring(row.level), level = row.level, source = nil, name = row.name }
+        gang.members[row.citizenid] = member
+        memberIndex[row.citizenid] = gang.name
+    end
+end
+
+local loadingGang = {}
+
+-- Builds the in-memory gang for one rsg-society gang (and its anchor row). Returns the gang or nil.
+local function loadGang(name)
+    if Gangs[name] then return Gangs[name] end
+    while loadingGang[name] do Wait(50) end
+    if Gangs[name] then return Gangs[name] end
+    loadingGang[name] = true
+
+    local gang
+    local ok, err = pcall(function()
+        forgetLive(name)
+        local info = societyInfo(name)
+        if not info or info.type ~= 'gang' then return end
+        ensureGangRow(name, info)
+
+        local row = MySQL.single.await('SELECT * FROM rsg_gangs WHERE name = ?', { name })
+        if not row then return end
         local stashId = row.stash_id
         if not stashId or stashId == '' then
             stashId = generateUUID()
-            dbOk('UPDATE rsg_gangs SET stash_id = ? WHERE name = ?', { stashId, row.name })
+            dbOk('UPDATE rsg_gangs SET stash_id = ? WHERE name = ?', { stashId, name })
         end
 
-        Gangs[row.name] = {
-            name = row.name,
-            label = row.label,
-            color = row.color,
-            bank = row.bank,
-            owner = row.owner,
+        gang = setmetatable({
+            name = name,
             members = {},
             equipment = {},
             wagon = row.wagon_x and {
@@ -475,57 +592,75 @@ local function loadGangs()
             stashId = stashId,
             upkeepDue = row.upkeep_due,
             upkeepMissed = row.upkeep_missed or 0,
-            tag = row.tag,
-        }
-    end
+        }, gangMeta)
 
-    local missingNames = {}
-    local memberRows = MySQL.query.await('SELECT * FROM rsg_gang_members', {}) or {}
-    for _, row in ipairs(memberRows) do
-        local gang = Gangs[row.gang_name]
-        if gang then
-            addMember(gang, row.citizenid, row.rank, nil, row.name)
-            if not row.name or row.name == '' then missingNames[#missingNames + 1] = row.citizenid end
+        local equipmentRows = MySQL.query.await('SELECT * FROM rsg_gang_equipment WHERE gang_name = ?', { name }) or {}
+        for _, eq in ipairs(equipmentRows) do
+            gang.equipment[eq.item_id] = gang.equipment[eq.item_id] or {}
+            table.insert(gang.equipment[eq.item_id], { id = eq.id, x = eq.x, y = eq.y, z = eq.z, heading = eq.heading })
         end
+        syncMembers(gang)
+        Gangs[name] = gang
+    end)
+    loadingGang[name] = nil
+    if not ok then print(('^1[rsg-gangs] could not load gang "%s": %s^7'):format(name, tostring(err))) return nil end
+    return gang
+end
+
+local function loadGangs()
+    for key in pairs(Gangs) do Gangs[key] = nil end
+    for key in pairs(memberIndex) do memberIndex[key] = nil end
+    liveCache, rankCache = {}, {}
+
+    local names = exports['rsg-society']:GetSocieties('gang') or {}
+    local known = {}
+    for _, name in ipairs(names) do
+        known[name] = true
+        loadGang(name)
     end
 
-    -- Members saved before 2.1.0 have no stored name yet: look them up once from the players table.
-    if #missingNames > 0 then
-        local ok, rows = pcall(MySQL.query.await, 'SELECT citizenid, charinfo FROM players WHERE citizenid IN (?)', { missingNames })
-        if ok and rows then
-            for _, row in ipairs(rows) do
-                local info = type(row.charinfo) == 'string' and json.decode(row.charinfo) or row.charinfo
-                local gang = findGangByMember(row.citizenid)
-                if gang and type(info) == 'table' and info.firstname then
-                    local name = trim(info.firstname .. ' ' .. (info.lastname or ''))
-                    gang.members[row.citizenid].name = name
-                    dbOk('UPDATE rsg_gang_members SET name = ? WHERE citizenid = ?', { name, row.citizenid })
-                end
-            end
-        end
-    end
-
-    local equipmentRows = MySQL.query.await('SELECT * FROM rsg_gang_equipment', {}) or {}
-    for _, row in ipairs(equipmentRows) do
-        local gang = Gangs[row.gang_name]
-        if gang then
-            gang.equipment[row.item_id] = gang.equipment[row.item_id] or {}
-            table.insert(gang.equipment[row.item_id], { id = row.id, x = row.x, y = row.y, z = row.z, heading = row.heading })
+    -- rows from before the move to rsg-society that no society owns: keep them, but they stay inactive
+    for _, row in ipairs(MySQL.query.await('SELECT name FROM rsg_gangs', {}) or {}) do
+        if not known[row.name] then
+            print(('^3[rsg-gangs] gang "%s" has no rsg-society account and is inactive. Start rsg-society with Config.Migration.ImportRsgGangs on (or run its migration command) to bring it over.^7'):format(row.name))
         end
     end
 
     RSGGangs.Loaded = true
 end
 
-CreateThread(function()
-    validateConfig()
-    if Config.AutoDatabase and not ensureDatabase() then return end
+local function societyReady()
+    if GetResourceState('rsg-society') ~= 'started' then return false end
+    local ok, ready = pcall(function() return exports['rsg-society']:IsReady() end)
+    return ok and ready == true
+end
 
+local function startUp()
     local ok, err = pcall(loadGangs)
     if not ok then
         print(('^1[rsg-gangs] failed to load gangs: %s^7'):format(tostring(err)))
         print('^1[rsg-gangs] Are the database tables installed? (Config.AutoDatabase or installation/rsg-gangs.sql)^7')
     end
+end
+
+CreateThread(function()
+    validateConfig()
+    if Config.AutoDatabase and not ensureDatabase() then return end
+
+    local waited = 0
+    while not societyReady() do
+        Wait(500)
+        waited = waited + 500
+        if waited == 30000 then
+            print('^3[rsg-gangs] still waiting for rsg-society. Is it installed and started before rsg-gangs?^7')
+        end
+    end
+    startUp()
+end)
+
+-- rsg-society was restarted: read everything again
+AddEventHandler('rsg-society:server:ready', function()
+    if RSGGangs.Loaded then startUp() end
 end)
 
 ---------------------------------------------------------------------
@@ -537,10 +672,7 @@ local function refreshMemberOnlineData(gang)
         if Player then
             member.source = Player.PlayerData.source
             local name = charName(Player)
-            if name ~= '' and name ~= member.name then
-                member.name = name
-                pcall(MySQL.update, 'UPDATE rsg_gang_members SET name = ? WHERE citizenid = ?', { name, citizenid })
-            end
+            if name ~= '' and (not member.name or member.name == '') then member.name = name end
         else
             member.source = nil
         end
@@ -550,15 +682,21 @@ end
 local function buildGangPayload(gang)
     refreshMemberOnlineData(gang)
 
+    local ranks = {}
+    local labelOf = {}
+    for _, rank in ipairs(ranksOf(gang.name)) do
+        ranks[#ranks + 1] = { name = tostring(rank.level), label = rank.name, weight = rank.level, isLeader = rank.boss == true }
+        labelOf[rank.level] = rank.name
+    end
+
     local members = {}
     for citizenid, data in pairs(gang.members) do
-        local rank = getRankData(data.rank)
         members[#members + 1] = {
             citizenid = citizenid,
             name = data.name or citizenid,
-            rank = data.rank,
-            rankLabel = rank and rank.label or data.rank,
-            weight = rankWeight(data.rank),
+            rank = tostring(data.level),
+            rankLabel = labelOf[data.level] or tostring(data.level),
+            weight = data.level,
             online = data.source ~= nil,
         }
     end
@@ -606,7 +744,7 @@ local function buildGangPayload(gang)
         maxMembers = Config.MaxMembers,
         hasWagon = gang.wagon ~= nil,
         members = members,
-        ranks = rankPayload,
+        ranks = ranks,
         equipment = equipment,
         stashTiers = stashTiers,
         territories = RSGGangs.TerritoryPayload and RSGGangs.TerritoryPayload(gang) or nil,
@@ -625,9 +763,9 @@ local function buildState(citizenid, gang, payload)
         citizenid = citizenid,
         inGang = gang ~= nil,
         gang = gang and (payload or buildGangPayload(gang)) or nil,
-        myRank = member and member.rank or nil,
-        myPermissions = member and permissionList(member.rank) or {},
-        canViewLog = member and canViewLog(member.rank) or false,
+        myRank = member and tostring(member.level) or nil,
+        myPermissions = member and permissionList(gang, citizenid) or {},
+        canViewLog = member and canViewLog(gang, citizenid) or false,
         tagsEnabled = Config.Tags and Config.Tags.enabled or false,
         leaderboardEnabled = Config.Leaderboard and Config.Leaderboard.enabled or false,
         createCost = Config.CreateGangCost,
@@ -648,59 +786,69 @@ local function broadcastGangUpdate(gang)
     end
 end
 
--- Bank changes go through here: memory is updated first (no yield, so concurrent callers see the
--- new balance) and the database uses a delta so two overlapping updates can never overwrite each other.
+---------------------------------------------------------------------
+-- Creating and destroying gangs, bank changes (all through rsg-society)
+---------------------------------------------------------------------
+-- Bank changes go to rsg-society, which keeps the balance and the ledger. `delta` is in dollars.
 local function adjustBank(gang, delta)
-    if delta < 0 and gang.bank + delta < 0 then return false end
-    if delta > 0 and gang.bank + delta > Config.MaxBankBalance then return false end
+    if type(delta) ~= 'number' or delta ~= delta then return false end
+    if delta == 0 then return true end
+    if delta > 0 and (gang.bank or 0) + delta > Config.MaxBankBalance then return false end
 
-    gang.bank = gang.bank + delta
-    if not dbOk('UPDATE rsg_gangs SET bank = bank + ? WHERE name = ?', { delta, gang.name }) then
-        gang.bank = gang.bank - delta
-        return false
-    end
-    return true
+    local ok, res = pcall(function()
+        if delta > 0 then return exports['rsg-society']:AddMoney(gang.name, delta, 'rsg-gangs') end
+        return exports['rsg-society']:RemoveMoney(gang.name, -delta, 'rsg-gangs')
+    end)
+    liveCache[gang.name] = nil
+    return ok and res ~= nil and res ~= false
 end
 
----------------------------------------------------------------------
--- Creating and destroying gangs
----------------------------------------------------------------------
--- Creates a gang row (and, when `leader` is given, its first member) in one transaction.
-local function createGangRecord(gangName, label, color, owner, leader)
-    local stashId = generateUUID()
-    local leaderName = leader and charName(leader) or nil
-
-    local queries = {
-        { query = 'INSERT INTO rsg_gangs (name, label, color, bank, owner, stash_id) VALUES (?, ?, ?, 0, ?, ?)',
-          values = { gangName, label, color, owner, stashId } },
-    }
-    if leader then
-        queries[#queries + 1] = {
-            query = 'INSERT INTO rsg_gang_members (citizenid, gang_name, rank, name) VALUES (?, ?, ?, ?)',
-            values = { leader.PlayerData.citizenid, gangName, Config.DefaultLeaderRank, leaderName },
-        }
+-- Maps an rsg-society failure key to a message the player can read
+local function notifyFail(src, reason)
+    if reason == 'sv_err_gang_taken' then return notify(src, locale('error_gang_exists'), 'error') end
+    if reason == 'sv_err_gang_name' then
+        return notify(src, locale('error_invalid_name', Config.MinNameLength, Config.MaxNameLength), 'error')
     end
-    if not dbTransaction(queries) then return nil end
+    notify(src, locale('error_generic'), 'error')
+end
 
-    local gang = {
-        name = gangName, label = label, color = color, bank = 0, owner = owner,
-        members = {}, equipment = {}, stashTier = 'small', stashId = stashId,
-    }
-    Gangs[gangName] = gang
-    if leader then
-        addMember(gang, leader.PlayerData.citizenid, Config.DefaultLeaderRank, leader.PlayerData.source, leaderName)
+-- Creates the gang in rsg-society (founder becomes its top rank) and loads it here.
+-- Returns the gang, or nil and the rsg-society reason key.
+local function createGangRecord(label, color, ownerCid)
+    local called, created, nameOrReason = pcall(function() return exports['rsg-society']:CreateGang(label, ownerCid) end)
+    if not called or not created then return nil, called and nameOrReason or 'sv_err_unknown' end
+
+    local gang = loadGang(nameOrReason)
+    if not gang then return nil, 'sv_err_unknown' end
+    if type(color) == 'string' then
+        pcall(function() exports['rsg-society']:SetGangInfo(gang.name, { color = color }) end)
+        forgetLive(gang.name)
     end
     return gang
 end
 
--- Removes a gang everywhere: database (members/equipment cascade), the world entities, memory and invites.
-local function destroyGang(gang, notifyKey, notifyType)
-    if not dbOk('DELETE FROM rsg_gangs WHERE name = ?', { gang.name }) then return false end
+local disbandNotice = {} -- [gangName] = { key, type } for the notice members get when the gang goes
 
-    for citizenid, member in pairs(gang.members) do
-        if member.source then
-            if notifyKey then notify(member.source, locale(notifyKey), notifyType or 'inform') end
-            TriggerClientEvent('rsg-gangs:client:setState', member.source, { inGang = false })
+-- Clears everything rsg-gangs owns for a gang that rsg-society has removed (safe to call twice)
+local function cleanupGang(gang, memberIds)
+    if rawget(gang, 'destroyed') then return end
+    rawset(gang, 'destroyed', true)
+
+    local notice = disbandNotice[gang.name]
+    disbandNotice[gang.name] = nil
+    local key = 'success_gang_disbanded'
+    local nType = 'inform'
+    if notice then key, nType = notice.key, notice.type or 'inform' end
+
+    local ids = {}
+    for citizenid in pairs(gang.members) do ids[citizenid] = true end
+    for _, citizenid in ipairs(memberIds or {}) do ids[citizenid] = true end
+    for citizenid in pairs(ids) do
+        local Player = RSGCore.Functions.GetPlayerByCitizenId(citizenid)
+        if Player then
+            local target = Player.PlayerData.source
+            if key then notify(target, locale(key), nType) end
+            TriggerClientEvent('rsg-gangs:client:setState', target, { inGang = false })
         end
         if memberIndex[citizenid] == gang.name then memberIndex[citizenid] = nil end
     end
@@ -713,32 +861,62 @@ local function destroyGang(gang, notifyKey, notifyType)
         if invite.gangName == gang.name then pendingInvites[citizenid] = nil end
     end
 
+    dbOk('DELETE FROM rsg_gangs WHERE name = ?', { gang.name }) -- equipment, turf, bounties, logs cascade
     Gangs[gang.name] = nil
-    return true
+    forgetLive(gang.name)
 end
 
--- Adds an online player to a gang (database + memory). Returns true on success.
-local function insertMember(gang, Player, rank)
+-- Disbands the gang in rsg-society, then removes the world entities and rows here.
+-- Returns true and the balance (dollars) that was in the gang account; the caller decides who gets it.
+local function destroyGang(gang, notifyKey, notifyType)
+    local memberIds = {}
+    for citizenid in pairs(gang.members) do memberIds[#memberIds + 1] = citizenid end
+
+    disbandNotice[gang.name] = { key = notifyKey or false, type = notifyType }
+    local ok, done, balance = pcall(function() return exports['rsg-society']:DisbandGang(gang.name) end)
+    if not ok or not done then
+        disbandNotice[gang.name] = nil
+        return false
+    end
+    cleanupGang(gang, memberIds)
+    return true, tonumber(balance) or 0
+end
+
+-- Adds an online player to a gang at a rank level. Returns true on success.
+local function insertMember(gang, Player, level)
     local citizenid = Player.PlayerData.citizenid
     if findGangByMember(citizenid) or pendingMembershipChange[citizenid] then return false end
 
     pendingMembershipChange[citizenid] = true
-    local name = charName(Player)
-    local ok, res = pcall(MySQL.insert.await,
-        'INSERT INTO rsg_gang_members (citizenid, gang_name, rank, name) VALUES (?, ?, ?, ?)',
-        { citizenid, gang.name, rank, name })
+    local ok, res = pcall(function() return exports['rsg-society']:AddMember(gang.name, citizenid, level or 0) end)
     pendingMembershipChange[citizenid] = nil
 
-    if not ok or res == nil then return false end
-    addMember(gang, citizenid, rank, Player.PlayerData.source, name)
+    if not ok or not res then return false end
     pendingInvites[citizenid] = nil
+    syncMembers(gang)
+    return true
+end
+
+-- Removes a member through rsg-society and updates memory. Returns true on success.
+local function removeMemberViaSociety(gang, citizenid)
+    local ok, res = pcall(function() return exports['rsg-society']:RemoveMember(gang.name, citizenid) end)
+    if not ok or not res then return false end
+    removeMember(gang, citizenid)
     return true
 end
 
 ---------------------------------------------------------------------
 -- Internal API for the other server files
 ---------------------------------------------------------------------
-RSGGangs.GetRankData = getRankData
+RSGGangs.RankInfo = rankInfo
+RSGGangs.Ranks = ranksOf
+RSGGangs.ResolveLevel = resolveLevel
+RSGGangs.TopLevels = topLevels
+RSGGangs.IsBossRank = isBossRank
+RSGGangs.LoadGang = loadGang
+RSGGangs.SyncMembers = syncMembers
+RSGGangs.ForgetLive = forgetLive
+RSGGangs.NotifyFail = notifyFail
 RSGGangs.HasPermission = hasPermission
 RSGGangs.RankWeight = rankWeight
 RSGGangs.Notify = notify
@@ -766,9 +944,8 @@ RSGGangs.Log = logEvent
 RSGGangs.AddLog = addLog
 RSGGangs.DbOk = dbOk
 RSGGangs.DbTransaction = dbTransaction
-RSGGangs.RemoveMember = removeMember
+RSGGangs.RemoveMember = removeMemberViaSociety
 RSGGangs.MemberCount = memberCount
-RSGGangs.RankByWeight = function(weight) return rankByWeight[weight] end
 
 ---------------------------------------------------------------------
 -- Exports for other resources
@@ -776,11 +953,14 @@ RSGGangs.RankByWeight = function(weight) return rankByWeight[weight] end
 exports('GetPlayerGang', function(citizenid)
     local gang = findGangByMember(citizenid)
     if not gang then return nil end
+    local member = gang.members[citizenid]
+    local info = rankInfo(gang.name, member.level)
     return {
         name = gang.name,
         label = gang.label,
         color = gang.color,
-        rank = gang.members[citizenid].rank,
+        rank = info and info.name or tostring(member.level),
+        level = member.level,
     }
 end)
 
@@ -793,14 +973,13 @@ end)
 exports('IsGangLeader', function(citizenid)
     local gang = findGangByMember(citizenid)
     if not gang then return false end
-    local rank = getRankData(gang.members[citizenid].rank)
-    return rank ~= nil and rank.isLeader == true
+    return isBossRank(gang, citizenid)
 end)
 
 exports('HasGangPermission', function(citizenid, permission)
     local gang = findGangByMember(citizenid)
     if not gang then return false end
-    return hasPermission(gang.members[citizenid].rank, permission)
+    return hasPermission(gang, citizenid, permission)
 end)
 
 exports('GetGangMembers', function(gangName)
@@ -863,14 +1042,8 @@ RegisterNetEvent('rsg-gangs:server:createGang', function(label)
     end
 
     label = cleanLabel(label)
-    local gangName = label and sanitizeGangName(label)
-    if not label or not gangName or #gangName < Config.MinNameLength then
+    if not label then
         notify(src, locale('error_invalid_name', Config.MinNameLength, Config.MaxNameLength), 'error')
-        return
-    end
-
-    if Gangs[gangName] or pendingGangNames[gangName] then
-        notify(src, locale('error_gang_exists'), 'error')
         return
     end
 
@@ -880,36 +1053,32 @@ RegisterNetEvent('rsg-gangs:server:createGang', function(label)
         return
     end
 
-    pendingGangNames[gangName] = true
     pendingMembershipChange[citizenid] = true
-
     if cost > 0 and Player.Functions.RemoveMoney('cash', cost, 'gang-creation') == false then
-        pendingGangNames[gangName] = nil
         pendingMembershipChange[citizenid] = nil
         notify(src, locale('error_not_enough_money'), 'error')
         return
     end
 
-    -- The creating player is added by createGangRecord itself, so release the membership lock first.
+    local color = Config.GangColors[math.random(#Config.GangColors)]
+    local gang, reason = createGangRecord(label, color, citizenid)
     pendingMembershipChange[citizenid] = nil
-    local gang = createGangRecord(gangName, label, Config.GangColors[math.random(#Config.GangColors)], citizenid, Player)
-    pendingGangNames[gangName] = nil
 
     if not gang then
         if cost > 0 then Player.Functions.AddMoney('cash', cost, 'gang-creation-refund') end
-        notify(src, locale('error_generic'), 'error')
+        notifyFail(src, reason)
         return
     end
 
-    notify(src, locale('success_gang_created', label), 'success')
-    logEvent('Gang created', ('%s (%s) founded by %s'):format(label, gangName, citizenid))
+    notify(src, locale('success_gang_created', gang.label or label), 'success')
+    logEvent('Gang created', ('%s (%s) founded by %s'):format(gang.label or label, gang.name, citizenid))
     addLog(gang, citizenid, 'created')
     broadcastGangUpdate(gang)
 
     if Config.GangVehicle.enabled then
-        grant(src, 'spot:' .. gangName, 90)
-        grant(src, 'wagon:' .. gangName, 150)
-        TriggerClientEvent('rsg-gangs:client:findGangVehicleSpot', src, gangName)
+        grant(src, 'spot:' .. gang.name, 90)
+        grant(src, 'wagon:' .. gang.name, 150)
+        TriggerClientEvent('rsg-gangs:client:findGangVehicleSpot', src, gang.name)
 
         if Config.GangVehicle.useTargetMenu then
             TriggerClientEvent('rsg-gangs:client:closeMenu', src)
@@ -923,21 +1092,25 @@ end)
 RegisterNetEvent('rsg-gangs:server:disbandGang', function()
     local src = source
     if onCooldown(src, 'disband', 2000) then return end
-    local citizenid = getPlayerCitizenId(src)
-    if not citizenid then return end
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player then return end
+    local citizenid = Player.PlayerData.citizenid
     local gang = findGangByMember(citizenid)
     if not gang then notify(src, locale('error_no_gang'), 'error') return end
 
-    if not hasPermission(gang.members[citizenid].rank, 'disband') then
+    if not hasPermission(gang, citizenid, 'disband') then
         notify(src, locale('error_no_permission'), 'error')
         return
     end
 
     local name, label = gang.name, gang.label
-    if not destroyGang(gang, 'success_gang_disbanded', 'inform') then
+    local ok, balance = destroyGang(gang, 'success_gang_disbanded', 'inform')
+    if not ok then
         notify(src, locale('error_generic'), 'error')
         return
     end
+    -- what was left in the gang account goes to whoever disbanded it, like rsg-society's own menu does
+    if balance > 0 then Player.Functions.AddMoney('cash', balance, 'gang-disband') end
     logEvent('Gang disbanded', ('%s (%s) disbanded by %s'):format(label, name, citizenid))
 end)
 
@@ -952,7 +1125,7 @@ RegisterNetEvent('rsg-gangs:server:invitePlayer', function(targetId)
     local gang = findGangByMember(citizenid)
     if not gang then notify(src, locale('error_no_gang'), 'error') return end
 
-    if not hasPermission(gang.members[citizenid].rank, 'invite') then
+    if not hasPermission(gang, citizenid, 'invite') then
         notify(src, locale('error_no_permission'), 'error')
         return
     end
@@ -1029,7 +1202,7 @@ RegisterNetEvent('rsg-gangs:server:acceptInvite', function()
         return
     end
 
-    if not insertMember(gang, Player, Config.DefaultJoinRank) then
+    if not insertMember(gang, Player, 0) then -- level 0 = lowest rank
         notify(src, locale('error_generic'), 'error')
         return
     end
@@ -1068,7 +1241,7 @@ RegisterNetEvent('rsg-gangs:server:kickMember', function(targetCitizenId)
     local gang = findGangByMember(citizenid)
     if not gang then notify(src, locale('error_no_gang'), 'error') return end
 
-    if not hasPermission(gang.members[citizenid].rank, 'kick') then
+    if not hasPermission(gang, citizenid, 'kick') then
         notify(src, locale('error_no_permission'), 'error')
         return
     end
@@ -1085,61 +1258,63 @@ RegisterNetEvent('rsg-gangs:server:kickMember', function(targetCitizenId)
         return
     end
 
-    if rankWeight(target.rank) >= rankWeight(gang.members[citizenid].rank) then
+    if rankWeight(gang, targetCitizenId) >= rankWeight(gang, citizenid) then
         notify(src, locale('error_no_permission'), 'error')
         return
     end
 
-    if not dbOk('DELETE FROM rsg_gang_members WHERE citizenid = ?', { targetCitizenId }) then
+    local targetName, targetSource = target.name or targetCitizenId, target.source
+    if not removeMemberViaSociety(gang, targetCitizenId) then
         notify(src, locale('error_generic'), 'error')
         return
     end
-    removeMember(gang, targetCitizenId)
 
-    notify(src, locale('success_kicked_member', target.name or targetCitizenId), 'success')
-    if target.source then
-        notify(target.source, locale('success_kicked'), 'inform')
-        TriggerClientEvent('rsg-gangs:client:setState', target.source, { inGang = false })
+    notify(src, locale('success_kicked_member', targetName), 'success')
+    if targetSource then
+        notify(targetSource, locale('success_kicked'), 'inform')
+        TriggerClientEvent('rsg-gangs:client:setState', targetSource, { inGang = false })
     end
     logEvent('Gang kick', ('%s kicked %s from %s'):format(citizenid, targetCitizenId, gang.name))
-    addLog(gang, citizenid, 'kick', target.name or targetCitizenId)
+    addLog(gang, citizenid, 'kick', targetName)
     broadcastGangUpdate(gang)
 end)
 
 RegisterNetEvent('rsg-gangs:server:leaveGang', function()
     local src = source
     if onCooldown(src, 'leave', 2000) then return end
-    local citizenid = getPlayerCitizenId(src)
-    if not citizenid then return end
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player then return end
+    local citizenid = Player.PlayerData.citizenid
     local gang = findGangByMember(citizenid)
     if not gang then notify(src, locale('error_no_gang'), 'error') return end
 
-    local myRank = getRankData(gang.members[citizenid].rank)
     local others = memberCount(gang) - 1
 
-    if myRank and myRank.isLeader and others > 0 then
+    if isBossRank(gang, citizenid) and others > 0 then
         notify(src, locale('error_leader_cannot_leave'), 'error')
         return
     end
 
     -- Last member out: the gang is removed completely (wagon, camp equipment, rows).
     if others == 0 then
-        if not destroyGang(gang) then
+        local label, name = gang.label, gang.name
+        local ok, balance = destroyGang(gang)
+        if not ok then
             notify(src, locale('error_generic'), 'error')
             return
         end
+        if balance > 0 then Player.Functions.AddMoney('cash', balance, 'gang-disband') end
         notify(src, locale('success_left_gang'), 'success')
         TriggerClientEvent('rsg-gangs:client:setState', src, { inGang = false })
-        logEvent('Gang disbanded', ('%s (%s) removed: last member left'):format(gang.label, gang.name))
+        logEvent('Gang disbanded', ('%s (%s) removed: last member left'):format(label, name))
         return
     end
 
-    if not dbOk('DELETE FROM rsg_gang_members WHERE citizenid = ?', { citizenid }) then
+    local leaverName = gang.members[citizenid] and gang.members[citizenid].name or citizenid
+    if not removeMemberViaSociety(gang, citizenid) then
         notify(src, locale('error_generic'), 'error')
         return
     end
-    local leaverName = gang.members[citizenid] and gang.members[citizenid].name or citizenid
-    removeMember(gang, citizenid)
     addLog(gang, nil, 'left', leaverName)
 
     notify(src, locale('success_left_gang'), 'success')
@@ -1157,8 +1332,7 @@ local function changeRank(src, targetCitizenId, direction)
     local gang = findGangByMember(citizenid)
     if not gang then notify(src, locale('error_no_gang'), 'error') return end
 
-    local permission = direction == 1 and 'promote' or 'demote'
-    if not hasPermission(gang.members[citizenid].rank, permission) then
+    if not hasPermission(gang, citizenid, direction == 1 and 'promote' or 'demote') then
         notify(src, locale('error_no_permission'), 'error')
         return
     end
@@ -1170,41 +1344,43 @@ local function changeRank(src, targetCitizenId, direction)
         return
     end
 
-    local myWeight = rankWeight(gang.members[citizenid].rank)
-    local targetWeight = rankWeight(target.rank)
+    local myWeight = rankWeight(gang, citizenid)
+    local targetWeight = rankWeight(gang, targetCitizenId)
 
     if targetWeight >= myWeight then
         notify(src, locale('error_rank_too_high'), 'error')
         return
     end
 
-    local targetRank = getRankData(target.rank)
-    if direction == -1 and targetRank and targetRank.isLeader then
+    local targetInfo = rankInfo(gang.name, targetWeight)
+    if direction == -1 and targetInfo and targetInfo.boss then
         notify(src, locale('error_cannot_demote_leader'), 'error')
         return
     end
 
-    local newRank = rankByWeight[targetWeight + direction]
-    if not newRank then
+    local newInfo = rankInfo(gang.name, targetWeight + direction)
+    if not newInfo then
         notify(src, locale('error_rank_limit'), 'error')
         return
     end
-    if newRank.weight >= myWeight then
+    if newInfo.level >= myWeight then
         notify(src, locale('error_rank_too_high'), 'error')
         return
     end
 
-    if not dbOk('UPDATE rsg_gang_members SET rank = ? WHERE citizenid = ?', { newRank.name, targetCitizenId }) then
+    local ok, res = pcall(function() return exports['rsg-society']:SetMemberLevel(gang.name, targetCitizenId, newInfo.level) end)
+    if not ok or not res then
         notify(src, locale('error_generic'), 'error')
         return
     end
-    target.rank = newRank.name
+    syncMembers(gang)
 
-    addLog(gang, citizenid, direction == 1 and 'promote' or 'demote', target.name or targetCitizenId, newRank.label)
+    local targetName = target.name or targetCitizenId
+    addLog(gang, citizenid, direction == 1 and 'promote' or 'demote', targetName, newInfo.name)
     local key = direction == 1 and 'success_promoted' or 'success_demoted'
-    notify(src, locale(key, target.name or targetCitizenId, newRank.label), 'success')
+    notify(src, locale(key, targetName, newInfo.name), 'success')
     if target.source then
-        notify(target.source, locale(key, target.name or targetCitizenId, newRank.label), 'inform')
+        notify(target.source, locale(key, targetName, newInfo.name), 'inform')
     end
     broadcastGangUpdate(gang)
 end
@@ -1217,6 +1393,24 @@ RegisterNetEvent('rsg-gangs:server:demoteMember', function(targetCitizenId)
     changeRank(source, targetCitizenId, -1)
 end)
 
+-- Makes `targetCitizenId` the boss rank and steps `fromCitizenId` (when given) one rank down.
+-- Shared by the player menu and the admin panel. Returns true on success.
+local function handOverLeadership(gang, targetCitizenId, fromCitizenId)
+    local top, below = topLevels(gang.name)
+    if not top or not below then return false, 'error_rank_limit' end
+
+    local ok, res = pcall(function() return exports['rsg-society']:SetMemberLevel(gang.name, targetCitizenId, top) end)
+    if not ok or not res then return false, 'error_generic' end
+    if fromCitizenId and fromCitizenId ~= targetCitizenId then
+        pcall(function() exports['rsg-society']:SetMemberLevel(gang.name, fromCitizenId, below) end)
+    end
+    pcall(function() exports['rsg-society']:SetGangOwner(gang.name, targetCitizenId) end)
+    forgetLive(gang.name)
+    syncMembers(gang)
+    return true
+end
+RSGGangs.HandOverLeadership = handOverLeadership
+
 RegisterNetEvent('rsg-gangs:server:transferLeadership', function(targetCitizenId)
     local src = source
     if onCooldown(src, 'transfer', 2000) then return end
@@ -1225,9 +1419,7 @@ RegisterNetEvent('rsg-gangs:server:transferLeadership', function(targetCitizenId
     local gang = findGangByMember(citizenid)
     if not gang then notify(src, locale('error_no_gang'), 'error') return end
 
-    local me = gang.members[citizenid]
-    local myRank = getRankData(me.rank)
-    if not myRank or not myRank.isLeader then
+    if not isBossRank(gang, citizenid) then
         notify(src, locale('error_no_permission'), 'error')
         return
     end
@@ -1239,36 +1431,22 @@ RegisterNetEvent('rsg-gangs:server:transferLeadership', function(targetCitizenId
         return
     end
 
-    local leaderRank = getRankData(Config.DefaultLeaderRank) or myRank
-    local stepDown = rankByWeight[leaderRank.weight - 1]
-    if not stepDown then
-        notify(src, locale('error_rank_limit'), 'error')
-        return
-    end
-
-    local ok = dbTransaction({
-        { query = 'UPDATE rsg_gang_members SET rank = ? WHERE citizenid = ?', values = { leaderRank.name, targetCitizenId } },
-        { query = 'UPDATE rsg_gang_members SET rank = ? WHERE citizenid = ?', values = { stepDown.name, citizenid } },
-        { query = 'UPDATE rsg_gangs SET owner = ? WHERE name = ?', values = { targetCitizenId, gang.name } },
-    })
+    local targetName, targetSource = target.name or targetCitizenId, target.source
+    local ok, errKey = handOverLeadership(gang, targetCitizenId, citizenid)
     if not ok then
-        notify(src, locale('error_generic'), 'error')
+        notify(src, locale(errKey), 'error')
         return
     end
 
-    target.rank = leaderRank.name
-    me.rank = stepDown.name
-    gang.owner = targetCitizenId
-
-    notify(src, locale('success_leadership_transferred', target.name or targetCitizenId), 'success')
-    if target.source then notify(target.source, locale('notify_now_leader', gang.label), 'inform') end
+    notify(src, locale('success_leadership_transferred', targetName), 'success')
+    if targetSource then notify(targetSource, locale('notify_now_leader', gang.label), 'inform') end
     logEvent('Gang leadership', ('%s handed %s to %s'):format(citizenid, gang.name, targetCitizenId))
-    addLog(gang, citizenid, 'transfer', target.name or targetCitizenId)
+    addLog(gang, citizenid, 'transfer', targetName)
     broadcastGangUpdate(gang)
 end)
 
 ---------------------------------------------------------------------
--- Bank
+-- Bank (the account lives in rsg-society)
 ---------------------------------------------------------------------
 RegisterNetEvent('rsg-gangs:server:depositMoney', function(amount)
     local src = source
@@ -1279,7 +1457,7 @@ RegisterNetEvent('rsg-gangs:server:depositMoney', function(amount)
     local gang = findGangByMember(citizenid)
     if not gang then notify(src, locale('error_no_gang'), 'error') return end
 
-    if not hasPermission(gang.members[citizenid].rank, 'deposit') then
+    if not hasPermission(gang, citizenid, 'deposit') then
         notify(src, locale('error_no_permission'), 'error')
         return
     end
@@ -1326,7 +1504,7 @@ RegisterNetEvent('rsg-gangs:server:withdrawMoney', function(amount)
     local gang = findGangByMember(citizenid)
     if not gang then notify(src, locale('error_no_gang'), 'error') return end
 
-    if not hasPermission(gang.members[citizenid].rank, 'withdraw') then
+    if not hasPermission(gang, citizenid, 'withdraw') then
         notify(src, locale('error_no_permission'), 'error')
         return
     end
@@ -1360,8 +1538,18 @@ RegisterNetEvent('rsg-gangs:server:withdrawMoney', function(amount)
 end)
 
 ---------------------------------------------------------------------
--- Rename / colour
+-- Rename / colour (stored in rsg-society)
 ---------------------------------------------------------------------
+-- Changes label, colour and/or tag through rsg-society. Returns true, or false and the failure key.
+local function setGangInfo(gang, data)
+    local ok, res, reason = pcall(function() return exports['rsg-society']:SetGangInfo(gang.name, data) end)
+    forgetLive(gang.name)
+    if not ok then return false, 'sv_err_unknown' end
+    if not res then return false, reason end
+    return true
+end
+RSGGangs.SetGangInfo = setGangInfo
+
 RegisterNetEvent('rsg-gangs:server:renameGang', function(newLabel)
     local src = source
     if onCooldown(src, 'rename', 2000) then return end
@@ -1370,7 +1558,7 @@ RegisterNetEvent('rsg-gangs:server:renameGang', function(newLabel)
     local gang = findGangByMember(citizenid)
     if not gang then notify(src, locale('error_no_gang'), 'error') return end
 
-    if not hasPermission(gang.members[citizenid].rank, 'rename') then
+    if not hasPermission(gang, citizenid, 'rename') then
         notify(src, locale('error_no_permission'), 'error')
         return
     end
@@ -1381,11 +1569,8 @@ RegisterNetEvent('rsg-gangs:server:renameGang', function(newLabel)
         return
     end
 
-    if not dbOk('UPDATE rsg_gangs SET label = ? WHERE name = ?', { newLabel, gang.name }) then
-        notify(src, locale('error_generic'), 'error')
-        return
-    end
-    gang.label = newLabel
+    local ok, reason = setGangInfo(gang, { label = newLabel })
+    if not ok then notifyFail(src, reason) return end
     addLog(gang, citizenid, 'rename', newLabel)
 
     notify(src, locale('success_renamed', newLabel), 'success')
@@ -1400,7 +1585,7 @@ RegisterNetEvent('rsg-gangs:server:setColor', function(color)
     local gang = findGangByMember(citizenid)
     if not gang then notify(src, locale('error_no_gang'), 'error') return end
 
-    if not hasPermission(gang.members[citizenid].rank, 'setcolor') then
+    if not hasPermission(gang, citizenid, 'setcolor') then
         notify(src, locale('error_no_permission'), 'error')
         return
     end
@@ -1411,15 +1596,82 @@ RegisterNetEvent('rsg-gangs:server:setColor', function(color)
     end
     if not valid then return end
 
-    if not dbOk('UPDATE rsg_gangs SET color = ? WHERE name = ?', { color, gang.name }) then
-        notify(src, locale('error_generic'), 'error')
-        return
-    end
-    gang.color = color
+    local ok, reason = setGangInfo(gang, { color = color })
+    if not ok then notifyFail(src, reason) return end
     addLog(gang, citizenid, 'color')
 
     notify(src, locale('success_color_set'), 'success')
     broadcastGangUpdate(gang)
+end)
+
+---------------------------------------------------------------------
+-- Changes made in rsg-society's own menu reach this resource through its events
+---------------------------------------------------------------------
+local broadcastPending = {}
+local function scheduleBroadcast(name)
+    if broadcastPending[name] then return end
+    broadcastPending[name] = true
+    SetTimeout(300, function()
+        broadcastPending[name] = nil
+        local gang = Gangs[name]
+        if gang and not rawget(gang, 'destroyed') then broadcastGangUpdate(gang) end
+    end)
+end
+
+AddEventHandler('rsg-society:server:memberJoined', function(name)
+    local gang = Gangs[name]
+    if not gang then return end
+    syncMembers(gang)
+    scheduleBroadcast(name)
+end)
+
+AddEventHandler('rsg-society:server:memberLeft', function(name, citizenid)
+    local gang = Gangs[name]
+    if not gang then return end
+    syncMembers(gang)
+    scheduleBroadcast(name)
+    local Player = type(citizenid) == 'string' and RSGCore.Functions.GetPlayerByCitizenId(citizenid)
+    if Player and not findGangByMember(citizenid) then
+        TriggerClientEvent('rsg-gangs:client:setState', Player.PlayerData.source, { inGang = false })
+    end
+end)
+
+AddEventHandler('rsg-society:server:rankChanged', function(name)
+    local gang = Gangs[name]
+    if not gang then return end
+    forgetLive(name)
+    syncMembers(gang)
+    scheduleBroadcast(name)
+end)
+
+AddEventHandler('rsg-society:server:gangCreated', function(name)
+    CreateThread(function()
+        local gang = loadGang(name)
+        if gang then scheduleBroadcast(name) end
+    end)
+end)
+
+AddEventHandler('rsg-society:server:gangDisbanded', function(name, memberIds)
+    local gang = Gangs[name]
+    if not gang then return end
+    CreateThread(function() cleanupGang(gang, memberIds) end)
+end)
+
+AddEventHandler('rsg-society:server:gangUpdated', function(name)
+    local gang = Gangs[name]
+    if not gang then return end
+    forgetLive(name)
+    local info = societyInfo(name)
+    if info then ensureGangRow(name, info) end
+    syncMembers(gang)
+    scheduleBroadcast(name)
+    if RSGGangs.PushTerritories then RSGGangs.PushTerritories() end
+end)
+
+AddEventHandler('rsg-society:server:balanceChanged', function(name)
+    if not Gangs[name] then return end
+    liveCache[name] = nil
+    scheduleBroadcast(name)
 end)
 
 ---------------------------------------------------------------------

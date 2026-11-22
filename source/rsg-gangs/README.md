@@ -2,7 +2,9 @@
 
 Player-run gangs ("outfits") for the RSG Framework: ranks and permissions, a shared bank, a chuck wagon that acts as the gang base, deployable camp equipment, crafting stations and an upgradable strongbox stash.
 
-Version 3.4.1. Full reference: [DOCS.md](DOCS.md).
+Version 3.5.0. Full reference: [DOCS.md](DOCS.md).
+
+Gang membership, ranks, permissions and the bank are handled by **rsg-society**. rsg-gangs adds the gameplay: wagon, camp equipment, crafting, strongbox, turf, bounties, rivals and the staff panel.
 
 ## Dependencies
 
@@ -11,6 +13,7 @@ Version 3.4.1. Full reference: [DOCS.md](DOCS.md).
 - rsg-target
 - rsg-gizmo
 - rsg-wellpump
+- rsg-society (3.1.0 or newer)
 - oxmysql
 
 No ox_lib and no ox_target are needed.
@@ -52,6 +55,7 @@ ensure rsg-inventory
 ensure rsg-target
 ensure rsg-gizmo
 ensure rsg-wellpump
+ensure rsg-society
 ensure rsg-gangs
 ```
 
@@ -73,7 +77,7 @@ Everything is in `shared/config.lua`.
 | `Config.MaxMembers` | per file | Member limit (0 = unlimited) |
 | `Config.MaxBankBalance` | `2000000000` | Largest balance a gang bank may hold |
 | `Config.InviteExpireSeconds` | `120` | How long an invite stays valid |
-| `Config.Ranks` | per file | Rank names, weights and permissions |
+| `Config.Ranks` | per file | Rank choices in the staff panel only. Real ranks and permissions are set per gang in rsg-society |
 | `Config.Notify.duration` | `5000` | Notification length in ms |
 | `Config.Logging` | disabled | Send events to rsg-log (`enabled`, `channel`) |
 | `Config.AllowPushToTalkWhileOpen` | `true` | Keep push-to-talk usable while the UI is open |

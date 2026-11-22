@@ -1,12 +1,12 @@
 # rsg-gangs
 
-Version 3.4.1. Gang System for RSG Framework
+Version 3.5.0. Gang System for RSG Framework
 
-Player-run gangs ("outfits") for the RSG Framework: ranks and permissions, a shared bank, a chuck wagon that acts as the gang base, deployable camp equipment, crafting stations and an upgradable strongbox stash. Version 3.4.1. Full reference: [DOCS.md](DOCS.md). - rsg-core
+Player-run gangs ("outfits") for the RSG Framework: ranks and permissions, a shared bank, a chuck wagon that acts as the gang base, deployable camp equipment, crafting stations and an upgradable strongbox stash. Version 3.5.0. Full reference: [DOCS.md](DOCS.md). Gang membership, ranks, permissions and the bank are handled by **rsg-society**. rsg-gangs adds the gameplay: wagon, camp equipment, craf
 
 Source: https://github.com/Rexshack-RedM/rsg-gangs
 
-**Dependencies:** `rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-gizmo`, `rsg-wellpump`, `oxmysql`
+**Dependencies:** `rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-gizmo`, `rsg-wellpump`, `rsg-society`, `oxmysql`
 
 Has NUI (`ui_page`).
 
@@ -22,7 +22,7 @@ Has NUI (`ui_page`).
 
 ## Event handlers
 
-**server:** `RSGCore:Server:OnPlayerKilled`, `RSGCore:Server:OnPlayerUnload`, `RSGCore:Server:PlayerLoaded`, `rsg-bountyhunter:server:posterClosed`
+**server:** `RSGCore:Server:OnPlayerKilled`, `RSGCore:Server:OnPlayerUnload`, `RSGCore:Server:PlayerLoaded`, `rsg-bountyhunter:server:posterClosed`, `rsg-society:server:balanceChanged`, `rsg-society:server:gangCreated`, `rsg-society:server:gangDisbanded`, `rsg-society:server:gangUpdated`, `rsg-society:server:memberJoined`, `rsg-society:server:memberLeft`, `rsg-society:server:rankChanged`, `rsg-society:server:ready`
 
 ## Callbacks (RSGCore.Functions.CreateCallback)
 

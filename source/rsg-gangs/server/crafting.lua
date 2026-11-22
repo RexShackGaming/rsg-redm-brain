@@ -34,7 +34,7 @@ RegisterNetEvent('rsg-gangs:server:craftItem', function(stationId, recipeId)
     local gang = RSGGangs.FindGangByMember(citizenid)
     if not gang then RSGGangs.Notify(src, locale('error_no_gang'), 'error') return end
 
-    if not RSGGangs.HasPermission(gang.members[citizenid].rank, 'equipment') then
+    if not RSGGangs.HasPermission(gang, citizenid, 'equipment') then
         RSGGangs.Notify(src, locale('error_no_permission'), 'error')
         return
     end
@@ -109,7 +109,7 @@ local function canUsePump(src)
     local gang = RSGGangs.FindGangByMember(citizenid)
     if not gang then RSGGangs.Notify(src, locale('error_no_gang'), 'error') return false end
 
-    if cfg.requirePermission and not RSGGangs.HasPermission(gang.members[citizenid].rank, 'equipment') then
+    if cfg.requirePermission and not RSGGangs.HasPermission(gang, citizenid, 'equipment') then
         RSGGangs.Notify(src, locale('error_no_permission'), 'error')
         return false
     end

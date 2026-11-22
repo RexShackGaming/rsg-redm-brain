@@ -94,7 +94,7 @@ local function memberContext(src, permission)
     if not citizenid then return end
     local gang = RSGGangs.FindGangByMember(citizenid)
     if not gang then RSGGangs.Notify(src, locale('error_no_gang'), 'error') return end
-    if permission and not RSGGangs.HasPermission(gang.members[citizenid].rank, permission) then
+    if permission and not RSGGangs.HasPermission(gang, citizenid, permission) then
         RSGGangs.Notify(src, locale('error_no_permission'), 'error')
         return
     end
@@ -256,7 +256,7 @@ RegisterNetEvent('rsg-gangs:server:requestLogs', function()
     if not (cfg and cfg.enabled) or RSGGangs.OnCooldown(src, 'logs', 2000) then return end
     local gang, citizenid = memberContext(src)
     if not gang then return end
-    if RSGGangs.RankWeight(gang.members[citizenid].rank) < (cfg.minWeight or 0) then
+    if RSGGangs.RankWeight(gang, citizenid) < (cfg.minWeight or 0) then
         RSGGangs.Notify(src, locale('error_no_permission'), 'error')
         return
     end
@@ -405,7 +405,7 @@ RSGCore.Functions.CreateCallback('rsg-gangs:server:bountyTargets', function(src,
     if not (cfg and cfg.enabled) or RSGGangs.OnCooldown(src, 'bountyTargets', 800) then cb({}) return end
     local citizenid = RSGGangs.GetPlayerCitizenId(src)
     local gang = citizenid and RSGGangs.FindGangByMember(citizenid)
-    if not gang or not RSGGangs.HasPermission(gang.members[citizenid].rank, 'bounty') then cb({}) return end
+    if not gang or not RSGGangs.HasPermission(gang, citizenid, 'bounty') then cb({}) return end
 
     local out = {}
     if kind == 'player' and cfg.targetPlayers ~= false then
@@ -610,11 +610,11 @@ RegisterNetEvent('rsg-gangs:server:setTag', function(tag)
         return
     end
     local value = tag ~= '' and tag or nil
-    if not RSGGangs.DbOk('UPDATE rsg_gangs SET tag = ? WHERE name = ?', { value, gang.name }) then
+    local saved = RSGGangs.SetGangInfo(gang, { tag = value or '' })
+    if not saved then
         RSGGangs.Notify(src, locale('error_generic'), 'error')
         return
     end
-    gang.tag = value
     RSGGangs.AddLog(gang, citizenid, 'tag', value or '-')
     RSGGangs.Notify(src, locale('success_tag_set', value or '-'), 'success')
     RSGGangs.BroadcastGangUpdate(gang)
