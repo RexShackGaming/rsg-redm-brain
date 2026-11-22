@@ -28,6 +28,13 @@ SvConfig.Webhooks = {
         boardPlaced    = { enabled = true, url = '', color = 5763719 },
         boardRenamed   = { enabled = true, url = '', color = 3447003 },
         boardDeleted   = { enabled = true, url = '', color = 15548997 },
+        noticeEdited   = { enabled = true, url = '', color = 3447003 },
+        noticeFeatured = { enabled = true, url = '', color = 16766720 },
+        noticeReported = { enabled = true, url = '', color = 15105570 },
+        noticeHidden   = { enabled = true, url = '', color = 15548997 },
+        reportsDismissed = { enabled = true, url = '', color = 9807270 },
+        playerBanned   = { enabled = true, url = '', color = 15548997 },
+        playerUnbanned = { enabled = true, url = '', color = 5763719 },
         exploit        = { enabled = true, url = '', color = 10038562 },
     },
 }

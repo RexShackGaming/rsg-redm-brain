@@ -1,8 +1,8 @@
 # rsg-ambush
 
-Version 3.0.1. rsg-ambush - random gang ambushes on the trail
+Version 3.2.0. rsg-ambush - random gang ambushes on the trail
 
-Random gang ambushes for RSG Framework. While a player is riding outside of towns, every `Config.CheckInterval` seconds there's a `Config.TriggerChance`% roll. If it hits (and the server cooldown allows), a gang (O'Driscolls, Lemoyne Raiders, Murfree Brood or Skinner Brothers) spawns ahead of the player, partly on horseback, and attacks. Kill them and search the bodies (rsg-target) for cash, paid 
+Version 3.2.0 · Random gang ambushes for RSG Framework · [Full docs](DOCS.md) While a player is riding outside of towns, every `Config.CheckInterval` seconds the server rolls a chance for an ambush. If it hits (and the cooldown allows), a warning sounds, then a gang (O'Driscolls, Lemoyne Raiders, Murfree Brood or Skinner Brothers) appears ahead of the player, partly on horseback, and attacks. Beat
 
 Source: https://github.com/Rexshack-RedM/rsg-ambush
 
@@ -10,7 +10,7 @@ Source: https://github.com/Rexshack-RedM/rsg-ambush
 
 ## Net events registered
 
-**server:** `rsg-ambush:server:finish`, `rsg-ambush:server:registerPeds`
+**server:** `rsg-ambush:server:claimWin`, `rsg-ambush:server:finish`, `rsg-ambush:server:registerPeds`
 
 **client:** `RSGCore:Client:OnPlayerUnload`, `rsg-ambush:client:force`
 

@@ -10,6 +10,32 @@ Config.InsuranceCost       = 25     -- $ cost to insure a horse
 Config.ReviveCost          = 40     -- $ cost to revive/replace a dead insured horse
 Config.StoreDistance       = 8.0    -- max distance player's mount can be from stable to store it
 Config.PaymentAccount      = 'cash' -- 'cash' or 'bank'
+
+-- ===================== TRANSFERS, BOARDING, RECORDS =====================
+-- Moving a stabled horse to another stable (stable menu > horse > Transfer)
+Config.Transfer = {
+    fee  = 25,      -- $ per transfer (0 = free)
+    time = 5 * 60,  -- seconds the horse is in transit and can't be taken out (0 = instant)
+}
+
+-- Boarding: a horse left in a stable owes a daily fee, paid when you take it out
+Config.Boarding = {
+    enabled  = true,
+    freeDays = 2,   -- days stabled before fees start
+    perDay   = 2,   -- $ per day after the free days
+    maxFee   = 40,  -- $ cap per retrieval (0 = no cap)
+}
+
+-- Horse records: every horse has a brand (prefix + id) and its owners are logged (bought, claimed, gifted, sold...).
+-- Lookup: /horserecord <id or brand> for the jobs below (and admins), or the server exports GetHorseRecord / GetHorseBrand /
+-- FindActiveHorseByNetId for other scripts (e.g. rsg-lawman).
+Config.HorseRecords = {
+    enabled     = true,
+    command     = 'horserecord',
+    brandPrefix = 'RSG',
+    adminAccess = true, -- admins (rsg-core 'admin' permission) can look up records too
+    jobs = { vallaw = true, rholaw = true, blklaw = true, strlaw = true, stdenlaw = true },
+}
 Config.WhistleStopDistance = 1.0 -- whistled horse stops this many meters in front of the player (measured to the horse's nose)
 Config.WhistleAnim = 'WHISTLEHORSESHORT' -- whistle sound + animation played on H ('WHISTLEHORSESHORT', 'WHISTLEHORSELONG', 'WHISTLEHORSEDOUBLE'), false to disable
 Config.WhistleSpawnDistance = 12.0 -- when moved closer, the horse is placed on open ground about this far away (preferring behind you) with a clear run to you
@@ -177,6 +203,9 @@ Config.HorseInventory = {
     requireSaddlebags = true, -- true: the horse stash can only be opened when saddlebags are fitted (tack); false: always accessible
     openAnim          = true, -- play the game's own saddlebag animation (Interaction_LootSaddleBags) before the stash opens
     openAnimDelay     = 1500, -- ms to wait for the animation before the stash opens
+    -- saddlebag upgrades: every saddlebag style above Style 1 adds this much to the stash (a tack item can also set its own `weight` / `slots`)
+    weightPerStyle = 2500, -- grams per style step (0 = off)
+    slotsPerStyle  = 0,    -- extra slots per style step
 }
 
 -- ===================== FLEE =====================
@@ -267,6 +296,7 @@ Config.WildHorse = {
     enabled       = true,
     claimFee      = 0,        -- $ paperwork fee to register the horse (0 = free), taken from Config.PaymentAccount
     claimWindow   = 30 * 60,  -- seconds after breaking it the horse can still be claimed
+    claimCooldown = 15 * 60,  -- seconds a player must wait between wild horse claims (the server can't see the taming, so this caps wild-claim -> sell loops; 0 = off)
     horseDistance = 15.0,     -- the broken horse must be this close to the player (and the stable) to claim it
 }
 
@@ -2477,6 +2507,7 @@ Config.TackBonuses = {
 Config.HorseSell = {
     enabled      = true,
     percent      = 0.5,  -- of the breed's buy price
+    minOwnedSeconds = 30 * 60, -- a horse must have been owned this long before it can be sold (anti-flip; 0 = off)
     perTrainedLevel = 5, -- extra $ per trained level (all stats)
     minPrice     = 5,
     -- appraisal (like the decompiled shop_horse_shop.c / loanshark_sellhorse1.c horse valuation):
@@ -2592,6 +2623,9 @@ Config.HorseRaces = {
     maxSpeed     = 25.0,       -- m/s; faster legs are rejected as teleports
     dismountTimeout = 10,      -- seconds off your horse before the race is forfeited
     leaderboardSize = 5,
+    -- weekly leaderboard prizes: the fastest riders of each race (Monday-Sunday, UTC) win cash, paid when the week ends
+    -- (offline winners get it the next time they log in)
+    weekly = { enabled = true, prizes = { 500, 300, 150 } }, -- $ for 1st, 2nd, 3rd (paid to Config.PaymentAccount)
     blip         = { sprite = 'blip_ambient_horse', color = 'BLIP_MODIFIER_MP_COLOR_8' }, -- rdr3_discoveries textures/blips + blip_modifiers
     races = {
         -- example: replace the checkpoints with your own route (see /raceroute)

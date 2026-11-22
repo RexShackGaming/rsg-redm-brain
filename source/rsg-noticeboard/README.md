@@ -1,5 +1,7 @@
 # rsg-noticeboard
 
+Version 3.3.0 · full reference in [DOCS.md](DOCS.md)
+
 Town notice boards for the RSG Framework (RedM). Players use rsg-target on a bounty board to read notices and pin their own: events, wanted posters, items for sale and more.
 
 ## Features
@@ -9,15 +11,22 @@ Town notice boards for the RSG Framework (RedM). Players use rsg-target on a bou
 - **Posting**: title, body text, https image link with live preview, category and display period
 - **Paid periods**: 1 day, 3 days, 1 week, 2 weeks or 1 calendar month, each with its own price (all configurable)
 - **Expiry and renewal**: the poster is warned before a notice expires (also on login) and can renew it from a popup or from **My Notices**. Expired notices are deleted automatically
-- **Admin tools** (`/noticeadmin`): place new boards with a gizmo (saved to the database, they survive restarts), then teleport to, rename or delete them. View, extend for free or delete any notice, filtered by town
+- **Admin tools** (`/noticeadmin`): place new boards with the rsg-gizmo placement tool (saved to the database, they survive restarts), then teleport to, rename or delete them. View, extend for free or delete any notice, filtered by town
+- **Search, sort and paging**: find notices by text, sort by newest, expiring soon or title; one page is loaded at a time
+- **Edit** your own notices for free, **feature** them for a fee, and **pin** your position so viewers can show it on the map
+- **Reminders**: viewers can ask for a telegram before an event notice expires (rsg-telegram, optional)
+- **Reports and bans**: a report button, auto-hide after several reports, and an admin Reports/Bans panel with posting bans (rsg-reputation penalty optional)
+- **Town treasury**: a share of the fees goes to the town through rsg-economy (optional)
 - **Blips** for placed boards, and boards only spawn when players are within range
 
 ## Requirements
-`rsg-core`, `rsg-target`, `oxmysql` (no ox_lib needed)
+Optional: `rsg-economy` (town treasury), `rsg-reputation` (honor limit and penalty), `rsg-telegram` (reminders). Each feature quietly turns off when its resource is not running.
+
+`rsg-core`, `rsg-target`, `rsg-gizmo`, `oxmysql` (no ox_lib needed)
 
 ## Installation
 1. Put `rsg-noticeboard` in your resources folder.
-2. Add `ensure rsg-noticeboard` after rsg-core, rsg-target and oxmysql.
+2. Add `ensure rsg-noticeboard` after rsg-core, rsg-target, rsg-gizmo and oxmysql.
 3. The database tables are created and upgraded automatically on start. `install.sql` is included if you prefer to run it yourself.
 4. Adjust `shared/config.lua` to suit your server.
 
@@ -33,11 +42,20 @@ Town notice boards for the RSG Framework (RedM). Players use rsg-target on a bou
 | `Config.AllowedImageHosts` | Restrict image links to certain hosts (empty = any https link) |
 | `Config.WarnBeforeExpiry` | How long before expiry the poster is warned |
 | `Config.SessionTimeout` / `Config.SessionDistance` | Anti-exploit: posting only works while at a board |
-| `Config.PlacerKeys` | Keybinds for the admin placement gizmo |
+| `Config.PlaceMaxDistance` | How far from the admin a board may be placed (checked on the server too) |
+| `Config.ExpiryPopup` | Open the renew popup when a notice is about to expire (`false` = notification only) |
+| `Config.AllowPushToTalkWhileOpen` / `Config.PushToTalkControls` | Keep push-to-talk working while the UI is open |
+| `Config.PageSize` / `Config.SearchMaxLength` | Notices per page and the search box length |
+| `Config.AllowEdit` / `Config.AllowPins` | Let posters edit notices and pin their position |
+| `Config.Featured` | `Enabled`, `Price`, `MaxPerTown` for featured notices |
+| `Config.Reminders` | `Enabled`, `Before` (seconds), `MaxPerPlayer` |
+| `Config.Economy` | `Enabled`, `Share`, `Regions` (town to rsg-economy region) |
+| `Config.Reports` | `HideAt`, `MaxPerDay`, `Cooldown`, `BanDays`, `Reasons` |
+| `Config.Reputation` | `MinHonorToPost`, `AbusePenalty` (rsg-reputation) |
 | `Config.AdminPermission` / `Config.AdminCommand` | Who can manage boards and the command name |
 
 ## Placing boards
-`/noticeadmin` → **Place New Board** → enter a name → aim to move the board. Left/Right rotates it, Up/Down changes the height, LMB places it and RMB cancels. All keys can be changed in `Config.PlacerKeys`.
+`/noticeadmin` → **Place New Board** → enter a name → place the board with rsg-gizmo (the controls are shown on screen; they are set in rsg-gizmo's config). The server checks you are standing within `Config.PlaceMaxDistance` of the board before it is saved.
 
 ## Security
 - All fees, prices, durations and categories are checked on the server. The client only sends text and IDs from the config
@@ -45,11 +63,11 @@ Town notice boards for the RSG Framework (RedM). Players use rsg-target on a bou
 - Board data requests are throttled to stop players spamming database queries
 - The town is worked out from the player's position on the server, never from client data
 - A per-player lock stops double-charging and spamming past the notice limit
-- Text is length-checked on the server (UTF-8 aware), image links must be https, and everything is escaped in the UI
+- Text is length-checked on the server (UTF-8 aware) and stripped of control, zero-width and text-direction characters; image links must be plain https links (optionally from `Config.AllowedImageHosts`), and everything is escaped in the UI
 - Admin callbacks check `RSGCore.Functions.HasPermission`
 
 ## Languages
-Includes translations for **en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru**. Every player message, the whole NUI, category and duration names, the placement help text and the Discord webhook embeds come from `locales/<lang>.json`.
+Includes translations for **en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru**. Every player message, the whole NUI, category and duration names, the Discord webhook embeds come from `locales/<lang>.json`.
 
 Set the language with the rsg-core locale convar in `server.cfg` (falls back to `ox:locale`, then `en`):
 ```

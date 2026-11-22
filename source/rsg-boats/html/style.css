@@ -23,6 +23,10 @@ html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden
 .tab.active,.tab:hover{color:var(--rdr-text);border-color:var(--rdr-gold)}
 .cash{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--rdr-muted);margin-bottom:10px;text-align:right}
 .cash b{color:var(--rdr-cost-ok);font-weight:600}
+.cash b.count{color:var(--rdr-text)}
+.cash .gap{display:inline-block;width:18px}
+.up-head{display:flex;align-items:center;gap:10px;margin-bottom:2px}
+.up-head .row-title{flex:1}
 .list{display:flex;flex-direction:column;gap:8px;overflow-y:auto;min-height:60px;max-height:46vh;padding-right:4px}
 .list.short{max-height:22vh}
 .list::-webkit-scrollbar{width:4px}.list::-webkit-scrollbar-thumb{background:var(--rdr-gold-dim)}
@@ -73,12 +77,6 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 .ink-divider{width:70%;height:1px;margin:10px auto 14px;background:linear-gradient(90deg,transparent,var(--rdr-gold-dim),transparent)}
 .modal-text{font-size:14px;color:var(--rdr-muted);font-style:italic;margin-bottom:16px}
 .actions{display:flex;gap:10px;justify-content:center}
-/* placer hud */
-.placer{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);padding:12px 18px;border-radius:3px;border:1px solid var(--rdr-gold-dim);outline:1px solid rgba(0,0,0,.6);outline-offset:-5px;background:linear-gradient(160deg,var(--rdr-panel-2),var(--rdr-panel) 60%,var(--rdr-black));box-shadow:0 20px 60px var(--rdr-shadow);text-align:center}
-.placer-title{text-transform:uppercase;letter-spacing:1.5px;font-weight:600;font-size:14px;margin-bottom:8px}
-.placer-keys{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;font-size:12px;color:var(--rdr-muted)}
-.placer-keys b{color:var(--rdr-text);font-weight:500}
-.placer-pos{margin-top:8px;font-size:11px;color:var(--rdr-muted);font-style:italic;letter-spacing:1px}
 /* admin layout */
 .panel-body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:6px}
 .panel-body::-webkit-scrollbar{width:4px}.panel-body::-webkit-scrollbar-thumb{background:var(--rdr-gold-dim)}

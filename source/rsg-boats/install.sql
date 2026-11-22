@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS `rsg_boats_models` (
   `enabled` TINYINT(1) NOT NULL DEFAULT 1,
   `slots` INT NOT NULL DEFAULT 10,
   `weight` INT NOT NULL DEFAULT 50000,
+  `rent_price` INT NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `model` (`model`)
 );
@@ -18,6 +19,8 @@ CREATE TABLE IF NOT EXISTS `rsg_boats_owned` (
   `label` VARCHAR(64) NOT NULL,
   `purchased` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `yard` INT NULL DEFAULT NULL,
+  `price_paid` INT NULL DEFAULT NULL,
+  `upgrades` TEXT NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `citizenid` (`citizenid`)
 );
@@ -39,5 +42,5 @@ CREATE TABLE IF NOT EXISTS `rsg_boats_settings` (
 );
 
 -- model: femga/rdr3_discoveries vehicles/vehicles_list.lua (0x9FD6BA58 "rowboat")
-INSERT IGNORE INTO `rsg_boats_models` (`model`, `label`, `description`, `price`, `enabled`, `slots`, `weight`)
-VALUES ('rowboat', 'Rowboat', 'A sturdy wooden rowboat for rivers and bayous.', 75, 1, 10, 50000);
+INSERT IGNORE INTO `rsg_boats_models` (`model`, `label`, `description`, `price`, `enabled`, `slots`, `weight`, `rent_price`)
+VALUES ('rowboat', 'Rowboat', 'A sturdy wooden rowboat for rivers and bayous.', 75, 1, 10, 50000, 10);

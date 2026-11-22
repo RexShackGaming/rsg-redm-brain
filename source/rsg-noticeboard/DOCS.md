@@ -1,8 +1,9 @@
-# rsg-noticeboard – Developer Docs
+# rsg-noticeboard 3.3.0 – Developer Docs
 
 ## Dependencies
 - `rsg-core` (locales, notify, callbacks, model loading)
 - `rsg-target` (board interaction)
+- `rsg-gizmo` (admin board placement and server-side placement checks)
 - `oxmysql`
 
 ox_lib is **not** used (migrated in v3.1.0).
@@ -11,8 +12,7 @@ ox_lib is **not** used (migrated in v3.1.0).
 | File | Purpose |
 |---|---|
 | `shared/config.lua` | Main config (boards, durations, categories, towns) |
-| `client/client.lua` | Board spawning, blips, target, NUI bridge, expiry renew prompt |
-| `client/placer.lua` | Admin ghost placer for new boards |
+| `client/client.lua` | Board spawning (diffed on sync), blips, target, NUI focus + push-to-talk, rsg-gizmo placement, expiry renew prompt |
 | `server/server.lua` | Notices, fees, expiry, admin actions, callbacks |
 | `server/sv_config.lua` / `webhooks.lua` | Server-only config and Discord logs |
 | `html/` | NUI (board, admin panel, modals) |
@@ -30,27 +30,45 @@ Registered through a local `registerCallback(name, fn)` wrapper that calls `cb(f
 - Server notifications use `RSGCore:Client:Notify`
 
 ## NUI actions
-`openBoard`, `openAdmin`, `expiryRenew`. NUI callbacks: `close`, `refresh`, `refreshAdmin`, `createNotice`, `renewNotice`, `deleteOwnNotice`, `adminDeleteNotice`, `adminExtendNotice`, `adminDeleteBoard`, `adminRenameBoard`, `adminTeleport`, `adminPlaceBoard`.
+`openBoard`, `openAdmin`, `expiryRenew`. NUI callbacks: `close`, `getNotices`, `getNotice`, `getMyNotices`, `editNotice`, `featureNotice`, `setPin`, `toggleReminder`, `reportNotice`, `setWaypoint`, `adminDismissReports`, `adminRemoveReported`, `adminBanPoster`, `adminUnban`, `refreshAdmin`, `createNotice`, `renewNotice`, `deleteOwnNotice`, `adminDeleteNotice`, `adminExtendNotice`, `adminDeleteBoard`, `adminRenameBoard`, `adminTeleport`, `adminPlaceBoard`.
+
+## Push-to-talk
+While the NUI has focus, `SetNuiFocusKeepInput(true)` is used and every game control except `Config.PushToTalkControls` is blocked each frame, so voice chat keeps working. Set `Config.AllowPushToTalkWhileOpen = false` to fall back to plain focus.
+
+## Placement
+`adminPlaceBoard` closes the UI and calls `exports['rsg-gizmo']:Place(Config.PlacedBoardModel, { rotation = 'z', maxDistance = Config.PlaceMaxDistance })`. The result is sent to `saveBoard`, which re-checks it with `rsg-gizmo:IsPlacementValid` and `SanitiseRotation`.
+
+## Security model
+3.3.0 additions: every new callback validates its arguments on the server; paging, search (LIKE characters escaped) and sorting use a whitelist; the map pin uses the server-side player position, never client coordinates; reports are one per character per notice with a daily limit and cooldown; bans and honor checks are enforced on the server before posting; fees paid to the treasury happen after the charge succeeds.
+
+- Prices, durations and categories come from the config; the client only sends text and ids. Ids are validated as whole numbers.
+- Posting needs a recent board session and the player still near where it was opened, a per-character cooldown, the notice limit, and a per-player lock. The fee is taken last.
+- Known limit: the server cannot know where the game's own (map) bounty boards are, so a modified client can open a board session from anywhere. It still pays the fee and obeys every limit above.
+- Text is stripped of control / zero-width / direction-override characters; invalid UTF-8 is rejected.
+- Image links: https only, no quotes, brackets or spaces, optional host list (`Config.AllowedImageHosts`, exact host match). Every viewer's client loads the image, so set the host list on public servers to stop IP-logging links.
+- Expiry deletes only rows that are still expired at delete time.
 
 ## Language
 `setr rsg:locale "de"` (falls back to `ox:locale`, then `en`). `ui_*` keys are sent to the NUI.
 
 ## Changelog
+- **3.3.0** – search, sort, paging, edit, featured, treasury, reports and bans, reputation, map pin and reminders (see CHANGELOG.md).
+- **3.2.0** – rsg-gizmo placement, push-to-talk support, HTML drop-downs, security hardening and cleanup (see CHANGELOG.md).
 - **3.1.0** – Removed ox_lib: rsg-core locales/notify/callbacks/RequestModel, `cache.ped` → `PlayerPedId()`, ox_target → rsg-target, renew alert/context menu moved into the NUI.
 
 <!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
 
 ## Technical reference
 
-Generated from the source of **rsg-noticeboard 3.1.0**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-noticeboard 3.3.0**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 
-`rsg-core`, `rsg-target`, `oxmysql`
+`rsg-core`, `rsg-target`, `rsg-gizmo`, `oxmysql`. Optional: `rsg-economy` (`DepositTreasury`), `rsg-reputation` (`AddHonor` / `HasHonor`), `rsg-telegram` (`SendTelegram`).
 
 ### Database
 
-Tables: `rsg_noticeboard_boards`, `rsg_noticeboard_notices`.
+Tables: `rsg_noticeboard_boards`, `rsg_noticeboard_notices` (3.3.0 adds `featured`, `edited_at`, `hidden` and pin columns), `rsg_noticeboard_reports`, `rsg_noticeboard_reminders`, `rsg_noticeboard_bans`. Existing tables get the new columns added safely on start.
 
 Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
 For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
@@ -82,15 +100,25 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.TitleMaxLength` | `60` |  |
 | `Config.BodyMaxLength` | `1500` |  |
 | `Config.RequireImage` | `false` |  |
-| `Config.AllowedImageHosts` | `{}` | image links must start with one of these (leave empty table to allow any https link) |
+| `Config.AllowedImageHosts` | `{}` | allowed image hosts, e.g. `{ 'i.imgur.com' }` (empty = any https link) |
 | `Config.Durations` | `table` | durations: seconds OR months = 1 (calendar month) |
 | `Config.Categories` | `table` |  |
 | `Config.WarnBeforeExpiry` | `60 * 60 * 6` | warn the poster 6 hours before expiry |
 | `Config.CheckInterval` | `60` | seconds between expiry checks |
-| `Config.PlacerKeys` | `table` |  |
-| `Config.PlacerRotateSpeed` | `1.5` | degrees per frame |
-| `Config.PlacerHeightSpeed` | `0.01` | metres per frame |
-| `Config.PlacerMaxDistance` | `15.0` | how far from the camera the board can be placed |
+| `Config.ExpiryPopup` | `true` | open the renew popup when a notice is about to expire (false = notification only) |
+| `Config.PlaceMaxDistance` | `8.0` | how far from the admin a board may be placed (checked on the server too) |
+| `Config.AllowPushToTalkWhileOpen` | `true` | block game controls but keep push-to-talk while the UI is open |
+| `Config.PushToTalkControls` | `table` | controls left enabled while the UI is open |
+| `Config.PageSize` | `12` | notices per page |
+| `Config.SearchMaxLength` | `40` | search box length |
+| `Config.AdminListLimit` | `300` | notices shown in the admin panel |
+| `Config.AllowEdit` | `true` | posters may edit their own notice for free |
+| `Config.AllowPins` | `true` | posters may pin their position; viewers get "Show on map" |
+| `Config.Featured` | `{ Enabled = true, Price = 10.00, MaxPerTown = 3 }` | featured notices |
+| `Config.Reminders` | `{ Enabled = true, Before = 3600, MaxPerPlayer = 20 }` | telegram reminders |
+| `Config.Economy` | `table` | `Enabled`, `Share`, `Regions`: fee share paid to the town treasury |
+| `Config.Reports` | `table` | `Enabled`, `HideAt`, `MaxPerDay`, `Cooldown`, `BanDays`, `Reasons` |
+| `Config.Reputation` | `table` | `Enabled`, `MinHonorToPost`, `AbusePenalty` (only online posters can be penalised) |
 | `Config.AdminPermission` | `'admin'` |  |
 | `Config.AdminCommand` | `'noticeadmin'` |  |
 
@@ -100,6 +128,18 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 |---|---|---|---|
 | `rsg-noticeboard:server:getBoards` | server | `` | `server/server.lua` |
 | `rsg-noticeboard:server:getBoardData` | server | `source` | `server/server.lua` |
+| `rsg-noticeboard:server:getNotices` | server | `source, query` (`category`, `search`, `sort`, `page`) | `server/server.lua` |
+| `rsg-noticeboard:server:getNotice` | server | `source, id` (full text, pin, reminder state) | `server/server.lua` |
+| `rsg-noticeboard:server:getMyNotices` | server | `source` | `server/server.lua` |
+| `rsg-noticeboard:server:editNotice` | server | `source, id, data` | `server/server.lua` |
+| `rsg-noticeboard:server:featureNotice` | server | `source, id` | `server/server.lua` |
+| `rsg-noticeboard:server:setPin` | server | `source, id, enable` | `server/server.lua` |
+| `rsg-noticeboard:server:toggleReminder` | server | `source, id` | `server/server.lua` |
+| `rsg-noticeboard:server:reportNotice` | server | `source, id, reason` | `server/server.lua` |
+| `rsg-noticeboard:server:adminDismissReports` | server | `source, id` | `server/server.lua` |
+| `rsg-noticeboard:server:adminRemoveReported` | server | `source, id, ban` | `server/server.lua` |
+| `rsg-noticeboard:server:adminBanPoster` | server | `source, id` | `server/server.lua` |
+| `rsg-noticeboard:server:adminUnban` | server | `source, citizenid` | `server/server.lua` |
 | `rsg-noticeboard:server:createNotice` | server | `source, data` | `server/server.lua` |
 | `rsg-noticeboard:server:renewNotice` | server | `source, noticeId, durationId` | `server/server.lua` |
 | `rsg-noticeboard:server:deleteOwnNotice` | server | `source, noticeId` | `server/server.lua` |

@@ -12,19 +12,24 @@ Boat yards for the RSG Framework. Players buy boats at a yard, launch them, stor
 - **Boat storage**: every owned boat has its own rsg-inventory stash (`boat_<id>`). Target your boat and choose *Boat Storage*, or open your inventory while sitting in it to see the storage in the right-hand panel. Slots and weight are set per model.
 - **Give a boat**: *Give* in *My Boats*, then the other player's server ID. They must be nearby and accept the popup (with a countdown) before it times out. Only one offer per player can be open at a time. The boat keeps its storage and yard.
 - **Movable windows**: drag the title area to move the shop or admin window; double-click it to reset. Positions are remembered per player.
+- **Hire boats**: yards with boats for hire show a *Hire* tab. Pay a fee, get the boat for `Config.Rental.minutes` minutes (the clock starts when it is on the water). Hire boats have no storage and aren't owned; hand one back at any dock or it is taken back when time runs out, with a warning first. Admins set a hire price per model (0 = not for hire).
+- **Storage upgrades**: *Upgrades* on each owned boat (while it is docked at the yard) buys extra storage slots and extra carry weight in levels (`Config.Upgrades`). Totals are capped by `Config.Storage.maxSlots` / `maxWeight`.
+- **Fair sell-back**: the sell-back price is based on what you actually paid (purchase plus upgrades), not the model's current price. Boats bought before this update use the current model price.
+- **Boat limit counter**: the shop shows boats owned / `Config.MaxBoats`, and buying is disabled at the limit.
 - **Auto database install**: tables are created and upgraded on start.
+- **Push-to-talk stays on**: all other game controls are blocked while a boat panel is open, but voice keeps working (`Config.AllowPushToTalkWhileOpen`).
 
 ## Install
-1. Requires `rsg-core`, `rsg-target`, `oxmysql`, `rsg-inventory`. ox_lib is **not** needed.
+1. Requires `rsg-core`, `rsg-target`, `rsg-gizmo`, `oxmysql`, `rsg-inventory`. ox_lib is **not** needed.
 2. Add `ensure rsg-boats` after them in your server.cfg.
-3. Start the server. The tables are created automatically (`Config.AutoInstallDB = true`). To install by hand instead, set it to `false` and run `install.sql`.
+3. Start the server. The tables are created automatically (`Config.AutoDatabase = true`). To install by hand instead, set it to `false` and run `install.sql`.
 4. The first start creates yard #1 (`Config.Yard.defaultName` at `Config.Yard.coords`) with a rowboat for sale.
 
 ## Admin: `/boatadmin`
 **Yards tab**: choose a yard from the dropdown.
 - *Rename*.
 - *Move To My Position*: moves the NPC and blip to where you stand, facing your direction. This resets the yard's launch point and dock.
-- *Launch Point*: pick a boat and press *Spawn Assistant*. Arrow keys move (camera-relative), Q/E rotate, PgUp/PgDn height, Shift fast, Enter save, Backspace cancel.
+- *Launch Point*: pick a boat and press *Spawn Assistant*. A ghost boat appears and is moved with rsg-gizmo (the controls are shown on its HUD); the ghost turns red when it is out of range. Confirm to save, cancel to abort.
 - *Dock & Store Zone*: stand on the dock spot players return to and press *Set Dock At My Position*. *Save Radius* changes only the zone size.
 - *Boats Sold & Stored Here*: *All boats*, or tick the models this yard sells and accepts at its dock.
 - *Delete Yard*: boats stored there can then be collected at any yard.
@@ -45,8 +50,11 @@ Moving or deleting a yard is blocked while a player has a boat out from it.
 | `Config.Dock` | Default radius, radius limits, prompt key/hold time, zone ring |
 | `Config.Transfer` | Enable, max distance, require accept, accept timeout |
 | `Config.Storage` | Enable, default and maximum slots/weight (grams), target distance, show in inventory while in boat |
-| `Config.Placer`, `Config.Keys` | Spawn Assistant speeds and controls |
-| `Config.AutoInstallDB`, `Config.DefaultBoats` | Auto install and the boats added on first install |
+| `Config.Upgrades` | Enable, and the levels for `slots` and `weight` (each level: `price`, `add`; weight in grams) |
+| `Config.Rental` | Enable, hire `minutes`, `warnSeconds` before the boat is taken back |
+| `Config.Placer` | Spawn Assistant: start distance, max distance from the admin, ghost alpha |
+| `Config.AllowPushToTalkWhileOpen`, `Config.PushToTalkControls` | Keep push-to-talk working while the shop, admin panel or transfer popup is open |
+| `Config.AutoDatabase`, `Config.DefaultBoats` | Auto install and the boats added on first install |
 | `Config.Debug` | Console debug output |
 
 All text is in `locales/`: player notifications, prompts, target labels, the whole NUI (`ui_*` keys) and Discord webhook embeds (`wh_*` keys). Included languages: en, de, el, es, fr, ja, nl, pl, pt-br, ro and ru. Locales load through rsg-core (`@rsg-core/shared/locale.lua`); set the language with `setr rsg:locale "de"` in server.cfg (falls back to `ox:locale`, then `en`).
@@ -54,7 +62,7 @@ All text is in `locales/`: player notifications, prompts, target labels, the who
 ## Discord webhooks
 Set these in `server/sv_config.lua`. It is server only, so webhook URLs are never sent to players.
 - `default`: one channel for everything, or give each event its own `url`.
-- Events: `buy`, `sell`, `launch`, `store`, `transfer`, `storage` (off by default, it's noisy), `admin` (yards, docks, launch points, allowed boats, models) and `exploit` (rejected boat claims, admin callbacks without permission).
+- Events: `buy`, `sell`, `launch`, `store`, `transfer`, `rent` (hire boats taken and returned), `upgrade`, `storage` (off by default, it's noisy), `admin` (yards, docks, launch points, allowed boats, models) and `exploit` (rejected boat claims, admin callbacks without permission).
 - Each post is an embed with the details, the character name, citizen ID, server ID and license/Discord identifiers (`showIdentifiers`).
 - `mentionOnExploit`: ping a staff role on exploit alerts.
 - Posts are queued with built-in rate limiting and retries when Discord asks to wait (429), so busy servers don't lose logs.
@@ -62,8 +70,8 @@ Set these in `server/sv_config.lua`. It is server only, so webhook URLs are neve
 
 ## Database
 - `rsg_boats_yards`: yards (coords, launch point, dock, allowed models)
-- `rsg_boats_models`: boats for sale and their storage size
-- `rsg_boats_owned`: owned boats and the yard each is stored at
+- `rsg_boats_models`: boats for sale, their storage size and hire price
+- `rsg_boats_owned`: owned boats, the yard each is stored at, the price paid and the bought upgrades
 - `rsg_boats_settings`: only read once to migrate the old single-yard setup
 - Boat storage is in rsg-inventory's `inventories` table (`boat_<id>`)
 
@@ -74,8 +82,12 @@ Set these in `server/sv_config.lua`. It is server only, so webhook URLs are neve
 - A launch the client never confirms is released after 30 seconds, so the player isn't stuck with a phantom boat out.
 - The client's report of the launched boat is only accepted once, for the right model, near the launch point and not already claimed by another player. A modified client can't claim or delete someone else's entity.
 - Admin callbacks check permission (`Config.AdminPermission` or the `command` ACE). Positions are read from the admin's ped on the server.
+- A boat can't be sold while its storage holds items, so nothing is destroyed silently.
+- Rejected-request (`exploit`) webhooks are limited to one per player and reason every 30 seconds and the webhook queue is capped, so a modified client can't flood Discord or server memory.
 
 ## Changelog
+- **3.2.0**: hire boats (per-model hire price, time limit, warning, return at any dock); storage upgrades (extra slots and carry weight in levels); sell-back is now based on the price paid (new `price_paid` column); boats owned / limit counter in the shop; new `rent` and `upgrade` webhook events; admin models form has a hire price field; 29 new locale keys in all 11 languages. Boat speed upgrades were left out because no verified RedM native exists for boat speed.
+- **3.1.1**: fixed *Set Dock* / *Save Radius* never saving (the dock request was sent with a stray argument); fixed a script error when closing the shop while a transfer offer was open; the Spawn Assistant now uses rsg-gizmo (custom placer, its HUD, `Config.Keys` and 5 locale keys removed); push-to-talk works while a boat panel is open; the shop closes when you die or walk away; selling a boat is refused while its storage still holds items, and its stash row is deleted afterwards; a failed purchase insert refunds the money; transfers re-check distance after the receiver accepts; exploit webhooks are rate limited and the webhook queue is capped; the server stops loading if the database install fails; Enter confirms popups; player ID must be a whole number; `Config.AutoInstallDB` renamed to `Config.AutoDatabase`.
 - **3.1.0**: removed the ox_lib dependency (rsg-core callbacks, notify and locale loader); the transfer accept popup is now part of the boat NUI with a countdown; fixed the giver's request timing out after 10 seconds while the receiver still had time to accept; a player can only have one transfer offer open at a time; boat storage opening has a cooldown; dock ring uses the monochrome house style; dock loop stops checking other yards after storing.
 - **1.1.1**: switched to rsg-target; fixed a transfer race that could duplicate a boat; stale launches now time out; store action has a cooldown; model labels and descriptions are sanitised; boats that sink no longer leave a stale storage target; shop can't be opened twice; remaining hard-coded UI text moved to locales; removed unused code and config.
 

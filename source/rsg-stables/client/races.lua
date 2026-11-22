@@ -143,7 +143,8 @@ local function openRaceDetail(stable, race, back)
     })
     StablesUI.render({
         title = race.label,
-        subtitle = race.best and locale('race_your_best', fmtTime(race.best)) or locale('race_no_best'),
+        subtitle = (race.best and locale('race_your_best', fmtTime(race.best)) or locale('race_no_best'))
+            .. (race.weeklyPrizes and (' • ' .. locale('race_weekly_hint', table.concat(race.weeklyPrizes, ' / '))) or ''),
         options = options,
         back = back,
     })

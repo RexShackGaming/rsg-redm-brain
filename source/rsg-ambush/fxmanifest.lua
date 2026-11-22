@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-ambush - random gang ambushes on the trail'
-version '3.0.1'
+version '3.2.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
@@ -23,6 +23,7 @@ server_scripts {
 }
 files { 'locales/*.json' }
 
+-- optional, used when started: rsg-reputation, rsg-skills, rsg-economy
 dependencies {
     'rsg-core',
     'rsg-inventory',

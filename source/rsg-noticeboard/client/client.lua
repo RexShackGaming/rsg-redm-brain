@@ -1,7 +1,7 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
 local Boards, Spawned, Blips = {}, {}, {}
-local nuiOpen = false
+local nuiOpen, opening, placing = false, false, false
 local uiLocale -- ui_* strings sent to the NUI once
 
 -- locale(key) only returns single strings, so read the json directly to hand the NUI its strings
@@ -20,27 +20,74 @@ local function getUiLocale()
     return uiLocale
 end
 
+local function notify(text, ntype, title, duration)
+    RSGCore.Functions.Notify({ title = title or locale('title'), description = text, type = ntype or 'inform', duration = duration or 5000 })
+end
+
+---------------------------------
+-- NUI focus (keeps push-to-talk working while the UI is open)
+---------------------------------
+local function applyNuiFocus(enable)
+    nuiOpen = enable
+    if enable then
+        SetNuiFocus(true, true)
+        if Config.AllowPushToTalkWhileOpen then SetNuiFocusKeepInput(true) end
+    else
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
+end
+
+-- KeepInput passes every key to the game, so block all controls except push-to-talk while focused
+CreateThread(function()
+    while true do
+        if nuiOpen and Config.AllowPushToTalkWhileOpen then
+            Wait(0)
+            DisableAllControlActions(0)
+            DisableAllControlActions(1)
+            DisableAllControlActions(2)
+            for _, c in ipairs(Config.PushToTalkControls or {}) do
+                EnableControlAction(0, c, true)
+                EnableControlAction(1, c, true)
+                EnableControlAction(2, c, true)
+            end
+        else
+            Wait(250)
+        end
+    end
+end)
+
 ---------------------------------
 -- placed boards
 ---------------------------------
-local function clearBoards()
-    for id, obj in pairs(Spawned) do if DoesEntityExist(obj) then DeleteEntity(obj) end Spawned[id] = nil end
-    for id, blip in pairs(Blips) do RemoveBlip(blip) Blips[id] = nil end
+local function removeBoard(id)
+    local obj = Spawned[id]
+    if obj and DoesEntityExist(obj) then DeleteEntity(obj) end
+    Spawned[id] = nil
+    if Blips[id] then RemoveBlip(Blips[id]) Blips[id] = nil end
 end
 
+-- only touches what changed, so boards do not blink out for everyone when an admin edits one
 local function setBoards(list)
-    clearBoards()
     Boards = list or {}
-    for _, b in ipairs(Boards) do b.coords = vector3(b.x, b.y, b.z) end
-    if Config.ShowBlips then
-        for _, b in ipairs(Boards) do
-            local blip = BlipAddForCoords(1664425300, b.x, b.y, b.z)
-            SetBlipSprite(blip, Config.BlipSprite, true)
-            SetBlipScale(blip, Config.BlipScale)
-            SetBlipName(blip, b.label)
-            Blips[b.id] = blip
+    local keep = {}
+    for _, b in ipairs(Boards) do
+        b.coords = vector3(b.x, b.y, b.z)
+        keep[b.id] = true
+        if Config.ShowBlips then
+            if Blips[b.id] then
+                SetBlipName(Blips[b.id], b.label)
+            else
+                local blip = BlipAddForCoords(1664425300, b.x, b.y, b.z)
+                SetBlipSprite(blip, Config.BlipSprite, true)
+                SetBlipScale(blip, Config.BlipScale)
+                SetBlipName(blip, b.label)
+                Blips[b.id] = blip
+            end
         end
     end
+    for id in pairs(Spawned) do if not keep[id] then removeBoard(id) end end
+    for id in pairs(Blips) do if not keep[id] then removeBoard(id) end end
 end
 
 RegisterNetEvent('rsg-noticeboard:client:syncBoards', setBoards)
@@ -50,20 +97,24 @@ CreateThread(function()
     local model = joaat(Config.PlacedBoardModel)
     while true do
         local pos = GetEntityCoords(PlayerPedId())
+        local loaded = false
         for _, b in ipairs(Boards) do
             local dist = #(pos - b.coords)
             if dist < Config.SpawnDistance and not Spawned[b.id] then
                 RSGCore.Functions.RequestModel(model)
+                loaded = true
                 local obj = CreateObject(model, b.x, b.y, b.z, false, false, false)
-                SetEntityHeading(obj, b.heading + 0.0)
-                FreezeEntityPosition(obj, true)
-                SetEntityInvincible(obj, true)
-                Spawned[b.id] = obj
+                if obj ~= 0 then
+                    SetEntityHeading(obj, b.heading + 0.0)
+                    FreezeEntityPosition(obj, true)
+                    SetEntityInvincible(obj, true)
+                    Spawned[b.id] = obj
+                end
             elseif dist >= Config.SpawnDistance and Spawned[b.id] then
                 DeleteEntity(Spawned[b.id]); Spawned[b.id] = nil
             end
         end
-        SetModelAsNoLongerNeeded(model)
+        if loaded then SetModelAsNoLongerNeeded(model) end
         Wait(2000)
     end
 end)
@@ -72,79 +123,120 @@ end)
 -- NUI
 ---------------------------------
 local function openNui(action, data)
-    nuiOpen = true
-    SetNuiFocus(true, true)
+    applyNuiFocus(true)
     SendNUIMessage({ action = action, data = data, locale = getUiLocale() })
 end
 
 local function openBoard()
+    if opening or nuiOpen then return end
+    opening = true
     local data = RSGCore.Functions.AwaitCallback('rsg-noticeboard:server:getBoardData', 10000)
+    opening = false
     if not data then return end
     openNui('openBoard', data)
 end
 
 local function openAdmin()
     local data = RSGCore.Functions.AwaitCallback('rsg-noticeboard:server:getAdminData', 10000)
-    if not data then RSGCore.Functions.Notify({ title = locale('title'), description = locale('sv_no_permission'), type = 'error' }) return end
+    if not data then notify(locale('sv_no_permission'), 'error') return end
     openNui('openAdmin', data)
 end
 
 RegisterNetEvent('rsg-noticeboard:client:openAdmin', openAdmin)
 
 RegisterNUICallback('close', function(_, cb)
-    nuiOpen = false
-    SetNuiFocus(false, false)
+    applyNuiFocus(false)
     cb('ok')
 end)
 
-RegisterNUICallback('refresh', function(_, cb)
-    cb(RSGCore.Functions.AwaitCallback('rsg-noticeboard:server:getBoardData', 10000) or {})
+-- thin bridges: every one of these is re-validated on the server
+-- action callbacks answer { ok = result }; data callbacks hand the server's table straight to the NUI
+local function bridge(nuiName, callbackName, ...)
+    local fields = { ... }
+    RegisterNUICallback(nuiName, function(data, cb)
+        local args = {}
+        for i, f in ipairs(fields) do args[i] = data[f] end
+        cb({ ok = RSGCore.Functions.AwaitCallback('rsg-noticeboard:server:' .. callbackName, 10000, table.unpack(args, 1, #fields)) })
+    end)
+end
+
+local function dataBridge(nuiName, callbackName, ...)
+    local fields = { ... }
+    RegisterNUICallback(nuiName, function(data, cb)
+        local args = {}
+        for i, f in ipairs(fields) do args[i] = data[f] end
+        cb(RSGCore.Functions.AwaitCallback('rsg-noticeboard:server:' .. callbackName, 10000, table.unpack(args, 1, #fields)) or {})
+    end)
+end
+
+-- browsing
+RegisterNUICallback('getNotices', function(data, cb)
+    cb(RSGCore.Functions.AwaitCallback('rsg-noticeboard:server:getNotices', 10000, data) or {})
 end)
-RegisterNUICallback('refreshAdmin', function(_, cb)
-    cb(RSGCore.Functions.AwaitCallback('rsg-noticeboard:server:getAdminData', 10000) or {})
-end)
+dataBridge('getNotice', 'getNotice', 'id')
+dataBridge('getMyNotices', 'getMyNotices')
+dataBridge('refreshAdmin', 'getAdminData')
+
+-- posting and own notices
 RegisterNUICallback('createNotice', function(data, cb)
     cb({ ok = RSGCore.Functions.AwaitCallback('rsg-noticeboard:server:createNotice', 10000, data) })
 end)
-RegisterNUICallback('renewNotice', function(data, cb)
-    cb({ ok = RSGCore.Functions.AwaitCallback('rsg-noticeboard:server:renewNotice', 10000, data.id, data.duration) })
+RegisterNUICallback('editNotice', function(data, cb)
+    cb({ ok = RSGCore.Functions.AwaitCallback('rsg-noticeboard:server:editNotice', 10000, data.id, data) })
 end)
-RegisterNUICallback('deleteOwnNotice', function(data, cb)
-    cb({ ok = RSGCore.Functions.AwaitCallback('rsg-noticeboard:server:deleteOwnNotice', 10000, data.id) })
+bridge('renewNotice', 'renewNotice', 'id', 'duration')
+bridge('deleteOwnNotice', 'deleteOwnNotice', 'id')
+bridge('featureNotice', 'featureNotice', 'id')
+bridge('setPin', 'setPin', 'id', 'enable')
+bridge('toggleReminder', 'toggleReminder', 'id')
+bridge('reportNotice', 'reportNotice', 'id', 'reason')
+
+-- admin
+bridge('adminDeleteNotice', 'adminDeleteNotice', 'id')
+bridge('adminExtendNotice', 'adminExtendNotice', 'id', 'duration')
+bridge('adminDeleteBoard', 'deleteBoard', 'id')
+bridge('adminRenameBoard', 'renameBoard', 'id', 'label')
+bridge('adminDismissReports', 'adminDismissReports', 'id')
+bridge('adminRemoveReported', 'adminRemoveReported', 'id', 'ban')
+bridge('adminBanPoster', 'adminBanPoster', 'id')
+bridge('adminUnban', 'adminUnban', 'citizenid')
+
+-- "Show on map": sets the game waypoint to a notice's pin
+RegisterNUICallback('setWaypoint', function(data, cb)
+    cb('ok')
+    local x, y = tonumber(data.x), tonumber(data.y)
+    if not x or not y then return end
+    SetNewWaypoint(x + 0.0, y + 0.0)
+    notify(locale('cl_waypoint'), 'success')
 end)
-RegisterNUICallback('adminDeleteNotice', function(data, cb)
-    cb({ ok = RSGCore.Functions.AwaitCallback('rsg-noticeboard:server:adminDeleteNotice', 10000, data.id) })
-end)
-RegisterNUICallback('adminExtendNotice', function(data, cb)
-    cb({ ok = RSGCore.Functions.AwaitCallback('rsg-noticeboard:server:adminExtendNotice', 10000, data.id, data.duration) })
-end)
-RegisterNUICallback('adminDeleteBoard', function(data, cb)
-    cb({ ok = RSGCore.Functions.AwaitCallback('rsg-noticeboard:server:deleteBoard', 10000, data.id) })
-end)
-RegisterNUICallback('adminRenameBoard', function(data, cb)
-    cb({ ok = RSGCore.Functions.AwaitCallback('rsg-noticeboard:server:renameBoard', 10000, data.id, data.label) })
-end)
+
 RegisterNUICallback('adminTeleport', function(data, cb)
     cb('ok')
     local b
     for _, v in ipairs(Boards) do if v.id == data.id then b = v break end end
     if not b then return end
-    nuiOpen = false; SetNuiFocus(false, false)
+    applyNuiFocus(false)
     DoScreenFadeOut(400); Wait(450)
     -- stand 2m in front of the board
     local h = math.rad(b.heading)
     SetEntityCoords(PlayerPedId(), b.x - math.sin(h) * 2.0, b.y + math.cos(h) * 2.0, b.z, false, false, false, false)
     Wait(500); DoScreenFadeIn(400)
 end)
+
 RegisterNUICallback('adminPlaceBoard', function(data, cb)
     cb('ok')
-    nuiOpen = false; SetNuiFocus(false, false)
-    Placer.Start(Config.PlacedBoardModel, function(pos)
-        if not pos then
-            RSGCore.Functions.Notify({ title = locale('title'), description = locale('cl_place_cancel'), type = 'inform' })
+    if placing then return end
+    applyNuiFocus(false)
+    placing = true
+    -- rsg-gizmo's Place blocks until the admin confirms or cancels
+    CreateThread(function()
+        local res = exports['rsg-gizmo']:Place(Config.PlacedBoardModel, { rotation = 'z', maxDistance = Config.PlaceMaxDistance })
+        placing = false
+        if res then
+            RSGCore.Functions.AwaitCallback('rsg-noticeboard:server:saveBoard', 10000,
+                { x = res.coords.x, y = res.coords.y, z = res.coords.z, heading = res.heading, label = data.label })
         else
-            pos.label = data.label
-            RSGCore.Functions.AwaitCallback('rsg-noticeboard:server:saveBoard', 10000, pos)
+            notify(locale('cl_place_cancel'))
         end
         openAdmin()
     end)
@@ -176,9 +268,9 @@ local function formatTime(sec)
 end
 
 RegisterNetEvent('rsg-noticeboard:client:expiryWarning', function(n)
-    RSGCore.Functions.Notify({ title = locale('cl_expiry_title'), description = locale('sv_warn'):format(n.title), type = 'warning', duration = 10000 })
-    if nuiOpen then return end
-    -- renew prompt runs in our own NUI
+    notify(locale('sv_warn'):format(n.title), 'warning', locale('cl_expiry_title'), 10000)
+    -- never grab the mouse from another menu, a dead player or a placement in progress
+    if not Config.ExpiryPopup or nuiOpen or placing or IsPedDeadOrDying(PlayerPedId(), true) then return end
     openNui('expiryRenew', {
         id = n.id,
         title = locale('cl_expiry_title'),
@@ -193,8 +285,9 @@ end)
 ---------------------------------
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
-    clearBoards()
-    Placer.Stop()
+    for id in pairs(Spawned) do removeBoard(id) end
+    for id in pairs(Blips) do removeBoard(id) end
+    if placing then exports['rsg-gizmo']:Cancel() end
     exports['rsg-target']:removeModel(Config.BoardModels, 'rsg_noticeboard_read')
-    if nuiOpen then SetNuiFocus(false, false) end
+    if nuiOpen then applyNuiFocus(false) end
 end)

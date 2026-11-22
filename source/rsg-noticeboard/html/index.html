@@ -26,8 +26,17 @@
             <div class="tabs" id="categoryTabs"></div>
             <button class="wood-btn" id="btnNew" data-i18n="ui_post_notice"></button>
         </div>
+        <div class="toolbar">
+            <input type="text" id="searchBox" class="search" maxlength="40" data-i18n-placeholder="ui_search_ph">
+            <div id="sortDd" class="dd sort"></div>
+        </div>
         <div class="grid" id="noticeGrid"></div>
-        <div class="empty hidden" id="noticeEmpty" data-i18n="ui_empty_board"></div>
+        <div class="empty hidden" id="noticeEmpty"></div>
+        <div class="pager hidden" id="pager">
+            <button class="wood-btn small muted" id="btnPrev" data-i18n="ui_prev"></button>
+            <span id="pageInfo"></span>
+            <button class="wood-btn small muted" id="btnNext" data-i18n="ui_next"></button>
+        </div>
     </div>
 
     <!-- ADMIN -->
@@ -45,12 +54,16 @@
             <div class="tabs">
                 <button class="tab active" data-admintab="boards" data-i18n="ui_tab_boards"></button>
                 <button class="tab" data-admintab="notices" data-i18n="ui_tab_notices"></button>
+                <button class="tab" data-admintab="reports" id="tabReports"></button>
+                <button class="tab" data-admintab="bans" id="tabBans"></button>
             </div>
-            <select id="adminTown" class="town-filter"></select>
+            <div id="adminTown" class="dd town-filter"></div>
             <button class="wood-btn" id="btnPlace" data-i18n="ui_place_board"></button>
         </div>
         <div class="list" id="adminBoards"></div>
         <div class="list hidden" id="adminNotices"></div>
+        <div class="list hidden" id="adminReports"></div>
+        <div class="list hidden" id="adminBans"></div>
     </div>
 
     <!-- MODALS -->
@@ -65,35 +78,54 @@
                 <div class="poster-body" id="viewBody"></div>
                 <div class="poster-foot"><span id="viewAuthor"></span><span id="viewExpires"></span></div>
             </div>
-            <div class="actions"><button class="wood-btn" data-close-modal data-i18n="ui_close"></button></div>
+            <div class="actions wrap">
+                <button class="wood-btn muted hidden" id="btnReport" data-i18n="ui_report"></button>
+                <button class="wood-btn hidden" id="btnRemind"></button>
+                <button class="wood-btn hidden" id="btnMap" data-i18n="ui_show_map"></button>
+                <button class="wood-btn" data-close-modal data-i18n="ui_close"></button>
+            </div>
         </div>
 
         <div class="modal create-modal hidden" id="createModal">
-            <div class="modal-title" data-i18n="ui_create_title"></div>
+            <div class="modal-title" id="createTitle"></div>
             <div class="ink-divider"></div>
             <label><span data-i18n="ui_label_title"></span> <span class="count" id="titleCount"></span></label>
             <input type="text" id="inTitle" maxlength="60" data-i18n-placeholder="ui_ph_title">
             <label data-i18n="ui_label_category"></label>
-            <select id="inCategory"></select>
+            <div id="inCategory" class="dd"></div>
             <label><span data-i18n="ui_label_image"></span> <span class="hint">(https)</span></label>
-            <input type="text" id="inImage" placeholder="https://i.imgur.com/....png">
+            <input type="text" id="inImage" maxlength="500" placeholder="https://i.imgur.com/....png">
             <div class="preview hidden" id="imgPreviewWrap"><img id="imgPreview" alt=""></div>
             <label><span data-i18n="ui_label_body"></span> <span class="count" id="bodyCount"></span></label>
             <textarea id="inBody" rows="7" data-i18n-placeholder="ui_ph_body"></textarea>
-            <label data-i18n="ui_label_period"></label>
-            <div class="durations" id="durationPick"></div>
-            <div class="cost-line"><span data-i18n="ui_fee"></span>: <span id="feeValue">$0.00</span> &middot; <span data-i18n="ui_cash"></span>: <span id="cashValue">$0.00</span></div>
+            <div id="periodBlock">
+                <label data-i18n="ui_label_period"></label>
+                <div class="durations" id="durationPick"></div>
+            </div>
+            <div class="check hidden" id="inFeatured"><span class="box"></span><span id="featLabel"></span></div>
+            <div class="cost-line" id="costLine"><span data-i18n="ui_fee"></span>: <span id="feeValue">$0.00</span> &middot; <span data-i18n="ui_cash"></span>: <span id="cashValue">$0.00</span></div>
             <div class="actions">
                 <button class="wood-btn muted" data-close-modal data-i18n="ui_cancel"></button>
-                <button class="wood-btn" id="btnSubmit" data-i18n="ui_pin"></button>
+                <button class="wood-btn" id="btnSubmit"></button>
             </div>
         </div>
 
-        <div class="modal hidden" id="mineModal">
+        <div class="modal mine-modal hidden" id="mineModal">
             <div class="modal-title" data-i18n="ui_my_notices"></div>
             <div class="ink-divider"></div>
             <div class="list compact" id="mineList"></div>
             <div class="actions"><button class="wood-btn" data-close-modal data-i18n="ui_close"></button></div>
+        </div>
+
+        <div class="modal hidden" id="reportModal">
+            <div class="modal-title" data-i18n="ui_report_title"></div>
+            <div class="ink-divider"></div>
+            <label data-i18n="ui_report_reason"></label>
+            <div id="reportReason" class="dd"></div>
+            <div class="actions">
+                <button class="wood-btn muted" data-close-modal data-i18n="ui_cancel"></button>
+                <button class="wood-btn" id="btnReportOk" data-i18n="ui_report"></button>
+            </div>
         </div>
 
         <div class="modal hidden" id="durationModal">

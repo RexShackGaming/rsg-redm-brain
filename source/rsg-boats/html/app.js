@@ -63,7 +63,7 @@ function confirmModal(title, text, withInput) {
         $('modal-yes').onclick = () => {
             if (!withInput) return done(true);
             const n = Number($('modal-input').value);
-            if (n >= 1) done(n);
+            if (Number.isInteger(n) && n >= 1) done(n);
         };
         $('modal-no').onclick = () => done(false);
     });
@@ -87,6 +87,7 @@ function closeAll() {
 function requestClose() { closeAll(); post('close'); }
 document.querySelectorAll('[data-close]').forEach((b) => b.onclick = requestClose);
 document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !$('modal').classList.contains('hidden')) { $('modal-yes').click(); return; }
     if (e.key === 'Escape' && !$('offer').classList.contains('hidden')) { answerOffer(false); return; }
     if (e.key === 'Escape' && !$('root').classList.contains('hidden')) {
         if (!$('modal').classList.contains('hidden')) { $('modal-no').click(); return; }
@@ -95,18 +96,24 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* ---------- shop ---------- */
+let upBoat = null; // boat id whose upgrades are open
+function showPane(name) {
+    ['buy', 'owned', 'hire', 'upgrades'].forEach((n) => $('tab-' + n).classList.toggle('hidden', n !== name));
+}
 document.querySelectorAll('.tab:not(.atab)').forEach((tb) => tb.onclick = () => {
+    upBoat = null;
     document.querySelectorAll('.tab:not(.atab)').forEach((x) => x.classList.toggle('active', x === tb));
-    $('tab-buy').classList.toggle('hidden', tb.dataset.tab !== 'buy');
-    $('tab-owned').classList.toggle('hidden', tb.dataset.tab !== 'owned');
+    showPane(tb.dataset.tab);
 });
 
 function renderShop() {
     const d = shopData;
     $('cash').textContent = `$${Number(d.cash || 0).toFixed(2)}`;
+    $('boat-count').textContent = d.maxBoats > 0 ? `${d.ownedCount} / ${d.maxBoats}` : String(d.ownedCount);
+    const atLimit = d.maxBoats > 0 && d.ownedCount >= d.maxBoats;
 
     $('tab-buy').innerHTML = d.models.length ? d.models.map((m) => {
-        const afford = d.cash >= m.price;
+        const afford = d.cash >= m.price && !atLimit;
         return `<div class="row">
             <div class="badge-icon">⚓</div>
             <div class="row-body"><div class="row-title">${esc(m.label)}</div><div class="row-desc">${esc(m.description)}</div></div>
@@ -119,11 +126,42 @@ function renderShop() {
             <div class="row-body"><div class="row-title">${esc(b.label)}</div><div class="row-desc">${b.here || b.out ? esc(t('ui_sells_for', b.sellPrice)) : esc(t('ui_stored_at', b.storedAt))}</div></div>
             <div class="row-actions">${b.out ? `<span class="pill ok">${esc(t('ui_on_water'))}</span>` : !b.here ? `<span class="pill">${esc(t('ui_elsewhere'))}</span>` : `
                 <button class="wood-btn small" data-launch="${b.id}" ${d.hasActive ? 'disabled' : ''}>${esc(t('ui_launch'))}</button>
+                ${shopData.canUpgrade ? `<button class="wood-btn small" data-upgrades="${b.id}">${esc(t('ui_upgrades'))}</button>` : ''}
                 ${shopData.canTransfer ? `<button class="wood-btn small" data-transfer="${b.id}" data-label="${esc(b.label)}">${esc(t('ui_give'))}</button>` : ''}
                 <button class="wood-btn small muted" data-sell="${b.id}" data-label="${esc(b.label)}" data-price="${b.sellPrice}">${esc(t('ui_sell'))}</button>`}</div></div>`).join('')
         : `<div class="empty">${esc(t('ui_none_owned'))}</div>`;
 
+    // hire tab only appears when this yard has boats for hire
+    const hire = d.hire || [];
+    $('tab-hire-btn').classList.toggle('hidden', !hire.length);
+    $('tab-hire').innerHTML = hire.length ? hire.map((m) => {
+        const afford = d.cash >= m.rent_price && !d.hasActive;
+        return `<div class="row">
+            <div class="badge-icon">⚓</div>
+            <div class="row-body"><div class="row-title">${esc(m.label)}</div><div class="row-desc">${esc(t('ui_hire_for', d.rentMinutes))}</div></div>
+            <div class="row-actions"><span class="price ${d.cash >= m.rent_price ? '' : 'over'}">$${m.rent_price}</span>
+            <button class="wood-btn small" data-hire="${esc(m.model)}" ${afford ? '' : 'disabled'}>${esc(t('ui_hire'))}</button></div></div>`;
+    }).join('') : '';
+
+    renderUpgrades();
     $('store-row').classList.toggle('hidden', !d.hasActive);
+}
+
+function renderUpgrades() {
+    if (upBoat === null) return;
+    const b = shopData.owned.find((x) => x.id === upBoat);
+    if (!b || !b.ups) { upBoat = null; showPane('owned'); return; }
+    $('tab-upgrades').innerHTML = `<div class="up-head"><button class="circle-btn" data-upback>‹</button><div class="row-title">${esc(t('ui_up_title', b.label))}</div></div>`
+        + b.ups.map((u) => {
+            const next = u.price == null ? esc(t('ui_up_maxed'))
+                : esc(t(u.key === 'slots' ? 'ui_up_next_slots' : 'ui_up_next_weight', u.key === 'slots' ? u.add : (u.add / 1000).toLocaleString()));
+            const afford = u.price != null && shopData.cash >= u.price;
+            return `<div class="row">
+                <div class="badge-icon">⚙</div>
+                <div class="row-body"><div class="row-title">${esc(t('ui_up_' + u.key))}</div><div class="row-desc">${esc(t('ui_up_level', u.level, u.max))} · ${next}</div></div>
+                <div class="row-actions">${u.price == null ? '' : `<span class="price ${afford ? '' : 'over'}">$${u.price}</span>
+                <button class="wood-btn small" data-up="${u.key}" data-boat="${b.id}" ${afford ? '' : 'disabled'}>${esc(t('ui_up_buy'))}</button>`}</div></div>`;
+        }).join('');
 }
 
 document.addEventListener('click', async (e) => {
@@ -134,6 +172,15 @@ document.addEventListener('click', async (e) => {
     } else if (b.dataset.launch) {
         busy = true; const ok = await post('launch', { id: Number(b.dataset.launch) }); busy = false;
         if (ok) closeAll();
+    } else if (b.dataset.hire) {
+        busy = true; const ok = await post('rent', { model: b.dataset.hire }); busy = false;
+        if (ok) closeAll();
+    } else if (b.dataset.upgrades) {
+        upBoat = Number(b.dataset.upgrades); showPane('upgrades'); renderUpgrades();
+    } else if (b.dataset.upback !== undefined) {
+        upBoat = null; showPane('owned');
+    } else if (b.dataset.up) {
+        busy = true; await post('upgrade', { id: Number(b.dataset.boat), key: b.dataset.up }); busy = false;
     } else if (b.dataset.sell) {
         if (await confirmModal(t('ui_sell_title'), t('ui_sell_text', b.dataset.label, b.dataset.price))) {
             busy = true; await post('sell', { id: Number(b.dataset.sell) }); busy = false;
@@ -229,7 +276,7 @@ function renderModels() {
     const d = adminData;
     $('admin-list').innerHTML = d.models.length ? d.models.map((m) => `<div class="row ${m.enabled ? '' : 'disabled'}">
         <div class="badge-icon">⚓</div>
-        <div class="row-body"><div class="row-title">${esc(m.label)}</div><div class="row-desc">${esc(t('ui_model_desc', m.model, m.price, m.slots, (m.weight / 1000).toLocaleString()))}</div></div>
+        <div class="row-body"><div class="row-title">${esc(m.label)}</div><div class="row-desc">${esc(t('ui_model_desc', m.model, m.price, m.slots, (m.weight / 1000).toLocaleString()))}${m.rent_price > 0 ? esc(t('ui_rent_suffix', m.rent_price)) : ''}</div></div>
         <div class="row-actions"><span class="pill ${m.enabled ? 'ok' : ''}">${esc(t(m.enabled ? 'ui_on_sale' : 'ui_hidden'))}</span>
         <button class="wood-btn small" data-edit="${esc(m.model)}">${esc(t('ui_edit'))}</button>
         <button class="wood-btn small muted" data-del="${esc(m.model)}">✕</button></div></div>`).join('')
@@ -280,6 +327,7 @@ function fillForm(m) {
     $('f-enabled').dataset.on = (!m || m.enabled) ? '1' : '0';
     $('f-slots').value = m ? m.slots : 10;
     $('f-weight').value = m ? m.weight / 1000 : 50;
+    $('f-rent').value = m ? (m.rent_price || 0) : 0;
 }
 $('f-enabled').parentElement.onclick = () => { const b = $('f-enabled'); b.dataset.on = b.dataset.on === '1' ? '0' : '1'; };
 $('f-clear').onclick = () => fillForm(null);
@@ -293,8 +341,9 @@ $('f-save').onclick = async () => {
         enabled: $('f-enabled').dataset.on === '1',
         slots: Number($('f-slots').value),
         weight: Number($('f-weight').value),
+        rentPrice: Number($('f-rent').value || 0),
     };
-    if (!data.model || !data.label || !(data.price >= 0) || !(data.slots >= 1) || !(data.weight > 0)) return;
+    if (!data.model || !data.label || !(data.price >= 0) || !(data.slots >= 1) || !(data.weight > 0) || !(data.rentPrice >= 0)) return;
     busy = true; const list = await post('adminSave', data); busy = false;
     if (Array.isArray(list)) { adminData.models = list; renderModels(); fillForm(null); }
 };
@@ -317,6 +366,7 @@ window.addEventListener('message', (e) => {
             shopData = m.data;
             if (m.title) $('shop-title').textContent = m.title;
             if (m.subtitle) $('shop-subtitle').textContent = m.subtitle;
+            upBoat = null;
             document.querySelector('.tab[data-tab="buy"]').click();
             renderShop(); show('shop'); break;
         case 'updateShop':
@@ -341,14 +391,6 @@ window.addEventListener('message', (e) => {
         }
         case 'offerClose':
             $('offer').classList.add('hidden'); break;
-        case 'placer':
-            applyLocales(m.locales);
-            $('placer').classList.toggle('hidden', !m.show);
-            if (m.model) $('placer-model').textContent = m.model;
-            break;
-        case 'placerPos':
-            $('placer-pos').textContent = `X ${m.x.toFixed(2)}   Y ${m.y.toFixed(2)}   Z ${m.z.toFixed(2)}   H ${m.w.toFixed(1)}`;
-            break;
     }
 });
 

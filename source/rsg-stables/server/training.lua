@@ -1,10 +1,8 @@
 -- rsg-stables: horse training (ride XP + paid stable sessions)
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
--- rsg-core server callback with return-style handlers: fn(source, ...) returns the reply values
-local function registerCallback(name, fn)
-    RSGCore.Functions.CreateCallback(name, function(source, cb, ...) cb(fn(source, ...)) end)
-end
+-- error-safe return-style callback wrapper, defined in server/server.lua
+local registerCallback = StablesAPI.registerCallback
 
 local T = Config.Training
 if not (T and T.enabled) then return end
@@ -120,7 +118,10 @@ registerCallback('rsg-stables:server:startTraining', function(source, stat, hors
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return false, locale('player_not_found') end
     if type(stat) ~= 'string' or not T.stats[stat] then return false, locale('training_invalid_stat') end
-    if pending[src] then return false, locale('training_in_progress') end
+    local stale = pending[src]
+    -- a session whose client never finished (crash / closed NUI) expires so the player isn't locked out until relog
+    if stale and GetGameTimer() - stale.startedAt > stale.rounds * T.session.roundMs + 30000 then pending[src], stale = nil, nil end
+    if stale then return false, locale('training_in_progress') end
 
     local horse = getActiveHorse(Player.PlayerData.citizenid)
     if not horse then return false, locale('no_active_horse') end

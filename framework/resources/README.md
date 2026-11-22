@@ -7,7 +7,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | Resource | Description | Exports | Net events |
 |---|---|---|---|
 | [rsg-adminmenu](rsg-adminmenu.md) | A full staff admin panel for RSG Framework (RedM): a React NUI with tiered staff roles, player management, | 0 | 32 |
-| [rsg-ambush](rsg-ambush.md) | rsg-ambush - random gang ambushes on the trail | 0 | 4 |
+| [rsg-ambush](rsg-ambush.md) | rsg-ambush - random gang ambushes on the trail | 0 | 5 |
 | [rsg-ammo](rsg-ammo.md) | Persistent ammunition system for RedM using the RSG Framework. Players refill their weapons by using ammo  | 1 | 7 |
 | [rsg-animations](rsg-animations.md) | Emote & animation menu for RedM (RSG Core). > A Vue.js animation menu that lets players play gestures, dan | 2 | 3 |
 | [rsg-auction](rsg-auction.md) | Real-time auction system for RSG Framework | 0 | 18 |
@@ -17,7 +17,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-barbers](rsg-barbers.md) | Barbershops for RedM (RSG Framework): hair, beard and makeup with a live preview. - Barber NPCs that spawn | 0 | 1 |
 | [rsg-bathing](rsg-bathing.md) | Interactive bathhouse system for RedM servers running the RSG Framework. Players pay for a bath, scrub themsel | 1 | 10 |
 | [rsg-beekeeper](rsg-beekeeper.md) | Beekeeper script for RSG Framework | 0 | 23 |
-| [rsg-boats](rsg-boats.md) | rsg-boats - multi-yard boat shop with dock storing, per-boat storage, transfers and an NUI admin panel | 0 | 6 |
+| [rsg-boats](rsg-boats.md) | rsg-boats - multi-yard boat shop with dock storing, per-boat storage, transfers and an NUI admin panel | 0 | 7 |
 | [rsg-bountyhunter](rsg-bountyhunter.md) | rsg-bountyhunter - hunt wanted outlaws and bring them in dead or alive | 2 | 6 |
 | [rsg-canteen](rsg-canteen.md) | Fill a canteen at water pumps with rsg-target, or straight from rivers and lakes, and drink from it to res | 0 | 4 |
 | [rsg-cards](rsg-cards.md) | Collectable cigarette cards for the RSG Framework | 0 | 27 |
@@ -84,7 +84,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-smelting](rsg-smelting.md) | Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for RSG-Core (RedM) with rsg-target a | 1 | 1 |
 | [rsg-smoking](rsg-smoking.md) | Cigarettes, cigars, pipes and chewing tobacco for the RSG Framework (RedM). Version: 3.0.0 / Dependencie | 0 | 2 |
 | [rsg-society](rsg-society.md) | Societies for the RSG Framework: members, ranks, permissions, finances, payroll, storage, fines, audit trail a | 34 | 9 |
-| [rsg-stables](rsg-stables.md) | Horse and stables script for RSG Framework | 2 | 20 |
+| [rsg-stables](rsg-stables.md) | Horse and stables script for RSG Framework | 5 | 21 |
 | [rsg-stores](rsg-stores.md) | Version 3.6.0 · requires rsg-core, rsg-inventory, rsg-target, rsg-gizmo, oxmysql (no ox_lib) · optional: r | 1 | 22 |
 | [rsg-target](rsg-target.md) | targeting system for RSG RedM Framework | 19 | 6 |
 | [rsg-targetpractise](rsg-targetpractise.md) | Placeable archery and throwing-knife practice targets for RSG Framework | 0 | 18 |

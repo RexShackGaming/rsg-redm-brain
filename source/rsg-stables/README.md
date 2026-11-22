@@ -39,6 +39,11 @@ Horse and stables system for the **RSG Framework** (RedM). Buy, stable, customis
 - **Spooking** – gunfire and explosions near your horse can make it rear up, throw you and bolt. Courage lowers the chance. A spooked horse stays skittish until you **Calm Horse** (rsg-target) or the timer runs out (`Config.HorseSpook`).
 - **Field salvage** – when an uninsured horse dies out in the world its body stays for a while so you can search its saddlebags on the spot (`Config.HorseSalvage`).
 - **Horse races** – checkpoint races run by the stablehands: pay the entry fee, ride your own horse through every checkpoint and beat the goal time for the prize. Timed and validated on the server, with a best-time leaderboard per race (`Config.HorseRaces`). Build routes in-game with `/raceroute`.
+- **Transfer fee and travel time** – moving a horse between stables costs `Config.Transfer.fee` and the horse is in transit for `Config.Transfer.time` seconds.
+- **Boarding fees** – horses left stabled longer than `Config.Boarding.freeDays` cost `perDay` (capped at `maxFee`) to bring out (`Config.Boarding`).
+- **Ownership history and brands** – every horse has a brand (`RSG-0042`) and a logged ownership history. Lawmen (and admins) look it up with `/horserecord` (`Config.HorseRecords`).
+- **Saddlebag upgrades** – better saddlebag styles carry more weight (`Config.HorseInventory.weightPerStyle`, `slotsPerStyle`).
+- **Weekly race prizes** – the fastest riders of each race each week win prizes, paid out automatically (`Config.HorseRaces.weekly`).
 - **Horse training** – ride your horse or pay for training sessions at a stable to level up health, stamina, speed and acceleration.
 - **Horse stimulant** – usable item giving a timed stamina fortify and optional speed boost.
 - **Whistle recall** – whistle (H) to call your horse; it walks up and stops just in front of you, facing you. Teleports closer first if it's too far away, and respawns it if the game has removed it. Either way it's placed on open ground (preferring behind you) that isn't inside a building, rock or water and has a clear run to you, falling back to the nearest road (`Config.WhistleSpawnDistance`).
@@ -137,7 +142,7 @@ All settings live in `shared/config.lua`.
 | `Config.HorseBonding` | Bonding gained per feed / water / brush |
 | `Config.HorseActions` | Horse actions panel on/off, `/horseaction` command, per-action commands, `/horsestop`, rest/sleep regen, the action list (animations, follow offset/speed) and the rear-up key (`rearKey`) |
 | `Config.HorseFlee` | Flee delay, whether fled horses are stored, respawn distance |
-| `Config.WildHorse` | Wild horse claiming on/off, registration fee, claim window after breaking, max horse distance |
+| `Config.WildHorse` | Wild horse claiming on/off, registration fee, claim window after breaking, cooldown between claims, max horse distance |
 | `Config.Breeding` | Cost, foal timer, same-stable, stallion + mare requirement, parent lock and cooldown, stat variance, better-parent chance |
 | `Config.FoalGrowth` | Foal growth on/off, newborn and adult scale, per-day size table (`scaleByDay`), days until adult (`adultAfterDays`, default = end of the Young stage), update interval, ride block, `applyToPurchased`, grown-up notification |
 | `Config.HorseAging` | Young/Old thresholds, lifespan, "days left" warning, minimum stamina for the oldest horses |
@@ -150,7 +155,7 @@ All settings live in `shared/config.lua`.
 | `Config.HorseMedicine` | Item, heal %, refill health core, use distance, cooldown |
 | `Config.HorseReviver` | Item, revive window, use distance, health after revive, bonding lost when the horse goes down |
 | `Config.TackBonuses` | Bonus ranks per tack category (saddle, stirrups, horseshoes, blanket); items can set their own `bonus` |
-| `Config.HorseSell` | Sell back to the stablehand on/off, % of breed price, extra per trained level, minimum price, and the `appraisal` weights (condition, bonding, age stage, shod bonus) |
+| `Config.HorseSell` | Sell back to the stablehand on/off, % of breed price, extra per trained level, minimum price, minimum ownership time before a horse can be sold, and the `appraisal` weights (condition, bonding, age stage, shod bonus) |
 | `Config.HorseSpook` | Spooking on/off, scare radius, base/min chance, throw chance, cooldown, skittish and calmed timers, bolt distance |
 | `Config.HorseSalvage` | Field salvage on/off, how long the body stays, search distance |
 | `Config.HorseRaces` | Races on/off, route builder command, checkpoint radius, max speed check, dismount timeout, leaderboard size, blip and the `races` list (stable, entry fee, prize, goal time, time limit, cooldown, checkpoints) |
@@ -246,6 +251,7 @@ Ride an unowned (wild or stolen) horse to a fence NPC from `Config.HorseFence.lo
 | `/horselead` | Lead your horse by the reins |
 | `/horsestop` | Stop the current horse action (or let go of the reins) |
 | `/horseadmin` (`Config.Admin.command`) | Admin: open the horse admin panel |
+| `/horserecord <id or brand>` (`Config.HorseRecords.command`) | Lawmen (`Config.HorseRecords.jobs`) and admins: show a horse's brand, owner and ownership history |
 | `/raceroute add \| print \| clear` | Admin: build a race route at your position and print it to the F8 console for `Config.HorseRaces.races` |
 
 ### Items
@@ -262,6 +268,9 @@ Ride an unowned (wild or stolen) horse to a fence NPC from `Config.HorseFence.lo
 ---
 
 ## Changelog
+
+**3.7.0**
+- Transfer fee + travel time, boarding fees, ownership history and brands (`/horserecord`), saddlebag weight upgrades, weekly race prizes, and a server-verified flee-store (`fleeStart`). New config blocks: `Config.Transfer`, `Config.Boarding`, `Config.HorseRecords`, `Config.HorseInventory.weightPerStyle/slotsPerStyle`, `Config.HorseRaces.weekly`.
 
 **3.6.0**
 - Optional rsg-skills integration: horsemanship XP for finished training sessions (`Config.Skills`).

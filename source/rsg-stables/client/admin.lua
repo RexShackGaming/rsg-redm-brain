@@ -55,13 +55,6 @@ local function buildStrings()
     return out
 end
 
-local function closePanel()
-    if not uiFocus then return end
-    uiFocus = false
-    applyNuiFocus(false)
-    SendNUIMessage({ action = 'adminClose' })
-end
-
 RegisterNetEvent('rsg-stables:client:openAdmin', function()
     if uiFocus then return end
     uiFocus = true

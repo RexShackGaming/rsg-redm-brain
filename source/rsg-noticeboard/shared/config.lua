@@ -50,7 +50,9 @@ Config.SessionDistance    = 10.0  -- max distance from where the board was opene
 Config.TitleMaxLength     = 60
 Config.BodyMaxLength      = 1500
 Config.RequireImage       = false
--- image links must start with one of these (leave empty table to allow any https link)
+-- only allow image links from these hosts, e.g. { 'i.imgur.com', 'cdn.discordapp.com' }
+-- (leave empty to allow any https link; note that every viewer's client loads the image, so
+--  restricting hosts also stops IP-logging links)
 Config.AllowedImageHosts  = {}
 
 -- durations: seconds OR months = 1 (calendar month)
@@ -72,27 +74,77 @@ Config.Categories = {
 }
 
 ---------------------------------
+-- browsing: the board loads one page of notices at a time (the text is fetched when a notice is opened)
+---------------------------------
+Config.PageSize         = 12
+Config.SearchMaxLength  = 40
+Config.AdminListLimit   = 300 -- notices shown in the admin panel
+
+---------------------------------
+-- editing, featured notices, map pins, reminders
+---------------------------------
+Config.AllowEdit = true  -- posters may edit title, text, image and category of their own notice (free)
+Config.AllowPins = true  -- posters may pin their current position to a notice; viewers get a "Show on map" button
+
+-- featured notices sit first on the board with a badge; extra fee on top of the display period
+Config.Featured = { Enabled = true, Price = 10.00, MaxPerTown = 3 }
+
+-- "Remind me": a telegram (rsg-telegram) shortly before the notice expires, handy for events.
+-- Falls back to a notification when rsg-telegram is not running and the player is online.
+Config.Reminders = { Enabled = true, Before = 3600, MaxPerPlayer = 20 }
+
+---------------------------------
+-- town treasury (rsg-economy): share of every fee paid into the treasury of the notice's town
+-- Regions maps a Config.Towns id to an rsg-economy region id when they differ; towns without a region just keep nothing
+---------------------------------
+Config.Economy = {
+    Enabled = true,
+    Share   = 1.0,
+    Regions = { saintdenis = 'saint_denis', vanhorn = 'van_horn' },
+}
+
+---------------------------------
+-- reports and bans
+-- HideAt: distinct reports that hide a notice until an admin reviews it
+---------------------------------
+Config.Reports = {
+    Enabled    = true,
+    HideAt     = 3,
+    MaxPerDay  = 10,   -- reports one character may file per day
+    Cooldown   = 10,   -- seconds between reports
+    BanDays    = 7,    -- posting ban given by "Remove & ban" / "Ban poster"
+    Reasons    = { 'scam', 'offensive', 'spam', 'other' }, -- labels: locale keys ui_reason_<id>
+}
+
+---------------------------------
+-- reputation (rsg-reputation)
+---------------------------------
+Config.Reputation = {
+    Enabled        = true,
+    MinHonorToPost = -250, -- characters below this honor cannot post (set very low to disable)
+    AbusePenalty   = 15,   -- honor removed from an online poster when an admin removes their reported notice
+}
+
+---------------------------------
 -- expiry
 ---------------------------------
 Config.WarnBeforeExpiry = 60 * 60 * 6 -- warn the poster 6 hours before expiry
 Config.CheckInterval    = 60          -- seconds between expiry checks
+Config.ExpiryPopup      = true        -- open the renew popup when a notice is about to expire (false = notification only)
 
 ---------------------------------
--- prop placer keybinds (admin board placement)
--- hash = RedM control hash, label = text shown in the on-screen help
--- control list: https://github.com/femga/rdr3_discoveries/tree/master/Controls
+-- admin board placement (rsg-gizmo)
 ---------------------------------
-Config.PlacerKeys = {
-    confirm    = { hash = 0x07CE1E61, label = 'LMB' },   -- INPUT_ATTACK
-    cancel     = { hash = 0xF84FA74F, label = 'RMB' },   -- INPUT_AIM
-    rotateLeft = { hash = 0xA65EBAB4, label = 'Left' },  -- INPUT_COVER
-    rotateRight= { hash = 0xDEB34313, label = 'Right' }, -- INPUT_ENTER
-    raise      = { hash = 0x6319DB71, label = 'Up' },    -- INPUT_FRONTEND_UP
-    lower      = { hash = 0x05CA7C52, label = 'Down' },  -- INPUT_FRONTEND_DOWN
+Config.PlaceMaxDistance = 8.0 -- how far from the admin a board may be placed (checked on the server too)
+
+---------------------------------
+-- NUI
+---------------------------------
+-- While the UI is open, block game controls but keep push-to-talk working.
+Config.AllowPushToTalkWhileOpen = true
+Config.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK
 }
-Config.PlacerRotateSpeed = 1.5   -- degrees per frame
-Config.PlacerHeightSpeed = 0.01  -- metres per frame
-Config.PlacerMaxDistance = 15.0  -- how far from the camera the board can be placed
 
 ---------------------------------
 -- admin

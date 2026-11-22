@@ -21,6 +21,8 @@ SvConfig.Webhooks = {
         launch     = { enabled = true, url = '', color = 3447003 },  -- blue
         store      = { enabled = true, url = '', color = 10181046 }, -- purple
         transfer   = { enabled = true, url = '', color = 15844367 }, -- gold
+        rent       = { enabled = true, url = '', color = 3066993 },  -- green (hire boats taken and returned)
+        upgrade    = { enabled = true, url = '', color = 15277667 }, -- pink (storage upgrades)
         storage    = { enabled = false, url = '', color = 9807270 }, -- grey (noisy, off by default)
         admin      = { enabled = true, url = '', color = 1752220 },  -- teal (yards, docks, models)
         exploit    = { enabled = true, url = '', color = 15548997 }, -- red (rejected / suspicious requests)

@@ -24,11 +24,14 @@
     <div class="tabs">
       <button class="tab active" data-tab="buy" data-i18n="ui_tab_buy">For Sale</button>
       <button class="tab" data-tab="owned" data-i18n="ui_tab_owned">My Boats</button>
+      <button class="tab hidden" id="tab-hire-btn" data-tab="hire" data-i18n="ui_tab_hire">Hire</button>
     </div>
     <div class="divider"><span>✦</span></div>
-    <div class="cash"><span data-i18n="ui_cash">Cash:</span> <b id="cash">$0</b></div>
+    <div class="cash"><span data-i18n="ui_boats_label">Boats:</span> <b class="count" id="boat-count">0</b><span class="gap"></span><span data-i18n="ui_cash">Cash:</span> <b id="cash">$0</b></div>
     <div id="tab-buy" class="list"></div>
     <div id="tab-owned" class="list hidden"></div>
+    <div id="tab-hire" class="list hidden"></div>
+    <div id="tab-upgrades" class="list hidden"></div>
     <div class="footer hidden" id="store-row">
       <button class="wood-btn" id="store-btn" data-i18n="ui_store_btn">Store Boat Out On Water</button>
     </div>
@@ -132,6 +135,7 @@
           <label class="toggle"><span class="box" id="f-enabled" data-on="1"></span> <span data-i18n="ui_for_sale">For sale</span></label>
           <div class="labeled"><span class="inline-label" data-i18n="ui_storage_slots">Storage slots</span><input id="f-slots" type="number" min="1" placeholder="10"></div>
           <div class="labeled"><span class="inline-label" data-i18n="ui_max_weight">Max weight (kg)</span><input id="f-weight" type="number" min="1" step="0.5" placeholder="50"></div>
+          <div class="labeled"><span class="inline-label" data-i18n="ui_hire_price">Hire price (0 = off)</span><input id="f-rent" type="number" min="0" placeholder="0"></div>
           <input id="f-desc" placeholder="Description" data-i18n-ph="ui_ph_desc" maxlength="255">
           <div class="form-actions">
             <button class="wood-btn muted" id="f-clear" data-i18n="ui_clear">Clear</button>
@@ -169,16 +173,6 @@
       <button class="wood-btn" id="offer-yes"></button>
     </div>
   </div>
-</div>
-
-<!-- PLACER HUD (no focus) -->
-<div id="placer" class="placer hidden">
-  <div class="placer-title"><span data-i18n="ui_spawn_assistant">Spawn Assistant</span> — <span id="placer-model"></span></div>
-  <div class="placer-keys">
-    <span><b>↑ ↓ ← →</b> <i data-i18n="ui_key_move">Move</i></span><span><b>Q / E</b> <i data-i18n="ui_key_rotate">Rotate</i></span><span><b>PgUp / PgDn</b> <i data-i18n="ui_key_height">Height</i></span>
-    <span><b>Shift</b> <i data-i18n="ui_key_fast">Fast</i></span><span><b>Enter</b> <i data-i18n="ui_key_save">Save</i></span><span><b>Backspace</b> <i data-i18n="ui_cancel">Cancel</i></span>
-  </div>
-  <div class="placer-pos" id="placer-pos"></div>
 </div>
 
 <script src="app.js"></script>

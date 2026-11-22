@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS `rsg_stables_horses` (
   `insured` TINYINT(1) NOT NULL DEFAULT 0,
   `active` TINYINT(1) NOT NULL DEFAULT 0,
   `born` TINYINT(1) NOT NULL DEFAULT 0,
+  `stored_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `transit_until` BIGINT(20) NOT NULL DEFAULT 0,
   `pos_x` FLOAT DEFAULT NULL,
   `pos_y` FLOAT DEFAULT NULL,
   `pos_z` FLOAT DEFAULT NULL,
@@ -63,4 +65,41 @@ CREATE TABLE IF NOT EXISTS `rsg_stables_races` (
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`citizenid`, `race`),
   KEY `race_best` (`race`, `best_ms`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `rsg_stables_history` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `horse_id` INT(11) NOT NULL,
+  `event` VARCHAR(20) NOT NULL,
+  `from_cid` VARCHAR(50) NOT NULL DEFAULT '',
+  `to_cid` VARCHAR(50) NOT NULL DEFAULT '',
+  `price` INT(11) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `horse_id` (`horse_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `rsg_stables_race_weekly` (
+  `citizenid` VARCHAR(50) NOT NULL,
+  `race` VARCHAR(50) NOT NULL,
+  `week` VARCHAR(10) NOT NULL,
+  `best_ms` INT(11) NOT NULL,
+  PRIMARY KEY (`citizenid`, `race`, `week`),
+  KEY `week_race` (`week`, `race`, `best_ms`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `rsg_stables_prizes` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `citizenid` VARCHAR(50) NOT NULL,
+  `amount` INT(11) NOT NULL,
+  `reason` VARCHAR(150) NOT NULL DEFAULT '',
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `citizenid` (`citizenid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `rsg_stables_meta` (
+  `k` VARCHAR(50) NOT NULL,
+  `v` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (`k`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

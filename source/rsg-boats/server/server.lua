@@ -60,6 +60,51 @@ local function allowedAt(yard, model)
     return not yard.models or yard.models[model] == true
 end
 
+-- upgrades / price paid ------------------------------------------------
+local UpgradeKeys = { 'slots', 'weight' }
+
+local function upgradesEnabled()
+    return Config.Upgrades.enabled and Config.Storage.enabled
+end
+
+local function parseUpgrades(raw)
+    local t = type(raw) == 'string' and json.decode(raw) or nil
+    return type(t) == 'table' and t or {}
+end
+
+local function upgradeLevel(ups, key)
+    return math.min(math.max(math.floor(tonumber(ups[key]) or 0), 0), #Config.Upgrades[key])
+end
+
+-- storage size of a boat: the model's own size plus every bought level, capped by the config limits
+local function storageSize(model, ups)
+    local m = Models[model]
+    local slots = m and m.slots or Config.Storage.defaultSlots
+    local weight = m and m.weight or Config.Storage.defaultWeight
+    for i = 1, upgradeLevel(ups, 'slots') do slots = slots + Config.Upgrades.slots[i].add end
+    for i = 1, upgradeLevel(ups, 'weight') do weight = weight + Config.Upgrades.weight[i].add end
+    return math.min(slots, Config.Storage.maxSlots), math.min(weight, Config.Storage.maxWeight)
+end
+
+-- what the player paid in total (purchase + upgrades); boats bought before price tracking use the model's current price
+local function paidFor(row)
+    local paid = tonumber(row.price_paid)
+    if paid then return paid end
+    local m = Models[row.model]
+    return m and m.price or 0
+end
+
+local function upgradeList(row)
+    local ups = parseUpgrades(row.upgrades)
+    local list = {}
+    for _, key in ipairs(UpgradeKeys) do
+        local lvl = upgradeLevel(ups, key)
+        local nxt = Config.Upgrades[key][lvl + 1]
+        list[#list + 1] = { key = key, level = lvl, max = #Config.Upgrades[key], price = nxt and nxt.price or nil, add = nxt and nxt.add or nil }
+    end
+    return list
+end
+
 local function modelArray(set)
     if not set then return nil end
     local list = {}
@@ -169,7 +214,7 @@ local function loadYards()
 end
 
 CreateThread(function()
-    InstallDatabase()
+    if not InstallDatabase() then return end -- tables missing: stay idle instead of erroring on every query
     loadModels()
     loadYards()
     broadcastYards()
@@ -192,6 +237,13 @@ local function modelList(onlyEnabled)
     return list
 end
 
+-- true when the boat's storage stash still holds anything
+local function stashHasItems(ownedId)
+    local ok, inv = pcall(function() return exports['rsg-inventory']:GetInventory('boat_' .. ownedId) end)
+    if not ok or type(inv) ~= 'table' or type(inv.items) ~= 'table' then return false end
+    return next(inv.items) ~= nil
+end
+
 ---------------------------------------------------------------------
 -- shop
 ---------------------------------------------------------------------
@@ -199,28 +251,37 @@ callback('rsg-boats:server:getShopData', function(src, yardId)
     local Player = RSGCore.Functions.GetPlayer(src)
     local yard = Yards[tonumber(yardId) or -1]
     if not Player or not yard then return nil end
-    local owned = MySQL.query.await('SELECT id, model, label, yard FROM rsg_boats_owned WHERE citizenid = ? ORDER BY id ASC',
+    local owned = MySQL.query.await('SELECT id, model, label, yard, price_paid, upgrades FROM rsg_boats_owned WHERE citizenid = ? ORDER BY id ASC',
         { Player.PlayerData.citizenid }) or {}
+    local canUpgrade = upgradesEnabled()
     for _, b in ipairs(owned) do
-        local m = Models[b.model]
-        b.sellPrice = m and math.floor(m.price * Config.SellBackRate) or 0
+        b.sellPrice = math.floor(paidFor(b) * Config.SellBackRate)
         b.out = Active[src] and Active[src].ownedId == b.id or false
         b.here = storedHere(b, yard.id)
         b.storedAt = (not b.here and Yards[b.yard]) and Yards[b.yard].name or nil
-        b.yard = nil
+        b.ups = canUpgrade and upgradeList(b) or nil
+        b.yard, b.price_paid, b.upgrades = nil, nil, nil
+    end
+    local sale, hire = {}, {}
+    for _, m in ipairs(modelList(true)) do
+        if allowedAt(yard, m.model) then
+            sale[#sale + 1] = m
+            if Config.Rental.enabled and (tonumber(m.rent_price) or 0) > 0 then hire[#hire + 1] = m end
+        end
     end
     return {
         yard = yard.id,
         name = yard.name,
-        models = (function()
-            local l = {}
-            for _, m in ipairs(modelList(true)) do if allowedAt(yard, m.model) then l[#l + 1] = m end end
-            return l
-        end)(),
+        models = sale,
+        hire = hire,
+        rentMinutes = Config.Rental.minutes,
         owned = owned,
+        ownedCount = #owned,
+        maxBoats = Config.MaxBoats,
         cash = Player.PlayerData.money[Config.MoneyType] or 0,
         hasActive = Active[src] ~= nil,
         canTransfer = Config.Transfer.enabled,
+        canUpgrade = canUpgrade,
     }
 end)
 
@@ -244,12 +305,28 @@ callback('rsg-boats:server:buy', function(src, yardId, model)
         return false
     end
 
-    MySQL.insert.await('INSERT INTO rsg_boats_owned (citizenid, model, label, yard) VALUES (?, ?, ?, ?)',
-        { Player.PlayerData.citizenid, m.model, m.label, yard.id })
+    local newId = MySQL.insert.await('INSERT INTO rsg_boats_owned (citizenid, model, label, yard, price_paid) VALUES (?, ?, ?, ?, ?)',
+        { Player.PlayerData.citizenid, m.model, m.label, yard.id, m.price })
+    if not newId then
+        -- database error: never keep the money without giving the boat
+        Player.Functions.AddMoney(Config.MoneyType, m.price, 'boat-purchase-refund')
+        notify(src, locale('spawn_failed'), 'error')
+        return false
+    end
     notify(src, locale('bought', m.label, m.price), 'success')
     BoatLog('buy', src, locale('wh_boat_bought'), { { locale('wh_f_boat'), ('%s (%s)'):format(m.label, m.model) }, { locale('wh_f_price'), '$' .. m.price }, { locale('wh_f_yard'), yard.name } })
     return true
 end)
+
+-- a launch that never produced a boat: free the slot and give a hire fee back
+local function releaseLaunch(src, entry)
+    if Active[src] ~= entry then return end
+    Active[src] = nil
+    if entry.rental and entry.paid then
+        local Player = RSGCore.Functions.GetPlayer(src)
+        if Player then Player.Functions.AddMoney(Config.MoneyType, entry.paid, 'boat-rental-refund') end
+    end
+end
 
 callback('rsg-boats:server:launch', function(src, yardId, ownedId)
     local Player = RSGCore.Functions.GetPlayer(src)
@@ -270,7 +347,7 @@ callback('rsg-boats:server:launch', function(src, yardId, ownedId)
     Active[src] = entry
     -- a client that never reports its boat (crash, modified client) must not lock the slot forever
     SetTimeout(30000, function()
-        if Active[src] == entry and not entry.netId then Active[src] = nil end
+        if not entry.netId then releaseLaunch(src, entry) end
     end)
     BoatLog('launch', src, locale('wh_boat_launched'), { { locale('wh_f_boat'), ('%s #%s'):format(row.label, row.id) }, { locale('wh_f_yard'), yard.name } })
     return { model = row.model, label = row.label, spawn = spawn }
@@ -294,11 +371,63 @@ RegisterNetEvent('rsg-boats:server:launched', function(netId)
         if other ~= src and oa.netId == netId then return reject(locale('wh_reason_taken', other)) end
     end
     a.netId = netId
+    -- the hire clock starts when the boat is on the water
+    if a.rental then a.expires = GetGameTimer() + Config.Rental.minutes * 60000 end
 end)
 
 RegisterNetEvent('rsg-boats:server:launchFailed', function()
     local src = source
-    if Active[src] and not Active[src].netId then Active[src] = nil end
+    local a = Active[src]
+    if a and not a.netId then releaseLaunch(src, a) end
+end)
+
+-- hire a boat: no ownership, no storage, taken back when the time is up
+callback('rsg-boats:server:rent', function(src, yardId, model)
+    local Player = RSGCore.Functions.GetPlayer(src)
+    local yard = Yards[tonumber(yardId) or -1]
+    if not Config.Rental.enabled or not Player or not yard or type(model) ~= 'string' then return false end
+    if onCooldown(src) then notify(src, locale('slow_down'), 'error') return false end
+    if not nearYard(src, yard) then notify(src, locale('too_far'), 'error') return false end
+    if Active[src] then notify(src, locale('already_out'), 'error') return false end
+
+    local m = Models[model]
+    local fee = m and math.floor(tonumber(m.rent_price) or 0) or 0
+    if not m or not m.enabled or fee <= 0 or not allowedAt(yard, model) then notify(src, locale('no_boat_model'), 'error') return false end
+    if not Player.Functions.RemoveMoney(Config.MoneyType, fee, 'boat-rental') then notify(src, locale('no_money'), 'error') return false end
+
+    local spawn = getSpawn(yard)
+    local entry = { rental = true, paid = fee, netId = nil, yard = yard.id, model = m.model, spawn = spawn }
+    Active[src] = entry
+    SetTimeout(30000, function()
+        if not entry.netId then releaseLaunch(src, entry) end
+    end)
+    notify(src, locale('rented', m.label, Config.Rental.minutes, fee), 'success')
+    BoatLog('rent', src, locale('wh_boat_rented'), { { locale('wh_f_boat'), ('%s (%s)'):format(m.label, m.model) }, { locale('wh_f_price'), '$' .. fee },
+        { locale('wh_f_duration'), Config.Rental.minutes }, { locale('wh_f_yard'), yard.name } })
+    return { model = m.model, label = m.label, spawn = spawn, rental = true }
+end)
+
+-- hire boats are taken back when the time runs out
+CreateThread(function()
+    while true do
+        Wait(5000)
+        local now = GetGameTimer()
+        for src, a in pairs(Active) do
+            if a.rental and a.expires then
+                local left = a.expires - now
+                if left <= 0 then
+                    local ent = a.netId and NetworkGetEntityFromNetworkId(a.netId) or 0
+                    if ent and ent ~= 0 and DoesEntityExist(ent) then DeleteEntity(ent) end
+                    Active[src] = nil
+                    notify(src, locale('rental_over'), 'inform')
+                    TriggerClientEvent('rsg-boats:client:rentalOver', src)
+                elseif left <= Config.Rental.warnSeconds * 1000 and not a.warned then
+                    a.warned = true
+                    notify(src, locale('rental_ending', math.ceil(left / 1000)), 'warning')
+                end
+            end
+        end
+    end
 end)
 
 -- fromDock = false: shop 'Store Boat' button at yardId; true: dock prompt at yardId's dock
@@ -326,12 +455,19 @@ callback('rsg-boats:server:store', function(src, yardId, fromDock)
         end
     end
 
-    if a.model and not allowedAt(yard, a.model) then
+    if a.model and not a.rental and not allowedAt(yard, a.model) then
         notify(src, locale('dock_not_allowed', yard.name), 'error')
         return false
     end
 
     if exists then DeleteEntity(ent) end
+    if a.rental then
+        -- a hire boat can be handed back at any dock; nothing is saved
+        Active[src] = nil
+        notify(src, locale('rental_returned'), 'success')
+        BoatLog('rent', src, locale('wh_rental_returned'), { { locale('wh_f_boat'), a.model }, { locale('wh_f_yard'), yard.name } })
+        return dockPayload(yard)
+    end
     MySQL.update.await('UPDATE rsg_boats_owned SET yard = ? WHERE id = ? AND citizenid = ?',
         { yard.id, a.ownedId, Player.PlayerData.citizenid })
     Active[src] = nil
@@ -349,22 +485,27 @@ callback('rsg-boats:server:sell', function(src, yardId, ownedId)
     if not nearYard(src, yard) then notify(src, locale('too_far'), 'error') return false end
     if Active[src] and Active[src].ownedId == ownedId then notify(src, locale('already_out'), 'error') return false end
 
-    local row = MySQL.single.await('SELECT id, model, label, yard FROM rsg_boats_owned WHERE id = ? AND citizenid = ?',
+    local row = MySQL.single.await('SELECT id, model, label, yard, price_paid FROM rsg_boats_owned WHERE id = ? AND citizenid = ?',
         { ownedId, Player.PlayerData.citizenid })
     if not row then notify(src, locale('not_owned'), 'error') return false end
     if not storedHere(row, yard.id) then notify(src, locale('stored_elsewhere', Yards[row.yard].name), 'error') return false end
+
+    -- never silently destroy a player's items: the storage must be emptied first
+    if Config.Storage.enabled and stashHasItems(row.id) then
+        notify(src, locale('sell_storage_not_empty'), 'error')
+        return false
+    end
 
     local affected = MySQL.update.await('DELETE FROM rsg_boats_owned WHERE id = ? AND citizenid = ?',
         { row.id, Player.PlayerData.citizenid })
     if not affected or affected < 1 then return false end
 
     if Config.Storage.enabled then
-        -- anything left in the boat's storage goes with the boat
-        pcall(function() exports['rsg-inventory']:ClearStash('boat_' .. row.id) end)
+        -- remove the (empty) stash row so ids never inherit old data
+        pcall(function() exports['rsg-inventory']:DeleteInventory('boat_' .. row.id) end)
     end
 
-    local m = Models[row.model]
-    local refund = m and math.floor(m.price * Config.SellBackRate) or 0
+    local refund = math.floor(paidFor(row) * Config.SellBackRate)
     if refund > 0 then Player.Functions.AddMoney(Config.MoneyType, refund, 'boat-sell') end
     notify(src, locale('sold', row.label, refund), 'success')
     BoatLog('sell', src, locale('wh_boat_sold'), { { locale('wh_f_boat'), ('%s #%s'):format(row.label, row.id) }, { locale('wh_f_refund'), '$' .. refund }, { locale('wh_f_yard'), yard.name } })
@@ -417,6 +558,11 @@ callback('rsg-boats:server:transfer', function(src, yardId, ownedId, targetId)
         if not Target then notify(src, locale('transfer_no_player'), 'error') return false end
         -- the owner may have launched this boat while the offer was open
         if Active[src] and Active[src].ownedId == row.id then notify(src, locale('already_out'), 'error') return false end
+        -- both players must still be close after the wait
+        if #(GetEntityCoords(GetPlayerPed(src)) - GetEntityCoords(GetPlayerPed(targetId))) > Config.Transfer.maxDistance then
+            notify(src, locale('transfer_too_far'), 'error')
+            return false
+        end
         if Config.MaxBoats > 0 then
             local count = MySQL.scalar.await('SELECT COUNT(*) FROM rsg_boats_owned WHERE citizenid = ?', { Target.PlayerData.citizenid })
             if (tonumber(count) or 0) >= Config.MaxBoats then notify(src, locale('transfer_target_full'), 'error') return false end
@@ -438,6 +584,48 @@ callback('rsg-boats:server:transfer', function(src, yardId, ownedId, targetId)
 end)
 
 ---------------------------------------------------------------------
+-- storage upgrades (boat must be stored at this yard)
+---------------------------------------------------------------------
+callback('rsg-boats:server:buyUpgrade', function(src, yardId, ownedId, key)
+    local Player = RSGCore.Functions.GetPlayer(src)
+    local yard = Yards[tonumber(yardId) or -1]
+    ownedId = tonumber(ownedId)
+    if not upgradesEnabled() or not Player or not yard or not ownedId or (key ~= 'slots' and key ~= 'weight') then return false end
+    if onCooldown(src) then notify(src, locale('slow_down'), 'error') return false end
+    if not nearYard(src, yard) then notify(src, locale('too_far'), 'error') return false end
+    if Active[src] and Active[src].ownedId == ownedId then notify(src, locale('already_out'), 'error') return false end
+
+    local row = MySQL.single.await('SELECT id, model, label, yard, price_paid, upgrades FROM rsg_boats_owned WHERE id = ? AND citizenid = ?',
+        { ownedId, Player.PlayerData.citizenid })
+    if not row then notify(src, locale('not_owned'), 'error') return false end
+    if not storedHere(row, yard.id) then notify(src, locale('stored_elsewhere', Yards[row.yard].name), 'error') return false end
+
+    local ups = parseUpgrades(row.upgrades)
+    local lvl = upgradeLevel(ups, key)
+    local nxt = Config.Upgrades[key][lvl + 1]
+    if not nxt then notify(src, locale('upgrade_max'), 'error') return false end
+
+    -- never go past the storage limits
+    local before = { storageSize(row.model, ups) }
+    ups[key] = lvl + 1
+    local slots, weight = storageSize(row.model, ups)
+    if slots == before[1] and weight == before[2] then ups[key] = lvl notify(src, locale('upgrade_limit'), 'error') return false end
+
+    if not Player.Functions.RemoveMoney(Config.MoneyType, nxt.price, 'boat-upgrade') then notify(src, locale('no_money'), 'error') return false end
+    local affected = MySQL.update.await('UPDATE rsg_boats_owned SET upgrades = ?, price_paid = ? WHERE id = ? AND citizenid = ?',
+        { json.encode(ups), paidFor(row) + nxt.price, row.id, Player.PlayerData.citizenid })
+    if not affected or affected < 1 then
+        Player.Functions.AddMoney(Config.MoneyType, nxt.price, 'boat-upgrade-refund')
+        return false
+    end
+    notify(src, locale('upgrade_done', locale('ui_up_' .. key), lvl + 1, nxt.price), 'success')
+    BoatLog('upgrade', src, locale('wh_boat_upgraded'), { { locale('wh_f_boat'), ('%s #%s'):format(row.label, row.id) },
+        { locale('wh_f_upgrade'), ('%s: %s'):format(locale('ui_up_' .. key), locale('ui_up_level', lvl + 1, #Config.Upgrades[key])) },
+        { locale('wh_f_price'), '$' .. nxt.price } })
+    return true
+end)
+
+---------------------------------------------------------------------
 -- boat storage (owner only, boat must be out and nearby)
 ---------------------------------------------------------------------
 local function inventoryBusy(src)
@@ -446,16 +634,17 @@ local function inventoryBusy(src)
 end
 
 local function openBoatStash(src, a)
+    if a.rental or not a.ownedId then return false end
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return false end
-    local row = MySQL.single.await('SELECT model, label FROM rsg_boats_owned WHERE id = ? AND citizenid = ?',
+    local row = MySQL.single.await('SELECT model, label, upgrades FROM rsg_boats_owned WHERE id = ? AND citizenid = ?',
         { a.ownedId, Player.PlayerData.citizenid })
     if not row then return false end
-    local m = Models[row.model]
+    local slots, weight = storageSize(row.model, parseUpgrades(row.upgrades))
     exports['rsg-inventory']:OpenInventory(src, 'boat_' .. a.ownedId, {
         label = locale('storage_label', row.label),
-        slots = m and m.slots or Config.Storage.defaultSlots,
-        maxweight = m and m.weight or Config.Storage.defaultWeight,
+        slots = slots,
+        maxweight = weight,
     })
     return true
 end
@@ -464,7 +653,7 @@ callback('rsg-boats:server:openStorage', function(src, netId)
     if not Config.Storage.enabled then return false end
     if onCooldown(src) then return false end
     local a = Active[src]
-    if not a or not a.netId or a.netId ~= netId then notify(src, locale('storage_not_yours'), 'error') return false end
+    if not a or a.rental or not a.netId or a.netId ~= netId then notify(src, locale('storage_not_yours'), 'error') return false end
 
     local ent = NetworkGetEntityFromNetworkId(a.netId)
     if not ent or ent == 0 or not DoesEntityExist(ent) then return false end
@@ -485,7 +674,7 @@ RegisterNetEvent('rsg-boats:server:inBoatInventory', function(netId)
     if not Config.Storage.enabled or not Config.Storage.showInBoat then return end
     local a = Active[src]
     local function dbg(msg) if Config.Debug then print(('[rsg-boats] inBoatInventory %s: %s'):format(src, msg)) end end
-    if not a then return dbg('no boat out') end
+    if not a or a.rental then return dbg('no owned boat out') end
     if a.netId ~= netId then return dbg(('netId mismatch (launched %s, sitting in %s)'):format(tostring(a.netId), tostring(netId))) end
     local ent = NetworkGetEntityFromNetworkId(netId)
     if not ent or ent == 0 or not DoesEntityExist(ent) then return dbg('boat entity not found on server') end
@@ -644,19 +833,20 @@ callback('rsg-boats:server:saveModel', function(src, data)
     local enabled = data.enabled and 1 or 0
     local slots = math.floor(tonumber(data.slots) or -1)
     local weight = math.floor((tonumber(data.weight) or -1) * 1000) -- panel sends kg
+    local rent = math.floor(tonumber(data.rentPrice) or 0)
     if slots < 1 or slots > Config.Storage.maxSlots or weight < 1000 or weight > Config.Storage.maxWeight then
         notify(src, locale('admin_bad_storage', Config.Storage.maxSlots, Config.Storage.maxWeight / 1000), 'error')
         return false
     end
-    if model == '' or #model > 64 or not model:match('^[%w_]+$') or label == '' or price < 0 or price > 1000000 then
+    if model == '' or #model > 64 or not model:match('^[%w_]+$') or label == '' or price < 0 or price > 1000000 or rent < 0 or rent > 1000000 then
         notify(src, locale('admin_invalid'), 'error')
         return false
     end
 
-    MySQL.query.await([[INSERT INTO rsg_boats_models (model, label, description, price, enabled, slots, weight) VALUES (?, ?, ?, ?, ?, ?, ?)
+    MySQL.query.await([[INSERT INTO rsg_boats_models (model, label, description, price, enabled, slots, weight, rent_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE label = VALUES(label), description = VALUES(description), price = VALUES(price),
-        enabled = VALUES(enabled), slots = VALUES(slots), weight = VALUES(weight)]],
-        { model, label, desc, price, enabled, slots, weight })
+        enabled = VALUES(enabled), slots = VALUES(slots), weight = VALUES(weight), rent_price = VALUES(rent_price)]],
+        { model, label, desc, price, enabled, slots, weight, rent })
     loadModels()
     notify(src, locale('admin_saved'), 'success')
     BoatLog('admin', src, locale('wh_model_saved'), { { locale('wh_f_model'), ('%s (%s)'):format(label, model) }, { locale('wh_f_price'), '$' .. price }, { locale('wh_f_for_sale'), enabled == 1 and locale('wh_yes') or locale('wh_no') }, { locale('wh_f_storage'), locale('wh_storage_value', slots, weight / 1000) } })

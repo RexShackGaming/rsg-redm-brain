@@ -119,6 +119,8 @@ Most state-changing callbacks return `success:boolean, payload_or_error_message`
 
 ### Tables
 
+New in 3.7.0: `rsg_stables_history` (horse_id, event, from_cid, to_cid, price, created_at), `rsg_stables_race_weekly` (citizenid, race, week, best_ms), `rsg_stables_prizes` (pending weekly prizes), `rsg_stables_meta` (k, v), and the columns `stored_at` and `transit_until` on `rsg_stables_horses`. All are created automatically and mirrored in `install.sql`.
+
 **`rsg_stables_horses`** — one row per owned horse
 
 | Column | Type | Notes |
@@ -226,11 +228,11 @@ Each entry in `actions` produces a `/horse<id>` command and a panel button. Beha
 
 | Block | Key settings |
 |---|---|
-| `Config.WildHorse` | `claimFee`, `claimWindow` (s), `horseDistance` |
+| `Config.WildHorse` | `claimFee`, `claimWindow` (s), `claimCooldown` (s between claims per player, `0` = off), `horseDistance` |
 | `Config.Breeding` | `cost`, `time` (ms), `sameStableOnly`, `requireOppositeGender`, `lockParents`, `parentCooldown`, `statVariance`, `betterParentChance` |
 | `Config.HorseAging` | `youngUntilDays` 7, `oldFromDays` 60, `lifespanDays` 90, `warnDays`, `oldMinStamina`, `checkInterval` |
 | `Config.HorseGive` | `distance`, `fee`, `timeout`, `maxPrice` |
-| `Config.HorseSell` | `percent`, `perTrainedLevel`, `minPrice`, `appraisal` (condition, bonding, stage multipliers, shod bonus) |
+| `Config.HorseSell` | `percent`, `perTrainedLevel`, `minPrice`, `minOwnedSeconds` (a horse must be owned this long before it can be sold, `0` = off), `appraisal` (condition, bonding, stage multipliers, shod bonus) |
 | `Config.HorseFence` | `account` (`bloodmoney`), `percent`, `cooldown`, `sellDistance`, `locations` |
 
 ### Foal growth — `Config.FoalGrowth`
@@ -329,6 +331,16 @@ Config.Training = {
 
 Levels are applied as `SET_ATTRIBUTE_BONUS_RANK` bonus ranks, so a breed's own base stats are never overwritten.
 
+### Transfer, boarding and records (3.7.0)
+
+| Option | Default | Description |
+|---|---|---|
+| `Config.Transfer.fee` / `.time` | `25` / `300` | Fee to move a horse to another stable and seconds it stays in transit |
+| `Config.Boarding.enabled` / `freeDays` / `perDay` / `maxFee` | `true` / `2` / `2` / `40` | Fee charged when retrieving a horse stored longer than `freeDays` |
+| `Config.HorseRecords.enabled` / `command` / `brandPrefix` / `adminAccess` / `jobs` | `true` / `horserecord` / `RSG` / `true` / law jobs | Brand format (`RSG-0042`) and who may use the record command |
+| `Config.HorseInventory.weightPerStyle` / `slotsPerStyle` | `2500` / `0` | Extra stash weight/slots per saddlebag style index above the first (a tack item's own `weight`/`slots` override) |
+| `Config.HorseRaces.weekly.enabled` / `prizes` | `true` / `{500,300,150}` | Weekly (Mon-Sun, UTC) per-race prizes for the fastest riders, in rank order |
+
 ### Races — `Config.HorseRaces`
 
 ```lua
@@ -389,6 +401,14 @@ Rules enforced on the server:
 `server/server.lua` exposes the helpers it shares with `server/admin.lua` in a global `StablesAPI` table (server only, not an export).
 
 ---
+
+## Server exports
+
+| Export | Returns |
+|---|---|
+| `GetHorseRecord(horseId)` | `{ id, brand, exists, name, breed, owner, ownerName, alive, stable, history = { { event, from, to, price, at } } }` or `nil` (last 20 history rows) |
+| `GetHorseBrand(horseId)` | brand string, e.g. `RSG-0042` |
+| `FindActiveHorseByNetId(netId)` | the record of the player horse out with that network id, or `nil` |
 
 ## Client exports
 
@@ -600,6 +620,7 @@ NUI messages sent from Lua use `SendNUIMessage({ action = '...', ... })` — for
 
 | Command | Permission | Description |
 |---|---|---|
+| `/horserecord <id or brand>` (`Config.HorseRecords.command`) | `Config.HorseRecords.jobs` or admin | Show brand, owner and ownership history of a horse |
 | `/storehorse` | everyone | Store the active horse at the nearest stable |
 | `/horseinfo` (`Config.HorseCard.command`) | everyone | Open the horse card |
 | `/horseaction` (`Config.HorseActions.command`) | everyone | Open the actions panel |
@@ -752,6 +773,10 @@ Paste the printed block into `Config.HorseRaces.races`, set `id`, `stable`, `lab
 
 ## Security model
 
+- **Flee-store (3.7.0):** the client calls `rsg-stables:server:fleeStart(horseNetId)` when the horse starts fleeing (the horse must be within 10 m). `fleeStoreHorse` is only accepted for that horse after the flee delay has really passed, so it can no longer be spammed to store instantly.
+- Net event `rsg-stables:server:horseSpawned(netId)` lets the server map an active horse to its entity.
+- Weekly prizes are written to `rsg_stables_prizes` and delivered by deleting the row first, so a prize can never be paid twice.
+
 - Every server callback re-reads the player and the horse row and checks `citizenid` ownership; ids are sanitised with `toId()`.
 - Distance checks (`isNearStable`, `nearStableByName`, `activeHorseNear`) are done with server-side coordinates.
 - Net-event arguments are untrusted. Client-reported entity ids are verified (entity exists, model matches the owned horse, close to the player).
@@ -760,6 +785,9 @@ Paste the printed block into `Config.HorseRaces.races`, set `id`, `stable`, `lab
 - The admin panel re-checks `Config.Admin.permission` in every callback, validates every field, takes the owner's lock and logs each change (see [Admin panel](#admin-panel)).
 - Riding restrictions for foals are enforced on the server where the server can know about them (`startRace`, ride XP); the mount block itself is client-side (ped config flag plus dismount), as RedM has no server mount control.
 - `RSGCore:Server:OnPlayerUnload` is a server-only event, intentionally not registered as a net event.
+- All callbacks are registered through `StablesAPI.registerCallback`, which wraps the handler in `pcall`: an error is printed to the console and the client gets `false, <generic error>` instead of an `AwaitCallback` that never returns.
+- The server cannot see the taming minigame, so `rsg-stables:server:wildHorseBroken` is only a claim. Abuse is capped by `Config.WildHorse.claimCooldown` (per player) and `Config.HorseSell.minOwnedSeconds` (a freshly claimed horse can't be sold straight away), which together stop wild-claim → sell money loops.
+- A race run or a paid training session whose client never reported back expires on its own (time limit plus a short grace), so a crash can't lock a player out until relog.
 
 ---
 
@@ -831,6 +859,8 @@ Foal keys: `foal_cannot_ride`, `foal_grown_up` (`%s` = horse name). When adding 
 | Race run cancelled | A leg was completed faster than `maxSpeed` allows (teleport/lag) or you left your horse for `dismountTimeout` seconds |
 | Foal is full size / won't grow | Only horses collected from breeding after the update have `born = 1`; check `Config.FoalGrowth.enabled`, or set `applyToPurchased = true` |
 | Other players see a foal full size | The owner's client publishes `rsgFoalScale` on the entity state bag; make sure the horse entity is networked and the other client has `client/foal.lua` running |
+| "You must wait N more minutes" when claiming | `Config.WildHorse.claimCooldown` limits how often a player can claim a wild horse |
+| "You must own this horse for N more minutes" | `Config.HorseSell.minOwnedSeconds` anti-flip delay before a horse can be sold |
 | Fence refuses a horse | Owned horses (state bag `rsgStablesOwned`) are never accepted; add locations to `Config.HorseFence.locations` |
 
 ## rsg-skills integration
@@ -841,7 +871,7 @@ Foal keys: `foal_cannot_ride`, `foal_grown_up` (`%s` = horse name). When adding 
 
 ## Technical reference
 
-Generated from the source of **rsg-stables 3.6.0**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-stables 3.7.0**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 

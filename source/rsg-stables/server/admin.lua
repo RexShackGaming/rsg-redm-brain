@@ -9,9 +9,7 @@ local API = StablesAPI
 
 local isTrue, toId, withLock = API.isTrue, API.toId, API.withLock
 
-local function registerCallback(name, fn)
-    RSGCore.Functions.CreateCallback(name, function(source, cb, ...) cb(fn(source, ...)) end)
-end
+local registerCallback = API.registerCallback
 
 local function isAdmin(src)
     return src and src > 0 and RSGCore.Functions.HasPermission(src, A.permission or 'admin') == true
@@ -94,7 +92,7 @@ local function forceStore(row)
         API.applyDecay(session)
         hunger, thirst, bonding = session.hunger, session.thirst, session.bonding
     end
-    MySQL.update.await('UPDATE rsg_stables_horses SET active = 0, pos_x = NULL, pos_y = NULL, pos_z = NULL, pos_h = NULL, hunger = ?, thirst = ?, bonding = ? WHERE id = ?',
+    MySQL.update.await('UPDATE rsg_stables_horses SET active = 0, stored_at = NOW(), pos_x = NULL, pos_y = NULL, pos_z = NULL, pos_h = NULL, hunger = ?, thirst = ?, bonding = ? WHERE id = ?',
         { hunger, thirst, bonding, row.id })
     if session and session.horseId == row.id then API.endSession(row.citizenid) end
     local P = RSGCore.Functions.GetPlayerByCitizenId(row.citizenid)
@@ -291,8 +289,8 @@ end
 ACTIONS.openSaddlebags = function(src, row)
     exports['rsg-inventory']:OpenInventory(src, 'horse_' .. row.id, {
         label = row.name or locale('your_horse'),
-        maxweight = Config.HorseInventory.maxweight,
-        slots = Config.HorseInventory.slots,
+        maxweight = API.stashOptions(row.tack).maxweight,
+        slots = API.stashOptions(row.tack).slots,
     })
     return true, locale('adm_ok_done')
 end
@@ -302,6 +300,7 @@ ACTIONS.delete = function(src, row)
     cancelBreedingJobs(row.id)
     MySQL.update.await('DELETE FROM rsg_stables_horses WHERE id = ?', { row.id })
     API.deleteSaddlebags(row.id)
+    API.logHistory(row.id, 'released', row.citizenid, '', 0)
     notifyOwner(row.citizenid, 'adm_n_deleted', row.name)
     return true, locale('adm_ok_deleted')
 end
@@ -353,6 +352,7 @@ registerCallback('rsg-stables:server:admin:giveHorse', function(source, citizeni
             breed.speed, breed.acceleration, API.breedHandlingValue(breed), breed.health, foal and 1 or 0, age,
         })
         if not ok or not id or id == 0 then return false, locale('generic_error') end
+        API.logHistory(id, 'admin_given', '', citizenid, 0)
         logAdmin(source, ('gave %s (%s, %s) id %d to %s at %s'):format(safeName, breed.label, gender, id, citizenid, stable))
         notifyOwner(citizenid, 'adm_n_given', safeName)
         return true, locale('adm_ok_given')
@@ -381,6 +381,7 @@ registerCallback('rsg-stables:server:admin:transferHorse', function(source, hors
             local oldOwner = row.citizenid
             MySQL.update.await('UPDATE rsg_stables_horses SET citizenid = ? WHERE id = ?', { targetCitizenid, horseId })
             cancelBreedingJobs(horseId)
+            API.logHistory(horseId, 'admin_transfer', oldOwner, targetCitizenid, 0)
             logAdmin(source, ('transferred horse %d (%s) from %s to %s'):format(horseId, row.name, oldOwner, targetCitizenid))
             notifyOwner(oldOwner, 'adm_n_transferred_away', row.name)
             notifyOwner(targetCitizenid, 'adm_n_transferred_to', row.name)

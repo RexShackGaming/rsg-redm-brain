@@ -1,6 +1,6 @@
 # rsg-stables
 
-Version 3.6.1. Horse and stables script for RSG Framework
+Version 3.7.0. Horse and stables script for RSG Framework
 
 Horse and stables system for the **RSG Framework** (RedM). Buy, stable, customise, care for and breed horses across multiple stable locations, all through a custom NUI. - **Multiple stables** – Valentine, Blackwater, Rhodes, Saint Denis and Strawberry out of the box, each with a stablehand NPC, map blip and horse preview spot. Add your own in config. - **Buy menu** – 100+ horse breeds/coats with h
 
@@ -12,17 +12,19 @@ Has NUI (`ui_page`).
 
 ## Exports (call as exports['rsg-stables']:Name)
 
+**server:** `FindActiveHorseByNetId(netId)`, `GetHorseBrand(id)`, `GetHorseRecord(horseId)`
+
 **client:** `GetActiveHorseNeeds()`, `GetHorseBonusInfo()`
 
 ## Net events registered
 
-**server:** `rsg-stables:server:openDeadHorseInventory`, `rsg-stables:server:openFieldSaddlebags`, `rsg-stables:server:openHorseInventory`, `rsg-stables:server:saveHorsePosition`, `rsg-stables:server:trainingRideTick`, `rsg-stables:server:wildHorseBroken`
+**server:** `rsg-stables:server:horseSpawned`, `rsg-stables:server:openDeadHorseInventory`, `rsg-stables:server:openFieldSaddlebags`, `rsg-stables:server:openHorseInventory`, `rsg-stables:server:saveHorsePosition`, `rsg-stables:server:trainingRideTick`, `rsg-stables:server:wildHorseBroken`
 
 **client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `rsg-stables:client:adminStoreHorse`, `rsg-stables:client:fieldCorpse`, `rsg-stables:client:horseDiedOfAge`, `rsg-stables:client:openAdmin`, `rsg-stables:client:raceRoute`, `rsg-stables:client:trainingUpdate`, `rsg-stables:client:useBrush`, `rsg-stables:client:useFeed`, `rsg-stables:client:useLantern`, `rsg-stables:client:useMedicine`, `rsg-stables:client:useReviver`, `rsg-stables:client:useStimulant`
 
 ## Event handlers
 
-**server:** `RSGCore:Server:OnPlayerUnload`
+**server:** `RSGCore:Server:OnPlayerUnload`, `RSGCore:Server:PlayerLoaded`
 
 **client:** `rsg-stables:client:horseSpawned`, `rsg-stables:client:openTraining`, `rsg-stables:client:tackChanged`
 
@@ -38,4 +40,4 @@ Has NUI (`ui_page`).
 
 ## Database tables
 
-`rsg_stables_breeding`, `rsg_stables_horses`, `rsg_stables_races`
+`rsg_stables_breeding`, `rsg_stables_history`, `rsg_stables_horses`, `rsg_stables_meta`, `rsg_stables_prizes`, `rsg_stables_race_weekly`, `rsg_stables_races`

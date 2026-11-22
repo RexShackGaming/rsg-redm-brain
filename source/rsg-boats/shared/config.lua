@@ -60,42 +60,53 @@ Config.Storage = {
     showInBoat    = true,    -- opening your inventory while in your boat shows the boat storage in the right panel
 }
 
+-- Storage upgrades (bought per owned boat in My Boats > Upgrades; needs Config.Storage.enabled)
+-- Each level adds on top of the model's own slots/weight. Weight is in grams. Totals are capped by Config.Storage.maxSlots / maxWeight.
+Config.Upgrades = {
+    enabled = true,
+    slots = {
+        { price = 150, add = 5 },
+        { price = 300, add = 5 },
+        { price = 600, add = 10 },
+    },
+    weight = {
+        { price = 150, add = 25000 },
+        { price = 300, add = 25000 },
+        { price = 600, add = 50000 },
+    },
+}
+
+-- Hire boats: a short rental from a yard. Models get a hire price in /boatadmin (0 = not for hire).
+-- A hired boat has no storage, is not owned and is taken back when the time runs out.
+Config.Rental = {
+    enabled     = true,
+    minutes     = 20,  -- hire time, starts when the boat is on the water
+    warnSeconds = 60,  -- warning before the boat is taken back
+}
+
 -- Admin
 Config.AdminCommand    = 'boatadmin'
 Config.AdminPermission = 'admin'
 
--- Ghost placer
+-- Launch point placer (uses rsg-gizmo; controls are shown in its HUD)
 Config.Placer = {
-    startDistance = 8.0,
-    moveStep      = 0.05,
-    fastMultiplier= 5.0,
-    rotateStep    = 1.0,
-    heightStep    = 0.03,
+    startDistance = 8.0,   -- how far in front of the admin the ghost boat starts
     maxDistance   = 80.0,  -- ghost can't wander further than this from the admin
     alpha         = 150,
 }
 
--- Controls: femga Controls/README.md
-Config.Keys = {
-    forward  = `INPUT_FRONTEND_UP`,    -- Arrow Up
-    back     = `INPUT_FRONTEND_DOWN`,  -- Arrow Down
-    left     = `INPUT_FRONTEND_LEFT`,  -- Arrow Left
-    right    = `INPUT_FRONTEND_RIGHT`, -- Arrow Right
-    rotL     = `INPUT_FRONTEND_LB`,    -- Q
-    rotR     = `INPUT_FRONTEND_RB`,    -- E
-    up       = `INPUT_CREATOR_LT`,     -- Page Up
-    down     = `INPUT_CREATOR_RT`,     -- Page Down
-    fast     = `INPUT_SPRINT`,         -- Shift
-    confirm  = `INPUT_FRONTEND_ACCEPT`,-- Enter
-    cancel   = `INPUT_FRONTEND_CANCEL`,-- Backspace
+-- While a boat NUI is open, game controls are blocked but push-to-talk keeps working (rsg-voice)
+Config.AllowPushToTalkWhileOpen = true
+Config.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK
 }
 
 ---------------------------------------------------------------------
 -- database
 ---------------------------------------------------------------------
-Config.AutoInstallDB = true -- create/update tables automatically on resource start (set false to use install.sql manually)
+Config.AutoDatabase = true -- create/update tables automatically on resource start (set false to import install.sql manually)
 
 -- boats added on first install only (rowboat: femga/rdr3_discoveries vehicles_list 0x9FD6BA58)
 Config.DefaultBoats = {
-    { model = 'rowboat', label = 'Rowboat', description = 'A sturdy wooden rowboat for rivers and bayous.', price = 75, slots = 10, weight = 50000 },
+    { model = 'rowboat', label = 'Rowboat', description = 'A sturdy wooden rowboat for rivers and bayous.', price = 75, rent = 10, slots = 10, weight = 50000 },
 }

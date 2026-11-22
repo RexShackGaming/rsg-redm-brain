@@ -1,4 +1,4 @@
-# rsg-boats – Docs (v3.1.0)
+# rsg-boats – Docs (v3.2.0)
 
 ## Contents
 1. Files
@@ -14,10 +14,10 @@
 ## 1. Files
 | File | Purpose |
 |---|---|
-| `fxmanifest.lua` | Manifest; depends on `rsg-core`, `rsg-target`, `oxmysql`, `rsg-inventory` |
+| `fxmanifest.lua` | Manifest; depends on `rsg-core`, `rsg-target`, `rsg-gizmo`, `oxmysql`, `rsg-inventory` |
 | `shared/config.lua` | Yard, limits, dock, transfer, storage, placer, defaults |
 | `client/client.lua` | Yard NPCs, shop NUI, launch, dock storing, boat storage |
-| `client/placer.lua` | Ghost-boat spawn placer (Spawn Assistant) |
+| `client/placer.lua` | Spawn Assistant: ghost boat moved with rsg-gizmo |
 | `server/server.lua` | Buy, launch, store, sell, transfer, storage, admin callbacks |
 | `server/database.lua` | Automatic table creation and upgrade |
 | `server/sv_config.lua`, `server/webhooks.lua` | Webhook settings and Discord embeds |
@@ -34,6 +34,9 @@
 - **Boat storage:** each owned boat has its own rsg-inventory stash `boat_<id>`; target the boat and choose *Boat Storage*, or open your inventory while in it.
 - **Give a boat:** *Give* in *My Boats*, then the player's server ID. They must be nearby and accept the popup before it times out.
 - Shop and admin windows can be dragged and positions are remembered per player.
+- **Hire boats:** `rsg-boats:server:rent` charges the model's `rent_price`, creates a launch with no database row and starts the clock when the client reports the boat. The server takes the boat back at expiry (warning first), refunds the fee if the boat never appears, and a hire boat has no storage. Handing it back at any dock just clears it.
+- **Storage upgrades:** `rsg-boats:server:buyUpgrade(yardId, ownedId, key)` with `key` `slots` or `weight`. The boat must be docked at that yard; the next level price comes from `Config.Upgrades`, the level is saved in `rsg_boats_owned.upgrades` and the stash is opened with model size + bought levels (capped by `Config.Storage`).
+- **Sell-back:** `rsg_boats_owned.price_paid` (purchase plus upgrades) × `SellBackRate`; old rows with no value use the model's current price.
 
 ## 3. Configuration
 `shared/config.lua`:
@@ -49,15 +52,18 @@
 | `Dock` | table | `radius`, `minRadius`, `maxRadius`, `promptKey` (E), `holdTime`, `showMarker` |
 | `Transfer` | table | Enable, max distance, require accept, accept timeout |
 | `Storage` | table | Enable, default/max slots and weight (grams), target distance, show in inventory while in boat |
+| `Upgrades` | table | `enabled`, `slots` and `weight` level lists, each level `{ price, add }` (weight in grams); needs `Storage.enabled` |
+| `Rental` | table | `enabled`, hire `minutes`, `warnSeconds` before the boat is taken back |
 | `AdminCommand` / `AdminPermission` | `'boatadmin'` / `'admin'` | Admin panel |
-| `Placer`, `Keys` | tables | Spawn Assistant speeds and controls |
-| `AutoInstallDB` | `true` | Create/update tables on start |
+| `Placer` | table | Spawn Assistant: `startDistance`, `maxDistance`, `alpha` |
+| `AllowPushToTalkWhileOpen` / `PushToTalkControls` | `true` / `{ 0x4BC9DABB }` | While a boat NUI has focus every control is blocked except push-to-talk |
+| `AutoDatabase` | `true` | Create/update tables on start |
 | `DefaultBoats` | list | Boats added on first install (rowboat) |
 
 ## 4. Admin panel
 `/boatadmin` opens two tabs.
-- **Yards:** pick a yard, then *Rename*; *Move To My Position* (moves NPC and blip, resets launch point and dock); *Launch Point* (pick a boat, *Spawn Assistant*: arrow keys move, Q/E rotate, PgUp/PgDn height, Shift fast, Enter save, Backspace cancel); *Dock & Store Zone* (*Set Dock At My Position*, *Save Radius*); *Boats Sold & Stored Here* (all boats or ticked models); *Delete Yard*; *New Yard At My Position*. Moving or deleting a yard is blocked while a player has a boat out from it.
-- **Boat Models:** add, edit or remove models (model name, label, price, for sale, storage slots, max weight in kg, description). The model name is verified in game as a real vehicle.
+- **Yards:** pick a yard, then *Rename*; *Move To My Position* (moves NPC and blip, resets launch point and dock); *Launch Point* (pick a boat, *Spawn Assistant*: moved with rsg-gizmo, controls on its HUD, the ghost turns red out of range); *Dock & Store Zone* (*Set Dock At My Position*, *Save Radius*); *Boats Sold & Stored Here* (all boats or ticked models); *Delete Yard*; *New Yard At My Position*. Moving or deleting a yard is blocked while a player has a boat out from it.
+- **Boat Models:** add, edit or remove models (model name, label, price, for sale, storage slots, max weight in kg, hire price (0 = not for hire), description). The model name is verified in game as a real vehicle.
 
 ## 5. Events and commands
 | Name | Side | Notes |
@@ -74,17 +80,17 @@
 | `/boatwebhooktest` | server console only | Send a test Discord embed for every event |
 
 ## 6. Database
-Created and upgraded automatically on start (`AutoInstallDB`); import `install.sql` if you set it to `false`.
-- `rsg_boats_models`: `model`, `label`, `description`, `price`, `enabled`, `slots`, `weight`.
-- `rsg_boats_owned`: `citizenid`, `model`, `label`, `purchased`, `yard`.
+Created and upgraded automatically on start (`AutoDatabase`); import `install.sql` if you set it to `false`.
+- `rsg_boats_models`: `model`, `label`, `description`, `price`, `enabled`, `slots`, `weight`, `rent_price`.
+- `rsg_boats_owned`: `citizenid`, `model`, `label`, `purchased`, `yard`, `price_paid` (NULL = bought before tracking, falls back to the model price), `upgrades` (JSON `{ slots = level, weight = level }`).
 - `rsg_boats_yards`: `name`, `coords`, `spawn`, `dock`, `models`.
 - `rsg_boats_settings`: `k`, `v`.
 
 ## 7. Discord webhooks
-Set URLs in `server/sv_config.lua` (server only). `default` sends everything to one channel, or give each event its own `url`. Events: `buy`, `sell`, `launch`, `store`, `transfer`, `storage` (off by default, noisy), `admin` and `exploit`. Embeds include character name, citizen ID, server ID and identifiers (`showIdentifiers`); `mentionOnExploit` pings a staff role. Posts are queued with rate limiting and retry on Discord 429.
+Set URLs in `server/sv_config.lua` (server only). `default` sends everything to one channel, or give each event its own `url`. Events: `buy`, `sell`, `launch`, `store`, `transfer`, `rent`, `upgrade`, `storage` (off by default, noisy), `admin` and `exploit`. Embeds include character name, citizen ID, server ID and identifiers (`showIdentifiers`); `mentionOnExploit` pings a staff role. Posts are queued with rate limiting and retry on Discord 429.
 
 ## 8. Security
-The server owns purchases, ownership, launching, storing and transfers. It checks distance to the yard, allowed models, ownership and one pending offer. Admin callbacks are permission-checked and rejected claims are logged as `exploit`.
+The server owns purchases, ownership, launching, storing and transfers. It checks distance to the yard, allowed models, ownership and one pending offer (distance is re-checked after the receiver accepts). Selling is refused while the boat's storage holds items. Admin callbacks are permission-checked and rejected claims are logged as `exploit` (rate limited per player).
 
 ## 9. Troubleshooting
 | Problem | Fix |
@@ -93,7 +99,9 @@ The server owns purchases, ownership, launching, storing and transfers. It check
 | Can't store | Drive into the dock zone ring and hold `E` |
 | Give fails | Target must be nearby and accept in time |
 | Admin edits blocked | A player has a boat out from that yard |
-| No tables | Set `AutoInstallDB = true` or import `install.sql` |
+| No tables | Set `AutoDatabase = true` or import `install.sql` |
+| Can't sell a boat | Empty its storage first |
+| Voice stops while a panel is open | Set `AllowPushToTalkWhileOpen = true` and check `PushToTalkControls` matches your voice key |
 
 Support the Project : https://rexshack.tebex.store/
 
@@ -101,11 +109,11 @@ Support the Project : https://rexshack.tebex.store/
 
 ## Technical reference
 
-Generated from the source of **rsg-boats 3.1.0**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-boats 3.2.0**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 
-`rsg-core`, `rsg-target`, `oxmysql`, `rsg-inventory`
+`rsg-core`, `rsg-target`, `rsg-gizmo`, `oxmysql`, `rsg-inventory`
 
 ### Database
 
@@ -137,11 +145,14 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.WarpIntoBoat` | `true` |  |
 | `Config.Transfer` | `table` | Transfer ownership to another player (My Boats tab) |
 | `Config.Storage` | `table` | Boat storage (rsg-inventory stash per owned boat; slots/weight set per model in /boatadmin) |
+| `Config.Upgrades` | `table` | Storage upgrade levels bought per owned boat (extra slots, extra weight in grams) |
+| `Config.Rental` | `table` | Hire boats: enabled, minutes, warning seconds |
 | `Config.AdminCommand` | `'boatadmin'` | Admin |
 | `Config.AdminPermission` | `'admin'` |  |
-| `Config.Placer` | `table` | Ghost placer |
-| `Config.Keys` | `table` | Controls: femga Controls/README.md |
-| `Config.AutoInstallDB` | `true` | create/update tables automatically on resource start (set false to use install.sql manually) |
+| `Config.Placer` | `table` | Launch point placer (rsg-gizmo): start distance, max distance, ghost alpha |
+| `Config.AllowPushToTalkWhileOpen` | `true` | While a boat NUI is open, game controls are blocked but push-to-talk keeps working (rsg-voice) |
+| `Config.PushToTalkControls` | `table` | Control hashes kept enabled for push-to-talk |
+| `Config.AutoDatabase` | `true` | create/update tables automatically on resource start (set false to import install.sql manually) |
 | `Config.DefaultBoats` | `table` | boats added on first install only (rowboat: femga/rdr3_discoveries vehicles_list 0x9FD6BA58) |
 
 ### Callbacks
@@ -166,6 +177,7 @@ Server events can be fired by any client, so every handler re-validates the play
 | `rsg-boats:client:yards` | client | `` | `client/client.lua` |
 | `rsg-inventory:client:open` | client | `_, other` | `client/client.lua` |
 | `rsg-boats:client:openAdmin` | client | `` | `client/client.lua` |
+| `rsg-boats:client:rentalOver` | client | `` | `client/client.lua` (server tells the client its hire boat was taken back) |
 | `rsg-boats:server:launched` | server | `netId` | `server/server.lua` |
 | `rsg-boats:server:launchFailed` | server | `` | `server/server.lua` |
 | `rsg-boats:server:inBoatInventory` | server | `netId` | `server/server.lua` |

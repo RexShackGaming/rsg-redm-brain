@@ -1241,6 +1241,13 @@ local function fleeActiveHorse()
     local horse = activeHorse
     local horsePed = horse.entity
     local snapshot = horse.snapshot
+    -- tell the server the flee started: it only accepts the flee-store after the delay has really passed
+    local fleeNetId = activeHorseNetId()
+    if Config.HorseFlee.storeOnFlee then
+        CreateThread(function()
+            RSGCore.Functions.AwaitCallback('rsg-stables:server:fleeStart', nil, fleeNetId)
+        end)
+    end
 
     pcall(function()
         exports['rsg-target']:removeLocalEntity(horsePed, HORSE_TARGETS)
@@ -1520,6 +1527,9 @@ local function spawnHorse(horse, coords)
     -- marks player-owned horses so the horse fence refuses them (server reads this state bag)
     if NetworkGetEntityIsNetworked(horsePed) then
         Entity(horsePed).state:set('rsgStablesOwned', true, true)
+    end
+    if NetworkGetEntityIsNetworked(horsePed) then
+        TriggerServerEvent('rsg-stables:server:horseSpawned', NetworkGetNetworkIdFromEntity(horsePed))
     end
     TriggerEvent('rsg-stables:client:horseSpawned', horsePed, horse) -- client/training.lua
     pendingHorse = nil
@@ -1938,6 +1948,8 @@ function OpenStableMenu(stable)
 
     local horses = RSGCore.Functions.AwaitCallback('rsg-stables:server:getStableHorses', nil, stable.name)
     local breedingJobs = RSGCore.Functions.AwaitCallback('rsg-stables:server:getBreedingJobs', nil, stable.name)
+    if type(horses) ~= 'table' then horses = {} end -- server error / timeout
+    if type(breedingJobs) ~= 'table' then breedingJobs = {} end
 
     local options = {
         {
@@ -1991,6 +2003,7 @@ function OpenStableMenu(stable)
         local desc, badge
         if horse.alive then
             desc = locale('horse_health_stamina', horse.health, horse.stamina)
+            if (tonumber(horse.transit_left) or 0) > 0 then desc = locale('in_transit_badge', horse.transit_left) .. ' • ' .. desc end
             if horse.gender then desc = locale(horse.gender == 'male' and 'gender_stallion' or 'gender_mare') .. ' • ' .. desc end
             if horse.stage then
                 local stageText = locale('stage_' .. horse.stage)
@@ -2737,7 +2750,7 @@ function OpenHorseMenu(stable, horse)
     if horse.alive then
         table.insert(options, {
             title = locale('retrieve'),
-            description = locale('retrieve_desc'),
+            description = (tonumber(horse.board_fee) or 0) > 0 and locale('retrieve_fee_desc', horse.board_fee) or locale('retrieve_desc'),
             icon = 'retrieve',
             onSelect = function()
                 local ok, result = RSGCore.Functions.AwaitCallback('rsg-stables:server:retrieveHorse', nil, horse.id)
@@ -2751,6 +2764,7 @@ function OpenHorseMenu(stable, horse)
                 if activeHorse then
                     saveActiveHorsePosition(true)
                     NuiNotify(locale('horse_retrieved', horse.name), 'success')
+                    if (tonumber(result.board_fee) or 0) > 0 then NuiNotify(locale('board_fee_paid', result.board_fee), 'inform') end
                 else
                     pendingHorse = result -- spawn failed; horse is out in the DB, let a whistle retry
                 end
@@ -2848,7 +2862,7 @@ function OpenHorseMenu(stable, horse)
 
         table.insert(options, {
             title = locale('transfer'),
-            description = locale('transfer_desc'),
+            description = (Config.Transfer and Config.Transfer.fee or 0) > 0 and locale('transfer_cost_desc', Config.Transfer.fee, math.ceil((Config.Transfer.time or 0) / 60)) or locale('transfer_desc'),
             icon = 'route',
             onSelect = function()
                 local transferOptions = {}

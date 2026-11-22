@@ -1,6 +1,7 @@
 -- Discord webhook logger: queued and rate limited so Discord never returns 429
 
 local Queue, Busy = {}, false
+local MAX_QUEUE = 100 -- if Discord is down, drop the oldest logs instead of growing forever
 local SecSeen = {} -- [src..reason] = os.time()
 
 local function urlFor(channel)
@@ -64,6 +65,7 @@ function SendLog(channel, title, colour, src, description, extraFields)
     local fields = src and playerFields(src) or {}
     for _, f in ipairs(extraFields or {}) do fields[#fields + 1] = f end
 
+    if #Queue >= MAX_QUEUE then table.remove(Queue, 1) end
     Queue[#Queue + 1] = {
         url = url,
         payload = {

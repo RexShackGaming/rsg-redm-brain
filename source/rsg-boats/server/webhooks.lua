@@ -8,6 +8,9 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 local W = SvConfig.Webhooks
 
+local MAX_QUEUE = 50          -- drop new embeds instead of growing without limit
+local EXPLOIT_COOLDOWN = 30   -- seconds between identical exploit alerts per player
+local lastExploit = {}        -- [src .. title] = os.time()
 local queue, sending = {}, false
 local resetAt = 0 -- os.time() until which Discord asked us to wait (429)
 
@@ -73,6 +76,14 @@ function BoatLog(event, src, title, fields, description)
     local url = (ev.url ~= '' and ev.url) or W.default
     if not url or url == '' then return end
 
+    -- a modified client can spam rejected requests: one alert per player and reason is enough
+    if event == 'exploit' then
+        local key = ('%s:%s'):format(src or 0, title)
+        if lastExploit[key] and os.time() - lastExploit[key] < EXPLOIT_COOLDOWN then return end
+        lastExploit[key] = os.time()
+    end
+    if #queue >= MAX_QUEUE then return end
+
     local list = {}
     for _, f in ipairs(fields or {}) do
         if f.name then
@@ -102,6 +113,13 @@ function BoatLog(event, src, title, fields, description)
 end
 
 -- quick test from the server console: boatwebhooktest
+AddEventHandler('playerDropped', function()
+    local prefix = ('%s:'):format(source)
+    for key in pairs(lastExploit) do
+        if key:sub(1, #prefix) == prefix then lastExploit[key] = nil end
+    end
+end)
+
 RegisterCommand('boatwebhooktest', function(src)
     if src ~= 0 then return end
     for event in pairs(W.events) do

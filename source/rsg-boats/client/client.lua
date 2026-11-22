@@ -4,12 +4,13 @@ local Yards = {}       -- [id] = { id, name, coords = vector4, dock = { x, y, z,
 local Npcs, Blips = {}, {}
 local activeBoat = nil
 local uiOpen = false
+local uiMode = nil     -- 'shop' | 'admin' while the panel is open
+local uiFocus = false  -- NUI currently holds focus (panel or transfer offer)
 local shopYard = nil   -- yard id the shop is open at
 local storePrompt = nil
 local storing = false
-local offerCb = nil    -- pending transfer offer answer
 placingBoat = false    -- set by placer.lua
-local OpenShop, OpenAdmin -- defined below, used by the NPC target / placer
+local OpenShop, OpenAdmin, answerOffer -- defined below, used by the NPC target / NUI callbacks
 
 ---------------------------------------------------------------------
 -- helpers
@@ -27,17 +28,60 @@ function BoatsLoadModel(model, timeout)
 end
 
 -- all locale strings for the NUI (ui_* keys), sent with every open so the UI follows the server language
+local uiLocales
 function BoatsUiLocales()
-    local ui = {}
-    for k, v in pairs(locale() or {}) do
-        if k:sub(1, 3) == 'ui_' then ui[k] = v end
+    if not uiLocales then
+        uiLocales = {}
+        for k, v in pairs(locale() or {}) do
+            if k:sub(1, 3) == 'ui_' then uiLocales[k] = v end
+        end
     end
-    return ui
+    return uiLocales
 end
 
-local function setUi(state, payload)
+-- one place for NUI focus: keeps push-to-talk working while a panel is open
+local function applyNuiFocus(enable)
+    if enable then
+        SetNuiFocus(true, true)
+        if Config.AllowPushToTalkWhileOpen then SetNuiFocusKeepInput(true) end
+    else
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
+end
+
+local offerCb -- pending transfer offer answer (declared early: focus depends on it)
+
+local function syncFocus()
+    local want = uiOpen or offerCb ~= nil
+    if want == uiFocus then return end
+    uiFocus = want
+    applyNuiFocus(want)
+end
+
+-- KeepInput passes every key to the game, so block all controls except push-to-talk while focused
+CreateThread(function()
+    while true do
+        if uiFocus and Config.AllowPushToTalkWhileOpen then
+            Wait(0)
+            DisableAllControlActions(0)
+            DisableAllControlActions(1)
+            DisableAllControlActions(2)
+            for _, c in ipairs(Config.PushToTalkControls or {}) do
+                EnableControlAction(0, c, true)
+                EnableControlAction(1, c, true)
+                EnableControlAction(2, c, true)
+            end
+        else
+            Wait(250)
+        end
+    end
+end)
+
+local function setUi(state, payload, mode)
     uiOpen = state
-    SetNuiFocus(state, state)
+    uiMode = state and mode or nil
+    syncFocus()
     if payload then SendNUIMessage(payload) end
     if not state then SendNUIMessage({ action = 'close' }) end
 end
@@ -130,12 +174,24 @@ end)
 -- shop
 ---------------------------------------------------------------------
 OpenShop = function(yardId)
-    if uiOpen then return end
+    if uiOpen or placingBoat or IsEntityDead(PlayerPedId()) then return end
     local data = await('rsg-boats:server:getShopData', yardId)
-    if not data then return end
+    if not data or uiOpen then return end
     shopYard = yardId
     data.hasActive = data.hasActive or (activeBoat ~= nil and DoesEntityExist(activeBoat))
-    setUi(true, { action = 'openShop', data = data, title = locale('shop_title'), subtitle = data.name, locales = BoatsUiLocales() })
+    setUi(true, { action = 'openShop', data = data, title = locale('shop_title'), subtitle = data.name, locales = BoatsUiLocales() }, 'shop')
+
+    -- close the shop if the player dies or walks away (the server would refuse every action anyway)
+    CreateThread(function()
+        while uiMode == 'shop' and shopYard == yardId do
+            Wait(500)
+            local y = Yards[yardId]
+            if IsEntityDead(PlayerPedId()) or not y or #(GetEntityCoords(PlayerPedId()) - y.coords.xyz) > Config.ActionRadius then
+                setUi(false)
+                break
+            end
+        end
+    end)
 end
 
 local function refreshShop()
@@ -158,7 +214,7 @@ local function launchBoat(info)
     end
     SetEntityAsMissionEntity(veh, true, true)
     activeBoat = veh
-    if Config.Storage.enabled then
+    if Config.Storage.enabled and not info.rental then -- hire boats have no storage
         exports['rsg-target']:addLocalEntity(veh, {
             {
                 name = 'rsg_boats_storage',
@@ -334,6 +390,26 @@ RegisterNUICallback('launch', function(data, cb)
     end
 end)
 
+RegisterNUICallback('rent', function(data, cb)
+    local info = await('rsg-boats:server:rent', shopYard, data.model)
+    cb(info and true or false)
+    if info then
+        setUi(false)
+        launchBoat(info)
+    end
+end)
+
+RegisterNUICallback('upgrade', function(data, cb)
+    local ok = await('rsg-boats:server:buyUpgrade', shopYard, data.id, data.key)
+    cb(ok and true or false)
+    if ok then refreshShop() end
+end)
+
+-- the server took a hire boat back (time ran out)
+RegisterNetEvent('rsg-boats:client:rentalOver', function()
+    clearActiveBoat()
+end)
+
 RegisterNUICallback('store', function(_, cb)
     local ok = await('rsg-boats:server:store', shopYard, false)
     if ok then clearActiveBoat() end
@@ -348,19 +424,19 @@ RegisterNUICallback('transfer', function(data, cb)
 end)
 
 -- someone offers us a boat: answered in our own NUI
-local function answerOffer(accepted)
+answerOffer = function(accepted)
     if not offerCb then return end
     local cb = offerCb
     offerCb = nil
     SendNUIMessage({ action = 'offerClose' })
-    if not uiOpen then SetNuiFocus(false, false) end
+    syncFocus()
     cb(accepted == true)
 end
 
 RSGCore.Functions.CreateClientCallback('rsg-boats:client:transferOffer', function(cb, fromName, label, yardName)
     if offerCb or placingBoat then return cb(false) end
     offerCb = cb
-    SetNuiFocus(true, true)
+    syncFocus()
     SendNUIMessage({
         action = 'offer', locales = BoatsUiLocales(),
         title = locale('transfer_offer_title'),
@@ -391,7 +467,7 @@ end)
 OpenAdmin = function()
     local data = await('rsg-boats:server:getAdminData')
     if not data then return notify(locale('no_permission'), 'error') end
-    setUi(true, { action = 'openAdmin', data = data, locales = BoatsUiLocales() })
+    setUi(true, { action = 'openAdmin', data = data, locales = BoatsUiLocales() }, 'admin')
 end
 
 RegisterNetEvent('rsg-boats:client:openAdmin', OpenAdmin)
@@ -432,14 +508,15 @@ RegisterNUICallback('yardDelete', function(data, cb)
 end)
 
 RegisterNUICallback('adminDock', function(data, cb)
-    cb(await('rsg-boats:server:saveDock', false,
+    cb(await('rsg-boats:server:saveDock',
         { yard = data.id, r = tonumber(data.r), usePed = data.usePed == true }) or false)
 end)
 
 RegisterNUICallback('adminPlace', function(data, cb)
     cb('ok')
     setUi(false)
-    StartBoatPlacer(data.model or 'rowboat', data.id)
+    local y = Yards[tonumber(data.id)]
+    StartBoatPlacer(data.model or 'rowboat', data.id, y and y.coords)
 end)
 
 -- called by placer.lua when finished
@@ -451,7 +528,10 @@ function BoatsReopenAdmin() OpenAdmin() end
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     clearYards()
-    if activeBoat and DoesEntityExist(activeBoat) then DeleteEntity(activeBoat) end
+    if activeBoat and DoesEntityExist(activeBoat) then
+        exports['rsg-target']:removeLocalEntity(activeBoat, 'rsg_boats_storage')
+        DeleteEntity(activeBoat)
+    end
     if storePrompt then PromptDelete(storePrompt) end
-    if uiOpen or offerCb then SetNuiFocus(false, false) end
+    if uiFocus then uiFocus = false applyNuiFocus(false) end
 end)

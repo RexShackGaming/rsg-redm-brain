@@ -12,6 +12,7 @@ local Schema = {
         `enabled` TINYINT(1) NOT NULL DEFAULT 1,
         `slots` INT NOT NULL DEFAULT 10,
         `weight` INT NOT NULL DEFAULT 50000,
+        `rent_price` INT NOT NULL DEFAULT 0,
         PRIMARY KEY (`id`),
         UNIQUE KEY `model` (`model`)
     )]],
@@ -22,6 +23,8 @@ local Schema = {
         `label` VARCHAR(64) NOT NULL,
         `purchased` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         `yard` INT NULL DEFAULT NULL,
+        `price_paid` INT NULL DEFAULT NULL,
+        `upgrades` TEXT NULL DEFAULT NULL,
         PRIMARY KEY (`id`),
         KEY `citizenid` (`citizenid`)
     )]],
@@ -50,6 +53,9 @@ local Columns = {
     { 'rsg_boats_owned', 'purchased', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP' },
     { 'rsg_boats_owned', 'yard', 'INT NULL DEFAULT NULL' },    -- yard the boat is stored at (NULL = any yard)
     { 'rsg_boats_yards', 'models', 'TEXT NULL DEFAULT NULL' }, -- JSON list of boat models allowed at the yard (NULL = all)
+    { 'rsg_boats_models', 'rent_price', 'INT NOT NULL DEFAULT 0' },       -- hire price (0 = not for hire)
+    { 'rsg_boats_owned', 'price_paid', 'INT NULL DEFAULT NULL' },         -- purchase + upgrades (NULL = old boat, uses the model price)
+    { 'rsg_boats_owned', 'upgrades', 'TEXT NULL DEFAULT NULL' },          -- JSON { slots = level, weight = level }
 }
 
 local function columnExists(tbl, col)
@@ -65,7 +71,7 @@ local function tableExists(tbl)
 end
 
 function InstallDatabase()
-    if not Config.AutoInstallDB then return true end
+    if not Config.AutoDatabase then return true end
     local ok, err = pcall(function()
         local fresh = not tableExists('rsg_boats_models')
 
@@ -81,9 +87,9 @@ function InstallDatabase()
         -- seed default boats only on first install (so admin deletions stick)
         if fresh then
             for _, b in ipairs(Config.DefaultBoats or {}) do
-                MySQL.insert.await([[INSERT IGNORE INTO rsg_boats_models (model, label, description, price, enabled, slots, weight)
-                    VALUES (?, ?, ?, ?, 1, ?, ?)]], { b.model, b.label, b.description or '', b.price or 0,
-                    b.slots or Config.Storage.defaultSlots, b.weight or Config.Storage.defaultWeight })
+                MySQL.insert.await([[INSERT IGNORE INTO rsg_boats_models (model, label, description, price, enabled, slots, weight, rent_price)
+                    VALUES (?, ?, ?, ?, 1, ?, ?, ?)]], { b.model, b.label, b.description or '', b.price or 0,
+                    b.slots or Config.Storage.defaultSlots, b.weight or Config.Storage.defaultWeight, b.rent or 0 })
             end
             print('^2[rsg-boats]^7 database tables created')
         else
