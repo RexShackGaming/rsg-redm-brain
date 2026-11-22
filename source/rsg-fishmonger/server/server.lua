@@ -246,6 +246,7 @@ local function checkout(src, locationIndex, mode, cart)
     if totalFish == 0 then return fail('sv_cart_empty') end
 
     local mult = 1.0
+    local econQuote = nil
     if mode == 'sell' then
         local left = stockLeft(loc)
         if left and totalFish > left then
@@ -253,6 +254,19 @@ local function checkout(src, locationIndex, mode, cart)
         end
         mult = demandFor(loc) * (1 + bonusFor(Player))
         totalCash = round2(totalCash * mult)
+        -- rsg-economy (optional): town tax + standing price modifier on the final payout
+        if Config.Economy and Config.Economy.Enabled and GetResourceState('rsg-economy') == 'started' then
+            local ok, region = pcall(function() return exports['rsg-economy']:GetRegionAt(vector3(loc.coords.x, loc.coords.y, loc.coords.z)) end)
+            if ok and region then
+                local okq, q = pcall(function()
+                    return exports['rsg-economy']:Quote(src, { region = region, mode = 'sell', base = totalCash, qty = 1, market = false })
+                end)
+                if okq and q and q.total then
+                    econQuote = q
+                    totalCash = round2(q.total)
+                end
+            end
+        end
     end
 
     -- remove fish (rollback on any failure)
@@ -285,6 +299,7 @@ local function checkout(src, locationIndex, mode, cart)
             Webhook.Send('errors', { title = locale('wh_payout_failed_title'), src = src, description = locale('wh_payout_failed', Config.MoneyType, ('%.2f'):format(totalCash)) })
             return fail('sv_failed')
         end
+        if econQuote then pcall(function() exports['rsg-economy']:Record(src, econQuote) end) end -- money moved: bank the tax
         if stockLeft(loc) then addSold(loc, totalFish) end
     end
     addRep(Player, totalFish)

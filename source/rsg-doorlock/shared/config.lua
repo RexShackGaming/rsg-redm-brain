@@ -17,6 +17,17 @@ Config.PickRange         = 2.0   -- how close your aim must be to a door to sele
 Config.Debug             = false  -- print MLO door lookups to the F8 console
 Config.AllowCustomDoors  = true  -- allow picking MLO / custom door objects that aren't in shared/doorhashes.lua
 
+-- Lockpicking (needs the rsg-lockpick resource). A lock is only pickable when it has a difficulty set in the /doorlock editor.
+Config.Lockpick = {
+    Enabled      = true,
+    Key          = 'G',   -- key name from RSGCore.Shared.Keybinds for the "Pick lock" prompt
+    HoldDuration = 750,   -- ms the player must hold the key
+    Presets      = { 'easy', 'medium', 'hard' }, -- difficulties offered in the editor (names from rsg-lockpick Config.Presets)
+    Cooldown     = 5000,  -- ms between lockpick requests per player (server enforced)
+    RelockAfter  = 300,   -- seconds a picked door stays unlocked before it locks again (0 = until someone locks it)
+    Reputation   = 'theft', -- rsg-reputation action reported on a successful pick, in the lock's region (nil = none)
+}
+
 -- Doors are stored in the database (table: rsg_doorlocks) and managed in game with /doorlock.
 -- On first start (empty table) the doors in server/seed_doors.lua are imported once.
 Config.ImportConfigDoors = true

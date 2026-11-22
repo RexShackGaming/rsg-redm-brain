@@ -460,6 +460,23 @@ local function skillPerk(src, perk)
     return tonumber(exports['rsg-skills']:GetPerk(src, Config.Skills.Skill, perk)) or 0
 end
 
+-- rsg-reputation (optional): standing in the mine's region, at most once per cooldown
+local lastStanding = {} -- [src][region] = os.time()
+local function repStanding(src, mineId)
+    local c = Config.Reputation
+    if not c or not c.Enabled or (c.StandingPerCollect or 0) <= 0 then return end
+    if GetResourceState('rsg-reputation') ~= 'started' then return end
+    local region = MineCfg[mineId] and MineCfg[mineId].region
+    if not region then return end
+    local now = os.time()
+    lastStanding[src] = lastStanding[src] or {}
+    local last = lastStanding[src][region]
+    if last and now - last < (c.Cooldown or 0) then return end
+    lastStanding[src][region] = now
+    pcall(function() exports['rsg-reputation']:AddStanding(src, region, c.StandingPerCollect, 'mining collect') end)
+end
+AddEventHandler('playerDropped', function() lastStanding[source] = nil end)
+
 -- largest amount (<= want) of an item the player can carry, checked via rsg-inventory
 local function maxCarry(src, item, want)
     local inv = exports['rsg-inventory']
@@ -482,8 +499,15 @@ local function collectItem(src, m, item)
     if not exports['rsg-inventory']:AddItem(src, item, amt, nil, nil, 'mining-collect') then return 0, true end
     local left = stored - amt
     m.storage[item] = left > 0 and left or nil
-    TriggerClientEvent('rsg-inventory:client:ItemBox', src, shared, 'add', amt)
-    return amt, left > 0, shared.label
+    -- rsg-skills perk: chance of one extra item (not taken from the mine's storage)
+    local given = amt
+    local chance = Config.Skills.ExtraYield and skillPerk(src, 'extra_yield') or 0
+    if chance > 0 and math.random(100) <= chance and exports['rsg-inventory']:CanAddItem(src, item, 1)
+        and exports['rsg-inventory']:AddItem(src, item, 1, nil, nil, 'mining-skill-perk') then
+        given = amt + 1
+    end
+    TriggerClientEvent('rsg-inventory:client:ItemBox', src, shared, 'add', given)
+    return given, left > 0, shared.label
 end
 
 registerCallback('rsg-mining:server:collect', function(src, id, item)
@@ -506,6 +530,7 @@ registerCallback('rsg-mining:server:collect', function(src, id, item)
     if got > 0 then
         notify(src, table.concat(msgs, '\n'), 'success') -- one toast instead of one per item
         skillXP(src, math.min(got * (Config.Skills.CollectXP or 0), Config.Skills.MaxXPPerCollect or 50), 'mining collect')
+        repStanding(src, id)
         saveMine(id)
         Webhook.Log('ore_collected', { src = src, mine = MineCfg[id].label, value = got,
             description = table.concat(lines, '\n'),

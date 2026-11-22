@@ -1,4 +1,4 @@
-# rsg-robbery — Developer Docs
+# rsg-robbery — Developer Docs (v3.1.0)
 
 ## Overview
 Player-to-player robbery: target a player with hands up via rsg-target, cuff them, and open their inventory. Victims can be uncuffed by the robber, by another player, or auto-uncuff after `Config.AutoUncuffTime`.
@@ -26,6 +26,11 @@ No ox_lib dependency — locales load from `@rsg-core/shared/locale.lua` and not
 | `Config.CuffDistance` | 1.5 | Max distance to cuff |
 | `Config.RobCooldown` | 30000 | ms between robberies |
 | `Config.AutoUncuffTime` | 120000 | ms before auto-uncuff (0 = off) |
+| `Config.Reputation.Enabled` | true | Report robberies to rsg-reputation (optional resource) |
+| `Config.Reputation.Action` | `'robbery'` | rsg-reputation action applied to the robber |
+
+## rsg-reputation integration
+In `rsg-robbery:server:confirmrobbery`, once the victim has confirmed (hands up) and has been cuffed, the server calls `exports['rsg-reputation']:ApplyAction(robberId, Config.Reputation.Action)`. The honor change comes from rsg-reputation's `Config.Actions` (default `robbery`: -15 honor). No region is passed, so standing is not changed. The call is skipped when rsg-reputation is not started, and it runs only after the existing server-side checks (distance, cooldown, state) have passed.
 
 ## Localisation
 Set the language with `setr rsg:locale <code>`. Keys live under `robbery.*`.
@@ -37,7 +42,7 @@ All checks (distance, cooldown, item, state) are server-side; client target opti
 
 ## Technical reference
 
-Generated from the source of **rsg-robbery 3.0.0**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-robbery 3.1.0**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 

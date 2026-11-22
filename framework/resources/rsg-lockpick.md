@@ -1,8 +1,8 @@
 # rsg-lockpick
 
-Version 3.0.1. Lockpicking minigame for RSG Core
+Version 3.1.0. Lockpicking minigame for RSG Core
 
-**Lockpicking minigame for RedM (RSG Core).** > A lightweight NUI lockpicking game (pick + cylinder) you can start from any script, with an optional **server-issued attempt** mode that adds lock presets, skill-based difficulty, lockpick wear and breakage, and lawman alerts. Version 3.0.0 · full developer reference in [DOCS.md](DOCS.md). - **rsg-core** (framework, also provides the locale loader)
+**Lockpicking minigame for RedM (RSG Core).** > A lightweight NUI lockpicking game (pick + cylinder) you can start from any script, with an optional **server-issued attempt** mode that adds lock presets, skill-based difficulty, lockpick wear and breakage, and lawman alerts. Version 3.1.0 · full developer reference in [DOCS.md](DOCS.md). - **rsg-core** (framework, also provides the locale loader)
 
 Source: https://github.com/Rexshack-RedM/rsg-lockpick
 

@@ -3,6 +3,14 @@ Config = {}
 -- debug
 Config.Debug = false
 
+-- reputation (needs rsg-reputation; action 'arrest' is defined in its Config.Actions)
+Config.Reputation = {
+    Enabled    = true,
+    Action     = 'arrest',
+    MinMinutes = 1,    -- jail time needed to count
+    Cooldown   = 600,  -- seconds before the same lawman is rewarded again for the same target
+}
+
 -- settings
 Config.AddGPSRoute = true
 Config.AlertTimer = 60

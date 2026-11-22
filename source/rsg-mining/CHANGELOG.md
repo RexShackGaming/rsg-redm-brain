@@ -2,6 +2,15 @@
 
 All notable changes to rsg-mining. Newest first.
 
+## 3.2.0
+
+### Added
+- The rsg-skills `extra_yield` perk now works: each ore type collected has that % chance of one extra item (not taken from the mine's storage). Switch off with `Config.Skills.ExtraYield = false`.
+- Optional rsg-reputation integration (`Config.Reputation`): collecting ore earns standing in the mine's region (`region` on each `Config.Mines` entry), at most once per cooldown per player and region.
+
+### Documentation
+- README and DOCS describe both features.
+
 ## 3.1.1
 
 ### Added

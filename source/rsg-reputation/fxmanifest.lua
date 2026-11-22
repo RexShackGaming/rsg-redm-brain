@@ -6,7 +6,7 @@ lua54 'yes'
 name 'rsg-reputation'
 author 'RexShack'
 description 'Honor and regional standing (fame and infamy) for RSG Framework'
-version '3.0.1'
+version '3.0.2'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',

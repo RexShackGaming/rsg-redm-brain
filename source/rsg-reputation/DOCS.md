@@ -52,6 +52,7 @@ Regions are plain ids (`valentine`, `new_hanover`, ...) chosen by the calling sc
 | `murder` | -40 | -30 |
 | `bounty_delivered` | 5 | 5 |
 | `outlaw_killed` | 8 | 6 |
+| `arrest` | 3 | 4 |
 | `helped_lawman` | 5 | 4 |
 | `revive` | 5 | 3 |
 | `donation` | 3 | 5 |

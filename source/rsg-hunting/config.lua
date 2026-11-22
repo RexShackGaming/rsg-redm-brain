@@ -1703,6 +1703,7 @@ Config.ButcherLocations = {
 
     {   --valentine
         name = 'Valentine Butcher',
+        region = 'valentine', -- rsg-reputation region (town or state)
         prompt = 'valentine-butcher',
         coords = vector3(-341.05, 767.33, 116.70),
         npcmodel = `u_m_m_valbutcher_01`,
@@ -1711,6 +1712,7 @@ Config.ButcherLocations = {
     },
     {   --st denis
         name = 'St Denis Butcher',
+        region = 'saint_denis', -- rsg-reputation region (town or state)
         prompt = 'stdenis-butcher',
         coords = vector3(2816.37, -1322.24, 46.61),
         npcmodel = `s_m_m_unibutchers_01`,
@@ -1719,6 +1721,7 @@ Config.ButcherLocations = {
     },
     {   -- rhodes
         name = 'Rhodes Butcher',
+        region = 'rhodes', -- rsg-reputation region (town or state)
         prompt = 'rhodes-butcher',
         coords = vector3(1296.36, -1279.26, 75.84),
         npcmodel = `s_m_m_unibutchers_01`,
@@ -1727,6 +1730,7 @@ Config.ButcherLocations = {
     },
     {   -- annesburg
         name = 'Annesburg Butcher',
+        region = 'annesburg', -- rsg-reputation region (town or state)
         prompt = 'annesburg-butcher',
         coords = vector3(2937.32, 1310.64, 44.48),
         npcmodel = `s_m_m_unibutchers_01`,
@@ -1735,6 +1739,7 @@ Config.ButcherLocations = {
     },
     {   -- tumbleweed
         name = 'Tumbleweed Butcher',
+        region = 'tumbleweed', -- rsg-reputation region (town or state)
         prompt = 'tumbleweed-butcher',
         coords = vector3(-5508.10, -2947.73, -1.87),
         npcmodel = `s_m_m_unibutchers_01`,
@@ -1743,6 +1748,7 @@ Config.ButcherLocations = {
     },
     {   -- blackwater
         name = 'Blackwater Butcher',
+        region = 'blackwater', -- rsg-reputation region (town or state)
         prompt = 'blackwater-butcher',
         coords = vector3(-751.102, -1284.896, 43.276576),
         npcmodel = `s_m_m_unibutchers_01`,
@@ -1751,6 +1757,7 @@ Config.ButcherLocations = {
     },
     {   -- strawberry
         name = 'Strawberry Butcher',
+        region = 'strawberry', -- rsg-reputation region (town or state)
         prompt = 'strawberry-butcher',
         coords = vector3(-1752.91, -394.74, 156.19),
         npcmodel = `s_m_m_unibutchers_01`,
@@ -1759,6 +1766,7 @@ Config.ButcherLocations = {
     },
     {   -- vanhorn
         name = 'Van-Horn Butcher',
+        region = 'van_horn', -- rsg-reputation region (town or state)
         prompt = 'vanhorn-butcher',
         coords = vector3(2994.23, 571.79, 44.35),
         npcmodel = `s_m_m_unibutchers_01`,
@@ -1767,6 +1775,7 @@ Config.ButcherLocations = {
     },
     {   -- spidergorge
         name = 'Spider Gorge Butcher',
+        region = 'ambarino', -- rsg-reputation region (town or state)
         prompt = 'spidergorge-butcher',
         coords = vector3(-1355.103, 2420.8293, 307.48272),
         npcmodel = `s_m_m_unibutchers_01`,
@@ -1775,6 +1784,7 @@ Config.ButcherLocations = {
     },
     {   -- riggsstation
         name = 'Riggs Station Butcher',
+        region = 'west_elizabeth', -- rsg-reputation region (town or state)
         prompt = 'riggsstation-butcher',
         coords = vector3(-1005.966, -540.9986, 98.964859),
         npcmodel = `s_m_m_unibutchers_01`,
@@ -1783,6 +1793,7 @@ Config.ButcherLocations = {
     },
     {   -- elysian
         name = 'Elysian Butcher',
+        region = 'new_hanover', -- rsg-reputation region (town or state)
         prompt = 'elysian-butcher',
         coords = vector3(2540.72, 802.35, 76.38),
         npcmodel = `s_m_m_unibutchers_01`,
@@ -1791,6 +1802,7 @@ Config.ButcherLocations = {
     },
     {   -- guarma
         name = 'Guarma Butcher',
+        region = 'guarma', -- rsg-reputation region (town or state)
         prompt = 'guarma-butcher',
         coords = vector3(1248.80, -7043.52, 41.84),
         npcmodel = `s_m_m_unibutchers_01`,
@@ -1898,3 +1910,41 @@ function SkillPerk(src, perk)
     if not SkillsActive() then return 0 end
     return tonumber(exports['rsg-skills']:GetPerk(src, Config.Skills.Skill, perk)) or 0
 end
+
+-- rsg-reputation integration (optional). Needs the rsg-reputation resource; does nothing when it is not started.
+-- Selling a carcass to a butcher earns standing in that butcher's region (Config.ButcherLocations[].region),
+-- and the region's standing changes how much cash the butcher pays. Honor is not touched: hunting is legal.
+Config.Reputation = {
+    Enabled          = true,
+    StandingPerSale  = 1,     -- standing gained in the butcher's region per carcass sold (0 = off)
+    StandingCooldown = 600,   -- seconds before the same player can gain standing in the same region again
+    PayoutModifier   = true,  -- hated/disliked players are paid less, liked/celebrated players more
+    PayoutMin        = 0.5,   -- the payout factor is kept between these two values
+    PayoutMax        = 1.5,
+}
+
+function ReputationActive()
+    return Config.Reputation and Config.Reputation.Enabled and GetResourceState('rsg-reputation') == 'started'
+end
+
+-- cash factor for a sale in a region: 1 - the region's price modifier (hated 0.75, neutral 1.0, celebrated 1.15)
+function ReputationPayoutFactor(src, region)
+    if not region or not ReputationActive() or not Config.Reputation.PayoutModifier then return 1.0 end
+    local ok, mod = pcall(function() return exports['rsg-reputation']:GetPriceModifier(src, region) end)
+    mod = ok and tonumber(mod) or 0.0
+    return math.max(Config.Reputation.PayoutMin or 0.5, math.min(Config.Reputation.PayoutMax or 1.5, 1.0 - mod))
+end
+
+local lastStanding = {} -- [src][region] = os.time() of the last standing gain
+function ReputationSale(src, region)
+    local c = Config.Reputation
+    if not region or not ReputationActive() or (c.StandingPerSale or 0) <= 0 then return end
+    local now = os.time()
+    lastStanding[src] = lastStanding[src] or {}
+    local last = lastStanding[src][region]
+    if last and now - last < (c.StandingCooldown or 0) then return end
+    lastStanding[src][region] = now
+    pcall(function() exports['rsg-reputation']:AddStanding(src, region, c.StandingPerSale, 'hunting butcher sale') end)
+end
+
+AddEventHandler('playerDropped', function() lastStanding[source] = nil end)

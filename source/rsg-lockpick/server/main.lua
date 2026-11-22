@@ -68,6 +68,25 @@ local function awardXP(src, success)
     pcall(function() exports['rsg-skills']:AddXP(src, Config.Skill.Name, amount, 'lockpick', { raw = true }) end)
 end
 
+---------------------------------------------------------------------------
+-- rsg-reputation (optional)
+---------------------------------------------------------------------------
+-- Only a successful attempt reports a crime, and only what the calling server script asked for
+-- (ticket.data.reputation = { action, region }) or Config.Reputation.DefaultAction.
+local function applyReputation(src, ticket, outcome)
+    local c = Config.Reputation
+    if not c or not c.Enabled or outcome ~= 'success' then return end
+    if GetResourceState('rsg-reputation') ~= 'started' then return end
+
+    local rep = type(ticket.data.reputation) == 'table' and ticket.data.reputation or {}
+    local action = rep.action or c.DefaultAction
+    if type(action) ~= 'string' or not c.Actions[action] then return end
+    local region = type(rep.region) == 'string' and rep.region or nil
+
+    local ok, err = pcall(function() return exports['rsg-reputation']:ApplyAction(src, action, region) end)
+    if not ok then print(('^1[rsg-lockpick]^7 could not apply reputation action \'%s\': %s'):format(action, tostring(err))) end
+end
+
 AddEventHandler('rsg-skills:server:ready', registerSkill)
 AddEventHandler('onResourceStart', function(res)
     if res == 'rsg-skills' then SetTimeout(500, registerSkill) end
@@ -167,6 +186,7 @@ local function resolveTicket(src, ticket, outcome, reason)
     if outcome ~= 'cancel' then
         applyWear(src, ticket, outcome)
         awardXP(src, success)
+        applyReputation(src, ticket, outcome)
         maybeAlert(src, ticket, outcome)
     end
 
@@ -181,6 +201,7 @@ end
 --     coords = vector3, radius = 3.0,         (optional: player must stay near this point)
 --     alert = false | 0.0-1.0,                (optional: lawman alert override)
 --     noItem = true,                          (optional: do not require/wear the lockpick item)
+--     reputation = { action = 'theft', region = 'valentine' },  (optional: reported to rsg-reputation on success)
 --   }
 --   cb(success, reason) is called on the server with the validated result.
 local function StartAttempt(src, data, cb)

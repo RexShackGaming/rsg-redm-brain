@@ -2,6 +2,15 @@
 
 All notable changes to rsg-hunting. Newest first.
 
+## 3.4.0
+
+### Added
+- Optional rsg-reputation integration (`Config.Reputation`): selling a carcass to a butcher earns standing in the butcher's region, and the region's standing adjusts the cash paid (`1 - price modifier`, limited by `PayoutMin` / `PayoutMax`). Standing gains have a per-player, per-region cooldown.
+- `region` on every `Config.ButcherLocations` entry (rsg-reputation region id). Check the ids for Spider Gorge (ambarino), Riggs Station (west_elizabeth) and Elysian (new_hanover) against your map.
+
+### Changed
+- `nearButcher` returns the butcher location instead of `true`.
+
 ## 3.3.2
 
 ### Changed

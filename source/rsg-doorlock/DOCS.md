@@ -1,4 +1,4 @@
-# rsg-doorlock – Docs (v3.2.0)
+# rsg-doorlock – Docs (v3.3.0)
 
 ## Contents
 1. Files
@@ -58,6 +58,13 @@
 | `AllowCustomDoors` | `true` | Allow MLO / custom doors not in the built-in list |
 | `ImportConfigDoors` | `true` | Import `seed_doors.lua` once into an empty table |
 | `Debug` | `false` | Print MLO door lookups to F8 |
+| `Lockpick.Enabled` | `true` | Lockpickable doors (needs `rsg-lockpick`) |
+| `Lockpick.Key` | `'G'` | Key name from `RSGCore.Shared.Keybinds` for the "Pick lock" prompt |
+| `Lockpick.HoldDuration` | `750` | ms the player holds the key |
+| `Lockpick.Presets` | `{ 'easy', 'medium', 'hard' }` | Difficulties offered in the editor; names must exist in rsg-lockpick's `Config.Presets` |
+| `Lockpick.Cooldown` | `5000` | ms between lockpick requests per player |
+| `Lockpick.RelockAfter` | `300` | Seconds before a picked door locks again (0 = never automatically) |
+| `Lockpick.Reputation` | `'theft'` | rsg-reputation action reported on success; must be listed in rsg-lockpick's `Config.Reputation.Actions` (`nil` = none) |
 
 `server/sv_config.lua` holds the webhook URLs. Never add it to `shared_scripts`.
 
@@ -67,6 +74,7 @@ Open it with `/doorlock` (needs `Config.AdminPermission`).
 - Create, edit and delete locks without restarting the resource.
 - **Door picking:** aim at a door and press ENTER. The HUD shows the model, hash, selection count and keys, and warns if the door already belongs to another lock. A door can belong to only one lock.
 - Set job tags, interaction range and the default locked/unlocked state.
+- **Lockpicking:** Off / Easy / Medium / Hard buttons (`Config.Lockpick.Presets`). **Reputation Region:** optional rsg-reputation region id (checked against `rsg-reputation:GetRegions()` when it is running). Both fields are hidden when `Config.Lockpick.Enabled = false`.
 - Teleport to any lock.
 - MLO doors: add the hashes to `shared/doorhashes_custom.lua`, or pick the door prop directly (`Config.AllowCustomDoors`).
 
@@ -101,13 +109,24 @@ CREATE TABLE IF NOT EXISTS `rsg_doorlocks` (
     `jobs` LONGTEXT NOT NULL,
     `distance` FLOAT NOT NULL DEFAULT 1.25,
     `locked` TINYINT(1) NOT NULL DEFAULT 1,
+    `lockpick` VARCHAR(16) NULL DEFAULT NULL,
+    `region` VARCHAR(32) NULL DEFAULT NULL,
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
-The table is created on start. If your database user lacks `CREATE` permission, import `installation/rsg_doorlocks.sql` manually. Lock states survive restarts.
+`lockpick` is the difficulty (empty = not pickable) and `region` the rsg-reputation region. Tables from older versions get the two columns added automatically on start (never destructive). For a manual upgrade run the two `ALTER TABLE` lines at the top of `installation/rsg_doorlocks.sql`; without the columns lockpicking stays off. The table is created on start. If your database user lacks `CREATE` permission, import `installation/rsg_doorlocks.sql` manually. Lock states survive restarts.
 
 ## 8. Discord webhooks
 Set URLs in `server/sv_config.lua` (`SvConfig.Webhooks`). Separate channels, or one default channel, for: door use, denied access, admin actions, security and system. Embeds include character name, citizen ID, job and grade, server ID and Discord mention. Edit logs show a before → after list. Messages are batched and Discord 429 replies are handled. Security alerts (non-admin editor requests, fake doors, using doors from far away) can ping a role.
+
+## 8b. Lockpicking
+Optional, needs `rsg-lockpick` (and `rsg-reputation` for the theft part). Flow:
+1. A lock with a `lockpick` difficulty, locked, shows the **Pick lock** prompt to players whose job does not unlock it (the client check is only a convenience).
+2. The client sends `rsg-doorlock:server:requestLockpick(doorID)`. The server checks: ready, door exists, not dead or handcuffed, `Config.Lockpick.Cooldown`, no attempt already running for the player, the door is locked and has a difficulty, rsg-lockpick is started, distance (`distance + DistanceTolerance`), and that the player does not already have a key.
+3. The server calls `exports['rsg-lockpick']:StartAttempt(src, { preset = lock.lockpick, coords = lock.textCoords, radius = distance + DistanceTolerance, reputation = { action = Config.Lockpick.Reputation, region = lock.region } }, cb)`. rsg-lockpick validates the minigame result, wears the pick and sends its own lawman alerts; the callback receives `success, reason`.
+4. On success the door is set unlocked **in memory only** and broadcast with `rsg-doorlock:client:setState`; the database keeps the saved state. A relock timer (`RelockAfter`) locks it again, and a manual toggle, an admin edit or a delete cancels a pending relock. rsg-lockpick reports the `theft` action to rsg-reputation (honor, plus standing in `region` when set).
+5. A failed attempt tells the player and is logged; cancelled or expired attempts change nothing.
+Discord: log type `Lockpick` (`SvConfig.Webhooks.Urls.Lockpick`, `Log.Lockpick`).
 
 ## 9. Security
 - Server checks player, door, distance, job, duty, permission and all input data.
@@ -115,6 +134,7 @@ Set URLs in `server/sv_config.lua` (`SvConfig.Webhooks`). Separate channels, or 
 - Door hashes and coordinates are validated (integers, finite values, map bounds).
 - Admin callbacks are permission-checked and logged.
 - A duplicate door is rejected with the name of the lock that owns it.
+- Lockpicking is decided on the server: the difficulty comes from the saved lock, never from the client, and the result comes from rsg-lockpick's ticket system. The editor only accepts difficulties listed in `Config.Lockpick.Presets` and region ids that exist in rsg-reputation.
 
 ## 10. How-tos
 - **Add a lock to an MLO house:** `/doorlock` → create → aim at the door → ENTER → set jobs/distance → save. If the door isn't in the hash list, add it to `shared/doorhashes_custom.lua`.
@@ -136,7 +156,7 @@ Support the Project : https://rexshack.tebex.store/
 
 ## Technical reference
 
-Generated from the source of **rsg-doorlock 3.2.0**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-doorlock 3.3.0**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 

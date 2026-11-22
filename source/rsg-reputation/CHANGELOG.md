@@ -2,6 +2,12 @@
 
 All notable changes to rsg-reputation. Newest first.
 
+
+## 3.0.2
+
+### Added
+- New `arrest` action in `Config.Actions` (honor +3, standing +4), used by rsg-lawman when jailing a player.
+
 ## 3.0.0
 
 ### Documentation

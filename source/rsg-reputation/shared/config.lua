@@ -104,6 +104,7 @@ Config.Actions = {
     murder           = { honor = -40, standing = -30 },
     bounty_delivered = { honor = 5,   standing = 5 },
     outlaw_killed    = { honor = 8,   standing = 6 },
+    arrest           = { honor = 3,   standing = 4 },
     helped_lawman    = { honor = 5,   standing = 4 },
     revive           = { honor = 5,   standing = 3 },
     donation         = { honor = 3,   standing = 5 },

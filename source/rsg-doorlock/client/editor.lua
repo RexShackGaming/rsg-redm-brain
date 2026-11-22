@@ -26,6 +26,7 @@ local function doorList()
         end
         list[#list + 1] = {
             id = id, name = d.name, jobs = d.jobs, distance = d.distance, locked = d.locked, doors = hashes,
+            lockpick = d.lockpick or '', region = d.region or '',
             dist = math.floor(#(GetEntityCoords(PlayerPedId()) - d.textCoords) + 0.5)
         }
     end
@@ -75,6 +76,8 @@ local function openUI(extra)
         doors = doorList(),
         maxDoors = Config.MaxDoorsPerLock,
         defaultDistance = Config.DefaultDistance,
+        lockpickEnabled = Config.Lockpick.Enabled,
+        lockpickPresets = Config.Lockpick.Presets,
         pick = extra
     })
 end

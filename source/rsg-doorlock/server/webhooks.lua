@@ -100,10 +100,10 @@ end
 ---------------------------------------------
 -- core
 ---------------------------------------------
---- @param logType string DoorUse | Denied | Admin | Security | System
+--- @param logType string DoorUse | Denied | Lockpick | Admin | Security | System
 --- @param data table { title, description, color, fields = {} }
 function Webhook.Send(logType, data)
-    if not W.Enabled or not W.Log[logType] then return end
+    if not W.Enabled or W.Log[logType] == false then return end -- log types missing from an older sv_config stay on
     local url = urlFor(logType)
     if not url then return end
 
@@ -140,6 +140,14 @@ function Webhook.DoorUsed(src, door, locked)
     })
 end
 
+function Webhook.Lockpick(src, door, success)
+    Webhook.Send('Lockpick', {
+        title = locale(success and 'wh_pick_ok' or 'wh_pick_fail'),
+        color = success and W.Colors.unlocked or W.Colors.denied,
+        fields = { Webhook.PlayerField(src), Webhook.DoorField(door), { name = locale('wh_f_difficulty'), value = tostring(door.lockpick or '-'), inline = true } }
+    })
+end
+
 function Webhook.Denied(src, door, reason, distance)
     local key = ('%s:%s'):format(src, door.id)
     local now = os.time()
@@ -172,6 +180,8 @@ local function diff(old, new)
     if j(old.jobs) ~= j(new.jobs) then out[#out + 1] = ('%s: %s → %s'):format(locale('ui_jobs'), j(old.jobs), j(new.jobs)) end
     if old.distance ~= new.distance then out[#out + 1] = ('%s: %.2f → %.2f'):format(locale('ui_range'), old.distance, new.distance) end
     if old.locked ~= new.locked then out[#out + 1] = ('%s: %s → %s'):format(locale('ui_state'), locale(old.locked and 'ui_locked' or 'ui_unlocked'), locale(new.locked and 'ui_locked' or 'ui_unlocked')) end
+    if (old.lockpick or '') ~= (new.lockpick or '') then out[#out + 1] = ('%s: %s → %s'):format(locale('ui_lockpick'), old.lockpick or locale('ui_lp_off'), new.lockpick or locale('ui_lp_off')) end
+    if (old.region or '') ~= (new.region or '') then out[#out + 1] = ('%s: %s → %s'):format(locale('ui_region'), old.region or locale('wh_none'), new.region or locale('wh_none')) end
     if h(old.doors) ~= h(new.doors) then out[#out + 1] = ('%s: %s → %s'):format(locale('wh_hashes'), h(old.doors), h(new.doors)) end
     return #out > 0 and table.concat(out, '\n') or locale('wh_no_changes')
 end

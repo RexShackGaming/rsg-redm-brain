@@ -1,8 +1,8 @@
 # rsg-robbery
 
-Version 3.0.0. Player-to-player robbery system for RSG Framework
+Version 3.1.0. Player-to-player robbery system for RSG Framework
 
-Player-to-player robbery system for RedM / RSG Core. **Approach** a player and get close (within ~2.5m) **Target them** using the third-eye targeting system (press the target key) they need to have hands up
+Version 3.1.0 Player-to-player robbery system for RedM / RSG Core. **Approach** a player and get close (within ~2.5m)
 
 Source: https://github.com/Rexshack-RedM/rsg-robbery
 

@@ -1,4 +1,4 @@
-# rsg-mining – Developer Docs
+# rsg-mining – Developer Docs (v3.2.0)
 
 ## Framework usage (ox_lib free)
 rsg-mining has no ox_lib dependency. Everything runs on rsg-core and rsg-target.
@@ -31,6 +31,12 @@ All re-validate lease holder, distance and cooldown server-side.
 ## rsg-skills integration
 
 `Config.Skills = { Enabled, Skill, CollectXP, MaxXPPerCollect }`. After the server has handed over the ore in `rsg-mining:server:collect`, it calls `exports['rsg-skills']:AddXP(src, 'mining', xp, 'mining collect')` with `xp = min(items collected * CollectXP, MaxXPPerCollect)`. The amount comes from config. Skipped when rsg-skills is not started.
+
+With `Config.Skills.ExtraYield = true`, `collectItem` also reads `GetPerk(src, 'mining', 'extra_yield')` and rolls once per ore type collected: on success one extra item is given (after `CanAddItem`) and shown in the item box and the notification. The extra item is not taken from the mine's storage. The `rare_chance` perk is not used by this script.
+
+## rsg-reputation integration
+
+`Config.Reputation = { Enabled, StandingPerCollect, Cooldown }`, and a `region` on every entry of `Config.Mines` (an id from rsg-reputation's `Config.Regions`: annesburg, new_austin for Gaptooth, ambarino for Grizzlies). After a successful `rsg-mining:server:collect` the server calls `exports['rsg-reputation']:AddStanding(src, region, StandingPerCollect, 'mining collect')`, at most once per player and region every `Cooldown` seconds. Honor is not changed. Skipped when rsg-reputation is not started or the mine has no region.
 
 <!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
 

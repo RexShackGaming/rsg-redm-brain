@@ -1,5 +1,7 @@
 # rsg-robbery
 
+Version 3.1.0
+
 Player-to-player robbery system for RedM / RSG Core.
 
 ---
@@ -79,6 +81,8 @@ Config.CuffDistance = 1.5          -- Max distance to cuff
 Config.RobCooldown = 30000         -- Cooldown between robberies (ms)
 Config.AutoUncuffTime = 120000     -- Auto-uncuff after ms (0 = disable)
 ```
+
+Optional: with `rsg-reputation` started, robbing another player costs the robber honor (`Config.Reputation`, action `robbery`). Set `Config.Reputation.Enabled = false` to turn it off.
 
 
 ### Uninstallation

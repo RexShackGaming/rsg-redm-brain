@@ -5,7 +5,9 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 let doors = [];
 let maxDoors = 8;
 let defaultDistance = 1.25;
-let form = null; // { id, name, jobs[], distance, locked, doors[] }
+let lockpickEnabled = false;
+let lockpickPresets = [];
+let form = null; // { id, name, jobs[], distance, locked, lockpick, region, doors[] }
 let pendingDelete = null;
 let L = {}; // locale dictionary sent from Lua (rsg-core locale(), locales/*.json)
 
@@ -57,6 +59,7 @@ function showForm(data) {
     $('btn-delete').classList.toggle('hidden', !form.id);
     $('f-name').value = form.name;
     $('f-distance').value = form.distance;
+    $('f-region').value = form.region || '';
     renderForm();
 }
 
@@ -93,6 +96,12 @@ function renderForm() {
         chips.insertBefore(c, $('f-job-input'));
     });
 
+    // lockpick difficulty: Off + the presets sent from Lua (custom buttons, no native select)
+    $('f-lp-wrap').classList.toggle('hidden', !lockpickEnabled);
+    $('f-region-wrap').classList.toggle('hidden', !lockpickEnabled);
+    $('f-lockpick').innerHTML = ['', ...lockpickPresets].map((p) =>
+        `<button data-lp="${esc(p)}" class="${(form.lockpick || '') === p ? 'on' : ''}">${esc(p ? (L['ui_lp_' + p] || p) : t('ui_lp_off'))}</button>`).join('');
+
     $('f-door-count').textContent = `${form.doors.length} / ${maxDoors}`;
     $('f-doors').innerHTML = form.doors.length ? form.doors.map((d, i) => `
         <div class="door-item">
@@ -113,6 +122,7 @@ function addJob() {
 
 function readForm() {
     form.name = $('f-name').value;
+    form.region = $('f-region').value.trim().toLowerCase();
     form.distance = parseFloat($('f-distance').value);
     if ($('f-job-input').value.trim()) addJob();
 }
@@ -156,7 +166,7 @@ $('search').addEventListener('input', renderList);
 $('btn-close').onclick = closeAll;
 $('btn-back').onclick = showList;
 $('btn-cancel').onclick = showList;
-$('btn-new').onclick = () => showForm({ id: null, name: '', jobs: [], distance: defaultDistance, locked: true, doors: [] });
+$('btn-new').onclick = () => showForm({ id: null, name: '', jobs: [], distance: defaultDistance, locked: true, lockpick: '', region: '', doors: [] });
 
 $('list').addEventListener('click', (e) => {
     const tp = e.target.closest('[data-tp]');
@@ -176,6 +186,10 @@ $('f-jobs').addEventListener('click', (e) => {
     else $('f-job-input').focus();
 });
 $('f-distance').addEventListener('input', (e) => { form.distance = parseFloat(e.target.value); renderForm(); });
+$('f-lockpick').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (b) { readForm(); form.lockpick = b.dataset.lp || ''; renderForm(); }
+});
 $('f-locked').addEventListener('click', (e) => {
     if (e.target.dataset.v) { form.locked = e.target.dataset.v === '1'; renderForm(); }
 });
@@ -229,6 +243,8 @@ window.addEventListener('message', ({ data }) => {
             doors = data.doors || [];
             maxDoors = data.maxDoors || maxDoors;
             defaultDistance = data.defaultDistance || defaultDistance;
+            lockpickEnabled = data.lockpickEnabled === true;
+            lockpickPresets = Array.isArray(data.lockpickPresets) ? data.lockpickPresets : [];
             $('app').classList.remove('hidden');
             if (data.pick && form) { form.doors = data.pick; showForm(form); }
             else showList();

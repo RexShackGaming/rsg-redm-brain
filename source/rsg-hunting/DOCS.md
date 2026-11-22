@@ -1,4 +1,4 @@
-# rsg-hunting – Docs (v3.3.2)
+# rsg-hunting – Docs (v3.4.0)
 
 ## Contents
 1. Files
@@ -112,6 +112,15 @@ The server validates every skinning and sale: carcass exists, is dead, is close 
 - The trapper vendor sale is not changed, because its prices are shown in the shop UI.
 - rsg-skills imports the old `hunting` rep value once per character (`repImport`), so existing levels carry over.
 
+## rsg-reputation integration
+
+`Config.Reputation = { Enabled, StandingPerSale, StandingCooldown, PayoutModifier, PayoutMin, PayoutMax }`, plus the global helpers `ReputationActive()`, `ReputationPayoutFactor(src, region)` and `ReputationSale(src, region)` defined at the end of `config.lua`. Optional: everything is skipped when `rsg-reputation` is not started.
+- Every entry in `Config.ButcherLocations` has a `region` (an id from rsg-reputation's `Config.Regions`, a town or a state). `nearButcher` now returns the butcher the player is standing at, so the server knows the region.
+- **Payout:** `ReputationPayoutFactor` reads `GetPriceModifier(src, region)` and pays `1 - modifier`, kept between `PayoutMin` and `PayoutMax` (hated 0.75, disliked 0.90, neutral 1.0, liked 1.05, respected 1.10, celebrated 1.15 with rsg-reputation's default tiers). The factor multiplies the final cash, after the quality multiplier and the perk bonuses. Set `PayoutModifier = false` to switch it off.
+- **Standing:** after a successful sale `ReputationSale` calls `AddStanding(src, region, StandingPerSale, 'hunting butcher sale')`, at most once per player and region every `StandingCooldown` seconds, so spamming sales cannot farm it. Set `StandingPerSale = 0` to switch it off.
+- Honor is never changed: hunting is legal. The trapper vendor is not affected, because its prices are shown in the shop UI.
+- All values come from the server config. The client only sends the carcass network id, as before.
+
 
 Support the Project : https://rexshack.tebex.store/
 
@@ -119,7 +128,7 @@ Support the Project : https://rexshack.tebex.store/
 
 ## Technical reference
 
-Generated from the source of **rsg-hunting 3.3.2**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-hunting 3.4.0**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 
@@ -188,6 +197,7 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.ButcherLocations` | `table` |  |
 | `Config.Animal` | `table` |  |
 | `Config.Skills` | `table` | The hunting XP, levels and leaderboard above keep working; this adds the shared rsg-skills 'hunting' skill on  |
+| `Config.Reputation` | `table` | rsg-reputation integration (optional): town standing and payout factor for butcher sales |
 | `Config.Skill` | `'hunting'` |  |
 | `Config.MirrorXP` | `true` |  |
 | `Config.SellBonus` | `true` |  |

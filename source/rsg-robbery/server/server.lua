@@ -74,6 +74,11 @@ RegisterNetEvent('rsg-robbery:server:confirmrobbery', function(robberId)
         Target.Functions.SetMetaData('ishandcuffed', true)
         TriggerClientEvent('rsg-robbery:client:getcuffed', targetSrc)
 
+        -- rsg-reputation (optional): the robber loses honor for robbing another player
+        if Config.Reputation and Config.Reputation.Enabled and GetResourceState('rsg-reputation') == 'started' then
+            pcall(function() exports['rsg-reputation']:ApplyAction(robberId, Config.Reputation.Action) end)
+        end
+
         TriggerClientEvent('RSGCore:Client:Notify', targetSrc, { title = locale('robbery.title'), description = locale('robbery.being_robbed'), type = 'error', duration = 7000 })
         TriggerClientEvent('RSGCore:Client:Notify', robberId, { title = locale('robbery.title'), description = locale('robbery.cuffing'), type = 'success', duration = 3000 })
 

@@ -5,7 +5,7 @@ game 'rdr3'
 name 'rsg-hunting'
 author 'RexShack'
 description 'Hunting, trapper and butcher script for RSG Framework'
-version '3.3.2'
+version '3.4.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',

@@ -182,5 +182,13 @@ Optional. With `rsg-skills` started (`Config.Skills`):
 
 The existing hunting XP, levels, weekly leaderboard and level perks keep working. Set `Config.Skills.Enabled = false` to turn it all off.
 
+## rsg-reputation integration
+
+Optional. With `rsg-reputation` started (`Config.Reputation`):
+- selling a carcass to a butcher earns **standing** in that butcher's town or state (`region` on each `Config.ButcherLocations` entry), at most once every `StandingCooldown` seconds per region;
+- the region's standing changes the butcher's **payout**: hated players are paid less, liked and celebrated players more (`PayoutModifier`, kept between `PayoutMin` and `PayoutMax`).
+
+Honor is not changed (hunting is legal). Set `Config.Reputation.Enabled = false` to turn it all off. Changing a region id is a one-word edit in the butcher list.
+
 
 Support the Project : https://rexshack.tebex.store/

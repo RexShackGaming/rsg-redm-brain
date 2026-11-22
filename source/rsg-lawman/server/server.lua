@@ -162,6 +162,24 @@ RSGCore.Commands.Add('jail', locale('sv_jail'),
 --------------------------------------------------------------------------------------------------
 -- jail player
 --------------------------------------------------------------------------------------------------
+local lastArrest = {} -- [lawman src] = { [target citizenid] = os.time() }
+
+local function arrestReputation(lawman, target, minutes)
+    local cfg = Config.Reputation
+    if not cfg or not cfg.Enabled then return end
+    if GetResourceState('rsg-reputation') ~= 'started' then return end
+    if (tonumber(minutes) or 0) < (cfg.MinMinutes or 1) then return end
+    if lawman.PlayerData.source == target.PlayerData.source then return end
+    local cid = target.PlayerData.citizenid
+    local src = lawman.PlayerData.source
+    lastArrest[src] = lastArrest[src] or {}
+    if lastArrest[src][cid] and os.time() - lastArrest[src][cid] < (cfg.Cooldown or 600) then return end
+    lastArrest[src][cid] = os.time()
+    pcall(function() exports['rsg-reputation']:ApplyAction(src, cfg.Action or 'arrest') end)
+end
+
+AddEventHandler('playerDropped', function() lastArrest[source] = nil end)
+
 function jailPlayerByPlayer(targetPlayer, byPlayer, minutes)
     local Player = RSGCore.Functions.GetPlayer(byPlayer)
     local OtherPlayer = RSGCore.Functions.GetPlayer(targetPlayer)
@@ -177,6 +195,7 @@ function jailPlayerByPlayer(targetPlayer, byPlayer, minutes)
             OtherPlayer.Functions.SetMetaData('injail', time)
             OtherPlayer.Functions.SetMetaData('criminalrecord', { ['hasRecord'] = true, ['date'] = currentDate })
             TriggerClientEvent('rsg-lawman:client:sendtojail', OtherPlayer.PlayerData.source, time)
+            arrestReputation(Player, OtherPlayer, time)
             TriggerClientEvent('RSGCore:Client:Notify', byPlayer,
                 { title = locale('sv_injail') .. ' ' .. time, type = 'success', duration = 5000 })
         end

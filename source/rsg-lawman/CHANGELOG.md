@@ -2,6 +2,12 @@
 
 All notable changes to rsg-lawman. Newest first.
 
+
+## 3.2.0
+
+### Added
+- Optional rsg-reputation hook: a lawman who jails a player earns the `arrest` action (`Config.Reputation`: Enabled, Action, MinMinutes, Cooldown per lawman/target). Server-side, only after the existing LEO job check; skipped if rsg-reputation is not started.
+
 ## 3.1.1
 
 ### Documentation

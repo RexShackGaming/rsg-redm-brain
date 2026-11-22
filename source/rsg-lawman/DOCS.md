@@ -37,7 +37,9 @@ Keys live in `locales/*.json`. Required languages: en, de, el, es, fr, ja, nl, p
 
 ## Technical reference
 
-Generated from the source of **rsg-lawman 3.1.1**. Names, arguments and defaults below are read straight from the code.
+> **Reputation (3.2.0):** `Config.Reputation` = `{ Enabled, Action = 'arrest', MinMinutes, Cooldown }`. `jailPlayerByPlayer` calls `exports['rsg-reputation']:ApplyAction(lawmanSrc, Action)` after a validated jail (LEO job check, min minutes, per-lawman/target cooldown, skipped if rsg-reputation is not started).
+
+Generated from the source of **rsg-lawman 3.2.0**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 

@@ -105,6 +105,9 @@ Config.LawOfficeLocations = {
 
 ---
 
+## ⭐ Reputation (optional)
+With `rsg-reputation` started, a lawman who jails a player earns the `arrest` action. Configure in `Config.Reputation` (`Enabled`, `Action`, `MinMinutes`, `Cooldown`).
+
 ## 🔐 Permissions
 - Accessible only to players with valid **law jobs** (e.g., `vallaw`, `rholaw`, etc.).  
 - Armoury and stash access require grade ≥ `Config.ArmouryAccessGrade`.  

@@ -121,6 +121,17 @@ Config.Skill = {
     },
 }
 
+-- Reputation (rsg-reputation, optional: ignored if it is not running).
+-- A successful server-issued attempt can report a crime. The calling script decides what the lock is:
+--   exports['rsg-lockpick']:StartAttempt(src, { preset = 'medium', reputation = { action = 'theft', region = 'valentine' } }, cb)
+-- `region` is optional (without it only honor changes). Only actions listed in Actions are accepted.
+-- The amounts come from rsg-reputation's Config.Actions. Failed and cancelled attempts change nothing.
+Config.Reputation = {
+    Enabled       = true,
+    DefaultAction = nil,   -- applied to successful attempts that pass no `reputation` (nil = only when the caller asks)
+    Actions       = { theft = true, robbery = true },
+}
+
 -- Alert on-duty lawmen (rsg-lawman) after a server-issued attempt.
 Config.Alert = {
     Enabled         = true,

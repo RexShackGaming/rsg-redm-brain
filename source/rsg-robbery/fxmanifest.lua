@@ -6,7 +6,7 @@ lua54 'yes'
 author 'PHIL & RexShack'
 name 'rsg-robbery'
 description 'Player-to-player robbery system for RSG Framework'
-version '3.0.0'
+version '3.1.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',

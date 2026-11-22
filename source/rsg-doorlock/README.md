@@ -15,6 +15,7 @@ A database-driven door lock system for **RedM** using the **RSG Framework**. Doo
 - 👮 Job-based access, with optional on-duty requirement
 - 🛡️ Admin bypass: admins can open any lock (optional)
 - 🏛️ Sisika prison front gates locked by default
+- 🗝️ **Lockpickable doors** (optional): give a lock an easy / medium / hard difficulty and players without a key can pick it with rsg-lockpick; the door relocks by itself
 
 ### Admin editor (`/doorlock`)
 - 🖥️ NUI editor in the RDR2 black & white leather style
@@ -28,6 +29,7 @@ A database-driven door lock system for **RedM** using the **RSG Framework**. Doo
   - **MLO door support**: add MLO door hashes to `shared/doorhashes_custom.lua`, or pick any door prop directly (it is frozen shut when locked)
 - 📍 Teleport to any lock
 - 🏷️ Job tag input, interaction range slider, default locked/unlocked state
+- 🗝️ Lockpick difficulty (Off / Easy / Medium / Hard) and an optional reputation region per lock
 
 ### Security
 - ✅ Everything is validated on the server: player, door, distance, job, permission and input data
@@ -57,6 +59,7 @@ A database-driven door lock system for **RedM** using the **RSG Framework**. Doo
 
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core) (locales, notifications and callbacks; **ox_lib is no longer required**)
 - [oxmysql](https://github.com/overextended/oxmysql)
+- *Optional:* `rsg-lockpick` (lockpickable doors) and `rsg-reputation` (theft honor and standing for picked locks). Both are detected at runtime and skipped when not started.
 
 ---
 
@@ -103,6 +106,13 @@ Your old `Config.DoorList` doors now live in `server/seed_doors.lua` and are imp
 | `Config.AllowCustomDoors` | `true` | Allow picking door props that are not in the door hash lists (frozen-object fallback) |
 | `Config.ImportConfigDoors` | `true` | Import `server/seed_doors.lua` when the table is empty |
 | `Config.JailDoors` | Sisika gates | Door hashes that are always locked |
+| `Config.Lockpick.Enabled` | `true` | Lockpickable doors (needs `rsg-lockpick`) |
+| `Config.Lockpick.Key` | `'G'` | Key name (from `RSGCore.Shared.Keybinds`) for the "Pick lock" prompt |
+| `Config.Lockpick.HoldDuration` | `750` | Milliseconds the player holds the key |
+| `Config.Lockpick.Presets` | `{ 'easy', 'medium', 'hard' }` | Difficulties offered in the editor (preset names from rsg-lockpick) |
+| `Config.Lockpick.Cooldown` | `5000` | Milliseconds between lockpick requests per player (server enforced) |
+| `Config.Lockpick.RelockAfter` | `300` | Seconds a picked door stays unlocked (0 = until someone locks it) |
+| `Config.Lockpick.Reputation` | `'theft'` | rsg-reputation action reported on a successful pick (`nil` = none) |
 
 ### `server/sv_config.lua` (server only, webhooks)
 
@@ -119,6 +129,7 @@ SvConfig.Webhooks = {
         Default  = 'https://discord.com/api/webhooks/...', -- used when a type below is empty
         DoorUse  = '',
         Denied   = '',
+        Lockpick = '',   -- lock picked / lockpick failed
         Admin    = '',
         Security = '',
         System   = '',
@@ -156,12 +167,14 @@ MLO doors are not in the built-in door list, so the editor can't find them until
 1. Walk up to a managed door. A **Door Status: Locked / Unlocked** prompt appears.
 2. **Hold ENTER** to lock or unlock it. Your character uses a key and you get a confirmation notification.
 3. You need one of the lock's authorised jobs (and to be on duty, if `RequireOnDuty` is on). Dead or handcuffed players can't use doors.
+4. **Lockpickable doors:** if the lock has a difficulty set and you have no key, a **Pick lock** prompt appears. Hold **G** (rebind with `Config.Lockpick.Key`), win the lockpick minigame, and the door opens for everyone until it locks itself again. You need a lockpick item (see rsg-lockpick), failed picks can alert lawmen, and a successful pick counts as theft in rsg-reputation.
 
 ### Admins: creating a lock
 1. Type **`/doorlock`** to open the editor.
 2. Click **+ New Lock**.
 3. Enter a **name**, add **jobs** (type a job, press Enter), set the **interaction range** and the **starting state**.
    - Leave jobs empty to make a door nobody can open (e.g. prison doors).
+   - Optional: choose a **Lockpicking** difficulty (Off / Easy / Medium / Hard) to let players without a key pick the lock, and a **Reputation Region** (an rsg-reputation region id such as `valentine`) that sees a picked lock as theft.
 4. Click **Select doors in world**. The editor hides and the HUD appears top-left:
    - **Aim** at a door and its model and hash show in the HUD.
    - **ENTER**: add or remove the aimed door
@@ -188,6 +201,9 @@ MLO doors are not in the built-in door list, so the editor can't find them until
 ---
 
 ## Changelog
+
+### 3.3.0
+- Lockpickable doors (rsg-lockpick) with an optional reputation region; see CHANGELOG.md
 
 ### 3.2.0
 - Removed the ox_lib dependency: locales, notifications, callbacks and asset loading now use rsg-core

@@ -36,13 +36,14 @@ local function notify(src, desc, ntype)
     TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('butcher_title'), description = desc, type = ntype, duration = 6000 })
 end
 
+-- returns the butcher location the player is at (so its region can be used), or nil
 local function nearButcher(coords)
     for _, b in ipairs(Config.ButcherLocations) do
         if #(coords - b.coords) <= BUTCHER_RANGE or #(coords - b.npccoords.xyz) <= BUTCHER_RANGE then
-            return true
+            return b
         end
     end
-    return false
+    return nil
 end
 
 local function suspicious(src, why)
@@ -82,7 +83,8 @@ local function handler_sellCarcass(src, netId, quality)
 
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     if #(playerCoords - GetEntityCoords(carcass)) > CARCASS_RANGE then suspicious(src, locale('reason_carcass_far')) return false end
-    if not nearButcher(playerCoords) then suspicious(src, locale('reason_not_at_butcher')) return false end
+    local butcher = nearButcher(playerCoords)
+    if not butcher then suspicious(src, locale('reason_not_at_butcher')) return false end
 
     -- items first: if there's no room, keep the carcass and stop
     local qty = ItemQuantity[quality]
@@ -104,13 +106,16 @@ local function handler_sellCarcass(src, netId, quality)
 
     local bonus = (HuntingXP.GetPerks(src).butcherBonus or 0) / 100 + HuntingBounty.ButcherBonus(animal.model)
     if Config.Skills and Config.Skills.SellBonus then bonus = bonus + SkillPerk(src, 'sell_bonus') / 100 end -- rsg-skills perk
-    local cash = math.floor((tonumber(animal.rewardmoney) or 0) * QualityMultiplier[quality] * (1 + bonus) * 100 + 0.5) / 100
+    local repFactor = ReputationPayoutFactor(src, butcher.region) -- rsg-reputation: the town's standing changes the payout
+    local cash = math.floor((tonumber(animal.rewardmoney) or 0) * QualityMultiplier[quality] * (1 + bonus) * repFactor * 100 + 0.5) / 100
     if cash > 0 then
         Player.Functions.AddMoney('cash', cash, 'rsg-hunting-butcher')
     end
     for _, name in ipairs(items) do
         exports['rsg-inventory']:AddItem(src, name, qty, nil, nil, 'rsg-hunting-butcher')
     end
+
+    ReputationSale(src, butcher.region) -- rsg-reputation: standing in the butcher's region
 
     notify(src, locale('butcher_sold', animal.name, locale('quality_' .. quality), ('%.2f'):format(cash)), 'success')
 

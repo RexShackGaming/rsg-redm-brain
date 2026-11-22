@@ -5,7 +5,10 @@ local DOOR_LOCKED, DOOR_UNLOCKED = 1, 0
 local keyProp
 local promptGroup = GetRandomIntInRange(0, 0xffffff)
 local lockPrompt
+local pickPrompt
+local pickShown = false
 local nearestDoor
+local nearestHasKey = false
 local busy = false
 
 Doors = {} -- shared with client/editor.lua
@@ -113,6 +116,36 @@ local function createPrompt()
     PromptRegisterEnd(lockPrompt)
 end
 
+-- "Pick lock" prompt (rsg-lockpick): hidden until the door is locked, pickable and the player has no key
+local function createPickPrompt()
+    if not Config.Lockpick or not Config.Lockpick.Enabled then return end
+    pickPrompt = PromptRegisterBegin()
+    PromptSetControlAction(pickPrompt, RSGCore.Shared.Keybinds[Config.Lockpick.Key] or RSGCore.Shared.Keybinds['G'])
+    PromptSetText(pickPrompt, CreateVarString(10, 'LITERAL_STRING', locale('cl_pick_door')))
+    PromptSetEnabled(pickPrompt, false)
+    PromptSetVisible(pickPrompt, false)
+    PromptSetHoldMode(pickPrompt, Config.Lockpick.HoldDuration)
+    PromptSetGroup(pickPrompt, promptGroup)
+    PromptRegisterEnd(pickPrompt)
+end
+
+local function setPickPrompt(show)
+    if not pickPrompt or pickShown == show then return end
+    pickShown = show
+    PromptSetEnabled(pickPrompt, show)
+    PromptSetVisible(pickPrompt, show)
+end
+
+-- client-side guess only (the server decides): does the player's job unlock this door?
+local function playerHasKey(door)
+    local job = (RSGCore.Functions.GetPlayerData() or {}).job
+    if not job then return false end
+    for _, name in ipairs(door.jobs) do
+        if name == job.name then return true end
+    end
+    return false
+end
+
 local function canUseDoors()
     local ped = PlayerPedId()
     return not (IsEntityDead(ped)
@@ -127,6 +160,7 @@ end
 CreateThread(function()
     for _, hash in ipairs(Config.JailDoors) do setDoorHash(hash, true) end
     createPrompt()
+    createPickPrompt()
     -- retry until the server has finished loading the database
     while true do
         local doors = RSGCore.Functions.AwaitCallback('rsg-doorlock:server:getDoors', 15000)
@@ -150,6 +184,7 @@ CreateThread(function()
             end
         end
         nearestDoor = closest
+        nearestHasKey = closest and playerHasKey(Doors[closest]) or false
         for ent in pairs(customState) do
             if not DoesEntityExist(ent) then customState[ent] = nil end
         end
@@ -163,8 +198,19 @@ CreateThread(function()
         local door = nearestDoor and Doors[nearestDoor]
         if door and lockPrompt and not busy and not LocalPlayer.state.doorEditor and canUseDoors() then
             local status = door.locked and locale('cl_door_status_lock') or locale('cl_door_status_unlock')
+            local showPick = pickPrompt ~= nil and door.lockpick ~= nil and door.locked and not nearestHasKey and not IsNuiFocused()
+            setPickPrompt(showPick)
             PromptSetActiveGroupThisFrame(promptGroup, CreateVarString(10, 'LITERAL_STRING', locale('cl_door_status_base', status)))
-            if PromptHasHoldModeCompleted(lockPrompt) then
+            if showPick and PromptHasHoldModeCompleted(pickPrompt) then
+                busy = true
+                TriggerServerEvent('rsg-doorlock:server:requestLockpick', nearestDoor)
+                -- the lockpick UI opens on its own; wait for the key to be released before the prompts come back
+                CreateThread(function()
+                    Wait(1500)
+                    while PromptHasHoldModeCompleted(pickPrompt) or IsNuiFocused() do Wait(50) end
+                    busy = false
+                end)
+            elseif PromptHasHoldModeCompleted(lockPrompt) then
                 busy = true
                 TriggerServerEvent('rsg-doorlock:server:requestToggle', nearestDoor)
                 -- wait for the key to be released so one long hold can't toggle twice
@@ -176,6 +222,7 @@ CreateThread(function()
             end
             Wait(0)
         else
+            setPickPrompt(false)
             Wait(250)
         end
     end
@@ -236,6 +283,7 @@ end)
 AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
     if lockPrompt then PromptDelete(lockPrompt) end
+    if pickPrompt then PromptDelete(pickPrompt) end
     if keyProp and DoesEntityExist(keyProp) then DeleteObject(keyProp) end
     for ent in pairs(customState) do
         if DoesEntityExist(ent) then FreezeEntityPosition(ent, false) end

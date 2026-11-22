@@ -230,7 +230,7 @@ rsg-fishmonger/
 
 ## Changelog
 
-### 3.1.1
+### 3.2.0
 - Daily stock is now saved in the `rsg_fishmonger_stock` table instead of resource KVP, so the server no longer creates a `db` folder. Adds the `oxmysql` dependency and `Config.AutoDatabase`. Today's sold counts from before the update are not migrated.
 
 ### 3.1.0
@@ -249,6 +249,9 @@ rsg-fishmonger/
 - NUI focus is now released cleanly when the resource stops.
 
 ---
+
+## rsg-economy integration (optional)
+When `rsg-economy` is started and `Config.Economy.Enabled = true`, the sale total (after demand and bonus) is taxed by the location's town and scaled by the player's standing there (hated pays less, celebrated pays more). The tax goes to the town treasury. Processing is unaffected.
 
 ## rsg-skills integration
 

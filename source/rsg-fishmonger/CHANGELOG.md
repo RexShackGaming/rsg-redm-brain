@@ -2,6 +2,11 @@
 
 All notable changes to rsg-fishmonger. Newest first.
 
+## 3.2.0
+
+### Added
+- Optional rsg-economy integration: sales go through `Quote` (town tax + reputation price modifier, no market multiplier) and `Record` after payout. Toggle with `Config.Economy.Enabled`; skipped if rsg-economy is not started.
+
 ## 3.1.1
 
 ### Changed

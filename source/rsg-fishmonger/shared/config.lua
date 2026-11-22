@@ -60,6 +60,11 @@ Config.Demand = {
 ---------------------------------
 -- seller bonus (added together, applied on top of demand when selling)
 ---------------------------------
+-- rsg-economy integration (optional): sales are taxed and scaled by the player's town standing
+Config.Economy = {
+    Enabled = true,
+}
+
 Config.Bonus = {
     jobs = {                 -- current job name = extra fraction (0.10 = +10%)
         -- fishmonger = 0.10,

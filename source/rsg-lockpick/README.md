@@ -6,14 +6,14 @@
 ![Platform](https://img.shields.io/badge/platform-RedM-darkred)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 
-> A lightweight NUI lockpicking game (pick + cylinder) you can start from any script, with an optional **server-issued attempt** mode that adds lock presets, skill-based difficulty, lockpick wear and breakage, and lawman alerts. Version 3.0.0 · full developer reference in [DOCS.md](DOCS.md).
+> A lightweight NUI lockpicking game (pick + cylinder) you can start from any script, with an optional **server-issued attempt** mode that adds lock presets, skill-based difficulty, lockpick wear and breakage, and lawman alerts. Version 3.1.0 · full developer reference in [DOCS.md](DOCS.md).
 
 ---
 
 ## 🛠️ Dependencies
 - **rsg-core** (framework, also provides the locale loader)
 - **rsg-inventory** (lockpick item, quality and wear)
-- *Optional:* **rsg-skills** (lockpicking skill and perks) and **rsg-lawman** (alerts). Both are detected at runtime and simply skipped when not running.
+- *Optional:* **rsg-skills** (lockpicking skill and perks), **rsg-reputation** (honor and standing for crimes) and **rsg-lawman** (alerts). All are detected at runtime and simply skipped when not running.
 
 No ox_lib, no database, no external web assets: the UI is fully bundled (only the Roboto font is loaded from Google Fonts, with a system fallback).
 
@@ -24,6 +24,7 @@ No ox_lib, no database, no external web assets: the UI is fully bundled (only th
 - 🔁 **Three client APIs**: the original event (backward compatible), a blocking export, or a callback.
 - 🛡️ **Server-issued attempts** (`StartAttempt`): the server picks the difficulty, validates the result (ticket, timing, distance) and applies the consequences.
 - 🎚️ **Lock presets** `easy` / `medium` / `hard`, plus per-call overrides, all clamped to safe limits.
+- 🕵️ **Reputation**: a calling script can report a successful pick as `theft` or `robbery` (optionally in a town), and rsg-reputation applies the honor and standing change.
 - 🧠 **Skill-based difficulty** through rsg-skills: wider sweet spot, less pick damage and extra picks as the *lockpicking* skill levels up, plus XP for each attempt.
 - 🔧 **Lockpick wear**: the item loses quality with use, a worn pick takes more damage, and a failure can destroy it.
 - 🚨 **Lawman alert**: on-duty lawmen can be alerted after an attempt (chance-based, per-call override).
@@ -70,6 +71,7 @@ No ox_lib, no database, no external web assets: the UI is fully bundled (only th
 | `Server.DefaultRadius` / `DistanceSlack` | `5.0` / `2.0` | Distance rules when `data.coords` is given |
 | `Item.*` | enabled, `lockpick` | Item name, require it, damage scaling by quality, wear on success / failure, break chance |
 | `Skill.*` | enabled, `lockpicking` | rsg-skills skill name, XP per attempt, perk definitions |
+| `Reputation.*` | enabled | rsg-reputation: allowed actions (`theft`, `robbery`) and an optional default action for successful attempts |
 | `Alert.*` | enabled | Job type, chance on success / failure, minimum gap |
 
 ---

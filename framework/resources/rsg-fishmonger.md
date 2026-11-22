@@ -1,6 +1,6 @@
 # rsg-fishmonger
 
-Version 3.1.1. rsg-fishmonger
+Version 3.2.0. rsg-fishmonger
 
 A fishmonger system for **RSG-Core (RedM)**. Players visit a fishmonger NPC in any major town to **sell their catch for cash** or **process fish into fillets**, using a cart-based menu styled to match the rest of the RSG UI. - **8 fishmonger NPCs**: Saint Denis, Blackwater, Valentine, Rhodes, Annesburg, Van Horn, Tumbleweed and the river trading post. Each has an optional map blip. - **Sell or pro
 

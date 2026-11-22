@@ -1,4 +1,4 @@
-# rsg-lockpick: Documentation
+# rsg-lockpick: Documentation (v3.1.0)
 
 Guide for server owners and developers. For features and installation see [README.md](README.md).
 
@@ -21,7 +21,7 @@ Guide for server owners and developers. For features and installation see [READM
 | `fxmanifest.lua` | Manifest. Loads `@rsg-core/shared/locale.lua`, config, client and server scripts and the NUI files |
 | `shared/config.lua` | All settings plus `Config.Clamp` and `Config.Build` (shared option builder) |
 | `client/main.lua` | Client API, NUI focus (`applyNuiFocus` + push-to-talk whitelist), session/token handling, sounds, optional animation, server-ticket handling, cleanup |
-| `server/main.lua` | `StartAttempt` and tickets, result validation, lockpick item wear, rsg-skills perks/XP, lawman alerts |
+| `server/main.lua` | `StartAttempt` and tickets, result validation, lockpick item wear, rsg-skills perks/XP, rsg-reputation, lawman alerts |
 | `html/index.html` | Panel markup and the inline SVG lock |
 | `html/style.css` | House "leather and gold" style (monochrome accent, no vignette) |
 | `html/script.js` | Game loop (requestAnimationFrame, delta-time), input (mouse, keyboard, gamepad), timer, animation, result and sound reporting |
@@ -145,6 +145,7 @@ None.
 - **Lockpick item**: set `Config.Item.Name` to your item; set `Config.Item.Enabled = false` to turn off the requirement, wear and breakage entirely.
 - **Wear tuning**: `Item.Wear.Success`, `Item.Wear.Fail` (quality points, 100 = new) and `Item.Wear.BreakChanceOnFail`. A stack of picks shares one quality; when a pick breaks, the next one in the stack starts at 100.
 - **Skill**: the *lockpicking* skill registers itself in rsg-skills at start (and again when rsg-skills restarts). Edit `Config.Skill.Definition.perks` for the level curve. Add `perk_lockpick_sweet_spot`, `perk_lockpick_pick_damage` and `perk_lockpick_extra_pick` to rsg-skills' locales for readable names.
+- **Reputation**: a script that knows the lock is a crime passes `reputation = { action = 'theft', region = 'valentine' }` in the `StartAttempt` data. On a successful attempt (not on a failure or cancel) the server calls `exports['rsg-reputation']:ApplyAction(src, action, region)`, so the honor and standing numbers come from rsg-reputation's `Config.Actions`. `region` is optional (without it only honor changes) and must be a region id from rsg-reputation. Only actions listed in `Config.Reputation.Actions` (`theft`, `robbery`) are accepted; `Config.Reputation.DefaultAction` applies to successful attempts that pass nothing (default `nil`). Skipped when rsg-reputation is not started. The data comes from the calling server script, never from a client.
 - **Alerts**: `Config.Alert`. They go to on-duty players whose job type is `Config.Alert.JobType` (`leo`), through rsg-lawman's `rsg-lawman:client:lawmanAlert`.
 - **Push-to-talk**: keep `Config.AllowPushToTalkWhileOpen = true`; add more controls to `Config.PushToTalkControls` if needed.
 - **Sounds and animation**: `Config.Sounds` can be edited or disabled; `Config.Animation` is off by default (see troubleshooting).

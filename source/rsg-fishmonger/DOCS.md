@@ -1,4 +1,4 @@
-# rsg-fishmonger – Docs (v3.1.1)
+# rsg-fishmonger – Docs (v3.2.0)
 
 ## Contents
 1. Files
@@ -31,6 +31,8 @@
 - **Supplies shop:** buy bait and lures from the same NPC (an rsg-inventory shop per town).
 - **Fillet types:** any fish can give its own fillet item.
 - **Opening hours** (optional) use the rsg-weather in-game clock.
+
+> **rsg-economy (3.2.0):** in `checkout` (sell mode) the total is passed to `exports['rsg-economy']:Quote(src, { region = GetRegionAt(loc.coords), mode = 'sell', base = total, qty = 1, market = false })`, the payout uses `quote.total`, and `Record(src, quote)` runs after `AddMoney` succeeds. Config: `Config.Economy.Enabled`.
 
 ## 3. Configuration
 `shared/config.lua`:

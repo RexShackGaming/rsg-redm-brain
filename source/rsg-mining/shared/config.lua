@@ -64,6 +64,7 @@ Config.LastNames  = { 'Hollis','Carver','Dunn','Pruitt','Mosby','Hale','Riggs','
 Config.Mines = {
     {
         id          = 'annesburg',
+        region      = 'annesburg', -- rsg-reputation region (town or state)
         label       = 'Annesburg Mining Camp',
         foreman     = vector4(2799.88, 1350.10, 73.13, 276.61),
         leasePrice  = 500,
@@ -95,6 +96,7 @@ Config.Mines = {
     },
     {
         id          = 'gaptooth',
+        region      = 'new_austin', -- rsg-reputation region (town or state)
         label       = 'Gaptooth Mining Camp',
         foreman     = vector4(-5988.13, -3214.70, -17.62, 306.18),
         leasePrice  = 700,
@@ -126,6 +128,7 @@ Config.Mines = {
     },
     {
         id          = 'grizzlies',
+        region      = 'ambarino', -- rsg-reputation region (town or state)
         label       = 'Grizzlies Mining Camp',
         foreman     = vector4(-1415.48, 1131.38, 225.54, 336.54),
         leasePrice  = 1000,
@@ -163,4 +166,13 @@ Config.Skills = {
     Skill   = 'mining', -- skill key in rsg-skills
     CollectXP = 1,       -- XP per ore item collected from a mine (rsg-skills applies its own multipliers and cap)
     MaxXPPerCollect = 50, -- cap on the XP from one collect action
+    ExtraYield = true,   -- the skill's extra_yield perk (%) is the chance of one extra item for each ore type collected
+}
+
+-- rsg-reputation integration (optional). Needs the rsg-reputation resource; does nothing when it is not started.
+-- Collecting ore earns standing in the mine's region (Config.Mines[].region). Honor is not touched.
+Config.Reputation = {
+    Enabled           = true,
+    StandingPerCollect = 1,   -- standing gained per collect action (0 = off)
+    Cooldown          = 600,  -- seconds before the same player can gain standing in the same region again
 }

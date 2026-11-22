@@ -1,5 +1,7 @@
 # rsg-mining
 
+Version 3.2.0
+
 Mine lease and NPC worker management for **RSG-Core (RedM)**.
 
 Lease a mine from its foreman, hire a crew of miners, keep them fed, watered, equipped and paid, and collect the ore they dig while you're away.
@@ -118,7 +120,8 @@ How the keys are grouped:
 ## Changelog
 
 **3.1.0**
-- Optional rsg-skills integration: mining XP when collecting ore (`Config.Skills`).
+- Optional rsg-skills integration: mining XP and the `extra_yield` perk when collecting ore (`Config.Skills`).
+- Optional rsg-reputation integration: town standing for collecting ore (`Config.Reputation`).
 
 ### 3.0.0 (audit pass)
 
@@ -133,7 +136,11 @@ How the keys are grouped:
 
 ## rsg-skills integration
 
-Optional. With `rsg-skills` started, collecting ore from a mine awards mining XP (`Config.Skills.CollectXP` per item, capped by `MaxXPPerCollect`). Set `Config.Skills.Enabled = false` to turn it off.
+Optional. With `rsg-skills` started, collecting ore from a mine awards mining XP (`Config.Skills.CollectXP` per item, capped by `MaxXPPerCollect`). Set `Config.Skills.Enabled = false` to turn it off. The skill's `extra_yield` perk gives each ore type you collect that % chance of one extra item (`Config.Skills.ExtraYield`).
+
+## rsg-reputation integration
+
+Optional. With `rsg-reputation` started, collecting ore earns **standing** in the mine's region (`Config.Reputation.StandingPerCollect`, at most once per `Cooldown` seconds per region). Each mine has a `region` in `Config.Mines`. Set `Config.Reputation.Enabled = false` to turn it off.
 
 
 ## License

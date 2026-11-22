@@ -3,7 +3,11 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 -- Doors[id] = { id, name, doors = { {hash, coords}, ... }, textCoords, jobs = {}, distance, locked }
 local Doors = {}
 local lastUse = {}
+local lastPick = {}   -- [src] = ms of the last lockpick request
+local picking = {}    -- [src] = true while a lockpick attempt is running
+local relockToken = {} -- [doorID] = counter; a pending auto-relock only runs if it still matches
 local ready = false
+local hasPickColumns = false -- the lockpick / region columns exist in rsg_doorlocks
 
 ---------------------------------------------
 -- helpers
@@ -36,7 +40,9 @@ local function rowToDoor(row)
         textCoords = vec(json.decode(row.text_coords)),
         jobs = json.decode(row.jobs) or {},
         distance = row.distance,
-        locked = row.locked == 1 or row.locked == true
+        locked = row.locked == 1 or row.locked == true,
+        lockpick = (type(row.lockpick) == 'string' and row.lockpick ~= '') and row.lockpick or nil,
+        region = (type(row.region) == 'string' and row.region ~= '') and row.region or nil
     }
 end
 
@@ -98,9 +104,26 @@ CreateThread(function()
                 `jobs` LONGTEXT NOT NULL,
                 `distance` FLOAT NOT NULL DEFAULT 1.25,
                 `locked` TINYINT(1) NOT NULL DEFAULT 1,
+                `lockpick` VARCHAR(16) NULL DEFAULT NULL,
+                `region` VARCHAR(32) NULL DEFAULT NULL,
                 PRIMARY KEY (`id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         ]])
+        -- tables made by an older version: add the new columns once (never destructive)
+        for _, col in ipairs({ { 'lockpick', 'VARCHAR(16) NULL DEFAULT NULL' }, { 'region', 'VARCHAR(32) NULL DEFAULT NULL' } }) do
+            local ok, err = pcall(function()
+                if (MySQL.scalar.await('SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?', { 'rsg_doorlocks', col[1] }) or 0) == 0 then
+                    MySQL.query.await(('ALTER TABLE `rsg_doorlocks` ADD COLUMN `%s` %s'):format(col[1], col[2]))
+                    print(('[rsg-doorlock] added column rsg_doorlocks.%s'):format(col[1]))
+                end
+            end)
+            if not ok then print(('^1[rsg-doorlock] could not add column %s: %s^7'):format(col[1], tostring(err))) end
+        end
+    end
+
+    hasPickColumns = (MySQL.scalar.await('SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME IN (?, ?)', { 'rsg_doorlocks', 'lockpick', 'region' }) or 0) == 2
+    if not hasPickColumns then
+        print('^3[rsg-doorlock] the lockpick / region columns are missing, so lockpicking is off; run the ALTER TABLE lines at the top of installation/rsg_doorlocks.sql^7')
     end
 
     if Config.ImportConfigDoors and (MySQL.scalar.await('SELECT COUNT(*) FROM rsg_doorlocks') or 0) == 0 then
@@ -161,6 +184,7 @@ RegisterNetEvent('rsg-doorlock:server:requestToggle', function(doorID)
 
     local newState = not door.locked
     door.locked = newState
+    relockToken[doorID] = (relockToken[doorID] or 0) + 1 -- a manual toggle cancels a pending auto-relock
     MySQL.update('UPDATE rsg_doorlocks SET locked = ? WHERE id = ?', { newState and 1 or 0, doorID })
     Webhook.DoorUsed(src, door, newState)
     TriggerClientEvent('rsg-doorlock:client:playKeyAnim', src, doorID)
@@ -168,6 +192,91 @@ RegisterNetEvent('rsg-doorlock:server:requestToggle', function(doorID)
     SetTimeout(1000, function()
         TriggerClientEvent('rsg-doorlock:client:setState', -1, doorID, newState)
     end)
+end)
+
+---------------------------------------------
+-- lockpicking (rsg-lockpick)
+---------------------------------------------
+local function setDoorState(doorID, door, locked)
+    door.locked = locked
+    TriggerClientEvent('rsg-doorlock:client:setState', -1, doorID, locked)
+end
+
+-- a picked door is unlocked in memory only (the database keeps the saved state), then locks again by itself
+local function scheduleRelock(doorID)
+    local token = (relockToken[doorID] or 0) + 1
+    relockToken[doorID] = token
+    local secs = tonumber(Config.Lockpick.RelockAfter) or 0
+    if secs <= 0 then return end
+    SetTimeout(secs * 1000, function()
+        local d = Doors[doorID]
+        if d and relockToken[doorID] == token and not d.locked then setDoorState(doorID, d, true) end
+    end)
+end
+
+RegisterNetEvent('rsg-doorlock:server:requestLockpick', function(doorID)
+    local src = source
+    if not ready or not Config.Lockpick.Enabled or not hasPickColumns then return end
+    local door = type(doorID) == 'number' and Doors[doorID]
+    if not door then
+        return Webhook.Security(src, locale('wh_sec_nodoor'), ('doorID = %s (%s)'):format(tostring(doorID), type(doorID)))
+    end
+
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player then return end
+    if picking[src] then return end
+
+    local now = GetGameTimer()
+    if lastPick[src] and now - lastPick[src] < Config.Lockpick.Cooldown then return end
+    lastPick[src] = now
+
+    local meta = Player.PlayerData.metadata or {}
+    if meta.isdead or meta.ishandcuffed then return end
+
+    if not door.lockpick or not door.locked then return notify(src, 'sv_pick_notpickable') end
+    if GetResourceState('rsg-lockpick') ~= 'started' then return notify(src, 'sv_pick_unavailable') end
+
+    local dist = #(GetEntityCoords(GetPlayerPed(src)) - door.textCoords)
+    if dist > door.distance + Config.DistanceTolerance then
+        if dist > door.distance + 25.0 then
+            Webhook.Security(src, locale('wh_sec_far', door.name, ('%.0f'):format(dist)), ('doorID = %d, distance = %.1fm'):format(doorID, dist))
+        end
+        return notify(src, 'sv_too_far')
+    end
+    -- someone with a key just uses the door
+    if isAuthorized(src, Player, door) then return notify(src, 'sv_pick_haskey', 'inform') end
+
+    local data = {
+        preset = door.lockpick,
+        coords = door.textCoords,
+        radius = door.distance + Config.DistanceTolerance,
+    }
+    if Config.Lockpick.Reputation then
+        data.reputation = { action = Config.Lockpick.Reputation, region = door.region }
+    end
+
+    picking[src] = true
+    local ok, err = pcall(function()
+        exports['rsg-lockpick']:StartAttempt(src, data, function(success, reason)
+            picking[src] = nil
+            local d = Doors[doorID] -- may have been edited or deleted while picking
+            if not d then return end
+            if success then
+                if not d.locked then return end -- someone with a key opened it first
+                setDoorState(doorID, d, false)
+                scheduleRelock(doorID)
+                Webhook.Lockpick(src, d, true)
+                notify(src, 'sv_pick_success', 'success')
+            elseif reason == 'fail' or reason == 'too_fast' or reason == 'too_far' then
+                Webhook.Lockpick(src, d, false)
+                notify(src, 'sv_pick_fail')
+            end
+        end)
+    end)
+    if not ok then
+        picking[src] = nil
+        print(('^1[rsg-doorlock] rsg-lockpick StartAttempt failed: %s^7'):format(tostring(err)))
+    end
 end)
 
 ---------------------------------------------
@@ -240,13 +349,38 @@ local function sanitise(data)
     local distance = tonumber(data.distance) or Config.DefaultDistance
     distance = math.min(math.max(distance, 0.5), 10.0)
 
+    -- lockpick difficulty: empty = not pickable, otherwise one of Config.Lockpick.Presets
+    local lockpick
+    if data.lockpick ~= nil and data.lockpick ~= '' then
+        local allowed = false
+        for _, p in ipairs(Config.Lockpick.Presets) do if p == data.lockpick then allowed = true break end end
+        if type(data.lockpick) ~= 'string' or not allowed then return nil, 'err_lockpick' end
+        lockpick = data.lockpick
+    end
+
+    -- rsg-reputation region that sees a picked lock as theft (optional)
+    local region
+    if type(data.region) == 'string' then
+        local r = data.region:gsub('^%s+', ''):gsub('%s+$', ''):lower()
+        if r ~= '' then
+            if #r > 32 or not r:match('^[%l%d_]+$') then return nil, 'err_region' end
+            if GetResourceState('rsg-reputation') == 'started' then
+                local ok, regions = pcall(function() return exports['rsg-reputation']:GetRegions() end)
+                if ok and type(regions) == 'table' and not regions[r] then return nil, 'err_region' end
+            end
+            region = r
+        end
+    end
+
     return {
         name = name,
         doors = doors,
         textCoords = sum / #doors + vector3(0.0, 0.0, 1.0),
         jobs = jobs,
         distance = distance,
-        locked = data.locked == true
+        locked = data.locked == true,
+        lockpick = lockpick,
+        region = region
     }
 end
 
@@ -268,17 +402,25 @@ local function saveDoor(src, data)
         door.name, encodeDoors(door.doors), json.encode(plain(door.textCoords)),
         json.encode(door.jobs), door.distance, door.locked and 1 or 0
     }
+    if hasPickColumns then
+        params[#params + 1] = door.lockpick
+        params[#params + 1] = door.region
+    else
+        door.lockpick, door.region = nil, nil -- columns missing: lockpicking stays off
+    end
+    local cols = hasPickColumns and ', lockpick = ?, region = ?' or ''
     if id then
         params[#params + 1] = id
-        MySQL.update.await('UPDATE rsg_doorlocks SET name = ?, doors = ?, text_coords = ?, jobs = ?, distance = ?, locked = ? WHERE id = ?', params)
+        MySQL.update.await('UPDATE rsg_doorlocks SET name = ?, doors = ?, text_coords = ?, jobs = ?, distance = ?, locked = ?' .. cols .. ' WHERE id = ?', params)
     else
-        id = MySQL.insert.await('INSERT INTO rsg_doorlocks (name, doors, text_coords, jobs, distance, locked) VALUES (?, ?, ?, ?, ?, ?)', params)
+        id = MySQL.insert.await('INSERT INTO rsg_doorlocks (name, doors, text_coords, jobs, distance, locked' .. (hasPickColumns and ', lockpick, region' or '') .. ') VALUES (?, ?, ?, ?, ?, ?' .. (hasPickColumns and ', ?, ?' or '') .. ')', params)
         if not id then return false, 'err_invalid' end
     end
 
     door.id = id
     local old = Doors[id]
     Doors[id] = door
+    relockToken[id] = (relockToken[id] or 0) + 1
     TriggerClientEvent('rsg-doorlock:client:syncDoor', -1, id, door, old)
     print(('[rsg-doorlock] %s (%s) saved door #%d "%s"'):format(GetPlayerName(src), src, id, door.name))
     Webhook.AdminSaved(src, door, old)
@@ -299,6 +441,7 @@ local function deleteDoor(src, id)
     if not old then return false end
     MySQL.query.await('DELETE FROM rsg_doorlocks WHERE id = ?', { id })
     Doors[id] = nil
+    relockToken[id] = nil
     TriggerClientEvent('rsg-doorlock:client:syncDoor', -1, id, nil, old)
     print(('[rsg-doorlock] %s (%s) deleted door #%d "%s"'):format(GetPlayerName(src), src, id, old.name))
     Webhook.AdminDeleted(src, old)
@@ -321,4 +464,6 @@ end)
 
 AddEventHandler('playerDropped', function()
     lastUse[source] = nil
+    lastPick[source] = nil
+    picking[source] = nil
 end)
