@@ -41,13 +41,21 @@ local function runPttWhitelist()
 end
 
 local storeZones = {}                     -- npcId -> rsg-target zone id (player-owned stores)
+local saleBlips = {}                      -- npcId -> map blip for stores that are for sale
+local refreshSaleBlips                    -- defined with the blips section
+
+-- Price a store is on sale for: the admin's price while ownerless, the owner's resale price once owned. 0 = not for sale.
+local function salePriceOf(n)
+    if not n then return 0 end
+    return tonumber(n.owner and n.resalePrice or n.salePrice) or 0
+end
 local storeZoneLabel = {}                 -- npcId -> label the zone was built with
 local signProps = {}                      -- npcId -> sign object (false while loading)
 local uiStringsCache = nil
 local OS = Config.OwnedStores or {}
 
 -- forward declarations (kept local instead of polluting the global scope)
-local findNpcById, CreateStoreZone, RemoveAllSigns, RebuildStoreZones, OpenManage, CloseManage, isMyStore
+local findNpcById, CreateStoreZone, RemoveAllSigns, RebuildStoreZones, OpenManage, CloseManage, isMyStore, openBuyConfirm
 
 -- ============================================
 -- HELPERS
@@ -501,8 +509,21 @@ local function storeOptions(npc)
             icon = 'fa-solid fa-store-slash',
             label = locale('cl_store_closed'):format(npc.shop.label),
             distance = Config.TargetDistance,
-            canInteract = function() local n = findNpcById(id) return n and n.owner == nil end,
+            canInteract = function() local n = findNpcById(id) return n and n.owner == nil and salePriceOf(n) <= 0 end,
             onSelect = function() RSGCore.Functions.Notify({ title = npc.shop.label, description = locale('sv_store_closed'), type = 'inform' }) end,
+        },
+        {
+            -- store for sale (admin price, or an owner's resale price): any other player can buy it (server checks price, funds, distance and limits)
+            name = 'rsg_store_buy_' .. id,
+            icon = 'fa-solid fa-hand-holding-dollar',
+            label = locale('cl_buy_store'):format(npc.shop.label, ('%.2f'):format(salePriceOf(npc))),
+            distance = Config.TargetDistance,
+            canInteract = function()
+                local n = findNpcById(id)
+                if not n or salePriceOf(n) <= 0 then return false end
+                return n.owner == nil or n.owner.citizenid ~= (RSGCore.Functions.GetPlayerData() or {}).citizenid
+            end,
+            onSelect = function() local n = findNpcById(id) if n then openBuyConfirm(n) end end, -- asks first; the server still re-checks everything
         },
         {
             name = 'rsg_store_manage_' .. id,
@@ -791,6 +812,8 @@ local MANAGE_OPS = {
     remove   = { 'rsg-stores:server:ownerRemoveListing', function(d) return d.item end },
     withdraw = { 'rsg-stores:server:ownerWithdraw',      function(d) return tonumber(d.amount) end },
     settings = { 'rsg-stores:server:ownerSetSettings',   function(d) return d.label, d.type end },
+    resale   = { 'rsg-stores:server:ownerSetResale',     function(d) return tonumber(d.price) end },
+    bulk     = { 'rsg-stores:server:ownerBulkPrice',     function(d) return tonumber(d.pct) end },
     packup   = { 'rsg-stores:server:ownerPackUp',        function(d) return end },
     pickup   = { 'rsg-stores:server:ownerPickUp',        function(d) return end },
     wholesale = { 'rsg-stores:server:ownerWholesale',    function(d) return d.item, tonumber(d.qty), d.price ~= nil and tonumber(d.price) or nil end },
@@ -879,6 +902,7 @@ RegisterNetEvent('rsg-blipmenu:client:refreshNPCs', function(npcs)
         if n then manageShop = n else CloseManage() end
     end
     RebuildStoreZones()
+    if refreshSaleBlips then refreshSaleBlips() end
     pushAdminData()
 end)
 
@@ -905,6 +929,35 @@ local function createBlip(data)
     Citizen.InvokeNative(0x9CB1A1623062F402, blip, data.name) -- SetBlipName
     if data.color then BlipAddModifier(blip, joaat(data.color)) end
     return blip
+end
+
+-- Map blips on stores that are for sale (Config.OwnedStores.ForSaleBlip)
+local function clearSaleBlips()
+    for id, blip in pairs(saleBlips) do
+        if DoesBlipExist(blip) then RemoveBlip(blip) end
+        saleBlips[id] = nil
+    end
+end
+
+refreshSaleBlips = function()
+    local cfg = OS.ForSaleBlip
+    local want = {}
+    if type(cfg) == 'table' and cfg.Enabled ~= false then
+        for _, n in ipairs(savedNpcs) do
+            if n.kind == 'player' and not n.packed and salePriceOf(n) > 0 then want[n.id] = n end
+        end
+    end
+    for id, blip in pairs(saleBlips) do
+        if not want[id] then
+            if DoesBlipExist(blip) then RemoveBlip(blip) end
+            saleBlips[id] = nil
+        end
+    end
+    for id, n in pairs(want) do
+        if not (saleBlips[id] and DoesBlipExist(saleBlips[id])) then
+            saleBlips[id] = createBlip({ x = n.x, y = n.y, z = n.z, sprite = cfg.Sprite, color = cfg.Color, name = locale('cl_blip_for_sale') })
+        end
+    end
 end
 
 local function clearBlips()
@@ -1004,7 +1057,7 @@ local function OpenAdmin()
     })
 end
 
-RegisterCommand('createshop', function()
+RegisterCommand('storeadmin', function()
     if not RSGCore.Functions.AwaitCallback('rsg-blipmenu:server:hasAdminPerm', nil) then
         return adminNotify(locale('t_access_denied'), locale('cl_access_denied'), 'error')
     end
@@ -1164,6 +1217,63 @@ RegisterNUICallback('adminDeletePreset', function(data, cb)
 end)
 
 -- ============================================
+-- ADMIN: OVERVIEW / STORE MANAGEMENT / SETTINGS
+-- The server does the work and every check; these callbacks only relay the NUI request and show the answer.
+-- ============================================
+local function adminReply(res, cb)
+    if type(res) ~= 'table' then
+        adminNotify(locale('t_error'), locale('sv_update_fail'), 'error')
+        return cb({ ok = false })
+    end
+    if res.msg then adminNotify(locale('t_updated'), res.msg, 'success') end
+    if res.ok == false and res.err then
+        adminNotify(locale('t_error'), locale(res.err):format(table.unpack(res.errArgs or {})), 'error')
+    end
+    cb(res)
+end
+
+local function adminRelay(name, argsOf)
+    RegisterNUICallback(name, function(data, cb)
+        if not adminOpen then return cb({ ok = false }) end
+        data = type(data) == 'table' and data or {}
+        adminReply(RSGCore.Functions.AwaitCallback('rsg-stores:server:' .. name, 10000, argsOf(data)), cb)
+    end)
+end
+
+adminRelay('adminOverview',      function() end)
+adminRelay('adminRunUpkeep',     function() end)
+adminRelay('adminStoreDetail',   function(d) return tonumber(d.id) end)
+adminRelay('adminLedger',        function(d) return tonumber(d.id), d.kind, tonumber(d.offset) end)
+adminRelay('adminTill',          function(d) return tonumber(d.id), d.action, tonumber(d.amount), d.reason end)
+adminRelay('adminUpkeep',        function(d) return tonumber(d.id), d.action, tonumber(d.value) end)
+adminRelay('adminStaff',         function(d) return tonumber(d.id), d.action, d.cid, d.rank end)
+adminRelay('adminTransfer',      function(d) return tonumber(d.id), d.target end)
+adminRelay('adminCloseStore',    function(d) return tonumber(d.id), d.mode end)
+adminRelay('adminAudit',         function(d) return tonumber(d.offset) end)
+adminRelay('adminSettingsGet',   function() end)
+adminRelay('adminSettingsSave',  function(d) return d.changes end)
+adminRelay('adminSettingsReset', function(d) return d.path end)
+
+-- Live settings: the server sends the effective value of every editable setting (on join and after each change).
+RegisterNetEvent('rsg-stores:client:applySettings', function(values)
+    if type(values) ~= 'table' then return end
+    for path, value in pairs(values) do
+        if type(path) == 'string' then
+            local parts = {}
+            for part in path:gmatch('[^.]+') do parts[#parts + 1] = part end
+            local node = Config
+            for i = 1, #parts - 1 do
+                if type(node[parts[i]]) ~= 'table' then node[parts[i]] = {} end
+                node = node[parts[i]]
+            end
+            node[parts[#parts]] = value
+        end
+    end
+    SELL_PCT = Config.SellPricePercentage or 0.80
+    OS, DISC, SPEECH, HOURS, SIGN = Config.OwnedStores or {}, Config.Discounts or {}, Config.Speech or {}, Config.OpeningHours or {}, Config.ShopSign or {}
+end)
+
+-- ============================================
 -- LIFECYCLE
 -- ============================================
 local function requestData()
@@ -1177,9 +1287,68 @@ CreateThread(function() -- resource (re)start while already in-game
     if LocalPlayer.state.isLoggedIn then requestData() end
 end)
 
+-- ============================================
+-- BUY STORE CONFIRMATION (Buy / Cancel before any cash is taken)
+-- ============================================
+local buyConfirm = nil -- npc id while the confirm window is open
+
+local function closeBuyConfirm()
+    if not buyConfirm then return end
+    buyConfirm = nil
+    SendNUIMessage({ action = 'closeBuyConfirm' })
+    applyNuiFocus(false)
+end
+
+openBuyConfirm = function(npc)
+    if buyConfirm or currentShop or manageShop or adminOpen or placing then return end
+    local price = salePriceOf(npc)
+    if price <= 0 or not npc.shop then return end
+    if npc.owner and npc.owner.citizenid == (RSGCore.Functions.GetPlayerData() or {}).citizenid then return end
+    local id = npc.id
+    buyConfirm = id
+    SendNUIMessage({
+        action = 'openBuyConfirm',
+        title  = locale('cl_buy_confirm_title'),
+        text   = locale('cl_buy_confirm_text'):format(npc.shop.label, ('%.2f'):format(price)),
+        ok     = locale('cl_buy_pay_cash'),
+        bank   = OS.BankPayment ~= false and locale('cl_buy_pay_bank') or nil,
+        cancel = locale('cl_buy_confirm_cancel'),
+    })
+    applyNuiFocus(true)
+    CreateThread(function() -- close if it is bought by someone else, or the player walks off / dies
+        while buyConfirm == id do
+            Wait(500)
+            local n, ped = findNpcById(id), PlayerPedId()
+            if not n or salePriceOf(n) <= 0 or IsEntityDead(ped) or #(GetEntityCoords(ped) - vector3(n.x, n.y, n.z)) > 8.0 then closeBuyConfirm() end
+        end
+    end)
+end
+
+RegisterNUICallback('buyConfirmCancel', function(_, cb)
+    closeBuyConfirm()
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('buyConfirmYes', function(data, cb)
+    local method = type(data) == 'table' and data.method == 'bank' and 'bank' or 'cash'
+    local id = buyConfirm
+    closeBuyConfirm()
+    cb({ ok = true })
+    if not id then return end
+    CreateThread(function()
+        local n = findNpcById(id)
+        local label = n and n.shop and n.shop.label or ''
+        local res = RSGCore.Functions.AwaitCallback('rsg-stores:server:buyStore', 8000, id, method)
+        if not res or not res.ok then
+            return RSGCore.Functions.Notify({ title = label, description = errText(res), type = 'error' })
+        end
+        RSGCore.Functions.Notify({ title = res.label, description = res.msg, type = 'success' })
+    end)
+end)
+
 CreateThread(function()
     while true do
-        local focused = currentShop or manageShop or adminOpen or (placing and placing.mode == 'details')
+        local focused = currentShop or manageShop or adminOpen or buyConfirm or (placing and placing.mode == 'details')
         if focused and Config.AllowPushToTalkWhileOpen then
             Wait(0)
             runPttWhitelist()
@@ -1191,10 +1360,11 @@ end)
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
-    if currentShop or adminOpen or manageShop or placing then applyNuiFocus(false) end
+    if currentShop or adminOpen or manageShop or placing or buyConfirm then applyNuiFocus(false) end
     for id in pairs(storeZones) do removeStoreZone(id) end
     RemoveAllSigns()
     if placing then stopPlacing() end
     clearBlips()
+    clearSaleBlips()
     RemoveAllNPCs()
 end)

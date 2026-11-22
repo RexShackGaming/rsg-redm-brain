@@ -122,6 +122,22 @@ end
 RegisterCommand(Config.Command, openNearest, false)
 RegisterCommand(Config.GangCommand, function() openMenu({ gang = true }) end, false)
 
+-- Admin panel: the server checks the permission, a normal player only gets a notice
+local function openAdmin()
+    if uiOpen or IsPauseMenuActive() then return end
+    CreateThread(function()
+        local res = RSGCore.Functions.AwaitCallback('rsg-society:server:adminOpen', 10000)
+        if not res then return notify(locale('cl_no_answer'), 'error') end
+        if not res.ok then return notify(res.msg or locale('cl_no_answer'), 'error') end
+        menuOpen = true
+        showUI({ mode = 'admin', dashboard = res })
+    end)
+end
+
+if Config.Admin and Config.Admin.Enabled ~= false then
+    RegisterCommand(Config.Admin.Command or 'societyadmin', openAdmin, false)
+end
+
 RegisterNetEvent('rsg-society:client:openDesk', function(society)
     openMenu({ society = society })
 end)
@@ -139,6 +155,14 @@ if Config.UseKeyMapping then
     pcall(function()
         RSGCore.Functions.RegisterKey('rsgsociety_open', locale('key_open'), Config.GangKey or '', function()
             openNearest()
+        end)
+    end)
+end
+
+if Config.UseKeyMapping and Config.Admin and Config.Admin.Enabled ~= false then
+    pcall(function()
+        RSGCore.Functions.RegisterKey('rsgsociety_admin', locale('key_admin'), Config.Admin.Key or '', function()
+            openAdmin()
         end)
     end)
 end
@@ -227,6 +251,25 @@ RegisterNUICallback('act', function(data, cb)
     res = res or { ok = false, msg = locale('cl_no_answer') }
     cb(res)
     if res.closed then closeUI() end
+end)
+
+RegisterNUICallback('adminTab', function(data, cb)
+    local res = RSGCore.Functions.AwaitCallback('rsg-society:server:adminTab', 10000, data.tab, data.arg)
+    cb(res or { ok = false, msg = locale('cl_no_answer') })
+    if res and res.closed then closeUI() end
+end)
+
+RegisterNUICallback('adminAct', function(data, cb)
+    local res = RSGCore.Functions.AwaitCallback('rsg-society:server:adminAct', 10000, data.action, data.data)
+    res = res or { ok = false, msg = locale('cl_no_answer') }
+    cb(res)
+    if res.closed or res.close then closeUI() end
+    -- the server says where to go: the NUI cannot ask for a teleport on its own
+    local pos = res.ok and res.teleport
+    if type(pos) == 'table' and tonumber(pos.x) and tonumber(pos.y) and tonumber(pos.z) then
+        local ped = PlayerPedId()
+        SetEntityCoords(ped, pos.x + 0.0, pos.y + 0.0, pos.z + 0.5, false, false, false, false)
+    end
 end)
 
 RegisterNUICallback('createGang', function(data, cb)

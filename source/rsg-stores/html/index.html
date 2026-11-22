@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wild West Shop</title>
+    <title>Wild West Store</title>
 
     <!-- Roboto -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,6 +16,8 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="admin.css">
     <link rel="stylesheet" href="manage.css">
+    <link rel="stylesheet" href="admin-ext.css">
+    <link rel="stylesheet" href="buy-confirm.css">
 </head>
 <body>
     <!-- Main Shop Root : fullscreen, toggles via .hidden -->
@@ -28,7 +30,7 @@
                     <i class="fa-solid fa-chevron-left"></i>
                 </button>
                 <div class="header-content">
-                    <h1 class="shop-name" id="shop-name" data-i18n="ui_shop_default">Shop</h1>
+                    <h1 class="shop-name" id="shop-name" data-i18n="ui_shop_default">Store</h1>
                     <p class="shop-subtitle" id="shop-subtitle" data-i18n="ui_sub_default">Frontier Trading Post</p>
                 </div>
                 <button class="circle-btn" data-close-shop title="Close" data-i18n-title="ui_btn_close">
@@ -161,7 +163,7 @@
                     <span id="footer-hint" data-i18n="ui_hint_buy">Click items to add to cart &bull; Right-click to remove</span>
                 </div>
                 <button class="wood-btn muted" id="close-btn">
-                    <span data-i18n="ui_close_shop">CLOSE SHOP</span>
+                    <span data-i18n="ui_close_shop">CLOSE STORE</span>
                     <i class="fa-solid fa-door-open"></i>
                 </button>
             </div>
@@ -260,26 +262,30 @@
         </div>
     </div>
 
-    <!-- ============ ADMIN PANEL (/createshop) ============ -->
+    <!-- ============ ADMIN PANEL (/storeadmin) ============ -->
     <div id="admin-container" class="hidden">
         <div class="adm-panel">
             <div class="shop-header adm-header">
                 <button class="circle-btn" id="adm-back" data-i18n-title="ui_btn_back" title="Back"><i class="fa-solid fa-chevron-left"></i></button>
                 <div class="header-content">
-                    <h1 class="shop-name adm-title" id="adm-title" data-i18n="ui_adm_title">Shop Manager</h1>
-                    <p class="shop-subtitle" id="adm-subtitle" data-i18n="ui_adm_subtitle">NPCs • Shops • Blips</p>
+                    <h1 class="shop-name adm-title" id="adm-title" data-i18n="ui_adm_title">Store Manager</h1>
+                    <p class="shop-subtitle" id="adm-subtitle" data-i18n="ui_adm_subtitle">NPCs • Stores • Blips</p>
                 </div>
                 <button class="circle-btn" id="adm-close" data-i18n-title="ui_btn_close" title="Close"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="section-divider"><span>&#9670;</span></div>
 
+            <div class="mode-tabs adm-tabs" id="adm-tabs">
+                <button class="sort-btn mode-tab active" id="adm-tab-overview"><i class="fa-solid fa-gauge-high"></i> <span data-i18n="ui_adm_tab_overview">Overview</span></button>
+                <button class="sort-btn mode-tab" id="adm-tab-npcs"><i class="fa-solid fa-users"></i> <span data-i18n="ui_adm_tab_npcs">Stores</span> <span class="qty-pill" id="adm-npc-count">0</span></button>
+                <button class="sort-btn mode-tab" id="adm-tab-blips"><i class="fa-solid fa-map-location-dot"></i> <span data-i18n="ui_adm_tab_blips">Blips</span> <span class="qty-pill" id="adm-blip-count">0</span></button>
+                <button class="sort-btn mode-tab" id="adm-tab-presets"><i class="fa-solid fa-list-check"></i> <span data-i18n="ui_adm_tab_presets">Presets</span> <span class="qty-pill" id="adm-preset-count">0</span></button>
+                <button class="sort-btn mode-tab" id="adm-tab-settings"><i class="fa-solid fa-sliders"></i> <span data-i18n="ui_adm_tab_settings">Settings</span></button>
+                <button class="sort-btn mode-tab" id="adm-tab-audit"><i class="fa-solid fa-clipboard-list"></i> <span data-i18n="ui_adm_tab_audit">Audit</span></button>
+            </div>
+
             <!-- LIST VIEW -->
             <div class="adm-view" id="adm-list-view">
-                <div class="mode-tabs adm-tabs">
-                    <button class="sort-btn mode-tab active" id="adm-tab-npcs"><i class="fa-solid fa-users"></i> <span data-i18n="ui_adm_tab_npcs">Shops</span> <span class="qty-pill" id="adm-npc-count">0</span></button>
-                    <button class="sort-btn mode-tab" id="adm-tab-blips"><i class="fa-solid fa-map-location-dot"></i> <span data-i18n="ui_adm_tab_blips">Blips</span> <span class="qty-pill" id="adm-blip-count">0</span></button>
-                    <button class="sort-btn mode-tab" id="adm-tab-presets"><i class="fa-solid fa-list-check"></i> <span data-i18n="ui_adm_tab_presets">Presets</span> <span class="qty-pill" id="adm-preset-count">0</span></button>
-                </div>
                 <div class="adm-toolbar">
                     <div class="search-box">
                         <i class="fa-solid fa-magnifying-glass"></i>
@@ -295,7 +301,7 @@
                     <p id="adm-list-empty-text"></p>
                 </div>
                 <div class="adm-footer">
-                    <button class="wood-btn" id="adm-new"><i class="fa-solid fa-plus"></i> <span id="adm-new-label" data-i18n="ui_adm_new_npc">New Shop</span></button>
+                    <button class="wood-btn" id="adm-new"><i class="fa-solid fa-plus"></i> <span id="adm-new-label" data-i18n="ui_adm_new_npc">New Store</span></button>
                 </div>
             </div>
 
@@ -306,12 +312,12 @@
                     <div class="adm-field">
                         <span data-i18n="ui_adm_run_by">Run By</span>
                         <div class="adm-kind-tabs">
-                            <button type="button" class="sort-btn mode-tab active" id="npc-kind-npc"><i class="fa-solid fa-user"></i> <span data-i18n="ui_adm_kind_npc">NPC Shopkeeper</span></button>
+                            <button type="button" class="sort-btn mode-tab active" id="npc-kind-npc"><i class="fa-solid fa-user"></i> <span data-i18n="ui_adm_kind_npc">NPC Storekeeper</span></button>
                             <button type="button" class="sort-btn mode-tab" id="npc-kind-player"><i class="fa-solid fa-user-tie"></i> <span data-i18n="ui_adm_kind_player">Player Owner</span></button>
                         </div>
                     </div>
                     <p class="adm-hint hidden adm-warn" id="npc-kind-warn" data-i18n="ui_adm_kind_warn">Changing who runs this store clears its stock and till.</p>
-                    <label class="adm-field"><span data-i18n="cl_npc_name" class="req">Shop Name</span>
+                    <label class="adm-field"><span data-i18n="cl_npc_name" class="req">Store Name</span>
                         <input type="text" id="npc-name" maxlength="100"></label>
                     <label class="adm-field" id="npc-model-field"><span data-i18n="cl_npc_model" class="req">NPC Model</span>
                         <select id="npc-model"></select></label>
@@ -325,14 +331,14 @@
                     </div>
                     <button class="wood-btn muted adm-wide" id="npc-use-pos"><i class="fa-solid fa-person-walking"></i> <span data-i18n="ui_adm_use_pos">Use My Position</span></button>
 
-                    <div class="adm-section-title"><i class="fa-solid fa-store"></i> <span data-i18n="ui_adm_sec_shop">Shop</span></div>
-                    <label class="adm-check" id="npc-is-shop-wrap"><input type="checkbox" id="npc-is-shop"> <span data-i18n="ui_adm_is_shop">This NPC is a shopkeeper</span></label>
+                    <div class="adm-section-title"><i class="fa-solid fa-store"></i> <span data-i18n="ui_adm_sec_shop">Store</span></div>
+                    <label class="adm-check" id="npc-is-shop-wrap"><input type="checkbox" id="npc-is-shop"> <span data-i18n="ui_adm_is_shop">This NPC is a storekeeper</span></label>
                     <div id="npc-shop-fields">
                         <div class="adm-grid2">
-                            <label class="adm-field"><span data-i18n="cl_shop_identifier" class="req">Shop ID</span><input type="text" id="adm-shop-name" maxlength="100"></label>
-                            <label class="adm-field"><span data-i18n="cl_shop_display" class="req">Shop Label</span><input type="text" id="adm-shop-label" maxlength="100"></label>
+                            <label class="adm-field"><span data-i18n="cl_shop_identifier" class="req">Store ID</span><input type="text" id="adm-shop-name" maxlength="100"></label>
+                            <label class="adm-field"><span data-i18n="cl_shop_display" class="req">Store Label</span><input type="text" id="adm-shop-label" maxlength="100"></label>
                         </div>
-                        <label class="adm-field"><span data-i18n="cl_shop_type">Shop Type</span>
+                        <label class="adm-field"><span data-i18n="cl_shop_type">Store Type</span>
                             <select id="adm-shop-type">
                                 <option value="both" data-i18n="cl_shop_both">Buy &amp; Sell</option>
                                 <option value="buy" data-i18n="cl_shop_buy">Buy only</option>
@@ -342,18 +348,20 @@
                         <div id="npc-owner-block" class="hidden">
                             <div class="adm-section-title"><i class="fa-solid fa-key"></i> <span data-i18n="ui_adm_sec_owner">Store Owner</span></div>
                             <p class="adm-hint" id="npc-owner-current"></p>
+                            <label class="adm-field"><span data-i18n="ui_adm_sale_price">Sale Price ($)</span><input type="number" id="npc-sale-price" min="0" step="0.01" autocomplete="off"></label>
+                            <p class="adm-hint" data-i18n="ui_adm_sale_hint">While the store has no owner, players can buy it for this price. Leave empty to keep it closed.</p>
                             <label class="adm-field"><span data-i18n="ui_adm_owner_assign">Assign Owner (Online Player)</span><select id="npc-owner-id"></select></label>
                             <label class="adm-check" id="npc-owner-clear-wrap"><input type="checkbox" id="npc-owner-clear"> <span data-i18n="ui_adm_owner_clear">Remove current owner</span></label>
                             <p class="adm-hint" data-i18n="ui_adm_owner_hint">The owner stocks the store from their own inventory, sets prices and collects the till. Stock and till stay with the store if the owner changes.</p>
                             <div id="npc-evict-wrap" class="hidden">
                                 <label class="adm-check"><input type="checkbox" id="npc-evict-force"> <span data-i18n="ui_adm_evict_force">Forfeit stock and till if the owner is offline</span></label>
                                 <button type="button" class="wood-btn muted adm-danger" id="npc-evict"><i class="fa-solid fa-door-open"></i> <span id="npc-evict-label" data-i18n="ui_adm_evict">Evict Owner</span></button>
-                                <p class="adm-hint" data-i18n="ui_adm_evict_hint">Stock, till and shop sign go back to the owner. Sign stores are removed; admin stores are emptied and left unowned.</p>
+                                <p class="adm-hint" data-i18n="ui_adm_evict_hint">Stock, till and store sign go back to the owner. Sign stores are removed; admin stores are emptied and left unowned.</p>
                             </div>
                         </div>
 
                         <div id="npc-items-block">
-                        <div class="adm-section-title"><i class="fa-solid fa-boxes-stacked"></i> <span data-i18n="ui_adm_sec_items">Shop Items</span> <span class="qty-pill" id="adm-item-count">0</span></div>
+                        <div class="adm-section-title"><i class="fa-solid fa-boxes-stacked"></i> <span data-i18n="ui_adm_sec_items">Store Items</span> <span class="qty-pill" id="adm-item-count">0</span></div>
                         <div class="adm-items-head">
                             <span data-i18n="cl_field_item">Item</span><span data-i18n="cl_field_price">Price</span><span data-i18n="ui_adm_stock">Stock</span><span></span>
                         </div>
@@ -365,7 +373,7 @@
 
                         <div id="npc-blip-block">
                             <div class="adm-section-title"><i class="fa-solid fa-map-pin"></i> <span data-i18n="ui_adm_sec_blip">Map Blip</span></div>
-                            <label class="adm-check"><input type="checkbox" id="npc-make-blip"> <span data-i18n="cl_create_blip_chk">Create a blip for this shop?</span></label>
+                            <label class="adm-check"><input type="checkbox" id="npc-make-blip"> <span data-i18n="cl_create_blip_chk">Create a blip for this store?</span></label>
                             <div id="npc-blip-fields" class="hidden">
                                 <label class="adm-field"><span data-i18n="cl_blip_name">Blip Name</span><input type="text" id="npc-blip-name" maxlength="100"></label>
                                 <div class="adm-grid2">
@@ -379,6 +387,7 @@
                 </div>
                 <div class="adm-footer">
                     <div class="adm-footer-tools" id="npc-tools">
+                        <button class="circle-btn" id="npc-manage" data-i18n-title="ui_st_manage" title="Manage"><i class="fa-solid fa-vault"></i></button>
                         <button class="circle-btn" id="npc-teleport" data-i18n-title="ui_adm_teleport" title="Teleport"><i class="fa-solid fa-location-arrow"></i></button>
                         <button class="circle-btn" id="npc-duplicate" data-i18n-title="ui_adm_duplicate" title="Duplicate"><i class="fa-solid fa-copy"></i></button>
                         <button class="circle-btn adm-danger" id="npc-delete" data-i18n-title="ui_adm_delete" title="Delete"><i class="fa-solid fa-trash"></i></button>
@@ -438,6 +447,126 @@
                     <button class="wood-btn" id="preset-save"><i class="fa-solid fa-floppy-disk"></i> <span id="preset-save-label" data-i18n="ui_adm_save">Save</span></button>
                 </div>
             </div>
+
+            <!-- OVERVIEW -->
+            <div class="adm-view hidden" id="adm-overview-view">
+                <div class="adm-scroll">
+                    <div class="ov-stats" id="ov-stats"></div>
+                    <div class="adm-section-title"><i class="fa-solid fa-store"></i> <span data-i18n="ui_ov_stores">Stores</span> <span class="qty-pill" id="ov-store-count">0</span></div>
+                    <div class="adm-toolbar">
+                        <div class="search-box"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="ov-search" data-i18n-ph="ui_adm_search" placeholder="Search..." autocomplete="off"></div>
+                        <button class="circle-btn" id="ov-refresh" data-i18n-title="ui_ov_refresh" title="Refresh"><i class="fa-solid fa-rotate"></i></button>
+                    </div>
+                    <div class="adm-chips" id="ov-filters"></div>
+                    <div id="ov-stores"></div>
+                    <p class="adm-hint hidden" id="ov-empty" data-i18n="cl_no_results">No results</p>
+                    <div class="adm-section-title"><i class="fa-solid fa-clock-rotate-left"></i> <span data-i18n="ui_ov_activity">Recent activity</span></div>
+                    <div id="ov-activity" class="mng-ledger"></div>
+                    <p class="adm-hint hidden" id="ov-activity-empty" data-i18n="ui_ov_no_activity">Nothing yet</p>
+                </div>
+                <div class="adm-footer">
+                    <button class="wood-btn muted" id="ov-upkeep"><i class="fa-solid fa-hourglass-half"></i> <span data-i18n="ui_ov_run_upkeep">Run upkeep now</span></button>
+                </div>
+            </div>
+
+            <!-- STORE MANAGEMENT -->
+            <div class="adm-view hidden" id="adm-store-view">
+                <div class="adm-scroll">
+                    <div class="st-head" id="st-head"></div>
+                    <div class="adm-chips st-tabs">
+                        <button class="adm-chip active" data-st-tab="finance"><span data-i18n="ui_st_tab_finance">Finance</span></button>
+                        <button class="adm-chip" data-st-tab="upkeep"><span data-i18n="ui_st_tab_upkeep">Upkeep</span></button>
+                        <button class="adm-chip" data-st-tab="staff"><span data-i18n="ui_st_tab_staff">Staff</span></button>
+                        <button class="adm-chip" data-st-tab="owner"><span data-i18n="ui_st_tab_owner">Owner</span></button>
+                    </div>
+
+                    <div id="st-pane-finance">
+                        <div class="st-till"><span data-i18n="ui_st_till">Till</span><b id="st-till">$0.00</b><em id="st-till-src"></em></div>
+                        <div class="ov-stats" id="st-stats"></div>
+                        <div class="adm-section-title"><i class="fa-solid fa-coins"></i> <span data-i18n="ui_st_adjust">Adjust till</span></div>
+                        <div class="adm-grid2">
+                            <label class="adm-field"><span data-i18n="ui_st_amount" class="req">Amount</span><input type="number" id="st-amount" min="0.01" step="0.01" autocomplete="off"></label>
+                            <label class="adm-field"><span data-i18n="ui_st_reason" class="req">Reason</span><input type="text" id="st-reason" maxlength="100" autocomplete="off"></label>
+                        </div>
+                        <div class="st-btn-row">
+                            <button class="wood-btn muted" id="st-till-add"><i class="fa-solid fa-plus"></i> <span data-i18n="ui_st_add">Add</span></button>
+                            <button class="wood-btn muted" id="st-till-remove"><i class="fa-solid fa-minus"></i> <span data-i18n="ui_st_remove">Remove</span></button>
+                            <button class="wood-btn muted" id="st-till-payout"><i class="fa-solid fa-hand-holding-dollar"></i> <span data-i18n="ui_st_payout">Pay to owner</span></button>
+                        </div>
+                        <div class="adm-section-title"><i class="fa-solid fa-book"></i> <span data-i18n="ui_st_ledger">Ledger</span></div>
+                        <div class="adm-chips" id="st-ledger-kinds"></div>
+                        <div id="st-ledger" class="mng-ledger"></div>
+                        <p class="adm-hint hidden" id="st-ledger-empty" data-i18n="ui_ov_no_activity">Nothing yet</p>
+                        <button class="wood-btn muted adm-wide hidden" id="st-ledger-more"><span data-i18n="ui_st_more">Load more</span></button>
+                    </div>
+
+                    <div id="st-pane-upkeep" class="hidden">
+                        <p class="adm-hint" id="st-upkeep-na" data-i18n="ui_st_upkeep_na">This store has no upkeep.</p>
+                        <div id="st-upkeep-body">
+                            <div class="ov-stats" id="st-upkeep-stats"></div>
+                            <div class="st-btn-row">
+                                <button class="wood-btn muted" id="st-up-collect"><i class="fa-solid fa-money-bill-transfer"></i> <span data-i18n="ui_st_up_collect">Collect from till</span></button>
+                                <button class="wood-btn muted" id="st-up-waive"><i class="fa-solid fa-eraser"></i> <span data-i18n="ui_st_up_waive">Waive debt</span></button>
+                                <button class="wood-btn muted" id="st-up-reset"><i class="fa-solid fa-rotate-left"></i> <span data-i18n="ui_st_up_reset">Restart timer</span></button>
+                            </div>
+                            <div class="adm-grid2">
+                                <label class="adm-field"><span data-i18n="ui_st_up_set_owed">Set amount owed</span><input type="number" id="st-up-owed" min="0" step="0.01" autocomplete="off"></label>
+                                <label class="adm-field"><span data-i18n="ui_st_up_postpone_h">Postpone by (hours)</span><input type="number" id="st-up-hours" min="1" step="1" autocomplete="off"></label>
+                            </div>
+                            <div class="st-btn-row">
+                                <button class="wood-btn muted" id="st-up-setowed"><span data-i18n="ui_st_apply">Apply</span></button>
+                                <button class="wood-btn muted" id="st-up-postpone"><span data-i18n="ui_st_apply">Apply</span></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="st-pane-staff" class="hidden">
+                        <div id="st-staff"></div>
+                        <p class="adm-hint" id="st-staff-empty"></p>
+                    </div>
+
+                    <div id="st-pane-owner" class="hidden">
+                        <div class="st-owner-card" id="st-owner-card"></div>
+                        <div class="adm-section-title"><i class="fa-solid fa-right-left"></i> <span data-i18n="ui_st_transfer">Transfer ownership</span></div>
+                        <label class="adm-field"><span data-i18n="ui_st_new_owner">New owner (online)</span><select id="st-owner-pick"></select></label>
+                        <label class="adm-field"><span data-i18n="ui_st_new_owner_cid">or citizen ID</span><input type="text" id="st-owner-cid" maxlength="50" autocomplete="off"></label>
+                        <button class="wood-btn muted adm-wide" id="st-transfer"><i class="fa-solid fa-right-left"></i> <span data-i18n="ui_st_transfer_btn">Transfer</span></button>
+                        <div class="adm-section-title"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="ui_st_danger">Close store</span></div>
+                        <div class="st-btn-row">
+                            <button class="wood-btn muted adm-danger-btn" id="st-evict"><i class="fa-solid fa-door-open"></i> <span data-i18n="ui_st_evict">Evict (return stock)</span></button>
+                            <button class="wood-btn muted adm-danger-btn" id="st-repo"><i class="fa-solid fa-gavel"></i> <span data-i18n="ui_st_repo">Repossess (forfeit)</span></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="adm-footer">
+                    <div class="adm-footer-tools">
+                        <button class="circle-btn" id="st-teleport" data-i18n-title="ui_adm_teleport" title="Teleport"><i class="fa-solid fa-location-arrow"></i></button>
+                    </div>
+                    <button class="wood-btn" id="st-edit"><i class="fa-solid fa-pen"></i> <span data-i18n="ui_st_edit">Edit store</span></button>
+                </div>
+            </div>
+
+            <!-- AUDIT LOG -->
+            <div class="adm-view hidden" id="adm-audit-view">
+                <div class="adm-scroll">
+                    <p class="adm-hint" data-i18n="ui_au_hint">Admin changes and store sales, newest first.</p>
+                    <div id="au-list" class="mng-ledger"></div>
+                    <p class="adm-hint hidden" id="au-empty" data-i18n="ui_au_empty">Nothing logged yet</p>
+                    <button class="wood-btn muted adm-wide hidden" id="au-more"><span data-i18n="ui_st_more">Load more</span></button>
+                </div>
+            </div>
+
+            <!-- SETTINGS -->
+            <div class="adm-view hidden" id="adm-settings-view">
+                <div class="adm-scroll"><p class="adm-hint" data-i18n="ui_set_hint">Changes apply live. Reset a value to return to the config.lua default.</p><div id="set-body"></div></div>
+                <div class="adm-footer">
+                    <span class="adm-hint" id="set-dirty"></span>
+                    <div class="st-btn-row">
+                        <button class="wood-btn muted" id="set-discard" disabled><span data-i18n="ui_set_discard">Discard</span></button>
+                        <button class="wood-btn" id="set-save" disabled><i class="fa-solid fa-floppy-disk"></i> <span data-i18n="ui_adm_save">Save</span></button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Item picker -->
@@ -466,7 +595,7 @@
                 <div class="modal-body"><p class="adm-confirm-text" id="adm-confirm-text"></p></div>
                 <div class="modal-footer">
                     <button class="wood-btn muted" data-adm-dismiss><span data-i18n="ui_adm_cancel">Cancel</span></button>
-                    <button class="wood-btn adm-danger-btn" id="adm-confirm-ok"><i class="fa-solid fa-trash"></i> <span data-i18n="ui_adm_delete">Delete</span></button>
+                    <button class="wood-btn adm-danger-btn" id="adm-confirm-ok"><i class="fa-solid fa-trash" id="adm-confirm-icon"></i> <span id="adm-confirm-label" data-i18n="ui_adm_delete">Delete</span></button>
                 </div>
             </div>
         </div>
@@ -527,7 +656,7 @@
             <div class="mng-scroll mng-form hidden" id="mng-settings-view">
                 <div class="mng-section" id="mng-settings-main">
                     <div class="mng-section-title"><i class="fa-solid fa-store"></i> <span data-i18n="ui_mng_sec_details">Store Details</span></div>
-                    <label class="mng-field"><span data-i18n="ui_mng_sign">Shop Sign</span>
+                    <label class="mng-field"><span data-i18n="ui_mng_sign">Store Sign</span>
                         <input type="text" class="mng-input" id="mng-label" maxlength="100"></label>
                     <div class="mng-field"><span data-i18n="ui_mng_counter">Counter</span>
                         <div class="mng-type-tabs">
@@ -538,6 +667,23 @@
                         <p class="mng-hint" id="mng-buyback-hint"></p>
                     </div>
                     <button class="wood-btn mng-wide" id="mng-save-settings"><i class="fa-solid fa-floppy-disk"></i> <span data-i18n="ui_adm_save">Save</span></button>
+                </div>
+                <div class="mng-section hidden" id="mng-bulk-block">
+                    <div class="mng-section-title"><i class="fa-solid fa-tags"></i> <span data-i18n="ui_mng_sec_bulk">Adjust All Prices</span></div>
+                    <p class="mng-hint" data-i18n="ui_mng_bulk_hint">Raise or lower every listing by a percentage, for example 10 or -15.</p>
+                    <div class="mng-inline">
+                        <input type="number" class="mng-input" id="mng-bulk-pct" step="0.5" min="-90" max="500" data-i18n-ph="ui_mng_bulk_pct" placeholder="%">
+                        <button class="wood-btn" id="mng-bulk-apply"><i class="fa-solid fa-check"></i> <span data-i18n="ui_mng_bulk_apply">Apply</span></button>
+                    </div>
+                </div>
+                <div class="mng-section hidden" id="mng-resale-block">
+                    <div class="mng-section-title"><i class="fa-solid fa-handshake"></i> <span data-i18n="ui_mng_sec_resale">Sell Store</span></div>
+                    <p class="mng-hint" id="mng-resale-hint"></p>
+                    <div class="mng-inline">
+                        <input type="number" class="mng-input" id="mng-resale-price" step="0.01" min="0" data-i18n-ph="ui_mng_resale_price" placeholder="$">
+                        <button class="wood-btn" id="mng-resale-set"><i class="fa-solid fa-tag"></i> <span data-i18n="ui_mng_resale_set">List For Sale</span></button>
+                        <button class="wood-btn muted" id="mng-resale-clear"><span data-i18n="ui_mng_resale_clear">Take Off Sale</span></button>
+                    </div>
                 </div>
                 <div class="mng-section hidden" id="mng-upkeep-block">
                     <div class="mng-section-title"><i class="fa-solid fa-coins"></i> <span data-i18n="ui_mng_sec_upkeep">Upkeep</span></div>
@@ -550,7 +696,7 @@
                 </div>
                 <div class="mng-section mng-section-danger hidden" id="mng-packup-block">
                     <div class="mng-section-title"><i class="fa-solid fa-box-archive"></i> <span data-i18n="ui_mng_sec_close">Close Store</span></div>
-                    <p class="mng-hint" data-i18n="ui_mng_packup_hint">Shelves must be empty. The till is paid out and you get your shop sign back.</p>
+                    <p class="mng-hint" data-i18n="ui_mng_packup_hint">Shelves must be empty. The till is paid out and you get your store sign back.</p>
                     <button class="wood-btn muted mng-wide mng-danger" id="mng-packup"><i class="fa-solid fa-box-archive"></i> <span id="mng-packup-label" data-i18n="ui_mng_packup">Pack Up Store</span></button>
                 </div>
             </div>
@@ -598,7 +744,7 @@
             <div class="shop-header mng-header">
                 <span class="circle-btn mng-seal"><i class="fa-solid fa-sign-hanging"></i></span>
                 <div class="header-content">
-                    <h1 class="shop-name mng-title" data-i18n="ui_sign_title">Place Shop Sign</h1>
+                    <h1 class="shop-name mng-title" data-i18n="ui_sign_title">Place Store Sign</h1>
                     <p class="shop-subtitle" data-i18n="ui_sign_sub">Open your own store</p>
                 </div>
                 <button class="circle-btn" id="sign-cancel-x" data-i18n-title="ui_btn_close" title="Close"><i class="fa-solid fa-xmark"></i></button>
@@ -637,8 +783,26 @@
         </div>
     </div>
 
+
+    <!-- BUY STORE CONFIRM -->
+    <div id="buy-confirm" class="hidden">
+        <div class="bc-backdrop"></div>
+        <div class="bc-card">
+            <h2 id="bc-title"></h2>
+            <div class="ink-divider"></div>
+            <p id="bc-text"></p>
+            <div class="bc-actions">
+                <button class="wood-btn muted" id="bc-cancel"></button>
+                <button class="wood-btn" id="bc-ok"></button>
+                <button class="wood-btn hidden" id="bc-bank"></button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
     <script src="admin.js"></script>
     <script src="manage.js"></script>
+    <script src="admin-ext.js"></script>
+    <script src="buy-confirm.js"></script>
 </body>
 </html>

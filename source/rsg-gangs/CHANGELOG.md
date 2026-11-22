@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.6.0
+
+### Changed
+- The gang wagon created with a new gang is now placed on the nearest road or trail (nearest road nodes first, facing the road's direction) instead of in front of the founder.
+- The spot is only used when no ped (other than the founder), vehicle or object is within `Config.GangVehicle.checkRadius` (now 4.0 m). Blocked nodes are skipped and the next nearest one is tried.
+- If no clear road spot is found, the previous in-front search is used (`fallbackOffRoad`), and if that fails too the founder is told there is no clear space.
+
+### Added
+- `Config.GangVehicle`: `spawnOnRoad`, `maxRoadDistance`, `minRoadDistance`, `roadNodeAttempts`, `fallbackOffRoad`.
+
 ## 3.5.0
 
 ### Changed

@@ -6,7 +6,7 @@ lua54 'yes'
 author 'RexShack'
 name 'rsg-gangs'
 description 'Gang System for RSG Framework'
-version '3.5.0'
+version '3.6.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',

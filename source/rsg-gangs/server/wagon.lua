@@ -83,7 +83,8 @@ RegisterNetEvent('rsg-gangs:server:gangVehicleSpotFound', function(gangName, coo
 
     local gang, citizenid = memberGang(src)
     if not gang or gang.name ~= gangName then return end
-    if not RSGGangs.IsNear(src, coords, 60.0) then return end
+    -- The spot may be on a road up to maxRoadDistance away from the founder.
+    if not RSGGangs.IsNear(src, coords, math.max(60.0, (Config.GangVehicle.maxRoadDistance or 0.0) + 15.0)) then return end
 
     if setWagonLocation(gang, coords, heading) then
         -- The founder's client spawns the first wagon itself; keep the streaming loop from asking twice.

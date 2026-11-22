@@ -75,6 +75,24 @@ Config.Blips = {
     showOwnedByOthers = false,
 }
 
+-- rsg-society integration: every factory gets its own job (JobPrefix + factory id) and a job society in rsg-society
+-- the moment it is created (treasury, member list, ranks, storage, audit trail). The owner holds the boss grade,
+-- trusted workers the first grade. With EarningsToSociety the fees other players pay go into the society account
+-- (money already in the factory's earnings moves over on the next start); the owner's Earnings tab, selling and
+-- transferring all use that account. Deleting a factory removes the society and pays its balance to the owner (if online).
+-- Factories created before this was added get their society on the next start. Needs rsg-society started.
+Config.Society = {
+    Enabled = true,
+    JobPrefix = 'factory_',
+    JobType = 'factory',        -- rsg-core job type
+    EarningsToSociety = true,   -- false = earnings stay in the factory (database column)
+    -- Grades created for each factory job, lowest first. payment = wage in dollars paid from the society account (0 = unpaid).
+    Grades = {
+        { name = 'Worker', payment = 0 },
+        { name = 'Owner', payment = 0, isboss = true },
+    },
+}
+
 -- Limits (enforced on the server)
 Config.MaxRecipes = 20            -- production lines per factory
 Config.MaxItemsPerRecipe = 6      -- distinct input items and distinct output items per line

@@ -33,7 +33,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-drugs](rsg-drugs.md) | Drug production for RSG Framework (cannabis lab: drying, processing, packing bags & bricks with hired crew) pl | 9 | 18 |
 | [rsg-economy](rsg-economy.md) | Regional treasuries, taxes, supply-and-demand prices and town projects for RSG Framework | 16 | 1 |
 | [rsg-essentials](rsg-essentials.md) | Quality-of-life utilities and fixes for RedM using RSG Core. > A collection of small but essential feature | 0 | 9 |
-| [rsg-factory](rsg-factory.md) | Version 3.0.0 · Requires: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` · Optional: `rsg-telegram`  | 0 | 3 |
+| [rsg-factory](rsg-factory.md) | Version 3.1.0 · Requires: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` · Optional: `rsg-telegram`, | 0 | 3 |
 | [rsg-farming](rsg-farming.md) | Plant, water, fertilise and harvest crops anywhere in the world, using the water buckets from rsg-wellpump. Bu | 0 | 7 |
 | [rsg-fireworks](rsg-fireworks.md) | Firework script for RSG Framework | 0 | 11 |
 | [rsg-fishing](rsg-fishing.md) | Fishing for RSG-Core (RedM), version 3.1.0. Full technical reference: [DOCS.md](DOCS.md). Players equip a  | 0 | 3 |
@@ -83,9 +83,9 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-skills](rsg-skills.md) | Framework-wide skills, XP, levels, perks and leaderboards for RSG Framework | 21 | 2 |
 | [rsg-smelting](rsg-smelting.md) | Turn ores into metal bars at smelter NPCs or ore-bucket props. Built for RSG-Core (RedM) with rsg-target a | 1 | 1 |
 | [rsg-smoking](rsg-smoking.md) | Cigarettes, cigars, pipes and chewing tobacco for the RSG Framework (RedM). Version: 3.0.0 / Dependencie | 0 | 2 |
-| [rsg-society](rsg-society.md) | Societies for the RSG Framework: members, ranks, permissions, finances, payroll, storage, fines, audit trail a | 32 | 9 |
+| [rsg-society](rsg-society.md) | Societies for the RSG Framework: members, ranks, permissions, finances, payroll, storage, fines, audit trail a | 34 | 9 |
 | [rsg-stables](rsg-stables.md) | Horse and stables script for RSG Framework | 2 | 20 |
-| [rsg-stores](rsg-stores.md) | Version 3.1.0 · requires rsg-core, rsg-inventory, rsg-target, rsg-gizmo, oxmysql (no ox_lib) Create NPC sh | 1 | 21 |
+| [rsg-stores](rsg-stores.md) | Version 3.6.0 · requires rsg-core, rsg-inventory, rsg-target, rsg-gizmo, oxmysql (no ox_lib) · optional: r | 1 | 22 |
 | [rsg-target](rsg-target.md) | targeting system for RSG RedM Framework | 19 | 6 |
 | [rsg-targetpractise](rsg-targetpractise.md) | Placeable archery and throwing-knife practice targets for RSG Framework | 0 | 18 |
 | [rsg-telegram](rsg-telegram.md) | Telegram system for RSG Framework (RedM). Send and receive telegrams at any post office, with an address book, | 17 | 4 |

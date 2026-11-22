@@ -29,6 +29,7 @@ local SCHEMA = {
               `upkeep_owed` decimal(10,2) NOT NULL DEFAULT 0.00,
               `upkeep_next` int(11) DEFAULT NULL,
               `packed_at` int(11) DEFAULT NULL,
+              `sale_price` decimal(12,2) DEFAULT NULL,
               PRIMARY KEY (`id`),
               KEY `idx_shop_name` (`shop_name`),
               KEY `idx_owner` (`owner_citizenid`)
@@ -47,6 +48,8 @@ local SCHEMA = {
             upkeep_owed     = 'decimal(10,2) NOT NULL DEFAULT 0.00',      -- unpaid sign store upkeep
             upkeep_next     = 'int(11) DEFAULT NULL',                     -- unix time the next upkeep is due
             packed_at       = 'int(11) DEFAULT NULL',                     -- set while a sign store is picked up (moving)
+            sale_price      = 'decimal(12,2) DEFAULT NULL',               -- price a player pays to buy an unowned admin store (NULL = not for sale)
+            resale_price    = 'decimal(12,2) DEFAULT NULL',               -- price an owner asks for their store (NULL = not for sale)
         },
         indexes = { idx_shop_name = '`shop_name`', idx_owner = '`owner_citizenid`' },
     },
@@ -150,6 +153,38 @@ local SCHEMA = {
               `value` varchar(100) NOT NULL,
               PRIMARY KEY (`id`),
               UNIQUE KEY `uq_kind_value` (`kind`, `value`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+        ]],
+        columns = {},
+        indexes = {},
+    },
+    {
+        -- Settings edited in the admin panel (Settings tab). One row per setting, value stored as JSON.
+        name = 'rsg_shops_settings',
+        create = [[
+            CREATE TABLE IF NOT EXISTS `rsg_shops_settings` (
+              `setting_key` varchar(64) NOT NULL,
+              `setting_value` text NOT NULL,
+              `updated_at` int(11) NOT NULL DEFAULT 0,
+              PRIMARY KEY (`setting_key`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+        ]],
+        columns = {},
+        indexes = {},
+    },
+    {
+        -- Admin action trail shown in /storeadmin > Audit.
+        name = 'rsg_shops_audit',
+        create = [[
+            CREATE TABLE IF NOT EXISTS `rsg_shops_audit` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `ts` int(11) NOT NULL,
+              `actor_cid` varchar(50) DEFAULT NULL,
+              `actor_name` varchar(100) DEFAULT NULL,
+              `action` varchar(40) NOT NULL,
+              `npc_id` int(11) DEFAULT NULL,
+              `detail` varchar(250) DEFAULT NULL,
+              PRIMARY KEY (`id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
         ]],
         columns = {},

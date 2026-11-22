@@ -1,6 +1,6 @@
 # rsg-gangs documentation
 
-For server owners and developers. Version 3.5.0.
+For server owners and developers. Version 3.6.0.
 
 ## Contents
 
@@ -123,10 +123,15 @@ Everything is in `shared/config.lua` unless stated.
 Config.GangVehicle = {
     enabled = true,
     model = 'chuckwagon002x',
-    spawnDistance = 6.0,   -- metres in front of the founder to try first
-    checkRadius = 3.0,     -- area around the spawn point that must be clear
-    maxAttempts = 6,       -- how many times the spawn point is pushed further out
-    attemptStep = 2.5,     -- metres added per retry
+    spawnOnRoad = true,        -- place the new wagon on the nearest road/trail
+    maxRoadDistance = 150.0,   -- furthest road node from the founder that may be used (m)
+    minRoadDistance = 6.0,     -- skip road nodes right on top of the founder (m)
+    roadNodeAttempts = 12,     -- how many of the nearest road nodes to try
+    fallbackOffRoad = true,    -- fall back to the spot-in-front search when no road spot is clear
+    checkRadius = 4.0,         -- area around the spawn point that must be clear of peds, vehicles and objects
+    spawnDistance = 6.0,       -- fallback: metres in front of the founder to try first
+    maxAttempts = 6,           -- fallback: how many times the spawn point is pushed further out
+    attemptStep = 2.5,         -- fallback: metres added per retry
     restrictDriving = true,
     useTargetMenu = true,  -- open the gang menu from a target on the wagon instead of the chat command
 }
@@ -189,7 +194,7 @@ The wagon is the gang's base: the "manage outfit" target opens the menu, and equ
 
 ### Lifecycle
 
-1. **Creation.** When a gang is founded the server issues the founder two single-use grants (`spot:<gang>` and `wagon:<gang>`) and sends `rsg-gangs:client:findGangVehicleSpot`. The client finds a clear spot, reports it (`gangVehicleSpotFound`, validated against the player's real position), and spawns the wagon.
+1. **Creation.** When a gang is founded the server issues the founder two single-use grants (`spot:<gang>` and `wagon:<gang>`) and sends `rsg-gangs:client:findGangVehicleSpot`. The client finds the nearest road node with nothing in the way (no ped, vehicle or object within `checkRadius`; falls back to a spot in front of the founder), reports it (`gangVehicleSpotFound`, validated against the player's real position), and spawns the wagon.
 2. **Registration.** The spawning client reports the net id (`gangWagonSpawned`). The server accepts it only with the grant, checks model and type only when it can see the entity, and creates the registry entry. The client also tags the entity with the `rsgGangWagon` state bag.
 3. **Heartbeats.** Every client within 120 m of the wagon sends `rsg-gangs:server:wagonHeartbeat` every 4 seconds. Any nearby client keeps the entry alive. Heartbeats from a **member of the owning gang** also update the live position, and when the wagon is standing still and no camp equipment is deployed, the new parking spot is written to the database.
 4. **Despawn.** When nobody is within `Config.DespawnProximityRadius`, the server drops the entry and broadcasts `rsg-gangs:client:despawnGangWagon`. Clients that have the entity delete it (asking for network control first).

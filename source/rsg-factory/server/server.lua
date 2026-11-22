@@ -233,6 +233,9 @@ local function normSettings(raw)
     return s
 end
 
+-- earnings: the society account (rsg-society) plus anything still in the factory's own column
+local function bankBalance(f) return f.bank + FactorySociety.Balance(f) end
+
 local function capFuel(f) return Config.MaxFuel + f.settings.tank * Config.Upgrades.tank.bonus end
 local function capWater(f) return Config.MaxWater + f.settings.tank * Config.Upgrades.tank.bonus end
 local function speedPercent(f) return math.min(90, f.settings.speed * Config.Upgrades.speed.percent) end
@@ -461,7 +464,7 @@ local function factoryState(src, Player, f)
         local s = f.settings
         local repairItem = Config.Breakdown.repairItem
         mgmt = {
-            bank = f.bank, trusted = s.trusted,
+            bank = bankBalance(f), trusted = s.trusted,
             tank = s.tank, tankMax = Config.Upgrades.tank.maxLevel,
             tankCost = s.tank < Config.Upgrades.tank.maxLevel and Config.Upgrades.tank.cost * (s.tank + 1) or nil,
             speed = s.speed, speedMax = Config.Upgrades.speed.maxLevel,
@@ -528,6 +531,7 @@ CreateThread(function()
     end
     Loaded = true
     print(('^2[rsg-factory] loaded %d factories^7'):format(#rows))
+    FactorySociety.Backfill(Factories)
 end)
 
 ---------------------------------------------------------------------
@@ -558,6 +562,7 @@ RSGCore.Commands.Add(Config.CommandName, 'Create a factory at your position (adm
             x = coords.x, y = coords.y, z = coords.z, h = heading, recipes = {},
             price = Config.DefaultPrice, fuel = 0, water = 0, bank = 0, settings = normSettings(nil),
         }
+        FactorySociety.Open(Factories[id])
         notify(src, 'factory_created', 'success', name)
         broadcast()
         TriggerClientEvent('rsg-factory:client:openAdmin', src, id)
@@ -612,6 +617,7 @@ RSGCore.Functions.CreateCallback('rsg-factory:server:saveFactory', function(sour
     MySQL.update.await('UPDATE `rsg_factories` SET `name` = ?, `ped_model` = ?, `recipes` = ?, `price` = ? WHERE `id` = ?',
         { name, model, json.encode(recipes), price, f.id })
     f.name, f.ped_model, f.recipes, f.price = name, model, recipes, price
+    FactorySociety.Rename(f)
     notify(source, 'factory_saved', 'success')
     broadcast()
     cb(true)
@@ -626,6 +632,7 @@ RSGCore.Functions.CreateCallback('rsg-factory:server:deleteFactory', function(so
     MySQL.update.await('DELETE FROM `rsg_factory_queue` WHERE `factory_id` = ?', { f.id })
     MySQL.update.await('DELETE FROM `rsg_factories` WHERE `id` = ?', { f.id })
     Factories[f.id] = nil
+    FactorySociety.Close(f, f.owner and RSGCore.Functions.GetPlayerByCitizenId(f.owner) or nil)
     notify(source, 'factory_deleted', 'success')
     broadcast()
     cb(true)
@@ -662,6 +669,7 @@ lockedCallback('rsg-factory:server:buyFactory', function(source, factoryId)
         notify(src, 'invalid_data', 'error')
         return false
     end
+    FactorySociety.OwnerSet(f, citizenid)
     notify(src, 'factory_bought', 'success', f.name)
     broadcast()
     return true
@@ -759,9 +767,12 @@ lockedCallback('rsg-factory:server:startProduction', function(source, factoryId,
         notify(src, 'cannot_afford_fee', 'error', fee)
         return false
     end
-    f.bank = f.bank + fee
     f.fuel = f.fuel - plan.fuel
     f.water = f.water - plan.water
+    -- the fee goes into the society account; without rsg-society it stays in the factory
+    -- (done after the stock is taken, because the society call can wait)
+    local feeInSociety = fee > 0 and FactorySociety.Credit(f, fee, 'factory fee')
+    if fee > 0 and not feeInSociety then f.bank = f.bank + fee end
 
     local removed = {}
     local function undo()
@@ -771,7 +782,7 @@ lockedCallback('rsg-factory:server:startProduction', function(source, factoryId,
         f.fuel = f.fuel + plan.fuel
         f.water = f.water + plan.water
         if fee > 0 then
-            f.bank = f.bank - fee
+            if feeInSociety then FactorySociety.Debit(f, fee, 'factory fee refund') else f.bank = f.bank - fee end
             Player.Functions.AddMoney('cash', fee, 'rsg-factory:fee-refund')
         end
     end
@@ -1055,6 +1066,7 @@ lockedCallback('rsg-factory:server:ownerAction', function(source, factoryId, act
             name = charName(row.charinfo, tcid)
         end
         s.trusted[#s.trusted + 1] = { cid = tcid, name = name }
+        FactorySociety.StaffAdd(f, tcid)
         saveSettings(f)
         notify(src, 'trusted_added', 'success', name)
         return true
@@ -1064,6 +1076,7 @@ lockedCallback('rsg-factory:server:ownerAction', function(source, factoryId, act
         for i, t in ipairs(s.trusted) do
             if t.cid == data.cid then
                 table.remove(s.trusted, i)
+                FactorySociety.StaffRemove(f, data.cid)
                 saveSettings(f)
                 notify(src, 'trusted_removed', 'success')
                 return true
@@ -1072,7 +1085,9 @@ lockedCallback('rsg-factory:server:ownerAction', function(source, factoryId, act
         return false
 
     elseif action == 'withdraw' then
-        local amount = f.bank
+        local inFactory, inSociety = f.bank, FactorySociety.Balance(f)
+        if inSociety > 0 and not FactorySociety.Debit(f, inSociety, 'factory earnings withdrawn') then inSociety = 0 end
+        local amount = inFactory + inSociety
         if amount < 1 then notify(src, 'nothing_to_withdraw', 'error') return false end
         f.bank = 0
         Player.Functions.AddMoney('cash', amount, 'rsg-factory:earnings')
@@ -1114,7 +1129,8 @@ lockedCallback('rsg-factory:server:ownerAction', function(source, factoryId, act
         return true
 
     elseif action == 'sell' then
-        local payout = math.floor(f.price * Config.SellbackPercent / 100) + f.bank
+        local inSociety = FactorySociety.Balance(f)
+        local payout = math.floor(f.price * Config.SellbackPercent / 100) + f.bank + inSociety
         local ns = normSettings(s)
         ns.fee, ns.access, ns.staffed, ns.paused, ns.trusted = 0, 'public', false, false, {}
         -- save first; only pay out when the sale is really stored
@@ -1122,7 +1138,11 @@ lockedCallback('rsg-factory:server:ownerAction', function(source, factoryId, act
             'UPDATE `rsg_factories` SET `owner` = NULL, `owner_name` = NULL, `bank` = 0, `fuel` = 0, `water` = 0, `settings` = ? WHERE `id` = ? AND `owner` = ?',
             { json.encode(ns), f.id, cid })
         if not affected or affected < 1 then notify(src, 'invalid_data', 'error') return false end
+        local oldSettings = f.settings
         f.owner, f.owner_name, f.bank, f.fuel, f.water, f.settings = nil, nil, 0, 0, 0, ns
+        -- everyone loses the factory job; the society account is paid out to the seller with the sale
+        FactorySociety.ClearPeople({ id = f.id, name = f.name, owner = cid, settings = oldSettings })
+        if inSociety > 0 and not FactorySociety.Debit(f, inSociety, 'factory sold') then payout = payout - inSociety end
         if payout > 0 then Player.Functions.AddMoney('cash', payout, 'rsg-factory:sell') end
         notify(src, 'factory_sold', 'success', payout)
         broadcast()
@@ -1167,8 +1187,12 @@ RSGCore.Commands.Add('acceptfactory', 'Accept a factory transfer offer', {}, fal
     busy[src] = nil
     if not affected or affected < 1 then return notify(src, 'transfer_failed', 'error') end
 
+    local inSociety = FactorySociety.Balance(f)
+    local oldSettings = f.settings
     local earnings = f.bank
+    if inSociety > 0 and FactorySociety.Debit(f, inSociety, 'factory transferred') then earnings = earnings + inSociety end
     f.owner, f.owner_name, f.bank, f.settings = cid, name, 0, ns
+    FactorySociety.OwnerChange({ id = f.id, name = f.name, owner = f.owner, settings = oldSettings }, offer.fromCid, cid)
     if earnings > 0 then old.Functions.AddMoney('cash', earnings, 'rsg-factory:transfer-earnings') end
     notify(old.PlayerData.source, 'transfer_done_owner', 'success', name)
     notify(src, 'transfer_done_target', 'success', f.name)

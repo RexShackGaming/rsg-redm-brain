@@ -1,6 +1,6 @@
 # rsg-factory
 
-**Version 3.0.0** · Requires: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` · Optional: `rsg-telegram`
+**Version 3.1.0** · Requires: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` · Optional: `rsg-telegram`, `rsg-society`
 
 Admin-built factories for the RSG Framework. An admin stands where the factory NPC should be, runs `/createfactory`, and then defines production lines in an NUI: which items go in, which items come out, and how long it takes. Players buy a factory at its NPC and become its owner. The owner keeps it stocked with fuel (wood or coal) and water, and every production line burns some of both. Anyone can then use the factory to start production, wait, and collect.
 
@@ -22,6 +22,7 @@ See [DOCS.md](DOCS.md) for the full developer and server-owner documentation.
   - **Upgrades:** storage tanks (more fuel/water capacity) and faster production (shorter times), bought with cash
   - **Breakdowns:** each production start has a small chance to break the factory; it can't start new runs until the owner repairs it (cash, or an item if you configure one). Running and finished products are never lost
   - **Sell or transfer:** sell back for a percentage of the price (earnings are paid out), or hand it to a nearby online player picked from the list, who accepts with `/acceptfactory`
+- **rsg-society:** every new factory gets its own job (`factory_<id>`) and society the moment `/createfactory` runs. The owner becomes boss, trusted workers get the first grade, and the owner's earnings are the society account (treasury, members, ranks, storage and audit in the society menu). Selling or transferring the factory moves the people on; deleting it closes the society. Optional: without rsg-society the factory works as before
 - **Alerts and delivery:** finished products are delivered straight to the player's inventory when they're online and have room (otherwise they get a "ready" notice, or a telegram if offline). The owner gets low fuel/water warnings and breakdown alerts, by telegram when offline (needs `rsg-telegram`, skipped if it isn't running)
 - **Movable, fitted window:** the panel sizes itself to its content (wider for the admin editor); drag the header to move it anywhere on screen and double-click the header to recentre it
 - **Item pictures:** recipes, the queue, supplies and the admin item picker show each item's picture from rsg-inventory (falls back to the item's first letter if an image is missing)
@@ -37,7 +38,8 @@ See [DOCS.md](DOCS.md) for the full developer and server-owner documentation.
 1. Put `rsg-factory` in your resources folder.
 2. Add `ensure rsg-factory` to your `server.cfg` after `rsg-core`, `rsg-inventory`, `rsg-target` and `oxmysql`.
 3. Database: tables are created automatically on first start. To install manually, set `Config.AutoDatabase = false` in `shared/config.lua` and import `install.sql`.
-4. Set your language with `setr rsg:locale en` (or any supported language).
+4. Optional: start `rsg-society` before `rsg-factory` to give each factory a society (see `Config.Society`). Factories that already exist get theirs on the next start.
+5. Set your language with `setr rsg:locale en` (or any supported language).
 
 ## Usage
 | Command | Permission | Description |

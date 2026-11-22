@@ -1,8 +1,8 @@
 # rsg-gangs
 
-Version 3.5.0. Gang System for RSG Framework
+Version 3.6.0. Gang System for RSG Framework
 
-Player-run gangs ("outfits") for the RSG Framework: ranks and permissions, a shared bank, a chuck wagon that acts as the gang base, deployable camp equipment, crafting stations and an upgradable strongbox stash. Version 3.5.0. Full reference: [DOCS.md](DOCS.md). Gang membership, ranks, permissions and the bank are handled by **rsg-society**. rsg-gangs adds the gameplay: wagon, camp equipment, craf
+Player-run gangs ("outfits") for the RSG Framework: ranks and permissions, a shared bank, a chuck wagon that acts as the gang base, deployable camp equipment, crafting stations and an upgradable strongbox stash. Version 3.6.0. Full reference: [DOCS.md](DOCS.md). Gang membership, ranks, permissions and the bank are handled by **rsg-society**. rsg-gangs adds the gameplay: wagon, camp equipment, craf
 
 Source: https://github.com/Rexshack-RedM/rsg-gangs
 

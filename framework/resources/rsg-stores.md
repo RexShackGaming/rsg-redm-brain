@@ -1,8 +1,8 @@
 # rsg-stores
 
-Version 3.1.2. rsg-stores
+Version 3.6.0. rsg-stores
 
-**Version 3.1.0** · requires rsg-core, rsg-inventory, rsg-target, rsg-gizmo, oxmysql (no ox_lib) Create NPC shopkeepers, **player-owned stores**, shops and map blips in-game for **RSG-Core (RedM)**, all from an admin menu with no config editing. Players buy with a cart or sell straight back to the shop through a themed NUI. Every transaction is checked on the server and can be logged to Discord. F
+**Version 3.6.0** · requires rsg-core, rsg-inventory, rsg-target, rsg-gizmo, oxmysql (no ox_lib) · optional: rsg-society 3.4.0+ Create NPC storekeepers, **player-owned stores**, stores and map blips in-game for **RSG-Core (RedM)**, all from an admin menu with no config editing. Players buy with a cart or sell straight back to the store through a themed NUI. Every transaction is checked on the serv
 
 Source: https://github.com/Rexshack-RedM/rsg-stores
 
@@ -18,9 +18,11 @@ Has NUI (`ui_page`).
 
 **server:** `rsg-blipmenu:server:deleteBlip`, `rsg-blipmenu:server:deleteNPC`, `rsg-blipmenu:server:evictOwner`, `rsg-blipmenu:server:requestBlips`, `rsg-blipmenu:server:requestNPCs`, `rsg-blipmenu:server:saveBlip`, `rsg-blipmenu:server:updateBlip`, `rsg-blipmenu:server:updateNPC`, `rsg-stores:server:purchaseCart`, `rsg-stores:server:requestShopStock`, `rsg-stores:server:sellItem`
 
-**client:** `RSGCore:Player:SetPlayerData`, `rsg-blipmenu:client:refreshBlips`, `rsg-blipmenu:client:refreshNPCs`, `rsg-stores:client:purchaseFailed`, `rsg-stores:client:purchaseSuccess`, `rsg-stores:client:shopStock`, `rsg-stores:client:staffStores`, `rsg-stores:client:startSignPlacement`, `rsg-stores:client:transactionResult`, `rsg-stores:client:updateShop`
+**client:** `RSGCore:Player:SetPlayerData`, `rsg-blipmenu:client:refreshBlips`, `rsg-blipmenu:client:refreshNPCs`, `rsg-stores:client:applySettings`, `rsg-stores:client:purchaseFailed`, `rsg-stores:client:purchaseSuccess`, `rsg-stores:client:shopStock`, `rsg-stores:client:staffStores`, `rsg-stores:client:startSignPlacement`, `rsg-stores:client:transactionResult`, `rsg-stores:client:updateShop`
 
 ## Event handlers
+
+**server:** `RSGCore:Server:OnPlayerUnload`
 
 **client:** `RSGCore:Client:OnPlayerLoaded`
 
@@ -28,7 +30,7 @@ Has NUI (`ui_page`).
 
 **server:** `/storeswebhooktest`
 
-**client:** `/createshop`
+**client:** `/storeadmin`
 
 ## Server events it triggers in other resources
 
@@ -38,8 +40,12 @@ Has NUI (`ui_page`).
 
 **server/sv_database.lua:** `Database.Install()`
 
+**server/sv_settings.lua:** `Settings.Load()`, `Settings.Get()`, `Settings.Save(changes)`, `Settings.Reset(path)`, `Settings.Effective()`, `Settings.Describe(v)`
+
+**server/sv_society.lua:** `StoreSociety.Account(npc)`, `StoreSociety.Open(npc)`, `StoreSociety.Close(npc, Owner)`, `StoreSociety.Update(old, new)`, `StoreSociety.Rename(npc)`, `StoreSociety.StaffAdd(npc, cid)`, `StoreSociety.StaffRemove(npc, cid)`, `StoreSociety.Backfill(npcs)`
+
 **server/sv_webhooks.lua:** `Webhook.Send(channel, title, description, src, fields, opts)`, `Webhook.Security(src, reason, fields)`, `Webhook.IsLarge(amount)`
 
 ## Database tables
 
-`rsg_shops_blips`, `rsg_shops_items`, `rsg_shops_ledger`, `rsg_shops_npcs`, `rsg_shops_presets`, `rsg_shops_staff`
+`rsg_shops_audit`, `rsg_shops_blips`, `rsg_shops_items`, `rsg_shops_ledger`, `rsg_shops_npcs`, `rsg_shops_presets`, `rsg_shops_settings`, `rsg_shops_staff`

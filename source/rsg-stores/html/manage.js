@@ -92,7 +92,7 @@ var ManageUI = {
             add: this.can('restock'),
             wholesale: !!(st.wholesale && st.wholesale.length),
             ledger: !!st.ledger,
-            settings: this.can('settings') || st.canPackUp || st.canPickUp,
+            settings: this.can('settings') || this.can('prices') || st.canResale || st.canPackUp || st.canPickUp,
             staff: !!st.staffOn,
         };
         this.$('mng-tab-add').classList.toggle('hidden', !show.add);
@@ -138,6 +138,13 @@ var ManageUI = {
         this.$('mng-label').value = st.label || '';
         this.setPickType(st.type || 'both');
         this.$('mng-buyback-hint').textContent = this.T('ui_mng_buyback_hint', Math.round((st.buyBackPct || 0) * 100));
+        this.$('mng-bulk-block').classList.toggle('hidden', !this.can('prices'));
+        this.$('mng-resale-block').classList.toggle('hidden', !st.canResale);
+        if (st.canResale) {
+            this.$('mng-resale-hint').textContent = this.T('ui_mng_resale_hint', this.money(st.maxSalePrice || 0));
+            this.$('mng-resale-price').value = st.resalePrice ? st.resalePrice : '';
+            this.$('mng-resale-clear').classList.toggle('hidden', !st.resalePrice);
+        }
         this.$('mng-packup-block').classList.toggle('hidden', !st.canPackUp);
         this.$('mng-pickup-block').classList.toggle('hidden', !st.canPickUp);
         var up = st.upkeep;
@@ -258,6 +265,7 @@ var ManageUI = {
         box.innerHTML = '';
         var incoming = { sale: true };
         rows.forEach(function(r) {
+            var inc = incoming[r.kind] || (r.kind === 'admin' && r.amount >= 0);
             var el = document.createElement('div');
             el.className = 'mng-ledger-row';
             var what = r.item ? (r.qty > 0 ? r.qty + 'x ' : '') + r.item : '';
@@ -265,7 +273,7 @@ var ManageUI = {
             var time = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
             el.innerHTML = '<span class="lg-kind">' + escHtml(self.T('ui_lg_' + r.kind)) + '</span>' +
                 '<span class="lg-main">' + escHtml(what) + (r.who ? ' <em>' + escHtml(r.who === 'auto' ? self.T('ui_lg_auto') : r.who) + '</em>' : '') + '</span>' +
-                '<span class="lg-amt ' + (incoming[r.kind] ? 'in' : 'out') + '">' + (incoming[r.kind] ? '+' : '-') + self.money(r.amount) + '</span>' +
+                '<span class="lg-amt ' + (inc ? 'in' : 'out') + '">' + (inc ? '+' : '-') + self.money(Math.abs(r.amount)) + '</span>' +
                 '<span class="lg-time">' + time + '</span>';
             box.appendChild(el);
         });
@@ -513,6 +521,19 @@ var ManageUI = {
         });
         $('mng-withdraw-all').addEventListener('click', function() { self.action({ op: 'withdraw', amount: 0 }); });
         $('mng-upkeep-pay').addEventListener('click', function() { self.action({ op: 'upkeep' }); });
+        $('mng-bulk-apply').addEventListener('click', function() {
+            var p = parseFloat($('mng-bulk-pct').value);
+            if (!(p >= -90 && p <= 500) || p === 0) { $('mng-bulk-pct').classList.add('invalid'); return; }
+            $('mng-bulk-pct').classList.remove('invalid');
+            self.action({ op: 'bulk', pct: Math.round(p * 10) / 10 }).then(function(r) { if (r) $('mng-bulk-pct').value = ''; });
+        });
+        $('mng-resale-set').addEventListener('click', function() {
+            var p = parseFloat($('mng-resale-price').value);
+            if (!(p > 0)) { $('mng-resale-price').classList.add('invalid'); return; }
+            $('mng-resale-price').classList.remove('invalid');
+            self.action({ op: 'resale', price: Math.round(p * 100) / 100 });
+        });
+        $('mng-resale-clear').addEventListener('click', function() { self.action({ op: 'resale', price: 0 }); });
         $('mng-save-settings').addEventListener('click', function() {
             var label = $('mng-label').value.trim();
             if (!label) { $('mng-label').classList.add('invalid'); return; }

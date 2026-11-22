@@ -1,7 +1,7 @@
-# rsg-society 3.2.0 – Documentation
+# rsg-society 3.4.0 – Documentation
 
 ## Contents
-1. Architecture 2. Data 3. Permissions 4. Payroll 5. Fines 6. Exports 7. Events 8. Commands 9. rsg-core change 10. Migration 11. Security 12. Database 13. Troubleshooting
+1. Architecture 2. Data 3. Permissions 4. Payroll 5. Fines 6. Exports 7. Events 8. Commands 9. rsg-core change 10. Migration 11. Security 12. Database 13. Troubleshooting 14. Admin panel
 
 ## 1. Architecture
 | File | Purpose |
@@ -13,6 +13,8 @@
 | `server/callbacks.lua` | NUI callbacks (`open`, `tab`, `act`, `createGang`) |
 | `server/migration.lua` | One-time import |
 | `server/commands.lua` | Admin commands, desk locations |
+| `server/admin.lua` | Admin panel: `adminOpen`, `adminTab`, `adminAct` callbacks (permission checked on every call) |
+| `html/admin.js`, `html/admin.css` | Admin panel NUI (shares helpers, modal, toasts and dropdowns with `script.js`) |
 | `client/main.lua`, `html/*` | Desks, prompts, blips, NUI |
 
 Jobs: membership stays in rsg-core (multi-job); this resource reads the grade. Gangs: membership lives in `rsg_society_members` and is mirrored to rsg-core with `SetGangs` / `Player.Functions.SetGang`.
@@ -43,6 +45,7 @@ Amount limits in `Config.Fines`. Collected from `PayWith` in order. With `AllowP
 ## 6. Exports (server)
 | Export | Returns |
 |---|---|
+| `EnsureJobSociety(jobName)` -> boolean | creates the society of a job that exists in rsg-core (used by rsg-ranch and rsg-stores) |
 | `GetAccount(name)` / `GetBalance(name)` | balance (dollars); job societies are created on demand |
 | `GetGangAccount(name)` | balance |
 | `AddMoney(name, amount, reason, actor?)` / `RemoveMoney(...)` (also `AddGangMoney`, `RemoveGangMoney`) | bool (remove fails if balance is too low) |
@@ -61,6 +64,7 @@ Amount limits in `Config.Fines`. Collected from `PayWith` in order. With `AllowP
 | `SetGangOwner(name, citizenid)` -> `ok` | changes the recorded owner of a gang (ranks are changed with `SetMemberLevel`) |
 | `AddRank(name, rankName)` -> `ok, level` | gangs: adds a rank below the lowest boss rank (max `Config.Gang.MaxRanks`) |
 | `RemoveRank(name, level)` -> `ok` | gangs: deletes a non-boss rank; its members move one rank down. Needs at least 3 ranks |
+| `RemoveJobSociety(name)` -> `ok, balance` | removes a job society (account, rank permissions, desks, ledger, audit, fines) and returns its balance in dollars so the caller can pay it out. Refuses gangs and societies named in `Config.Jobs` or `Config.Locations`. The job itself stays in rsg-core (delete it there). Used by rsg-stores when a store closes |
 | `IsReady()` -> boolean | true once all societies are loaded; other resources wait for it at start |
 | `OpenStorage(src, name)` | opens the stash (checks access) |
 
@@ -68,7 +72,7 @@ Amount limits in `Config.Fines`. Collected from `PayWith` in order. With `AllowP
 `rsg-society:server:ready`, `balanceChanged`, `memberJoined`, `memberLeft`, `rankChanged`, `gangCreated`, `gangDisbanded`, `gangUpdated` (name, label, colour, tag or owner changed), `fineIssued`. Legacy `rsg-bossmenu:client:mainmenu` and `rsg-gangmenu:client:mainmenu` still open the menu.
 
 ## 8. Commands
-`/society`, `/gang`, `/fines`, `/payfines`; admin: `/addsociety <job>`, `/societydesk <society>`, `/removesocietydesk`, `/societyfunds <society> <add|remove> <amount>`, `/societymigrate`, `/removegang <id>`. Key: rebindable in the game's key settings (`Config.UseKeyMapping`).
+`/society`, `/gang`, `/fines`, `/payfines`; admin: `/societyadmin` (panel, see section 14), `/addsociety <job>`, `/societydesk <society>`, `/removesocietydesk`, `/societyfunds <society> <add|remove> <amount>`, `/societymigrate`, `/removegang <id>`. Key: rebindable in the game's key settings (`Config.UseKeyMapping`).
 
 ## 9. rsg-core change
 In `server/functions.lua`, `PaycheckInterval` asks `exports['rsg-society']:ProcessWage` before paying when `RSGConfig.Money.PayCheckSociety = true`, and skips the wage on `'skipped'`. Without rsg-society started, core pays as it always did.
@@ -89,7 +93,32 @@ Created automatically from `install.sql` (`Config.AutoDatabase`). Manual: import
 | Wages still paid with empty account | `PayCheckSociety` false, or core patch missing, or society payroll off, or the caller is not `Config.Payroll.TrustedWageCaller` |
 | "Slow down" in the menu | You hit `Config.ActionCooldown` / `Config.ReadCooldown`; wait a moment |
 | "too many fines recently" | `Config.Fines.IssueLimit` reached for that issuer |
+| Admin panel says "not allowed" | The player lacks `Config.AdminPermission` (rsg-core permission), or `Config.Admin.Enabled = false` |
 | Menu says system starting | Wait for jobs to load; check console |
 | Old balances missing | Check `rsg_society_meta` markers, run `/societymigrate` |
+
+## 14. Admin panel
+Open with `/societyadmin` (`Config.Admin.Command`) or the rebindable key (`Config.Admin.Key`, off by default). It needs `Config.AdminPermission`; a player without it only gets a notice. The NUI never decides anything: each request is a server callback that checks the permission again, is throttled (`Config.ReadCooldown` for reads, `Config.ActionCooldown` for actions) and validates every argument. Admin actions are written to the audit trail with the actor shown as `Name [admin]`, and copied to rsg-log when `Config.Logging.enabled`.
+
+**Callbacks** (rsg-core callbacks, all in `server/admin.lua`): `rsg-society:server:adminOpen` (checks, returns the dashboard), `rsg-society:server:adminTab (tab, arg)`, `rsg-society:server:adminAct (action, data)`.
+
+| Tab | Server reads (`adminTab`) | What you can do |
+|---|---|---|
+| Dashboard | `dashboard` | Totals, richest societies, recent activity, config warnings (payroll off, `PayCheckSociety` off) |
+| Societies | `societies`, `job_options`, `s_overview`, `s_members`, `s_ranks`, `s_ledger`, `s_audit`, `s_fines` | Search and filter; create a job society or a gang; per society: add or remove funds, payroll on/off, run gang payroll, open the stash, gang name/tag/colour, set owner, add members by server id or citizen id (online or offline), change ranks, remove members, edit rank permissions (gangs also rank names and wages, add and delete ranks), read ledger, audit and fines, disband a gang, remove a job society |
+| Players | `players`, `player` | Search online players and all characters; see memberships and unpaid fines; cancel one fine or all of them |
+| Desks | `desks` | Place a desk at your position, teleport to a desk, remove desks added in game (config desks are removed in `shared/config.lua`) |
+| Fines | `fines` | All fines with status and society filter; cancel unpaid fines |
+| Audit | `audit` | The audit trail of all societies, filter by society |
+| Tools | `tools` | Run the import again, reload the data from the database, delete ledger, audit and settled fines older than N days (7 to 3650) |
+
+**Actions** (`adminAct`): `create_job`, `create_gang`, `delete_job`, `disband`, `funds`, `payroll`, `run_payroll`, `gang_info`, `set_owner`, `member_add`, `member_level`, `member_remove`, `rank_save`, `rank_add`, `rank_delete`, `fine_void`, `fines_forgive`, `desk_add`, `desk_remove`, `desk_goto`, `storage_open`, `migrate`, `reload`, `prune`.
+
+Rules worth knowing:
+- Funds changes are capped by `Config.Admin.MaxFunds` and appear in the ledger as `admin`.
+- Disbanding a gang or removing a job society does **not** pay out the account; the balance is printed to the server console. A job society that is named in `Config.Jobs` or `Config.Locations` cannot be removed from the panel (it would come back on restart).
+- A gang cannot lose its last boss through the panel (changing the rank of the only boss is refused).
+- Teleporting: the server answers `desk_goto` with the coordinates; the client only moves the admin when the server's answer carries them.
+- Rank hierarchy, desk distance and the on-duty rule apply to normal members only; the panel is an admin tool and is not limited by them.
 
 Support: https://rexshack.tebex.store

@@ -1,4 +1,4 @@
-# rsg-stores — Documentation (v3.1.0)
+# rsg-stores — Documentation (v3.6.0)
 
 Reference for server owners and developers. For installation and everyday use see [README.md](README.md).
 
@@ -8,11 +8,12 @@ Reference for server owners and developers. For installation and everyday use se
 3. [Data formats](#data-formats)
 4. [Events and callbacks](#events-and-callbacks)
 5. [Exports](#exports)
-6. [Persistence](#persistence)
+6. [Society integration](#society-integration-rsg-society) · [Persistence](#persistence)
 7. [Security model](#security-model)
 8. [Database schema](#database-schema)
-9. [Server owner how-tos](#server-owner-how-tos)
-10. [Troubleshooting](#troubleshooting)
+9. [Admin panel](#admin-panel)
+10. [Server owner how-tos](#server-owner-how-tos)
+11. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -24,9 +25,9 @@ Reference for server owners and developers. For installation and everyday use se
 | `server/sv_database.lua` | server | Auto installer / non-destructive migrator (`Config.AutoInstallDatabase`) |
 | `server/server.lua` | server | Cache of stores/blips/presets, buy & sell, admin events, owner management callbacks |
 | `server/sv_webhooks*.lua` | server | Discord queue (`purchases`, `sales`, `admin`, `owners`, `security`, `system`) |
-| `client/client.lua` | client | NPC spawning, owned-store counter zones (rsg-target), shop/admin/manage NUI bridge |
-| `html/script.js` + `style.css` | NUI | Customer shop |
-| `html/admin.js` + `admin.css` | NUI | `/createshop` Shop Manager |
+| `client/client.lua` | client | NPC spawning, owned-store counter zones (rsg-target), store/admin/manage NUI bridge |
+| `html/script.js` + `style.css` | NUI | Customer store |
+| `html/admin.js` + `admin.css` | NUI | `/storeadmin` Store Manager |
 | `html/manage.js` + `manage.css` | NUI | Owner store management |
 
 The server holds the authoritative cache (`CachedNPCs`). Clients get the full list on join and after admin edits (`refreshNPCs`, which respawns NPCs), and a light per-store update (`updateShop`) after stock, price, label or owner changes on owned stores. The till balance is never broadcast; it is read from the database for the owner only.
@@ -40,7 +41,7 @@ Framework APIs used: rsg-core callbacks (`CreateCallback` / `AwaitCallback`), rs
 | `npc` | Spawned ped with target | Set by admins, may be unlimited (`NULL`) | Removed from the economy | Nowhere (created), `Config.SellPricePercentage` |
 | `player` | None; sphere zone at the coords | Only what the owner puts in, always limited | Added to the store `balance` (till) | The till, `Config.OwnedStores.BuyBackPercentage` |
 
-Player stores opened with the **shop sign item** also have `prop` (the sign model). Their target is the sign object (spawned within `Config.DistanceSpawn`) instead of a sphere zone, and the owner can pack them up.
+Player stores opened with the **store sign item** also have `prop` (the sign model). Their target is the sign object (spawned within `Config.DistanceSpawn`) instead of a sphere zone, and the owner can pack them up.
 
 An owned store without an owner is closed: customers see *(Closed)* and buy/sell events are refused.
 
@@ -82,6 +83,8 @@ An owned store without an owner is closed: customers see *(Closed)* and buy/sell
 | `rsg-stores:server:ownerSetPrice` | `npcId, item, price` | owner / `prices` | owner state |
 | `rsg-stores:server:ownerRemoveListing` | `npcId, item` | owner / `prices` + `takestock` | owner state (stock returned to the caller) |
 | `rsg-stores:server:ownerWithdraw` | `npcId, amount` (`0` = all) | owner / `till` | owner state. Staff are capped by `DailyWithdrawLimit` (error `sv_staff_limit`, `errArgs = { left }`) |
+| `rsg-stores:server:ownerSetResale` | `npcId, price` (`0` = off sale) | owner | owner state (`resalePrice`, `canResale`) |
+| `rsg-stores:server:ownerBulkPrice` | `npcId, pct` (-90..500) | owner / `prices` | owner state. Re-prices every listing |
 | `rsg-stores:server:ownerSetSettings` | `npcId, label, type` | owner / `settings` | owner state |
 | `rsg-stores:server:staffNearby` | `npcId` | owner | `{ ok, players = { {id, name} } }` within `HireDistance`, not already staff |
 | `rsg-stores:server:staffHire` | `npcId, serverId, rank, perms?` | owner | owner state. `rank` = a `Config.Staff.Ranks` name (its perms are used) or `'custom'` with `perms = { restock = true, ... }` |
@@ -117,12 +120,30 @@ Owner state now also carries `upkeep` (`{ amount, owed, dueIn, evictAfter }` or 
 | `rsg-stores:client:staffStores` | `{ npcId, ... }` stores this character works at (sent on `requestNPCs` and whenever they're hired/fired/quit). Shows **Manage Store**, hides **Trade** |
 | `rsg-stores:client:startSignPlacement` | — (from the usable item; opens `exports['rsg-gizmo']:Place(Config.ShopSign.Model, { rotation = 'z', snapToGround = true, maxDistance ≤ 4.0 })`; confirm opens the name/type panel, **Reposition** reopens the gizmo at the last spot, cancel keeps the item) |
 | `rsg-blipmenu:client:refreshBlips` | blip list |
-| `rsg-stores:client:transactionResult` / `purchaseSuccess` / `purchaseFailed` / `shopStock` | shop NUI updates |
+| `rsg-stores:client:transactionResult` / `purchaseSuccess` / `purchaseFailed` / `shopStock` | store NUI updates |
 
 ## Exports
 | Export | Side | Description |
 |---|---|---|
 | `SendWebhook(channel, title, description, src, fields)` | server | Send a log through the rsg-stores queue |
+
+## Society integration (rsg-society)
+
+Implemented in `server/sv_society.lua` (global `StoreSociety`), configured with `Config.Society`. Optional: nothing happens unless `Config.Society.Enabled ~= false` and rsg-society is started; every call is wrapped in `pcall`, so a missing rsg-society never breaks a store.
+
+| Store event | What happens |
+|---|---|
+| Sign placed / admin saves an owned store | job `store_<id>` is saved in rsg-core (`SaveJobDefinition`), `rsg-society:EnsureJobSociety` creates the society, the owner gets the boss grade (`AddPlayerJob`, ignores the job limit) |
+| Staff hired | staff member gets grade 0 of the store job |
+| Staff fired / quit / owner changed / store closed | `RemovePlayerJob` |
+| Admin changes owner | the old owner loses the job, the new owner gets the boss grade; the society and its balance stay with the store |
+| Store renamed (owner settings or admin) | the job label is updated, so the society shows the new name |
+| Pack up, eviction, repossession, admin delete, owner cleared | `rsg-society:RemoveJobSociety` removes the society and returns its balance, which is paid in cash to the owner if online (otherwise forfeited and printed to the console); then the job is deleted (`DeleteJobDefinition`) |
+| Start | every owned store without a society gets one once `rsg-society:IsReady()` |
+
+Grades come from `Config.Society.Grades` (lowest first, the `isboss` grade is the owner's). Wages (`payment`) are paid from the society account by rsg-core when `RSGConfig.Money.PayCheckSociety` is true. **The till is the society account.** With `Config.Society.SalesToSociety ~= false`, `getBalance` / `addBalance` / `takeBalance` (sales, buy-backs, wholesale, upkeep, till withdrawals, pack-up and eviction payouts) call `rsg-society:GetBalance`, `AddMoney` and `RemoveMoney` for stores that have a society (`StoreSociety.Account(npc)`); `RemoveMoney` fails when the balance is too low, so overdraws are refused as before. Stores without a society (rsg-society stopped, society disabled, no owner) keep using `rsg_shops_npcs.balance`. On start, `Open` moves any money left in the column into the society account (atomic subtract, restored if the credit fails). Each transaction is also a `till [rsg-stores]` row in the society ledger. Set `SalesToSociety = false` for a separate till.
+
+Requires rsg-society 3.4.0+ (`RemoveJobSociety`) and rsg-core's job registry (`SaveJobDefinition`, `DeleteJobDefinition`, `AddPlayerJob`, `RemovePlayerJob`, `HasPlayerJob`).
 
 ## Persistence
 Everything is saved to MySQL immediately. Stock changes use atomic `UPDATE ... WHERE stock >= ?`, and till changes use `UPDATE ... WHERE balance >= ?`, so concurrent customers and the owner can't oversell or overdraw. Owned-store stock is the item rows' `stock` column; the till is `rsg_shops_npcs.balance`.
@@ -136,15 +157,15 @@ Everything is saved to MySQL immediately. Stock changes use atomic `UPDATE ... W
 - Owner-only, never staff: hire / update / fire, pack up, pick up & move. Staff can't buy from or sell to a store they work at (blocked in `purchaseCart` and `sellItem`), so `prices` can't be used to buy stock at $0 or drain the till by selling to the store at a high price.
 - Hiring: target must be online, a different character, within `HireDistance` of the owner (and the owner at the store), not already staff, under `MaxStaff` and `MaxJobsPerPlayer`. Permissions are whitelisted against the 8 keys; rank presets come from server config only. Staff rows are deleted when the store is packed up, deleted, evicted, repossessed, converted or given a new owner.
 - Staff till withdrawals: `DailyWithdrawLimit` is tracked per staff row (`withdrawn`, `withdraw_day` = `YYYYMMDD`), so restarts don't reset it.
-- Item quality: selling to any shop and stocking a shelf only count and remove stacks whose `info.quality` is missing or at least `Config.OwnedStores.MinQuality`; removal is per slot, rolled back on failure. Stops worn/spoiled items coming back out as fresh ones.
+- Item quality: selling to any store and stocking a shelf only count and remove stacks whose `info.quality` is missing or at least `Config.OwnedStores.MinQuality`; removal is per slot, rolled back on failure. Stops worn/spoiled items coming back out as fresh ones.
 - Picked-up (hidden) stores refuse purchases as well as sales and owner actions.
 - Sign placement: `exports['rsg-gizmo']:IsPlacementValid(src, coords, 5.0)` on top of the 5 m and spacing checks.
 - Sync requests (`requestNPCs`, `requestBlips`: 2 s; `requestShopStock`: 300 ms) are throttled per player; they only read the cache.
-- Quantities are whole numbers 1–1000; prices 0–`MaxPrice`, rounded to cents; labels trimmed to 100 chars; shop type whitelisted.
+- Quantities are whole numbers 1–1000; prices 0–`MaxPrice`, rounded to cents; labels trimmed to 100 chars; store type whitelisted.
 - Stocking: item must exist in `RSGCore.Shared.Items`, not be blacklisted, unique or a weapon (metadata would be lost); the owner must hold the items and they are removed before stock is added.
 - Taking stock: `CanAddItem` first, stock reserved atomically, rolled back if `AddItem` fails. Removing a listing only deletes if the stock didn't change meanwhile.
 - Withdrawals: atomic till decrement before `AddMoney('cash')`.
-- Shop sign: the item must be held (checked on use and again on place), it is removed before the store is created (refunded if the insert fails), the sign must be within 5 m of the player and `MinSpacing` from every other store, and `MaxPerPlayer` is enforced per citizenid.
+- Store sign: the item must be held (checked on use and again on place), it is removed before the store is created (refunded if the insert fails), the sign must be within 5 m of the player and `MinSpacing` from every other store, and `MaxPerPlayer` is enforced per citizenid.
 - Pick up & move: owner gets a **Pick Up & Move Store** target option on the sign (and a button on the Settings tab). Sign stores only, room for the sign is checked first. Sets `packed_at`; the store stays in the server cache (stock, prices, till, ledger untouched) but is left out of the NPC/blip lists sent to clients, and all trade/owner calls refuse it. Upkeep skips it. Using the sign while you have a picked-up store skips the details panel; `placeSign` then moves that store (new x/y/z/h, blip moved, `packed_at` cleared, `upkeep_next` pushed back by the time it was packed). It doesn't count against `MaxPerPlayer` twice.
 - Pack up: sign stores only, shelves must hold 0 stock, room for the sign is checked first, till paid out atomically.
 - Buy-back to owned stores: till reserved atomically before items are removed, refunded on any failure.
@@ -154,7 +175,7 @@ Everything is saved to MySQL immediately. Stock changes use atomic `UPDATE ... W
 ## Database schema
 Created automatically (or `install/rsg-stores.sql`):
 
-`rsg_shops_npcs`: `id`, `name`, `model`, `x`, `y`, `z`, `h`, `shop_name`, `shop_label`, `shop_type` (`both|buy|sell`), `store_kind` (`npc|player`, default `npc`), `owner_citizenid` (nullable), `owner_name` (nullable), `balance` decimal(12,2) default 0, `prop_model` (nullable; set for shop sign stores). Indexes `idx_shop_name`, `idx_owner`.
+`rsg_shops_npcs`: `id`, `name`, `model`, `x`, `y`, `z`, `h`, `shop_name`, `shop_label`, `shop_type` (`both|buy|sell`), `store_kind` (`npc|player`, default `npc`), `owner_citizenid` (nullable), `owner_name` (nullable), `balance` decimal(12,2) default 0, `prop_model` (nullable; set for store sign stores). Indexes `idx_shop_name`, `idx_owner`.
 
 `rsg_shops_items`: `id`, `npc_id`, `item_name`, `label`, `price`, `stock` (NULL = unlimited, NPC stores only).
 
@@ -162,19 +183,62 @@ Created automatically (or `install/rsg-stores.sql`):
 
 `rsg_shops_presets`: `id`, `kind` (`model|blip`), `label`, `value`.
 
-`rsg_shops_npcs` also has `upkeep_owed` decimal(10,2) default 0 and `upkeep_next` int (unix time the next upkeep is due; sign stores only). `packed_at` int is set while a sign store is picked up (moving) and NULL otherwise.
+`rsg_shops_npcs` also has `sale_price` decimal(12,2) NULL (price to buy the store while it has no owner), and `upkeep_owed` decimal(10,2) default 0 and `upkeep_next` int (unix time the next upkeep is due; sign stores only). `packed_at` int is set while a sign store is picked up (moving) and NULL otherwise.
+
+`rsg_shops_npcs` also has `resale_price` decimal(12,2) NULL: the price an owner asks for their store (cleared when ownership changes).
+
+`rsg_shops_audit`: `id`, `ts` (unix), `actor_cid`, `actor_name`, `action` (callback / event name such as `adminTill`, `buyStore`, `saveNPC`), `npc_id` (nullable), `detail`. Trimmed to `Config.AdminPanel.AuditKeep` rows every 5 minutes. Written through `StoresAPI.audit(src, action, npcId, detail)`; every successful admin panel change is logged automatically.
 
 `rsg_shops_staff`: `id`, `npc_id`, `citizenid`, `name`, `staff_rank` (rank name or `custom`), `perms` (comma list of `restock,takestock,prices,wholesale,till,ledger,settings,upkeep`), `withdrawn` decimal(12,2), `withdraw_day` int (`YYYYMMDD`), `hired_at` (unix). Unique `uq_store_staff (npc_id, citizenid)`, index `idx_staff_cid`.
 
-`rsg_shops_ledger`: `id`, `npc_id`, `ts` (unix), `kind`, `item`, `qty`, `amount`, `who`. Index `idx_ledger_npc`. Trimmed to `Config.Ledger.Keep` rows per store every 5 minutes; deleted with the store.
+`rsg_shops_settings`: `setting_key` varchar (dotted `Config` path, primary key), `setting_value` JSON text, `updated_at`. One row per setting changed in the admin Settings tab.
+
+`rsg_shops_ledger`: `id`, `npc_id`, `ts` (unix), `kind` (`sale`, `buyback`, `wholesale`, `upkeep`, `withdraw`, `admin`), `item`, `qty`, `amount`, `who`. Index `idx_ledger_npc`. Trimmed to `Config.Ledger.Keep` rows per store every 5 minutes; deleted with the store.
+
+## Admin panel
+Files: `server/sv_admin.lua` (callbacks), `server/sv_settings.lua` (live settings), `html/admin-ext.js` / `admin-ext.css` (UI), relays in `client/client.lua`. `server.lua` exposes the store cache to them through the `StoresAPI` table.
+
+**Server callbacks** (`rsg-stores:server:<name>`, all admin-gated with `Config.AdminPermission`, rate-limited to one call per 400 ms per player, answered with `cb({ ok, ... })`; failures return `{ ok = false, err = localeKey, errArgs }`):
+
+| Callback | Arguments | Returns |
+|---|---|---|
+| `adminOverview` | none | `stats`, `stores[]`, `activity[]` |
+| `adminRunUpkeep` | none | `ok, msg` |
+| `adminStoreDetail` | `npcId` | `detail` (till, stats, upkeep, staff, owner) |
+| `adminLedger` | `npcId, kind, offset` | `rows, more` (page size `Config.AdminPanel.LedgerPage`) |
+| `adminAudit` | `offset` | `rows` (`ts, actor_name, action, npc_id, detail, store`), `more` (page size `Config.AdminPanel.AuditPage`) |
+| `adminTill` | `npcId, action (add/remove/payout), amount, reason` | `msg, detail` |
+| `adminUpkeep` | `npcId, action (waive/collect/setowed/postpone/reset), value` | `msg, detail` |
+| `adminStaff` | `npcId, action (fire/rank), cid, rank` | `msg, detail` |
+| `adminTransfer` | `npcId, { id = serverId } or { citizenid = cid }` | `msg, detail` |
+| `adminCloseStore` | `npcId, mode (evict/forfeit)` | `msg, closed` |
+| `adminSettingsGet` / `adminSettingsSave(changes)` / `adminSettingsReset(path)` | see below | `groups`, `errors` |
+
+**Live settings.** `Settings` holds a whitelist of config paths with a type and range (`bool`, `int`, `num`, `pct`, `choice`, `map_cost`, `map_pct`, `map_hours`). Saved values go to `rsg_shops_settings` as JSON per dotted path (for example `OwnedStores.MaxPrice`), are loaded at start before the store cache, written over `Config`, and pushed to every client with `rsg-stores:client:applySettings` (also on join). Resetting a path deletes the row and restores the `config.lua` value. Anything not in the whitelist is rejected.
+
+**Security.** Every callback checks the admin permission and that the stores cache is ready, validates every argument on the server (ids, enums, amounts finite and within `Config.AdminPanel.MaxAdjust`, reasons required, settings by type and range) and posts to the `admin` webhook channel. Till changes are also written to `rsg_shops_ledger` as kind `admin` with a signed amount. Money moves through the same helpers the store uses, so a society till stays in sync.
+
+## Stores for sale
+An admin sets **Sale Price** on a player store in `/storeadmin` (stored in `rsg_shops_npcs.sale_price`, kept in the cache as `salePrice`, capped by `Config.OwnedStores.MaxSalePrice`). While the store has no owner and `salePrice > 0`, the counter shows a **Buy** target option.
+
+The target option first opens a **Buy / Cancel** confirmation window (`html/buy-confirm.js`, NUI callbacks `buyConfirmYes` / `buyConfirmCancel`; Esc or Enter cancel, it closes if the player walks off or the store is bought). Only **Buy** calls the server.
+
+Callback `rsg-stores:server:buyStore(npcId, method)` (see *Resale, bank payment and bulk prices* below) returns `{ ok, label, msg }` or `{ ok = false, err, errArgs }`. The server checks, in order: the store exists, is a player store, is not packed up and has no owner; it has a price; the player is within 8 m; the player owns fewer than `Config.OwnedStores.MaxStoresPerPlayer` stores; a per-store lock is free; the player has the cash. It then removes the cash (the money leaves the economy), sets the owner with a conditional `UPDATE ... WHERE owner_citizenid IS NULL`, refunds on failure, opens the store's society account (`StoreSociety.Update`), broadcasts the change and posts to the `admin` webhook. Evicting or repossessing an admin store leaves `sale_price` in place, so it goes back on sale.
+
+### Resale, bank payment and bulk prices (3.6.0)
+- `rsg-stores:server:buyStore(npcId, method)`: `method` is `'cash'` or `'bank'` (bank only while `Config.OwnedStores.BankPayment` is on). A store is for sale when it has no owner and `salePrice > 0`, or has an owner whose `resalePrice > 0` (and `Config.OwnedStores.AllowResale` is on). Extra checks for a resale: the buyer is not the owner, no upkeep is owed, and the seller account can be reached. The seller is paid `price + till` to their **bank** (offline sellers are loaded with `GetOfflinePlayerByCitizenId` and saved), the owner changes with a conditional `UPDATE ... WHERE owner_citizenid = <seller>`, staff are cleared, the ledger is reset and a `bought` row is written.
+- `rsg-stores:server:ownerSetResale(npcId, price)`: owner only (`0` takes it off sale). Capped by `Config.OwnedStores.MaxSalePrice`; refused while upkeep is owed.
+- `rsg-stores:server:ownerBulkPrice(npcId, pct)`: needs the `prices` permission; `pct` from -90 to 500 (not 0); every price is re-validated with the normal price cap.
+- For-sale stores get a map blip from `Config.OwnedStores.ForSaleBlip` (client only; follows `salePrice` / `resalePrice` in the NPC cache).
+- Upkeep: the final-warning message is sent from `runUpkeep` when one more missed period would reach `EvictAfterMissed`, and once per session on login.
 
 ## Server owner how-tos
-- **Sell a store to a player:** take payment however your server does it, then `/createshop` → store → pick them in **Assign Owner** → Save.
+- **Sell a store to a player:** take payment however your server does it, then `/storeadmin` → store → pick them in **Assign Owner** → Save.
 - **Evict an owner:** open the store and press **Evict Owner** twice. Stock, till and sign go back to the owner (they must be online, unless you tick *Forfeit*). To keep the stock and till for the next owner instead, tick **Remove current owner** and Save.
 - **Charge rent for sign stores:** set `Config.ShopSign.Upkeep`. The upkeep check runs every 5 minutes on the server's real clock (`os.time()`), so periods keep counting while the server is offline and are charged on the next start.
 - **Opening hours** use each client's in-game clock (rsg-weather syncs it). The check happens on the client only, because closing hours don't affect money.
-- **Discounts** use the player's current job (`PlayerData.job.name`) and gang. The server applies them to purchases and, at NPC shops, to what the shop pays when that player sells (payout = price x `SellPricePercentage` x (1 - discount)), so discounts can't be farmed. The client only shows them.
-- **Price exploit warning:** on start the server prints `price exploit: <item> costs $X at <shop> but <shop> pays $Y` for every item you can buy (NPC shop or wholesale) for less than another NPC shop pays. Raise the buy price or lower the sell price until it's gone.
+- **Discounts** use the player's current job (`PlayerData.job.name`) and gang. The server applies them to purchases and, at NPC stores, to what the store pays when that player sells (payout = price x `SellPricePercentage` x (1 - discount)), so discounts can't be farmed. The client only shows them.
+- **Price exploit warning:** on start the server prints `price exploit: <item> costs $X at <shop> but <shop> pays $Y` for every item you can buy (NPC store or wholesale) for less than another NPC store pays. Raise the buy price or lower the sell price until it's gone.
 - **Refund a till before deleting:** read `balance` for the store in `rsg_shops_npcs` (also logged on delete/convert under *Till lost*) and pay the owner manually.
 - **Stop customers selling to owned stores:** the owner (or admin) sets the counter to *Buy only*.
 - **Staff ranks:** edit `Config.Staff.Ranks` (`{ name = 'cashier', perms = { 'restock', 'till' } }`) and add `ui_rank_cashier` to all 11 locale files. Existing staff keep the permissions they were saved with.
@@ -185,6 +249,7 @@ Created automatically (or `install/rsg-stores.sql`):
 | Problem | Cause / fix |
 |---|---|
 | Sign doesn't appear | Check `Config.ShopSign.Model`; invalid models are printed in F8 |
+| Store has no society | `Config.Society.Enabled` is false, rsg-society 3.4.0+ isn't started, or rsg-core could not save the job (console shows why). Restart rsg-stores once both run |
 | Using the sign does nothing | You already own `MaxPerPlayer` sign stores, or `Config.ShopSign.Enabled`/`Config.OwnedStores.Enabled` is false (a notification says which) |
 | Owned store has no target | Check `rsg-target` is started before rsg-stores and `Config.OwnedStores.Enabled` is true |
 | "No player with that server ID is online" | The owner must be online when assigned |
@@ -192,7 +257,7 @@ Created automatically (or `install/rsg-stores.sql`):
 | "Something changed, please try again" | A customer bought stock while you removed the listing; retry |
 | Buy-back refused | Till too low for the payout |
 | Language not changing | Use `setr rsg:locale "xx"` |
-| Shopkeeper doesn't speak | Some ped voices don't have every line; change the lines in `Config.Speech` or set `Enabled = false` |
+| Storekeeper doesn't speak | Some ped voices don't have every line; change the lines in `Config.Speech` or set `Enabled = false` |
 | "Closed until the owner pays its upkeep" | Owner opens **Manage** and presses **Pay Upkeep** |
 | Wholesale tab missing | `Config.Wholesale.Enabled` is false or no `Items` exist in your shared items |
 
@@ -201,7 +266,7 @@ Created automatically (or `install/rsg-stores.sql`):
 Support the Project : https://rexshack.tebex.store/
 
 ## Dependencies
-`rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-gizmo` (shop sign placement), `oxmysql`. Ensure `rsg-gizmo` before `rsg-stores`.
+`rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-gizmo` (store sign placement), `oxmysql`. Optional: `rsg-society` 3.4.0+ (store societies). Ensure `rsg-gizmo` and `rsg-society` before `rsg-stores`.
 
 <!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
 
@@ -233,9 +298,9 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.DefaultScenario` | `'WORLD_HUMAN_STAND_IMPATIENT'` | NPC scenario |
 | `Config.DistanceSpawn` | `20.0` | Distance before spawning/despawning the NPC (GTA Units) |
 | `Config.FadeIn` | `true` | Enable fade in/out effect |
-| `Config.SellPricePercentage` | `0.80` | Player gets 80% (20% shop fee) |
-| `Config.SellAddsStock` | `true` | Items sold to a shop are added back to its stock (limited-stock items only) |
-| `Config.MaxShopStock` | `100` | Most of any one item a shop will hold from player sales (0 = no cap) |
+| `Config.SellPricePercentage` | `0.80` | Player gets 80% (20% store fee) |
+| `Config.SellAddsStock` | `true` | Items sold to a store are added back to its stock (limited-stock items only) |
+| `Config.MaxShopStock` | `100` | Most of any one item a store will hold from player sales (0 = no cap) |
 | `Config.TargetDistance` | `2.5` | rsg-target range; server allows +5.0 for latency |
 | `Config.AllowPushToTalkWhileOpen` | `true` | While NUI is open, block game controls but allow push-to-talk. |
 | `Config.PushToTalkControls` | `table` |  |
@@ -320,6 +385,9 @@ local result = exports['rsg-stores']:SendWebhook(channel, title, description, sr
 | `rsg-stores:server:ownerSetPrice` | server | `source, npcId, itemName, price` | `server/server.lua` |
 | `rsg-stores:server:ownerRemoveListing` | server | `source, npcId, itemName` | `server/server.lua` |
 | `rsg-stores:server:ownerWithdraw` | server | `source, npcId, amount` | `server/server.lua` |
+| `rsg-stores:server:ownerSetResale` | server | `source, npcId, price` | `server/server.lua` |
+| `rsg-stores:server:ownerBulkPrice` | server | `source, npcId, pct` | `server/server.lua` |
+| `rsg-stores:server:adminAudit` | server | `source, offset` | `server/sv_admin.lua` |
 | `rsg-stores:server:ownerSetSettings` | server | `source, npcId, label, sType` | `server/server.lua` |
 | `rsg-stores:server:staffNearby` | server | `source, npcId` | `server/server.lua` |
 | `rsg-stores:server:staffHire` | server | `source, npcId, targetId, rank, perms` | `server/server.lua` |
@@ -378,7 +446,7 @@ TriggerClientEvent('rsg-stores:client:transactionResult', source, success, messa
 
 | Command | Notes | File |
 |---|---|---|
-| `/createshop` |  | `client/client.lua` |
+| `/storeadmin` |  | `client/client.lua` |
 | `/storeswebhooktest` |  | `server/sv_webhooks.lua` |
 
 ### Locales

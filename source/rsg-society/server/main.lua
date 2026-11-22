@@ -448,6 +448,11 @@ local function accountFor(name)
     return Soc.S[name] or Soc.EnsureJob(name)
 end
 
+--- EnsureJobSociety(jobName) -> boolean: creates the job's society if the job exists in rsg-core (used by resources that register their own jobs, e.g. rsg-ranch)
+exports('EnsureJobSociety', function(name)
+    return accountFor(name) ~= nil
+end)
+
 exports('GetAccount', function(name)
     local s = accountFor(name)
     return s and s.balance / 100 or 0

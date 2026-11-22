@@ -3,7 +3,7 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 
 description 'rsg-stores'
-version '3.1.2'
+version '3.6.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
@@ -19,7 +19,10 @@ server_scripts {
     'server/sv_webhooks_config.lua',
     'server/sv_webhooks.lua',
     'server/sv_database.lua',
+    'server/sv_society.lua',
+    'server/sv_settings.lua',
     'server/server.lua',
+    'server/sv_admin.lua',
     'server/versionchecker.lua'
 }
 
@@ -40,6 +43,10 @@ files {
     'html/script.js',
     'html/admin.js',
     'html/admin.css',
+    'html/admin-ext.js',
+    'html/admin-ext.css',
+    'html/buy-confirm.js',
+    'html/buy-confirm.css',
     'html/manage.js',
     'html/manage.css'
 }

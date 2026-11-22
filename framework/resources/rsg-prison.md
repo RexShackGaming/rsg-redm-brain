@@ -1,6 +1,6 @@
 # rsg-prison
 
-Version 3.3.0. rsg-prison
+Version 3.3.1. rsg-prison
 
 **Prison system for RedM servers using RSG Core.** - [rsg-core](https://github.com/Rexshack-RedM/rsg-core) - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
 

@@ -17,6 +17,7 @@
 | `fxmanifest.lua` | Resource manifest; depends on `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` |
 | `shared/config.lua` | All settings (see README) |
 | `server/server.lua` | Database build, factory cache, `/createfactory`, all callbacks and validation |
+| `server/sv_society.lua` | rsg-society integration: job + society per factory, owner/worker grades, earnings account |
 | `client/client.lua` | NPC spawning, `rsg-target` options, NUI bridge, push-to-talk whitelist |
 | `html/index.html`, `style.css`, `script.js` | NUI (house "leather & gold" style, custom HTML dropdowns) |
 | `locales/*.json` | 11 languages, loaded by rsg-core (`@rsg-core/shared/locale.lua`) |
@@ -96,6 +97,15 @@ All use the rsg-core callback system (`RSGCore.Functions.AwaitCallback` on the c
 
 Events: `rsg-factory:client:sync` (server → all, public factory list) and `rsg-factory:client:openAdmin` (server → admin, opens the editor).
 
+## rsg-society integration (v3.1.0)
+Optional (`Config.Society`, needs `rsg-society` started; every call is wrapped in `pcall`).
+- **Create:** `/createfactory` creates the job `factory_<id>` (grades from `Config.Society.Grades`, default Worker / Owner-boss) and calls `exports['rsg-society']:EnsureJobSociety`. Factories without a society get one on start (`FactorySociety.Backfill`).
+- **Owner:** buying makes the buyer boss. Transfer (`/acceptfactory`) removes the old owner and their trusted workers from the job and makes the new owner boss. Selling removes everyone who holds the job.
+- **Trusted workers:** adding or removing one in the owner panel gives or takes the first grade.
+- **Earnings:** with `EarningsToSociety` the fee a player pays to use a factory is credited to the society account (reason `factory fee`). The owner's Earnings tab shows that balance plus anything left in the factory column; withdraw, sell and transfer pay it out. Money in the old `bank` column moves to the society on the next start.
+- **Rename / delete:** saving a factory with a new name renames the job. Deleting a factory removes its people, closes the society (`RemoveJobSociety`), deletes the job and pays the balance to the owner if online (otherwise it is printed to the console).
+- Society members hired in the society menu are not trusted workers: `access = trusted` still follows the owner panel list.
+
 ## Exports
 None.
 
@@ -163,7 +173,7 @@ Support: https://rexshack.tebex.store
 
 ## Technical reference
 
-Generated from the source of **rsg-factory 3.0.0**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-factory 3.1.0**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 
@@ -211,6 +221,7 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.AutoDeliver` | `true` | finished products go straight to the player's inventory when they are online with room |
 | `Config.Alerts` | `table` |  |
 | `Config.Blips` | `table` | Map blips (sprite blip_shop_blacksmith; colours are the rsg-banking modifiers) |
+| `Config.Society` | `table` | rsg-society integration: `Enabled`, `JobPrefix` (`'factory_'`), `JobType`, `EarningsToSociety` (`true`), `Grades` |
 | `Config.MaxRecipes` | `20` | production lines per factory |
 | `Config.MaxItemsPerRecipe` | `6` | distinct input items and distinct output items per line |
 | `Config.MaxAmount` | `1000` | max amount of one item in a line |

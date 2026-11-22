@@ -3,6 +3,16 @@ Config = {}
 -- Required permission to use the Blip/NPC menu
 Config.AdminPermission = 'admin'
 
+-- Admin panel (/storeadmin): Overview, store management (finance, upkeep, staff, ownership) and the Settings tab.
+-- The Settings tab edits a curated list of the options below in-game; saved values override this file (see DOCS.md).
+Config.AdminPanel = {
+    MaxAdjust  = 100000,  -- most an admin can add to / remove from / pay out of one till in a single action
+    Activity   = 25,      -- recent ledger entries shown on the Overview tab
+    LedgerPage = 40,      -- ledger rows loaded per page in store management
+    AuditKeep  = 1000,    -- admin audit log entries kept (older ones are trimmed)
+    AuditPage  = 40,      -- audit rows loaded per page
+}
+
 -- Create/upgrade the database tables automatically on resource start.
 -- Set to false if you prefer to import rsg-stores.sql by hand.
 Config.AutoInstallDatabase = true
@@ -11,9 +21,9 @@ Config.AutoInstallDatabase = true
 Config.DefaultScenario = 'WORLD_HUMAN_STAND_IMPATIENT'
 Config.DistanceSpawn = 20.0  -- Distance before spawning/despawning the NPC (GTA Units)
 Config.FadeIn = true         -- Enable fade in/out effect
-Config.SellPricePercentage = 0.80  -- Player gets 80% (20% shop fee)
-Config.SellAddsStock = true        -- Items sold to a shop are added back to its stock (limited-stock items only)
-Config.MaxShopStock = 100          -- Most of any one item a shop will hold from player sales (0 = no cap)
+Config.SellPricePercentage = 0.80  -- Player gets 80% (20% store fee)
+Config.SellAddsStock = true        -- Items sold to a store are added back to its stock (limited-stock items only)
+Config.MaxShopStock = 100          -- Most of any one item a store will hold from player sales (0 = no cap)
 Config.TargetDistance = 2.5       -- rsg-target range; server allows +5.0 for latency
 
 -- While NUI is open, block game controls but allow push-to-talk.
@@ -22,7 +32,7 @@ Config.PushToTalkControls = {
     0x4BC9DABB, -- INPUT_PUSH_TO_TALK
 }
 
--- Player-owned stores: created by admins in /createshop ("Run by: Player"), no NPC is spawned.
+-- Player-owned stores: created by admins in /storeadmin ("Run by: Player"), no NPC is spawned.
 -- The owner stocks the store from their own inventory, sets prices and collects the till.
 Config.OwnedStores = {
     Enabled           = true,
@@ -31,8 +41,13 @@ Config.OwnedStores = {
     MaxListings       = 50,     -- most different items one store can list
     MaxStock          = 500,    -- most of any one item a store can hold (0 = no cap)
     MaxPrice          = 10000,  -- highest price an owner can set per item
+    MaxSalePrice      = 10000000, -- highest price an admin can put on an unowned store for sale
+    MaxStoresPerPlayer = 3,       -- most player stores one character can own by buying them (0 = no cap)
+    BankPayment       = true,   -- buyers may pay for a store from their bank instead of cash
+    AllowResale       = true,   -- owners may put their store up for sale to other players (price capped by MaxSalePrice)
+    ForSaleBlip       = { Enabled = true, Sprite = 1475879922, Color = 'BLIP_MODIFIER_MP_COLOR_8' }, -- map blip on stores for sale
     NotifyOwner       = true,   -- tell the owner (if online) when a customer buys or sells
-    MinQuality        = 75,     -- stacks below this quality (worn/spoiled) can't be stocked or sold to any shop (0 = off)
+    MinQuality        = 75,     -- stacks below this quality (worn/spoiled) can't be stocked or sold to any store (0 = off)
     -- Items owners may not stock (money items, unique/metadata items are always refused)
     BlacklistItems    = { 'dollar', 'cent', 'blood_dollar', 'blood_cent' },
 }
@@ -57,6 +72,23 @@ Config.Staff = {
     },
 }
 
+-- rsg-society integration: every player-owned store gets its own job (JobPrefix + store id) and a job society in
+-- rsg-society (treasury, members, ranks, storage, audit). The owner holds the boss grade, hired staff the first grade.
+-- With SalesToSociety the store's till is the society account (any money already in the till moves over on the next start).
+-- Closing the store removes the society again and pays its balance to the owner (if online). Needs rsg-society started.
+-- Stores opened before this was added get their society on the next start.
+Config.Society = {
+    Enabled   = true,
+    JobPrefix = 'store_',
+    JobType   = 'store',    -- rsg-core job type
+    SalesToSociety = true,  -- the till IS the society account: sales, wholesale, upkeep and till withdrawals use it. false = separate till
+    -- Grades created for each store job, lowest first. payment = wage in dollars paid from the society account (0 = unpaid).
+    Grades = {
+        { name = 'Staff', payment = 0 },
+        { name = 'Owner', payment = 0, isboss = true },
+    },
+}
+
 -- Shop sign item: admins give players the item (e.g. /giveitem [id] shopsign 1).
 -- Using it places a sign in front of the player and opens a player-owned store they own.
 -- Customers and the owner target the sign to trade / manage.
@@ -65,7 +97,7 @@ Config.ShopSign = {
     Item           = 'shopsign',
     Model          = 'p_sandwichboard02x', -- rdr3_discoveries objects/object_list.lua (0x456CF4F4)
     MaxPerPlayer   = 1,       -- sign stores one character can own (0 = no limit)
-    MinSpacing     = 8.0,     -- metres from any other store/NPC shop
+    MinSpacing     = 8.0,     -- metres from any other store/NPC store
     PlaceDistance  = 1.5,     -- start distance in front of the player (owner can adjust 0.75 - 3.0)
     DefaultType    = 'buy',   -- starting counter type: 'buy' | 'sell' | 'both'
     ReturnOnPackUp = true,    -- give the sign back when the owner packs the store up
@@ -79,7 +111,7 @@ Config.ShopSign = {
     Blip = { Enabled = true, Sprite = 1475879922, Color = 'BLIP_MODIFIER_MP_COLOR_32' }, -- blip_shop_store, from Config.BlipTypes
     -- Auto-registered in rsg-core if your items list doesn't have it yet
     ItemDefinition = {
-        name = 'shopsign', label = 'Shop Sign', weight = 2000, type = 'item', image = 'shopsign.png',
+        name = 'shopsign', label = 'Store Sign', weight = 2000, type = 'item', image = 'shopsign.png',
         unique = false, useable = true, shouldClose = true, description = 'Place it to open your own store',
     },
 }
@@ -106,7 +138,7 @@ Config.OpeningHours = {
     },
 }
 
--- Job / gang discounts on NPC shop purchases (player-owned stores set their own prices).
+-- Job / gang discounts on NPC store purchases (player-owned stores set their own prices).
 -- The best matching discount applies; worked out on the server.
 Config.Discounts = {
     Enabled     = false,

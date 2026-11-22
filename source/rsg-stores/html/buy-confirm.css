@@ -1,0 +1,27 @@
+/* Buy-store confirmation window (Buy / Cancel) */
+#buy-confirm { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; }
+#buy-confirm.hidden { display: none; }
+#buy-confirm .bc-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.45); }
+#buy-confirm .bc-card {
+    position: relative;
+    width: 400px; max-width: calc(100vw - 40px);
+    padding: 22px 24px 20px;
+    border-radius: 3px;
+    border: 1px solid var(--rdr-gold-dim);
+    outline: 1px solid rgba(0,0,0,0.6);
+    outline-offset: -5px;
+    background:
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 4px),
+        linear-gradient(160deg, var(--rdr-panel-2), var(--rdr-panel) 60%, var(--rdr-black));
+    box-shadow: 0 20px 60px var(--rdr-shadow), inset 0 0 40px rgba(0,0,0,0.5);
+    text-align: center;
+    animation: bcIn 0.2s ease;
+}
+@keyframes bcIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: none; } }
+#buy-confirm h2 { margin: 0 0 10px; font-size: 20px; letter-spacing: 1px; text-transform: uppercase; color: var(--rdr-parchment); overflow-wrap: anywhere; }
+#buy-confirm p { margin: 14px 0 20px; font-size: 14px; line-height: 1.5; color: var(--rdr-text); overflow-wrap: anywhere; }
+#buy-confirm .bc-actions { display: flex; gap: 10px; justify-content: center; }
+#buy-confirm .bc-actions .wood-btn { flex: 1; justify-content: center; }
+
+#buy-confirm .bc-actions { flex-wrap: wrap; }
+#buy-confirm .bc-actions .wood-btn.hidden { display: none; }

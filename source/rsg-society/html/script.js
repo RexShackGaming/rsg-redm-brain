@@ -662,7 +662,9 @@ window.addEventListener('message', (e) => {
     if (d.strings) { S.strings = d.strings; applyI18n(); }
     if (d.action === 'open') {
         closeModal();
-        if (d.mode === 'invite') {
+        if (d.mode === 'admin') {
+            if (window.openAdmin) window.openAdmin(d);
+        } else if (d.mode === 'invite') {
             S.mode = 'invite';
             document.body.classList.add('invite-only');
             $('root').classList.add('hidden');
@@ -674,6 +676,7 @@ window.addEventListener('message', (e) => {
         showInvite(d.invite);
     } else if (d.action === 'close') {
         closeModal();
+        if (window.closeAdmin) window.closeAdmin();
         $('root').classList.add('hidden');
         document.body.classList.remove('invite-only');
         S.view = null;

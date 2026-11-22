@@ -1,4 +1,4 @@
-# rsg-society 3.2.0
+# rsg-society 3.4.0
 
 One resource for everything a job or gang organisation needs: members and ranks, permissions, a bank account, payroll, shared storage, fines and a full audit trail, plus an API so other scripts can plug in.
 
@@ -22,6 +22,7 @@ Dependencies: `rsg-core` (3.5.0+), `rsg-inventory`, `oxmysql`. No ox_lib. Full r
 - **Custom gang ranks.** Add and delete ranks (up to `Gang.MaxRanks`).
 - **Storage log tab.** Who put in or took out which item (needs `audit`).
 - **Import.** Balances from `management_funds`, core gangs, and rsg-gangs data are imported once, automatically.
+- **Admin panel (`/societyadmin`).** One NUI for admins: dashboard, every society (create job societies and gangs, funds, payroll, members, ranks and permissions, ledger, audit, fines, storage, disband or remove), player lookup (memberships, cancel fines), desks (place, teleport, remove) and tools (import, reload, prune). Every action is checked on the server again.
 - **NUI** in the leather-and-gold style. Push-to-talk keeps working while it is open.
 
 ## Installation
@@ -39,6 +40,8 @@ Dependencies: `rsg-core` (3.5.0+), `rsg-inventory`, `oxmysql`. No ox_lib. Full r
 | `InteractDistance` / `HireDistance` | `5.0` / `10.0` | Server-side distance checks |
 | `MaxTransaction` | `1000000` | Largest single deposit or withdrawal |
 | `ActionCooldown` / `ReadCooldown` | `750` / `150` | ms between menu actions / menu reads (open, tabs) per player |
+| `AdminPermission` | `'admin'` | Permission needed for the admin commands and the admin panel |
+| `Admin.*` | see file | Admin panel: `Enabled`, `Command` (`societyadmin`), `Key` (rebindable, `''` = unbound), `MaxFunds` (largest single funds change, dollars) |
 | `VersionCheck` | `true` | Check GitHub for a newer version on start |
 | `PruneDays` | `90` | Delete old ledger/audit rows (0 = keep) |
 | `AllowPushToTalkWhileOpen`, `PushToTalkControls` | `true` | Keep push-to-talk working in the NUI |
@@ -57,6 +60,7 @@ Dependencies: `rsg-core` (3.5.0+), `rsg-inventory`, `oxmysql`. No ox_lib. Full r
 ## Use
 - Job: walk to the desk (prompt) or press the key, or `/society`.
 - Gang: `/gang`. Without a gang you get the found-a-gang form.
+- Admin panel: `/societyadmin` (needs `Config.AdminPermission`; the key is rebindable in the game's key settings, `Config.Admin.Key`). Tabs: Dashboard, Societies, Players, Desks, Fines, Audit, Tools.
 - Admin: `/addsociety`, `/societydesk`, `/removesocietydesk`, `/societyfunds`, `/societymigrate`, `/removegang`.
 
 ## Developers

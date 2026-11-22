@@ -2,7 +2,7 @@
 
 Player-run gangs ("outfits") for the RSG Framework: ranks and permissions, a shared bank, a chuck wagon that acts as the gang base, deployable camp equipment, crafting stations and an upgradable strongbox stash.
 
-Version 3.5.0. Full reference: [DOCS.md](DOCS.md).
+Version 3.6.0. Full reference: [DOCS.md](DOCS.md).
 
 Gang membership, ranks, permissions and the bank are handled by **rsg-society**. rsg-gangs adds the gameplay: wagon, camp equipment, crafting, strongbox, turf, bounties, rivals and the staff panel.
 
@@ -23,7 +23,7 @@ No ox_lib and no ox_target are needed.
 - Create, rename, recolour and disband a gang; invite, accept or decline, kick, promote, demote and hand over leadership
 - Configurable ranks with per-rank permissions (`invite`, `kick`, `promote`, `demote`, `deposit`, `withdraw`, `upgrade`, `disband`, `rename`, `setcolor`, `equipment`)
 - Shared gang bank with server-side limits
-- Gang chuck wagon that spawns when players are nearby, only members can drive it, and its parking spot follows it automatically (restarting the resource removes and respawns it cleanly, target included)
+- Gang chuck wagon that is placed on the nearest road, in a spot clear of peds, vehicles and objects, and spawns when players are nearby, only members can drive it, and its parking spot follows it automatically (restarting the resource removes and respawns it cleanly, target included)
 - Camp equipment (tent, torches, hitching posts, campfire, crafting table, strongbox) placed with rsg-gizmo near the wagon
 - Crafting stations, a well pump that fills buckets and gives a drink (through rsg-wellpump), and a tiered strongbox stash tied to deployed equipment
 - Territories: claim turf by standing in it; owned turf pays income into the gang bank and shows on the map
@@ -86,7 +86,7 @@ Everything is in `shared/config.lua`.
 | `Config.StationInteractDistance` | `6.0` | Max distance from a crafting station, the well pump or the strongbox |
 | `Config.RespawnProximityRadius` / `DespawnProximityRadius` | `80.0` / `100.0` | How close a player must be for a saved wagon or prop to spawn, and how far everyone must be for it to be removed |
 | `Config.DebugWagon` | `false` | Print wagon spawn, save and despawn steps to the server console |
-| `Config.GangVehicle` | per file | Wagon model, spawn search, driving restriction, target menu |
+| `Config.GangVehicle` | per file | Wagon model, road spawn search (nearest road, area must be clear of peds/vehicles/objects), driving restriction, target menu |
 | `Config.GangEquipment` | per file | Equipment props, limits and placement range |
 | `Config.WellPump` | enabled | Well pump targets: `equipmentId` (`wellpump`), `targetIcon`, `drink` (`true`), `drinkIcon`, `requirePermission` (`false`). Bucket items, uses, fill time and drinking are set in rsg-wellpump |
 | `Config.Crafting` | per file | Stations and recipes |

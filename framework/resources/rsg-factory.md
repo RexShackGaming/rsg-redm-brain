@@ -1,8 +1,8 @@
 # rsg-factory
 
-Version 3.0.0. rsg-factory
+Version 3.1.0. rsg-factory
 
-**Version 3.0.0** · Requires: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` · Optional: `rsg-telegram` Admin-built factories for the RSG Framework. An admin stands where the factory NPC should be, runs `/createfactory`, and then defines production lines in an NUI: which items go in, which items come out, and how long it takes. Players buy a factory at its NPC and become its owner. The owner
+**Version 3.1.0** · Requires: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` · Optional: `rsg-telegram`, `rsg-society` Admin-built factories for the RSG Framework. An admin stands where the factory NPC should be, runs `/createfactory`, and then defines production lines in an NUI: which items go in, which items come out, and how long it takes. Players buy a factory at its NPC and become its o
 
 Source: https://github.com/Rexshack-RedM/rsg-factory
 
@@ -21,6 +21,10 @@ Has NUI (`ui_page`).
 ## Commands (RSGCore.Commands.Add)
 
 **server:** `/acceptfactory`
+
+## Public (table) functions
+
+**server/sv_society.lua:** `FactorySociety.Account(f)`, `FactorySociety.Balance(f)`, `FactorySociety.Credit(f, amount, reason)`, `FactorySociety.Debit(f, amount, reason)`, `FactorySociety.Open(f)`, `FactorySociety.ClearPeople(f)`, `FactorySociety.OwnerSet(f, cid)`, `FactorySociety.OwnerChange(f, oldCid, newCid)`, `FactorySociety.StaffAdd(f, cid)`, `FactorySociety.StaffRemove(f, cid)`, `FactorySociety.Rename(f)`, `FactorySociety.Close(f, Owner)`, `FactorySociety.Backfill(factories)`
 
 ## Database tables
 

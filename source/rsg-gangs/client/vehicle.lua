@@ -77,12 +77,15 @@ end)
 ---------------------------------------------------------------------
 -- Spawning
 ---------------------------------------------------------------------
-local function isAreaClear(coords, radius)
+-- True when no ped (other than `ignorePed`), vehicle or object is within `radius` of `coords`.
+local function isAreaClear(coords, radius, ignorePed)
+    local mount = ignorePed and GetMount(ignorePed) or 0 -- the founder's own horse never blocks the spot
     for _, pool in ipairs({ 'CPed', 'CVehicle', 'CObject' }) do
         local ok, entities = pcall(GetGamePool, pool)
         if ok and entities then
             for _, entity in ipairs(entities) do
-                if DoesEntityExist(entity) and #(GetEntityCoords(entity) - coords) <= radius then
+                if entity ~= ignorePed and entity ~= mount and DoesEntityExist(entity)
+                    and #(GetEntityCoords(entity) - coords) <= radius then
                     return false
                 end
             end
@@ -91,7 +94,35 @@ local function isAreaClear(coords, radius)
     return true
 end
 
-local function findClearSpawnPoint(ped)
+-- Nearest road/trail node that is clear of peds, vehicles and objects. Nodes are tried nearest first
+-- and the road's own heading is used so the wagon sits along the road. GetNthClosestVehicleNodeWithHeading
+-- (0x591B40D4390DB54A) is called the same way as in rsg-wagons.
+local function findClearRoadSpot(ped)
+    local cfg = Config.GangVehicle
+    local origin = GetEntityCoords(ped)
+
+    for n = 1, cfg.roadNodeAttempts do
+        local found, pos, nodeHeading = GetNthClosestVehicleNodeWithHeading(origin.x, origin.y, origin.z, n, 1, 3.0, 0)
+        if found and pos then
+            local distance = #(origin - pos)
+            if distance > cfg.maxRoadDistance then break end -- nodes only get further away
+            if distance >= cfg.minRoadDistance then
+                local spawnCoords = vector3(pos.x, pos.y, pos.z)
+                local foundGround, groundZ = GetGroundZFor_3dCoord(pos.x, pos.y, pos.z + 2.0, false)
+                if foundGround and math.abs(groundZ - pos.z) < 3.0 then
+                    spawnCoords = vector3(pos.x, pos.y, groundZ)
+                end
+                if isAreaClear(spawnCoords, cfg.checkRadius, ped) then
+                    return spawnCoords, nodeHeading or GetEntityHeading(ped)
+                end
+            end
+        end
+    end
+    return nil, nil
+end
+
+-- Fallback: a spot in front of the founder, pushed further out while it is blocked.
+local function findClearSpotInFront(ped)
     local cfg = Config.GangVehicle
     local origin = GetEntityCoords(ped)
     local heading = GetEntityHeading(ped)
@@ -105,11 +136,21 @@ local function findClearSpawnPoint(ped)
         if foundGround then z = groundZ end
 
         local spawnCoords = vector3(x, y, z)
-        if isAreaClear(spawnCoords, cfg.checkRadius) then
+        if isAreaClear(spawnCoords, cfg.checkRadius, ped) then
             return spawnCoords, heading
         end
     end
     return nil, nil
+end
+
+local function findClearSpawnPoint(ped)
+    local cfg = Config.GangVehicle
+    if cfg.spawnOnRoad then
+        local coords, heading = findClearRoadSpot(ped)
+        if coords then return coords, heading end
+        if not cfg.fallbackOffRoad then return nil, nil end
+    end
+    return findClearSpotInFront(ped)
 end
 
 -- Deletes a vehicle even when another client owns it (asks for network control first).

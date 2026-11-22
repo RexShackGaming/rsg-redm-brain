@@ -1,10 +1,10 @@
 // ============================================
-// ADMIN PANEL (/createshop) — NPC, shop and blip management
+// ADMIN PANEL (/storeadmin) — NPC, shop and blip management
 // Shares ShopUI (script.js) for i18n, image paths and escHtml.
 // ============================================
 var AdminUI = {
     isOpen: false,
-    tab: 'npcs',
+    tab: 'overview',
     view: 'list',          // 'list' | 'npc' | 'blip'
     search: '',
     typeFilter: '',        // '' = all, '__none' = no blip, otherwise blip sprite value
@@ -69,6 +69,7 @@ var AdminUI = {
         this.fillTypeFilter();
         this.$('adm-blip-count').textContent = this.blips.length;
         if (this.view === 'list') this.renderList();
+        if (this.view === 'overview') this.scheduleOverview();
         // the record being edited was removed by someone else
         if (this.view === 'npc' && this.editId && !this.findNpc(this.editId)) this.showList();
         if (this.view === 'blip' && this.editId && !this.findBlip(this.editId)) this.showList();
@@ -249,10 +250,16 @@ var AdminUI = {
     setView: function(view) {
         this.view = view;
         this.$('adm-list-view').classList.toggle('hidden', view !== 'list');
+        this.$('adm-overview-view').classList.toggle('hidden', view !== 'overview');
+        this.$('adm-settings-view').classList.toggle('hidden', view !== 'settings');
+        this.$('adm-audit-view').classList.toggle('hidden', view !== 'audit');
+        this.$('adm-store-view').classList.toggle('hidden', view !== 'store');
+        var tabbed = view === 'list' || view === 'overview' || view === 'settings' || view === 'audit';
+        this.$('adm-tabs').classList.toggle('hidden', !tabbed);
         this.$('adm-npc-view').classList.toggle('hidden', view !== 'npc');
         this.$('adm-blip-view').classList.toggle('hidden', view !== 'blip');
         this.$('adm-preset-view').classList.toggle('hidden', view !== 'preset');
-        document.querySelector('.adm-panel').classList.toggle('editing', view !== 'list');
+        document.querySelector('.adm-panel').classList.toggle('editing', !tabbed);
     },
 
     setHeader: function(titleKey, sub) {
@@ -263,13 +270,22 @@ var AdminUI = {
     showList: function() {
         this.editId = null;
         this.closeModals();
-        this.setView('list');
         this.setHeader('ui_adm_title');
         this.setTab(this.tab);
     },
 
     setTab: function(tab) {
         this.tab = tab;
+        this.$('adm-tab-overview').classList.toggle('active', tab === 'overview');
+        this.$('adm-tab-settings').classList.toggle('active', tab === 'settings');
+        this.$('adm-tab-audit').classList.toggle('active', tab === 'audit');
+        if (tab === 'overview' || tab === 'settings' || tab === 'audit') {
+            this.setView(tab);
+            this.setHeader('ui_adm_title');
+            if (tab === 'overview') this.loadOverview(); else if (tab === 'audit') this.loadAudit(true); else this.loadSettings();
+            return;
+        }
+        this.setView('list');
         this.$('adm-tab-npcs').classList.toggle('active', tab === 'npcs');
         this.$('adm-tab-blips').classList.toggle('active', tab === 'blips');
         this.$('adm-tab-presets').classList.toggle('active', tab === 'presets');
@@ -384,6 +400,7 @@ var AdminUI = {
         this.$('npc-evict-force').checked = false;
         this.evictArmed = false;
         this.$('npc-evict-label').textContent = this.T('ui_adm_evict');
+        this.$('npc-sale-price').value = npc && npc.salePrice ? npc.salePrice : '';
         this.$('npc-owner-current').textContent = (npc && npc.owner)
             ? this.T('ui_adm_owner_current', npc.owner.name, npc.owner.citizenid) : this.T('ui_adm_no_owner');
         this.setKind(npc ? (npc.kind || 'npc') : 'npc');
@@ -521,6 +538,7 @@ var AdminUI = {
         if (owned) {
             var assign = parseInt(this.$('npc-owner-id').value, 10);
             npc.owner = { assign: assign > 0 ? assign : null, clear: this.$('npc-owner-clear').checked };
+            npc.salePrice = Math.max(0, parseFloat(this.$('npc-sale-price').value) || 0);
         }
         var blip = null;
         if (!this.editId && isShop && this.$('npc-make-blip').checked) {
@@ -546,7 +564,8 @@ var AdminUI = {
     renderPicker: function(q) {
         var box = this.$('adm-picker-list'), self = this;
         var inShop = {};
-        this.draftItems.forEach(function(it) { inShop[it.name] = true; });
+        if (this.pickerTaken) inShop = this.pickerTaken();
+        else this.draftItems.forEach(function(it) { inShop[it.name] = true; });
         box.innerHTML = '';
         var shown = 0;
         for (var i = 0; i < this.catalog.length && shown < 150; i++) {
@@ -570,6 +589,12 @@ var AdminUI = {
     },
 
     addItem: function(it) {
+        if (this.pickerPick) {
+            var pick = this.pickerPick;
+            this.closeModals();
+            pick(it);
+            return;
+        }
         this.draftItems.push({ name: it.name, label: it.label, price: 0, amount: null });
         this.closeModals();
         this.renderItems();
@@ -663,7 +688,9 @@ var AdminUI = {
     },
 
     // ---------- confirm ----------
-    confirm: function(title, text, action) {
+    confirm: function(title, text, action, label, icon) {
+        this.$('adm-confirm-label').textContent = label || this.T('ui_adm_delete');
+        this.$('adm-confirm-icon').className = 'fa-solid ' + (icon || 'fa-trash');
         this.$('adm-confirm-title').textContent = title;
         this.$('adm-confirm-text').textContent = text;
         this.confirmAction = action;
@@ -672,6 +699,8 @@ var AdminUI = {
 
     closeModals: function() {
         this.closeDropdown();
+        this.pickerTaken = null;
+        this.pickerPick = null;
         this.$('adm-picker').classList.add('hidden');
         this.$('adm-confirm').classList.add('hidden');
         this.confirmAction = null;

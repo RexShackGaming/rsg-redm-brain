@@ -312,3 +312,7 @@
 
 .mng-rank-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .mng-rank-row .mng-rank { flex: 1 1 auto; justify-content: center; padding: 6px 10px; font-size: 10.5px; }
+
+/* inline input + buttons (bulk price, resale) */
+.mng-inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.mng-inline .mng-input { flex: 1 1 120px; min-width: 0; }

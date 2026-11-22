@@ -40,6 +40,15 @@ Config.Logging = {
 -- Permission needed for the admin commands (/addsociety, /societydesk, /removesocietydesk, /societyfunds, /societymigrate, /removegang)
 Config.AdminPermission = 'admin'
 
+-- Admin panel: one NUI to see and manage every society (members, ranks, money, fines, desks, audit, tools).
+-- Needs Config.AdminPermission. Every action is checked on the server again.
+Config.Admin = {
+    Enabled = true,
+    Command = 'societyadmin',   -- opens the admin panel
+    Key = '',                   -- default key for a rebindable mapping ('' = unbound, bind it in the game's key settings)
+    MaxFunds = 10000000,        -- biggest single funds change from the panel (dollars)
+}
+
 -- Desk blips (only for locations with showblip = true)
 Config.Blip = {
     name = 'Society Desk',
