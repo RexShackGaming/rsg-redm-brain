@@ -5,6 +5,8 @@ local chatInputActivating = false
 local chatHidden = true
 local chatLoaded = false
 local adminOpen = false
+local aimFaded = false
+local aimHideEnabled = Config.DefaultSettings.aimHide ~= false -- player setting, synced from the NUI
 local myChannels = {}
 local channelSuggestions = {}
 
@@ -23,13 +25,15 @@ end
 local UI_KEYS = {
     'ui_settings', 'ui_layout', 'ui_font_size', 'ui_opacity', 'ui_timestamps', 'ui_history',
     'ui_autohide', 'ui_hide_delay', 'ui_fade', 'ui_hide', 'ui_never', 'ui_reset_layout',
-    'ui_close', 'ui_on', 'ui_off', 'ui_seconds', 'ui_messages', 'ui_drag_hint', 'ui_tab_hint',
+    'ui_close', 'ui_seconds', 'ui_messages', 'ui_drag_hint', 'ui_tab_hint',
     'ui_admin_title', 'ui_admin_sub', 'ui_new_channel', 'ui_channel_id', 'ui_label', 'ui_command',
     'ui_prefix', 'ui_show_prefix', 'ui_color', 'ui_range', 'ui_distance', 'ui_jobs', 'ui_gangs',
     'ui_require_duty', 'ui_permission', 'ui_everyone', 'ui_max_length', 'ui_enabled', 'ui_save',
     'ui_delete', 'ui_cancel', 'ui_confirm_delete', 'ui_saved', 'ui_deleted', 'ui_error',
     'ui_range_global', 'ui_range_local', 'ui_range_regional', 'ui_range_group',
-    'ui_list_hint', 'ui_chat_enabled', 'ui_chat_off_hint', 'ui_select_channel', 'ui_disabled', 'ui_preview', 'ui_success', 'ui_info',
+    'ui_aim_hide', 'ui_tab_channels', 'ui_tab_logs', 'ui_search', 'ui_log_text', 'ui_log_player', 'ui_log_channel',
+    'ui_all_channels', 'ui_no_results', 'ui_log_hint',
+    'ui_list_hint', 'ui_chat_enabled', 'ui_chat_off_hint', 'ui_select_channel', 'ui_preview', 'ui_success', 'ui_info',
 }
 
 local function uiStrings()
@@ -43,6 +47,15 @@ local function loadSettings()
     if not raw then return nil end
     local ok, data = pcall(json.decode, raw)
     return ok and type(data) == 'table' and data or nil
+end
+
+-- "Fade while aiming" lives in the player's saved settings; the Lua side needs it to decide when to fade
+local function applyAimSetting(settings)
+    if type(settings) == 'table' and settings.aimHide ~= nil then
+        aimHideEnabled = settings.aimHide == true
+    else
+        aimHideEnabled = Config.DefaultSettings.aimHide ~= false
+    end
 end
 
 RegisterNetEvent('chatMessage')
@@ -77,9 +90,8 @@ AddEventHandler('chat:addSuggestion', function(name, help, params)
 end)
 
 AddEventHandler('chat:addSuggestions', function(suggestions)
-    for _, suggestion in ipairs(suggestions) do
-        SendNUIMessage({ type = 'ON_SUGGESTION_ADD', suggestion = suggestion })
-    end
+    if type(suggestions) ~= 'table' then return end
+    SendNUIMessage({ type = 'ON_SUGGESTIONS_ADD', suggestions = suggestions }) -- one NUI message for the whole batch
 end)
 
 AddEventHandler('chat:removeSuggestion', function(name)
@@ -103,15 +115,15 @@ local function refreshChannelSuggestions()
     end
     channelSuggestions = {}
     local param = { { name = locale('param_message'), help = locale('param_message_help') } }
+    local batch = {}
     for _, ch in ipairs(myChannels) do
         if ch.command and ch.command ~= '' then
             local name = '/' .. ch.command
             channelSuggestions[#channelSuggestions + 1] = name
-            SendNUIMessage({ type = 'ON_SUGGESTION_ADD', suggestion = {
-                name = name, help = locale('help_channel', ch.label), params = param,
-            } })
+            batch[#batch + 1] = { name = name, help = locale('help_channel', ch.label), params = param }
         end
     end
+    if #batch > 0 then SendNUIMessage({ type = 'ON_SUGGESTIONS_ADD', suggestions = batch }) end
 end
 
 RegisterNetEvent('rsg-chat:client:syncChannels', function(list, defaultId)
@@ -136,6 +148,7 @@ RegisterNetEvent('RSGCore:Client:OnGangUpdate', requestChannels)
 RegisterNUICallback('chatResult', function(data, cb)
     chatInputActive = false
     SetNuiFocus(false, false)
+    if type(data) ~= 'table' then return cb('ok') end
 
     local message = type(data.message) == 'string' and data.message or ''
     if not data.canceled and message ~= '' then
@@ -151,12 +164,14 @@ end)
 RegisterNUICallback('saveSettings', function(data, cb)
     if type(data) == 'table' then
         SetResourceKvp(KVP_SETTINGS, json.encode(data))
+        applyAimSetting(data)
     end
     cb('ok')
 end)
 
 RegisterNUICallback('resetSettings', function(_, cb)
     DeleteResourceKvp(KVP_SETTINGS)
+    applyAimSetting(nil)
     cb(Config.DefaultSettings)
 end)
 
@@ -169,7 +184,7 @@ local function closeAdmin()
     SendNUIMessage({ type = 'ON_ADMIN_CLOSE' })
 end
 
-RegisterNetEvent('rsg-chat:client:openAdmin', function()
+RegisterNetEvent('rsg-chat:client:openAdmin', function(tab)
     if adminOpen or chatInputActive then return end
     local channels = RSGCore.Functions.AwaitCallback('rsg-chat:server:adminGetChannels', CB_TIMEOUT)
     if type(channels) ~= 'table' then return notify('no_permission', 'error') end
@@ -177,6 +192,7 @@ RegisterNetEvent('rsg-chat:client:openAdmin', function()
     SetNuiFocus(true, true)
     SendNUIMessage({
         type = 'ON_ADMIN_OPEN',
+        tab = tab == 'logs' and 'logs' or 'channels',
         channels = channels,
         permissions = Config.PermissionLevels,
         limits = { minDistance = Config.DistanceLimits.min, maxDistance = Config.DistanceLimits.max, maxLength = Config.HardMaxLength },
@@ -198,6 +214,10 @@ RegisterNUICallback('adminToggle', function(data, cb)
     cb(adminCall('adminToggle', data and data.id))
 end)
 
+RegisterNUICallback('adminSearchLogs', function(data, cb)
+    cb(adminCall('adminSearchLogs', type(data) == 'table' and data or {}))
+end)
+
 RegisterNUICallback('adminMove', function(data, cb)
     cb(adminCall('adminMove', data and data.id, data and data.dir))
 end)
@@ -210,6 +230,10 @@ RegisterCommand('chatsettings', function()
     chatInputActive = true
     SendNUIMessage({ type = 'ON_OPEN', settings = true })
     SetNuiFocus(true, true)
+end, false)
+
+RegisterCommand('clearchat', function()
+    SendNUIMessage({ type = 'ON_CLEAR' })
 end, false)
 
 RegisterCommand('togglechat', function()
@@ -244,12 +268,24 @@ local function refreshCommands()
         TriggerEvent('chat:addSuggestions', suggestions)
     end
 
-    TriggerEvent('chat:addSuggestions', {
+    local own = {
         { name = '/clearchat', help = locale('help_clearchat') },
         { name = '/chatsettings', help = locale('help_chatsettings') },
         { name = '/togglechat', help = locale('help_togglechat') },
         { name = '/channel', help = locale('help_channelcmd'), params = { { name = 'id', help = locale('param_channel_help') } } },
-    })
+    }
+    local messageParam = { name = locale('param_message'), help = locale('param_message_help') }
+    if Config.PM.Enabled then
+        own[#own + 1] = { name = '/' .. Config.PM.Command, help = locale('help_pm'), params = {
+            { name = locale('param_target'), help = locale('param_target_help') }, messageParam } }
+        own[#own + 1] = { name = '/' .. Config.PM.ReplyCommand, help = locale('help_reply'), params = { messageParam } }
+    end
+    if Config.Roleplay.Enabled then
+        own[#own + 1] = { name = '/' .. Config.Roleplay.DoCommand, help = locale('help_do'), params = { messageParam } }
+        own[#own + 1] = { name = '/' .. Config.Roleplay.RollCommand, help = locale('help_roll'), params = {
+            { name = locale('param_sides'), help = locale('param_sides_help') } } }
+    end
+    TriggerEvent('chat:addSuggestions', own)
     refreshChannelSuggestions()
 end
 
@@ -269,23 +305,31 @@ local function refreshThemes()
     SendNUIMessage({ type = 'ON_UPDATE_THEMES', themes = themes })
 end
 
-local refreshPending = false
-local function queueRefresh()
-    if not chatLoaded or refreshPending then return end
+local refreshPending, themesDirty = false, false
+local function queueRefresh(resource)
+    if not chatLoaded then return end
+    if type(resource) == 'string' and GetNumResourceMetadata(resource, 'chat_theme') > 0 then themesDirty = true end
+    if refreshPending then return end
     refreshPending = true -- many resources start together: refresh once
     SetTimeout(500, function()
         refreshPending = false
         refreshCommands()
-        refreshThemes()
+        if themesDirty then
+            themesDirty = false
+            refreshThemes()
+        end
     end)
 end
 AddEventHandler('onClientResourceStart', queueRefresh)
 AddEventHandler('onClientResourceStop', queueRefresh)
 
 RegisterNUICallback('loaded', function(_, cb)
+    local saved = loadSettings()
+    applyAimSetting(saved)
     SendNUIMessage({
         type = 'ON_INIT',
-        settings = loadSettings(),
+        pmCommand = Config.PM.Enabled and Config.PM.Command or nil,
+        settings = saved,
         defaults = Config.DefaultSettings,
         maxHistory = Config.MaxHistoryCap,
         ui = uiStrings(),
@@ -304,36 +348,64 @@ AddEventHandler('onResourceStop', function(res)
 end)
 
 ---------------------------------------------------------------------
--- Input loop (reads controls, so Wait(0) is required)
+-- Opening the chat
+-- The text box takes NUI focus only after the key is released, so the key itself isn't typed into it.
 ---------------------------------------------------------------------
+local function openChat()
+    if chatInputActive or adminOpen then return end
+    chatInputActive = true
+    chatInputActivating = true
+    SendNUIMessage({ type = 'ON_OPEN' })
+end
+
+local function focusChat()
+    if not chatInputActivating then return end
+    chatInputActivating = false
+    if chatInputActive then SetNuiFocus(true, true) end
+end
+
+local function checkScreenState()
+    if not chatLoaded then return end
+    local shouldBeHidden = IsScreenFadedOut() or IsPauseMenuActive()
+    if shouldBeHidden ~= chatHidden then
+        chatHidden = shouldBeHidden
+        SendNUIMessage({ type = 'ON_SCREEN_STATE_CHANGE', shouldHide = shouldBeHidden })
+    end
+
+    -- fade (not hide) while aiming or in a cinematic camera; never while the player is typing
+    local faded = aimHideEnabled and not chatInputActive and not adminOpen
+        and (IsPlayerFreeAiming(PlayerId()) or IsCinematicCamRendering()) or false
+    if faded ~= aimFaded then
+        aimFaded = faded
+        SendNUIMessage({ type = 'ON_AIM_STATE', faded = faded })
+    end
+end
+
 CreateThread(function()
     SetTextChatEnabled(false)
     SetNuiFocus(false, false)
-    local nextScreenCheck = 0
 
+    -- Rebindable key (rsg-core RegisterKey): no per-frame work at all
+    if Config.UseKeyMapping and RSGCore.Functions.RegisterKey
+        and RSGCore.Functions.RegisterKey('rsgchat_open', locale('key_open_chat'), Config.OpenKey, openChat, focusChat, {
+            requireLogin = false, -- chat also works on the character screen
+            canTrigger = function() return not IsPauseMenuActive() end,
+        }) then
+        while true do
+            Wait(250)
+            checkScreenState()
+        end
+    end
+
+    -- Fallback (Config.UseKeyMapping = false): read the control every frame
+    local nextScreenCheck = 0
     while true do
         Wait(0)
-
-        if not chatInputActive and not adminOpen then
-            if IsControlPressed(0, `INPUT_MP_TEXT_CHAT_ALL`) then
-                chatInputActive = true
-                chatInputActivating = true
-                SendNUIMessage({ type = 'ON_OPEN' })
-            end
-        end
-
-        if chatInputActivating and not IsControlPressed(0, `INPUT_MP_TEXT_CHAT_ALL`) then
-            SetNuiFocus(true, true)
-            chatInputActivating = false
-        end
-
-        if chatLoaded and GetGameTimer() >= nextScreenCheck then
+        if IsControlPressed(0, `INPUT_MP_TEXT_CHAT_ALL`) then openChat() end
+        if chatInputActivating and not IsControlPressed(0, `INPUT_MP_TEXT_CHAT_ALL`) then focusChat() end
+        if GetGameTimer() >= nextScreenCheck then
             nextScreenCheck = GetGameTimer() + 250
-            local shouldBeHidden = IsScreenFadedOut() or IsPauseMenuActive()
-            if shouldBeHidden ~= chatHidden then
-                chatHidden = shouldBeHidden
-                SendNUIMessage({ type = 'ON_SCREEN_STATE_CHANGE', shouldHide = shouldBeHidden })
-            end
+            checkScreenState()
         end
     end
 end)

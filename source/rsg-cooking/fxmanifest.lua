@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-cooking'
-version '3.3.1'
+version '3.5.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
@@ -36,5 +36,6 @@ dependencies {
     'rsg-core',
     'rsg-inventory',
     'rsg-target',
+    'rsg-gizmo',
     'oxmysql',
 }

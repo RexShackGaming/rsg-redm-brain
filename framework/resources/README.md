@@ -18,19 +18,19 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-bathing](rsg-bathing.md) | Interactive bathhouse system for RedM servers running the RSG Framework. Players pay for a bath, scrub themsel | 1 | 10 |
 | [rsg-beekeeper](rsg-beekeeper.md) | Beekeeper script for RSG Framework | 0 | 23 |
 | [rsg-boats](rsg-boats.md) | rsg-boats - multi-yard boat shop with dock storing, per-boat storage, transfers and an NUI admin panel | 0 | 7 |
-| [rsg-bountyhunter](rsg-bountyhunter.md) | rsg-bountyhunter - hunt wanted outlaws and bring them in dead or alive | 2 | 6 |
-| [rsg-canteen](rsg-canteen.md) | Fill a canteen at water pumps with rsg-target, or straight from rivers and lakes, and drink from it to res | 0 | 4 |
+| [rsg-bountyhunter](rsg-bountyhunter.md) | rsg-bountyhunter - hunt wanted outlaws and bring them in dead or alive | 3 | 7 |
+| [rsg-canteen](rsg-canteen.md) | Fill a canteen at water pumps with rsg-target, or straight from rivers and lakes, and drink from it to res | 1 | 8 |
 | [rsg-cards](rsg-cards.md) | Collectable cigarette cards for the RSG Framework | 0 | 27 |
 | [rsg-character](rsg-character.md) | Character selection, character creation, clothing stores, wardrobe and spawn selection for RSG-Core (RedM) | 33 | 21 |
-| [rsg-chat](rsg-chat.md) | A chat resource for RedM servers running RSG-Core. It replaces the default chat with channels that adm | 2 | 19 |
+| [rsg-chat](rsg-chat.md) | Version 3.4.0 A chat resource for RedM servers running RSG-Core. It replaces the default chat with | 2 | 19 |
 | [rsg-cinema](rsg-cinema.md) | rsg-cinema - moving picture shows rebuilt from RDR2 show_movie_magic_lantern | 0 | 8 |
-| [rsg-consume](rsg-consume.md) | Universal consumption system for RedM using RSG Core. > Immersive eating and drinking system for RedM serv | 0 | 2 |
-| [rsg-cooking](rsg-cooking.md) | A cooking system for RSG-Core (RedM) that works the same way as [rsg-moonshine](https://github.com/Rexshac | 8 | 7 |
+| [rsg-consume](rsg-consume.md) | Universal consumption system for RedM using RSG Core. > Immersive eating and drinking system for RedM serv | 1 | 11 |
+| [rsg-cooking](rsg-cooking.md) | A cooking system for RSG-Core (RedM) that works the same way as [rsg-moonshine](https://github.com/Rexshac | 10 | 8 |
 | [rsg-core](rsg-core.md) | The core framework for RSG RedM servers: players, characters, money, jobs (with built-in multi-job), gangs, pe | 43 | 42 |
-| [rsg-crafting](rsg-crafting.md) | An XP-based crafting book for RSG-Core (RedM). Players use a crafting book item to open a NUI menu. From t | 5 | 2 |
-| [rsg-deliveries](rsg-deliveries.md) | Wagon delivery system RSG Framework | 0 | 4 |
+| [rsg-crafting](rsg-crafting.md) | An XP-based crafting book for RSG-Core (RedM). Players use a crafting book item to open a NUI menu. From t | 9 | 11 |
+| [rsg-deliveries](rsg-deliveries.md) | Wagon delivery system RSG Framework | 1 | 6 |
 | [rsg-doorlock](rsg-doorlock.md) | A database-driven door lock system for RedM using the RSG Framework. Doors are created, edited and del | 0 | 8 |
-| [rsg-drugs](rsg-drugs.md) | Drug production for RSG Framework (cannabis lab: drying, processing, packing bags & bricks with hired crew) pl | 9 | 18 |
+| [rsg-drugs](rsg-drugs.md) | Drug production for RSG Framework (cannabis lab: drying, processing, packing bags & bricks with hired crew) pl | 9 | 16 |
 | [rsg-economy](rsg-economy.md) | Regional treasuries, taxes, supply-and-demand prices and town projects for RSG Framework | 16 | 1 |
 | [rsg-essentials](rsg-essentials.md) | Quality-of-life utilities and fixes for RedM using RSG Core. > A collection of small but essential feature | 0 | 9 |
 | [rsg-factory](rsg-factory.md) | Version 3.1.0 · Requires: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` · Optional: `rsg-telegram`, | 0 | 3 |
@@ -47,7 +47,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-herbalist](rsg-herbalist.md) | Herbalist script for RSG Framework | 0 | 15 |
 | [rsg-hotair](rsg-hotair.md) | Hireable hot air balloons for RedM servers running the RSG-Core framework. Players hire a balloon at a doc | 0 | 7 |
 | [rsg-housing](rsg-housing.md) | Monthly house rentals for the RSG Framework (RedM). Players rent a house directly at the property, pay rent ev | 24 | 13 |
-| [rsg-hud](rsg-hud.md) | Player and horse HUD for RSG-Core (RedM): health, stamina, dead eye, hunger, thirst, cleanliness, stress, temp | 18 | 13 |
+| [rsg-hud](rsg-hud.md) | Player and horse HUD for RSG-Core (RedM): health, stamina, dead eye, hunger, thirst, cleanliness, stress, temp | 19 | 13 |
 | [rsg-hunting](rsg-hunting.md) | Hunting, trapper and butcher script for RSG Framework | 5 | 1 |
 | [rsg-huntingpets](rsg-huntingpets.md) | A combined RedM / RSG-Core resource that adds hunting dogs and hunting birds to your server in one package | 0 | 16 |
 | [rsg-inventory](rsg-inventory.md) | Slot/weight inventory for the RSG Framework (rsg-core) with a hotbar, persistent stashes, ground drops, shops  | 47 | 20 |

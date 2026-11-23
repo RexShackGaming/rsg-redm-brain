@@ -1,6 +1,21 @@
 -- Default-off first throwable policy: no grant, slot mutation,
 -- native setter, pickup credit, item escrow or alternate ammunition ledger.
 WeaponNativeThrowablePolicy={}
+function WeaponNativeThrowablePolicy.KnivesEnabled()
+    return WeaponNativeThrowablePolicy.QuantityEnabled() and type(GetConvarInt)=='function'
+        and GetConvarInt('feather_throwing_knife_quantities',0)==1 or false
+end
+function WeaponNativeThrowablePolicy.QuantityProfile(catalog,id)
+    if id==nil or id=='throwable_tomahawk' then return WeaponNativeThrowablePolicy.Resolve(catalog) end
+    if id~='throwable_throwing_knives' or not WeaponNativeThrowablePolicy.KnivesEnabled() then return nil,'knife_quantities_disabled' end
+    local w=catalog and catalog.weapons and catalog.weapons[id]
+    local a=catalog and catalog.ammunition and catalog.ammunition.ammo_throwing_knives_regular
+    if not w or w.id~=id or w.itemName~='weapon_thrown_throwing_knives' or w.nativeWeaponName~='WEAPON_THROWN_THROWING_KNIVES'
+        or w.family~='throwing_knife' or w.slot~='throwable' or w.ammunitionType~='ammo_throwing_knives_regular'
+        or not a or a.id~='ammo_throwing_knives_regular' or a.itemName~=a.id or a.nativeAmmoName~='AMMO_THROWING_KNIVES'
+        or a.maxTotal~=8 then return nil,'unsupported_quantity_knife_profile' end
+    return {definition=w,ammunition=a}
+end
 function WeaponNativeThrowablePolicy.QuantityEnabled()
     return Config and Config.NativeThrowableQuantityContract==1 and Config.NativeAlphaRuntime==true and Config.CharacterAmmunitionEnabled==true
         and Config.CharacterAmmoTransportEnabled==true and Config.NativeAlphaLifecycleWearEnabled==true

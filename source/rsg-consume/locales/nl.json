@@ -9,5 +9,17 @@
     "wakeup_desc": "Je wordt wakker met een vreselijke hoofdpijn...",
     "sober_title": "✨ Hersteld",
     "sober_desc": "Je hebt weer een helder hoofd.",
-    "inventory_full": "Je zakken zitten vol"
+    "inventory_full": "Je zakken zitten vol",
+    "cannot_now": "Je kunt nu niet eten of drinken",
+    "full": "Daar ben je te vol voor",
+    "spoiled": "Het was bedorven! Je voelt je misselijk...",
+    "cancel_hint": "Druk op X om te stoppen met eten of drinken",
+    "bar_label": "%s bestellen ($%s)",
+    "bar_no_money": "Je hebt niet genoeg contant geld",
+    "share_label": "%s delen",
+    "share_given": "Je deelde %s",
+    "share_received": "Iemand deelde %s met je",
+    "share_far": "Die persoon is te ver weg",
+    "share_full": "Die persoon kan niets meer dragen",
+    "share_failed": "Je hebt dat voorwerp niet"
 }

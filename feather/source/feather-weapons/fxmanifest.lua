@@ -6,7 +6,7 @@ lua54 'yes'
 description 'The official weapon system for Feather framework.'
 author 'Feather Framework'
 name 'feather-weapons'
-version '0.25.0'
+version '0.26.0'
 
 -- Normal startup includes the supported quantity path. Retired exact-item
 -- experiments remain offline research and are not loaded by this manifest.

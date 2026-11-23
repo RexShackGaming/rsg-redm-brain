@@ -508,18 +508,21 @@ Config = {
                 alcohol = -10,
             },
             ['stew'] = {
+                buff = { health = { amount = 2, interval = 3000, duration = 45000 } },
                 hunger = 50,
                 thirst = 25,
                 stress = 20,
                 alcohol = -10,
             },
             ['stew_fish'] = {
+                buff = { health = { amount = 2, interval = 3000, duration = 45000 } },
                 hunger = 50,
                 thirst = 25,
                 stress = 20,
                 alcohol = -10,
             },
             ['stew_veg'] = {
+                buff = { health = { amount = 2, interval = 3000, duration = 45000 } },
                 hunger = 50,
                 thirst = 25,
                 stress = 20,
@@ -537,12 +540,14 @@ Config = {
     ------------------------------------------
         Hotdrinks = { -- default hot drink items
             ['coffee'] = {
+                buff = { stamina = { amount = 3, interval = 2000, duration = 40000 } }, -- timed buff, see Config.Buffs
                 hunger = 0,
                 thirst = 25,
                 stress = 20,
                 alcohol = -15, -- hot drinks always use the coffee mug prop
             },
             ['tea'] = {
+                buff = { health = { amount = 1, interval = 3000, duration = 30000 } },
                 hunger = 0,
                 thirst = 25,
                 stress = 20,
@@ -618,6 +623,76 @@ Config = {
         },
     },
 
+    -- ==========================================================================================
+    -- Features (all can be switched off)
+    -- ==========================================================================================
+
+    -- Refuse food/drink that would only fill a need that is already (nearly) full (0-100).
+    -- Items with alcohol, or that restore neither hunger nor thirst, are never blocked.
+    Fullness = { Enabled = true, BlockAt = 95 },
+
+    -- Items that decay in rsg-inventory carry info.quality (0-100). Positive hunger/thirst scale from
+    -- MinFactor (quality 0) to 1.0 (quality 100). Items without quality are unaffected.
+    Quality = { Enabled = true, MinFactor = 0.5 },
+
+    -- Old food can make you sick. Below `Below` quality the chance rises linearly to MaxChance (%) at
+    -- quality 0. Only categories listed here can spoil (canned food and drinks do not).
+    Spoilage = {
+        Enabled = true,
+        Below = 20,
+        MaxChance = 60,
+        Categories = { Eat = true, Stew = true },
+        EffectFactor = 0.0,   -- share of the hunger/thirst you still get from spoiled food
+        ThirstLoss = 10,      -- extra thirst lost
+        StressGain = 10,      -- stress added
+        SickDuration = 6000,  -- vomit animation (ms)
+    },
+
+    -- Regular drinkers handle more. Each alcohol point adds GainPerAlcohol tolerance (0-Max); it raises the
+    -- drunk / pass-out thresholds by up to MaxThresholdBonus (0.5 = +50%) and fades by DecayPerDay.
+    -- Stored in player metadata (alcoholtolerance), so it survives relogs.
+    Tolerance = { Enabled = true, GainPerAlcohol = 0.1, Max = 100, MaxThresholdBonus = 0.5, DecayPerDay = 5 },
+
+    -- Passing out leaves a hangover: thirst drops and stress rises (server side).
+    Hangover = { Enabled = true, ThirstLoss = 20, StressGain = 10 },
+
+    -- Press the key while eating/drinking to stop. Progress is measured by the server (Config.Duration):
+    -- below RefundBelow the item is refunded, above it you get that share of the effects.
+    Cancel = { Enabled = true, Key = 'X', RefundBelow = 0.5, Hint = true },
+
+    -- Approximate real animation length per category (ms); used to work out cancel progress
+    Duration = { Eat = 5000, Drink = 4000, Stew = 7000, Hotdrinks = 5000, Eatcanned = 2750 },
+
+    -- Timed buffs. Add `buff = { health = { amount, interval, duration }, stamina = { ... } }` to an item:
+    -- every `interval` ms for `duration` ms it adds `amount` health points / stamina percent.
+    Buffs = { Enabled = true },
+
+    -- Body temperature (needs rsg-hud with the AddWarmth export). amount = degrees C added for `duration`
+    -- seconds (negative cools). Set per category here or per item with `warmth = { amount = -3, duration = 120 }`.
+    Warmth = {
+        Enabled = true,
+        Categories = {
+            Hotdrinks = { amount = 3, duration = 180 },
+            Stew = { amount = 4, duration = 240 },
+        },
+    },
+
+    -- Hand one of these items to a nearby player (target the player). They drink it themselves.
+    Share = {
+        Enabled = true,
+        Distance = 2.5,
+        Items = {
+            bottle_beer = true, glass_whisky = true, glass_bourbon = true, glass_wine_red = true,
+            glass_wine_white = true, moonshine = true, coffee = true, tea = true,
+        },
+    },
+
+    -- Order at the bar: pay cash, drink on the spot (no item is created, no empty bottle).
+    -- Add your own bars; coordinates are never guessed here. Prices are cash.
+    -- { coords = vec3(x, y, z), radius = 3.0, icon = 'fa-solid fa-beer-mug-empty',
+    --   items = { bottle_beer = 0.50, glass_whisky = 0.75, coffee = 0.25 } },
+    Bars = {},
+
     -- AlcoholSystem Configuration
     AlcoholSystem = {
         DrunkThreshold = 50,      -- Threshold to be considered drunk
@@ -625,6 +700,20 @@ Config = {
         DecreaseAmount = 1,       -- Points removed per cycle
         DecreaseInterval = 5000,  -- Decrement interval (in ms)
         MaxAlcoholLevel = 500,    -- Maximum alcohol level (safety)
+        ScaleDrunkness = true,    -- Drunk walk gets stronger as the level rises (false = fixed MaxDrunkLevel)
+        MinDrunkLevel = 0.3,      -- Drunkness at DrunkThreshold (0.0 - 1.0)
+        MaxDrunkLevel = 0.95,     -- Drunkness at PassOutThreshold (0.0 - 1.0)
+    },
+
+    -- Minimum time (ms) the server expects each category to take. If the client reports "finished"
+    -- faster than this, the animation was skipped: no effects are applied and the item is refunded.
+    -- Keep well below the real animation length (Eat/Hotdrinks 5000, Drink ~4000, Eatcanned 2750).
+    MinDuration = {
+        Eat = 3000,
+        Drink = 2400,
+        Stew = 1000,
+        Hotdrinks = 3000,
+        Eatcanned = 1600,
     },
 
     AlcoholEffects = {
@@ -638,7 +727,7 @@ Config = {
         -- Timings & Durations (in milliseconds)
         GroggyDuration = 15000,                  -- How long the hangover state lasts after waking up (ms)
         VomitDuration = 10000,                   -- How long the vomit animation plays (ms)
-        SleepDuration = 20000,                   -- How long the character sleeps on the ground (ms)
+        SleepDuration = 20000,                   -- Total time asleep on the ground, fade-out included (ms)
         FadeOutDuration = 10000,                 -- Duration of the screen fading to black (ms)
         FadeInDuration = 10000,                  -- Duration of the screen fading back in (ms)
     },

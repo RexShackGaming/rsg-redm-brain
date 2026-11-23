@@ -58,6 +58,7 @@ em { font-style: italic; }
     pointer-events: none;
 }
 .chat-window.is-faded { opacity: 0; }
+.chat-window.is-aim-faded { opacity: 0; } /* aiming or cinematic camera */
 .chat-window.is-editing {
     pointer-events: auto;
     border-color: var(--rdr-gold-dim) !important;
@@ -98,6 +99,12 @@ em { font-style: italic; }
 .msg.multiline { white-space: pre-wrap; }
 .channel-msg .ch-prefix { margin-right: 4px; }
 .channel-msg .ch-author { margin-right: 4px; }
+.channel-msg .ch-author.clickable { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 2px; }
+.channel-msg.mention {
+    background: linear-gradient(90deg, rgba(217, 164, 65, 0.22), transparent);
+    border-left: 2px solid var(--rdr-amber);
+    padding-left: 4px;
+}
 .chat-message.server { color: var(--rdr-amber); font-weight: 600; }
 
 /* ---------- input ---------- */
@@ -283,6 +290,33 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 /* ---------- admin ---------- */
+.admin-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.admin-tabs .tab {
+    padding: 6px 16px; cursor: pointer;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--rdr-muted);
+    background: linear-gradient(180deg, #1c1c1c, #0a0a0a);
+    border: 1px solid rgba(255,255,255,0.12); border-radius: 2px;
+    transition: all 0.15s ease;
+}
+.admin-tabs .tab:hover { color: var(--rdr-text); border-color: var(--rdr-gold-dim); }
+.admin-tabs .tab.active { color: var(--rdr-text); border-color: var(--rdr-gold); background: linear-gradient(180deg, #2e2e2e, #141414); }
+
+.logs-body { flex-direction: column; gap: 10px; }
+.logs-filters { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 0 12px; align-items: end; }
+.logs-filters .wood-btn { margin-bottom: 12px; }
+.logs-results { flex: 1; overflow-y: auto; padding-right: 4px; }
+.logs-results::-webkit-scrollbar { width: 4px; }
+.logs-results::-webkit-scrollbar-thumb { background: var(--rdr-gold-dim); }
+.log-hint { text-align: center; margin-top: 40px; color: var(--rdr-muted); }
+.log-row {
+    display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+    padding: 6px 8px; margin-bottom: 4px; font-size: 12.5px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.15));
+    border: 1px solid rgba(201,162,75,0.18); border-radius: 2px;
+}
+.log-time, .log-cid { color: var(--rdr-muted); font-size: 11px; }
+.log-text { flex: 1 1 100%; word-break: break-word; }
 .admin-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 .admin-panel { width: 880px; max-width: 94vw; }
 .admin-body { display: flex; gap: 16px; height: 520px; max-height: 70vh; }

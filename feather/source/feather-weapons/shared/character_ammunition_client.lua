@@ -49,7 +49,16 @@ function WeaponCharacterAmmoClient.New()
         local ammoId='ammo_tomahawk_regular'
         if quantityMode==true and limits.ammo_arrow_regular==40 and observed
             and observed.ammo_arrow_regular>baseline.pools.ammo_arrow_regular then ammoId='ammo_arrow_regular' end
-        local allowed=quantityMode==true and limits[ammoId]==(ammoId=='ammo_arrow_regular' and 40 or 3)
+        if quantityMode==true and limits.ammo_throwing_knives_regular==8 and observed
+            and observed.ammo_throwing_knives_regular>baseline.pools.ammo_throwing_knives_regular then ammoId='ammo_throwing_knives_regular' end
+        local caps={ammo_tomahawk_regular=3,ammo_arrow_regular=40,ammo_throwing_knives_regular=8,
+            ammo_arrow_small_game=40,ammo_arrow_poison=8,ammo_arrow_fire=8,ammo_arrow_dynamite=8,ammo_throwing_knives_poison=8}
+        if quantityMode==true and observed then
+            for id,cap in pairs(caps) do
+                if limits[id]==cap and observed[id]>baseline.pools[id] then ammoId=id end
+            end
+        end
+        local allowed=quantityMode==true and limits[ammoId]==caps[ammoId]
             and observed and observed[ammoId]>baseline.pools[ammoId]
         if not allowed and (not observed or limits.ammo_tomahawk_regular~=1 or baseline.pools.ammo_tomahawk_regular~=0
             or observed.ammo_tomahawk_regular~=1) then return nil,'pickup_one_unit_increase_required' end

@@ -179,17 +179,20 @@ function WeaponNativeThrowableItem.AssignedUnits(snapshot,catalog,identity,limit
         nativeRequired=true,pickupCredits=false}
 end
 
-function WeaponNativeThrowableItem.AssignedQuantity(snapshot,catalog,identity,limits)
-    if not WeaponNativeThrowablePolicy.QuantityEnabled() or not WeaponNativeThrowablePolicy.Resolve(catalog)
+function WeaponNativeThrowableItem.AssignedQuantity(snapshot,catalog,identity,limits,definitionId)
+    local profile=WeaponNativeThrowablePolicy.QuantityProfile(catalog,definitionId)
+    local ammoId=profile and profile.ammunition.id
+    local cap=profile and profile.ammunition.maxTotal
+    if not WeaponNativeThrowablePolicy.QuantityEnabled() or not profile
         or not keys(snapshot,{contract=true,kind=true,characterId=true,identity=true,revision=true,pools=true})
         or snapshot.contract~=3 or snapshot.kind~='throwable_quantity' or not integer(snapshot.revision,0)
         or not keys(identity,{characterId=true,sessionId=true,epoch=true}) or snapshot.characterId~=identity.characterId
-        or not equal(snapshot.identity,identity) or type(limits)~='table' or limits.ammo_tomahawk_regular~=3 then return nil,'quantity_snapshot_required' end
+        or not equal(snapshot.identity,identity) or type(limits)~='table' or limits[ammoId]~=cap then return nil,'quantity_snapshot_required' end
     for _,key in ipairs({'characterId','sessionId','epoch'}) do if not text(identity[key]) then return nil,'quantity_identity_required' end end
     local pools,why=WeaponCharacterAmmunition.Validate(snapshot.pools,limits)
     if not pools then return nil,why end
     return {contract=3,identity=copy(identity),ledgerRevision=snapshot.revision,
-        ammunitionId='ammo_tomahawk_regular',fundedQuantity=pools.ammo_tomahawk_regular,units={},pickupCredits=true}
+        ammunitionId=ammoId,fundedQuantity=pools[ammoId],units={},pickupCredits=true}
 end
 
 function WeaponNativeThrowableItem.PrepareUnits(snapshot,catalog,identity,intent)

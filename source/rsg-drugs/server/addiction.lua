@@ -112,11 +112,10 @@ for key, cfg in pairs(Config.Addiction.Substances) do
     end
 end
 
--- Hook for items consumed by rsg-consume (client relays its consume event).
--- Feeding only resets craving and RAISES addiction, so a spoofed call can't benefit beyond rate-limit.
-RegisterNetEvent('rsg-drugs:server:consumed', function(itemName)
-    local src = source
-    if type(itemName) ~= 'string' then return end
+-- Hook for items consumed by rsg-consume (3.3.0+): rsg-consume fires this on the server once the item was
+-- really consumed, so there is no client relay to spoof. Feeding only resets craving and RAISES addiction.
+AddEventHandler('rsg-consume:server:consumed', function(src, itemName)
+    if type(src) ~= 'number' or type(itemName) ~= 'string' then return end
     local key = hookedItem[itemName]
     if not key then return end
     local Player = RSGCore.Functions.GetPlayer(src)

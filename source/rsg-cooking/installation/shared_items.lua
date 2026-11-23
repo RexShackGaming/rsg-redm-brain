@@ -9,3 +9,5 @@
     milk        = { name = 'milk',         label = 'Milk',             weight = 100,  type = 'item',  image = 'milk.png',         unique = false,  useable = true,   shouldClose = true,  description = 'Dairy product',       category = 'cooking' },
     raw_fish    = { name = 'raw_fish',     label = 'Fish Meat',        weight = 50,   type = 'item',  image = 'raw_fish.png',     unique = false,  useable = true,   shouldClose = true,  description = 'ready for cooking',   category = 'general' },
     raw_meat    = { name = 'raw_meat',     label = 'Raw Meat',         weight = 50,   type = 'item',  image = 'raw_meat.png',     unique = false,  useable = true,   shouldClose = true,  description = 'ready for cooking',   category = 'general' },
+    -- optional cookbook (see Config.Cookbooks), add your own cookbook.png to rsg-inventory/html/images
+    -- cookbook_stews = { name = 'cookbook_stews', label = 'Stew Cookbook', weight = 200, type = 'item', image = 'cookbook_stews.png', unique = false, useable = true, shouldClose = true, description = 'Teaches stew recipes', category = 'cooking' },

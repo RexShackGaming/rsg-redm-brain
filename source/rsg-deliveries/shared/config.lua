@@ -23,7 +23,9 @@ Config.UIPosition = "top-center" -- rsg-core DrawText position (left, right, top
 Config.ShowDeliveryTimerUI = false -- toggle the rsg-core text UI for the delivery timer on/off
 Config.FadeIncrement = 51 -- alpha fade increment
 Config.DefaultDeliveryTime = 30 -- default delivery time limit in minutes
-Config.MaxRewardAmount = 500 -- maximum cash reward to prevent exploitation
+Config.MaxRewardAmount = 500 -- maximum BASE cash reward of a route (before bonuses)
+Config.MaxPayoutAmount = 1000 -- hard cap on the final payout after every bonus (skills, streak, hot route, ambush, fragile)
+Config.AutoDatabase = true -- create the rsg_deliveries_stats table on start; set false and import install.sql manually
 Config.InteractionDistance = 2.0 -- NPC interaction distance
 Config.CompleteDistance = 10.0 -- how close the wagon must be to the drop-off to complete
 
@@ -1097,3 +1099,103 @@ Config.Reputation = {
         ['SaintDenis Deliveries']  = 'saint_denis',
     },
 }
+
+
+---------------------------------
+-- rsg-skills integration (optional): a 'teamster' skill. XP is awarded on the server for every completed delivery
+-- perks: pay_bonus (% extra cash) and time_bonus (% longer time limit). Needs rsg-skills started
+---------------------------------
+Config.Skills = {
+    Enabled = true,
+    Skill = 'teamster',
+    XPBase = 10,  -- XP for any delivery
+    XPPerKm = 5,  -- extra XP per km of route
+    Definition = {
+        label = 'Teamster',
+        description = 'Haul cargo by wagon for the foremen.',
+        order = 120,
+        maxLevel = 20,
+        perks = {
+            pay_bonus  = { suffix = '%', levels = { [3] = 5, [8] = 10, [14] = 15, [20] = 20 } },
+            time_bonus = { suffix = '%', levels = { [5] = 10, [12] = 20 } },
+        },
+    },
+}
+
+---------------------------------
+-- rsg-economy integration (optional): the payout is a 'sell' quote for the hub's town (tax and reputation apply, tax goes to the treasury)
+---------------------------------
+Config.Economy = {
+    Enabled = true,
+    Regions = { -- hub label -> rsg-economy region (hubs not listed are paid without a quote)
+        ['Valentine Deliveries']   = 'valentine',
+        ['Blackwater Deliveries']  = 'blackwater',
+        ['Strawberry Deliveries']  = 'strawberry',
+        ['Tumbleweed Deliveries']  = 'tumbleweed',
+        ['Annesburg Deliveries']   = 'annesburg',
+        ['SaintDenis Deliveries']  = 'saint_denis',
+    },
+}
+
+---------------------------------
+-- fragile cargo: add fragile = true to a route. The server reads the wagon's health on arrival and scales the pay
+---------------------------------
+Config.Fragile = {
+    Enabled = true,
+    MinPayPct = 40, -- % of the pay kept when the wagon arrives with no health left
+    WarnBelowPct = 50, -- the player is warned once when the wagon drops below this health %
+}
+
+---------------------------------
+-- streaks: deliveries finished within Window seconds of each other build a streak
+---------------------------------
+Config.Streak = {
+    Enabled = true,
+    Window = 1800, -- seconds after a delivery to keep the streak alive
+    BonusPerStep = 5, -- % extra pay per streak step (the first delivery of a streak gets none)
+    MaxBonusPct = 25,
+}
+
+---------------------------------
+-- hot route: one route per hub each day (rotates at midnight UTC) pays extra
+---------------------------------
+Config.HotRoute = {
+    Enabled = true,
+    BonusPct = 25,
+}
+
+---------------------------------
+-- return trips: after a delivery the wagon can carry a load back to the hub for a share of the route's pay
+---------------------------------
+Config.ReturnTrips = {
+    Enabled = true,
+    Command = 'returntrip',
+    OfferTime = 60, -- seconds the offer stays open (the wagon is kept until then)
+    PayPct = 60, -- % of the route's base pay
+}
+
+---------------------------------
+-- rsg-ambush integration (optional): ambushes are likelier while you carry a contract; surviving one pays a bonus
+---------------------------------
+Config.Ambush = {
+    Enabled = true,
+    ChanceMultiplier = 2.0, -- multiplies rsg-ambush's trigger chance during a delivery
+    BonusPct = 25, -- % extra pay when an ambush during the delivery was beaten
+}
+
+---------------------------------
+-- rsg-society integration (optional). Add society = 'jobname' to a hub in Config.DeliveryLocations to use it
+-- Cut: % of the cash the company account earns on top (system funded). PayFromSociety: the account pays the driver instead
+---------------------------------
+Config.Society = {
+    Enabled = true,
+    Cut = 20,
+    PayFromSociety = false,
+    FallbackToServer = true, -- when the account cannot pay, the server pays anyway (false = the driver gets nothing)
+}
+
+-- optional per hub in Config.DeliveryLocations:
+--   job = 'teamster' (or { 'teamster', 'trader' }), minGrade = 0   -- only these jobs can take contracts there
+--   society = 'teamster'                                          -- company account (see Config.Society)
+--   noReturn = true                                               -- no return trips from this hub's routes
+-- optional per route: fragile = true

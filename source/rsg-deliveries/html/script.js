@@ -9,7 +9,7 @@ const T = (key, fallback) => L[key] || fallback;
 const post = (name, data = {}) =>
     fetch(`https://${GetParentResourceName()}/${name}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
-    }).catch(() => {});
+    }).then(r => r.json()).catch(() => null);
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtDist = m => m >= 1000 ? (m / 1000).toFixed(2) + ' km' : Math.round(m) + ' m';
@@ -34,7 +34,11 @@ function renderList() {
                 <div class="row-title">${esc(d.label)}</div>
                 <div class="row-sub">${fmtDist(d.distance)}${d.item ? ' &middot; + ' + esc(d.item.label) : ''}</div>
             </div>
-            ${d.cash > 0 ? `<div class="pill cash">$${d.cash}</div>` : ''}`;
+            <div class="pills">
+                ${d.cash > 0 ? `<div class="pill cash">$${d.cash}</div>` : ''}
+                ${d.hot ? `<div class="pill hot">${esc(T('ui_hot', 'Hot'))} +${d.hot}%</div>` : ''}
+                ${d.fragile ? `<div class="pill fragile">${esc(T('ui_fragile', 'Fragile'))}</div>` : ''}
+            </div>`;
         row.onclick = () => select(i);
         listEl.appendChild(row);
     });
@@ -56,6 +60,8 @@ function select(i) {
     $('d-wagon').textContent = d.wagon;
     const dEl = $('d-diff');
     dEl.textContent = diff.label; dEl.className = 'stat-val txt-' + diff.cls;
+
+    $('d-fragile').classList.toggle('hidden', !d.fragile);
 
     const pct = Math.max(4, Math.min(100, (d.distance / (state.config.maxDistance || 1)) * 100));
     const bar = $('d-bar');
@@ -89,6 +95,51 @@ function select(i) {
     if (!rw.children.length) rw.innerHTML = `<div class="empty">${esc(T('ui_no_reward', 'No reward configured'))}</div>`;
 }
 
+// ---- leaderboard
+const boardEl = $('board'), boardList = $('board-list'), boardMe = $('board-me');
+let boardMode = 'completed';
+
+function fmtBoard(mode, v) {
+    if (mode === 'distance') return fmtDist(v);
+    if (mode === 'earned') return '$' + v;
+    return String(v);
+}
+
+async function loadBoard() {
+    boardList.innerHTML = '';
+    const res = await post('leaderboard', { mode: boardMode });
+    if (!res || !res.rows) { boardList.innerHTML = `<div class="empty">${esc(T('ui_lb_empty', 'Nothing here yet'))}</div>`; return; }
+    const me = res.me || {};
+    boardMe.innerHTML = `<span>${esc(T('ui_lb_you', 'You'))}: <b>${me.completed || 0}</b></span>
+        <span>${esc(T('ui_lb_streak', 'Streak'))}: <b>${me.streak || 0}</b></span>
+        <span>${esc(T('ui_lb_best', 'Best'))}: <b>${me.best || 0}</b></span>`;
+    if (!res.rows.length) { boardList.innerHTML = `<div class="empty">${esc(T('ui_lb_empty', 'Nothing here yet'))}</div>`; return; }
+    res.rows.forEach((r, i) => {
+        boardList.insertAdjacentHTML('beforeend', `
+            <div class="lb-row"><div class="lb-rank">${i + 1}</div>
+            <div class="lb-name">${esc(r.name || '?')}</div>
+            <div class="lb-val">${esc(fmtBoard(res.mode, Math.round(r[res.mode] || 0)))}</div></div>`);
+    });
+}
+
+function showTab(name) {
+    const board = name === 'board';
+    $('tab-contracts').classList.toggle('active', !board);
+    $('tab-board').classList.toggle('active', board);
+    listEl.classList.toggle('hidden', board);
+    boardEl.classList.toggle('hidden', !board);
+    detailEl.classList.toggle('hidden', board || state.selected === null);
+    if (board) loadBoard();
+}
+$('tab-contracts').onclick = () => showTab('contracts');
+$('tab-board').onclick = () => showTab('board');
+document.querySelectorAll('.subtab').forEach(el => el.onclick = () => {
+    document.querySelectorAll('.subtab').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    boardMode = el.dataset.mode;
+    loadBoard();
+});
+
 function open(data) {
     state.hub = data.hub;
     state.deliveries = data.deliveries || [];
@@ -99,6 +150,7 @@ function open(data) {
     $('hub-title').textContent = data.hub;
     detailEl.classList.add('hidden');
     renderList();
+    showTab('contracts');
     app.classList.remove('hidden');
     if (state.deliveries.length) select(0);
 }

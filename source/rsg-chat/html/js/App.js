@@ -1,5 +1,5 @@
 const RESOURCE = 'rsg-chat';
-const SETTING_KEYS = ['x', 'y', 'w', 'h', 'fontSize', 'opacity', 'timestamps', 'history', 'autoHide', 'hideDelay', 'chatOff'];
+const SETTING_KEYS = ['x', 'y', 'w', 'h', 'fontSize', 'opacity', 'timestamps', 'history', 'autoHide', 'hideDelay', 'chatOff', 'aimHide'];
 const arr = (v) => (Array.isArray(v) ? v : []);
 let msgId = 0;
 let toastId = 0;
@@ -17,6 +17,8 @@ window.APP = {
       showSettings: false,
       active: false,       // recent activity keeps the window visible
       shouldHide: true,
+      aimFaded: false,     // fading while the player aims / a cinematic camera runs
+      pmCommand: null,     // name of the /pm command (for click-to-reply)
       backingSuggestions: [],
       removedSuggestions: [],
       templates: CONFIG.templates,
@@ -28,14 +30,15 @@ window.APP = {
       msgTplBackups: [],
       channels: [],
       activeChannel: null,
-      defaultChannel: null,
       atBottom: true,
       toasts: [],
       swatches: ['#ffffff', '#bfbfbf', '#9a9a9a', '#6fbf73', '#d9a441', '#e0554f', '#7fb3d5', '#c39bd3'],
       admin: {
         open: false, channels: [], form: null, originalId: null, busy: false,
         confirmDelete: false, permissions: [''], limits: { minDistance: 2, maxDistance: 5000, maxLength: 512 },
+        tab: 'channels',
       },
+      logs: { text: '', player: '', channel: '', rows: [], searched: false, busy: false },
     };
   },
   destroyed() {
@@ -88,6 +91,11 @@ window.APP = {
     rangeOptions() {
       return ['global', 'local', 'regional', 'group'].map(v => ({ value: v, label: this.t('ui_range_' + v) }));
     },
+    logChannelOptions() {
+      return [{ value: '', label: this.t('ui_all_channels') }]
+        .concat(this.admin.channels.map(c => ({ value: c.id, label: c.label })))
+        .concat([{ value: 'pm', label: 'PM' }, { value: 'rp', label: 'RP' }]);
+    },
     permOptions() {
       return this.admin.permissions.map(p => ({ value: p, label: p === '' ? this.t('ui_everyone') : p }));
     },
@@ -96,8 +104,9 @@ window.APP = {
     t(key) { return this.ui[key] || key; },
 
     // ---------- init / settings ----------
-    ON_INIT({ settings, defaults, maxHistory, ui }) {
+    ON_INIT({ settings, defaults, maxHistory, ui, pmCommand }) {
       this.ui = ui || {};
+      this.pmCommand = pmCommand || null;
       if (defaults) this.defaults = Object.assign({}, CONFIG.defaultSettings, defaults);
       this.maxHistory = maxHistory || 250;
       this.applySettings(settings || this.defaults);
@@ -174,7 +183,6 @@ window.APP = {
     // ---------- channels ----------
     ON_CHANNELS({ channels, defaultChannel }) {
       this.channels = arr(channels);
-      this.defaultChannel = defaultChannel;
       if (!this.channels.find(c => c.id === this.activeChannel)) {
         const def = this.channels.find(c => c.id === defaultChannel) || this.channels[0];
         this.activeChannel = def ? def.id : null;
@@ -216,8 +224,16 @@ window.APP = {
       if (!message) return;
       this.pushMessage({
         channel: message.channel, color: message.color, prefix: message.prefix,
-        author: message.author, text: message.text,
+        author: message.author, text: message.text, mention: !!message.mention, replyTo: message.replyTo,
       });
+    },
+    // click a name while the input is open: /pm <name> for private messages, otherwise add an @mention
+    clickAuthor(msg) {
+      if (!this.showInput) return;
+      const token = String(msg.replyTo || msg.author || '').trim().replace(/\s+/g, '_');
+      if (!token) return;
+      if (msg.channel === 'pm' && this.pmCommand) this.fillSuggestion(`/${this.pmCommand} ${token} `);
+      else this.fillSuggestion(`${this.message}@${token} `);
     },
     onScroll() {
       const el = this.$refs.messages;
@@ -229,6 +245,7 @@ window.APP = {
       this.activeTimer = setTimeout(() => { this.active = false; }, (this.settings.hideDelay || 10) * 1000);
     },
     ON_SCREEN_STATE_CHANGE({ shouldHide }) { this.shouldHide = shouldHide; },
+    ON_AIM_STATE({ faded }) { this.aimFaded = !!faded; },
     ON_OPEN({ settings }) {
       this.showInput = true;
       this.showSettings = !!settings;
@@ -246,7 +263,11 @@ window.APP = {
     },
 
     // ---------- suggestions / templates / themes (cfx compatible) ----------
+    ON_SUGGESTIONS_ADD({ suggestions }) {
+      arr(suggestions).forEach((suggestion) => this.ON_SUGGESTION_ADD({ suggestion }));
+    },
     ON_SUGGESTION_ADD({ suggestion }) {
+      if (!suggestion || typeof suggestion.name !== 'string') return; // a malformed entry would break the whole suggestion list
       const dup = this.backingSuggestions.find(a => a.name == suggestion.name);
       const removedIndex = this.removedSuggestions.indexOf(suggestion.name);
       if (removedIndex > -1) this.removedSuggestions.splice(removedIndex, 1);
@@ -262,10 +283,6 @@ window.APP = {
     },
     ON_SUGGESTION_REMOVE({ name }) {
       if (this.removedSuggestions.indexOf(name) <= -1) this.removedSuggestions.push(name);
-    },
-    ON_COMMANDS_RESET() {
-      this.removedSuggestions = [];
-      this.backingSuggestions = [];
     },
     ON_TEMPLATE_ADD({ template }) {
       if (this.templates[template.id]) this.warn(`Tried to add duplicate template '${template.id}'`);
@@ -398,14 +415,38 @@ window.APP = {
     },
 
     // ---------- admin panel ----------
-    ON_ADMIN_OPEN({ channels, permissions, limits }) {
+    ON_ADMIN_OPEN({ channels, permissions, limits, tab }) {
       this.admin.channels = arr(channels);
       this.admin.permissions = arr(permissions).length ? arr(permissions) : [''];
       if (limits) this.admin.limits = limits;
       this.admin.form = null;
       this.admin.originalId = null;
       this.admin.confirmDelete = false;
+      this.admin.tab = tab === 'logs' ? 'logs' : 'channels';
       this.admin.open = true;
+      this.logs.searched = false;
+      if (this.admin.tab === 'logs') this.searchLogs();
+    },
+    openLogs() {
+      this.admin.tab = 'logs';
+      if (!this.logs.searched) this.searchLogs();
+    },
+    searchLogs() {
+      if (this.logs.busy) return;
+      this.logs.busy = true;
+      post(`https://${RESOURCE}/adminSearchLogs`, JSON.stringify({
+        text: this.logs.text, player: this.logs.player, channel: this.logs.channel,
+      })).then((res) => {
+        this.logs.busy = false;
+        if (!res || !res.ok) { this.toast('error', (res && res.err) || this.t('ui_error')); return; }
+        this.logs.rows = arr(res.rows);
+        this.logs.searched = true;
+      });
+    },
+    logTime(ts) {
+      const d = new Date(Number(ts) * 1000);
+      const p = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
     },
     ON_ADMIN_CLOSE() { this.admin.open = false; },
     closeAdmin() {

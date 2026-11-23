@@ -6,6 +6,11 @@ local alcoholCount = 0
 local drunkActive = false
 local passingOut = false
 local activeProps = {}
+local toleranceMult = 1.0 -- from the server: raises the drunk / pass-out thresholds
+local hintShown = false
+local buffToken = { health = 0, stamina = 0 }
+local targetNames = {}
+local zones = {}
 
 local fx = config.AlcoholEffects
 local alc = config.AlcoholSystem
@@ -21,6 +26,14 @@ local function notify(key, nType, duration)
         type = nType,
         duration = duration,
         position = 'top-right',
+    })
+end
+
+---Notification with the generic title and a single description key
+local function say(key, nType, duration)
+    RSGCore.Functions.Notify({
+        title = locale('title_consume'), description = locale(key),
+        type = nType, duration = duration, position = 'top-right',
     })
 end
 
@@ -78,15 +91,46 @@ end
 -- Alcohol System
 -- =========================================================================================
 
+local function drunkThreshold() return alc.DrunkThreshold * toleranceMult end
+local function passOutThreshold() return alc.PassOutThreshold * toleranceMult end
+
+---Drunkness (0-1) for the current level, scaled between the drunk and pass-out thresholds.
+local function drunkLevel()
+    if not alc.ScaleDrunkness then return alc.MaxDrunkLevel end
+    local span = math.max(1, passOutThreshold() - drunkThreshold())
+    local t = clamp((alcoholCount - drunkThreshold()) / span, 0.0, 1.0)
+    return alc.MinDrunkLevel + (alc.MaxDrunkLevel - alc.MinDrunkLevel) * t
+end
+
+local function resetAlcohol(ped)
+    if drunkActive and fx.DrunkEffect then AnimpostfxStop(fx.DrunkEffectName) end
+    alcoholCount = 0
+    drunkActive = false
+    setDrunkLevel(ped, 0.0)
+end
+
 local function setDrunk(ped, state)
-    if state == drunkActive then return end
+    if state == drunkActive then
+        if state then setDrunkLevel(ped, drunkLevel()) end -- keep it applied/scaled (survives respawn)
+        return
+    end
     drunkActive = state
-    setDrunkLevel(ped, state and 0.95 or 0.0)
+    setDrunkLevel(ped, state and drunkLevel() or 0.0)
 
     if fx.DrunkEffect then
         if state then AnimpostfxPlay(fx.DrunkEffectName) else AnimpostfxStop(fx.DrunkEffectName) end
     end
     if state then notify('drunk', 'inform', 3000) else notify('sober', 'success', 2000) end
+end
+
+local function endPassOut(ped)
+    FreezeEntityPosition(ped, false)
+    AnimpostfxStop(fx.PassOutEffect)
+    AnimpostfxStop(fx.WakeUpEffect)
+    AnimpostfxStop(fx.GroggyEffectName)
+    if IsScreenFadedOut() or IsScreenFadingOut() then DoScreenFadeIn(500) end
+    resetAlcohol(ped)
+    passingOut = false
 end
 
 local function handlePassOut(ped)
@@ -95,52 +139,83 @@ local function handlePassOut(ped)
 
     playAnim(ped, 'amb_misc@world_human_vomit@male_a@idle_b', 'idle_f', 31, fx.VomitDuration)
     Wait(fx.VomitDuration)
+    if IsEntityDead(ped) then return endPassOut(ped) end
     ClearPedTasks(ped)
 
+    -- sleep on the ground for SleepDuration in total; the screen fades out while falling asleep
+    local frozen = not IsPedOnMount(ped) and not IsPedInAnyVehicle(ped, false)
+    if frozen then FreezeEntityPosition(ped, true) end
     playAnim(ped, 'amb_rest@world_human_sleep_ground@arm@male_b@idle_b', 'idle_f', 1, fx.SleepDuration)
     AnimpostfxPlay(fx.PassOutEffect)
     DoScreenFadeOut(fx.FadeOutDuration)
-    Wait(fx.FadeOutDuration)
-    AnimpostfxStop(fx.PassOutEffect)
+    Wait(math.max(fx.FadeOutDuration, fx.SleepDuration))
+    if IsEntityDead(ped) then return endPassOut(ped) end
 
+    AnimpostfxStop(fx.PassOutEffect)
+    FreezeEntityPosition(ped, false)
     ClearPedTasks(ped)
     Citizen.InvokeNative(0x58F7DB5BD8FA2288, ped) -- _CLEAR_PED_TASKS_EXTRA (wake up)
 
-    alcoholCount = 0
-    if drunkActive and fx.DrunkEffect then AnimpostfxStop(fx.DrunkEffectName) end
-    drunkActive = false
+    resetAlcohol(ped)
 
     AnimpostfxPlay(fx.GroggyEffectName)
-    setDrunkLevel(ped, 0.95)
+    setDrunkLevel(ped, alc.MaxDrunkLevel)
     AnimpostfxPlay(fx.WakeUpEffect)
     DoScreenFadeIn(fx.FadeInDuration)
     Wait(fx.FadeInDuration)
     AnimpostfxStop(fx.WakeUpEffect)
     notify('wakeup', 'inform', 5000)
+    TriggerServerEvent('rsg-consume:server:passedOut') -- hangover: server takes thirst / adds stress
 
     Wait(fx.GroggyDuration)
     AnimpostfxStop(fx.GroggyEffectName)
-    setDrunkLevel(ped, 0.0)
+    setDrunkLevel(PlayerPedId(), 0.0)
     notify('sober', 'success', 2000)
     passingOut = false
 end
 
+---Applies the current alcohol level: pass out, drunk or sober.
+local function evaluateAlcohol(ped)
+    if passingOut then return end
+    if alcoholCount > passOutThreshold() then
+        handlePassOut(ped)
+    else
+        setDrunk(ped, alcoholCount > drunkThreshold())
+    end
+end
+
 CreateThread(function()
     while true do
-        if alcoholCount > 0 then
+        if alcoholCount > 0 and not passingOut then
             Wait(alc.DecreaseInterval)
-            alcoholCount = math.max(0, alcoholCount - alc.DecreaseAmount)
             local ped = PlayerPedId()
-
-            if alcoholCount > alc.PassOutThreshold then
-                handlePassOut(ped)
+            if IsEntityDead(ped) then
+                resetAlcohol(ped) -- dying sobers you up
             else
-                setDrunk(ped, alcoholCount > alc.DrunkThreshold)
+                alcoholCount = math.max(0, alcoholCount - alc.DecreaseAmount)
+                evaluateAlcohol(ped)
             end
         else
             Wait(2000)
         end
     end
+end)
+
+-- A new character must not inherit the previous one's drunkenness
+RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
+    if not passingOut then resetAlcohol(PlayerPedId()) end
+    toleranceMult = 1.0
+end)
+
+RegisterNetEvent('rsg-consume:client:tolerance', function(mult)
+    if GetInvokingResource() then return end
+    toleranceMult = clamp(tonumber(mult) or 1.0, 1.0, 3.0)
+end)
+
+RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
+    RSGCore.Functions.TriggerCallback('rsg-consume:server:getTolerance', function(mult)
+        toleranceMult = clamp(tonumber(mult) or 1.0, 1.0, 3.0)
+    end)
 end)
 
 -- =========================================================================================
@@ -209,31 +284,94 @@ function animations.Eatcanned(ped, data)
 end
 
 -- =========================================================================================
+-- Timed effects (all values come from the server)
+-- =========================================================================================
+
+---Sick from rotten food: vomit for a while
+RegisterNetEvent('rsg-consume:client:sick', function(duration)
+    if GetInvokingResource() or passingOut then return end
+    say('spoiled', 'error', 5000)
+    CreateThread(function()
+        local ped = PlayerPedId()
+        playAnim(ped, 'amb_misc@world_human_vomit@male_a@idle_b', 'idle_f', 31, tonumber(duration) or 6000)
+        Wait(tonumber(duration) or 6000)
+        if not IsEntityDead(ped) then ClearPedTasks(ped) end
+    end)
+end)
+
+---Health / stamina over time. A new buff of the same kind replaces the running one.
+RegisterNetEvent('rsg-consume:client:buff', function(buffs)
+    if GetInvokingResource() or type(buffs) ~= 'table' then return end
+    for kind, b in pairs(buffs) do
+        if (kind == 'health' or kind == 'stamina') and b.duration > 0 then
+            buffToken[kind] = buffToken[kind] + 1
+            local token = buffToken[kind]
+            CreateThread(function()
+                local untilTime = GetGameTimer() + b.duration
+                while GetGameTimer() < untilTime and buffToken[kind] == token do
+                    Wait(b.interval)
+                    local ped = PlayerPedId()
+                    if IsEntityDead(ped) then break end
+                    if kind == 'health' then
+                        local hp, maxHp = GetEntityHealth(ped), GetEntityMaxHealth(ped)
+                        if hp < maxHp then SetEntityHealth(ped, math.min(maxHp, hp + b.amount)) end
+                    else
+                        Citizen.InvokeNative(0x675680D089BFA21F, ped, b.amount + 0.0) -- RESTORE_PED_STAMINA
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+---Warm / cold items change the body temperature shown and used by rsg-hud (needs rsg-hud 'AddWarmth')
+RegisterNetEvent('rsg-consume:client:warmth', function(amount, duration)
+    if GetInvokingResource() or GetResourceState('rsg-hud') ~= 'started' then return end
+    pcall(function() exports['rsg-hud']:AddWarmth(tonumber(amount) or 0, tonumber(duration) or 0) end)
+end)
+
+-- =========================================================================================
 -- Consumption handler (only triggered by the server after the item was removed)
 -- =========================================================================================
 
 local function applyStats(data)
+    -- hunger, thirst and stress are applied server-side in rsg-consume:server:finish (rsg-hud is authoritative)
     if data.alcohol then
         alcoholCount = clamp(alcoholCount + data.alcohol, 0, alc.MaxAlcoholLevel)
     end
-    -- hunger/thirst are applied server-side in rsg-consume:server:finish (rsg-hud ServerNeeds is authoritative)
-    if data.stress then
-        if data.stress > 0 then
-            TriggerEvent('hud:client:RelieveStress', data.stress)
-        elseif data.stress < 0 then
-            TriggerServerEvent('hud:server:GainStress', -data.stress)
-        end
-    end
 end
 
-RegisterNetEvent('rsg-consume:client:consume', function(itemName, category)
+---Things that make eating or drinking impossible right now
+local function canConsume(ped)
+    return not (IsPedSwimming(ped) or IsPedRagdoll(ped) or IsPedFalling(ped) or IsPedClimbing(ped))
+end
+
+---Waits for the animation, polling the cancel key. Returns true when the player cancelled.
+local function waitForAnimation(ped, duration, canCancel)
+    local cfg = config.Cancel
+    local key = canCancel and cfg and RSGCore.Shared.Keybinds[cfg.Key]
+    local untilTime = GetGameTimer() + duration
+    while GetGameTimer() < untilTime do
+        if IsEntityDead(ped) then return false end
+        if key and IsControlJustPressed(0, key) then return true end
+        Wait(key and 0 or 100)
+    end
+    return false
+end
+
+RegisterNetEvent('rsg-consume:client:consume', function(itemName, category, extra)
     if GetInvokingResource() then return end -- server-only trigger
+    extra = type(extra) == 'table' and extra or {}
+    if extra.tolerance then toleranceMult = clamp(tonumber(extra.tolerance) or 1.0, 1.0, 3.0) end
     local data = config.Consumables[category] and config.Consumables[category][itemName]
     local anim = animations[category]
     local ped = PlayerPedId()
 
     -- Server already removed the item: if we can't play it, tell the server to refund it
-    if not data or not anim or isBusy or passingOut or IsEntityDead(ped) then
+    if not data or not anim or isBusy or passingOut or IsEntityDead(ped) or not canConsume(ped) then
+        if not IsEntityDead(ped) then
+            RSGCore.Functions.Notify({ title = locale('title_consume'), description = locale('cannot_now'), type = 'error', duration = 3000, position = 'top-right' })
+        end
         TriggerServerEvent('rsg-consume:server:finish', false)
         return
     end
@@ -243,8 +381,16 @@ RegisterNetEvent('rsg-consume:client:consume', function(itemName, category)
     SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
 
     local ok, duration, prop, prop2 = pcall(anim, ped, data)
+    local cancelled, progress = false, 1.0
     if ok then
-        Wait(duration)
+        local canCancel = extra.cancel == true and duration > 0
+        if canCancel and config.Cancel.Hint and not hintShown then
+            hintShown = true
+            say('cancel_hint', 'inform', 4000)
+        end
+        local started = GetGameTimer()
+        cancelled = waitForAnimation(ped, duration, canCancel)
+        if cancelled then progress = clamp((GetGameTimer() - started) / duration, 0.0, 1.0) end
     else
         print(('^1[rsg-consume] animation error (%s/%s): %s^7'):format(category, itemName, duration))
     end
@@ -254,14 +400,75 @@ RegisterNetEvent('rsg-consume:client:consume', function(itemName, category)
     safeDelete(prop2)
     activeProps = {}
 
-    applyStats(data)
-    TriggerEvent('rsg-consume:client:onConsume', data)
+    local alive = not IsEntityDead(PlayerPedId())
+    if ok and alive then
+        -- alcohol is tracked locally; a cancelled drink only counts for the part that was drunk
+        local scaled = {}
+        for k, v in pairs(data) do scaled[k] = v end
+        if scaled.alcohol then scaled.alcohol = scaled.alcohol * progress end
+        applyStats(scaled)
+        TriggerEvent('rsg-consume:client:onConsume', data)
+    end
 
-    -- Releases the server lock and gives back any return item (e.g. emptybottle)
-    TriggerServerEvent('rsg-consume:server:finish', true)
+    -- Releases the server lock, applies hunger/thirst/stress and gives back any return item.
+    -- A failed animation or a death mid-use is reported as "not consumed" so the item is refunded.
+    TriggerServerEvent('rsg-consume:server:finish', ok and alive, cancelled)
 
     LocalPlayer.state:set('inv_busy', false, true)
     isBusy = false
+
+    -- react to the new alcohol level straight away instead of at the next decay tick
+    if data.alcohol and data.alcohol > 0 then evaluateAlcohol(PlayerPedId()) end
+end)
+
+-- =========================================================================================
+-- Bars (order a drink at the counter) and sharing (hand a drink to a nearby player)
+-- =========================================================================================
+
+local function itemLabel(name)
+    local shared = RSGCore.Shared.Items[name]
+    return shared and shared.label or name
+end
+
+CreateThread(function()
+    for index, bar in ipairs(config.Bars or {}) do
+        local options = {}
+        for itemName, price in pairs(bar.items) do
+            options[#options + 1] = {
+                name = ('rsg-consume:bar:%d:%s'):format(index, itemName),
+                icon = bar.icon or 'fa-solid fa-champagne-glasses',
+                label = locale('bar_label', itemLabel(itemName), price),
+                distance = 2.0,
+                onSelect = function() TriggerServerEvent('rsg-consume:server:bar', index, itemName) end,
+            }
+        end
+        table.sort(options, function(a, b) return a.label < b.label end)
+        zones[#zones + 1] = exports['rsg-target']:addSphereZone({
+            name = ('rsg-consume:bar:%d'):format(index),
+            coords = bar.coords, radius = bar.radius or 3.0, options = options,
+        })
+    end
+
+    if config.Share and config.Share.Enabled then
+        local options = {}
+        for itemName in pairs(config.Share.Items) do
+            local name = 'rsg-consume:share:' .. itemName
+            targetNames[#targetNames + 1] = name
+            options[#options + 1] = {
+                name = name,
+                icon = 'fa-solid fa-wine-glass',
+                label = locale('share_label', itemLabel(itemName)),
+                distance = config.Share.Distance,
+                canInteract = function() return RSGCore.Functions.HasItem(itemName, 1) end,
+                onSelect = function(target)
+                    local player = NetworkGetPlayerIndexFromPed(target.entity)
+                    if player == -1 then return end
+                    TriggerServerEvent('rsg-consume:server:share', GetPlayerServerId(player), itemName)
+                end,
+            }
+        end
+        exports['rsg-target']:addGlobalPlayer(options)
+    end
 end)
 
 -- =========================================================================================
@@ -281,5 +488,9 @@ AddEventHandler('onResourceStop', function(resource)
     AnimpostfxStop(fx.WakeUpEffect)
     AnimpostfxStop(fx.GroggyEffectName)
     setDrunkLevel(ped, 0.0)
+    FreezeEntityPosition(ped, false)
     if IsScreenFadedOut() or IsScreenFadingOut() then DoScreenFadeIn(500) end
+    buffToken.health, buffToken.stamina = buffToken.health + 1, buffToken.stamina + 1
+    for _, zone in ipairs(zones) do exports['rsg-target']:removeZone(zone) end
+    if #targetNames > 0 then exports['rsg-target']:removeGlobalPlayer(targetNames) end
 end)

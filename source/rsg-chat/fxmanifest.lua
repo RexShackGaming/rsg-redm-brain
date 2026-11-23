@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-chat'
-version '3.2.1'
+version '3.4.0'
 
 ui_page 'html/index.html'
 
@@ -18,7 +18,6 @@ files {
   'html/js/Suggestions.js',
   'html/js/Dropdown.js',
   'html/vendor/vue.2.3.3.min.js',
-  'html/vendor/animate.3.5.2.min.css',
 }
 
 shared_scripts {
@@ -33,6 +32,7 @@ client_scripts {
 server_scripts {
   '@oxmysql/lib/MySQL.lua',
   'server/main.lua',
+  'server/extras.lua',
   'server/versionchecker.lua',
 }
 

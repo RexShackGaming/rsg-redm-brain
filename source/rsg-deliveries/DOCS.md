@@ -1,6 +1,6 @@
 # rsg-deliveries — Technical Documentation
 
-Version 3.2.0. For installation and the full configuration tables see [README.md](README.md).
+Version 3.3.0. For installation and the full configuration tables see [README.md](README.md).
 
 ## Contents
 
@@ -48,7 +48,9 @@ The client fails the contract itself (`faildelivery`) on timeout, lost wagon, de
 
 | Name | Arguments | Returns |
 |------|-----------|---------|
-| `rsg-deliveries:server:startdelivery` | `hubIndex`, `destIndex` | `true` if the delivery was started, otherwise `false` |
+| `rsg-deliveries:server:startdelivery` | `hubIndex`, `destIndex` | `{ seconds, fragile }` if the delivery was started (`seconds` is the time limit including the skill perk), otherwise `false` |
+| `rsg-deliveries:server:acceptreturn` | none | `{ seconds, fragile, endCoords, label }` when the return load is accepted, otherwise `false` |
+| `rsg-deliveries:server:getleaderboard` | `mode` (`completed`, `distance`, `earned`) | `{ mode, rows, me }`, read only, throttled |
 
 ### Server events (sent by the client)
 
@@ -58,14 +60,27 @@ The client fails the contract itself (`faildelivery`) on timeout, lost wagon, de
 | `rsg-deliveries:server:completedelivery` | `netId` | Requests completion. The net id is only used if no wagon was registered at the start, and is fully re-validated. |
 | `rsg-deliveries:server:canceldelivery` | none | Cancels the active delivery (cooldown applies, wagon deleted) |
 | `rsg-deliveries:server:faildelivery` | `reason` | `timeout`, `damaged_wagon`, `wagon_lost` or `player_died` (cooldown applies, wagon deleted) |
+| `rsg-deliveries:server:declinereturn` | none | Drops an open return load and deletes its wagon |
 
-There are no client net events; the server only sends `RSGCore:Client:Notify`.
+### Client event (sent by the server)
+
+| Event | Arguments | Description |
+|-------|-----------|-------------|
+| `rsg-deliveries:client:finished` | `offered`, `offerTime` | The server's verdict on a completion: `offered = true` keeps the wagon for a return load, otherwise the client deletes it |
+
+### Exports and local events
+
+| Name | Side | Description |
+|------|------|-------------|
+| `GetAmbushMultiplier(src)` | server export | Chance multiplier rsg-ambush applies while the player has a contract (`1.0` otherwise) |
+| `rsg-ambush:server:ambushStarted` / `ambushWon` | server, local | Listened to by this resource, fired by rsg-ambush 3.2.1+. Clients cannot trigger them |
 
 ### NUI callbacks
 
 | Callback | Data | Description |
 |----------|------|-------------|
 | `close` | none | Closes the board |
+| `leaderboard` | `{ mode }` | Asks the server for the leaderboard and returns it to the board |
 | `start` | `{ index }` | Starts the route at that index for the hub that was opened |
 
 ## Shared helpers
@@ -102,26 +117,44 @@ Hub and route tables are described in the README under *Delivery Locations*.
 What the server checks:
 
 - **Start:** valid indexes, no active delivery, cooldown (`Config.DeliveryCooldown`), player within 30m of the hub's cart spawn.
-- **Wagon registration:** entity exists on the server, model matches the route's `wagonModel`, within 30m of the player.
+- **Wagon registration:** entity exists on the server, model matches the route's `wagonModel`, was created by that player, is within 30m of the player and is not already registered to another player's delivery.
 - **Completion:**
   - the delivery is consumed on the first call, so the event cannot be replayed
-  - not expired
+  - not expired (15 seconds of grace for the client/server timer difference)
   - player within 20m of the drop-off
   - elapsed time at least `distance / Config.MaxAverageSpeed` (teleport check)
   - with `Config.RequireWagonAtDestination`: the registered wagon exists and is within 20m of the drop-off. If no wagon was registered, the net id sent with the completion is accepted only if the entity has the route's model, was created by that player and is within 20m of the drop-off.
-- **Rewards:** cash and items come from the config on the server, cash is capped at `Config.MaxRewardAmount`, `CanAddItem` is checked before `AddItem`.
+- **Rewards:** cash and items come from the config on the server. The base is capped at `Config.MaxRewardAmount`, the final payout at `Config.MaxPayoutAmount`. `CanAddItem` is checked before `AddItem`.
+- **Payout order:** base cash, fragile health scale (read from the wagon entity on the server), then one additive bonus % (skill perk, hot route, streak, ambush won), the cap, then the rsg-economy quote, the society settlement and `AddMoney`. The client never sends an amount, a health value or a streak.
+- **Job lock:** `job` / `minGrade` on a hub is checked on the server at the start (the client check only hides the board).
+- **Return trips:** the offer is created by the server after a verified completion. Accepting re-checks that the wagon exists, has the right model and is at the drop-off, and that the player is near it. A new contract, disconnect, expiry or `/canceldelivery` deletes the kept wagon.
+- **Ambush hooks:** handled with `AddEventHandler` (local events), so a client cannot fake an ambush win.
 
-Every rejected completion prints a line to the server console with the reason.
+Every rejected start or completion prints a line to the server console with the reason and tells the player. A rejected completion ends the contract, deletes the wagon and applies the cooldown.
 
 ## Persistence
 
-Nothing is saved. Active deliveries and cooldowns live in server memory and are cleared when the player drops or the resource restarts. Restarting the resource deletes all delivery wagons.
+Active deliveries, return offers and cooldowns live in server memory and are cleared when the player drops or the resource restarts. Restarting the resource deletes all delivery wagons.
+
+Statistics (deliveries, distance, earnings, streak, best streak) are saved per character in `rsg_deliveries_stats` on every completion, and cached in memory.
+
+### Database
+
+Tables are created on start when `Config.AutoDatabase = true`. To install manually set it to `false` and import `install.sql`.
+
+| Table | Columns |
+|---|---|
+| `rsg_deliveries_stats` | `citizenid` (PK), `name`, `completed`, `distance`, `earned`, `streak`, `best_streak`, `last_delivery` (unix time) |
 
 ## Server owner how-tos
 
 - **Add a route or hub:** copy an existing entry in `Config.DeliveryLocations` (README has the field list).
 - **Change payouts:** `Config.RewardPerDistance`, `Config.BaseReward`, each route's `multiplier` / `price`, and the `Config.MaxRewardAmount` cap.
 - **Turn off the wagon check:** `Config.RequireWagonAtDestination = false` (for servers without OneSync).
+- **Lock a hub to a job:** add `job = 'teamster'` (or a list) and optionally `minGrade` to the hub. Add `society = 'teamster'` to give the company account a cut.
+- **Turn a feature off:** `Enabled = false` in `Config.Skills`, `Economy`, `Fragile`, `Streak`, `HotRoute`, `ReturnTrips`, `Ambush` or `Society`.
+- **Make a route fragile:** add `fragile = true` to the route.
+- **Reset the leaderboard:** `TRUNCATE rsg_deliveries_stats;` and restart the resource (the cache is in memory).
 - **Discord logs:** set `SvConfig.Webhook.url` in `server/sv_config.lua`.
 - **Rename a wagon in the UI:** add it to `Config.WagonLabels`.
 
@@ -149,7 +182,7 @@ https://buymeacoffee.com/rexshack
 
 ## Technical reference
 
-Generated from the source of **rsg-deliveries 3.2.0**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-deliveries 3.3.0**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 
@@ -218,7 +251,8 @@ TriggerServerEvent('rsg-deliveries:server:setwagon', netId)
 
 | Command | Notes | File |
 |---|---|---|
-| `/canceldelivery` |  | `client/client.lua` |
+| `/canceldelivery` | cancels the delivery or declines a return load | `client/client.lua` |
+| `/returntrip` | accepts the return load (`Config.ReturnTrips.Command`) | `client/client.lua` |
 
 ### Locales
 

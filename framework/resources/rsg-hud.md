@@ -1,6 +1,6 @@
 # rsg-hud
 
-Version 3.2.1. rsg-hud
+Version 3.2.2. rsg-hud
 
 Player and horse HUD for RSG-Core (RedM): health, stamina, dead eye, hunger, thirst, cleanliness, stress, temperature, voice, mail and outlaw badges, horse health/stamina/cleanliness/bonding/hunger/thirst, a money pop-up, and a drag-and-resize edit mode. - **Server-owned needs** (`Config.ServerNeeds`): the server decays hunger, thirst and stress and reverts state bag tampering. Clients can still a
 
@@ -14,7 +14,7 @@ Has NUI (`ui_page`).
 
 **server:** `GainStress(src, amount)`, `GetNeeds(src)`, `RelieveStress(src, amount)`, `SetNeed(src, key, value)`, `ShowAccount(src, account)`
 
-**client:** `AddNeed(key, amount)`, `GainStress(amount)`, `GetCurrentTemperature()`, `GetNeed(key)`, `GetNeeds()`, `GetOutlawStatus()`, `IsEditMode()`, `IsHudVisible()`, `OpenSettings()`, `RelieveStress(amount)`, `SetHudVisible(visible)`, `SetNeed(key, value)`, `ToggleEditMode(enabled)`
+**client:** `AddNeed(key, amount)`, `AddWarmth(amount, duration)`, `GainStress(amount)`, `GetCurrentTemperature()`, `GetNeed(key)`, `GetNeeds()`, `GetOutlawStatus()`, `IsEditMode()`, `IsHudVisible()`, `OpenSettings()`, `RelieveStress(amount)`, `SetHudVisible(visible)`, `SetNeed(key, value)`, `ToggleEditMode(enabled)`
 
 ## Net events registered
 

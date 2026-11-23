@@ -1,18 +1,18 @@
 # rsg-cooking
 
-Version 3.3.1. rsg-cooking
+Version 3.5.0. rsg-cooking
 
 A cooking system for **RSG-Core (RedM)** that works the same way as [rsg-moonshine](https://github.com/Rexshack-RedM/rsg-moonshine): cooking stations keep their own pantry, firebox and serving tray, food cooks in real time on the server (even while you're away and across restarts), and everything is run from one NUI. 1. **Find a station**: target any stove on the map (**Use Stove**) or set up your
 
 Source: https://github.com/Rexshack-RedM/rsg-cooking
 
-**Dependencies:** `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
+**Dependencies:** `rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-gizmo`, `oxmysql`
 
 Has NUI (`ui_page`).
 
 ## Exports (call as exports['rsg-cooking']:Name)
 
-**server:** `AddCustomRecipe(recipe)`, `CanCookItem(itemName)`, `GetCookingRecipes()`, `GetPlayerCookingLevel(src)`, `GetPlayerCookingXP(src)`, `GivePlayerCookingXP(src, amount)`
+**server:** `AddCustomRecipe(recipe)`, `CanCookItem(itemName)`, `GetCookingRecipes()`, `GetPlayerCookingLevel(src)`, `GetPlayerCookingXP(src)`, `GivePlayerCookingXP(src, amount)`, `KnowsCookingRecipe(src, key)`, `LearnCookingRecipe(src, key)`
 
 **client:** `GetCookingRecipes(category)`, `GetRecipesByCookingType(stype)`
 
@@ -20,11 +20,15 @@ Has NUI (`ui_page`).
 
 **server:** `rsg-cooking:server:placeCampfire`, `rsg-cooking:server:requestCampfire`
 
-**client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `rsg-cooking:client:placeCampfire`, `rsg-cooking:client:removeStation`, `rsg-cooking:client:syncStation`
+**client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `rsg-cooking:client:placeCampfire`, `rsg-cooking:client:printStove`, `rsg-cooking:client:removeStation`, `rsg-cooking:client:syncStation`
 
 ## Callbacks (RSGCore.Functions.CreateCallback)
 
-**server:** `rsg-cooking:server:action`, `rsg-cooking:server:getState`, `rsg-cooking:server:getStations`, `rsg-cooking:server:getWorldStation`
+**server:** `rsg-cooking:server:action`, `rsg-cooking:server:getLeaderboard`, `rsg-cooking:server:getState`, `rsg-cooking:server:getStations`, `rsg-cooking:server:getWorldStation`
+
+## Commands (RSGCore.Commands.Add)
+
+**server:** `/cookingstove`
 
 ## Commands (RegisterCommand)
 

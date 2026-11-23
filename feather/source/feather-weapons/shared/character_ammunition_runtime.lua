@@ -4,7 +4,8 @@ WeaponCharacterAmmoRuntime={}
 WeaponCharacterAmmoRuntime.RecoveryContract=1
 local function recoveryType(limits,before,after)
     local found
-    for id,cap in pairs({ammo_tomahawk_regular=3,ammo_arrow_regular=40}) do
+    for id,cap in pairs({ammo_tomahawk_regular=3,ammo_arrow_regular=40,ammo_throwing_knives_regular=8,
+        ammo_arrow_small_game=40,ammo_arrow_poison=8,ammo_arrow_fire=8,ammo_arrow_dynamite=8,ammo_throwing_knives_poison=8}) do
         if limits[id]==cap and after[id]>before[id] then
             if found then return nil end -- one ammunition type per claim
             found=id
@@ -86,7 +87,7 @@ function WeaponCharacterAmmoRuntime.New(isCurrent)
             or type(location)~='table' then return false end
         local s=sessions[request.context.actorSource]
         local spent=false
-        for id,cap in pairs({ammo_tomahawk_regular=3,ammo_arrow_regular=40}) do
+        for id,cap in pairs({ammo_tomahawk_regular=3,ammo_arrow_regular=40,ammo_throwing_knives_regular=8,ammo_throwing_knives_poison=8}) do
             if s.limits[id]==cap and s.pools[id]>request.spec.pools[id] then spent=true end
         end
         if s.pending.sealAfter or s.pending.finalWear~=nil or not spent then return false end

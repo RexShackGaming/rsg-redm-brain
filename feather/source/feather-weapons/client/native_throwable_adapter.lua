@@ -1,17 +1,42 @@
 -- Concrete but inert port: no registration, activation, grants or loops on load.
 WeaponNativeThrowableAdapter={}
-function WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog,registry,collection)
+function WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog,registry,collection,profileId)
+    if profileId==nil and collection==nil and registry and registry.quantityKnifeContract==1 then
+        local tom,why=WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog,registry,nil,'throwable_tomahawk')
+        if not tom then return nil,why end
+        local knives;knives,why=WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog,registry,nil,'throwable_throwing_knives')
+        if not knives then return nil,why end
+        local owners={tom,knives};local group={}
+        for _,method in ipairs({'Create','PrepareRestore','Observe','AcceptNativePickup','Release'}) do
+            group[method]=function(...)
+                for _,owner in ipairs(owners) do
+                    local accepted,reason=owner[method](...)
+                    if not accepted then return nil,reason end
+                end
+                return method=='Observe' and {quantityMode=true} or true
+            end
+        end
+        group.Status=function()
+            local t,k=tom.Status(),knives.Status()
+            if t.phase~=k.phase then t.phase='retained';t.reason='quantity_children_not_settled' end
+            t.knives=k;return t
+        end
+        return group
+    end
     assert(type(current)=='function' and type(sealed)=='function','Local parent throwable lifecycle required')
     if type(identity)~='table' then return nil,'throwable_identity_required' end
     identity={characterId=identity.characterId,sessionId=identity.sessionId,epoch=identity.epoch}
-    local profile,why=WeaponNativeThrowablePolicy.Resolve(catalog)
+    local knifeMode=profileId=='throwable_throwing_knives'
+    local profile,why=WeaponNativeThrowablePolicy.QuantityProfile(catalog,profileId)
     if not profile then return nil,why end
     if not WeaponNativeGuidIdentity or not WeaponCharacterAmmoCreationNative or not WeaponCharacterAmmoNative
         or type(registry)~='table' or type(registry.names)~='table' or type(registry.limits)~='table'
-        or registry.names.ammo_tomahawk_regular~='AMMO_TOMAHAWK'
-        or (registry.limits.ammo_tomahawk_regular~=1 and not (registry.limits.ammo_tomahawk_regular==3
+        or registry.names[profile.ammunition.id]~=profile.ammunition.nativeAmmoName
+        or (knifeMode and (registry.limits.ammo_throwing_knives_regular~=8 or registry.quantityKnifeContract~=1))
+        or (not knifeMode and registry.limits.ammo_tomahawk_regular~=1 and not (registry.limits.ammo_tomahawk_regular==3
             and (registry.throwableUnitContract==2 or registry.throwableQuantityContract==1))) then return nil,'throwable_native_components_required' end
-    local maximum=registry.limits.ammo_tomahawk_regular
+    local ammoId=profile.ammunition.id
+    local maximum=registry.limits[ammoId]
     local def=profile.definition
     local function yes(v) return v==true or v==1 end
     local function valid(check)
@@ -94,9 +119,16 @@ function WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog
     if registry.throwableQuantityContract==1 then
         if not WeaponNativeThrowablePolicy.QuantityEnabled() or not WeaponThrowableQuantityOwner
             or not WeaponNativeThrowablePickupPermissions then return nil,'quantity_components_required' end
+        local prior,models=Config.NativeThrowablePickupPriorPolicy,nil
+        if knifeMode then
+            local objectModel=Citizen.InvokeNative(0xF70825EB340E7D15,model) -- _GET_WEAPONTYPE_MODEL
+            if type(objectModel)~='number' or objectModel%1~=0 or objectModel==0
+                or type(Config.RegularKnifePickupPriorAllowed)~='boolean' then return nil,'knife_pickup_model_policy_required' end
+            models={objectModel};prior={[objectModel]=Config.RegularKnifePickupPriorAllowed}
+        end
         local permissions=WeaponNativeThrowablePickupPermissions.New(function(name,allowed)
-            SetLocalPlayerPermittedToCollectPickupsWithModel(joaat(name),allowed)
-        end,Config.NativeThrowablePickupPriorPolicy)
+            SetLocalPlayerPermittedToCollectPickupsWithModel(type(name)=='number' and name or joaat(name),allowed)
+        end,prior,models)
         local function unchanged(a,b)
             if not a or not b then return false end
             for id,n in pairs(a) do if b[id]~=n then return false end end
@@ -104,6 +136,9 @@ function WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog
         end
         return WeaponThrowableQuantityOwner.New({current=function() return valid(identity) end,
             quantity=quantity,find=inventoryGuid,sealed=sealed,
+            extraQuantity=knifeMode and registry.limits.ammo_throwing_knives_poison and function()
+                return GetPedAmmoByType(ped,joaat('AMMO_THROWING_KNIVES_POISON'))
+            end or nil,
             allow=permissions.Allow,suppress=permissions.Suppress,restorePermissions=permissions.Restore,
             materialize=function()
                 local before=native.Read(ped,true)
@@ -120,12 +155,18 @@ function WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog
                     local removed=Citizen.InvokeNative(0x3E4E811480B3AE79,1,found.raw,1,joaat('REMOVE_REASON_CLIENT_PURGED'))
                     if not yes(removed) or inventoryGuid()~=false or present() or anyVisible() then return false end
                 elseif handle and (present() or anyVisible()) then return false end
-                local remaining=quantity()
-                if type(remaining)~='number' or remaining<0 or remaining>before.ammo_tomahawk_regular then return false end
-                if remaining>0 then Citizen.InvokeNative(0xB6CFEC32E3742779,ped,ammo,remaining,0xA07362E6) end
-                before.ammo_tomahawk_regular=0
+                local ownedTypes={[ammoId]=ammo}
+                if knifeMode and registry.limits.ammo_throwing_knives_poison then
+                    ownedTypes.ammo_throwing_knives_poison=joaat('AMMO_THROWING_KNIVES_POISON')
+                end
+                for id,hash in pairs(ownedTypes) do
+                    local remaining=GetPedAmmoByType(ped,hash)
+                    if type(remaining)~='number' or remaining<0 or remaining>before[id] then return false end
+                    if remaining>0 then Citizen.InvokeNative(0xB6CFEC32E3742779,ped,hash,remaining,0xA07362E6) end
+                    before[id]=0
+                end
                 return valid(identity) and not present() and inventoryGuid()==false and unchanged(before,native.Read(ped,true))
-            end},catalog,identity,registry.limits)
+            end},catalog,identity,registry.limits,profileId)
     end
     if collection~=nil then
         if maximum~=3 or type(collection)~='table' or type(collection.world)~='function'

@@ -23,7 +23,14 @@ function post(endpoint, data = {}) {
         body: JSON.stringify(data),
     }).catch(() => {});
 }
-const act = (action, data = {}) => post('action', { action, data });
+let busy = false; // one action at a time: the server drops presses that arrive within 300ms
+const act = async (action, data = {}) => {
+    if (busy) return;
+    busy = true;
+    app.classList.add('busy');
+    try { await post('action', { action, data }); }
+    finally { busy = false; app.classList.remove('busy'); }
+};
 
 function fmt(sec) {
     sec = Math.max(0, Math.floor(sec));
@@ -222,7 +229,7 @@ function renderStatus(recipe) {
     const out = recipe ? recipe.output : null;
     $('out-img').src = out ? img(out.image) : '';
     $('out-img').style.visibility = out ? 'visible' : 'hidden';
-    $('out-label').textContent = out ? out.label : '—';
+    $('out-label').textContent = out ? out.label + (state.quality ? ` · ${t('ui_quality')} ${state.quality}%` : '') : '—';
     const tankPct = Math.min(100, (state.output / state.outputCap) * 100);
     const tank = $('tank-fill');
     tank.style.width = tankPct + '%';
@@ -238,6 +245,8 @@ function renderStatus(recipe) {
 
 function renderFuel() {
     const list = $('fuel-list');
+    // keep focus on an input while refreshing
+    const focused = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.item : null;
     list.innerHTML = '';
     const editable = state.canUse;
     state.fuels.forEach((f) => {
@@ -274,6 +283,7 @@ function renderFuel() {
             act('loadFuel', { item: f.item, amount });
         });
         list.appendChild(row);
+        if (focused === key) input.focus();
     });
 }
 
@@ -331,19 +341,48 @@ function close() {
     batchEndsAt = null;
 }
 
+const board = $('board');
+
+function openBoardUi(d) {
+    T = d.locale || {};
+    applyLocale();
+    const data = d.data || {};
+    const rows = data.rows || [];
+    const me = data.me || { level: 1, xp: 0 };
+    $('board-me').textContent = `${t('ui_level')} ${me.level} · ${me.xp} ${t('ui_xp')}`;
+    const list = $('board-list');
+    list.innerHTML = rows.length ? '' : `<div class="hint">${esc(t('lb_empty'))}</div>`;
+    rows.forEach((r, i) => {
+        const row = document.createElement('div');
+        row.className = 'row board-row' + (r.me ? ' me' : '');
+        row.innerHTML = `
+            <div class="rank">${i + 1}</div>
+            <div class="row-main"><div class="row-title">${esc(r.name || '—')}</div></div>
+            <span class="pill">${esc(t('lb_level'))} ${r.level}</span>
+            <span class="pill">${r.xp} ${esc(t('ui_xp'))}</span>`;
+        list.appendChild(row);
+    });
+    board.classList.remove('hidden');
+}
+
 window.addEventListener('message', (e) => {
     const d = e.data || {};
-    if (d.action === 'open') open(d);
+    if (d.action === 'board') openBoardUi(d);
+    else if (d.action === 'closeBoard') board.classList.add('hidden');
+    else if (d.action === 'open') open(d);
     else if (d.action === 'update' && state) { try { state = d.state; render(); } catch (err) { console.error(err); post('uiError', { msg: String(err && err.stack || err) }); } }
     else if (d.action === 'close') close();
 });
 
 $('btn-close').addEventListener('click', () => post('close'));
+$('board-close').addEventListener('click', () => post('closeBoard'));
 $('btn-back').addEventListener('click', () => act('clearRecipe'));
 $('btn-change').addEventListener('click', () => act('clearRecipe'));
 $('btn-collect').addEventListener('click', () => act('collect'));
 $('btn-pickup').addEventListener('click', () => act('pickup'));
 
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && state) post('close');
+    if (e.key !== 'Escape') return;
+    if (!board.classList.contains('hidden')) post('closeBoard');
+    else if (state) post('close');
 });

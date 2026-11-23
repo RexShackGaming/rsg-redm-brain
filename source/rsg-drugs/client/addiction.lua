@@ -164,11 +164,6 @@ RegisterNetEvent('rsg-drugs:client:useSubstance', function(key)
     busy = false
 end)
 
--- Hook rsg-consume (alcohol etc.). Server validates the item + rate limits.
-RegisterNetEvent('rsg-consume:client:consume', function(itemName)
-    TriggerServerEvent('rsg-drugs:server:consumed', itemName)
-end)
-
 ---------------------------------------------------------------------
 -- Rehab teleport + local fence
 ---------------------------------------------------------------------

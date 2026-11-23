@@ -254,3 +254,14 @@ html, body {
 }
 .cat-tab:hover { color: var(--rdr-text); border-color: var(--rdr-gold); }
 .cat-tab.active { color: var(--rdr-text); border-color: var(--rdr-gold); background: linear-gradient(180deg, #2e2e2e, #141414); }
+
+/* one action at a time while the server answers */
+#app.busy button:not(#btn-close) { pointer-events: none; filter: brightness(0.8); }
+
+/* ---------- leaderboard ---------- */
+#board { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+.board-panel { width: 520px; }
+#board-list { margin-top: 10px; overflow-y: auto; }
+.board-row .rank { width: 30px; text-align: center; font-size: 18px; font-weight: 700; color: var(--rdr-muted); }
+.board-row:nth-child(-n+3) .rank { color: var(--rdr-gold); }
+.board-row.me { border-color: var(--rdr-gold); }

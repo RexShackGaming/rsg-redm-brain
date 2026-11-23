@@ -383,7 +383,9 @@ function S.Observe(source,report)
         local live=runtime.Get(source)
         local tomSpent=quantities() and live and request.spec.pools.ammo_tomahawk_regular<live.pools.ammo_tomahawk_regular
         local arrowSpent=arrows() and live and live.pools.ammo_arrow_regular and request.spec.pools.ammo_arrow_regular<live.pools.ammo_arrow_regular
-        if tomSpent or arrowSpent then
+        local knifeSpent=live and live.pools.ammo_throwing_knives_regular and request.spec.pools.ammo_throwing_knives_regular<live.pools.ammo_throwing_knives_regular
+        knifeSpent=knifeSpent or live and live.pools.ammo_throwing_knives_poison and request.spec.pools.ammo_throwing_knives_poison<live.pools.ammo_throwing_knives_poison
+        if tomSpent or arrowSpent or knifeSpent then
             local where=quantityLocation(source,loadouts[source])
             local test=quantityExpiryTests[source]
             if tomSpent and test and test.phase=='armed' then
@@ -434,14 +436,19 @@ function S.NativePickup(source,report)
         local fresh=quantityLocation(source,bound)
         if not fresh or fresh.bucket~=where.bucket then return failure('quantity_pickup_context_changed') end
         local live=runtime.Get(source)
-        if arrows() and live and live.pools.ammo_arrow_regular and type(report)=='table' and type(report.pools)=='table'
-            and type(report.pools.ammo_arrow_regular)=='number' and report.pools.ammo_arrow_regular>live.pools.ammo_arrow_regular then
+        local arrowIncrease=false
+        if arrows() and live and type(report)=='table' and type(report.pools)=='table' then
+            for id,n in pairs(live.pools) do
+                if id:match('^ammo_arrow_') and type(report.pools[id])=='number' and report.pools[id]>n then arrowIncrease=true end
+            end
+        end
+        if arrowIncrease then
             local checked=S.ValidateLoadout(source)
             if not checked.ok or loadouts[source]~=bound then return failure('arrow_pickup_loadout_changed') end
         end
         local request,why=runtime.PrepareQuantityPickup(source,copy(report),where)
         if not request then return failure(why) end
-        if request.spec.nativePickupPlan.ammunitionId=='ammo_arrow_regular' then
+        if type(request.spec.nativePickupPlan.ammunitionId)=='string' and request.spec.nativePickupPlan.ammunitionId:match('^ammo_arrow_') then
             local owned=false
             for _,row in pairs(bound.equipment or {}) do
                 if type(row)=='table' and row.metadata and row.metadata.weaponDefinitionId=='bow' then owned=true end

@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-bountyhunter - hunt wanted outlaws and bring them in dead or alive'
-version '3.4.0'
+version '3.5.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
@@ -34,6 +34,7 @@ files {
 
 dependencies {
     'rsg-core',
+    'rsg-inventory',
     'rsg-target',
     'oxmysql',
 }

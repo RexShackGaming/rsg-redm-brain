@@ -7,6 +7,37 @@ local Fx       = {}  -- [id] = { particle handles }
 local uiOpen   = nil -- station id while the NUI is open
 local uiReady  = false
 local opening  = false -- guards double clicks while the state callback is in flight
+local uiFocus  = false -- NUI has keyboard / mouse focus
+local boardOpen = false -- leaderboard panel is open
+
+-- one place for NUI focus so push-to-talk keeps working while the UI is open
+local function applyNuiFocus(enable)
+    if enable then
+        SetNuiFocus(true, true)
+        if Config.AllowPushToTalkWhileOpen then SetNuiFocusKeepInput(true) end
+    else
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
+end
+
+CreateThread(function()
+    while true do
+        if uiFocus and Config.AllowPushToTalkWhileOpen then
+            Wait(0)
+            DisableAllControlActions(0)
+            DisableAllControlActions(1)
+            DisableAllControlActions(2)
+            for _, c in ipairs(Config.PushToTalkControls or {}) do
+                EnableControlAction(0, c, true)
+                EnableControlAction(1, c, true)
+                EnableControlAction(2, c, true)
+            end
+        else
+            Wait(250)
+        end
+    end
+end)
 
 local function loadModel(model)
     pcall(RSGCore.Functions.RequestModel, model, 5000)
@@ -50,7 +81,7 @@ end
 ---------------------------------
 -- campfire props
 ---------------------------------
-local openStationMenu, closeUi
+local openStationMenu, closeUi, closeBoard
 local placing = false
 
 local function despawnCampfire(id)
@@ -148,6 +179,7 @@ RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', loadStations)
 RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
     streaming = false
     closeUi()
+    closeBoard()
     clearAll()
 end)
 AddEventHandler('onResourceStart', function(res)
@@ -156,8 +188,10 @@ end)
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     streaming = false
-    if placing then placing = false exports['rsg-core']:HideText() end
+    if placing then placing = false exports['rsg-gizmo']:Cancel() end
     closeUi()
+    closeBoard()
+    if uiFocus then uiFocus = false applyNuiFocus(false) end
     clearAll()
     if Config.WorldStations.enabled then exports['rsg-target']:removeModel(Config.WorldStations.models, 'rsg_cooking_stove') end
 end)
@@ -190,18 +224,18 @@ local UiLocale = {
     'ui_current_batch', 'ui_queued', 'ui_tank', 'ui_collect', 'ui_pickup', 'ui_change_recipe', 'ui_batch_time',
     'ui_makes', 'ui_close', 'ui_locked', 'ui_select', 'ui_all',
     'ui_firebox', 'ui_fuel_left', 'ui_burns', 'ui_each', 'ui_nofuel', 'ui_paused', 'ui_add', 'ui_level',
-    'ui_requires', 'ui_max_level', 'ui_xp',
+    'ui_requires', 'ui_max_level', 'ui_xp', 'ui_quality',
 }
 
 closeUi = function()
     if not uiOpen then return end
-    uiOpen, uiReady = nil, false
-    SetNuiFocus(false, false)
+    uiOpen, uiReady, uiFocus = nil, false, false
+    applyNuiFocus(false)
     SendNUIMessage({ action = 'close' })
 end
 
 openStationMenu = function(id)
-    if uiOpen or opening or placing then return end
+    if uiOpen or opening or placing or boardOpen then return end
     opening = true
     local state = RSGCore.Functions.AwaitCallback('rsg-cooking:server:getState', 5000, id)
     opening = false
@@ -217,8 +251,8 @@ openStationMenu = function(id)
     SetTimeout(2000, function()
         if uiOpen == id and not uiReady then
             print('^1[rsg-cooking] NUI did not respond - check the html files are on the server and run "refresh" then "ensure rsg-cooking"^7')
-            uiOpen = nil
-            SetNuiFocus(false, false)
+            uiOpen, uiFocus = nil, false
+            applyNuiFocus(false)
         end
     end)
 
@@ -244,16 +278,16 @@ end
 
 RegisterNUICallback('opened', function(_, cb)
     if uiOpen then
-        uiReady = true
-        SetNuiFocus(true, true)
+        uiReady, uiFocus = true, true
+        applyNuiFocus(true)
     end
     cb('ok')
 end)
 
 RegisterNUICallback('uiError', function(data, cb)
     print(('^1[rsg-cooking] NUI error: %s^7'):format(tostring(data and data.msg)))
-    uiReady, uiOpen = false, nil
-    SetNuiFocus(false, false)
+    uiReady, uiOpen, uiFocus = false, nil, false
+    applyNuiFocus(false)
     cb('ok')
 end)
 
@@ -275,10 +309,62 @@ end)
 
 -- emergency release if the cursor ever gets stuck
 RegisterCommand('cooking_unfocus', function()
-    uiOpen, uiReady = nil, false
-    SetNuiFocus(false, false)
+    uiOpen, uiReady, uiFocus = nil, false, false
+    applyNuiFocus(false)
     SendNUIMessage({ action = 'close' })
 end, false)
+
+---------------------------------
+-- leaderboard
+---------------------------------
+closeBoard = function()
+    if not boardOpen then return end
+    boardOpen, uiFocus = false, false
+    applyNuiFocus(false)
+    SendNUIMessage({ action = 'closeBoard' })
+end
+
+local function openBoard()
+    if boardOpen or uiOpen or opening or placing then return end
+    local data = RSGCore.Functions.AwaitCallback('rsg-cooking:server:getLeaderboard', 5000)
+    if not data or boardOpen or uiOpen then return end
+    local strings = {}
+    for _, key in ipairs({ 'lb_title', 'lb_rank', 'lb_name', 'lb_level', 'lb_empty', 'ui_subtitle', 'ui_level', 'ui_xp', 'ui_close' }) do
+        strings[key] = locale(key)
+    end
+    boardOpen, uiFocus = true, true
+    applyNuiFocus(true)
+    SendNUIMessage({ action = 'board', data = data, locale = strings })
+end
+
+RegisterNUICallback('closeBoard', function(_, cb)
+    closeBoard()
+    cb('ok')
+end)
+
+if Config.Leaderboard and Config.Leaderboard.Enabled and Config.Leaderboard.Command then
+    RegisterCommand(Config.Leaderboard.Command, openBoard, false)
+end
+
+-- admin helper (/cookingstove): print the closest stove prop for Config.WorldStations.Locations
+RegisterNetEvent('rsg-cooking:client:printStove', function()
+    local pos = GetEntityCoords(PlayerPedId())
+    local best, bestDist
+    for _, m in ipairs(Config.WorldStations.models) do
+        local e = GetClosestObjectOfType(pos.x, pos.y, pos.z, 6.0, m, false, false, false)
+        if e and e ~= 0 then
+            local c = GetEntityCoords(e)
+            local d = #(c - pos)
+            if not bestDist or d < bestDist then best, bestDist = c, d end
+        end
+    end
+    if not best then
+        return RSGCore.Functions.Notify({ title = locale('notify_title'), description = locale('stove_none_near'), type = 'error', duration = 4000 })
+    end
+    local line = ('{ coords = vector3(%.2f, %.2f, %.2f), radius = 2.5 },'):format(best.x, best.y, best.z)
+    print(('^2[rsg-cooking] %s^7'):format(line))
+    RSGCore.Functions.Notify({ title = locale('notify_title'), description = line, type = 'success', duration = 8000 })
+end)
 
 ---------------------------------
 -- world stations
@@ -319,88 +405,33 @@ exports('GetRecipesByCookingType', function(stype)
 end)
 
 ---------------------------------
--- campfire placement (camera preview)
+-- campfire placement (rsg-gizmo)
 ---------------------------------
-local KEY_PLACE  = 0xC7B5340A -- ENTER
-local KEY_CANCEL = 0x156F7119 -- BACKSPACE
-local KEY_ROT_L  = 0xA65EBAB4 -- LEFT ARROW
-local KEY_ROT_R  = 0xDEB34313 -- RIGHT ARROW
-
-local function rotToDir(rot)
-    local z, x = math.rad(rot.z), math.rad(rot.x)
-    local num = math.abs(math.cos(x))
-    return vector3(-math.sin(z) * num, math.cos(z) * num, math.sin(x))
-end
-
-local function cameraRaycast(ignore, dist)
-    local camPos = GetGameplayCamCoord()
-    local dest = camPos + rotToDir(GetGameplayCamRot(2)) * dist
-    local ray = StartShapeTestRay(camPos.x, camPos.y, camPos.z, dest.x, dest.y, dest.z, 1 | 16, ignore, 0)
-    local _, hit, coords = GetShapeTestResult(ray)
-    return hit == 1, coords
-end
-
 local function campNotify(desc, ntype)
     RSGCore.Functions.Notify({ title = locale('station_campfire'), description = desc, type = ntype or 'inform', duration = 4000 })
 end
 
 local function startPlacement()
     local cfg = Config.Campfire
-    if not loadModel(cfg.Model) then placing = false return end
-
-    local ped = PlayerPedId()
-    local pc = GetEntityCoords(ped)
-    local ghost = CreateObject(cfg.Model, pc.x, pc.y, pc.z, false, false, false)
-    SetModelAsNoLongerNeeded(cfg.Model)
-    SetEntityCollision(ghost, false, false)
-    FreezeEntityPosition(ghost, true)
-
-    local heading = GetEntityHeading(ped)
-    local final
-    exports['rsg-core']:DrawText(locale('campfire_controls'), 'left')
-
-    while placing do
-        Wait(0)
-        DisableControlAction(0, KEY_PLACE, true)
-        DisableControlAction(0, KEY_CANCEL, true)
-        DisableControlAction(0, KEY_ROT_L, true)
-        DisableControlAction(0, KEY_ROT_R, true)
-
-        local hit, coords = cameraRaycast(ghost, cfg.PlaceDistance + 5.0)
-        local valid = hit and #(coords - GetEntityCoords(ped)) <= cfg.PlaceDistance and not IsPedInAnyVehicle(ped, false)
-        if valid then
+    local res = exports['rsg-gizmo']:Place(cfg.Model, {
+        title = locale('station_campfire'),
+        maxDistance = cfg.PlaceDistance,
+        rotation = 'z',
+        validate = function(coords)
+            if IsPedInAnyVehicle(PlayerPedId(), false) then return false, locale('campfire_invalid') end
             for _, s in pairs(Stations) do
-                if #(coords - s.coords) < cfg.MinSpacing then valid = false break end
+                if #(coords - s.coords) < cfg.MinSpacing then return false, locale('campfire_too_close') end
             end
-        end
-
-        if hit then
-            SetEntityCoords(ghost, coords.x, coords.y, coords.z, false, false, false, false)
-            PlaceObjectOnGroundProperly(ghost)
-        end
-        SetEntityHeading(ghost, heading)
-        SetEntityAlpha(ghost, valid and 200 or 70, false)
-
-        if IsDisabledControlPressed(0, KEY_ROT_L) then heading = (heading + 2.0) % 360 end
-        if IsDisabledControlPressed(0, KEY_ROT_R) then heading = (heading - 2.0) % 360 end
-
-        if IsDisabledControlJustPressed(0, KEY_CANCEL) or IsEntityDead(ped) then
-            placing = false
-            campNotify(locale('campfire_cancelled'))
-        elseif IsDisabledControlJustPressed(0, KEY_PLACE) then
-            if valid then
-                final = GetEntityCoords(ghost)
-                placing = false
-            else
-                campNotify(locale('campfire_invalid'), 'error')
-            end
-        end
+            return true
+        end,
+    })
+    if not res then
+        placing = false
+        campNotify(locale('campfire_cancelled'))
+        return
     end
 
-    DeleteEntity(ghost)
-    exports['rsg-core']:HideText()
-    if not final then return end
-
+    -- the server re-checks distance, spacing, limit and item before anything is saved
     if RSGCore.Functions.ProgressBar({
         duration = cfg.SetupTime,
         label = locale('campfire_setting_up'),
@@ -409,9 +440,10 @@ local function startPlacement()
         disable = { move = true, combat = true },
         anim = { scenario = 'WORLD_HUMAN_CROUCH_INSPECT' },
     }) then
-        TriggerServerEvent('rsg-cooking:server:placeCampfire', final, heading + 0.0)
+        TriggerServerEvent('rsg-cooking:server:placeCampfire', res.coords, (res.heading or 0.0) + 0.0)
     end
-    ClearPedTasks(ped)
+    ClearPedTasks(PlayerPedId())
+    placing = false
 end
 
 local function tryStartPlacement()

@@ -1,5 +1,5 @@
 -- Execute actual shipped server graph without obsolete globals/provider loaded.
-local function scenario(quantityMode)
+local function scenario(quantityMode,knifeMode)
 local f=assert(io.open('fxmanifest.lua','r')); local manifest=f:read('*a'); f:close()
 local function paths(section)
  local block=assert(manifest:match(section..'%s*{(.-)}'))
@@ -9,8 +9,8 @@ end
 vector3=function(x,y,z) return {x=x,y=y,z=z} end
 GetGameTimer=function() return 100 end
 GetResourceState=function() return 'started' end
-GetConvarInt=function(name,default) return name=='feather_throwable_quantities' and quantityMode and 1 or default or 0 end
-GetConvar=function(name,default) return name=='feather_throwable_quantities' and quantityMode and '1' or default end
+GetConvarInt=function(name,default) return (name=='feather_throwable_quantities' and quantityMode or name=='feather_throwing_knife_quantities' and knifeMode) and 1 or default or 0 end
+GetConvar=function(name,default) return (name=='feather_throwable_quantities' and quantityMode or name=='feather_throwing_knife_quantities' and knifeMode) and '1' or default end
 SetConvar=function() end
 LoadResourceFile=function() return nil end
 SaveResourceFile=function() return true end
@@ -66,4 +66,4 @@ events['feather-weapons:client:guid-suite-shared-collector']('retired',{}, {},1)
 assert(#threads==threadCount,'stale retired suite events do not start client native work')
 print('Native-only manifest client graph PASS (no hybrid owner/coordinator/GUID helper dependency)')
 end
-scenario(false);scenario(true)
+scenario(false);scenario(true);scenario(true,true)

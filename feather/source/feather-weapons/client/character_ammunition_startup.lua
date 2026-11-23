@@ -111,8 +111,15 @@ RegisterCommand('weaponArrowStatus',function()
     local runtime=status.bootstrap and status.bootstrap.runtime
     local session=runtime and runtime.session
     local baseline=session and session.ammo and session.ammo.baseline
+    local types={}
+    if baseline and WeaponSpecialAmmunitionPolicy and WeaponSpecialAmmunitionPolicy.Enabled('bow') then
+        for _,id in ipairs({'ammo_arrow_regular','ammo_arrow_small_game','ammo_arrow_poison','ammo_arrow_fire','ammo_arrow_dynamite'}) do
+            local name=WeaponDefinitionCatalog.ammunition[id].nativeAmmoName
+            types[id]={fundedQuantity=baseline.pools[id],observedQuantity=GetPedAmmoByType(PlayerPedId(),joaat(name))}
+        end
+    end
     print('[WeaponArrowStatus] '..json.encode({enabled=WeaponRegularArrowPolicy and WeaponRegularArrowPolicy.Enabled() or false,
         phase=runtime and runtime.phase or 'idle',revision=baseline and baseline.revision,
         fundedQuantity=baseline and baseline.pools and baseline.pools.ammo_arrow_regular,
-        observedQuantity=baseline and GetPedAmmoByType(PlayerPedId(),joaat('AMMO_ARROW')) or nil}))
+        observedQuantity=baseline and GetPedAmmoByType(PlayerPedId(),joaat('AMMO_ARROW')) or nil,types=next(types) and types or nil}))
 end,false)

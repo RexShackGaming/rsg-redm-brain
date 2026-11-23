@@ -10,6 +10,58 @@ Config.PSAPermission     = 'admin'  -- rsg-core permission needed to send a SERV
 Config.MessageCooldown   = 1000     -- ms between chat messages per player (all channels)
 Config.HardMaxLength     = 512      -- absolute cap; a channel's own limit can't go above this
 Config.DefaultChannel    = 'ooc'    -- channel players start on (falls back to the first one they can use)
+Config.ConsoleLog        = true     -- print every channel message to the server console
+Config.UseKeyMapping     = true     -- open chat with a rebindable key (game key settings); false = old per-frame control check
+Config.OpenKey           = 'T'      -- default key name for opening chat (players can rebind it)
+Config.ModPermission     = 'mod'    -- rsg-core permission for /chatmute and /chatunmute (also exempt from the word filter)
+Config.Mentions          = true     -- "@First_Last" or "@First" in a message highlights it for that player (click a name to mention)
+Config.NobodyHeardHint   = true     -- tell players when nobody is close enough to hear a local/regional message
+
+-- Private messages: /pm <id or First_Last> <message>, /r <message>
+Config.PM = {
+    Enabled      = true,
+    Command      = 'pm',
+    ReplyCommand = 'r',
+    AllowById    = true,        -- false = players can only be messaged by character name
+    Color        = '#c39bd3',
+}
+
+-- /do <text> and /roll [sides]: range-limited lines in chat (/me comes from rsg-core)
+Config.Roleplay = {
+    Enabled          = true,
+    DoCommand        = 'do',
+    RollCommand      = 'roll',
+    Distance         = 20,      -- metres
+    MaxLength        = 200,
+    DoColor          = '#d9a441',
+    RollColor        = '#7fb3d5',
+    RollDefaultSides = 100,
+    RollMaxSides     = 1000,
+}
+
+-- Staff moderation: /chatmute <id> <minutes, 0 = permanent> [reason], /chatunmute <id>
+Config.Moderation = {
+    MaxMuteMinutes = 10080,     -- one week; 0 (permanent) is always allowed
+}
+
+-- Word filter. words are matched as whole words, case-insensitive, with simple leetspeak (5 = s, 0 = o ...)
+Config.WordFilter = {
+    enabled     = true,
+    mode        = 'mask',       -- 'mask' = replace with ****, 'block' = reject the whole message
+    exemptStaff = true,         -- players with Config.ModPermission are not filtered
+    words       = {             -- add your own, lowercase
+        -- 'example',
+    },
+}
+
+-- Chat logs (searchable in /chatlog). Stored in rsg_chat_logs.
+Config.Logging = {
+    Enabled       = true,
+    RetentionDays = 30,         -- older entries are deleted automatically (0 = keep forever)
+    LogPrivate    = true,       -- also log /pm messages (staff can read them in /chatlog)
+    SearchLimit   = 100,        -- rows returned per search
+    RsgLogChannel = false,      -- set a channel name (e.g. 'chat') to also forward public messages to rsg-log / Discord
+}
 Config.MaxHistoryCap     = 250      -- highest "message history" value players can pick
 
 -- Distance limits the admin panel will accept (metres)
@@ -34,6 +86,7 @@ Config.DefaultSettings = {
     autoHide = 'fade',-- 'fade' | 'hide' | 'never'
     hideDelay = 10,   -- seconds of inactivity before fading/hiding
     chatOff = false,  -- player turned the chat box off completely (/togglechat)
+    aimHide = true,   -- fade the chat while aiming or in a cinematic camera
 }
 
 ---------------------------------------------------------------------

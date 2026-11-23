@@ -1,5 +1,7 @@
 # rsg-chat
 
+**Version 3.4.0**
+
 A chat resource for **RedM** servers running **RSG-Core**. It replaces the default chat with channels that admins manage in-game, and a chat window each player can move, resize and style to suit themselves. Every message shows the sender's in-character name, and the server checks each message before sending it to players.
 
 ## Features
@@ -31,6 +33,18 @@ A chat resource for **RedM** servers running **RSG-Core**. It replaces the defau
 - **Reset layout:** put everything back to the server defaults.
 - **Saved per player:** all of these settings are stored on the player's own PC, so they survive restarts.
 - **Character counter:** shows how many characters are left for the active channel.
+
+### Social and roleplay
+- **Private messages:** `/pm <id or First_Last> <message>` and `/r <message>` to reply to the last person. Both sides see the message in their own colour; click a name to start a reply.
+- **@mentions:** write `@First_Last` or `@First` and that player's chat line is highlighted. Click a name while the input is open to add a mention.
+- **`/do <text>` and `/roll [sides]`:** lines for people within `Config.Roleplay.Distance`. Rolls are decided on the server. (`/me` comes from rsg-core.)
+- **"Nobody heard you" hint:** local and regional messages tell the sender when nobody was in range.
+- **Fade while aiming:** the chat fades out while you aim or a cinematic camera plays (player setting).
+
+### Moderation
+- **Mutes:** `/chatmute <id> <minutes, 0 = permanent> [reason]` and `/chatunmute <id>`. Stored by character, so they survive relogs and restarts; staff can't mute staff.
+- **Word filter:** whole-word, case-insensitive, with simple leetspeak (`5` = `s`); masks the word or blocks the message. Staff are exempt by default.
+- **Chat logs:** every message (and optionally every PM) is stored and searchable in `/chatlog` by text, player name / citizen ID and channel. Old entries are deleted automatically.
 
 ### General
 - **Character names:** messages show the sender's character first and last name, falling back to their account name.
@@ -72,6 +86,17 @@ A chat resource for **RedM** servers running **RSG-Core**. It replaces the defau
 | `Config.MessageCooldown` | `1000` | Minimum time between messages per player, in milliseconds. |
 | `Config.HardMaxLength` | `512` | Overall character cap; no channel can be set higher. |
 | `Config.DefaultChannel` | `'ooc'` | Channel players start on (falls back to the first channel they can use). |
+| `Config.ConsoleLog` | `true` | Print every channel message to the server console. |
+| `Config.UseKeyMapping` | `true` | Open chat with a rebindable key (rsg-core `RegisterKey`). `false` = old per-frame control check. |
+| `Config.OpenKey` | `'T'` | Default key name for opening chat. Players can rebind it. |
+| `Config.ModPermission` | `'mod'` | Permission for `/chatmute` and `/chatunmute`; also exempt from the word filter. |
+| `Config.Mentions` | `true` | Highlight `@First_Last` / `@First` mentions. |
+| `Config.NobodyHeardHint` | `true` | Tell players when nobody was close enough to hear a local/regional message. |
+| `Config.PM` | table | `/pm` and `/r`: `Enabled`, `Command`, `ReplyCommand`, `AllowById`, `Color`. |
+| `Config.Roleplay` | table | `/do` and `/roll`: `Enabled`, commands, `Distance`, `MaxLength`, colours, roll sides. |
+| `Config.Moderation` | table | `MaxMuteMinutes` (default one week; `0` = permanent is always allowed). |
+| `Config.WordFilter` | table | `enabled`, `mode` (`'mask'` / `'block'`), `exemptStaff`, `words` (add your own). |
+| `Config.Logging` | table | `Enabled`, `RetentionDays`, `LogPrivate`, `SearchLimit`, `RsgLogChannel`. |
 | `Config.MaxHistoryCap` | `250` | Highest message history players can choose. |
 | `Config.DistanceLimits` | `2` – `5000` | Allowed distance range (metres) for local and regional channels. |
 | `Config.PermissionLevels` | `''`, helper … god | Permission levels offered in the admin panel (`''` = everyone). |
@@ -133,7 +158,7 @@ To add a language, copy `locales/en.json` to a new file, for example `locales/it
 
 | Action | Description |
 |---|---|
-| **T** (default MP chat key) | Open the chat input. |
+| **T** (default, rebindable in the game's key settings) | Open the chat input. |
 | Type a message + **Enter** | Send to your active channel. |
 | **Tab** / **Shift+Tab** | Switch to the next or previous channel. |
 | Click a channel tab | Switch channel. |
@@ -147,12 +172,21 @@ To add a language, copy `locales/en.json` to a new file, for example `locales/it
 | `/chatsettings` | Open chat settings. |
 | `/togglechat` | Turn the chat box on or off. |
 | `/clearchat` | Clear your own chat window. |
+| `/pm <id or First_Last> <message>` | Send a private message. |
+| `/r <message>` | Reply to your last private message. |
+| `/do <text>` | Describe your surroundings to people nearby. |
+| `/roll [sides]` | Roll a die (default 100) for people nearby. |
+| `@First_Last` in a message | Highlights it for that player. |
+| Click a name (input open) | Mention that player, or start a reply to a PM. |
 
 ### Admins
 
 | Command | Description |
 |---|---|
 | `/chatadmin` | Open the channel manager (needs `Config.AdminPermission`). |
+| `/chatlog` | Open the chat log search (needs `Config.AdminPermission`). |
+| `/chatmute <id> <minutes> [reason]` | Mute a player in chat; `0` minutes = permanent (needs `Config.ModPermission`). |
+| `/chatunmute <id>` | Lift a mute (needs `Config.ModPermission`). |
 
 ### Developers
 
@@ -197,6 +231,17 @@ end)
 
 ## Changelog
 
+### 3.4.0
+- Added private messages (`/pm`, `/r`), @mentions with click-to-mention, `/do` and `/roll`, the "nobody heard you" hint and fade-while-aiming.
+- Added moderation: persistent mutes (`/chatmute`, `/chatunmute`), a word filter, and searchable chat logs (`/chatlog`) with automatic clean-up.
+- New tables `rsg_chat_mutes` and `rsg_chat_logs`, 46 new locale keys in all 11 languages.
+
+### 3.3.0
+- Fixed message truncation for non-ASCII text (Russian, Greek, Japanese): limits now count characters, not bytes.
+- Hardened input: invalid UTF-8, oversized payloads, zero-width/direction-override characters and console colour codes are handled.
+- The open-chat key is now rebindable (`Config.UseKeyMapping`, `Config.OpenKey`) and the client no longer runs a per-frame loop.
+- Faster suggestion and theme refresh; `/clearchat` runs on the client; removed unused files, handlers and locale keys.
+
 ### 3.2.0
 - Removed the ox_lib dependency: locales, notifications and admin callbacks now use rsg-core.
 - Rate limit now runs before channel checks, so requests for invalid or locked channels can't be spammed.
@@ -214,4 +259,4 @@ Support the Project : https://rexshack.tebex.store/
 
 ## Database
 
-Tables (`rsg_chat_channels`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `install.sql` once.
+Tables (`rsg_chat_channels`, `rsg_chat_mutes`, `rsg_chat_logs`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `install.sql` once.

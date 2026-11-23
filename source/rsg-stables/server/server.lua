@@ -1,3 +1,12 @@
+-- ISO-8601 week key (e.g. 2026-W47), UTC. Pure Lua: os.date %G/%V are unsupported on Windows servers.
+local function weekKey(t)
+    local d = os.date('!*t', t or os.time())
+    local wday = (d.wday + 5) % 7 + 1                 -- Monday=1 .. Sunday=7
+    local nearThu = (t or os.time()) + (4 - wday) * 86400 -- Thursday of this ISO week
+    local th = os.date('!*t', nearThu)
+    local year = th.year
+    return ('%d-W%02d'):format(year, math.floor((th.yday - 1) / 7) + 1)
+end
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
 -- rsg-core server callback with return-style handlers: fn(source, ...) returns the reply values.
@@ -722,24 +731,32 @@ registerCallback('rsg-stables:server:waterHorse', function(source, horseNetId)
     end
 
     for _, drinkItem in ipairs(Config.HorseDrinkItems) do
-        local owned = Player.Functions.GetItemByName(drinkItem.item)
-        if owned and (owned.amount or 0) > 0 then
-            local removed = Player.Functions.RemoveItem(drinkItem.item, 1, nil, 'rsg-stables-water')
-            if removed then
-                TriggerClientEvent('rsg-inventory:client:ItemBox', source, RSGCore.Shared.Items[drinkItem.item], 'remove', 1)
-                applyDecay(session)
-                session.thirst = math.max(0, math.min(100, session.thirst + (drinkItem.thirst or 0)))
-                if Config.HorseBonding.enabled then
-                    session.bonding = math.max(0, math.min(100, session.bonding + (Config.HorseBonding.waterGain or 0)))
+        local removed = false
+        if drinkItem.canteen then
+            -- rsg-canteen: takes one use from the player's best canteen instead of removing the item
+            removed = GetResourceState('rsg-canteen') == 'started' and exports['rsg-canteen']:ConsumeUse(source) == true
+        else
+            local owned = Player.Functions.GetItemByName(drinkItem.item)
+            if owned and (owned.amount or 0) > 0 then
+                removed = Player.Functions.RemoveItem(drinkItem.item, 1, nil, 'rsg-stables-water')
+                if removed then
+                    TriggerClientEvent('rsg-inventory:client:ItemBox', source, RSGCore.Shared.Items[drinkItem.item], 'remove', 1)
                 end
-                session.lastWaterAt = now
-                return true, {
-                    label = drinkItem.label,
-                    stamina = drinkItem.stamina,
-                    thirst = session.thirst,
-                    bonding = session.bonding,
-                }
             end
+        end
+        if removed then
+            applyDecay(session)
+            session.thirst = math.max(0, math.min(100, session.thirst + (drinkItem.thirst or 0)))
+            if Config.HorseBonding.enabled then
+                session.bonding = math.max(0, math.min(100, session.bonding + (Config.HorseBonding.waterGain or 0)))
+            end
+            session.lastWaterAt = now
+            return true, {
+                label = drinkItem.label,
+                stamina = drinkItem.stamina,
+                thirst = session.thirst,
+                bonding = session.bonding,
+            }
         end
     end
 
@@ -2306,7 +2323,7 @@ registerCallback('rsg-stables:server:raceCheckpoint', function(source, idx)
         MySQL.insert.await([[
             INSERT INTO rsg_stables_race_weekly (citizenid, race, week, best_ms) VALUES (?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE best_ms = LEAST(best_ms, VALUES(best_ms))
-        ]], { cid, race.id, os.date('!%G-W%V'), ms })
+        ]], { cid, race.id, weekKey(), ms })
     end
     return true, { finished = true, ms = ms, won = won == true, prize = prize, newBest = newBest }
 end)
@@ -2325,7 +2342,6 @@ end
 -- ===================== WEEKLY RACE PRIZES =====================
 -- Each race has a weekly (Monday-Sunday, UTC) leaderboard. When a week ends the fastest riders win Config.HorseRaces.weekly.prizes.
 -- Winnings go into rsg_stables_prizes and are paid out to the player when online (right away or on their next login).
-local function weekKey(t) return os.date('!%G-W%V', t or os.time()) end
 
 local function deliverPrizes(src)
     local Player = RSGCore.Functions.GetPlayer(src)

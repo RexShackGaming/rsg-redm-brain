@@ -616,6 +616,8 @@
   // ever sees a scroll event, so the preview camera zoom is driven from here.
   document.addEventListener('wheel', (e) => {
     if (panelEl.classList.contains('hidden')) return;
+    // A scrollable list (e.g. the tack review screen) scrolls with the wheel instead of zooming the camera
+    if (activeScreen === 'list' && optionsListEl.contains(e.target) && optionsListEl.scrollHeight > optionsListEl.clientHeight) return;
     post('zoomCam', { dir: e.deltaY > 0 ? 1 : -1 });
   }, { passive: true });
 

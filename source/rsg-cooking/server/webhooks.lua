@@ -65,6 +65,8 @@ function WebhookLog(event, src, title, description, extra)
     local url = (ev.url ~= '' and ev.url) or W.default
     if not url or url == '' then return end
 
+    if #queue >= 200 then return end -- webhook unreachable: don't let the queue grow forever
+
     local fields = playerFields(src)
     for _, f in ipairs(extra or {}) do
         fields[#fields + 1] = { name = f[1], value = tostring(f[2]), inline = f[3] ~= false }

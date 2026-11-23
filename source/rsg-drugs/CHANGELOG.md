@@ -2,6 +2,11 @@
 
 All notable changes to rsg-drugs. Newest first.
 
+## 3.1.4
+
+### Changed
+- Alcohol addiction now hooks the server event `rsg-consume:server:consumed` (rsg-consume 3.3.0+) instead of a client relay (`rsg-drugs:server:consumed` is removed). Items cancelled early or refunded no longer count as a use.
+
 ## 3.1.3
 
 ### Changed

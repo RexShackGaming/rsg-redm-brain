@@ -9,5 +9,17 @@
     "wakeup_desc": "Te trezești cu o durere de cap cumplită...",
     "sober_title": "✨ Refăcut",
     "sober_desc": "Ai din nou mintea limpede.",
-    "inventory_full": "Buzunarele tale sunt pline"
+    "inventory_full": "Buzunarele tale sunt pline",
+    "cannot_now": "Nu poți mânca sau bea acum",
+    "full": "Ești prea sătul pentru asta",
+    "spoiled": "Era stricat! Îți e rău...",
+    "cancel_hint": "Apasă X pentru a te opri din mâncat sau băut",
+    "bar_label": "Comandă %s ($%s)",
+    "bar_no_money": "Nu ai destui bani cash",
+    "share_label": "Împarte: %s",
+    "share_given": "Ai împărțit: %s",
+    "share_received": "Cineva a împărțit cu tine: %s",
+    "share_far": "Persoana e prea departe",
+    "share_full": "Nu mai poate căra nimic",
+    "share_failed": "Nu ai acest obiect"
 }

@@ -90,7 +90,13 @@ function WeaponCharacterAmmoController.New(api,pickupAck,prepareQuantityRestore)
         local quantityMode=WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.QuantityEnabled and WeaponNativeThrowablePolicy.QuantityEnabled()
         local arrowPickup=WeaponRegularArrowPolicy and WeaponRegularArrowPolicy.Enabled() and pools.ammo_arrow_regular
             and pools.ammo_arrow_regular>status.baseline.pools.ammo_arrow_regular
-        if not closing and (arrowPickup or quantityMode and pools.ammo_tomahawk_regular>status.baseline.pools.ammo_tomahawk_regular) then
+        local knifePickup=quantityMode and pools.ammo_throwing_knives_regular and pools.ammo_throwing_knives_regular>status.baseline.pools.ammo_throwing_knives_regular
+        if WeaponSpecialAmmunitionPolicy then
+            for _,id in ipairs({'ammo_arrow_small_game','ammo_arrow_poison','ammo_arrow_fire','ammo_arrow_dynamite','ammo_throwing_knives_poison'}) do
+                if pools[id] and pools[id]>status.baseline.pools[id] then knifePickup=true end
+            end
+        end
+        if not closing and (arrowPickup or knifePickup or quantityMode and pools.ammo_tomahawk_regular>status.baseline.pools.ammo_tomahawk_regular) then
             request,reason=C.PrepareNativePickup(status.ped,pools,true,true)
             if request and type(api.block)=='function' then api.block(true) end
         elseif not closing and Config and Config.DevMode==true and type(GetConvarInt)=='function'

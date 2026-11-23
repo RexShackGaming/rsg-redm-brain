@@ -2540,6 +2540,7 @@ local function showTackReview(stable, horse, baseTack, selections)
         title = locale('tack_purchase_total', total),
         description = locale('tack_confirm_desc'),
         icon = 'dollar',
+        variant = 'confirm',
         disabled = total == 0 and next(selections) == nil,
         onSelect = function()
             local ok, result = RSGCore.Functions.AwaitCallback('rsg-stables:server:applyHorseTack', nil, horse.id, selections)

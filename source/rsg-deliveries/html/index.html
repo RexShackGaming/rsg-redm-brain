@@ -22,7 +22,20 @@
                 <div class="circle-btn" id="close-btn" title="Close">&#10005;</div>
             </div>
             <div class="divider"><span>&#10022;</span></div>
+            <div class="tabs">
+                <div class="tab active" id="tab-contracts" data-i18n="ui_tab_contracts">Contracts</div>
+                <div class="tab" id="tab-board" data-i18n="ui_tab_leaderboard">Leaderboard</div>
+            </div>
             <div id="dest-list" class="list"></div>
+            <div id="board" class="hidden">
+                <div class="subtabs">
+                    <div class="subtab active" data-mode="completed" data-i18n="ui_lb_completed">Deliveries</div>
+                    <div class="subtab" data-mode="distance" data-i18n="ui_lb_distance">Distance</div>
+                    <div class="subtab" data-mode="earned" data-i18n="ui_lb_earned">Earned</div>
+                </div>
+                <div id="board-me" class="board-me"></div>
+                <div id="board-list" class="list"></div>
+            </div>
         </div>
 
         <!-- detail -->
@@ -52,6 +65,7 @@
             <div class="section-label" data-i18n="ui_rewards">Rewards</div>
             <div id="d-rewards" class="rewards"></div>
 
+            <div class="note txt-warn hidden" id="d-fragile" data-i18n="ui_fragile_note">Fragile cargo</div>
             <div class="note" data-i18n="ui_note">Keep the wagon in one piece &mdash; a wrecked wagon fails the contract.</div>
 
             <div class="actions">

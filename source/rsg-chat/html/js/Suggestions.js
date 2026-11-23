@@ -1,3 +1,5 @@
+const escapeRegex = (str) => String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 Vue.component('suggestions', {
   template: '#suggestions_template',
   props: ['message', 'suggestions'],
@@ -31,7 +33,7 @@ Vue.component('suggestions', {
 
         s.params.forEach((p, index) => {
           const wType = (index === s.params.length - 1) ? '.' : '\\S';
-          const regex = new RegExp(`${s.name} (?:\\w+ ){${index}}(?:${wType}*)$`, 'g');
+          const regex = new RegExp(`${escapeRegex(s.name)} (?:\\w+ ){${index}}(?:${wType}*)$`, 'g');
 
           // eslint-disable-next-line no-param-reassign
           p.disabled = this.message.match(regex) == null;

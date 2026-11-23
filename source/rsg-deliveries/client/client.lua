@@ -5,6 +5,12 @@ local MARKER_DISTANCE = 50.0
 
 local spawnedBlips = {}
 local Delivery = nil -- { wagon, endCoords, deadline }
+local starting = false -- true while a start request is in flight
+local PendingWagon = nil -- wagon of a just-finished delivery, waiting for the server's verdict
+local ReturnOffer = nil -- { wagon, expires } while a return load is on offer
+
+---@return boolean true while this player has an active delivery or one is being started
+function IsDeliveryBusy() return Delivery ~= nil or starting end
 
 local function SecondsToClock(seconds)
     return ('%02d:%02d:%02d'):format(seconds // 3600, (seconds % 3600) // 60, seconds % 60)
@@ -21,11 +27,11 @@ local function DeleteWagon(wagon, delay)
     end)
 end
 
-local function EndDelivery(deleteDelay)
+local function EndDelivery(deleteDelay, keepWagon)
     if not Delivery then return end
     if Config.ShowDeliveryTimerUI then exports['rsg-core']:HideText() end
     ClearGpsMultiRoute()
-    DeleteWagon(Delivery.wagon, deleteDelay)
+    if not keepWagon then DeleteWagon(Delivery.wagon, deleteDelay) end
     Delivery = nil
 end
 
@@ -54,13 +60,18 @@ end)
 local function RunDelivery()
     local nextSlowTick = 0
     while Delivery do
-        DisableControlAction(0, CINEMATIC_CAM, true)
-
         local wagon, endCoords = Delivery.wagon, Delivery.endCoords
-        local playerCoords = GetEntityCoords(PlayerPedId())
-        local playerDist = #(playerCoords - endCoords)
+        local ped = PlayerPedId()
+        local playerDist = #(GetEntityCoords(ped) - endCoords)
+        local needFrame = false -- per-frame work is only needed in the wagon or near the drop-off
+
+        if IsPedInVehicle(ped, wagon, false) then
+            DisableControlAction(0, CINEMATIC_CAM, true)
+            needFrame = true
+        end
 
         if Config.DestinationMarker and playerDist < MARKER_DISTANCE then
+            needFrame = true
             Citizen.InvokeNative(0x2A32FAA57B937173, 0x07DCE236, endCoords.x, endCoords.y, endCoords.z, 0, 0, 0, 0, 0, 0, 5.0, 5.0, 5.0, 163, 51, 13, 250, false, false, 2, false, false)
         end
 
@@ -75,7 +86,7 @@ local function RunDelivery()
             elseif not DoesEntityExist(wagon) then
                 FailDelivery('wagon_lost', 'delivery_failed_lost')
                 return
-            elseif IsEntityDead(PlayerPedId()) then
+            elseif IsEntityDead(ped) then
                 FailDelivery('player_died', 'delivery_failed_died')
                 return
             elseif not IsVehicleDriveable(wagon) then
@@ -83,10 +94,24 @@ local function RunDelivery()
                 return
             end
 
+            if Delivery.fragile and not Delivery.warned then
+                local maxHealth = GetEntityMaxHealth(wagon)
+                if maxHealth > 0 and (GetEntityHealth(wagon) / maxHealth) * 100 < Config.Fragile.WarnBelowPct then
+                    Delivery.warned = true
+                    Notify(locale('delivery_fragile_warning'), 'warning')
+                end
+            end
+
             local wagonDist = #(GetEntityCoords(wagon) - endCoords)
             if wagonDist < Config.CompleteDistance and playerDist < Config.CompleteDistance + 5.0 then
                 TriggerServerEvent('rsg-deliveries:server:completedelivery', NetworkGetNetworkIdFromEntity(wagon))
-                EndDelivery(3000) -- leave the wagon briefly so the server can verify it
+                -- keep the wagon until the server answers: it may offer a return load, otherwise it is removed
+                local finished = wagon
+                PendingWagon = finished
+                EndDelivery(nil, true)
+                SetTimeout(10000, function()
+                    if PendingWagon == finished then PendingWagon = nil DeleteWagon(finished) end
+                end)
                 return
             end
 
@@ -95,8 +120,18 @@ local function RunDelivery()
             end
         end
 
-        Wait(0)
+        Wait(needFrame and 0 or 250)
     end
+end
+
+local function BeginTracking(wagon, endCoords, seconds, fragile)
+    Delivery = { wagon = wagon, endCoords = endCoords, deadline = GetGameTimer() + seconds * 1000, fragile = fragile }
+    starting = false
+
+    StartGpsMultiRoute(joaat('COLOR_RED'), true, true)
+    AddPointToGpsMultiRoute(endCoords.x, endCoords.y, endCoords.z)
+    SetGpsMultiRouteRender(true)
+    CreateThread(RunDelivery)
 end
 
 local function LoadModel(hash)
@@ -105,7 +140,7 @@ end
 
 ---Called from the NUI contract board (client/npcs.lua)
 function StartDelivery(hubIndex, destIndex)
-    if Delivery then
+    if IsDeliveryBusy() then
         return Notify(locale('delivery_already_active'), 'error')
     end
 
@@ -123,18 +158,24 @@ function StartDelivery(hubIndex, destIndex)
     local cargoHash = data.cargo and data.cargo ~= '' and joaat(data.cargo) or nil
     local lightHash = data.light and data.light ~= '' and joaat(data.light) or nil
 
+    starting = true
     if not LoadModel(cartHash) then
+        starting = false
         return Notify(locale('delivery_spawn_failed'), 'error')
     end
 
-    if not RSGCore.Functions.AwaitCallback('rsg-deliveries:server:startdelivery', 10000, hubIndex, destIndex) then
+    local contract = RSGCore.Functions.AwaitCallback('rsg-deliveries:server:startdelivery', 10000, hubIndex, destIndex)
+    if not contract then
         SetModelAsNoLongerNeeded(cartHash)
+        starting = false
         return
     end
+    ReturnOffer = nil -- the server deleted the unclaimed return wagon when it accepted the new contract
 
     local vehicle = CreateVehicle(cartHash, spawn.x, spawn.y, spawn.z, spawn.w, true, false)
     SetModelAsNoLongerNeeded(cartHash)
     if not vehicle or vehicle == 0 then
+        starting = false
         TriggerServerEvent('rsg-deliveries:server:canceldelivery')
         return Notify(locale('delivery_spawn_failed'), 'error')
     end
@@ -149,22 +190,51 @@ function StartDelivery(hubIndex, destIndex)
     while not NetworkGetEntityIsNetworked(vehicle) and GetGameTimer() < netTimeout do Wait(50) end
     TriggerServerEvent('rsg-deliveries:server:setwagon', NetworkGetNetworkIdFromEntity(vehicle))
 
-    Delivery = {
-        wagon = vehicle,
-        endCoords = data.deliveryLoc,
-        deadline = GetGameTimer() + Config.DefaultDeliveryTime * 60000,
-    }
-
-    StartGpsMultiRoute(joaat('COLOR_RED'), true, true)
-    AddPointToGpsMultiRoute(data.deliveryLoc.x, data.deliveryLoc.y, data.deliveryLoc.z)
-    SetGpsMultiRouteRender(true)
-
-    Notify(locale('delivery_started', data.label, Config.DefaultDeliveryTime), 'inform')
-    CreateThread(RunDelivery)
+    BeginTracking(vehicle, data.deliveryLoc, contract.seconds, contract.fragile)
+    Notify(locale('delivery_started', data.label, math.floor(contract.seconds / 60)), 'inform')
 end
+
+---------------------------------
+-- return trips
+---------------------------------
+RegisterNetEvent('rsg-deliveries:client:finished', function(offered, offerTime)
+    local wagon = PendingWagon
+    PendingWagon = nil
+    if not wagon then return end
+    if offered then
+        ReturnOffer = { wagon = wagon, expires = GetGameTimer() + (offerTime or 60) * 1000 }
+    else
+        DeleteWagon(wagon, 1500)
+    end
+end)
+
+RegisterCommand(Config.ReturnTrips.Command, function()
+    if not Config.ReturnTrips.Enabled then return end
+    if IsDeliveryBusy() then return Notify(locale('delivery_already_active'), 'error') end
+    if not ReturnOffer or GetGameTimer() > ReturnOffer.expires or not DoesEntityExist(ReturnOffer.wagon) then
+        ReturnOffer = nil
+        return Notify(locale('delivery_return_none'), 'error')
+    end
+
+    starting = true
+    local offer = ReturnOffer
+    local result = RSGCore.Functions.AwaitCallback('rsg-deliveries:server:acceptreturn', 10000)
+    ReturnOffer = nil
+    if not result then
+        starting = false
+        return
+    end
+    BeginTracking(offer.wagon, result.endCoords, result.seconds, result.fragile)
+    Notify(locale('delivery_return_started', result.label), 'inform')
+end, false)
 
 RegisterCommand('canceldelivery', function()
     if not Delivery then
+        if ReturnOffer then
+            ReturnOffer = nil
+            TriggerServerEvent('rsg-deliveries:server:declinereturn')
+            return Notify(locale('delivery_cancelled'), 'inform')
+        end
         return Notify(locale('delivery_none_active'), 'error')
     end
     TriggerServerEvent('rsg-deliveries:server:canceldelivery')
@@ -175,5 +245,7 @@ end, false)
 AddEventHandler('onResourceStop', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
     EndDelivery()
+    if PendingWagon then DeleteWagon(PendingWagon) end
+    if ReturnOffer then DeleteWagon(ReturnOffer.wagon) end
     for _, blip in ipairs(spawnedBlips) do RemoveBlip(blip) end
 end)

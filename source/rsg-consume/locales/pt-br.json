@@ -9,5 +9,17 @@
     "wakeup_desc": "Você acorda com uma dor de cabeça terrível...",
     "sober_title": "✨ Recuperado",
     "sober_desc": "Você está com a mente clara novamente.",
-    "inventory_full": "Seus bolsos estão cheios"
+    "inventory_full": "Seus bolsos estão cheios",
+    "cannot_now": "Você não pode comer ou beber agora",
+    "full": "Você está cheio demais para isso",
+    "spoiled": "Estava podre! Você se sente mal...",
+    "cancel_hint": "Pressione X para parar de comer ou beber",
+    "bar_label": "Pedir %s ($%s)",
+    "bar_no_money": "Você não tem dinheiro suficiente",
+    "share_label": "Compartilhar %s",
+    "share_given": "Você compartilhou %s",
+    "share_received": "Alguém compartilhou %s com você",
+    "share_far": "Essa pessoa está longe demais",
+    "share_full": "Essa pessoa não aguenta mais peso",
+    "share_failed": "Você não tem esse item"
 }

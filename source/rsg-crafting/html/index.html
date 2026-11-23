@@ -29,6 +29,7 @@
 
         <div class="body">
             <div class="list-col">
+                <input id="search" class="search" type="text" autocomplete="off" maxlength="40" spellcheck="false">
                 <div id="tabs" class="tabs"></div>
                 <div id="recipe-list" class="recipe-list"></div>
             </div>
@@ -48,6 +49,7 @@
                         <div class="meta"><span id="m-time-l"></span><b id="m-time"></b></div>
                         <div class="meta"><span id="m-xp-l"></span><b id="m-xp"></b></div>
                     </div>
+                    <div class="meta-row extra hidden" id="extra-meta"></div>
 
                     <div class="section-label" id="ing-label"></div>
                     <div id="ingredients" class="ingredients"></div>
@@ -63,6 +65,7 @@
                             <button class="circle-btn small" id="qty-minus">&minus;</button>
                             <span id="qty-val">1</span>
                             <button class="circle-btn small" id="qty-plus">+</button>
+                            <button class="mini-btn" id="qty-max"></button>
                         </div>
                     </div>
 
@@ -76,6 +79,11 @@
                         <button class="wood-btn muted hidden" id="stop-btn"></button>
                     </div>
                     <div id="status" class="status"></div>
+
+                    <div id="queue-wrap" class="hidden">
+                        <div class="section-label" id="queue-label"></div>
+                        <div id="queue-list" class="queue-list"></div>
+                    </div>
                 </div>
             </div>
         </div>

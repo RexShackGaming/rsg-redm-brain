@@ -1,8 +1,8 @@
 # feather-weapons
 
-Version 0.25.0. The official weapon system for Feather framework.
+Version 0.26.0. The official weapon system for Feather framework.
 
-Current version: **0.25.0**. See [release notes](docs/release-0.25.0.md). `setr feather_regular_arrows 1` opts the current native runtime into owned bows and the 40-unit Regular-arrow character pool. Bows use their native Shoulder8 /
+Current version: **0.26.0**. See [release notes](docs/release-0.26.0.md). Regular throwing knives and validated specialty ammunition use the character ledger, paired with Inventory **0.18.0**. Regular/Poison knives share one native
 
 Source: https://github.com/FeatherFramework/feather-weapons
 
@@ -30,7 +30,7 @@ Source: https://github.com/FeatherFramework/feather-weapons
 
 **server:** `/WeaponGuidAcceptance`, `/WeaponJaneAmmoRead`, `/WeaponJaneEconomic`, `/WeaponJanePrimaryAutoLogin`, `/WeaponJanePrimaryAutoRecover`, `/WeaponJanePrimaryLogin`, `/WeaponJanePrimaryLogout`, `/WeaponJanePrimaryNative`, `/WeaponJanePrimaryRecover`, `/WeaponJanePrimaryRoundtrip`, `/WeaponJaneSession`, `/WeaponJaneZero`, `/WeaponNativeAcceptance`, `/WeaponNativeArmAttachmentDisconnect`, `/WeaponNativeAttachmentChange`, `/WeaponNativeAttachmentStatus`, `/WeaponNativeCollectionTest`, `/WeaponNativeEquipmentChange`, `/WeaponNativeEquipmentDryRun`, `/WeaponNativeEvidenceChange`, `/WeaponNativeEvidenceStatus`, `/WeaponNativeIssuanceStatus`, `/WeaponNativeIssue`, `/WeaponNativeKnifeStatus`, `/WeaponNativeMaintenanceCheckpoint`, `/WeaponNativeOverlapProbe`, `/WeaponNativePeriodicWearStatus`, `/WeaponNativePrepareStop`, `/WeaponNativePrepareStopAll`, `/WeaponNativeProjectileProbe`, `/WeaponNativeRecoveryStatus`, `/WeaponNativeRepair`, `/WeaponNativeRepairStatus`, `/WeaponNativeShutdownStatus`, `/WeaponNativeThrowableFunding`, `/WeaponNativeThrowableStatus`, `/WeaponNativeUtilityStatus`, `/WeaponProvenanceInspect`, `/WeaponQuantityStatus`, `/WeaponRestartAcceptance`, `/WeaponThrowableWorldCapture`
 
-**client:** `/WeaponDualEntitlementRemove`, `/WeaponJaneZeroCleanup`, `/WeaponNativeProbeClear`, `/WeaponNativeProbeCompare`, `/WeaponNativeProbeDualAllow`, `/WeaponNativeProbeDualEntitle`, `/WeaponNativeProbeDualPrepare`, `/WeaponNativeProbeDualStatus`, `/WeaponNativeProbeDualWatch`, `/WeaponNativeProbeHolsterPrepare`, `/WeaponNativeProbeHolsterStatus`, `/WeaponNativeProbeMark`, `/WeaponNativeProbePrepare`, `/WeaponNativeProbeSpecial`, `/WeaponNativeProbeStatus`, `/WeaponNativeProbeWatch`, `/weaponArrowStatus`, `/weaponNativeChildComponentProbe`, `/weaponNativeCollectionStatus`, `/weaponNativeComponentSlotStatus`, `/weaponNativeEntityStatus`, `/weaponNativeGuidComponentProbe`, `/weaponNativeMaintenanceStatus`, `/weaponNativeProjectileSnapshot`, `/weaponNativeStatus`, `/weaponNativeThrowableEvents`, `/weaponPickupInspect`, `/weaponQuantityStatus`, `/weaponThrowableStatus`, `/weapondeathaftershots`, `/weaponmaintenance`, `/weaponruntime`, `/weaponstate`, `/weaponthrowablecapacity`, `/weaponthrowablepoolfailure`, `/weaponthrowableselection`
+**client:** `/WeaponDualEntitlementRemove`, `/WeaponJaneZeroCleanup`, `/WeaponNativeProbeClear`, `/WeaponNativeProbeCompare`, `/WeaponNativeProbeDualAllow`, `/WeaponNativeProbeDualEntitle`, `/WeaponNativeProbeDualPrepare`, `/WeaponNativeProbeDualStatus`, `/WeaponNativeProbeDualWatch`, `/WeaponNativeProbeHolsterPrepare`, `/WeaponNativeProbeHolsterStatus`, `/WeaponNativeProbeMark`, `/WeaponNativeProbePrepare`, `/WeaponNativeProbeSpecial`, `/WeaponNativeProbeStatus`, `/WeaponNativeProbeWatch`, `/weaponArrowStatus`, `/weaponKnifeQuantityStatus`, `/weaponNativeChildComponentProbe`, `/weaponNativeCollectionStatus`, `/weaponNativeComponentSlotStatus`, `/weaponNativeEntityStatus`, `/weaponNativeGuidComponentProbe`, `/weaponNativeMaintenanceStatus`, `/weaponNativeProjectileSnapshot`, `/weaponNativeStatus`, `/weaponNativeThrowableEvents`, `/weaponPickupInspect`, `/weaponQuantityStatus`, `/weaponThrowableStatus`, `/weapondeathaftershots`, `/weaponmaintenance`, `/weaponruntime`, `/weaponstate`, `/weaponthrowablecapacity`, `/weaponthrowablepoolfailure`, `/weaponthrowableselection`
 
 **?:** `/weaponNativePairOptionsProbe`
 
@@ -82,7 +82,7 @@ Source: https://github.com/FeatherFramework/feather-weapons
 
 **client/native_melee_owner.lua:** `WeaponNativeMeleeOwner.New(approval,catalog,identity,factory,current)`, `T.Status()`, `T.Create()`, `T.Release(deathRecovery)`
 
-**client/native_throwable_adapter.lua:** `WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog,registry,collection)`, `WeaponNativeThrowableAdapter.ScopedCollection(ped,identity,current,world,catalog,registry)`
+**client/native_throwable_adapter.lua:** `WeaponNativeThrowableAdapter.Scoped(ped,identity,current,sealed,catalog,registry,collection,profileId)`, `WeaponNativeThrowableAdapter.ScopedCollection(ped,identity,current,world,catalog,registry)`
 
 **client/native_throwable_collection_client.lua:** `WeaponNativeThrowableCollectionClient.New(api)`, `C.Arm(packet,origin)`, `C.Event(event)`, `C.BeforeStep(runtime)`, `C.Escrow(packet,origin)`, `C.ReadEscrow(ticket)`, `C.Result(packet,origin)`, `C.Status()`
 
@@ -108,7 +108,7 @@ Source: https://github.com/FeatherFramework/feather-weapons
 
 **client/native_throwable_pickup_lifecycle.lua:** `WeaponNativeThrowablePickupLifecycle.New(api)`, `P.Start()`, `P.Snapshot(scope,sequence,offers)`, `P.Tick()`, `P.LanguageChanged()`, `P.Stop()`, `P.Status()`
 
-**client/native_throwable_pickup_permissions.lua:** `WeaponNativeThrowablePickupPermissions.New(setPermission,prior)`, `P.Restore()`, `P.Suppress()`, `P.Allow()`, `P.Status()`
+**client/native_throwable_pickup_permissions.lua:** `WeaponNativeThrowablePickupPermissions.New(setPermission,prior,modelList)`, `P.Restore()`, `P.Suppress()`, `P.Allow()`, `P.Status()`
 
 **client/native_throwable_pickup_prompt.lua:** `WeaponNativeThrowablePickupPrompt.New(api)`, `P.Replace(rows)`, `P.Tick()`, `P.ReadPending()`, `P.LanguageChanged()`, `P.Stop()`, `P.Status()`
 
@@ -130,7 +130,7 @@ Source: https://github.com/FeatherFramework/feather-weapons
 
 **client/native_utility_owner.lua:** `WeaponNativeUtilityOwner.New(api,def,identity)`, `T.Status()`, `T.Create(candidate)`, `T.Release()`
 
-**client/throwable_quantity_owner.lua:** `WeaponThrowableQuantityOwner.New(api,catalog,identity,limits)`, `Q.Create(snapshot)`, `Q.PrepareRestore(value)`, `Q.AcceptNativePickup(value)`, `Q.Observe(value)`, `Q.Release()`, `Q.Status()`
+**client/throwable_quantity_owner.lua:** `WeaponThrowableQuantityOwner.New(api,catalog,identity,limits,definitionId)`, `Q.Create(snapshot)`, `Q.PrepareRestore(value)`, `Q.AcceptNativePickup(value)`, `Q.Observe(value)`, `Q.Release()`, `Q.Status()`
 
 **diagnostics/native_pickup_inspect/inspection.lua:** `WeaponPickupReadOnlyInspection.Read(api)`
 
@@ -218,7 +218,7 @@ Source: https://github.com/FeatherFramework/feather-weapons
 
 **shared/character_ammunition_activation.lua:** `WeaponCharacterAmmoActivation.New(api)`, `T.Ready(source,hint)`, `T.Cancel(source,sessionId)`
 
-**shared/character_ammunition_catalog.lua:** `WeaponRegularArrowPolicy.Enabled()`, `WeaponCharacterAmmoCatalog.Build(catalog,policy)`
+**shared/character_ammunition_catalog.lua:** `WeaponSpecialAmmunitionPolicy.Profile(catalog,id)`, `WeaponSpecialAmmunitionPolicy.Profiles(catalog)`, `WeaponRegularArrowPolicy.Enabled()`, `WeaponSpecialAmmunitionPolicy.Enabled(family)`, `WeaponCharacterAmmoCatalog.Build(catalog,policy)`
 
 **shared/character_ammunition_client.lua:** `WeaponCharacterAmmoClient.New()`, `C.Begin(value,caps,currentPed)`, `C.Prepare(currentPed,pools,worldReady)`, `C.PrepareFinal(currentPed,pools,worldReady)`, `C.PrepareNativePickup(currentPed,pools,worldReady,quantityMode)`, `C.PrepareTransfer(currentPed,pools,worldReady,ammunitionId,amount,operationId)`, `C.PrepareCleanup(currentPed)`, `C.Accept(id,result,currentPed)`, `C.Close()`, `C.Status()`
 
@@ -278,9 +278,9 @@ Source: https://github.com/FeatherFramework/feather-weapons
 
 **shared/native_throwable_event_reference.lua:** `R.Profiles(build)`, `R.Decode(build,queue,eventHash,buffer)`
 
-**shared/native_throwable_item.lua:** `WeaponNativeThrowableItem.Prepare(snapshot,catalog,identity,intent)`, `WeaponNativeThrowableItem.Validate(metadata,catalog)`, `WeaponNativeThrowableItem.Build(catalog,options)`, `WeaponNativeThrowableItem.Assigned(snapshot,catalog,identity,limits)`, `WeaponNativeThrowableItem.AssignedUnits(snapshot,catalog,identity,limits)`, `WeaponNativeThrowableItem.AssignedQuantity(snapshot,catalog,identity,limits)`, `WeaponNativeThrowableItem.PrepareUnits(snapshot,catalog,identity,intent)`, `WeaponNativeThrowableItem.Recovered(before,after,receipt,catalog,identity,limits)`
+**shared/native_throwable_item.lua:** `WeaponNativeThrowableItem.Prepare(snapshot,catalog,identity,intent)`, `WeaponNativeThrowableItem.Validate(metadata,catalog)`, `WeaponNativeThrowableItem.Build(catalog,options)`, `WeaponNativeThrowableItem.Assigned(snapshot,catalog,identity,limits)`, `WeaponNativeThrowableItem.AssignedUnits(snapshot,catalog,identity,limits)`, `WeaponNativeThrowableItem.AssignedQuantity(snapshot,catalog,identity,limits,definitionId)`, `WeaponNativeThrowableItem.PrepareUnits(snapshot,catalog,identity,intent)`, `WeaponNativeThrowableItem.Recovered(before,after,receipt,catalog,identity,limits)`
 
-**shared/native_throwable_policy.lua:** `WeaponNativeThrowablePolicy.QuantityEnabled()`, `WeaponNativeThrowablePolicy.UnitsEnabled()`, `WeaponNativeThrowablePolicy.Enabled()`, `WeaponNativeThrowablePolicy.Resolve(catalog)`, `WeaponNativeThrowablePolicy.Preview(catalog,firearmRegistry)`, `WeaponNativeThrowablePolicy.RegistryFromLimits(catalog,limits)`
+**shared/native_throwable_policy.lua:** `WeaponNativeThrowablePolicy.KnivesEnabled()`, `WeaponNativeThrowablePolicy.QuantityProfile(catalog,id)`, `WeaponNativeThrowablePolicy.QuantityEnabled()`, `WeaponNativeThrowablePolicy.UnitsEnabled()`, `WeaponNativeThrowablePolicy.Enabled()`, `WeaponNativeThrowablePolicy.Resolve(catalog)`, `WeaponNativeThrowablePolicy.Preview(catalog,firearmRegistry)`, `WeaponNativeThrowablePolicy.RegistryFromLimits(catalog,limits)`
 
 **shared/native_throwable_recovery.lua:** `WeaponNativeThrowableRecovery.NativePickupPlan(credit,current,snapshot,report,catalog,limits)`, `WeaponNativeThrowableRecovery.BindingPlan(candidate,durable,observed)`, `WeaponNativeThrowableRecovery.SpendCandidate(before,after,snapshot,catalog,limits)`, `WeaponNativeThrowableRecovery.PhysicalSpendCandidates(before,after,snapshot,spent,catalog,limits)`
 

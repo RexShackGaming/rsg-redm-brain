@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-crafting'
-version '3.2.0'
+version '3.3.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
@@ -13,12 +13,17 @@ shared_scripts {
 
 client_scripts {
     'client/client.lua',
+    'client/stations.lua',
 }
 
 server_scripts {
+    '@oxmysql/lib/MySQL.lua',
     'server/sv_config.lua',
     'server/webhook.lua',
+    'server/database.lua',
+    'server/stations.lua',
     'server/server.lua',
+    'server/commands.lua',
     'server/versionchecker.lua',
 }
 
@@ -34,4 +39,7 @@ files {
 dependencies {
     'rsg-core',
     'rsg-inventory',
+    'oxmysql',
+    'rsg-target',
+    'rsg-gizmo',
 }

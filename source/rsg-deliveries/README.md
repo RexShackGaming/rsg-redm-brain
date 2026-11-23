@@ -4,13 +4,15 @@ A wagon delivery system for RedM using the RSG Framework. Players pick up goods 
 
 Talking to a foreman opens a NUI contract board listing every destination from that hub. Selecting a route shows its distance, time limit, wagon, difficulty rating, a route-length bar, and the cash and item rewards (with item images when configured).
 
-Version 3.2.0. Full technical reference (events, security model, troubleshooting): [DOCS.md](DOCS.md)
+Version 3.3.0. Full technical reference (events, security model, troubleshooting): [DOCS.md](DOCS.md)
 
 ## Dependencies
 
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
 - [rsg-target](https://github.com/Rexshack-RedM/rsg-target)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
+- [oxmysql](https://github.com/communityox/oxmysql) (streaks and leaderboard; the table is created automatically)
+- Optional: rsg-skills, rsg-economy, rsg-reputation, rsg-society, rsg-ambush (each is skipped when not started)
 - OneSync (needed for the server-side wagon check, see `Config.RequireWagonAtDestination`)
 
 ## How It Works
@@ -24,7 +26,8 @@ Version 3.2.0. Full technical reference (events, security model, troubleshooting
 
 | Command | Description |
 |---------|-------------|
-| `canceldelivery` | Cancels the active delivery (the cooldown still applies) |
+| `canceldelivery` | Cancels the active delivery (the cooldown still applies). Also declines an open return load |
+| `returntrip` | Accepts the return load offered after a delivery (`Config.ReturnTrips.Command`) |
 
 ## Configuration
 
@@ -45,6 +48,25 @@ All options are in `shared/config.lua`.
 | `Config.InteractionDistance` | float | `2.0` | NPC interaction range |
 | `Config.ShowDeliveryTimerUI` | bool | `false` | Show the time remaining / distance text UI during a delivery |
 | `Config.CompleteDistance` | float | `10.0` | How close the wagon must be to the drop-off to complete |
+
+| `Config.MaxPayoutAmount` | int | `1000` | Hard cap on the final payout after every bonus |
+| `Config.AutoDatabase` | bool | `true` | Create the `rsg_deliveries_stats` table on start. Set `false` and import `install.sql` to install manually |
+
+### Features (all in `shared/config.lua`)
+
+| Feature | Config | What it does |
+|---|---|---|
+| Teamster skill (rsg-skills) | `Config.Skills` | Awards XP per delivery. Perks `pay_bonus` (% extra cash) and `time_bonus` (% longer time limit) |
+| Economy (rsg-economy) | `Config.Economy` | The payout is a `sell` quote for the hub's town: tax goes to the town treasury |
+| Fragile cargo | `Config.Fragile`, route `fragile = true` | The server reads the wagon's health on arrival and scales the pay down to `MinPayPct`. The player is warned once below `WarnBelowPct` |
+| Streaks | `Config.Streak` | Deliveries within `Window` seconds of each other add `BonusPerStep` % each, up to `MaxBonusPct` |
+| Hot route | `Config.HotRoute` | One route per hub each day (rotates at midnight UTC) pays `BonusPct` % extra and is badged on the board |
+| Return trips | `Config.ReturnTrips`, hub `noReturn = true` | After a delivery the wagon is kept for `OfferTime` seconds. Type `/returntrip` to haul a load back to the hub for `PayPct` % of the route's base pay |
+| Ambush (rsg-ambush) | `Config.Ambush` | Ambush chance is multiplied while a contract is active; beating an ambush pays `BonusPct` % extra. Needs rsg-ambush 3.2.1+ |
+| Job lock and company (rsg-society) | hub `job`, `minGrade`, `society`; `Config.Society` | Only the listed job(s) can take contracts at that hub. With `society` set the company account earns a `Cut` % (or pays the driver with `PayFromSociety = true`) |
+| Leaderboard | contract board tab | Top 10 by deliveries, distance or earnings, plus your streak. Stored in `rsg_deliveries_stats` |
+
+Hub example: `job = 'teamster', minGrade = 0, society = 'teamster'`. Only the active job is checked.
 
 ### Anti-Exploit Settings
 
@@ -152,6 +174,16 @@ Player-facing text, including the contract board UI, ships in en, de, el, es, fr
 Add a new entry to `Config.DeliveryLocations` following the existing structure, or add a new route to an existing hub's `deliveries` array. Wagon models and prop sets can be referenced from [rdr3_discoveries](https://github.com/femga/rdr3_discoveries).
 
 ## Changelog
+
+### 3.3.0
+- New: teamster skill and economy hooks, fragile cargo, delivery streaks, daily hot route, return trips (`/returntrip`), ambush chance and bonus, job-locked hubs with society cut or payout, and a leaderboard tab on the contract board.
+- New database table `rsg_deliveries_stats` (created automatically, `install.sql` included). Needs oxmysql.
+- The start callback now returns `{ seconds, fragile }` instead of `true`.
+
+### 3.2.1
+- Security: wagon registration now requires the player to have created the wagon and refuses one already used by another delivery. Rejected completions now clean up the wagon and apply the cooldown.
+- Fixes: 15s timer grace, players are told when a start or completion is rejected, no double start from the board, foreman model failures no longer retry every tick.
+- Optimization: delivery loop and foreman loop sleep when nothing needs per-frame work.
 
 ### 3.2.0
 - Optional rsg-reputation integration: `delivery` action on a completed delivery (`Config.Reputation`).

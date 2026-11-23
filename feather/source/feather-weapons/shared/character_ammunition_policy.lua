@@ -19,6 +19,15 @@ local limits={
 function WeaponCharacterAmmoPolicy.Limits()
     local copy={}; for id,cap in pairs(limits) do copy[id]=cap end
     if WeaponRegularArrowPolicy and WeaponRegularArrowPolicy.Enabled() then copy.ammo_arrow_regular=40 end
+    if WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.KnivesEnabled and WeaponNativeThrowablePolicy.KnivesEnabled() then copy.ammo_throwing_knives_regular=8 end
+    if WeaponSpecialAmmunitionPolicy then
+        for _,id in ipairs({'ammo_arrow_small_game','ammo_arrow_poison','ammo_arrow_fire','ammo_arrow_dynamite','ammo_throwing_knives_poison'}) do
+            local family=id=='ammo_throwing_knives_poison' and 'throwing_knife' or 'bow'
+            if WeaponSpecialAmmunitionPolicy.Enabled(family) then
+                copy[id]=id=='ammo_arrow_small_game' and 40 or 8
+            end
+        end
+    end
     return copy
 end
 function WeaponCharacterAmmoPolicy.Build(catalog)

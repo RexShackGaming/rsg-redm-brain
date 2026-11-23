@@ -9,5 +9,17 @@
     "wakeup_desc": "Budzisz się z okropnym bólem głowy...",
     "sober_title": "✨ Wróciłeś do siebie",
     "sober_desc": "Znów masz jasny umysł.",
-    "inventory_full": "Twoje kieszenie są pełne"
+    "inventory_full": "Twoje kieszenie są pełne",
+    "cannot_now": "Nie możesz teraz jeść ani pić",
+    "full": "Jesteś na to zbyt najedzony",
+    "spoiled": "Było zepsute! Robi ci się niedobrze...",
+    "cancel_hint": "Naciśnij X, aby przerwać jedzenie lub picie",
+    "bar_label": "Zamów %s ($%s)",
+    "bar_no_money": "Nie masz dość gotówki",
+    "share_label": "Podziel się: %s",
+    "share_given": "Podzieliłeś się: %s",
+    "share_received": "Ktoś podzielił się z tobą: %s",
+    "share_far": "Ta osoba jest za daleko",
+    "share_full": "Ta osoba nie uniesie więcej",
+    "share_failed": "Nie masz tego przedmiotu"
 }

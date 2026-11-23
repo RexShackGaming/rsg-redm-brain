@@ -2,6 +2,24 @@
 
 All notable changes to rsg-stables. Newest first.
 
+## 3.7.3
+
+### Added
+- Water Horse can use a canteen from `rsg-canteen` (one use per watering) when no water bucket is available. `Config.HorseDrinkItems` entries with `canteen = true` call `exports['rsg-canteen']:ConsumeUse`.
+
+## 3.7.2
+
+### Fixed
+- Scrolling the tack review list with the mouse wheel no longer zooms the preview camera; the wheel only zooms when the list isn't scrollable.
+
+### Changed
+- The purchase row on the tack review screen is now a large, high-contrast confirm button (`variant-confirm`).
+
+## 3.7.1
+
+### Fixed
+- Fixed weekly race prizes failing on Windows servers (`bad argument #1 to 'date'`): the ISO week key no longer uses `os.date('%G-W%V')`.
+
 ## 3.7.0
 
 ### Added

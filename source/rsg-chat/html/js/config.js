@@ -11,6 +11,6 @@ window.CONFIG = {
   // fallback until the client sends Config.DefaultSettings
   defaultSettings: {
     x: 1.5, y: 2.5, w: 30, h: 32, fontSize: 15, opacity: 55,
-    timestamps: false, history: 100, autoHide: 'fade', hideDelay: 10, chatOff: false
+    timestamps: false, history: 100, autoHide: 'fade', hideDelay: 10, chatOff: false, aimHide: true
   }
 };

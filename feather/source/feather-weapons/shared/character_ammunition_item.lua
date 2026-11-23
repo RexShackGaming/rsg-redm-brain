@@ -25,7 +25,9 @@ function WeaponCharacterAmmoItem.Validate(metadata,definition)
     if type(metadata.ammo.type)~='string' or not WeaponValidation.AcceptsAmmunition(definition,metadata.ammo.type) then
         return nil,'incompatible_ammunition_type'
     end
-    if definition.family=='bow' and (definition.id~='bow' or metadata.ammo.type~='ammo_arrow_regular') then
+    if definition.family=='bow' and (definition.id~='bow' or metadata.ammo.type~='ammo_arrow_regular'
+        and not (WeaponSpecialAmmunitionPolicy and WeaponSpecialAmmunitionPolicy.Enabled('bow')
+            and WeaponSpecialAmmunitionPolicy.Profile(WeaponDefinitionCatalog,metadata.ammo.type))) then
         return nil,'unsupported_bow_ammunition'
     end
     if not finite(metadata.condition) or type(metadata.maintenance)~='table' then return nil,'invalid_condition' end

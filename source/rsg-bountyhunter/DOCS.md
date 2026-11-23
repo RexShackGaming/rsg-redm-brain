@@ -1,4 +1,4 @@
-# rsg-bountyhunter – Docs (v3.3.0)
+# rsg-bountyhunter – Docs (v3.5.0)
 
 ## Contents
 1. Files
@@ -38,7 +38,7 @@
 | Option | Default | Meaning |
 |---|---|---|
 | `Debug` | `false` | Print distance checks |
-| `RequiredJob` | `nil` | Job lock for contracts (server checked) |
+| `RequiredJob` | `nil` | Job lock for contracts (server checked): one name or a list of names |
 | `MoneyType` | `'cash'` | Reward account |
 | `BoardSize` | `6` | Posters on the board |
 | `RefreshMinutes` | `30` | Board re-roll interval |
@@ -46,6 +46,8 @@
 | `WarnMinutes` | `5` | Warning before expiry |
 | `AcceptCooldown` | `120` | Seconds before another contract after abandon/fail/expiry |
 | `MinHuntSeconds` | `60` | Anti-exploit minimum between finding and turning in |
+| `MaxTravelSpeed` | `25.0` | m/s; minimum hunt time = max(`MinHuntSeconds`, hideout to office distance / this). `0` = off |
+| `AllowPushToTalkWhileOpen` / `PushToTalkControls` | `true` / `{ 0x4BC9DABB }` | Keep push-to-talk working while the board is open; every other control is blocked |
 | `AbandonCommand` | `'abandonbounty'` | `false` to disable |
 | `InteractDistance` / `ServerCheckDistance` / `DeliverRadius` | `3.0` / `10.0` / `12.0` | Distances |
 | `ClerkSpawnDistance` | `60.0` | Clerk spawn range |
@@ -94,12 +96,55 @@ CREATE TABLE IF NOT EXISTS `rsg_bountyhunter` (
 Created automatically on first start; `install.sql` is the manual option.
 
 ## 6. Security
-The server owns the board and contracts. It checks distance to the clerk, the job lock, that the target is the registered entity within `DeliverRadius`, the minimum hunt time, contract expiry and cooldowns, and computes the payout itself.
+The server owns the board and contracts. It checks distance to the clerk, the job lock, that the target is the registered entity within `DeliverRadius`, the minimum hunt time (scaled by the hideout to office distance), contract expiry and cooldowns, and computes the payout itself.
+
+- `registerTarget` accepts a ped once per contract, only with the right model, near the hideout, from a hunter who is near it, and only if no other contract holds that entity and the entity is owned by the hunter.
+- A registered target that stays missing for 3 consecutive 15 second checks fails the contract (`target_lost`).
+- Turn-ins are serialised per player. The reward is paid only after the contract is removed, and the result of `AddMoney` is checked.
+- Known limit: whether an NPC target is "alive" is read from the entity the hunter's client owns, and "hogtied" for a player target is reported by the target's own client. The alive bonus can therefore be spoofed by a modded client, and two colluding players can fake a hogtie. The repost cooldown, the honor requirement and the Discord `exploits` log are the mitigations.
 
 ## 7. How-tos
 - Job-lock the script: `RequiredJob = 'bountyhunter'`.
 - Add an office: add an `Offices` entry with a unique `id` and a locale label.
 - Make tiers harder: raise `accuracy` or the `gang` range.
+
+## Features added in 3.5.0
+
+### Posters
+`Config.Conditions` rolls a condition per NPC poster: `any` (default), `alive` (only `rewardAlive` is set) or `dead` (only `rewardDead`). The server enforces it in the turn-in: a dead target on an alive poster fails the contract (`alive_only_failed`), a live target on a dead poster is refused without ending the contract. Sponsored posters are always `any`.
+
+### Reward adjustments (NPC contracts only)
+`reward = base * (1 + skill perk % + streak bonus + gang bonus) * region multiplier`.
+- Skill perk: `GetPerk(src, Config.Skills.Key, Config.Skills.RewardPerk)` from rsg-skills.
+- Streak: `Streaks[citizenid]` counts consecutive completions within `Config.Streak.WindowMinutes`; a lost, abandoned or expired contract resets it.
+- Gang bonus: after spawning, the client sends `rsg-bountyhunter:server:registerGang(ids)`. The server accepts only existing entities of the tier's models within 60 m of the hideout, owned by the hunter, not the target and not held by another contract, capped at the poster's gang size. At turn-in the members with health <= 0 are counted. A modified client can only fake up to `Config.GangBonus.MaxBonus`.
+- Region: `Config.Economy.Multipliers[region]` where region is `Config.Reputation.Regions[office.id]` or the office id. With `PayFromTreasury` the amount is also withdrawn with rsg-economy `WithdrawTreasury`.
+
+### rsg-skills
+Registered at start and on `rsg-skills:server:ready` with `Config.Skills.Definition`. `Config.Skills.TierLevels` gates which tier a hunter can accept (`tier_locked`); locked posters show on the board. Add a `perk_reward_bonus` label to rsg-skills locales if you want a translated perk name.
+
+### Evidence
+`Config.Evidence.Items[tier]` lists `{ name, amount = {min, max}, chance }`. Items missing from the shared items are skipped with one console warning. Definitions are in `installation/items.lua`; images are not included.
+
+### Telegram and jail
+`Config.Telegram` sends through `exports['rsg-telegram']:SendTelegram(citizenid, subject, message, { senderName })`. `Config.Jail` sets `injail` metadata and triggers `rsg-lawman:client:sendtojail` on the target only when the capture was alive and both rsg-prison and rsg-lawman are started.
+
+### Hideouts and ambush
+A hideout in `Config.Hideouts` is a `vector3` or `{ coords = vector3, props = { { model, offset, heading } } }`. Props are client side, frozen and removed with the contract. With `IdleUntilAlert` the outlaws run a scenario until the hunter is within `AlertDistance`, an outlaw dies or the target is hurt. The server rolls `ambush` when the poster is created (tier >= `MinTier`, `Chance`) and sends it with the contract; the client spawns the riders once the target is down and the hunter is at least `MinDistance` from the hideout and `SafeOfficeRadius` from every office. Scenario names are community names: test them in game.
+
+### Export: CancelBounty
+```lua
+-- server
+local found = exports['rsg-bountyhunter']:CancelBounty(ref)
+```
+`ref` is the value you passed to `PostBounty`. Removes the poster; a hunter who holds it is told (`poster_cancelled`) and released without a cooldown. Returns `true` if a poster with that ref existed. No `posterClosed` event is sent for a cancel, so refund your own escrow after a `true`. On a full server shutdown sponsored posters still close as `'expired'`.
+
+### Events
+| Event | Side | Purpose |
+|---|---|---|
+| `rsg-bountyhunter:server:registerGang` | server (from client) | Gang netIds for the gang bonus, validated as above |
+
+`startContract` now also carries `props`, `idle`, `alertDistance`, `scenarios` and `ambush`. The board callback returns `level` and `streak`, and every poster has `condition`, `minLevel` and `locked`.
 
 ## 8. Troubleshooting
 | Problem | Fix |
@@ -108,6 +153,9 @@ The server owns the board and contracts. It checks distance to the clerk, the jo
 | Can't accept | Cooldown after abandon/fail, or a job lock |
 | Turn-in refused | Target must be within `DeliverRadius` of the office and the hunt long enough |
 | Poster gone | Another hunter took it, or the board re-rolled |
+| "The sheriff is still verifying the capture" | Turned in too early; wait the seconds shown (the minimum grows with the hideout to office distance) |
+| "Something went wrong at the hideout" | The outlaw could not spawn: check the ped models in `Config.Tiers` and the coords in `Config.Hideouts` |
+| Board closes by itself | The player died while it was open |
 | Player never gets a poster | rsg-reputation not started, honor above `Threshold`, lawman job type, jailed, or on the repost cooldown |
 | "The target must be dead, hogtied or cuffed" | Hogtie or cuff the target (or kill them) and keep them at the office; a dead player must not have respawned yet |
 
@@ -115,7 +163,7 @@ The server owns the board and contracts. It checks distance to the clerk, the jo
 
 `exports['rsg-bountyhunter']:PostBounty(opts)` lets another resource (rsg-gangs uses it) put a poster on every board. `opts = { ref, reward, sponsor, expireMinutes, targetCitizenid, targetGang, targetName, sponsorGang }`: `ref` is any unique value the caller uses to settle it, `reward` is the alive reward (dead pays the tier's `deadMultiplier`), `sponsor` is shown next to the crime, `expireMinutes` defaults to 360. Without a target the poster is a normal NPC contract. With `targetCitizenid` the hunter must bring in that player; with `targetGang` (an rsg-gangs gang name) any online member of that gang counts. Both follow a moving search area on the hunter's map and are turned in dead, hogtied or cuffed at an office, like reputation bounties. `targetName` is the name shown on the board and `sponsorGang` is the gang that cannot take its own bounty; hunters can never take a bounty on their own gang or on themselves. Gang membership is read from rsg-gangs (`GetPlayerGang`, `GetGangOnlineSources`). Returns the poster id or `nil`.
 
-The caller holds the money in escrow. When the poster ends the server fires `rsg-bountyhunter:server:posterClosed(ref, reason, paid)` (server-only, not callable by clients) with reason `'completed'` (hunter was paid `paid`) or `'expired'` (nobody delivered it). A sponsored poster that is abandoned or failed goes back on the board; sponsored posters are never re-rolled.
+The caller holds the money in escrow. When the poster ends the server fires `rsg-bountyhunter:server:posterClosed(ref, reason, paid)` (server-only, not callable by clients) with reason `'completed'` (hunter was paid `paid`) or `'expired'` (nobody delivered it). A sponsored poster that is abandoned or failed goes back on the board; sponsored posters are never re-rolled. When rsg-bountyhunter stops or restarts, every sponsored poster (taken or not) is closed with `'expired'` and `paid = 0`, so the caller must refund its escrow. If the hunter could not be paid, `'completed'` is sent with `paid = 0`.
 
 ## Reputation bounties
 
@@ -151,7 +199,7 @@ Support the Project : https://rexshack.tebex.store/
 
 ## Technical reference
 
-Generated from the source of **rsg-bountyhunter 3.1.0**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-bountyhunter 3.5.0**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 
@@ -175,7 +223,9 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 |---|---|---|
 | `Config.AutoDatabase` | `true` | build the database tables automatically on start (set false and import the SQL file for a manual install) |
 | `Config.Debug` | `false` | prints distance checks to the server console |
-| `Config.RequiredJob` | `nil` | e.g. 'bountyhunter' to job-lock contracts (checked on the server), nil = anyone |
+| `Config.AllowPushToTalkWhileOpen` | `true` | while the bounty board is open, block game controls but keep push-to-talk working (rsg-voice) |
+| `Config.PushToTalkControls` | `table` | controls left enabled while the board is open |
+| `Config.RequiredJob` | `nil` | job-lock contracts (checked on the server): 'bountyhunter' or { 'bountyhunter', 'sheriff' }, nil = anyone |
 | `Config.MoneyType` | `'cash'` | paid with Player.Functions.AddMoney |
 | `Config.BoardSize` | `6` | posters shown on the board at once |
 | `Config.RefreshMinutes` | `30` | board re-rolls unclaimed posters this often |
@@ -183,6 +233,7 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.WarnMinutes` | `5` | warn the hunter when this many minutes are left |
 | `Config.AcceptCooldown` | `120` | seconds before another contract can be taken after abandon/fail/expiry |
 | `Config.MinHuntSeconds` | `60` | anti-exploit: minimum time between finding the target and turning it in |
+| `Config.MaxTravelSpeed` | `25.0` | anti-exploit: metres per second. The minimum hunt time also grows with the hideout to office distance (distance / this); 0 = off |
 | `Config.AbandonCommand` | `'abandonbounty'` | abandon the current contract from anywhere, false to disable |
 | `Config.InteractDistance` | `3.0` | rsg-target reach to the clerk |
 | `Config.ServerCheckDistance` | `10.0` | server-side radius around the office coords (keep larger than InteractDistance) |

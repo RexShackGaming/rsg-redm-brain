@@ -92,7 +92,7 @@
 | `DiscordLog(category, title, src, fields, description)` | server export | Write to the drug log channels |
 | `NpcSoldWeedBag(ped)` | client export | Tell the addiction system an NPC bought a bag |
 | `rsg-drugs:client:open` / `exportOpen` / `openUI` | client events | Open lab, export or addiction UI |
-| `rsg-drugs:server:consumed` | server event | `(itemName)` from rsg-consume |
+| `rsg-consume:server:consumed` | server event (from rsg-consume 3.3.0+) | `(src, itemName, category, data, meta)` |
 | `rsg-drugs:server:npcRehab` | server event | `(netId)` |
 
 | Command | Who | What |
@@ -250,15 +250,15 @@ Server events can be fired by any client, so every handler re-validates the play
 | `RSGCore:Player:SetPlayerData` | client | `data` | `client/addiction_npc.lua` |
 | `rsg-drugs:client:sellAlert` | client | `coords` | `client/addiction_npc.lua` |
 | `rsg-drugs:client:refresh` | client | `data` | `client/client.lua` |
-| `rsg-drugs:server:consumed` | server | `itemName` | `server/addiction.lua` |
+| `rsg-consume:server:consumed` | server (local) | `src, itemName, category, data, meta` | `server/addiction.lua` |
 | `rsg-drugs:server:npcRehab` | server | `netId` | `server/addiction.lua` |
 | `rsg-drugs:server:checkIn` | server | `` | `server/addiction.lua` |
 | `rsg-drugs:server:closed` | server | `` | `server/server.lua` |
 | `rsg-prison:server:startSentence` | server | `` | `server/xp.lua` |
 
 ```lua
--- from a client script
-TriggerServerEvent('rsg-drugs:server:consumed', itemName)
+-- fired by rsg-consume on the server after a real consumption
+AddEventHandler('rsg-consume:server:consumed', function(src, itemName, category, data, meta) end)
 -- from a server script
 TriggerClientEvent('rsg-drugs:client:useSubstance', source, key)
 ```

@@ -7,7 +7,7 @@ function WeaponCharacterAmmoSession.New(api,registry)
     local throwable,throwableFactoryUnconfirmed,throwableSnapshot
     local utility,utilityFactoryUnconfirmed
     local controller=WeaponCharacterAmmoController.New(api,function(baseline,ammunitionId)
-        if ammunitionId=='ammo_arrow_regular' then
+        if type(ammunitionId)=='string' and ammunitionId:match('^ammo_arrow_') then
             -- The already-owned bow survives collection; no carrier creation or ammo grant.
             local owned=false
             for _,record in pairs(records or {}) do if record.name=='WEAPON_BOW' then owned=true end end
@@ -18,7 +18,8 @@ function WeaponCharacterAmmoSession.New(api,registry)
         if not throwable or type(throwable.AcceptNativePickup)~='function' then return nil end
         local accepted,why=throwable.AcceptNativePickup(baseline)
         if accepted then
-            print(('[WeaponNativeThrowablePickup] PASS ledger acknowledged/read-only GUID rebind revision=%s; no loose/native ammo grant'):format(tostring(baseline.revision)))
+            local label=ammunitionId=='ammo_throwing_knives_regular' and 'WeaponNativeKnifePickup' or 'WeaponNativeThrowablePickup'
+            print(('[%s] PASS ledger acknowledged/read-only GUID rebind revision=%s; no loose/native ammo grant'):format(label,tostring(baseline.revision)))
         end
         return accepted,why
     end,function(baseline)
@@ -117,12 +118,14 @@ function WeaponCharacterAmmoSession.New(api,registry)
         end
         if throwableSnapshot then
             throwableFactoryUnconfirmed=true
-            local called,value=pcall(api.throwable,ped,bundle.creation.identity,function()
+            local called,value,detail=pcall(api.throwable,ped,bundle.creation.identity,function()
                 local state=controller.Status()
                 return state.phase=='sealed' and state.baseline or nil
             end,registry)
             if not called or type(value)~='table' or type(value.Create)~='function' or type(value.Observe)~='function'
-                or type(value.Release)~='function' or type(value.Status)~='function' then return freeze('throwable_factory_unconfirmed') end
+                or type(value.Release)~='function' or type(value.Status)~='function' then
+                return freeze('throwable_factory_unconfirmed'..(called and type(detail)=='string' and ':'..detail or ''))
+            end
             throwable=value; throwableFactoryUnconfirmed=false
             local made,result=pcall(throwable.Create,throwableSnapshot)
             if not made or result~=true or api.ped()~=ped or api.ready()~=true then return freeze('throwable_creation_unconfirmed') end

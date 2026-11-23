@@ -13,6 +13,7 @@
 
 ## 🛠️ Dependencies
 - [**rsg-core**](https://github.com/Rexshack-RedM/rsg-core) 🤠 *(notifications, locales)*  
+- [**rsg-target**](https://github.com/Rexshack-RedM/rsg-target) 🎯 *(bars, sharing)*  
 - [**rsg-inventory**](https://github.com/Rexshack-RedM/rsg-inventory) 🎒 *(item use integration)*  
 
 **Locales:** `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`  
@@ -38,13 +39,25 @@
 - Alcoholic drinks raise an alcohol level; food and soft drinks can lower it (negative `alcohol`).
 - Above `DrunkThreshold` → drunk walk + screen effect.
 - Above `PassOutThreshold` → vomit, pass out, wake up with a hangover.
-- Level drops by `DecreaseAmount` every `DecreaseInterval` ms.
+- Level drops by `DecreaseAmount` every `DecreaseInterval` ms. Drunkness scales with the level (`ScaleDrunkness`), and the level resets on death or character switch.
+
+### 🆕 More features (3.3.0)
+- **Fullness limit:** you can't force down food or water when you're already full.
+- **Quality and spoiling:** decaying items give less, and rotten food can make you sick.
+- **Tolerance and hangovers:** regular drinkers handle more; passing out leaves you thirsty and stressed.
+- **Cancel:** press `X` while eating/drinking to stop. Stop early and you get the item back; stop late and you get part of the effect.
+- **Buffs and temperature:** coffee gives stamina, stews and tea heal over time, hot food warms you, cold drinks can cool you (needs rsg-hud 3.2.2+).
+- **Bars:** order a drink at the counter with cash. Add your bars in `Config.Bars`.
+- **Share:** target a nearby player to hand them a drink.
+- Other scripts can listen to the server event `rsg-consume:server:consumed`.
 
 ### 🔒 Security
 - Items are removed **server-side** before the animation plays.
 - Return items are only given once per real consumption (one-time server token) — the return event can't be spammed.
 - If the client can't play the consume (already busy, passed out, dead) the item is refunded instead of lost.
 - Return/refund items check inventory space first; a stuck consume auto-unlocks after 30s.
+- Hunger, thirst and stress are applied on the server (stress needs rsg-hud). Skipping the animation (finishing faster than `MinDuration`) gives no effects and refunds the item.
+- Eating/drinking is refused while swimming, ragdolled, falling or climbing.
 - Props, screen effects and the inventory lock are cleaned up if the resource stops mid-use.
 
 ---
@@ -70,7 +83,12 @@ AlcoholSystem = {
     DecreaseAmount = 1,
     DecreaseInterval = 5000,
     MaxAlcoholLevel = 500,
+    ScaleDrunkness = true,   -- drunk walk scales between MinDrunkLevel and MaxDrunkLevel
+    MinDrunkLevel = 0.3,
+    MaxDrunkLevel = 0.95,
 },
+
+MinDuration = { Eat = 3000, Drink = 2400, Stew = 1000, Hotdrinks = 3000, Eatcanned = 1600 }, -- server-side anti-skip (ms)
 ```
 `AlcoholEffects` controls the post-fx names and the vomit / sleep / fade / hangover timings.
 
@@ -111,6 +129,14 @@ coffee  = { name = 'coffee',  label = 'Cup of Coffee',      weight = 80,  type =
 ---
 
 ## 📝 Changelog
+**3.3.0**
+- Added fullness limit, quality scaling, spoilage, alcohol tolerance and hangover, cancel key, timed buffs, warm/cold items, bars, drink sharing and the `rsg-consume:server:consumed` event. See CHANGELOG.md.
+
+**3.2.0**
+- Security: skipping the animation no longer gives instant effects (`Config.MinDuration`).
+- Fixed: stress was never applied server-side (negative stress items did nothing); alcohol carried over between characters and after death; `SleepDuration` was ignored; pass-out could leave the screen black if you died.
+- Changed: drunkness scales with level, effects react immediately, no eating while swimming/ragdolled/falling/climbing (new `cannot_now` locale key).
+
 **3.1.1**
 - Fixed: drinking/eating sometimes did not restore thirst/hunger. Values are now applied **server-side** through `exports['rsg-hud']:SetNeed` (works with rsg-hud `Config.ServerNeeds`), instead of a client write that could race the HUD decay loop or be reverted by its gain limiter.
 

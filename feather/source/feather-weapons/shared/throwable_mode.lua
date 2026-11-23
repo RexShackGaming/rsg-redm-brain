@@ -18,3 +18,7 @@ if type(GetConvar)=='function' and GetConvar('feather_throwable_quantities','0')
     Config.NativeThrowablePickupPriorPolicy=Config.NativeThrowablePickupPriorPolicy
         or {w_melee_tomahawk01=true,w_melee_tomahawk02=true}
 end
+if type(GetConvarInt)=='function' and GetConvarInt('feather_throwing_knife_quantities',0)==1 then
+    assert(Config.NativeThrowableQuantityContract==1,'Regular throwing knives require feather_throwable_quantities 1')
+    if Config.RegularKnifePickupPriorAllowed==nil then Config.RegularKnifePickupPriorAllowed=true end
+end

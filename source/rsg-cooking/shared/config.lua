@@ -12,6 +12,12 @@ Config.OutputCap    = 100                         -- max items the serving tray 
 Config.TickInterval = 15                          -- seconds between server cooking ticks
 Config.ImagePath    = 'nui://rsg-inventory/html/images/'
 
+-- While the cooking UI is open, block game controls but keep push-to-talk working
+Config.AllowPushToTalkWhileOpen = true
+Config.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK
+}
+
 ---------------------------------
 -- station types
 -- fuel = true  -> the station has a firebox and only cooks while it has fuel
@@ -29,6 +35,13 @@ Config.WorldStations = {
     enabled  = true,
     private  = true,
     distance = 2.0, -- rsg-target distance
+    MaxPerPlayer = 3, -- pots one character can hold at once (empty ones are removed first)
+    -- optional whitelist of real stove spots. When it has entries the server refuses pots anywhere else, so a modded
+    -- client can't open a "stove" in the middle of nowhere. Empty = any stove prop works.
+    -- Get the entries by standing at a stove and running /cookingstove (admin), then paste the lines here.
+    Locations = {
+        -- { coords = vector3(0.0, 0.0, 0.0), radius = 2.5 },
+    },
     models   = {
         `p_stove01x`,
         `p_stove04x`,
@@ -47,11 +60,12 @@ Config.Campfire = {
     Item          = 'campfire',             -- item used to place a campfire (nil = free via command)
     ReturnItem    = true,                   -- give the item back when the owner puts the fire out
     Model         = `p_campfirecombined01x`,
-    PlaceDistance = 5.0,                    -- max distance from the player the campfire can be placed
+    PlaceDistance = 5.0,                    -- max distance from the player the campfire can be placed (rsg-gizmo placement)
     MinSpacing    = 3.0,                    -- min distance between two cooking stations
     MaxPerPlayer  = 1,                      -- campfires a character can have at once
     SetupTime     = 5000,                   -- ms to build the fire after placing
     OwnerOnly     = false,                  -- true = only the owner can cook at / collect from their campfire
+    ExpireDays    = 14,                     -- an EMPTY campfire nobody used for this many days is removed (0 = never)
 }
 
 ---------------------------------
@@ -81,6 +95,36 @@ Config.XpPerItem = 1                        -- xp for each item collected (recip
 -- total xp needed to reach each level (index = level)
 Config.Levels = { 0, 10, 50, 150, 400, 1000 }
 
+-- how xp is paid out when food is collected
+-- 'item'  -> xp x items collected (a recipe that makes 10 items pays 10x)
+-- 'batch' -> xp x batches collected (every batch pays the same however many items it makes)
+Config.XpMode = 'item'
+
+-- food quality (rsg-inventory info.quality, which rsg-inventory's own Config.Decay then ages). Collected food gets the
+-- quality of the collecting player's cooking level. Only recipes in these categories are affected; a recipe can set
+-- quality = true / false to override. Items with different quality don't stack together.
+Config.Quality = {
+    Enabled    = true,
+    ByLevel    = { 70, 80, 90, 95, 100, 100 }, -- quality % at cooking level 1, 2, 3 ...
+    Categories = { Snacks = true, Meals = true, Brewing = true, Bread = true, Canning = true, Desserts = true },
+}
+
+-- cookbooks: useable items that teach locked recipes (recipes with locked = true stay hidden until learned)
+-- the learned recipes are saved on the character. Add the item to your items file (see installation/shared_items.lua).
+Config.CookbookConsume = true -- the book is used up when it teaches something
+Config.Cookbooks = {
+    -- cookbook_stews = { recipes = { 'stew_fish', 'stew_veg' } },
+}
+
+-- top cooks panel (reads the cooking xp from the players table, cached)
+Config.Leaderboard = {
+    Enabled   = true,
+    Command   = 'cookingtop',
+    Size      = 10,
+    Cache     = 60,   -- seconds between database reads
+    ShowNames = true, -- false = hide character names
+}
+
 ---------------------------------
 -- recipes
 -- key         unique id (use the output item name)
@@ -89,7 +133,9 @@ Config.Levels = { 0, 10, 50, 150, 400, 1000 }
 -- time        seconds per batch (real time - keeps cooking while you're away and survives restarts)
 -- types       station types it can be cooked at: 'all' or a table e.g. { 'stove', 'campfire' }
 -- job         optional job name / job type required (nil = anyone)
--- xp          xp per item collected (optional, defaults to Config.XpPerItem)
+-- xp          xp per item collected, or per batch with Config.XpMode = 'batch' (optional, defaults to Config.XpPerItem)
+-- locked      true = hidden until the player learns it from a cookbook (Config.Cookbooks)
+-- quality     true / false = force Config.Quality on / off for this recipe's output (default: by category)
 ---------------------------------
 Config.Recipes = {
     ------------------------------------------
@@ -210,6 +256,7 @@ Config.Recipes = {
     ------------------------------------------
     -- job-only example
     ------------------------------------------
+    -- cookbook example (add the item to Config.Cookbooks): { key = 'stew_special', ..., locked = true, ... }
     -- { key = 'gourmet_meal', category = 'Professional', level = 3, time = 300, types = { 'stove' }, job = 'cook', xp = 5,
     --   ingredients = { { item = 'raw_meat', amount = 2 }, { item = 'flour_wheat', amount = 1 }, { item = 'egg', amount = 2 } },
     --   output = { item = 'gourmet_meal', amount = 1 } },

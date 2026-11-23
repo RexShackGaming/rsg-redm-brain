@@ -25,3 +25,11 @@ function CalculateCashReward(location, destination)
     end
     return cash, false
 end
+
+---Route of a hub that is 'hot' today (rotates at midnight UTC). Client uses it for the badge, the server for the bonus.
+---@return integer|nil index into location.deliveries
+function GetHotRouteIndex(hubIndex, count)
+    if not count or count < 1 then return nil end
+    local now = IsDuplicityVersion() and os.time() or GetCloudTimeAsInt()
+    return ((now // 86400) + hubIndex) % count + 1
+end

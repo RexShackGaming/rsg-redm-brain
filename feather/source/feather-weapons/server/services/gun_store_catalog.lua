@@ -44,8 +44,14 @@ function WeaponGunStore.Build(config,definitions)
             local setting=config[group][key]
             if setting==nil then return Error('Missing gun store price: '..key) end
             local arrows=WeaponRegularArrowPolicy and WeaponRegularArrowPolicy.Enabled()
+            local knives=WeaponNativeThrowablePolicy and WeaponNativeThrowablePolicy.KnivesEnabled and WeaponNativeThrowablePolicy.KnivesEnabled()
+            if knives and group=='ammunition' and key:match('^ammo_throwing_knives_') and key~='ammo_throwing_knives_regular'
+                and not (WeaponSpecialAmmunitionPolicy and WeaponSpecialAmmunitionPolicy.Enabled('throwing_knife')
+                    and WeaponSpecialAmmunitionPolicy.Profile(definitions,key)) then setting=false end
             if group=='weapons' and definition.family=='bow' and not arrows then setting=false end
-            if arrows and group=='ammunition' and key:match('^ammo_arrow_') and key~='ammo_arrow_regular' then setting=false end
+            if arrows and group=='ammunition' and key:match('^ammo_arrow_') and key~='ammo_arrow_regular'
+                and not (WeaponSpecialAmmunitionPolicy and WeaponSpecialAmmunitionPolicy.Enabled('bow')
+                    and WeaponSpecialAmmunitionPolicy.Profile(definitions,key)) then setting=false end
             if group=='weapons' and WeaponNativeMeleeCatalog and WeaponNativeMeleeCatalog.Resolve(definition)
                 and not WeaponNativeMeleeCatalog.Enabled() then setting=false end
             if group=='ammunition' and key=='ammo_tomahawk_regular' and physicalUnits then setting=false end

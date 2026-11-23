@@ -101,7 +101,7 @@ Player & NPC addiction system for RSG Framework (alcohol and weed). Keep feeding
 
 ### Install
 1. Addiction is built into rsg-drugs — just `ensure rsg-drugs` after rsg-consume. Remove the old `rsg-addiction` resource if you had it.
-2. Alcohol: items are consumed by **rsg-consume**; this script listens to `rsg-consume:client:consume`. Nothing else needed.
+2. Alcohol: items are consumed by **rsg-consume**; this script listens to the server event `rsg-consume:server:consumed` (needs rsg-consume 3.3.0+). Nothing else needed.
 3. Weed: this script makes `weed_joint` usable (smoking). Add it from `installation/shared_items.lua` and add a `weed_joint.png` to rsg-inventory images.
 4. No SQL needed. Data lives in player metadata `addiction` and is mirrored to the `addiction` statebag.
 

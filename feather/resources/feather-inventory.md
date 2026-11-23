@@ -1,8 +1,8 @@
 # feather-inventory
 
-Version 0.17.0. The Inventory API for the Feather Framework
+Version 0.18.0. The Inventory API for the Feather Framework
 
-Version **0.17.0** adds type-separated Regular-arrow recovery for Weapons0.25.0. With `setr feather_regular_arrows 1`, funded shot debits create arrow allowances atomically; native recovery consumes them once within180seconds/50metres and the
+Version **0.18.0** adds Regular-knife recovery and bounded Poison-to-Regular knife conversion for Weapons **0.26.0**, preserving independent ammunition pools and existing schema. See [release notes](docs/release-0.18.0.md).
 
 Source: https://github.com/FeatherFramework/feather-inventory
 

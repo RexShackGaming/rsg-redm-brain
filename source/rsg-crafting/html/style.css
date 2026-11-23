@@ -224,6 +224,57 @@ html, body {
 .status.bad { color: var(--rdr-cost-over); }
 
 
+/* search, favourites, category icons */
+.search {
+    width: 100%; margin-bottom: 8px; padding: 7px 10px;
+    font-family: inherit; font-size: 12.5px; color: var(--rdr-text);
+    background: rgba(0, 0, 0, 0.35); border: 1px solid var(--rdr-gold-dim); border-radius: 2px;
+    outline: none; transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.search::placeholder { color: var(--rdr-muted); font-style: italic; }
+.search:focus { border-color: var(--rdr-gold); box-shadow: 0 0 0 2px rgba(201, 162, 75, 0.15); }
+
+.tab { display: flex; align-items: center; gap: 6px; }
+.tab-icon { width: 16px; height: 16px; object-fit: contain; }
+
+.star {
+    width: 14px; height: 14px; flex-shrink: 0; cursor: pointer; border: 0; padding: 0;
+    background: var(--rdr-gold-dim);
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+.star:hover { background: var(--rdr-text); transform: scale(1.15); }
+.star.on { background: var(--rdr-amber); }
+.list-empty { padding: 18px 8px; text-align: center; font-style: italic; color: var(--rdr-muted); font-size: 12.5px; }
+
+/* extra meta (fail chance, quality, station) */
+.meta-row.extra { margin-top: -6px; }
+.meta b.ok { color: var(--rdr-cost-ok); }
+.meta b.warn { color: var(--rdr-amber); }
+.meta b.bad { color: var(--rdr-cost-over); }
+
+.mini-btn {
+    margin-left: 6px; padding: 4px 10px; cursor: pointer;
+    font-family: inherit; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--rdr-text); background: linear-gradient(180deg, #2e2e2e, #141414);
+    border: 1px solid var(--rdr-gold-dim); border-radius: 2px;
+    transition: border-color 0.15s ease, filter 0.15s ease;
+}
+.mini-btn:hover:not(:disabled) { border-color: var(--rdr-gold); filter: brightness(1.3); }
+.mini-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* queue */
+#queue-wrap { margin-top: 14px; }
+.queue-list { display: flex; flex-direction: column; gap: 5px; }
+.queue-item {
+    display: flex; align-items: center; gap: 10px; padding: 5px 8px 5px 10px;
+    border: 1px solid rgba(201,162,75,0.12); border-radius: 2px; background: rgba(0,0,0,0.2);
+    font-size: 12.5px;
+}
+.queue-item .q-pos { color: var(--rdr-muted); font-weight: 600; min-width: 16px; }
+.queue-item .q-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.queue-item .q-qty { color: var(--rdr-muted); font-weight: 600; }
+
 /* draggable panel */
 .panel-header { cursor: grab; }
 .panel-header .circle-btn { cursor: pointer; }

@@ -177,7 +177,10 @@ All settings live in `shared/config.lua`. The tables below list the keys; defaul
 
 ```lua
 Config.HorseFeedItems  = { { item = 'horse_apple',  label = 'Horse Apple',  health = 10, stamina = 10, hunger = 15 } }
-Config.HorseDrinkItems = { { item = 'fullbucket', label = 'Water Bucket', thirst = 50, stamina = 10 } }
+Config.HorseDrinkItems = {
+    { item = 'fullbucket', label = 'Water Bucket', thirst = 50, stamina = 10 },
+    { item = 'canteen', label = 'Canteen', thirst = 30, stamina = 5, canteen = true }, -- takes one rsg-canteen use
+}
 
 Config.HorseNeeds = {
     enabled = true, decayInterval = 60000,
@@ -602,7 +605,7 @@ Registered with `RegisterNUICallback` in the client scripts and called from the 
 | Callback | File | Purpose |
 |---|---|---|
 | `select`, `close`, `inputSubmit`, `inputCancel`, `alertClose`, `statsClose` | `client.lua` | Menu navigation, name input, alert and stats dialogs |
-| `rotateCam`, `zoomCam` | `client.lua` | Preview camera |
+| `rotateCam`, `zoomCam` | `client.lua` | Preview camera (the NUI skips `zoomCam` while the pointer is over a scrollable list, so the wheel scrolls it) |
 | `tackCycle`, `tackCategoryNav`, `coatUpdate`, `coatAction` | `client.lua` | Tack and coat editors |
 | `horseCardAction`, `horseCardClose` | `client.lua` | Horse card (`/horseinfo`) |
 | `actionsSelect`, `actionsClose` | `actions.lua` | Horse Actions panel |
@@ -641,6 +644,7 @@ Created with `RSGCore.Functions.CreateUseableItem` from the `Config` item names.
 |---|---|---|
 | `Config.HorseFeedItems[].item` | `horse_apple`, `horse_carrot` | Feed (needs the horse within `HorseBrushDistance`) |
 | `Config.HorseDrinkItems[].item` | `fullbucket` | Water the horse (via **Water Horse**) |
+| `Config.HorseDrinkItems[].canteen` | `true` on the `canteen` entry | Takes one use from the player's `rsg-canteen` through `exports['rsg-canteen']:ConsumeUse(src)` instead of removing the item; ignored if rsg-canteen is not running |
 | `Config.HorseBrushItem` | `horse_brush` | Brush (not consumed) |
 | `Config.HorseStimulant.item` | `horse_stimulant` | Boost, consumed |
 | `Config.HorseMedicine.item` | `horse_medicine` | Heal, consumed |
@@ -871,7 +875,7 @@ Foal keys: `foal_cannot_ride`, `foal_grown_up` (`%s` = horse name). When adding 
 
 ## Technical reference
 
-Generated from the source of **rsg-stables 3.7.0**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-stables 3.7.3**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 

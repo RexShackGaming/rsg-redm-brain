@@ -30,7 +30,7 @@ Recipes use `types` to choose where they can be cooked (`'all'` or e.g. `{ 'stov
 1. Put `rsg-cooking` in your `resources` folder.
 2. Items: add `installation/shared_items.lua` to `rsg-core/shared/items.lua` and copy `installation/images/*.png` to `rsg-inventory/html/images/`.
 3. Database: the `rsg_cooking_stations` table is created automatically (or run `installation/rsg-cooking.sql`). The old `rsg_cooking_campfires` table is no longer used.
-4. `ensure rsg-cooking` after oxmysql, rsg-core, rsg-inventory and rsg-target. ox_lib is **not** required (locales, notify, callbacks, progress bar and text UI all come from rsg-core).
+4. `ensure rsg-cooking` after oxmysql, rsg-core, rsg-inventory, rsg-target and rsg-gizmo (campfire placement). ox_lib is **not** required (locales, notify, callbacks, progress bar and text UI all come from rsg-core).
 5. Webhooks live in `server/sv_config.lua` (server only, the URLs are never sent to clients).
 
 ---
@@ -42,8 +42,13 @@ Recipes use `types` to choose where they can be cooked (`'all'` or e.g. `{ 'stov
 | `Config.MaxBatches` | batches' worth of each ingredient the pantry holds |
 | `Config.OutputCap` | max items on the serving tray |
 | `Config.StationTypes` | which station types need fuel |
-| `Config.WorldStations` | stove models, target distance, private or shared pots |
-| `Config.Campfire` | item, model, max per player, spacing, owner-only |
+| `Config.WorldStations` | stove models, target distance, private or shared pots, `MaxPerPlayer` pots per character, optional `Locations` whitelist |
+| `Config.Campfire` | item, model, max per player, spacing, owner-only, `ExpireDays` for unused empty campfires (placed with rsg-gizmo) |
+| `Config.AllowPushToTalkWhileOpen` / `Config.PushToTalkControls` | keep push-to-talk working while the cooking UI is open (other controls are blocked) |
+| `Config.XpMode` | `'item'` (xp per item collected) or `'batch'` (xp per batch) |
+| `Config.Quality` | food quality by cooking level, per recipe category |
+| `Config.Cookbooks` / `Config.CookbookConsume` | useable books that teach `locked = true` recipes |
+| `Config.Leaderboard` | `/cookingtop` panel: command, size, cache, hide names |
 | `Config.Fuels` / `Config.MaxFuel` | fuel items, seconds each burns, firebox size |
 | `Config.Levels` / `Config.XpPerItem` | cooking levels (rep `cooking`, existing xp carries over) |
 | `Config.Recipes` | `key, category, level, time (seconds per batch), types, job, xp, ingredients, output` |
@@ -73,11 +78,17 @@ exports['rsg-cooking']:AddCustomRecipe({ key = 'x', category = 'Meals', level = 
 
 ## Security notes
 - All items, fuel, xp and food are handled on the server: the client only sends which action it wants, and the server checks distance, ownership, level, job, amounts and inventory space every time.
-- Stove props are map objects the server can't see, so a modded client could open a "stove" pot anywhere. To limit this, each character keeps at most **one unused pot**, and unused pots are deleted on restart.
+- Stove props are map objects the server can't see, so a modded client could open a "stove" pot anywhere. To limit this, each character keeps at most **one unused pot** and at most `Config.WorldStations.MaxPerPlayer` pots in total, and unused pots are deleted on restart.
 
 ---
 
 ## Changelog
+
+### 3.5.0
+- Campfire expiry, stove whitelist, per-batch XP, cookbooks and food quality, and a `/cookingtop` leaderboard. See `CHANGELOG.md`.
+
+### 3.4.0
+- Campfire placement uses rsg-gizmo; push-to-talk works with the UI open; world pot cap per character; sanitised client amounts; partial pantry unload; private pots only sync to their owner; UI fixes. Full list in `CHANGELOG.md`.
 
 **3.3.0**
 - Optional rsg-skills integration: cooking XP mirrored to the `cooking` skill (`Config.Skills`).
@@ -94,6 +105,8 @@ exports['rsg-cooking']:AddCustomRecipe({ key = 'x', category = 'Meals', level = 
 ---
 
 ## Commands
+- `/cookingtop` shows the top cooks (`Config.Leaderboard.Command`)
+- `/cookingstove` (admin) prints the closest stove's coordinates for `Config.WorldStations.Locations`
 - `/setupcampfire` place a campfire (needs the `campfire` item when one is configured; the item and campfire limit are checked before the preview opens)
 - `/cooking_unfocus` releases the mouse if the UI ever gets stuck
 
@@ -105,6 +118,12 @@ If you enjoy this script, consider supporting development: https://buymeacoffee.
 ## rsg-skills integration
 
 Optional. With `rsg-skills` started, cooking XP is also awarded to the shared `cooking` skill (`Config.Skills.XPScale` times the XP earned). Cooking levels and recipe gates keep working as before. Set `Config.Skills.Enabled = false` to turn it off.
+
+## Cookbooks, quality and leaderboard
+
+- Add an item (example in `installation/shared_items.lua`), list it in `Config.Cookbooks = { cookbook_stews = { recipes = { 'stew_fish' } } }` and set `locked = true` on those recipes. Using the book teaches them; until then they are hidden.
+- Food quality is passed to rsg-inventory as `info.quality`; it only ages if rsg-inventory's own `Config.Decay` is enabled for those items.
+- Campfires are only removed by `ExpireDays` when completely empty (no ingredients, batch or food).
 
 ## Database
 

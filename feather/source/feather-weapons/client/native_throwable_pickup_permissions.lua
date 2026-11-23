@@ -2,10 +2,11 @@
 -- requires the caller's explicit prior policy so teardown never guesses it.
 -- Inactive until the normal recovery lifecycle installs and owns this policy.
 WeaponNativeThrowablePickupPermissions={}
-function WeaponNativeThrowablePickupPermissions.New(setPermission,prior)
+function WeaponNativeThrowablePickupPermissions.New(setPermission,prior,modelList)
  local callable=type(setPermission)=='function' or type(setPermission)=='table' and type(rawget(setPermission,'__cfx_functionReference'))=='string'
  assert(callable and type(prior)=='table','Explicit prior model pickup policy required')
- local models={'w_melee_tomahawk01','w_melee_tomahawk02'}
+ local models=modelList or {'w_melee_tomahawk01','w_melee_tomahawk02'}
+ assert(type(models)=='table' and #models>0 and #models<=8,'Bounded pickup models required')
  for _,name in ipairs(models) do assert(type(prior[name])=='boolean','Unknown prior pickup policy: '..name) end
  local original={};for _,name in ipairs(models) do original[name]=prior[name] end
  local changed,active,allowed={},false,false

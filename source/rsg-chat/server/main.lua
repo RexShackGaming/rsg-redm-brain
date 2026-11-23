@@ -20,11 +20,26 @@ local function notify(src, key, ntype, ...)
     })
 end
 
+-- Invisible / direction-override characters used to spoof names or hide text
+local STRIP = {
+    '\u{200B}', '\u{FEFF}', '\u{202A}', '\u{202B}', '\u{202C}', '\u{202D}', '\u{202E}',
+    '\u{2066}', '\u{2067}', '\u{2068}', '\u{2069}',
+}
+
+-- Cuts to `max` CHARACTERS (not bytes) so Russian / Japanese / Greek text is not mangled.
+-- Returns nil for invalid UTF-8.
+local function limitChars(s, max)
+    local len = utf8.len(s)
+    if not len then return nil end
+    if len <= max then return s end
+    return s:sub(1, utf8.offset(s, max + 1) - 1)
+end
+
 local function cleanStr(v, max)
-    if type(v) ~= 'string' then return '' end
+    if type(v) ~= 'string' or #v > max * 4 then return '' end
     v = (v:gsub('[%c<>]', ''))
     v = v:match('^%s*(.-)%s*$') or ''
-    return v:sub(1, max)
+    return limitChars(v, max) or ''
 end
 
 local function cleanList(v)
@@ -180,9 +195,48 @@ end
 
 local function CleanMessage(message, maxLength)
     if type(message) ~= 'string' then return end
-    message = message:gsub('%c', ' '):match('^%s*(.-)%s*$')
+    if #message > Config.HardMaxLength * 4 then return end -- oversized payload: dropped before any processing
+    message = message:gsub('%c', ' ')
+    for i = 1, #STRIP do message = message:gsub(STRIP[i], '') end
+    message = message:match('^%s*(.-)%s*$')
     if message == '' then return end
-    return message:sub(1, math.min(maxLength or Config.HardMaxLength, Config.HardMaxLength))
+    return limitChars(message, math.min(maxLength or Config.HardMaxLength, Config.HardMaxLength))
+end
+
+-- One place builds the payload sent to clients (used by players and by the export)
+local function BuildPayload(ch, author, text)
+    return {
+        channel = ch.id,
+        color = ch.color,
+        prefix = ch.showPrefix and ch.prefix ~= '' and ch.prefix or nil,
+        author = author,
+        text = text,
+    }
+end
+
+-- Sends one message to its recipients. Players mentioned with @First_Last (or @First) get it flagged for highlighting.
+-- Returns the recipient list.
+local function Deliver(src, ch, payload, message)
+    local recipients = GetRecipients(src, ch)
+    local mentioned = Config.Mentions and message:find('@', 1, true) and ChatCore.FindMentions(message, recipients, src) or nil
+
+    if mentioned and next(mentioned) then
+        if recipients[1] == -1 then -- global channel: expand to real ids so individual players can be flagged
+            recipients = {}
+            for _, sid in ipairs(GetPlayers()) do recipients[#recipients + 1] = tonumber(sid) end
+        end
+        local pinged = {}
+        for k, v in pairs(payload) do pinged[k] = v end
+        pinged.mention = true
+        for _, target in ipairs(recipients) do
+            TriggerClientEvent('rsg-chat:client:channelMessage', target, mentioned[target] and pinged or payload)
+        end
+    else
+        for _, target in ipairs(recipients) do
+            TriggerClientEvent('rsg-chat:client:channelMessage', target, payload)
+        end
+    end
+    return recipients
 end
 
 local function SendToChannel(src, channelId, message)
@@ -194,24 +248,32 @@ local function SendToChannel(src, channelId, message)
         SyncPlayer(src)
         return
     end
+    if ChatCore.CheckMute(src) then return end
     message = CleanMessage(message, ch.maxLength)
     if not message then return end
+
+    local blocked
+    message, blocked = ChatCore.Filter(message, src)
+    if blocked or not message then return notify(src, 'message_blocked') end
 
     local name = GetCharacterName(src)
     TriggerEvent('chatMessage', src, name, message) -- lets other resources hook/cancel
     if WasEventCanceled() then return end
 
-    local payload = {
-        channel = ch.id,
-        color = ch.color,
-        prefix = ch.showPrefix and ch.prefix ~= '' and ch.prefix or nil,
-        author = name,
-        text = message,
-    }
-    for _, target in ipairs(GetRecipients(src, ch)) do
-        TriggerClientEvent('rsg-chat:client:channelMessage', target, payload)
+    local recipients = Deliver(src, ch, BuildPayload(ch, name, message), message)
+
+    -- "nobody heard you" hint for range-limited channels
+    if Config.NobodyHeardHint and (ch.range == 'local' or ch.range == 'regional') then
+        local heard = 0
+        for _, t in ipairs(recipients) do if t ~= src then heard = heard + 1 end end
+        if heard == 0 then notify(src, 'nobody_heard', 'inform') end
     end
-    print(('[%s] %s^7: %s^7'):format(ch.id, name, message))
+
+    ChatCore.Log(src, ch.id, name, message)
+    if Config.ConsoleLog then
+        -- colour codes typed by players are stripped so they can't recolour the server console
+        print(('[%s] %s^7: %s^7'):format(ch.id, (name:gsub('%^%d', '')), (message:gsub('%^%d', ''))))
+    end
 end
 
 local function FindByCommand(cmd)
@@ -246,17 +308,26 @@ local function SaveOrder()
     if #queries > 0 then MySQL.transaction.await(queries) end
 end
 
-local function LoadChannels()
-    if Config.AutoDatabase ~= false then
-        MySQL.query.await([[
-            CREATE TABLE IF NOT EXISTS `rsg_chat_channels` (
-                `id` VARCHAR(32) NOT NULL,
-                `data` LONGTEXT NOT NULL,
-                `sort` INT NOT NULL DEFAULT 0,
-                PRIMARY KEY (`id`)
-            )
-        ]])
+-- Same schema as install.sql (keep the two in sync)
+local function ensureDatabase()
+    local ok, err = pcall(MySQL.query.await, [[
+        CREATE TABLE IF NOT EXISTS `rsg_chat_channels` (
+            `id` VARCHAR(32) NOT NULL,
+            `data` LONGTEXT NOT NULL,
+            `sort` INT NOT NULL DEFAULT 0,
+            PRIMARY KEY (`id`)
+        )
+    ]])
+    if not ok then
+        print(('^1[rsg-chat] could not create the database table: %s^7'):format(tostring(err)))
+        return false
     end
+    print('^2[rsg-chat] database tables ready^7')
+    return true
+end
+
+local function LoadChannels()
+    if Config.AutoDatabase ~= false and not ensureDatabase() then return end
 
     local rows = MySQL.query.await('SELECT id, data FROM rsg_chat_channels ORDER BY sort ASC, id ASC') or {}
     if #rows == 0 then
@@ -350,10 +421,6 @@ end)
 ---------------------------------------------------------------------
 -- Commands
 ---------------------------------------------------------------------
-RegisterCommand('clearchat', function(source)
-    if source > 0 then TriggerClientEvent('chat:clear', source) end
-end, false)
-
 RSGCore.Commands.Add('chatadmin', locale('help_chatadmin'), {}, false, function(source)
     TriggerClientEvent('rsg-chat:client:openAdmin', source)
 end, Config.AdminPermission)
@@ -454,13 +521,17 @@ local function adminMove(src, id, dir)
 end
 
 -- Admin actions are rate limited per player (they hit the database)
-for name, fn in pairs({ adminSave = adminSave, adminDelete = adminDelete, adminToggle = adminToggle, adminMove = adminMove }) do
+local function adminCallback(name, fn)
     RSGCore.Functions.CreateCallback('rsg-chat:server:' .. name, function(src, cb, ...)
         local now = GetGameTimer()
         if lastAdmin[src] and now - lastAdmin[src] < 250 then return cb(adminResult(false, 'slow_down')) end
         lastAdmin[src] = now
         cb(fn(src, ...))
     end)
+end
+
+for name, fn in pairs({ adminSave = adminSave, adminDelete = adminDelete, adminToggle = adminToggle, adminMove = adminMove }) do
+    adminCallback(name, fn)
 end
 
 ---------------------------------------------------------------------
@@ -471,11 +542,7 @@ exports('SendChannelMessage', function(channelId, author, text)
     local ch = Channels[channelId]
     text = CleanMessage(text)
     if not ch or not text then return false end
-    local payload = {
-        channel = ch.id, color = ch.color,
-        prefix = ch.showPrefix and ch.prefix ~= '' and ch.prefix or nil,
-        author = tostring(author or locale('console_name')):sub(1, 64), text = text,
-    }
+    local payload = BuildPayload(ch, cleanStr(tostring(author or ''), 64) ~= '' and cleanStr(tostring(author), 64) or locale('console_name'), text)
     for _, sid in ipairs(GetPlayers()) do
         local t = tonumber(sid)
         if CanUse(t, ch) then TriggerClientEvent('rsg-chat:client:channelMessage', t, payload) end
@@ -484,3 +551,21 @@ exports('SendChannelMessage', function(channelId, author, text)
 end)
 
 exports('GetChannels', function() return AdminList() end)
+
+---------------------------------------------------------------------
+-- Shared with server/extras.lua (mutes, word filter, logs, PM, /do, /roll, mentions).
+-- The stubs below are replaced by extras.lua when it loads.
+---------------------------------------------------------------------
+ChatCore = {
+    notify = notify,
+    cleanStr = cleanStr,
+    CleanMessage = CleanMessage,
+    GetCharacterName = GetCharacterName,
+    OnCooldown = OnCooldown,
+    isAdmin = isAdmin,
+    AdminCallback = adminCallback,
+    CheckMute = function() return false end,
+    Filter = function(message) return message end,
+    Log = function() end,
+    FindMentions = function() return nil end,
+}

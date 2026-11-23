@@ -1,6 +1,13 @@
 # Feather Weapons
 
-Current version: **0.25.0**. See [release notes](docs/release-0.25.0.md).
+Current version: **0.26.0**. See [release notes](docs/release-0.26.0.md).
+
+Regular throwing knives and validated specialty ammunition use the character
+ledger, paired with Inventory **0.18.0**. Regular/Poison knives share one native
+carrier with independent eight-unit pools; Poison recovery becomes Regular.
+Small Game, Poison, Fire and Dynamite arrows keep independent quantities.
+These additions are opt-in; see the release notes for startup settings and
+recovery limits. Specialty-arrow recovery and Improved variants remain disabled.
 
 ## Regular arrows
 

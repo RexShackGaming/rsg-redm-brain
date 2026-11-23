@@ -9,5 +9,17 @@
     "wakeup_desc": "Du wachst mit furchtbaren Kopfschmerzen auf...",
     "sober_title": "✨ Erholt",
     "sober_desc": "Du hast wieder einen klaren Kopf.",
-    "inventory_full": "Deine Taschen sind voll"
+    "inventory_full": "Deine Taschen sind voll",
+    "cannot_now": "Du kannst gerade nicht essen oder trinken",
+    "full": "Dafür bist du zu satt",
+    "spoiled": "Es war verdorben! Dir wird übel...",
+    "cancel_hint": "Drücke X, um das Essen oder Trinken abzubrechen",
+    "bar_label": "%s bestellen ($%s)",
+    "bar_no_money": "Du hast nicht genug Bargeld",
+    "share_label": "%s teilen",
+    "share_given": "Du hast %s geteilt",
+    "share_received": "Jemand hat %s mit dir geteilt",
+    "share_far": "Die Person ist zu weit weg",
+    "share_full": "Die Person kann nichts mehr tragen",
+    "share_failed": "Du hast diesen Gegenstand nicht"
 }

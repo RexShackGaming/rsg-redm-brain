@@ -9,5 +9,17 @@
     "wakeup_desc": "ひどい頭痛で目が覚めた...",
     "sober_title": "✨ 回復",
     "sober_desc": "頭がすっきりした。",
-    "inventory_full": "持ち物がいっぱいです"
+    "inventory_full": "持ち物がいっぱいです",
+    "cannot_now": "今は飲食できません",
+    "full": "もうお腹がいっぱいです",
+    "spoiled": "腐っていた！気分が悪い…",
+    "cancel_hint": "Xキーで食事・飲酒を中止",
+    "bar_label": "%sを注文 ($%s)",
+    "bar_no_money": "現金が足りません",
+    "share_label": "%sを分ける",
+    "share_given": "%sを分けました",
+    "share_received": "誰かが%sを分けてくれました",
+    "share_far": "相手が遠すぎます",
+    "share_full": "相手はこれ以上持てません",
+    "share_failed": "そのアイテムを持っていません"
 }

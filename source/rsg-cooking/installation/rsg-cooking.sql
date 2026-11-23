@@ -12,9 +12,14 @@ CREATE TABLE IF NOT EXISTS `rsg_cooking_stations` (
     `fuel` INT NOT NULL DEFAULT 0,
     `batch_left` INT DEFAULT NULL,
     `last_tick` INT DEFAULT NULL,
+    `last_used` INT DEFAULT NULL,
     PRIMARY KEY (`id`),
     INDEX `idx_citizenid` (`citizenid`)
 );
+
+-- upgrading from 3.4.x or older by hand (AutoDatabase = false)? run this once:
+-- ALTER TABLE `rsg_cooking_stations` ADD COLUMN `last_used` INT DEFAULT NULL;
+-- UPDATE `rsg_cooking_stations` SET `last_used` = UNIX_TIMESTAMP() WHERE `last_used` IS NULL;
 
 -- the old campfire table from v3 is no longer used and can be dropped:
 -- DROP TABLE IF EXISTS `rsg_cooking_campfires`;

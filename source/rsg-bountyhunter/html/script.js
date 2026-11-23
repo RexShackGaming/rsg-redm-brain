@@ -4,6 +4,8 @@ const app = $('app');
 let T = {};
 let timerHandle = null;
 let busy = false;
+let abandonArmed = false;
+let abandonTimer = null;
 
 const post = (name, body = {}) => fetch(`https://${resource}/${name}`, {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
@@ -43,19 +45,33 @@ function renderBoard(posters, locked, hasContract) {
   $('locked').classList.toggle('hidden', !locked);
   if (!posters.length) { board.innerHTML = `<div class="empty">${esc(t('ui_no_posters'))}</div>`; return; }
 
-  const disabled = locked || hasContract;
-  board.innerHTML = posters.map(p => `
+  board.innerHTML = posters.map(p => {
+    const disabled = locked || hasContract || p.locked;
+    const cond = p.condition === 'alive' ? 'ui_alive_only' : p.condition === 'dead' ? 'ui_dead_only' : null;
+    const aliveR = p.condition === 'dead' ? '' : `<span class="pill">${esc(t('ui_reward_alive'))} $${p.rewardAlive}</span>`;
+    const deadR = p.condition === 'alive' ? '' : `<span class="pill">${esc(t('ui_reward_dead'))} $${p.rewardDead}</span>`;
+    return `
     <div class="poster${disabled ? ' disabled' : ''}">
       <div class="wanted">${esc(t('ui_wanted'))}</div>
       <span class="pill tier-${p.tier}">${esc(p.tierLabel)}</span>
+      ${cond ? `<span class="pill cond">${esc(t(cond))}</span>` : ''}
       <div class="name">${esc(p.name)}</div>
       <div class="crime">${esc(p.crime)}</div>
       <div class="rewards">
-        <span class="pill">${esc(t('ui_reward_alive'))} $${p.rewardAlive}</span>
-        <span class="pill">${esc(t('ui_reward_dead'))} $${p.rewardDead}</span>
+        ${aliveR}${deadR}
       </div>
+      ${p.locked ? `<div class="lvl-lock">${esc(t('ui_requires_level'))} ${p.minLevel}</div>` : ''}
       <button class="wood-btn" data-id="${p.id}" ${disabled ? 'disabled' : ''}>${esc(t('ui_take_contract'))}</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+function renderProg(level, streak) {
+  const parts = [];
+  if (level) parts.push(`${esc(t('ui_level'))} ${level}`);
+  if (streak) parts.push(`${esc(t('ui_streak'))} ${streak}`);
+  $('prog').innerHTML = parts.map(x => `<span class="pill">${x}</span>`).join('');
+  $('prog').classList.toggle('hidden', !parts.length);
 }
 
 function renderLeaders(rows) {
@@ -75,9 +91,20 @@ function switchTab(tab) {
   $('leaders').classList.toggle('hidden', tab !== 'leaders');
 }
 
+// the abandon button needs a second click within 3 seconds (a misclick costs a cooldown)
+function resetAbandon() {
+  abandonArmed = false;
+  clearTimeout(abandonTimer);
+  const btn = $('abandon');
+  btn.classList.remove('armed');
+  btn.textContent = t('ui_abandon');
+}
+
 function close() {
   app.classList.add('hidden');
   clearInterval(timerHandle);
+  resetAbandon();
+  busy = false;
 }
 
 window.addEventListener('message', ({ data }) => {
@@ -88,9 +115,11 @@ window.addEventListener('message', ({ data }) => {
     $('office').textContent = d.office || t('ui_dead_or_alive');
     renderStats(d.stats);
     renderActive(d.contract);
+    renderProg(d.level, d.streak);
     renderBoard(d.posters || [], !d.canHunt, !!d.contract);
     renderLeaders(d.leaderboard || []);
     switchTab('board');
+    resetAbandon();
     busy = false;
     app.classList.remove('hidden');
   }
@@ -109,6 +138,18 @@ $('board').addEventListener('click', async e => {
 });
 
 document.querySelectorAll('.tab').forEach(el => el.addEventListener('click', () => switchTab(el.dataset.tab)));
-$('abandon').addEventListener('click', () => { if (!busy) { busy = true; post('abandon').then(() => { busy = false; }); } });
+$('abandon').addEventListener('click', () => {
+  if (busy) return;
+  if (!abandonArmed) {
+    abandonArmed = true;
+    $('abandon').classList.add('armed');
+    $('abandon').textContent = t('ui_confirm_abandon');
+    abandonTimer = setTimeout(resetAbandon, 3000);
+    return;
+  }
+  resetAbandon();
+  busy = true;
+  post('abandon').then(() => { busy = false; });
+});
 $('close').addEventListener('click', () => post('close'));
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !app.classList.contains('hidden')) post('close'); });

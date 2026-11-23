@@ -66,6 +66,8 @@ Config.HorseFeedItems = {
 
 Config.HorseDrinkItems = {
     { item = 'fullbucket', label = 'Water Bucket', thirst = 50, stamina = 10 },
+    -- canteen = true takes one use from the player's rsg-canteen instead of removing the item (needs rsg-canteen)
+    { item = 'canteen', label = 'Canteen', thirst = 30, stamina = 5, canteen = true },
 }
 
 -- ===================== HORSE STIMULANT =====================

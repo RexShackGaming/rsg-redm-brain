@@ -1,4 +1,4 @@
-# rsg-cooking – Docs (v3.2.0)
+# rsg-cooking – Docs (v3.5.0)
 
 ## Contents
 1. Files
@@ -13,7 +13,7 @@
 ## 1. Files
 | File | Purpose |
 |---|---|
-| `fxmanifest.lua` | Manifest; depends on `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` |
+| `fxmanifest.lua` | Manifest; depends on `rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-gizmo`, `oxmysql` |
 | `shared/config.lua` | Stations, campfire, fuels, levels, recipes |
 | `client/client.lua` | Targets, campfire placement, NUI bridge |
 | `server/server.lua` | Stations, cooking ticks, actions, XP, exports |
@@ -51,7 +51,13 @@ To change recipe, the pantry, current batch and tray must be empty.
 | `TickInterval` | `15` | Seconds between server ticks |
 | `ImagePath` | `nui://rsg-inventory/html/images/` | Item images |
 | `StationTypes` | table | `fuel = true/false` per type |
-| `WorldStations` | table | `enabled`, `private`, `distance`, `models` |
+| `WorldStations` | table | `enabled`, `private`, `distance`, `MaxPerPlayer`, `Locations` (optional whitelist of `{ coords, radius }`), `models` |
+| `Campfire.ExpireDays` | number | empty campfires unused this long are removed, `0` = never |
+| `XpMode` | string | `'item'` or `'batch'` |
+| `Quality` | table | `Enabled`, `ByLevel`, `Categories` (recipe `quality = true/false` overrides) |
+| `Cookbooks` / `CookbookConsume` | table / bool | book item -> `{ recipes = { keys } }`, book consumed when it teaches something |
+| `Leaderboard` | table | `Enabled`, `Command`, `Size`, `Cache`, `ShowNames` |
+| `AllowPushToTalkWhileOpen` / `PushToTalkControls` | bool / table | block game controls while the UI is open but keep push-to-talk (rsg-voice) usable |
 | `Campfire` | table | `Command`, `Item`, `ReturnItem`, `Model`, `PlaceDistance`, `MinSpacing`, `MaxPerPlayer`, `SetupTime`, `OwnerOnly` |
 | `Fuels` | table | Fuel item → `burnTime` seconds |
 | `Levels` | `{0, 10, 50, 150, 400, 1000}` | XP needed per cooking level |
@@ -69,6 +75,7 @@ Webhook URLs are in `server/sv_config.lua`.
 | `GetRecipesByCookingType(stype)` | client export | |
 | `CanCookItem(itemName)` | server export | |
 | `AddCustomRecipe(recipe)` | server export | Register a recipe from another resource |
+| `LearnCookingRecipe(src, key)` / `KnowsCookingRecipe(src, key)` | server export | Teach a locked recipe / check if a player can use it |
 | `rsg-cooking:server:getStations` | callback | All stations |
 | `rsg-cooking:server:getState` | callback | `(id)` |
 | `rsg-cooking:server:action` | callback | `(id, action, data)` pantry, fuel, recipe, collect |
@@ -80,13 +87,16 @@ Webhook URLs are in `server/sv_config.lua`.
 Command: `/setupcampfire` (name from `Campfire.Command`).
 
 ## 5. Database
+Column `last_used` (unix time of the last use) drives campfire expiry. Tables from older versions get it automatically; with `Config.AutoDatabase = false` run the `ALTER TABLE` from `installation/rsg-cooking.sql`.
+
 `rsg_cooking_stations`: `id`, `citizenid`, `world`, `stype`, `x`, `y`, `z`, `heading`, `recipe`, `hopper`, `output`, `fuel`, `batch_left`, `last_tick`. Created automatically on start; `installation/rsg-cooking.sql` is optional.
 
 ## 6. Security
-The server validates distance, ownership, pantry contents, fuel and level for every action. Cooking runs on server ticks. Clients can't set output or XP.
+The server validates distance, ownership, pantry contents, fuel and level for every action. Cooking runs on server ticks. Clients can't set output or XP. Amounts from the client are sanitised (whole numbers only), campfire placement is re-checked with `rsg-gizmo:IsPlacementValid`, and each character can hold at most `WorldStations.MaxPerPlayer` world pots because the server can't see map stove props. For full protection fill `WorldStations.Locations` (use `/cookingstove`): the server then refuses pots anywhere else. The leaderboard sends no citizen IDs to clients.
 
 ## 7. How-tos
 - Add a recipe: add it to `Config.Recipes` (or call `AddCustomRecipe`), and make sure all items exist in `items.lua`.
+- Cookbook: add the item, put it in `Config.Cookbooks`, mark its recipes `locked = true`. Other scripts can use `exports['rsg-cooking']:LearnCookingRecipe(src, key)` and `KnowsCookingRecipe(src, key)`.
 - Items: wood and coal are `resource_wood` and `resource_coal`.
 - Language: `setr rsg:locale "de"` in server.cfg.
 
@@ -113,7 +123,7 @@ Generated from the source of **rsg-cooking 3.3.0**. Names, arguments and default
 
 ### Dependencies
 
-`rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
+`rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-gizmo`, `oxmysql`
 
 ### Database
 
@@ -139,8 +149,14 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.TickInterval` | `15` | seconds between server cooking ticks |
 | `Config.ImagePath` | `'nui://rsg-inventory/html/images/'` |  |
 | `Config.StationTypes` | `table` |  |
-| `Config.WorldStations` | `table` | private = false -> one shared pot per stove, like rsg-moonshine world stills |
+| `Config.AllowPushToTalkWhileOpen` | `true` | keep push-to-talk working while the UI is open |
+| `Config.PushToTalkControls` | `table` | controls left enabled while the UI is open |
+| `Config.WorldStations` | `table` | `MaxPerPlayer` = 3 pots per character; private = false -> one shared pot per stove, like rsg-moonshine world stills |
 | `Config.Campfire` | `table` |  |
+| `Config.XpMode` | `'item'` | `'batch'` pays xp per batch instead of per item |
+| `Config.Quality` | `table` | food quality by cooking level |
+| `Config.Cookbooks` | `table` | cookbook items and the recipes they teach |
+| `Config.Leaderboard` | `table` | `/cookingtop` settings |
 | `Config.Command` | `'setupcampfire'` |  |
 | `Config.Item` | `'campfire'` |  |
 | `Config.ReturnItem` | `true` |  |
@@ -174,6 +190,8 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `GetCookingRecipes` | `` | `server/server.lua` |
 | `CanCookItem` | `itemName` | `server/server.lua` |
 | `AddCustomRecipe` | `recipe` | `server/server.lua` |
+| `LearnCookingRecipe` | `src, key` | `server/server.lua` |
+| `KnowsCookingRecipe` | `src, key` | `server/server.lua` |
 
 **Client**
 
@@ -229,6 +247,8 @@ TriggerClientEvent('RSGCore:Client:OnPlayerLoaded', source)
 | Command | Notes | File |
 |---|---|---|
 | `/cooking_unfocus` |  | `client/client.lua` |
+| `/cookingtop` | top cooks panel (`Config.Leaderboard.Command`) | `client/client.lua` |
+| `/cookingstove` | admin: prints the closest stove for `Config.WorldStations.Locations` | `server/server.lua` |
 
 ### Locales
 

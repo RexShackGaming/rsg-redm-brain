@@ -1,5 +1,6 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 local spawnedPeds = {}
+local failedHubs = {} -- hubs whose foreman model failed to load (don't retry every tick)
 local currentHub = nil
 
 ---------------------------------
@@ -18,7 +19,21 @@ local UI_KEYS = {
     'ui_difficulty', 'ui_route_length', 'ui_rewards', 'ui_note', 'ui_close', 'ui_start', 'ui_no_contracts',
     'ui_cash_payment', 'ui_capped', 'ui_paid_on_arrival', 'ui_bonus_item', 'ui_guaranteed', 'ui_chance',
     'ui_no_reward', 'ui_easy', 'ui_moderate', 'ui_hard', 'ui_minutes',
+    'ui_hot', 'ui_fragile', 'ui_fragile_note', 'ui_tab_contracts', 'ui_tab_leaderboard', 'ui_lb_completed',
+    'ui_lb_distance', 'ui_lb_earned', 'ui_lb_streak', 'ui_lb_best', 'ui_lb_you', 'ui_lb_empty',
 }
+
+local function HubAllowed(location)
+    local required = location.job
+    if not required then return true end
+    local job = RSGCore.Functions.GetPlayerData().job
+    if not job then return false end
+    local grade = job.grade and job.grade.level or 0
+    for _, name in ipairs(type(required) == 'table' and required or { required }) do
+        if job.name == name and grade >= (location.minGrade or 0) then return true end
+    end
+    return false
+end
 
 local function BuildLang()
     local lang = {}
@@ -28,8 +43,15 @@ end
 
 local function ShowDeliveryMenu(hubIndex)
     if currentHub then return end
+    if IsDeliveryBusy() then
+        return RSGCore.Functions.Notify({ title = locale('delivery_title'), description = locale('delivery_already_active'), type = 'error', duration = 5000 })
+    end
     local location = Config.DeliveryLocations[hubIndex]
+    if not HubAllowed(location) then
+        return RSGCore.Functions.Notify({ title = locale('delivery_title'), description = locale('delivery_job_locked'), type = 'error', duration = 5000 })
+    end
     local deliveries, maxDistance = {}, 0
+    local hotIndex = Config.HotRoute.Enabled and GetHotRouteIndex(hubIndex, #location.deliveries) or nil
 
     for i, destination in ipairs(location.deliveries) do
         local distance = GetRouteDistance(location, destination)
@@ -58,6 +80,8 @@ local function ShowDeliveryMenu(hubIndex)
             cash = cash,
             capped = capped,
             item = item,
+            hot = hotIndex == i and Config.HotRoute.BonusPct or nil,
+            fragile = Config.Fragile.Enabled and destination.fragile == true,
         }
     end
 
@@ -76,6 +100,11 @@ RegisterNUICallback('close', function(_, cb)
     SetNuiFocus(false, false)
     currentHub = nil
     cb('ok')
+end)
+
+RegisterNUICallback('leaderboard', function(data, cb)
+    local mode = data and data.mode
+    cb(RSGCore.Functions.AwaitCallback('rsg-deliveries:server:getleaderboard', 5000, type(mode) == 'string' and mode or 'completed') or {})
 end)
 
 RegisterNUICallback('start', function(data, cb)
@@ -104,6 +133,7 @@ local function SpawnForeman(hubIndex, location)
     local modelHash = joaat(location.npcmodel)
     if not pcall(RSGCore.Functions.RequestModel, modelHash, 5000) then
         print(('^1[%s] Failed to load NPC model: %s^7'):format(GetCurrentResourceName(), location.npcmodel))
+        failedHubs[hubIndex] = true
         return nil
     end
 
@@ -147,15 +177,18 @@ end
 CreateThread(function()
     while true do
         local playerCoords = GetEntityCoords(PlayerPedId())
+        local closest = math.huge
         for k, location in ipairs(Config.DeliveryLocations) do
-            local near = #(playerCoords - location.npccoords.xyz) < Config.DistanceSpawn
-            if near and not spawnedPeds[k] then
+            local dist = #(playerCoords - location.npccoords.xyz)
+            closest = math.min(closest, dist)
+            local near = dist < Config.DistanceSpawn
+            if near and not spawnedPeds[k] and not failedHubs[k] then
                 spawnedPeds[k] = SpawnForeman(k, location)
             elseif not near and spawnedPeds[k] then
                 CreateThread(function() DespawnForeman(k) end)
             end
         end
-        Wait(500)
+        Wait(closest > Config.DistanceSpawn * 4 and 2000 or 500) -- sleep longer when far from every hub
     end
 end)
 

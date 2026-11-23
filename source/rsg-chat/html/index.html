@@ -6,7 +6,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
-  <link href="vendor/animate.3.5.2.min.css" rel="stylesheet">
   <link href="./css/style.css" rel="stylesheet">
   <script src="vendor/vue.2.3.3.min.js" type="text/javascript"></script>
   <script src="./js/config.js" type="text/javascript"></script>
@@ -22,7 +21,8 @@
            :style="windowStyle"
            :class="{ 'is-faded': !windowVisible && settings.autoHide === 'fade',
                      'hidden': shouldHide || (!windowVisible && settings.autoHide === 'hide'),
-                     'is-editing': showInput }">
+                     'is-editing': showInput,
+                     'is-aim-faded': aimFaded && !showInput }">
 
         <div class="chat-header" v-show="showInput" @mousedown.prevent="startDrag">
           <span class="drag-hint">{{ t('ui_drag_hint') }}</span>
@@ -33,9 +33,9 @@
         <div class="chat-messages" v-show="!settings.chatOff" ref="messages" :style="{ fontSize: settings.fontSize + 'px' }" @scroll="onScroll">
           <div class="msg-row" v-for="msg in messages" :key="msg.id">
             <span class="ts" v-if="settings.timestamps">{{ msg.time }}</span>
-            <div v-if="msg.channel" class="msg channel-msg" :style="{ color: msg.color }">
+            <div v-if="msg.channel" class="msg channel-msg" :class="{ mention: msg.mention }" :style="{ color: msg.color }">
               <b v-if="msg.prefix" class="ch-prefix">[{{ msg.prefix }}]</b>
-              <b class="ch-author">{{ msg.author }}:</b>
+              <b class="ch-author" :class="{ clickable: showInput }" @mousedown.prevent="clickAuthor(msg)">{{ msg.author }}:</b>
               <span class="ch-text">{{ msg.text }}</span>
             </div>
             <message v-else
@@ -102,6 +102,10 @@
           <div class="toggle" :class="{ on: !settings.chatOff }" @click="setChatOff(!settings.chatOff)"><span></span></div>
         </div>
         <div class="field row">
+          <label>{{ t('ui_aim_hide') }}</label>
+          <div class="toggle" :class="{ on: settings.aimHide }" @click="settings.aimHide = !settings.aimHide; saveSettings()"><span></span></div>
+        </div>
+        <div class="field row">
           <label>{{ t('ui_timestamps') }}</label>
           <div class="toggle" :class="{ on: settings.timestamps }" @click="settings.timestamps = !settings.timestamps; saveSettings()"><span></span></div>
         </div>
@@ -133,7 +137,12 @@
           </div>
           <div class="divider"><span>&#10022;</span></div>
 
-          <div class="admin-body">
+          <div class="admin-tabs">
+            <button class="tab" :class="{ active: admin.tab === 'channels' }" @click="admin.tab = 'channels'">{{ t('ui_tab_channels') }}</button>
+            <button class="tab" :class="{ active: admin.tab === 'logs' }" @click="openLogs">{{ t('ui_tab_logs') }}</button>
+          </div>
+
+          <div class="admin-body" v-if="admin.tab === 'channels'">
             <!-- list -->
             <div class="admin-list">
               <button class="wood-btn full" @click="newChannel">+ {{ t('ui_new_channel') }}</button>
@@ -250,6 +259,36 @@
               <em>{{ t('ui_list_hint') }}</em>
             </div>
           </div>
+
+          <!-- chat log search -->
+          <div class="admin-body logs-body" v-else>
+            <div class="logs-filters">
+              <div class="field">
+                <label>{{ t('ui_log_text') }}</label>
+                <input type="text" maxlength="100" v-model="logs.text" @keyup.enter="searchLogs">
+              </div>
+              <div class="field">
+                <label>{{ t('ui_log_player') }}</label>
+                <input type="text" maxlength="60" v-model="logs.player" @keyup.enter="searchLogs">
+              </div>
+              <div class="field">
+                <label>{{ t('ui_log_channel') }}</label>
+                <dropdown :options="logChannelOptions" v-model="logs.channel"></dropdown>
+              </div>
+              <button class="wood-btn" :disabled="logs.busy" @click="searchLogs">{{ t('ui_search') }}</button>
+            </div>
+            <div class="logs-results">
+              <div class="log-hint" v-if="!logs.searched"><em>{{ t('ui_log_hint') }}</em></div>
+              <div class="log-hint" v-else-if="!logs.rows.length"><em>{{ t('ui_no_results') }}</em></div>
+              <div class="log-row" v-for="r in logs.rows" :key="r.id">
+                <span class="log-time">{{ logTime(r.ts) }}</span>
+                <span class="pill">{{ r.channel }}</span>
+                <b class="log-name">{{ r.name }}</b>
+                <span class="log-cid">{{ r.citizenid }}</span>
+                <span class="log-text">{{ r.message }}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- delete confirm modal -->
@@ -330,11 +369,6 @@
     el: '#app',
     render: h => h(APP),
   });
-
-  window.emulate = (type, detail = {}) => {
-    detail.type = type;
-    window.dispatchEvent(new CustomEvent('message', { detail }));
-  };
   </script>
 </body>
 </html>
