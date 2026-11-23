@@ -31,12 +31,34 @@ Hunting, trapper and butcher script for the RSG Framework (RedM). Players skin a
 - Level-up notifications; XP is stored as player rep (`metadata.rep.hunting`), no extra table needed
 
 ### Daily bounties
+- With `Config.Bounty.PerRegion` every butcher region (and the trappers near it) has its own bounty animals, picked per UTC day
 - Each UTC day a few animals are bounties (`Config.Bounty`): extra butcher cash and an XP multiplier
 - Same for every player, survives restarts; check them at any trapper (**Today's Bounties**) or on the leaderboard
 - Default pool is every butcher animal paying at least `MinReward` (legendaries excluded), or set your own list
 
 ### Clean kills
 - Skinning a perfect-quality animal multiplies its skinning XP (`Config.HuntingXP.CleanKillMultiplier`, capped at 3x). XP only, never items or cash, because pelt quality is read on the client
+
+### Pelt quality and trophies
+- Good and perfect carcasses give skinning items that remember their quality (`pelt` in the item info). Trappers pay `Config.PeltQuality.good` / `.perfect` times more for them, best quality sold first; the sell screen shows the real total
+- A perfect skin of an animal in `Config.Trophies.Animals` can give a `hunting_trophy` item (`Config.Trophies.Chance`); every trapper buys trophies at `Config.Trophies.SellPrice`. Add the item from `installation/shared_items.lua` and an image `hunting_trophy.png`. (Placing trophy mounts in the world is not included: it needs a verified prop list.)
+- Carcass quality is read by the client, so all of this needs `Config.TrustClientQuality = true`
+
+### Hunting contracts
+- "Hunting Contract" option on every trapper: one contract at a time ("skin 3 deer", optionally good or perfect quality), a time limit (`Duration`), progress counted by the server when you skin, paid at any trapper with cash and hunting XP, then a cooldown (`Cooldown`)
+- Contracts come from `Config.Contracts.Pool` and respect each entry's `minLevel`; stored in `hunting_contracts`
+
+### Trapper demand
+- With rsg-weather started, weather and seasonal events change what trappers pay (`Config.Demand.Rules`: cold weather lifts skins and pelts, wet weather lifts meat, ...). The sell screen shows the live prices and a notification names the active rules
+
+### Skill gates
+- `Config.Gates`: dangerous and legendary animals need a hunting level (and optionally an rsg-skills level) to skin or sell. A player who skins one without the level is paid nothing
+
+### Bulk sales
+- Selling several carcasses at a butcher in a row (`Config.BulkBonus.WindowSeconds`) adds a growing cash bonus. rsg-wagons' hunting cart calls the `GetBulkBonus` export so a full load pays the same way
+
+### Hunting journal
+- "Journal" tab on the leaderboard: per species skinned, perfect and best butcher sale, plus how many species you have found. Stored in `hunting_journal`
 
 ### Leaderboard
 - **All Time** and **This Week** tabs; weekly XP is tracked in the database (weeks start Monday 00:00 UTC)
@@ -68,7 +90,8 @@ Hunting, trapper and butcher script for the RSG Framework (RedM). Players skin a
    ```
    ensure rsg-hunting
    ```
-4. No SQL needed: the weekly leaderboard tables are created automatically on start (`install.sql` is included if you prefer to run it by hand).
+4. Add `hunting_trophy` (from `installation/shared_items.lua`, with a `hunting_trophy.png` image) if you use trophies.
+5. No SQL needed: the weekly, journal and contract tables are created automatically on start (`install.sql` is included if you prefer to run it by hand).
 
 ## Configuration (`config.lua`)
 
@@ -88,7 +111,16 @@ Hunting, trapper and butcher script for the RSG Framework (RedM). Players skin a
 | `Config.KeyBind` / `Config.EnableTarget` | Butcher prompt key or rsg-target |
 | `Config.ServerCooldown` | Per-player reward cooldown (ms) |
 | `Config.EnableLogging` + `Config.Webhook*` | Butcher sale logging via rsg-log |
-| `Config.DistanceSpawn` / `Config.FadeIn` | Butcher NPC spawn distance and fade |
+| `Config.DistanceSpawn` / `Config.FadeIn` | Butcher and trapper NPC spawn distance and fade |
+| `Config.PeltQuality` | Trapper price multipliers for good / perfect items |
+| `Config.Trophies` | Trophy item, chance, trapper price and eligible animals |
+| `Config.Contracts` | Contract duration, cooldown and pool |
+| `Config.Demand` | Weather / season rules that change trapper prices |
+| `Config.Gates` | Hunting (and rsg-skills) level needed per animal |
+| `Config.BulkBonus` | Bulk sale bonus for butcher runs and the hunting cart |
+| `Config.Journal` | Turn the journal tab on or off |
+| `Config.Bounty.PerRegion` | Each butcher region gets its own daily bounty animals |
+| `Config.TrustClientQuality` | `true` pays carcass quality multipliers (read by the client); `false` treats every carcass as poor quality |
 | `Config.Blip` | Butcher blips |
 | `Config.ButcherLocations` | Butcher prompt coords, NPC model and coords |
 | `Config.Animal` | Animals the butcher buys: `model`, `rewardmoney`, `rewarditem1`–`rewarditem3` |
@@ -170,7 +202,7 @@ Level titles (`Config.HuntingXP.Levels[].label`), vendor/butcher names and butch
 
 ## Database
 
-Tables (`hunting_weekly`, `hunting_weekly_rewards`, `hunting_weekly_state`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `install.sql` once.
+Tables (`hunting_weekly`, `hunting_weekly_rewards`, `hunting_weekly_state`, `hunting_journal`, `hunting_contracts`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `install.sql` once.
 
 ---
 ## rsg-skills integration

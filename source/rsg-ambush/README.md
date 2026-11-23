@@ -1,6 +1,6 @@
 # rsg-ambush
 
-Version 3.2.0 · Random gang ambushes for RSG Framework · [Full docs](DOCS.md)
+Version 3.2.1 · Random gang ambushes for RSG Framework · [Full docs](DOCS.md)
 
 While a player is riding outside of towns, every `Config.CheckInterval` seconds the server rolls a chance for an ambush. If it hits (and the cooldown allows), a warning sounds, then a gang (O'Driscolls, Lemoyne Raiders, Murfree Brood or Skinner Brothers) appears ahead of the player, partly on horseback, and attacks. Beat them for a bounty, honor and skill XP, and search the bodies (rsg-target) for loot.
 
@@ -78,6 +78,9 @@ Messages are queued and sent about once a second, with a retry when Discord rate
 - Keep `Config.Debug = false` on a live server: debug mode ignores the cooldown and always rolls a hit.
 
 ## Changelog
+### 3.2.1
+- rsg-deliveries hook (optional): ambushes are likelier while a delivery contract is active, and two local server events (`ambushStarted`, `ambushWon`) let other resources react.
+
 ### 3.2.0
 - Safe spawn points, server-side roll, warning cue, death delay
 - Optional hooks: honor (rsg-reputation), skill scaling and XP (rsg-skills), per-town chance and gangs (rsg-economy)

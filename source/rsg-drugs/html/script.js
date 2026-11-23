@@ -17,6 +17,7 @@ const money = (n) => '$' + Number(n).toFixed(2);
 // locales come from locales/*.json via rsg-core locale(); %s placeholders filled in order, %% = literal %
 let LOCALE = {};
 const t = (key, ...args) => { let i = 0; return String(LOCALE[key] ?? key).replace(/%%|%s/g, (m) => m === '%%' ? '%' : String(args[i++] ?? '')); };
+const tr = (...a) => t(...a); // the click handler below shadows t with the clicked element
 const applyStatic = () => document.querySelectorAll('[data-l]').forEach((el) => { el.textContent = t(el.dataset.l); });
 const slow = (e) => e.hunger < 25 || e.thirst < 25 || e.unpaid > 0;
 const workRate = (list) => list.filter((e) => !e.strike).reduce((a, e) => a + e.rate * (slow(e) ? 0.5 : 1), 0);
@@ -94,6 +95,17 @@ function repBlock() {
     <div class="prod"><div class="track"><div class="fill prod-fill" style="width:${pct}%"></div></div></div></div></div>`;
 }
 
+// bar of how close the law is to raiding this lab (only when heat is switched on)
+function heatBlock() {
+  if (!state.config.heat) return '';
+  const h = Math.round(state.lab.heat || 0);
+  const cls = h >= 70 ? 'stat-bad' : h >= 40 ? 'stat-warn' : 'stat-good';
+  return `<div class="label">${t('ui_heat')}</div>
+    <div class="prod"><div class="bar-l">${h}%${state.raid ? ' · ' + t('ui_raid_warn') : ''}</div><div class="track"><div class="fill ${cls}" style="width:${h}%"></div></div></div>`;
+}
+// potency of a stock type, shown next to its name
+const pq = (k) => (state.lab.q && state.lab.q[k] != null) ? ` · ${Math.round(state.lab.q[k])}%` : '';
+
 function renderOverview() {
   const { lab, config } = state;
   const emps = lab.employees;
@@ -102,16 +114,16 @@ function renderOverview() {
   const wages = emps.reduce((a, e) => a + e.wage, 0);
   const ticksLeft = wages > 0 ? Math.floor(lab.payroll / wages) : '∞';
   const eff = emps.length ? Math.round((working / emps.length) * 100) : 0;
-  $('#tab-overview').innerHTML = repBlock() + `
-    <div class="label">${t('ui_stock')}</div>
+  $('#tab-overview').innerHTML = repBlock() + heatBlock() + `
+    <div class="label">${t('ui_stock')} <span style="opacity:.6">(${t('ui_potency')} %)</span></div>
     <div class="grid">
       <div class="stat">${itemIcon(itemName('raw'), 'W')}<div class="v">${lab.stock.raw}</div><div class="k">${t('ui_fresh')}</div></div>
-      <div class="stat">${itemIcon(itemName('dried'), 'D')}<div class="v">${lab.stock.dried}</div><div class="k">${t('ui_dried')}</div></div>
-      <div class="stat">${itemIcon(itemName('processed'), 'P')}<div class="v">${lab.stock.processed}</div><div class="k">${t('ui_processed')}</div></div>
+      <div class="stat">${itemIcon(itemName('dried'), 'D')}<div class="v">${lab.stock.dried}</div><div class="k">${t('ui_dried')}${pq('dried')}</div></div>
+      <div class="stat">${itemIcon(itemName('processed'), 'P')}<div class="v">${lab.stock.processed}</div><div class="k">${t('ui_processed')}${pq('processed')}</div></div>
     </div>
     <div class="grid" style="margin-top:8px">
-      <div class="stat">${itemIcon(itemName('brick'), 'B')}<div class="v">${lab.stock.brick || 0}</div><div class="k">${t('ui_bricks')}</div></div>
-      <div class="stat">${itemIcon(itemName('bag'), 'b')}<div class="v">${lab.stock.bag || 0}</div><div class="k">${t('ui_bags')}</div></div>
+      <div class="stat">${itemIcon(itemName('brick'), 'B')}<div class="v">${lab.stock.brick || 0}</div><div class="k">${t('ui_bricks')}${pq('brick')}</div></div>
+      <div class="stat">${itemIcon(itemName('bag'), 'b')}<div class="v">${lab.stock.bag || 0}</div><div class="k">${t('ui_bags')}${pq('bag')}</div></div>
       <div class="stat">${itemIcon(itemName('seed'), 'S')}<div class="v">${lab.stock.seed || 0}</div><div class="k">${t('ui_seeds')}</div></div>
     </div>
     <div class="label">${t('ui_per_shift', config.tick)}</div>
@@ -205,7 +217,15 @@ document.addEventListener('click', (e) => {
   const t = e.target;
   if (t.classList.contains('tab')) return setTab(t.dataset.tab);
   if (t.dataset.pack) { if (t.classList.contains('on')) return; return act('assign', { id: Number(t.dataset.pack), pack: t.dataset.prod }); }
-  if (t.dataset.fire) return act('fire', { id: Number(t.dataset.fire) });
+  if (t.dataset.fire) {
+    // two clicks to fire: the first arms the button, so a slip can't sack someone (owed wages are lost)
+    if (t.dataset.armed !== '1') {
+      t.dataset.armed = '1'; t.textContent = tr('ui_confirm');
+      setTimeout(() => { if (t.isConnected) { t.dataset.armed = ''; t.textContent = tr('ui_fire'); } }, 3000);
+      return;
+    }
+    return act('fire', { id: Number(t.dataset.fire) });
+  }
   if (t.dataset.hire) return act('hire', { index: Number(t.dataset.hire), name: t.dataset.name });
   if (t.dataset.max !== undefined) {
     // max = everything the player carries (or everything ready to collect); do it in one click

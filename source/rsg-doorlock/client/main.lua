@@ -8,7 +8,8 @@ local lockPrompt
 local pickPrompt
 local pickShown = false
 local nearestDoor
-local nearestHasKey = false
+local nearestCanUse -- nil = not asked yet, true / false = the server's answer for the nearest door
+local lastAccessCheck, checkedDoor = 0, nil
 local busy = false
 
 Doors = {} -- shared with client/editor.lua
@@ -136,14 +137,33 @@ local function setPickPrompt(show)
     PromptSetVisible(pickPrompt, show)
 end
 
--- client-side guess only (the server decides): does the player's job unlock this door?
-local function playerHasKey(door)
-    local job = (RSGCore.Functions.GetPlayerData() or {}).job
-    if not job then return false end
-    for _, name in ipairs(door.jobs) do
-        if name == job.name then return true end
+-- prompt group title, built once per state instead of every frame
+local statusLabels = {}
+local function statusLabel(locked, noKey)
+    local key = (locked and 'lock' or 'unlock') .. (noKey and '_nokey' or '')
+    if not statusLabels[key] then
+        local status = locale(locked and 'cl_door_status_lock' or 'cl_door_status_unlock')
+        if noKey then status = status .. ' · ' .. locale('cl_door_nokey') end
+        statusLabels[key] = CreateVarString(10, 'LITERAL_STRING', locale('cl_door_status_base', status))
     end
-    return false
+    return statusLabels[key]
+end
+
+-- ask the server whether the nearest door is usable (job, gang, key item, admin) so the prompt can say "No key"
+local function refreshAccess(id)
+    lastAccessCheck, checkedDoor = GetGameTimer(), id
+    RSGCore.Functions.TriggerCallback('rsg-doorlock:server:canUse', function(ok)
+        if nearestDoor == id and ok ~= nil then nearestCanUse = ok end
+    end, id)
+end
+
+-- after a hold completes: wait for the key to be released so one long hold can't fire twice
+local function releaseWhenReleased(prompt, alsoNui)
+    CreateThread(function()
+        Wait(1500)
+        while PromptHasHoldModeCompleted(prompt) or (alsoNui and IsNuiFocused()) do Wait(50) end
+        busy = false
+    end)
 end
 
 local function canUseDoors()
@@ -183,8 +203,9 @@ CreateThread(function()
                 end
             end
         end
+        if closest ~= nearestDoor then nearestCanUse, checkedDoor = nil, nil end
         nearestDoor = closest
-        nearestHasKey = closest and playerHasKey(Doors[closest]) or false
+        if closest and (checkedDoor ~= closest or GetGameTimer() - lastAccessCheck > 3000) then refreshAccess(closest) end
         for ent in pairs(customState) do
             if not DoesEntityExist(ent) then customState[ent] = nil end
         end
@@ -197,28 +218,19 @@ CreateThread(function()
     while true do
         local door = nearestDoor and Doors[nearestDoor]
         if door and lockPrompt and not busy and not LocalPlayer.state.doorEditor and canUseDoors() then
-            local status = door.locked and locale('cl_door_status_lock') or locale('cl_door_status_unlock')
-            local showPick = pickPrompt ~= nil and door.lockpick ~= nil and door.locked and not nearestHasKey and not IsNuiFocused()
+            local noKey = nearestCanUse == false
+            local showPick = pickPrompt ~= nil and door.lockpick ~= nil and door.locked and noKey and not IsNuiFocused()
+            PromptSetEnabled(lockPrompt, not noKey)
             setPickPrompt(showPick)
-            PromptSetActiveGroupThisFrame(promptGroup, CreateVarString(10, 'LITERAL_STRING', locale('cl_door_status_base', status)))
+            PromptSetActiveGroupThisFrame(promptGroup, statusLabel(door.locked, noKey))
             if showPick and PromptHasHoldModeCompleted(pickPrompt) then
                 busy = true
                 TriggerServerEvent('rsg-doorlock:server:requestLockpick', nearestDoor)
-                -- the lockpick UI opens on its own; wait for the key to be released before the prompts come back
-                CreateThread(function()
-                    Wait(1500)
-                    while PromptHasHoldModeCompleted(pickPrompt) or IsNuiFocused() do Wait(50) end
-                    busy = false
-                end)
+                releaseWhenReleased(pickPrompt, true) -- the lockpick UI opens on its own
             elseif PromptHasHoldModeCompleted(lockPrompt) then
                 busy = true
                 TriggerServerEvent('rsg-doorlock:server:requestToggle', nearestDoor)
-                -- wait for the key to be released so one long hold can't toggle twice
-                CreateThread(function()
-                    Wait(1500)
-                    while PromptHasHoldModeCompleted(lockPrompt) do Wait(50) end
-                    busy = false
-                end)
+                releaseWhenReleased(lockPrompt)
             end
             Wait(0)
         else

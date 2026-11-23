@@ -3,6 +3,8 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 
 local E = Config.Export
 local open = false
+local opening = false
+local buyerPos = vector3(E.NPC.coords.x, E.NPC.coords.y, E.NPC.coords.z)
 
 local getNpc = DrugsProximityNpc(E.NPC, {
     name = 'rsg_drugs_export',
@@ -14,17 +16,21 @@ local getNpc = DrugsProximityNpc(E.NPC, {
 local function close()
     if not open then return end
     open = false
-    SetNuiFocus(false, false)
+    DrugsNuiFocus(false)
     SendNUIMessage({ action = 'export:close' })
 end
 
 AddEventHandler('rsg-drugs:client:exportOpen', function()
-    if open then return end
+    if open or opening then return end
+    opening = true
     local data = RSGCore.Functions.AwaitCallback('rsg-drugs:server:exportOpen', 10000)
+    opening = false
     if not data then return end
     open = true
-    SetNuiFocus(true, true)
+    DrugsNuiFocus(true)
     SendNUIMessage({ action = 'export:open', data = data, locale = locale() })
+    -- the server rejects sales beyond interactDistance, so close a little earlier
+    DrugsWatchPanel(buyerPos, math.max(2.0, E.NPC.interactDistance - 0.5), function() return open end, close)
 end)
 
 RegisterNUICallback('exportSell', function(body, cb)
@@ -45,5 +51,5 @@ RegisterNUICallback('exportClose', function(_, cb) close() cb('ok') end)
 RegisterNetEvent('RSGCore:Client:OnPlayerUnload', close)
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
-    if open then SetNuiFocus(false, false) end
+    if open then open = false; DrugsNuiFocus(false) end
 end)

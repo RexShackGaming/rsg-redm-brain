@@ -20,6 +20,15 @@ local CARCASS_RANGE = Config.HorseCarcassRange or 6.0  -- carcass (carried or on
 local COOLDOWN = Config.ServerCooldown or 2000
 
 local Cooldowns = {}
+local Runs = {} -- [src] = { count, last }: carcasses sold in a row (bulk bonus)
+
+-- bonus % for selling `count` carcasses in one run (hand sales and rsg-wagons' hunting cart)
+function HuntingBulk(count)
+    local cfg = Config.BulkBonus
+    if not cfg or not cfg.Enabled or count < (cfg.MinCarcasses or 3) then return 0 end
+    return math.min(cfg.Max or 20, (count - (cfg.MinCarcasses or 3) + 1) * (cfg.PerCarcass or 2))
+end
+exports('GetBulkBonus', function(count) return HuntingBulk(tonumber(count) or 0) end)
 local SoldCarcasses = {} -- [netId] = os.time()
 
 CreateThread(function()
@@ -62,7 +71,8 @@ local function handler_sellCarcass(src, netId, quality)
     netId = math.tointeger(tonumber(netId))
     if not netId or netId <= 0 then return false end
     if SoldCarcasses[netId] then suspicious(src, locale('reason_already_sold')) return false end
-    if not QualityMultiplier[quality] then quality = 'poor' end
+    -- quality is read by the client (the server can't), so it can be switched off
+    if not Config.TrustClientQuality or not QualityMultiplier[quality] then quality = 'poor' end
 
     local carcass = NetworkGetEntityFromNetworkId(netId)
     if not carcass or carcass == 0 or not DoesEntityExist(carcass) or GetEntityType(carcass) ~= 1 then
@@ -86,6 +96,12 @@ local function handler_sellCarcass(src, netId, quality)
     local butcher = nearButcher(playerCoords)
     if not butcher then suspicious(src, locale('reason_not_at_butcher')) return false end
 
+    local allowed, why, need = HuntingGates.Check(src, animal.model)
+    if not allowed then
+        HuntingGates.Notify(src, why, need)
+        return false
+    end
+
     -- items first: if there's no room, keep the carcass and stop
     local qty = ItemQuantity[quality]
     local items = {}
@@ -104,10 +120,17 @@ local function handler_sellCarcass(src, netId, quality)
     SoldCarcasses[netId] = os.time()
     DeleteEntity(carcass)
 
-    local bonus = (HuntingXP.GetPerks(src).butcherBonus or 0) / 100 + HuntingBounty.ButcherBonus(animal.model)
+    local bonus = (HuntingXP.GetPerks(src).butcherBonus or 0) / 100 + HuntingBounty.ButcherBonus(animal.model, butcher.region)
     if Config.Skills and Config.Skills.SellBonus then bonus = bonus + SkillPerk(src, 'sell_bonus') / 100 end -- rsg-skills perk
     local repFactor = ReputationPayoutFactor(src, butcher.region) -- rsg-reputation: the town's standing changes the payout
-    local cash = math.floor((tonumber(animal.rewardmoney) or 0) * QualityMultiplier[quality] * (1 + bonus) * repFactor * 100 + 0.5) / 100
+    -- bulk bonus: carcasses sold in a run at a butcher
+    local run = Runs[src]
+    if not run or os.time() - run.last > ((Config.BulkBonus or {}).WindowSeconds or 600) then run = { count = 0 } end
+    run.count, run.last = run.count + 1, os.time()
+    Runs[src] = run
+    local bulkPct = HuntingBulk(run.count)
+
+    local cash = math.floor((tonumber(animal.rewardmoney) or 0) * QualityMultiplier[quality] * (1 + bonus) * repFactor * (1 + bulkPct / 100) * 100 + 0.5) / 100
     if cash > 0 then
         Player.Functions.AddMoney('cash', cash, 'rsg-hunting-butcher')
     end
@@ -118,6 +141,8 @@ local function handler_sellCarcass(src, netId, quality)
     ReputationSale(src, butcher.region) -- rsg-reputation: standing in the butcher's region
 
     notify(src, locale('butcher_sold', animal.name, locale('quality_' .. quality), ('%.2f'):format(cash)), 'success')
+    if bulkPct > 0 then notify(src, locale('bulk_bonus', bulkPct), 'inform') end
+    HuntingJournal.RecordSale(src, animal.model, cash)
 
     local itemText = {}
     for _, name in ipairs(items) do itemText[#itemText + 1] = ('%sx %s'):format(qty, RSGCore.Shared.Items[name].label or name) end
@@ -126,7 +151,7 @@ local function handler_sellCarcass(src, netId, quality)
         { name = locale('wh_quality'), value = locale('quality_' .. quality) },
         { name = locale('wh_cash'), value = ('$%.2f'):format(cash) },
         { name = locale('wh_items'), value = #itemText > 0 and table.concat(itemText, ', ') or '-', inline = false },
-        { name = locale('wh_bounty'), value = HuntingBounty.Get(animal.model) and locale('yes') or locale('no') },
+        { name = locale('wh_bounty'), value = HuntingBounty.Get(animal.model, butcher.region) and locale('yes') or locale('no') },
         { name = locale('wh_butcher_perk'), value = ('+%s%%'):format(math.floor(bonus * 100 + 0.5)) },
     }, cash)
 
@@ -138,7 +163,7 @@ local function handler_sellCarcass(src, netId, quality)
     local xpCfg = Config.HuntingXP
     if xpCfg and xpCfg.Enabled and xpCfg.ButcherXP then
         local mult = xpCfg.ButcherQualityMultiplier and xpCfg.ButcherQualityMultiplier[quality] or 1
-        HuntingXP.Award(src, HuntingXP.GetAnimalXP(animal.model) * mult * HuntingBounty.XPMultiplier(animal.model))
+        HuntingXP.Award(src, HuntingXP.GetAnimalXP(animal.model) * mult * HuntingBounty.XPMultiplier(animal.model, butcher.region))
     end
 
     return true
@@ -147,4 +172,5 @@ RSGCore.Functions.CreateCallback('rsg-hunting:server:sellCarcass', function(src,
 
 AddEventHandler('playerDropped', function()
     Cooldowns[source] = nil
+    Runs[source] = nil
 end)

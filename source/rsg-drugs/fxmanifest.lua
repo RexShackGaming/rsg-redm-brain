@@ -3,7 +3,7 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 
 description 'rsg-drugs'
-version '3.1.4'
+version '3.3.0'
 
 shared_scripts {
 	'@rsg-core/shared/locale.lua',
@@ -21,9 +21,11 @@ client_scripts {
 
 server_scripts {
 	'@oxmysql/lib/MySQL.lua',
+	'server/utils.lua',
 	'server/config_discord.lua',
 	'server/discord.lua',
 	'server/xp.lua',
+	'server/integrations.lua',
 	'server/server.lua',
 	'server/addiction.lua',
 	'server/export.lua',

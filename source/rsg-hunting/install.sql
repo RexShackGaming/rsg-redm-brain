@@ -24,3 +24,28 @@ CREATE TABLE IF NOT EXISTS `hunting_weekly_state` (
     `value` INT NOT NULL DEFAULT 0,
     PRIMARY KEY (`key`)
 );
+
+-- journal, contracts
+CREATE TABLE IF NOT EXISTS `hunting_journal` (
+    `citizenid` VARCHAR(50) NOT NULL,
+    `model` BIGINT NOT NULL,
+    `skinned` INT NOT NULL DEFAULT 0,
+    `perfect` INT NOT NULL DEFAULT 0,
+    `sold` INT NOT NULL DEFAULT 0,
+    `best_sale` DECIMAL(10,2) NOT NULL DEFAULT 0,
+    PRIMARY KEY (`citizenid`, `model`)
+);
+
+CREATE TABLE IF NOT EXISTS `hunting_contracts` (
+    `citizenid` VARCHAR(50) NOT NULL,
+    `model` BIGINT NOT NULL DEFAULT 0,
+    `need` INT NOT NULL DEFAULT 1,
+    `got` INT NOT NULL DEFAULT 0,
+    `quality` VARCHAR(10) NOT NULL DEFAULT '',
+    `reward` DECIMAL(10,2) NOT NULL DEFAULT 0,
+    `xp` INT NOT NULL DEFAULT 0,
+    `expires` INT NOT NULL DEFAULT 0,
+    `status` VARCHAR(10) NOT NULL DEFAULT 'active',
+    `claimed_at` INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (`citizenid`)
+);

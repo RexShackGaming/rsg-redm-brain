@@ -43,7 +43,35 @@
                 <div class="chips" id="f-jobs">
                     <input type="text" id="f-job-input" data-i18n-ph="ui_jobs_ph">
                 </div>
-                <em class="hint" data-i18n="ui_jobs_hint"></em>
+            </div>
+
+            <div class="field">
+                <span data-i18n="ui_gangs"></span>
+                <div class="chips" id="f-gangs">
+                    <input type="text" id="f-gang-input" data-i18n-ph="ui_gangs_ph">
+                </div>
+            </div>
+
+            <label class="field">
+                <span data-i18n="ui_key_item"></span>
+                <input type="text" id="f-keyitem" maxlength="64" data-i18n-ph="ui_key_item_ph">
+                <em class="hint" data-i18n="ui_key_item_hint"></em>
+            </label>
+            <em class="hint access-hint" data-i18n="ui_access_hint"></em>
+
+            <label class="field">
+                <span data-i18n="ui_group"></span>
+                <input type="text" id="f-group" maxlength="32" data-i18n-ph="ui_group_ph">
+                <em class="hint" data-i18n="ui_group_hint"></em>
+            </label>
+
+            <div class="field">
+                <span data-i18n="ui_schedule"></span>
+                <div class="row-2">
+                    <input type="text" id="f-open-from" maxlength="2" inputmode="numeric" data-i18n-ph="ui_open_from">
+                    <input type="text" id="f-open-to" maxlength="2" inputmode="numeric" data-i18n-ph="ui_open_to">
+                </div>
+                <em class="hint" data-i18n="ui_schedule_hint"></em>
             </div>
 
             <div class="row-2">
@@ -81,6 +109,7 @@
 
             <div class="actions">
                 <button class="wood-btn muted" id="btn-delete" data-i18n="ui_delete"></button>
+                <button class="wood-btn muted" id="btn-duplicate" data-i18n="ui_duplicate"></button>
                 <button class="wood-btn muted" id="btn-cancel" data-i18n="ui_cancel"></button>
                 <button class="wood-btn" id="btn-save" data-i18n="ui_save"></button>
             </div>

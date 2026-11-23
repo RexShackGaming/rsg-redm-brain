@@ -32,7 +32,7 @@ local function send(url, embeds, content)
         avatar_url = W.AvatarUrl ~= '' and W.AvatarUrl or nil,
         content = content,
         embeds = embeds,
-        allowed_mentions = { parse = { 'roles', 'users' } }
+        allowed_mentions = content and { parse = { 'roles' } } or { parse = {} }
     }), { ['Content-Type'] = 'application/json' })
 end
 
@@ -182,6 +182,13 @@ local function diff(old, new)
     if old.locked ~= new.locked then out[#out + 1] = ('%s: %s → %s'):format(locale('ui_state'), locale(old.locked and 'ui_locked' or 'ui_unlocked'), locale(new.locked and 'ui_locked' or 'ui_unlocked')) end
     if (old.lockpick or '') ~= (new.lockpick or '') then out[#out + 1] = ('%s: %s → %s'):format(locale('ui_lockpick'), old.lockpick or locale('ui_lp_off'), new.lockpick or locale('ui_lp_off')) end
     if (old.region or '') ~= (new.region or '') then out[#out + 1] = ('%s: %s → %s'):format(locale('ui_region'), old.region or locale('wh_none'), new.region or locale('wh_none')) end
+    if j(old.gangs or {}) ~= j(new.gangs or {}) then out[#out + 1] = ('%s: %s → %s'):format(locale('ui_gangs'), j(old.gangs or {}), j(new.gangs or {})) end
+    if (old.keyItem or '') ~= (new.keyItem or '') then out[#out + 1] = ('%s: %s → %s'):format(locale('ui_key_item'), old.keyItem or locale('wh_none'), new.keyItem or locale('wh_none')) end
+    if (old.group or '') ~= (new.group or '') then out[#out + 1] = ('%s: %s → %s'):format(locale('ui_group'), old.group or locale('wh_none'), new.group or locale('wh_none')) end
+    if old.openFrom ~= new.openFrom or old.openTo ~= new.openTo then
+        local function hrs(d) return d.openFrom and ('%02d:00-%02d:00'):format(d.openFrom, d.openTo) or locale('wh_none') end
+        out[#out + 1] = ('%s: %s → %s'):format(locale('ui_schedule'), hrs(old), hrs(new))
+    end
     if h(old.doors) ~= h(new.doors) then out[#out + 1] = ('%s: %s → %s'):format(locale('wh_hashes'), h(old.doors), h(new.doors)) end
     return #out > 0 and table.concat(out, '\n') or locale('wh_no_changes')
 end

@@ -194,5 +194,22 @@
     "cfg_stage_1": "Niespokojny",
     "cfg_stage_2": "Drżący",
     "cfg_stage_3": "Głód",
-    "ui_skill": "Umiejętność %s"
+    "ui_skill": "Umiejętność %s",
+    "ui_confirm": "Potwierdzić?",
+    "cfg_sub_tobacco": "Tytoń",
+    "payroll_low": "Kasa płac wystarczy tylko na %s zmian",
+    "raid_warning": "Prawo dostało cynk o twojej działalności. Nadchodzi nalot, przenieś towar!",
+    "raid_alert_title": "Nalot na Laboratorium",
+    "raid_alert": "Zgłoszono laboratorium narkotykowe. Zrób nalot u kontaktu od przetwarzania w ciągu %s min.",
+    "raid_target": "Zrób nalot na laboratorium",
+    "raid_none": "Obecnie nie ma zgłoszonego laboratorium do nalotu",
+    "raid_done_officer": "Nalot udany: zniszczono %s jednostek, nagroda $%s",
+    "raid_done_owner": "Twoje laboratorium zostało przeszukane: zniszczono %s jednostek",
+    "raid_escaped": "Tym razem prawo było za wolne, ale twoje laboratorium nadal jest obserwowane",
+    "ui_heat": "Zainteresowanie",
+    "ui_raid_warn": "Nalot w drodze",
+    "ui_potency": "Moc",
+    "cfg_sub_opium": "Opium",
+    "cfg_skill_drugs": "Handel Narkotykami",
+    "cfg_skill_drugs_desc": "Prowadź laboratoria, pakuj towar i sprzedawaj go dalej."
 }

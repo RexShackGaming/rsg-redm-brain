@@ -66,8 +66,20 @@ RegisterNetEvent('rsg-hunting:server:giverewards', function(netId, quality)
     local dist = #(GetEntityCoords(GetPlayerPed(src)) - GetEntityCoords(carcass))
     if dist > MAX_SKIN_DISTANCE then return suspicious(src, locale('reason_too_far', ('%.1f'):format(dist))) end
 
-    local animal = AnimalByModel[GetEntityModel(carcass)]
+    local model = GetEntityModel(carcass)
+    local animal = AnimalByModel[model]
     if not animal or not animal.skinable then return end
+
+    -- quality is read by the client: only known values count, and only when it is trusted
+    if quality ~= 'poor' and quality ~= 'good' and quality ~= 'perfect' then quality = nil end
+    if not Config.TrustClientQuality then quality = nil end
+
+    -- skill gate: dangerous animals need the hunting level (the skinning already happened, so nothing is paid)
+    local allowed, why, need = HuntingGates.Check(src, model)
+    if not allowed then
+        SkinnedCarcasses[netId] = os.time()
+        return HuntingGates.Notify(src, why, need)
+    end
 
     -- claim the carcass before giving anything
     SkinnedCarcasses[netId] = os.time()
@@ -93,8 +105,10 @@ RegisterNetEvent('rsg-hunting:server:giverewards', function(netId, quality)
         end
     end
 
+    -- good / perfect carcasses give items that remember it (trappers pay more); poor ones stay plain
+    local pelt = Config.PeltQuality and Config.PeltQuality.Enabled and (quality == 'good' or quality == 'perfect') and quality or nil
     for _, itemName in ipairs(toGive) do
-        exports['rsg-inventory']:AddItem(src, itemName, 1, nil, nil, 'rsg-hunting-skinning')
+        exports['rsg-inventory']:AddItem(src, itemName, 1, pelt and { pelt = pelt } or nil, nil, 'rsg-hunting-skinning')
     end
 
     -- perk: chance of a second main reward
@@ -102,12 +116,12 @@ RegisterNetEvent('rsg-hunting:server:giverewards', function(netId, quality)
     if Config.Skills and Config.Skills.ExtraYield then chance = chance + SkillPerk(src, 'extra_yield') end -- rsg-skills perk
     local bonusItem = toGive[1]
     if chance > 0 and math.random(100) <= chance and exports['rsg-inventory']:CanAddItem(src, bonusItem, 1) then
-        exports['rsg-inventory']:AddItem(src, bonusItem, 1, nil, nil, 'rsg-hunting-skinning-perk')
+        exports['rsg-inventory']:AddItem(src, bonusItem, 1, pelt and { pelt = pelt } or nil, nil, 'rsg-hunting-skinning-perk')
         TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('hunting_xp_title'), description = locale('hunting_perk_extraskin'), type = 'inform' })
     end
 
-    local model = GetEntityModel(carcass)
-    local xp = HuntingXP.GetAnimalXP(model) * HuntingBounty.XPMultiplier(model)
+    local region = HuntingBounty.RegionAt(GetEntityCoords(GetPlayerPed(src)))
+    local xp = HuntingXP.GetAnimalXP(model) * HuntingBounty.XPMultiplier(model, region)
     -- clean kill: perfect pelt quality is read by the client (the server can't),
     -- so it only ever adds a capped xp bonus, never items or cash
     local cleanMult = Config.HuntingXP.CleanKillMultiplier or 1
@@ -117,6 +131,17 @@ RegisterNetEvent('rsg-hunting:server:giverewards', function(netId, quality)
     end
     xp = math.floor(xp)
     HuntingXP.Award(src, xp)
+
+    -- trophy: a perfect skin of a listed animal can give a trophy item
+    local trophy = Config.Trophies
+    if trophy and trophy.Enabled and quality == 'perfect' and trophy.Animals[model] and RSGCore.Shared.Items[trophy.Item]
+        and math.random(100) <= (trophy.Chance or 100) and exports['rsg-inventory']:CanAddItem(src, trophy.Item, 1) then
+        exports['rsg-inventory']:AddItem(src, trophy.Item, 1, { animal = HuntingJournal.Name(model) }, nil, 'rsg-hunting-trophy')
+        TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('hunting_xp_title'), description = locale('trophy_awarded', HuntingJournal.Name(model)), type = 'success', duration = 7000 })
+    end
+
+    HuntingJournal.RecordSkin(src, model, quality)
+    HuntingContracts.OnSkin(src, model, quality)
 
     local labels = {}
     for _, itemName in ipairs(toGive) do labels[#labels + 1] = RSGCore.Shared.Items[itemName].label or itemName end

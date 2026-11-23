@@ -6,7 +6,7 @@ lua54 'yes'
 name 'rsg-economy'
 author 'RexShack'
 description 'Regional treasuries, taxes, supply-and-demand prices and town projects for RSG Framework'
-version '3.1.0'
+version '3.2.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
@@ -21,6 +21,9 @@ server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/database.lua',
     'server/economy.lua',
+    'server/regions.lua',
+    'server/elections.lua',
+    'server/automation.lua',
     'server/actions.lua',
     'server/commands.lua',
     'server/versionchecker.lua',

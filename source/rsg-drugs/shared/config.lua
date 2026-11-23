@@ -2,6 +2,12 @@ Config = {}
 -- build the database tables automatically on start (set false and import the SQL file for a manual install)
 Config.AutoDatabase = true
 
+-- While a panel is open the mouse/keyboard go to the UI. Keep push-to-talk working (rsg-voice) while it is open.
+Config.AllowPushToTalkWhileOpen = true
+Config.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK
+}
+
 ---------------------------------
 -- processing npc
 ---------------------------------
@@ -106,4 +112,100 @@ Config.XP = {
         { xp = 1500, label = locale('cfg_level_5') },
         { xp = 3000, label = locale('cfg_level_6') },
     },
+}
+
+---------------------------------
+-- low wage chest warning
+---------------------------------
+Config.Payroll = {
+    WarnShifts          = 3,   -- warn the owner when the wage chest covers fewer shifts than this (0 = off)
+    WarnCooldownMinutes = 30,  -- at most one warning per lab per this many minutes
+}
+
+---------------------------------
+-- product quality (potency 0-100)
+-- Crew skill sets the potency of what they make, input potency is partly carried through, and the final
+-- potency is stored on withdrawn items (info.potency) and changes what they sell for.
+---------------------------------
+Config.Quality = {
+    Enabled     = true,
+    Default     = 50,   -- potency of fresh weed handed in, and of items that have none recorded
+    InputWeight = 0.4,  -- share of the input's potency carried into the output (the rest comes from the crew)
+    Step        = 5,    -- item potency is rounded to this so stacks still merge in the inventory
+    CrewPotency = { [1] = 40, [2] = 55, [3] = 70, [4] = 85, [5] = 95 }, -- by worker skill (1-5)
+    PriceMin    = 0.7,  -- price multiplier at potency 0
+    PriceMax    = 1.3,  -- price multiplier at potency 100
+}
+
+---------------------------------
+-- heat and raids
+-- Making and selling drugs builds heat on your lab. Hot labs get reported; on-duty law is alerted and can raid
+-- the lab at the processing NPC within the window. A raid destroys part of the stock and pays the officer.
+---------------------------------
+Config.Heat = {
+    Enabled        = true,
+    Max            = 100,
+    Decay          = 2,     -- heat lost per shift while no raid is pending
+    PerBrick       = 2.0,   -- per brick finished by the crew
+    PerBag         = 0.1,   -- per bag finished by the crew
+    PerExportBrick = 3.0,   -- per brick exported
+    PerSale        = 1.0,   -- per bag sold to an NPC
+    PerRefusal     = 10.0,  -- when an NPC refuses a sale (it called the law)
+    RaidThreshold  = 70,    -- a raid can start at or above this heat
+    RaidChance     = 25,    -- % per shift while above the threshold
+    MinLaw         = 1,     -- on-duty law needed before a raid is called
+    RaidWindowMinutes = 10, -- how long the law has to carry out the raid
+    SeizePercent   = 60,    -- % of every stock type destroyed in a raid
+    HeatAfterRaid  = 20,
+    HeatAfterEscape = 40,   -- the law was too slow
+    CooldownMinutes = 60,   -- no new raid on the same lab for this long
+    OfficerReward  = 150,
+    MoneyType      = 'cash',
+    AlertRadius    = 80.0,  -- law map blip radius around the lab
+    LawJobTypes    = { leo = true },
+    LawJobs        = {},
+}
+
+---------------------------------
+-- rsg-skills: drug XP also feeds this skill; its perks boost sales and crew speed
+---------------------------------
+Config.Skills = {
+    Enabled     = true,
+    Key         = 'drugs',
+    XPScale     = 1.0,   -- skill XP = drug XP * this
+    ResetOnJail = true,  -- follows Config.XP.ResetOnJail
+    Definition  = {
+        label       = locale('cfg_skill_drugs'),
+        description = locale('cfg_skill_drugs_desc'),
+        order       = 120,
+        maxLevel    = 20,
+        -- perk names come from rsg-skills locale keys perk_sell_bonus and perk_speed_bonus
+        perks = {
+            sell_bonus  = { suffix = '%', levels = { [3] = 2, [6] = 4, [10] = 6, [15] = 8, [20] = 10 } }, -- NPC bag sales and brick export
+            speed_bonus = { suffix = '%', levels = { [5] = 5, [10] = 10, [15] = 15, [20] = 20 } },        -- crew output
+        },
+    },
+}
+
+---------------------------------
+-- rsg-reputation: dealing costs honor and local standing, helping the law earns it
+-- Standing is applied in the town nearest to the player (needs rsg-economy GetRegionAt).
+---------------------------------
+Config.Reputation = {
+    Enabled = true,
+    HostileBuyMult = 0.5, -- NPCs in a town that is hostile to you are this much less likely to buy
+    Events = {
+        sale    = { honor = -1, standing = -1 },
+        refused = { honor = -2, standing = -3 },
+        export  = { honor = -5, standing = -3 },
+        rehab   = { honor = 3,  standing = 2 },
+        raid    = { honor = 5,  standing = 4 },
+    },
+}
+
+---------------------------------
+-- rsg-economy: bag sales to NPCs follow the town's market (flooding a town lowers the price)
+---------------------------------
+Config.Economy = {
+    Enabled = true,
 }

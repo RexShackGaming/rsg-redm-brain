@@ -194,5 +194,22 @@
     "cfg_stage_1": "Inquieto",
     "cfg_stage_2": "Tembloroso",
     "cfg_stage_3": "Abstinencia",
-    "ui_skill": "Habilidad %s"
+    "ui_skill": "Habilidad %s",
+    "ui_confirm": "¿Confirmar?",
+    "cfg_sub_tobacco": "Tabaco",
+    "payroll_low": "La caja de salarios solo cubre %s turnos más",
+    "raid_warning": "La ley ha recibido un soplo sobre tu operación. Viene una redada, ¡mueve tu mercancía!",
+    "raid_alert_title": "Redada en Laboratorio",
+    "raid_alert": "Se ha denunciado un laboratorio de drogas. Haz una redada en el contacto de procesado en %s minutos.",
+    "raid_target": "Allanar laboratorio",
+    "raid_none": "No hay ningún laboratorio denunciado para allanar ahora",
+    "raid_done_officer": "Laboratorio allanado: %s unidades destruidas, recompensa de $%s",
+    "raid_done_owner": "Allanaron tu laboratorio: se destruyeron %s unidades",
+    "raid_escaped": "La ley llegó tarde esta vez, pero tu laboratorio sigue vigilado",
+    "ui_heat": "Calor",
+    "ui_raid_warn": "Redada inminente",
+    "ui_potency": "Pureza",
+    "cfg_sub_opium": "Opio",
+    "cfg_skill_drugs": "Tráfico de Drogas",
+    "cfg_skill_drugs_desc": "Dirige laboratorios, empaqueta producto y véndelo."
 }

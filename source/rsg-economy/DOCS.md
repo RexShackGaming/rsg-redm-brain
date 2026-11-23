@@ -9,6 +9,9 @@
 - [Quotes](#quotes)
 - [Treasury and ledger](#treasury-and-ledger)
 - [Projects](#projects)
+- [Elections and mayors](#elections-and-mayors)
+- [Admin panel](#admin-panel)
+- [Interest, reports and duties](#interest-reports-and-duties)
 - [Server exports](#server-exports)
 - [Events and callbacks](#events-and-callbacks)
 - [Integration examples](#integration-examples)
@@ -83,10 +86,25 @@ Result: `{ region, mode, category, item, qty, base, marketMultiplier, repModifie
 - Ledger kinds: `tax`, `deposit`, `withdraw` (official panel withdrawals, counted toward the daily limit), `payout` (script payouts through `WithdrawTreasury`), `project`, `admin`, `tax_rate`.
 - Every entry stores amount, balance after, kind, reason, actor and time. Entries older than `Ledger.KeepDays` are deleted. `Ledger.LogTax = false` stops one row per taxed sale.
 - Withdrawals through the panel: official only, at most `Treasury.Withdraw.DailyLimit` per region and UTC day across all officials (summed from the ledger, plus withdrawals still in progress), and at most the balance. The lower balance is saved before the money is paid out.
-- Deposits take money from the player and are open to everyone when `AllowPublicDonations` is on. Donors can also earn reputation through `Treasury.DonationAction`.
+- Deposits take money from the player and are open to everyone when `AllowPublicDonations` is on. A deposit must be at least `Treasury.MinDeposit` and players wait `Treasury.DepositCooldown` seconds between deposits. Donations of at least `DonationRepMin` earn reputation through `Treasury.DonationAction`, at most once per `DonationRepCooldown` seconds per player and town.
+- Balances are capped at 999,999,999,999.99. A deposit that would pass the cap is refused and the player's money returned.
+- Citizen ids in ledger actors are only shown to officials; other players see the name alone. The panel opens on the town the player is standing in (else a town they run).
 
 ## Projects
 `Config.Projects` entries: `{ id, label, cost, days }`. An official funds a project from the panel; the cost leaves the treasury, the project becomes active for `days` days (0 = permanent) and a project already active cannot be funded again. The effect is up to other scripts: read `HasProject(region, id)` or listen to `rsg-economy:server:projectFunded`.
+
+Optional `effect` on a project: `{ type = 'wage', amount = n }` pays each on-duty player holding the town's `lawJob` from the treasury (one aggregated withdrawal); `{ type = 'tradeBonus', percent = n }` raises sell prices in that town; `{ type = 'taxHoliday' }` removes taxes there. Active projects are mirrored to `GlobalState['rsg-economy:projects']` and client export `HasProject(region, id)`.
+
+## Elections and mayors
+Phases per town: **candidacy** (`CandidacyDays`) then **voting** (`VotingDays`) then result. Candidates pay `CandidateFee` (kept in the treasury) and may add a platform of up to `PlatformLength` characters. One vote per licence per town. The highest tally wins; a tie goes to the earliest registrant. With no candidates or no votes the election is cancelled and retried after a day. The winner becomes mayor for `TermDays`, receives a telegram, and `IsOfficial` is true for them in that town. With `AutoStart` an election starts when a town has no mayor or the term ends within the candidacy and voting length. `HideCounts` hides running tallies. Staff can use `/startelection`, `/endelection`, `/cancelelection`, `/setmayor` and `/clearmayor`.
+
+## Admin panel
+Callbacks `getAdmin`, `adminSaveRegion` and `adminDeleteRegion` (staff only, `Config.AdminPermission`). A saved town is stored in `rsg_economy_region` and overrides or extends `Config.Regions`. Deleting a config town restores its config values; a custom town can only be deleted when its treasury is below 1. Up to 6 officials per town (`job`, `minGrade`), a `lawJob`, a display `order` and coordinates (use your position).
+
+## Interest, reports and duties
+- `Treasury.Interest`: once per UTC day each treasury between `MinBalance` and `MaxBalance` earns `PercentPerDay` percent (ledger kind `interest`).
+- `Report`: on `Weekday` a telegram with a 7-day summary goes to the mayor and online officials (needs `rsg-telegram`).
+- `Duties`: `Quote` accepts `origin`; goods whose origin differs from the selling town pay the `duty` category rate, banked in the treasury. `Config.Duties.Origins[item]` supplies a default origin. The quote returns `origin, dutyRate, duty`.
 
 ## Server exports
 Regions and categories are validated; invalid input returns `nil` or `false` as noted.
@@ -106,6 +124,10 @@ Regions and categories are validated; invalid input returns `nil` or `false` as 
 | `ResetMarket(region?, item?)` | entries cleared | Clear pressure for a region, an item, or everything. |
 | `IsOfficial(src, region)` | boolean | |
 | `HasProject(region, id)` | boolean | The project is active now. |
+| `GetMayor(region)` | `{ citizenid, name, since, term_end }` / `nil` | Sitting mayor. |
+| `StartElection(region)` | boolean | Start an election. |
+| `SetMayor(region, citizenid, name?)` | boolean | Appoint a mayor. |
+| `ClearMayor(region)` | boolean | Remove the mayor. |
 | `GetRegions()` / `GetCategories()` | config tables | |
 
 ## Events and callbacks
@@ -115,13 +137,21 @@ Regions and categories are validated; invalid input returns `nil` or `false` as 
 | `rsg-economy:server:taxChanged` | server | `region, category, newRate, oldRate` | A rate changed. |
 | `rsg-economy:server:treasuryChanged` | server | `region, balance, delta, kind` | A balance changed. |
 | `rsg-economy:server:projectFunded` | server | `region, projectId, expires, src` | A project was funded (`expires` is 0 for permanent). |
+| `rsg-economy:server:mayorChanged` | server | `region, citizenid or nil` | A mayor was elected, appointed or removed. |
 | `rsg-economy:client:open` | client | none | Opens the panel. |
 | `rsg-economy:server:getPanel` | callback | none | Panel data. Read only, throttled. |
-| `rsg-economy:server:getLedger` | callback | `region` | Recent ledger rows. Read only, throttled. |
+| `rsg-economy:server:getLedger` | callback | `region` | `{ rows, remaining }`: recent ledger rows, and for officials the amount they can still withdraw today. Read only, throttled. |
 | `rsg-economy:server:setTax` | callback | `region, category, rate` | Official only. Returns `{ ok, msg }`. |
 | `rsg-economy:server:withdraw` | callback | `region, amount` | Official only. Returns `{ ok, msg }`. |
 | `rsg-economy:server:deposit` | callback | `region, amount` | Returns `{ ok, msg }`. |
 | `rsg-economy:server:fundProject` | callback | `region, project` | Official only. Returns `{ ok, msg }`. |
+| `rsg-economy:server:getElection` | callback | `region` | Election state, candidates and your vote. |
+| `rsg-economy:server:electionRegister` | callback | `region, platform` | Register as a candidate. Returns `{ ok, msg }`. |
+| `rsg-economy:server:electionWithdraw` | callback | `region` | Withdraw your candidacy. |
+| `rsg-economy:server:electionVote` | callback | `region, candidateId` | Cast your vote (once). |
+| `rsg-economy:server:getAdmin` | callback | none | Staff only. Town list for the Admin tab. |
+| `rsg-economy:server:adminSaveRegion` | callback | `data` | Staff only. Add or update a town. |
+| `rsg-economy:server:adminDeleteRegion` | callback | `region` | Staff only. Remove or restore a town. |
 
 ## Integration examples
 ### A general store
@@ -161,17 +191,18 @@ end)
 ```
 
 ## Persistence
-- Treasuries, rates, market pressure and projects are saved every `SaveInterval` seconds and when the resource stops. A failed write is kept and retried on the next save.
+- Treasuries, rates, market pressure and projects are saved every `SaveInterval` seconds and when the resource stops. Changes are written in one transaction per save; a failed write is kept and retried on the next save. Calls made before the saved data has loaded wait for it (up to 15 seconds) instead of being overwritten.
 - Panel withdrawals, deposits and project funding save immediately; the ledger row for those is written before the action finishes.
 - Expired projects and old ledger entries are removed on start and every 6 hours.
 
 ## Commands
-See the table in [README.md](README.md). Admin commands also work from the server console (source 0). All use `Config.AdminPermission`.
+See the table in [README.md](README.md), including the election and mayor commands. The panel key (`Config.Key`, default F7) is rebindable in the game's key settings; `Config.UseKeyMapping = false` disables it. Admin commands also work from the server console (source 0). All use `Config.AdminPermission`.
 
 ## Security model
 - The client only displays data and forwards requests. Every callback re-checks the region, category, project and amount, and whether the player is an official.
 - Amounts must be finite and between 0 and `Treasury.MaxAmount`; rates are clamped to the category limits; project costs come from config, never from the client.
-- Actions are throttled per player and run one at a time. Tax changes have a per-rate cooldown; withdrawals have a daily per-town limit that concurrent requests cannot exceed.
+- Actions are throttled per player and run one at a time. Tax changes have a per-rate cooldown; withdrawals have a daily per-town limit that concurrent requests cannot exceed; a project is claimed before it is paid for, so two officials cannot fund it twice. The reputation price modifier is limited to `Config.ReputationLimit`.
+- **Officials:** the default `government` entry makes every government worker an official of every town. Raise its `minGrade` or use town-specific jobs.
 - Money moves in a safe order: a withdrawal lowers and saves the treasury before paying the player (refunded if the payout fails); a deposit takes the player's money first.
 - Exports trust their caller. Never forward client-supplied prices or quantities to `Quote` / `Record` / `WithdrawTreasury`, and call `Record` only after the money has moved.
 
@@ -182,9 +213,15 @@ Created automatically (`Config.AutoDatabase`), or import `install.sql`.
 | --- | --- |
 | `rsg_economy_treasury` | `region` (PK), `balance` DECIMAL(14,2) |
 | `rsg_economy_tax` | `region`, `category` (PK), `rate` DECIMAL(6,4) |
-| `rsg_economy_ledger` | `id` (PK, auto), `region`, `amount`, `balance_after`, `kind`, `reason`, `actor`, `created` (unix time); index on `region, created` |
+| `rsg_economy_ledger` | `id` (PK, auto), `region`, `amount`, `balance_after`, `kind`, `reason`, `actor`, `created` (unix time); indexes on `region, created` and on `created` (added automatically to older tables) |
 | `rsg_economy_market` | `item`, `region` (PK), `pressure` DOUBLE, `updated` (unix time) |
 | `rsg_economy_project` | `region`, `project` (PK), `expires` (unix time, 0 = permanent) |
+| `rsg_economy_meta` | `k` (PK), `v`: day markers for interest and reports, election retry times |
+| `rsg_economy_region` | `id` (PK), `label`, `ord`, `x`, `y`, `z`, `law_job`, `officials` (JSON) |
+| `rsg_economy_mayor` | `region` (PK), `citizenid`, `name`, `since`, `term_end` |
+| `rsg_economy_election` | `region` (PK), `phase`, `phase_end` |
+| `rsg_economy_candidate` | `id` (PK, auto), `region`, `citizenid`, `name`, `platform`, `registered`; unique on `region, citizenid` |
+| `rsg_economy_vote` | `region`, `license` (PK), `voter`, `candidate`, `voted`; index on `candidate` |
 
 ## Server owner how-tos
 - **Add a town:** add it to `Config.Regions` with its `officials`, and use the same id in the scripts that quote for it.
@@ -224,7 +261,7 @@ Support the Project : https://rexshack.tebex.store/
 
 ## Technical reference
 
-Generated from the source of **rsg-economy 3.1.0**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-economy 3.2.0**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 
@@ -254,7 +291,8 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.SaveInterval` | `30` | Seconds between database saves of changed treasuries, rates and prices |
 | `Config.MoneyType` | `'cash'` | Money type used for deposits and withdrawals ('cash' or 'bank') |
 | `Config.UseReputation` | `true` | Use rsg-reputation price modifiers (disliked players pay more, respected players less) when it is running |
-| `Config.RequireOnDuty` | `false` |  |
+| `Config.ReputationLimit` | `0.5` | The reputation price modifier is limited to +/- this fraction |
+| `Config.RequireOnDuty` | `false` | Officials must be on duty to act |
 | `Config.RegionRadius` | `800.0` | exports['rsg-economy']:GetRegionAt(coords). A position further than RegionRadius from every town has no region |
 | `Config.Regions` | `table` |  |
 | `Config.Tax` | `table` |  |
@@ -262,10 +300,14 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.ChangeCooldown` | `300` | seconds an official must wait before changing the same rate again in the same region |
 | `Config.Categories` | `table` |  |
 | `Config.Treasury` | `table` |  |
-| `Config.PublicBalance` | `true` |  |
-| `Config.AllowPublicDonations` | `true` |  |
-| `Config.DonationAction` | `'donation'` |  |
-| `Config.MaxAmount` | `1000000` |  |
+| `Config.PublicBalance` | `true` | Everyone can see the balance (false = officials only) |
+| `Config.AllowPublicDonations` | `true` | Any player can donate to a town |
+| `Config.DonationAction` | `'donation'` | rsg-reputation action applied to a donor (nil to disable) |
+| `Config.DonationRepMin` | `25` | Smallest donation that earns reputation |
+| `Config.DonationRepCooldown` | `3600` | Seconds before the same player can earn reputation from the same town again |
+| `Config.MinDeposit` | `1.0` | Smallest single deposit |
+| `Config.DepositCooldown` | `3` | Seconds a player must wait between deposits |
+| `Config.MaxAmount` | `1000000` | Largest single deposit or withdrawal |
 | `Config.Withdraw` | `table` |  |
 | `Config.Ledger` | `table` |  |
 | `Config.Market` | `table` |  |

@@ -27,6 +27,7 @@ Config.Bounty = {
     XPMultiplier = 2,    -- xp multiplier for skinning and butcher sales
     MinReward    = 3,    -- default pool: Config.Animal entries paying at least this (legendaries excluded)
     Animals      = {},   -- optional fixed pool: { { model = -1124266369, label = 'Bear' }, ... }
+    PerRegion    = true, -- each butcher region has its own bounty animals (same for everyone in that region); false = one list for the whole map
 }
 
 ----------------------------------
@@ -851,6 +852,7 @@ Config.Animals = {
     -- animals
     {
         modelhash = `a_c_alligator_01`,
+        name = 'Alligator',
         skinable = true,
         rewarditem1 = 'resource_skin_alligator',
         rewarditem2 = nil,
@@ -860,6 +862,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_alligator_03`,
+        name = 'Alligator',
         skinable = true,
         rewarditem1 = 'resource_skin_alligator',
         rewarditem2 = nil,
@@ -869,6 +872,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_badger_01`,
+        name = 'Badger',
         skinable = true,
         rewarditem1 = 'resource_pelt_badger',
         rewarditem2 = nil,
@@ -879,6 +883,7 @@ Config.Animals = {
 
     {
         modelhash = `a_c_bearblack_01`,
+        name = 'Bearblack',
         skinable = true,
         rewarditem1 = 'resource_skin_bear_black',
         rewarditem2 = 'resource_tooth_bear',
@@ -888,6 +893,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_bear_01`,
+        name = 'Bear',
         skinable = true,
         rewarditem1 = 'resource_skin_bear',
         rewarditem2 = 'resource_tooth_bear',
@@ -897,6 +903,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_beaver_01`,
+        name = 'Beaver',
         skinable = true,
         rewarditem1 = 'resource_pelt_beaver',
         rewarditem2 = 'resource_tail_beaver',
@@ -906,6 +913,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_bighornram_01`,
+        name = 'Bighornram',
         skinable = true,
         rewarditem1 = 'resource_skin_ram',
         rewarditem2 = 'resource_horn_ram',
@@ -915,6 +923,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_boar_01`,
+        name = 'Boar',
         skinable = true,
         rewarditem1 = 'resource_skin_boar',
         rewarditem2 = 'heart_pig_boar',
@@ -924,6 +933,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_buck_01`,
+        name = 'Buck',
         skinable = true,
         rewarditem1 = 'resource_skin_buck',
         rewarditem2 = 'resource_antler_buck',
@@ -933,6 +943,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_buffalo_01`,
+        name = 'Buffalo',
         skinable = true,
         rewarditem1 = 'resource_skin_buffalo',
         rewarditem2 = 'resource_horn_buffalo',
@@ -942,6 +953,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_bull_01`,
+        name = 'Bull',
         skinable = true,
         rewarditem1 = 'resource_hide_cow_bull',
         rewarditem2 = 'resource_horn_bull',
@@ -951,6 +963,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_cougar_01`,
+        name = 'Cougar',
         skinable = true,
         rewarditem1 = 'resource_skin_cougar',
         rewarditem2 = 'heart_cougar',
@@ -960,6 +973,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_cow`,
+        name = 'Cow',
         skinable = true,
         rewarditem1 = 'resource_hide_cow1',
         rewarditem2 = 'resource_horn_cow',
@@ -969,6 +983,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_coyote_01`,
+        name = 'Coyote',
         skinable = true,
         rewarditem1 = 'resource_pelt_coyote',
         rewarditem2 = 'resource_tooth_coyote',
@@ -978,6 +993,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_deer_01`,
+        name = 'Deer',
         skinable = true,
         rewarditem1 = 'resource_skin_deer',
         rewarditem2 = nil,
@@ -987,6 +1003,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_elk_01`,
+        name = 'Elk',
         skinable = true,
         rewarditem1 = 'resource_skin_elk',
         rewarditem2 = 'resource_antler_elk',
@@ -996,6 +1013,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_fox_01`,
+        name = 'Fox',
         skinable = true,
         rewarditem1 = 'resource_pelt_fox',
         rewarditem2 = 'resource_tooth_fox',
@@ -1005,6 +1023,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_goat_01`,
+        name = 'Goat',
         skinable = true,
         rewarditem1 = 'resource_skin_goat',
         rewarditem2 = 'resource_head_goat',
@@ -1014,6 +1033,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_javelina_01`,
+        name = 'Javelina',
         skinable = true,
         rewarditem1 = 'resource_skin_javelina_boar',
         rewarditem2 = 'resource_tusk_javolina',
@@ -1023,6 +1043,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_moose_01`,
+        name = 'Moose',
         skinable = true,
         rewarditem1 = 'resource_skin_moose',
         rewarditem2 = 'resource_antler_moose',
@@ -1032,6 +1053,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_ox_01`,
+        name = 'Ox',
         skinable = true,
         rewarditem1 = 'resource_hide_cow_ox',
         rewarditem2 = 'resource_horn_ox',
@@ -1041,6 +1063,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_panther_01`,
+        name = 'Panther',
         skinable = true,
         rewarditem1 = 'resource_skin_panther',
         rewarditem2 = 'resource_claw_panther',
@@ -1050,6 +1073,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_pig_01`,
+        name = 'Pig',
         skinable = true,
         rewarditem1 = 'resource_skin_pig',
         rewarditem2 = 'pigs_feet',
@@ -1059,6 +1083,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_pronghorn_01`,
+        name = 'Pronghorn',
         skinable = true,
         rewarditem1 = 'resource_skin_pronghorn',
         rewarditem2 = 'resource_horn_pronghorn',
@@ -1068,6 +1093,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_sheep_01`,
+        name = 'Sheep',
         skinable = true,
         rewarditem1 = 'resource_wool',
         rewarditem2 = 'resource_head_sheep',
@@ -1077,6 +1103,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_wolf`,
+        name = 'Wolf',
         skinable = true,
         rewarditem1 = 'resource_pelt_wolf',
         rewarditem2 = 'resource_tooth_wolf',
@@ -1086,6 +1113,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_wolf_medium`,
+        name = 'Wolf Medium',
         skinable = true,
         rewarditem1 = 'resource_pelt_wolf',
         rewarditem2 = 'resource_tooth_wolf',
@@ -1095,6 +1123,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_wolf_small`,
+        name = 'Wolf Small',
         skinable = true,
         rewarditem1 = 'resource_pelt_wolf',
         rewarditem2 = 'resource_tooth_wolf',
@@ -1105,6 +1134,7 @@ Config.Animals = {
     -- small animals
     {
         modelhash = `a_c_bat_01`,
+        name = 'Bat',
         skinable = false,
         rewarditem1 = 'a_c_bat_01',
         rewarditem2 = nil,
@@ -1114,6 +1144,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_bluejay_01`,
+        name = 'Bluejay',
         skinable = false,
         rewarditem1 = 'a_c_bluejay_01',
         rewarditem2 = nil,
@@ -1123,6 +1154,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_californiacondor_01`,
+        name = 'Californiacondor',
         skinable = true,
         rewarditem1 = 'provision_feather_condor',
         rewarditem2 = 'provision_beak_condor',
@@ -1132,6 +1164,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_cardinal_01`,
+        name = 'Cardinal',
         skinable = false,
         rewarditem1 = 'a_c_cardinal_01',
         rewarditem2 = nil,
@@ -1141,6 +1174,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_carolinaparakeet_01`,
+        name = 'Carolinaparakeet',
         skinable = false,
         rewarditem1 = 'a_c_carolinaparakeet_01',
         rewarditem2 = nil,
@@ -1150,6 +1184,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_cedarwaxwing_01`,
+        name = 'Cedarwaxwing',
         skinable = false,
         rewarditem1 = 'a_c_cedarwaxwing_01',
         rewarditem2 = nil,
@@ -1159,6 +1194,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_chicken_01`,
+        name = 'Chicken',
         skinable = true,
         rewarditem1 = 'heart_chicken',
         rewarditem2 = 'provision_feather_chicken',
@@ -1168,6 +1204,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_chipmunk_01`,
+        name = 'Chipmunk',
         skinable = false,
         rewarditem1 = 'a_c_chipmunk_01',
         rewarditem2 = nil,
@@ -1177,6 +1214,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_cormorant_01`,
+        name = 'Cormorant',
         skinable = true,
         rewarditem1 = 'provision_beak_cormorant',
         rewarditem2 = 'provision_feather_cormorant',
@@ -1186,6 +1224,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_crab_01`,
+        name = 'Crab',
         skinable = false,
         rewarditem1 = 'a_c_crab_01',
         rewarditem2 = nil,
@@ -1195,6 +1234,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_cranewhooping_01`,
+        name = 'Cranewhooping',
         skinable = true,
         rewarditem1 = 'provision_feather_crane',
         rewarditem2 = 'provision_beak_crane',
@@ -1204,6 +1244,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_crow_01`,
+        name = 'Crow',
         skinable = false,
         rewarditem1 = 'a_c_crow_01',
         rewarditem2 = nil,
@@ -1213,6 +1254,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_duck_01`,
+        name = 'Duck',
         skinable = true,
         rewarditem1 = 'heart_duck',
         rewarditem2 = nil,
@@ -1222,6 +1264,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_eagle_01`,
+        name = 'Eagle',
         skinable = true,
         rewarditem1 = 'resource_claw_eagle',
         rewarditem2 = 'provision_feather_eagle',
@@ -1231,6 +1274,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_egret_01`,
+        name = 'Egret',
         skinable = true,
         rewarditem1 = 'provision_feather_egret',
         rewarditem2 = 'provision_beak_egret',
@@ -1240,6 +1284,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_frogbull_01`,
+        name = 'Frogbull',
         skinable = false,
         rewarditem1 = 'a_c_frogbull_01',
         rewarditem2 = nil,
@@ -1249,6 +1294,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_gilamonster_01`,
+        name = 'Gilamonster',
         skinable = false,
         rewarditem1 = 'resource_skin_gilamonster',
         rewarditem2 = nil,
@@ -1258,6 +1304,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_goosecanada_01`,
+        name = 'Goosecanada',
         skinable = true,
         rewarditem1 = 'provision_feather_goose',
         rewarditem2 = 'provision_beak_goose',
@@ -1267,6 +1314,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_hawk_01`,
+        name = 'Hawk',
         skinable = true,
         rewarditem1 = 'provision_feather_hawk',
         rewarditem2 = 'resource_claw_hawk',
@@ -1276,6 +1324,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_heron_01`,
+        name = 'Heron',
         skinable = true,
         rewarditem1 = 'provision_feather_heron',
         rewarditem2 = 'provision_beak_heron',
@@ -1285,6 +1334,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_iguanadesert_01`,
+        name = 'Iguanadesert',
         skinable = true,
         rewarditem1 = 'resource_skin_desert_iguana',
         rewarditem2 = nil,
@@ -1294,6 +1344,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_iguana_01`,
+        name = 'Iguana',
         skinable = true,
         rewarditem1 = 'resource_skin_iguana',
         rewarditem2 = nil,
@@ -1303,6 +1354,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_loon_01`,
+        name = 'Loon',
         skinable = true,
         rewarditem1 = 'provision_feather_loon',
         rewarditem2 = 'provision_beak_common_loon',
@@ -1312,6 +1364,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_muskrat_01`,
+        name = 'Muskrat',
         skinable = true,
         rewarditem1 = 'resource_pelt_muskrat',
         rewarditem2 = nil,
@@ -1321,6 +1374,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_oriole_01`,
+        name = 'Oriole',
         skinable = false,
         rewarditem1 = 'a_c_oriole_01',
         rewarditem2 = nil,
@@ -1330,6 +1384,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_owl_01`,
+        name = 'Owl',
         skinable = true,
         rewarditem1 = 'provision_feather_owl',
         rewarditem2 = 'resource_claw_owl',
@@ -1339,6 +1394,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_parrot_01`,
+        name = 'Parrot',
         skinable = true,
         rewarditem1 = 'provision_feather_parrot',
         rewarditem2 = 'provision_beak_parrot',
@@ -1348,6 +1404,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_pelican_01`,
+        name = 'Pelican',
         skinable = true,
         rewarditem1 = 'provision_feather_pelican',
         rewarditem2 = 'provision_beak_pelican',
@@ -1357,6 +1414,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_pheasant_01`,
+        name = 'Pheasant',
         skinable = true,
         rewarditem1 = 'provision_feather_pheasant',
         rewarditem2 = 'provision_beak_phesant',
@@ -1366,6 +1424,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_pigeon`,
+        name = 'Pigeon',
         skinable = false,
         rewarditem1 = 'a_c_pigeon',
         rewarditem2 = nil,
@@ -1375,6 +1434,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_possum_01`,
+        name = 'Possum',
         skinable = true,
         rewarditem1 = 'a_c_possum_01',
         rewarditem2 = nil,
@@ -1384,6 +1444,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_prairiechicken_01`,
+        name = 'Prairiechicken',
         skinable = true,
         rewarditem1 = 'provision_feather_prairie_chicken',
         rewarditem2 = 'provision_beak_prairie_chicken',
@@ -1393,6 +1454,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_quail_01`,
+        name = 'Quail',
         skinable = false,
         rewarditem1 = 'a_c_quail_01',
         rewarditem2 = nil,
@@ -1402,6 +1464,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_rabbit_01`,
+        name = 'Rabbit',
         skinable = true,
         rewarditem1 = 'resource_pelt_rabbit',
         rewarditem2 = 'resource_foot_rabbit',
@@ -1411,6 +1474,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_raccoon_01`,
+        name = 'Raccoon',
         skinable = true,
         rewarditem1 = 'resource_pelt_raccoon',
         rewarditem2 = 'resource_tooth_raccoon',
@@ -1420,6 +1484,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_rat_01`,
+        name = 'Rat',
         skinable = false,
         rewarditem1 = 'a_c_rat_01',
         rewarditem2 = nil,
@@ -1429,6 +1494,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_raven_01`,
+        name = 'Raven',
         skinable = true,
         rewarditem1 = 'provision_feather_raven',
         rewarditem2 = 'resource_claw_raven',
@@ -1438,6 +1504,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_redfootedbooby_01`,
+        name = 'Redfootedbooby',
         skinable = true,
         rewarditem1 = 'provision_feather_red_footed_booby',
         rewarditem2 = 'provision_beak_red_footed_booby',
@@ -1447,6 +1514,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_robin_01`,
+        name = 'Robin',
         skinable = false,
         rewarditem1 = 'a_c_robin_01',
         rewarditem2 = nil,
@@ -1456,6 +1524,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_rooster_01`,
+        name = 'Rooster',
         skinable = true,
         rewarditem1 = 'provision_feather_rooster',
         rewarditem2 = 'resource_claw_rooster',
@@ -1465,6 +1534,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_roseatespoonbill_01`,
+        name = 'Roseatespoonbill',
         skinable = true,
         rewarditem1 = 'provision_feather_roseta_spoonbill',
         rewarditem2 = 'provision_beak_roseate_spoonbill',
@@ -1474,6 +1544,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_seagull_01`,
+        name = 'Seagull',
         skinable = true,
         rewarditem1 = 'provision_feather_seagull',
         rewarditem2 = 'provision_beak_seagull',
@@ -1483,6 +1554,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_skunk_01`,
+        name = 'Skunk',
         skinable = true,
         rewarditem1 = 'resource_pelt_skunk',
         rewarditem2 = nil,
@@ -1492,6 +1564,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_snakeblacktailrattle_01`,
+        name = 'Snakeblacktailrattle',
         skinable = true,
         rewarditem1 = 'resource_skin_snake_blacktail_rattlesnake',
         rewarditem2 = 'resource_tooth_snake',
@@ -1501,6 +1574,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_snakeferdelance_01`,
+        name = 'Snakeferdelance',
         skinable = true,
         rewarditem1 = 'resource_skin_snake_ferdelance',
         rewarditem2 = 'resource_tooth_snake',
@@ -1510,6 +1584,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_snakeredboa10ft_01`,
+        name = 'Snakeredboa10Ft',
         skinable = true,
         rewarditem1 = 'resource_skin_snake_boa',
         rewarditem2 = 'resource_tooth_snake',
@@ -1519,6 +1594,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_snakeredboa_01`,
+        name = 'Snakeredboa',
         skinable = true,
         rewarditem1 = 'resource_skin_snake_boa',
         rewarditem2 = 'resource_tooth_snake',
@@ -1528,6 +1604,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_snakewater_01`,
+        name = 'Snakewater',
         skinable = true,
         rewarditem1 = 'resource_skin_snake_watersnake',
         rewarditem2 = 'resource_tooth_snake',
@@ -1537,6 +1614,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_snake_01`,
+        name = 'Snake',
         skinable = true,
         rewarditem1 = 'resource_skin_snake_western_rattlesnake',
         rewarditem2 = 'resource_tooth_snake',
@@ -1546,6 +1624,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_songbird_01`,
+        name = 'Songbird',
         skinable = false,
         rewarditem1 = 'a_c_songbird_01',
         rewarditem2 = nil,
@@ -1555,6 +1634,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_sparrow_01`,
+        name = 'Sparrow',
         skinable = false,
         rewarditem1 = 'a_c_sparrow_01',
         rewarditem2 = nil,
@@ -1564,6 +1644,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_squirrel_01`,
+        name = 'Squirrel',
         skinable = false,
         rewarditem1 = 'a_c_squirrel_01',
         rewarditem2 = nil,
@@ -1573,6 +1654,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_toad_01`,
+        name = 'Toad',
         skinable = false,
         rewarditem1 = 'a_c_toad_01',
         rewarditem2 = nil,
@@ -1582,6 +1664,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_turkeywild_01`,
+        name = 'Turkeywild',
         skinable = true,
         rewarditem1 = 'provision_feather_turkey',
         rewarditem2 = 'provision_beak_turkey',
@@ -1591,6 +1674,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_turkey_01`,
+        name = 'Turkey',
         skinable = true,
         rewarditem1 = 'provision_feather_turkey',
         rewarditem2 = 'provision_beak_turkey',
@@ -1600,6 +1684,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_turkey_02`,
+        name = 'Turkey',
         skinable = true,
         rewarditem1 = 'provision_feather_turkey',
         rewarditem2 = 'provision_beak_turkey',
@@ -1609,6 +1694,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_turtlesea_01`,
+        name = 'Turtlesea',
         skinable = true,
         rewarditem1 = 'resource_shell_turtle',
         rewarditem2 = 'provision_beak_turtle',
@@ -1618,6 +1704,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_turtlesnapping_01`,
+        name = 'Turtlesnapping',
         skinable = true,
         rewarditem1 = 'resource_shell_turtle',
         rewarditem2 = 'provision_beak_turtle',
@@ -1627,6 +1714,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_vulture_01`,
+        name = 'Vulture',
         skinable = true,
         rewarditem1 = 'provision_feather_vulture',
         rewarditem2 = 'provision_beak_vulture',
@@ -1636,6 +1724,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_woodpecker_01`,
+        name = 'Woodpecker',
         skinable = false,
         rewarditem1 = 'a_c_woodpecker_01',
         rewarditem2 = nil,
@@ -1645,6 +1734,7 @@ Config.Animals = {
     },
     {
         modelhash = `a_c_woodpecker_02`,
+        name = 'Woodpecker',
         skinable = false,
         rewarditem1 = 'a_c_woodpecker_02',
         rewarditem2 = nil,
@@ -1662,7 +1752,6 @@ Config.Animals = {
 ---------------------------------
 -- butcher settings
 ---------------------------------
-Config.Debug = false
 Config.SellTime = 10000          -- butcher sell progress bar (ms)
 Config.SellFromHorse = true      -- butcher also buys a carcass strapped to your horse
 Config.HorseCarcassRange = 6.0   -- max distance (m) between you and the carcass/horse
@@ -1672,6 +1761,9 @@ Config.PerfectMultiplier = 3
 Config.KeyBind = 'J'             -- prompt key when Config.EnableTarget = false
 Config.EnableTarget = true       -- rsg-target on butcher NPCs instead of prompts
 Config.ServerCooldown = 2000     -- per-player cooldown on skinning/butcher rewards (ms)
+-- carcass quality is read by the client (the server can't see it), so a modified client could always claim 'perfect'.
+-- true = pay the quality multipliers and clean-kill xp; false = every carcass counts as poor quality (cheat-proof)
+Config.TrustClientQuality = true
 Config.EnableLogging = true      -- send butcher sales to rsg-log
 
 ---------------------------------
@@ -1684,7 +1776,7 @@ Config.WebhookColour = 'default'
 ---------------------------------
 -- butcher npc settings
 ---------------------------------
-Config.DistanceSpawn = 20.0 -- distance before spawning/despawning the butcher ped
+Config.DistanceSpawn = 20.0 -- distance before spawning/despawning the butcher and trapper peds
 Config.FadeIn = true        -- fade butcher peds in/out
 
 ---------------------------------
@@ -1890,6 +1982,98 @@ Config.Animal = {
     { name = 'Legendary Wolf',           model = -1392359921, rewardmoney = 50, rewarditem1 = 'raw_meat', rewarditem2 = nil, rewarditem3 = nil },
 
 }
+
+----------------------------------
+-- pelt quality: skinning rewards remember the carcass quality and trappers pay more for good pelts.
+-- quality is read by the client, so this (and trophies / quality contracts) needs Config.TrustClientQuality = true
+----------------------------------
+Config.PeltQuality = {
+    Enabled = true,
+    good    = 1.15, -- trapper price multiplier for good-quality items
+    perfect = 1.40, -- ... and for perfect-quality items
+}
+
+----------------------------------
+-- trophies: a perfect skin of a listed animal can give a trophy item that trappers buy
+-- add the item to your shared items first (see installation/shared_items.lua, image hunting_trophy.png)
+----------------------------------
+Config.Trophies = {
+    Enabled   = true,
+    Item      = 'hunting_trophy',
+    Chance    = 25,      -- % chance per perfect skin of a listed animal
+    SellPrice = 10.00,   -- what every trapper pays per trophy
+    Animals = {
+        [`a_c_bear_01`] = true, [`a_c_bearblack_01`] = true, [`a_c_cougar_01`] = true, [`a_c_panther_01`] = true,
+        [`a_c_alligator_01`] = true, [`a_c_alligator_03`] = true, [`a_c_wolf`] = true, [`a_c_moose_01`] = true,
+        [`a_c_buffalo_01`] = true, [`a_c_elk_01`] = true, [`a_c_buck_01`] = true,
+    },
+}
+
+----------------------------------
+-- hunting contracts: ask any trapper for a contract, skin the animals, report back to be paid
+----------------------------------
+Config.Contracts = {
+    Enabled  = true,
+    Duration = 120, -- minutes to finish a contract
+    Cooldown = 30,  -- minutes after claiming before the next contract
+    -- need = { min, max } animals; reward = cash PER animal; xp = hunting xp PER animal; minLevel = hunting level needed
+    -- quality = 'good' | 'perfect' (needs Config.TrustClientQuality = true), omit for any quality
+    Pool = {
+        { model = `a_c_deer_01`,  need = { 3, 5 }, reward = 3.0,  xp = 2,  minLevel = 1 },
+        { model = `a_c_boar_01`,  need = { 2, 4 }, reward = 4.0,  xp = 3,  minLevel = 1 },
+        { model = `a_c_buck_01`,  need = { 2, 4 }, reward = 5.0,  xp = 3,  minLevel = 2 },
+        { model = `a_c_elk_01`,   need = { 2, 3 }, reward = 7.0,  xp = 5,  minLevel = 2, quality = 'good' },
+        { model = `a_c_wolf`,     need = { 2, 3 }, reward = 8.0,  xp = 6,  minLevel = 3 },
+        { model = `a_c_bear_01`,  need = { 1, 2 }, reward = 22.0, xp = 14, minLevel = 4, quality = 'perfect' },
+        { model = `a_c_cougar_01`, need = { 1, 2 }, reward = 20.0, xp = 12, minLevel = 4 },
+    },
+}
+
+----------------------------------
+-- trapper demand: weather and seasonal events change what the trappers pay (best matching rule wins)
+-- weather names are rsg-weather's (snow, blizzard, rain, thunderstorm, ...); season = an rsg-weather seasonal event name
+-- match = parts of the item name. needs rsg-weather started
+----------------------------------
+Config.Demand = {
+    Enabled = true,
+    Rules = {
+        { label = 'skins and pelts (cold weather)', weather = { 'snow', 'snowlight', 'blizzard', 'groundblizzard', 'whiteout', 'sleet' }, match = { 'skin', 'pelt', 'hide' }, mult = 1.20 },
+        { label = 'meat (wet weather)',             weather = { 'rain', 'shower', 'drizzle', 'thunder', 'thunderstorm', 'hurricane' },    match = { 'meat' },                 mult = 1.10 },
+        { label = 'pelts (winter festival)',        season = 'christmas', match = { 'pelt', 'skin' }, mult = 1.15 },
+    },
+}
+
+----------------------------------
+-- skill gates: dangerous animals need hunting level (and optionally an rsg-skills level) to skin or sell
+-- [model] = { level = hunting level, skill = rsg-skills level (optional) }
+----------------------------------
+Config.Gates = {
+    [`a_c_bear_01`]      = { level = 4 },
+    [`a_c_bearblack_01`] = { level = 3 },
+    [`a_c_cougar_01`]    = { level = 4 },
+    [`a_c_panther_01`]   = { level = 4 },
+    [-1149999295] = { level = 7 }, -- Legendary Beaver
+    [-1433814131] = { level = 7 }, -- Legendary Cougar
+    [-1307757043] = { level = 7 }, -- Legendary Coyote
+    [-1189368951] = { level = 7 }, -- Legendary Panther
+    [-1392359921] = { level = 7 }, -- Legendary Wolf
+}
+
+----------------------------------
+-- bulk sales: selling several carcasses in a row (or a full hunting cart from rsg-wagons) earns a cash bonus
+----------------------------------
+Config.BulkBonus = {
+    Enabled       = true,
+    MinCarcasses  = 3,   -- bonus starts at this many carcasses
+    PerCarcass    = 2,   -- % per carcass from the minimum up
+    Max           = 20,  -- % cap
+    WindowSeconds = 600, -- hand sales: carcasses sold at a butcher within this time count as one run
+}
+
+----------------------------------
+-- hunting journal: species skinned / perfect / sold and best sale per player (leaderboard "Journal" tab)
+----------------------------------
+Config.Journal = { Enabled = true }
 
 -- rsg-skills integration (optional). Needs the rsg-skills resource; does nothing when it is not started.
 -- The hunting XP, levels and leaderboard above keep working; this adds the shared rsg-skills 'hunting' skill on top.

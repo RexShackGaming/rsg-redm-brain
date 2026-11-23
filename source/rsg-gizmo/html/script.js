@@ -7,9 +7,10 @@ function renderKeys(rotation) {
   const rows = [
     [S.confirm, k.confirm], [S.cancel, k.cancel], [S.mode, k.mode],
     [S.move, k.move], [S.height, k.height], [S.rotate, k.rotate],
-    [S.precise, k.precise], [S.ground, k.ground],
+    [S.precise, k.precise], [S.ground, k.ground], [S.snap, k.snap],
+    [S.undo, k.undo], [S.redo, k.redo],
   ];
-  if (rotation === 'all') rows.push([S.reset, k.reset]);
+  if (rotation === 'all') rows.push([S.reset, k.reset], [S.roll, k.roll]);
   const box = $('keys');
   box.innerHTML = '';
   rows.forEach(([desc, cap]) => {
@@ -22,6 +23,8 @@ function renderKeys(rotation) {
   });
 }
 
+function setSnap(on) { const b = $('snap'); b.textContent = S.snapOn || ''; b.classList.toggle('hidden', !on); }
+
 function setMode(mode) { $('mode').textContent = mode === 'fine' ? S.modeFine : S.modeFree; }
 
 window.addEventListener('message', ({ data }) => {
@@ -33,10 +36,12 @@ window.addEventListener('message', ({ data }) => {
       $('lblRot').textContent = S.rotation || '';
       renderKeys(data.rotation);
       setMode(data.mode);
+      setSnap(data.snap);
       hud.classList.remove('hidden');
       break;
     case 'mode': setMode(data.mode); break;
     case 'update': {
+      setSnap(data.snap);
       const st = $('status');
       st.textContent = data.valid ? S.valid : (data.reason || '');
       st.className = 'status ' + (data.valid ? 'ok' : 'bad');

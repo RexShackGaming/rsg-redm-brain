@@ -5,6 +5,7 @@ const state = {
     basket: {},         // name -> amount
     picks: {},          // name -> amount chosen in the card stepper
     imagePath: '',
+    qm: { good: 1, perfect: 1 }, // price multipliers for good / perfect pelts
     busy: false,
 };
 
@@ -43,12 +44,20 @@ const findItem = (name) => state.items.find((i) => i.name === name);
 const available = (item) => Math.max(0, item.owned - (state.basket[item.name] || 0));
 const imgSrc = (item) => state.imagePath + item.image;
 
+// value of `amount` units: best quality is sold first (same order as the server)
+function lineValue(item, amount) {
+    const perfect = Math.min(amount, item.perfect || 0);
+    const good = Math.min(amount - perfect, item.good || 0);
+    const plain = amount - perfect - good;
+    return item.price * (perfect * state.qm.perfect + good * state.qm.good + plain);
+}
+
 function basketTotals() {
     let raw = 0, count = 0;
     for (const [name, amount] of Object.entries(state.basket)) {
         const item = findItem(name);
         if (!item) continue;
-        raw += item.price * amount;
+        raw += lineValue(item, amount);
         count += amount;
     }
     const payout = Math.round(raw * 100) / 100;
@@ -108,11 +117,11 @@ function renderBasket() {
                 <div class="row-icon"><img src="${esc(imgSrc(item))}" onerror="this.style.visibility='hidden'"></div>
                 <div class="row-info">
                     <div class="row-title">${esc(item.label)}</div>
-                    <div class="row-sub">${amount} &times; ${money(item.price)}</div>
+                    <div class="row-sub">${amount} &times; ${money(lineValue(item, amount) / amount)}</div>
                 </div>
                 <button class="qty-btn" data-act="bdec">&minus;</button>
                 <button class="qty-btn" data-act="binc" ${available(item) <= 0 ? 'disabled' : ''}>+</button>
-                <div class="row-total">${money(item.price * amount)}</div>
+                <div class="row-total">${money(lineValue(item, amount))}</div>
                 <button class="round-btn row-remove" data-act="remove" title="${esc(L.remove)}">&#10005;</button>
             </div>`;
         }).join('');
@@ -190,6 +199,7 @@ async function commitSale() {
 function openUi(data) {
     applyLabels(data.labels);
     state.imagePath = data.imagePath || '';
+    state.qm = { good: 1, perfect: 1, ...(data.qualityMult || {}) };
     state.basket = {};
     state.picks = {};
     setItems(data.items);

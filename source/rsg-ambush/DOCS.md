@@ -1,4 +1,4 @@
-# rsg-ambush – Docs (v3.2.0)
+# rsg-ambush – Docs (v3.2.1)
 
 ## Contents
 1. Files
@@ -100,6 +100,7 @@ Each integration is skipped silently when its resource is not started. Server ow
 | rsg-reputation | `GetHonor` (chance), `AddHonor`, `AddStanding` (rewards) | `Hooks.Honor`, `Rewards.Honor/Standing/MercyHonor` |
 | rsg-skills | `GetLevel` (group size), `AddXP` (reward) | `Hooks.Scaling`, `Rewards.Skill` |
 | rsg-economy | `GetRegionAt` (area for chance, gangs and standing) | `Zones` |
+| rsg-deliveries | `GetAmbushMultiplier(src)` (chance multiplier while the player carries a delivery contract) | `Config.Ambush` in rsg-deliveries |
 
 - `Hooks.Honor.Chance` entries use `maxHonor` (honor at or below) or `minHonor` (at or above) and a `mult`; the first matching entry wins, so list the most extreme first.
 - `Zones.Areas[region].chance` multiplies the chance; `.gangs[key]` multiplies that gang's weight (0 = never there). Region ids are the rsg-economy town ids. `Zones.Radius` is how far the nearest town may be.
@@ -114,6 +115,8 @@ Each integration is skipped silently when its resource is not started. Server ow
 | `rsg-ambush:server:finish` | server event | `(id, aborted)`; ends the ambush and removes leftover bandits. `aborted` returns the cooldown if nothing was registered |
 | `rsg-ambush:server:loot` | callback | `(id, netId)` pays loot once per body |
 | `rsg-ambush:client:force` | client event | Force an ambush (debug) |
+| `rsg-ambush:server:ambushStarted` | local server event | `(src, id, gang)`, fired when the server accepts an ambush. For other resources; clients cannot trigger it |
+| `rsg-ambush:server:ambushWon` | local server event | `(src, id)`, fired when the server confirms the player won. For other resources |
 
 | Command | Who | What |
 |---|---|---|
@@ -160,7 +163,7 @@ Support the Project : https://rexshack.tebex.store/
 
 ## 9. Technical reference
 
-Generated from the source of **rsg-ambush 3.2.0**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-ambush 3.2.1**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 

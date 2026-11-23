@@ -2,7 +2,7 @@
 
 A regional economy for the RSG Framework: every town has a **treasury**, its own **tax rates** set by its officials, **supply-and-demand prices** that react to what players buy and sell, and **town projects** the treasury can pay for. Taxes flow into the treasuries, and projects and officials' decisions spend them, so money keeps moving instead of piling up.
 
-Version 3.1.0 · Requires `rsg-core` and `oxmysql` · Optional: `rsg-reputation` · No ox_lib, no target and no inventory dependency
+Version 3.2.0 · Requires `rsg-core` and `oxmysql` · Optional: `rsg-reputation`, `rsg-telegram` · No ox_lib, no target and no inventory dependency
 
 Full developer and server owner documentation is in [DOCS.md](DOCS.md).
 
@@ -15,6 +15,12 @@ Full developer and server owner documentation is in [DOCS.md](DOCS.md).
 - **Reputation link:** if `rsg-reputation` is running, disliked players pay more and respected players pay less in a town.
 - **Treasury** panel: balance, deposits (anyone can donate), officials' withdrawals with a daily limit, and a ledger of recent activity. Every change is logged with who did it.
 - **Town projects** (street lamps, extra deputies, road repairs, town festival by default): officials pay for them from the treasury and other scripts read `HasProject` or listen for an event to apply the effect.
+- **Player elections:** players elect a mayor for each town (candidacy, voting, result). The mayor is an official of that town for the length of the term.
+- **Admin panel:** staff add, edit and remove towns and officials in game.
+- **Withdrawal safety:** per-official daily limit and alerts to other officials when a large amount leaves the treasury.
+- **Treasury interest** and a **weekly telegram report** to the mayor and officials (needs `rsg-telegram`).
+- **Project effects:** wages for law workers, better sell prices, or a tax holiday. **Import duty** on goods brought in from another town.
+- **F7** opens the panel (rebindable in the game's key settings; `Config.UseKeyMapping`).
 - Admin commands to set taxes, adjust treasuries, reset markets and inspect a town (also from the console).
 - Push-to-talk keeps working while the panel is open.
 - Database tables are created automatically.
@@ -30,8 +36,8 @@ Full developer and server owner documentation is in [DOCS.md](DOCS.md).
    ```
 3. Database: the tables (`rsg_economy_treasury`, `rsg_economy_tax`, `rsg_economy_ledger`, `rsg_economy_market`, `rsg_economy_project`) are created automatically on first start. To install manually instead, set `Config.AutoDatabase = false` in `shared/config.lua` and import `install.sql`.
 4. Optional: set the language with `setr rsg:locale de` in `server.cfg` (see Locales).
-5. Check the officials. The seed jobs in rsg-core include the five town law jobs (`vallaw`, `rholaw`, `stdenlaw`, `strlaw`, `blklaw`). There is no mayor or governor job, so the `government` job (the manager job used by rsg-townhall) is also accepted in every town. Raise its `minGrade` in `Config.Regions` if not every government worker should be an official.
-6. The economy does nothing on its own. Shop and trade scripts must call `Quote` / `Record` (see below). No existing RSG resource does this yet, so taxes stay empty until a script uses it.
+5. Check the officials (see the warning about the `government` job below). The seed jobs in rsg-core include the five town law jobs (`vallaw`, `rholaw`, `stdenlaw`, `strlaw`, `blklaw`). There is no mayor or governor job, so the `government` job (the manager job used by rsg-townhall) is also accepted in every town. **The `government` job is an official of every town**, so any government worker can set taxes and take money out of all nine treasuries. Raise its `minGrade` in `Config.Regions`, or give each town its own job, if that is not what you want.
+6. The economy does nothing on its own. Shop and trade scripts must call `Quote` / `Record` (see below). Taxes only fill up from scripts that use it: rsg-trader, rsg-ranch and rsg-fishmonger quote and record sales, and rsg-housing, rsg-mdt (fines) and rsg-noticeboard pay into treasuries.
 
 ## Configuration
 All options are in `shared/config.lua`.
@@ -46,6 +52,7 @@ All options are in `shared/config.lua`.
 | `SaveInterval` | `30` | Seconds between saves of changed data. |
 | `MoneyType` | `'cash'` | Money type used for deposits and withdrawals. |
 | `UseReputation` | `true` | Apply `rsg-reputation` price modifiers when it is running. |
+| `ReputationLimit` | `0.5` | The reputation price modifier is limited to this fraction either way. |
 | `RequireOnDuty` | `false` | Officials must be on duty. |
 | `Regions` | 9 towns | Region id, label, panel `order` and the `officials` list (`job`, `minGrade`). |
 | `Tax.Step` / `Tax.ChangeCooldown` | `0.005` / `300` | Rate step (0.5%) and seconds before the same rate can change again. |
@@ -53,21 +60,34 @@ All options are in `shared/config.lua`.
 | `Treasury.PublicBalance` | `true` | Everyone can see the balance (`false` = officials only). |
 | `Treasury.AllowPublicDonations` | `true` | Any player may donate. |
 | `Treasury.DonationAction` | `'donation'` | `rsg-reputation` action applied to donors. |
+| `Treasury.DonationRepMin` / `DonationRepCooldown` | `25` / `3600` | Smallest donation that earns reputation, and seconds before the same player can earn it again in the same town. |
+| `Treasury.MinDeposit` / `DepositCooldown` | `1.0` / `3` | Smallest single deposit and seconds between deposits. |
 | `Treasury.MaxAmount` | `1000000` | Largest single deposit or withdrawal. |
 | `Treasury.Withdraw` | `Enabled true, DailyLimit 2000` | Official withdrawals through the panel; limit per town and UTC day. |
 | `Treasury.Ledger` | `KeepDays 30, PageSize 20, LogTax true` | History kept, rows shown, and whether each taxed sale gets a row. |
 | `Market` | `PressurePerUnit 0.02, HalfLifeHours 12, Sensitivity 0.5, 0.5 to 1.5` | Dynamic price settings and optional per-item overrides in `Items`. |
-| `Projects` | 4 projects | `id`, `label`, `cost`, `days` (0 = permanent). |
+| `Projects` | 4 projects | `id`, `label`, `cost`, `days` (0 = permanent), optional `effect` (`wage`, `tradeBonus`, `taxHoliday`). |
+| `UseKeyMapping` / `Key` | `true` / `'F7'` | Open the panel with a rebindable key (players can change it in the game's key settings). |
+| `Treasury.Withdraw.PlayerDailyLimit` | `1000` | What one official may withdraw per UTC day. |
+| `Treasury.Withdraw.AlertAbove` | `1000` | Withdrawals at or above this alert other online officials. |
+| `Treasury.Interest` | `Enabled`, `PercentPerDay 0.2`, `MinBalance 100`, `MaxBalance 50000` | Daily interest on treasuries. |
+| `Duties` | `Enabled`, `Origins {}` | Import duty by item origin town. |
+| `Report` | `Enabled`, `Weekday 1` | Weekly telegram report (needs `rsg-telegram`). |
+| `Elections` | `Enabled`, `AutoStart`, `TermDays 14`, `CandidacyDays 2`, `VotingDays 3`, `CandidateFee 100`, `MaxCandidates 8`, `MinCandidates 1`, `HideCounts`, `PlatformLength 140` | Player elections. |
 
 ## How to use
 **Players**
 - `/economy` opens the panel. Use it again, the close button or Escape to close it.
 - Pick a town. **Taxes** shows its rates, **Treasury** shows the balance, projects and recent activity, **Market** lists items whose price has moved.
 - Anyone can donate to a treasury (when `AllowPublicDonations` is on).
+- **Elections** tab: register as a candidate while candidacy is open (small fee), vote once per town while voting is open, see the mayor and when the term ends.
+- `F7` (or `/economy`) opens the panel.
 
 **Officials** (see Installation, step 5)
 - On the Taxes tab, use − and + to choose a rate and press Apply. Each rate can change once per `Tax.ChangeCooldown` seconds.
-- On the Treasury tab, withdraw money (up to the daily limit for the whole town) and fund town projects.
+- On the Treasury tab, withdraw money (up to the daily limit for the whole town; the panel shows what is left today) and fund town projects.
+
+**Staff:** the **Admin** tab (needs `Config.AdminPermission`) adds, edits and removes towns and officials. Stand in the town centre and keep "Use my position" on.
 
 **Admin commands** (permission `Config.AdminPermission`; region ids are the keys in `Config.Regions`, categories are `sales`, `trade`, `property`, `license`)
 
@@ -78,6 +98,11 @@ All options are in `shared/config.lua`.
 | `/settreasury [region] [amount]` | Set a treasury balance exactly. |
 | `/resetmarket [region or all]` | Clear market price pressure. |
 | `/economyinfo [region]` | Show a town's treasury, tax rates and number of moved items. |
+| `/startelection [region]` | Start an election in a town. |
+| `/endelection [region]` | End the current election phase now. |
+| `/cancelelection [region]` | Cancel a running election. |
+| `/setmayor [region] [citizenid]` | Make a player the mayor. |
+| `/clearmayor [region]` | Remove the mayor. |
 
 ## For developers
 In any shop or trade script, ask for a quote, move the money yourself, then record it:
@@ -113,6 +138,8 @@ Ships with `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro` and `ru
 - Regions are passed by the calling script (for example the town a shop belongs to). The resource does not detect where the player is.
 - Prices are rounded to two decimals at the unit price and again at the subtotal, tax and total.
 - Data is saved every `SaveInterval` seconds and when the resource stops. Withdrawals, deposits and project funding are saved immediately, before money is paid out.
+- Reports use `rsg-telegram` when it is started; without it they are skipped. Interest and reports are only paid while the server is running at the change of day or week.
+- Wages from a `wage` project are paid from the treasury to players on duty with the town's `lawJob`.
 - The panel works from anywhere. If officials should only act inside the town hall, open it with the `rsg-economy:client:open` event from a prompt or target there and set `Config.Command = ''`.
 
 ---

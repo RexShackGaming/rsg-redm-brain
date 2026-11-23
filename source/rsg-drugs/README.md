@@ -1,4 +1,4 @@
-# rsg-drugs
+# rsg-drugs (v3.3.0)
 
 Drug production for RSG Framework (cannabis lab: drying, processing, packing bags & bricks with hired crew) plus a built-in player & NPC addiction system with rehab.
 
@@ -9,6 +9,17 @@ Drug production for RSG Framework (cannabis lab: drying, processing, packing bag
 1. `ensure rsg-drugs` (after rsg-core, rsg-inventory and rsg-target)
 2. Run `installation/install.sql` and add `installation/shared_items.lua` to `rsg-core/shared/items.lua`.
 3. Lab settings: `shared/config.lua` · Addiction settings: `shared/config_addiction.lua` (`Config.Addiction`).
+4. Push-to-talk keeps working while a panel is open (`Config.AllowPushToTalkWhileOpen`, `Config.PushToTalkControls`). Panels close by themselves if you walk away from the NPC or die.
+
+## Potency, heat and raids
+- **Potency (0-100):** your crew's skill sets how potent what they make is (`Config.Quality.CrewPotency`), part of the input's potency carries through, and each stock type shows its potency in the lab panel. Withdrawn items carry `info.potency` and potency changes the sale price from `PriceMin` (x0.7) to `PriceMax` (x1.3). Bricks are exported best potency first.
+- **Heat:** finishing bricks and bags, selling to NPCs, exporting bricks and refused sales all build heat on your lab (see `Config.Heat`). Heat fades each shift. Above `RaidThreshold` there is a chance each shift that the lab is reported: on-duty law get a blip and a notification, you get a warning, and an officer can use *Raid Lab* on the processing NPC within `RaidWindowMinutes`. A raid destroys `SeizePercent` of every stock type and pays the officer `OfficerReward` (no reward for raiding your own lab). If the law is too slow your heat only drops to `HeatAfterEscape`.
+- **Low wage chest:** you are warned when the chest covers fewer than `Config.Payroll.WarnShifts` shifts.
+
+## Integrations (all optional)
+- **rsg-skills:** a `drugs` skill is registered (`Config.Skills`). Drug XP feeds it. Perks: `sell_bonus` (NPC bag sales and brick export price) and `speed_bonus` (crew output).
+- **rsg-reputation:** dealing costs honor and standing in the nearest town, helping the law earns it (`Config.Reputation.Events`). Hostile towns buy less.
+- **rsg-economy:** NPC bag sales use the town's market multiplier and push it down as you flood the town (`Config.Economy`). Needed for standing changes too (it provides the town lookup).
 
 ## Brick export (demand market)
 Players at **Distributor or higher** (`Config.Export.MinLevel`) can sell `weed_brick` to a buyer NPC (`Config.Export.NPC`, rsg-target *Talk business*). Settings: `shared/config_export.lua`.
@@ -89,7 +100,7 @@ Player & NPC addiction system for RSG Framework (alcohol and weed). Keep feeding
 - Voluntary: talk to the rehab doctor NPC at the Sisika gate (rsg-target *Check in to rehab*). Only offered while you are not already in rehab.
 - Withdrawal is held at stage 1 during rehab and substances can't be used.
 - **Inspect NPCs** (lawmen/medics on duty): rsg-target *Look them over* on an ambient NPC shows whether they're hooked. *Send to rehab* clears an NPC addict.
-- **Rehab bonus**: lawmen/medics are paid `Config.Addiction.Rehab.Reward.Amount` (default $1) per admission, for players via `/rehab` and for NPCs via rsg-target (NPC rewards have a per-officer cooldown, and no bonus for NPCs you sold to yourself). Only real addicts can be admitted by job holders, and no one already in rehab.
+- **Rehab bonus**: lawmen/medics are paid `Config.Addiction.Rehab.Reward.Amount` (default $1) per admission, for players via `/rehab` and for NPCs via rsg-target (NPC rewards have a per-officer cooldown `NpcCooldown`, player admissions have `PlayerCooldown`, and there is no bonus for NPCs you sold to yourself). Only real addicts can be admitted by job holders, and no one already in rehab.
 
 ### Selling weed bags to NPCs
 - Players carrying a `weed_bag` get *Sell Bag of Weed* on ambient NPCs (shop/script NPCs and riders are excluded).
@@ -102,7 +113,8 @@ Player & NPC addiction system for RSG Framework (alcohol and weed). Keep feeding
 ### Install
 1. Addiction is built into rsg-drugs — just `ensure rsg-drugs` after rsg-consume. Remove the old `rsg-addiction` resource if you had it.
 2. Alcohol: items are consumed by **rsg-consume**; this script listens to the server event `rsg-consume:server:consumed` (needs rsg-consume 3.3.0+). Nothing else needed.
-3. Weed: this script makes `weed_joint` usable (smoking). Add it from `installation/shared_items.lua` and add a `weed_joint.png` to rsg-inventory images.
+3. Opium: this script makes `opium_resin` usable (it is a hook for your own gathering or crafting script; nothing here produces it). Tobacco is fed by rsg-smoking.
+4. Weed: this script makes `weed_joint` usable (smoking). Add it from `installation/shared_items.lua` and add a `weed_joint.png` to rsg-inventory images.
 4. No SQL needed. Data lives in player metadata `addiction` and is mirrored to the `addiction` statebag.
 
 ### Commands
@@ -132,4 +144,4 @@ Support the Project : https://rexshack.tebex.store/
 
 ## Database
 
-Tables (`rsg_drugs_labs`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `installation/install.sql` once.
+Tables (`rsg_drugs_labs`, `rsg_drugs_state`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `installation/install.sql` once.

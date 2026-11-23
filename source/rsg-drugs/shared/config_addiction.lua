@@ -53,8 +53,24 @@ Config.Addiction.Substances = {
             goldSeconds  = 45.0,                   -- _ENABLE_ATTRIBUTE_CORE_OVERPOWER value
         },
     },
+    opium = {
+        -- hook for your own poppy / crafting scripts: give players an 'opium_resin' item (see installation/shared_items.lua)
+        label         = locale('cfg_sub_opium'),
+        registerItems = true,
+        items         = { opium_resin = 20 },
+        threshold     = 30,
+        decay         = 1,
+        cravingRate   = 6,
+        useScenario   = 'WORLD_HUMAN_SMOKE',   -- same verified scenario as weed
+        useTime       = 10000,
+        highEnabled   = true,
+        highEffect    = 'playerdrugshalluc01', -- same verified effect as weed
+        highTime      = 60000,
+        stressRelief  = 50,                    -- rsg-hud RelieveStress (server export)
+    },
+    -- tobacco is fed by rsg-smoking (it calls exports['rsg-drugs']:AddUse(src, 'tobacco', amount))
     tobacco = {
-        label         = 'Tobacco',
+        label         = locale('cfg_sub_tobacco'),
         registerItems = false,
         items         = {},
         threshold     = 50, -- dependency level at which the player is "hooked"
@@ -103,6 +119,7 @@ Config.Addiction.Rehab = {
         Amount      = 1,       -- $ paid per admission
         MoneyType   = 'cash',  -- 'cash' or 'bank'
         NpcCooldown = 60,      -- seconds between NPC rehab rewards per officer (anti-farm)
+        PlayerCooldown = 300,  -- seconds between bonuses for admitting a PLAYER per officer (anti-farm)
     },
     -- Belongings are taken for the stint and handed back on release (stored in player metadata 'rehabitems')
     Confiscate = {

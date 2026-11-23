@@ -194,5 +194,22 @@
     "cfg_stage_1": "Inquieto",
     "cfg_stage_2": "Trêmulo",
     "cfg_stage_3": "Abstinência",
-    "ui_skill": "Habilidade %s"
+    "ui_skill": "Habilidade %s",
+    "ui_confirm": "Confirmar?",
+    "cfg_sub_tobacco": "Tabaco",
+    "payroll_low": "O caixa de salários cobre apenas mais %s turnos",
+    "raid_warning": "A lei recebeu uma denúncia sobre sua operação. Uma batida vem aí, tire seu estoque de lá!",
+    "raid_alert_title": "Batida em Laboratório",
+    "raid_alert": "Um laboratório de drogas foi denunciado. Faça a batida no contato de processamento em até %s minutos.",
+    "raid_target": "Invadir laboratório",
+    "raid_none": "Não há nenhum laboratório denunciado para invadir agora",
+    "raid_done_officer": "Laboratório invadido: %s unidades destruídas, recompensa de $%s",
+    "raid_done_owner": "Seu laboratório foi invadido: %s unidades foram destruídas",
+    "raid_escaped": "A lei foi lenta demais desta vez, mas seu laboratório continua sendo vigiado",
+    "ui_heat": "Calor",
+    "ui_raid_warn": "Batida a caminho",
+    "ui_potency": "Pureza",
+    "cfg_sub_opium": "Ópio",
+    "cfg_skill_drugs": "Tráfico de Drogas",
+    "cfg_skill_drugs_desc": "Gerencie laboratórios, embale o produto e distribua."
 }

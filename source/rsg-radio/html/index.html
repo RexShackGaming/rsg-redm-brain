@@ -110,10 +110,7 @@ html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden
 /* volume, search, recents, compact, HUD */
 .pill.low{color:var(--rdr-cost-over);border-color:var(--rdr-cost-over)}
 .vol{display:flex;align-items:center;gap:10px;margin-top:10px}
-.vol.off input{opacity:.4}
-.vol input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:rgba(0,0,0,.45);border:1px solid var(--rdr-gold-dim);outline:none;cursor:pointer}
-.vol input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle,#fff,#9a9a9a);border:1px solid #000;cursor:pointer}
-.vol .vv{min-width:46px;text-align:right;font-size:12px;font-weight:600;color:var(--rdr-muted)}
+.vol .vv{text-align:left;font-size:12px;font-weight:600;color:var(--rdr-muted)}
 #search{display:block;width:100%;box-sizing:border-box;margin-top:14px;padding:6px 10px;font:400 12.5px 'Roboto',sans-serif;color:var(--rdr-text);
         background:rgba(0,0,0,.35);border:1px solid var(--rdr-gold-dim);border-radius:2px;outline:none;transition:all .15s ease}
 #search:focus{border-color:var(--rdr-gold);box-shadow:0 0 0 2px rgba(201,162,75,.15)}
@@ -146,7 +143,7 @@ html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden
   <div id="radio" class="panel hidden">
     <div class="hdr" id="hdr"><button class="cbtn" id="cmp">⇕</button><div class="t"><h1 id="title"></h1><small id="subtitle"></small></div><button class="cbtn" id="x">✕</button></div>
     <div id="status" class="status"><div class="dot"></div><span id="stext"></span><span id="members" class="pill hidden"></span><span id="batt" class="pill hidden"></span></div>
-    <div class="vol hidden" id="vol"><button class="cbtn mini" id="mute">🔊</button><input type="range" id="vslider" min="0" max="100" step="5"><span class="vv" id="vval"></span></div>
+    <div class="vol" id="vol"><button class="cbtn mini" id="mute">🔊</button><span class="vv" id="vval"></span></div>
     <div class="div" id="divFreq"></div>
     <div class="tune"><button class="cbtn" id="minus">−</button><input id="freq" inputmode="decimal" maxlength="8" autocomplete="off"><button class="cbtn" id="plus">+</button><span class="unit" id="unit"></span><button class="cbtn star" id="fav">☆</button></div>
     <div class="fhint" id="fhint"></div>
@@ -181,7 +178,14 @@ const post=(n,d)=>fetch(`https://${res}/${n}`,{method:'POST',headers:{'Content-T
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let S={},st=null,pform=false;
 
+const LISTS=['list','plist','favs','recs'];
 function render(){
+  if(!st)return;
+  const tops=LISTS.map(id=>$(id).scrollTop); // live updates must not throw the lists back to the top
+  renderLists();
+  LISTS.forEach((id,i)=>{$(id).scrollTop=tops[i];});
+}
+function renderLists(){
   if(!st)return;
   const on=!!st.freq;
   $('status').classList.toggle('on',on);
@@ -192,10 +196,7 @@ function render(){
   const bt=st.battery;
   $('batt').classList.toggle('hidden',bt==null);
   if(bt!=null){$('batt').textContent='🔋 '+Math.round(bt)+'%';$('batt').classList.toggle('low',bt<=20);}
-  if(st.vol!=null){
-    $('vol').classList.remove('hidden');$('vslider').step=st.volStep||5;
-    if(Date.now()>volHold){vs={vol:st.vol,muted:!!st.muted};$('vslider').value=vs.vol;vui(vs.vol,vs.muted);}
-  }else $('vol').classList.add('hidden');
+  if(Date.now()>muteHold){muted=!!st.muted;muteUi();}
   hint();
   const q=($('search').value||'').trim().toLowerCase();
   const m=(...a)=>!q||a.join(' ').toLowerCase().includes(q);
@@ -232,11 +233,11 @@ function render(){
       (!isFav&&f.usable?`<button class="cbtn mini" data-addrec="${esc(f.freq)}" data-label="${esc(f.label||'')}" title="${esc(S.favAdd)}">☆</button>`:'')+`</div>`;
   }).join(''):`<div class="empty">${esc(S.noMatch)}</div>`;
 }
-let vs={vol:100,muted:false},volHold=0,volTimer=null;
-function vui(vol,muted){$('vval').textContent=muted?S.muted:vol+'%';$('mute').textContent=muted?'🔇':'🔊';$('vol').classList.toggle('off',!!muted);}
-function volSend(){
-  vui(vs.vol,vs.muted);post('setVolume',vs);volHold=Date.now()+1500;
-  clearTimeout(volTimer);volTimer=setTimeout(()=>post('saveVolume',vs),400);
+let muted=false,muteHold=0,muteTimer=null;
+function muteUi(){$('vval').textContent=muted?S.muted:'';$('mute').textContent=muted?'🔇':'🔊';}
+function muteSend(){
+  muteUi();post('setMute',{muted});muteHold=Date.now()+1500;
+  clearTimeout(muteTimer);muteTimer=setTimeout(()=>post('saveMute'),400);
 }
 function applyCompact(on){$('radio').classList.toggle('compact',on);try{localStorage.setItem('rsg-radio:compact',on?'1':'0');}catch(e){}}
 const scale=()=>Math.pow(10,st.dec||0);
@@ -291,8 +292,7 @@ function toggleFav(){
 $('x').onclick=()=>post('close');
 $('cmp').onclick=()=>applyCompact(!$('radio').classList.contains('compact'));
 $('search').addEventListener('input',render);
-$('vslider').addEventListener('input',e=>{vs.vol=+e.target.value;volSend();});
-$('mute').onclick=()=>{vs.muted=!vs.muted;volSend();};
+$('mute').onclick=()=>{muted=!muted;muteSend();};
 $('connect').onclick=connect;
 $('disconnect').onclick=()=>post('leave');
 $('minus').onclick=()=>{const v=curFreq();setFreq(v===null?st.min:v-step());};
@@ -466,7 +466,7 @@ window.addEventListener('message',ev=>{
     $('code').placeholder=S.code;$('pname').placeholder=S.pname;$('ptoggle').textContent=S.private;$('divPriv').textContent=S.privateList;
     $('divFav').textContent=S.favorites;$('flabel').placeholder=S.favLabel;$('flabel').value='';
     $('divRec').textContent=S.recents;$('search').placeholder=S.search;$('search').value='';
-    $('cmp').title=S.compact;$('mute').title=S.mute;$('vslider').title=S.volume;volHold=0;
+    $('cmp').title=S.compact;$('mute').title=S.mute;muteHold=0;
     try{$('radio').classList.toggle('compact',localStorage.getItem('rsg-radio:compact')==='1');}catch(e){}
     $('radio').classList.remove('hidden');
     $('hdr').title=S.move;

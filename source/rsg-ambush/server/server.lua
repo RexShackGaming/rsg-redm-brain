@@ -145,6 +145,10 @@ local function chanceMultiplier(src, region)
 
     local area = region and Config.Zones and Config.Zones.Areas and Config.Zones.Areas[region]
     if area then mult = mult * (tonumber(area.chance) or 1.0) end
+
+    -- rsg-deliveries (optional): riders carrying a delivery contract are a better target
+    local ok, extra = callExport('rsg-deliveries', 'GetAmbushMultiplier', src)
+    if ok and tonumber(extra) and tonumber(extra) > 0 then mult = mult * tonumber(extra) end
     return mult
 end
 
@@ -299,6 +303,7 @@ RSGCore.Functions.CreateCallback('rsg-ambush:server:requestAmbush', function(src
         previousCooldown = Cooldowns[cid],
     }
     Cooldowns[cid] = now + Config.PlayerCooldown
+    TriggerEvent('rsg-ambush:server:ambushStarted', src, id, gangKey) -- local event for other resources
 
     if SvConfig.Log.AmbushStart then
         SendLog('Ambush', locale('log_start_title'), SvConfig.Colours.start, src,
@@ -411,6 +416,7 @@ RegisterNetEvent('rsg-ambush:server:claimWin', function(id)
         return
     end
     amb.won = true
+    TriggerEvent('rsg-ambush:server:ambushWon', src, amb.id) -- local event for other resources
 
     local gang = Config.Gangs[amb.gang]
 

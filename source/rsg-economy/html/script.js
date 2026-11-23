@@ -3,7 +3,7 @@
 const root = document.getElementById('root');
 const $ = (id) => document.getElementById(id);
 
-const state = { data: null, strings: {}, region: null, tab: 'taxes', pending: {}, ledger: null, busy: false };
+const state = { data: null, strings: {}, region: null, tab: 'taxes', pending: {}, ledger: null, remaining: null, busy: false, election: null, admin: null, adminSel: '', adminForm: null };
 
 function post(endpoint, payload) {
     return fetch(`https://${GetParentResourceName()}/${endpoint}`, {
@@ -21,7 +21,7 @@ function el(tag, className, text) {
 }
 
 const S = (k) => state.strings[k] || k;
-const money = (n) => '$' + Number(n || 0).toFixed(2);
+const money = (n) => '$' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const pct = (r) => (Number(r) * 100).toFixed(1) + '%';
 
 function currentRegion() {
@@ -102,8 +102,8 @@ function renderTaxes(region, box) {
             apply.disabled = !changed || state.busy;
             apply.addEventListener('click', async () => {
                 state.busy = true;
-                await post('setTax', { region: region.id, category: t.key, rate: shown });
-                delete state.pending[key];
+                const res = await post('setTax', { region: region.id, category: t.key, rate: shown });
+                if (res && res.ok) delete state.pending[key]; // keep the chosen rate when the server said no
                 state.busy = false;
                 refresh();
             });
@@ -143,9 +143,9 @@ function renderTreasury(region, box) {
             const amount = parseFloat(input.value.replace(',', '.'));
             if (!(amount > 0)) return;
             state.busy = true;
-            await post(endpoint, { region: region.id, amount });
+            const res = await post(endpoint, { region: region.id, amount });
             state.busy = false;
-            input.value = '';
+            if (res && res.ok) input.value = ''; // keep the amount when the server said no
             refresh();
         };
         if (canWithdraw) {
@@ -161,7 +161,12 @@ function renderTreasury(region, box) {
             row.appendChild(d);
         }
         box.appendChild(row);
-        if (canWithdraw && state.data.dailyLimit > 0) box.appendChild(el('div', 'hint', S('ui_daily_limit').replace('%s', money(state.data.dailyLimit))));
+        if (canWithdraw && state.data.dailyLimit > 0) {
+            const remaining = state.remaining;
+            box.appendChild(el('div', 'hint', typeof remaining === 'number'
+                ? S('ui_remaining').replace('%s', money(remaining))
+                : S('ui_daily_limit').replace('%s', money(state.data.dailyLimit))));
+        }
         if (!region.official) box.appendChild(el('div', 'hint', S('ui_donate_hint')));
     }
 
@@ -231,6 +236,235 @@ function renderMarket(region, box) {
     });
 }
 
+/* ---------- elections ---------- */
+function renderElections(region, box) {
+    box.appendChild(el('div', 'hint', S('ui_elections_hint')));
+    const v = state.election;
+    if (!v || v.region !== region.id) {
+        box.appendChild(el('div', 'empty', S('ui_loading')));
+        return;
+    }
+
+    const card = el('div', 'row');
+    card.appendChild(el('div', 'balance-label', S('ui_mayor')));
+    if (v.mayor) {
+        card.appendChild(el('div', 'row-name', v.mayor.name));
+        card.appendChild(el('div', 'sub', S('ui_term_ends').replace('%s', fmtTime(v.mayor.termEnd))));
+    } else {
+        card.appendChild(el('div', 'sub', S('ui_no_mayor')));
+    }
+    box.appendChild(card);
+
+    const phase = v.phase;
+    let status = S('ui_election_idle');
+    if (phase === 'candidacy') status = S('ui_candidacy_open').replace('%s', fmtTime(v.phaseEnd));
+    else if (phase === 'voting') status = S('ui_voting_open').replace('%s', fmtTime(v.phaseEnd));
+    box.appendChild(el('div', 'section-title', status));
+
+    const act = async (endpoint, payload) => {
+        if (state.busy) return;
+        state.busy = true;
+        await post(endpoint, payload);
+        state.busy = false;
+        loadElection();
+        refresh();
+    };
+
+    if (phase === 'candidacy' && !v.registered) {
+        const row = el('div', 'input-row');
+        const input = el('input', 'txt');
+        input.type = 'text';
+        input.placeholder = S('ui_platform');
+        input.maxLength = v.maxPlatform || 140;
+        row.appendChild(input);
+        const btn = el('button', 'wood-btn', S('ui_register'));
+        btn.type = 'button';
+        btn.addEventListener('click', () => act('electionRegister', { region: region.id, platform: input.value }));
+        row.appendChild(btn);
+        box.appendChild(row);
+        if (v.fee > 0) box.appendChild(el('div', 'hint', S('ui_register_fee').replace('%s', money(v.fee))));
+    }
+
+    box.appendChild(el('div', 'section-title', S('ui_candidates')));
+    if (!v.candidates || !v.candidates.length) {
+        box.appendChild(el('div', 'empty', S('ui_no_candidates')));
+        return;
+    }
+    v.candidates.forEach((c) => {
+        const row = el('div', 'row');
+        const top = el('div', 'row-flex');
+        top.appendChild(el('span', 'row-name', c.name));
+        const right = el('div', 'rate-controls');
+        if (typeof c.votes === 'number') right.appendChild(el('span', 'pill', c.votes + ' ' + S('ui_votes')));
+        if (v.votedFor === c.id) {
+            right.appendChild(el('span', 'pill on', '✓ ' + S('ui_your_vote')));
+        } else if (phase === 'voting' && !v.votedFor) {
+            const vote = el('button', 'wood-btn small', S('ui_vote'));
+            vote.type = 'button';
+            vote.addEventListener('click', () => act('electionVote', { region: region.id, candidate: c.id }));
+            right.appendChild(vote);
+        }
+        if (c.mine && (phase === 'candidacy' || phase === 'voting')) {
+            const out = el('button', 'wood-btn small', S('ui_withdraw_candidacy'));
+            out.type = 'button';
+            out.addEventListener('click', () => act('electionWithdraw', { region: region.id }));
+            right.appendChild(out);
+        }
+        top.appendChild(right);
+        row.appendChild(top);
+        if (c.platform) row.appendChild(el('div', 'platform', c.platform));
+        box.appendChild(row);
+    });
+}
+
+async function loadElection() {
+    const region = currentRegion();
+    if (!region) return;
+    const id = region.id;
+    const v = await post('election', { region: id });
+    if (state.region !== id) return;
+    if (v && v.region) state.election = v;
+    else if (!state.election || state.election.region !== id) state.election = { region: id, candidates: [], fee: 0, maxPlatform: 140 };
+    if (state.tab === 'elections') render();
+}
+
+/* ---------- admin: towns ---------- */
+const blankForm = () => ({ id: '', label: '', order: 99, lawJob: '', officials: [{ job: 'government', minGrade: 0 }], usePos: true, exists: false });
+const formFrom = (r) => ({
+    id: r.id, label: r.label, order: r.order, lawJob: r.lawJob || '', usePos: false, exists: true,
+    custom: r.custom, overridden: r.overridden,
+    officials: r.officials.map((o) => ({ job: o.job, minGrade: o.minGrade })),
+    pos: [r.x, r.y, r.z].map((n) => Number(n).toFixed(0)).join(', '),
+});
+
+function field(labelText, input) {
+    const f = el('div', 'field');
+    f.appendChild(el('span', 'label', labelText));
+    f.appendChild(input);
+    return f;
+}
+
+function textInput(value, onInput, placeholder, disabled) {
+    const i = el('input', 'txt');
+    i.type = 'text';
+    i.value = value === undefined || value === null ? '' : value;
+    if (placeholder) i.placeholder = placeholder;
+    i.disabled = !!disabled;
+    i.addEventListener('input', () => onInput(i.value));
+    return i;
+}
+
+function renderAdmin(box) {
+    box.appendChild(el('div', 'hint', S('ui_admin_hint')));
+    if (!state.admin) {
+        box.appendChild(el('div', 'empty', S('ui_loading')));
+        return;
+    }
+    if (!state.adminForm) state.adminForm = blankForm();
+    const form = state.adminForm;
+
+    const pick = el('div', 'region-row');
+    pick.appendChild(el('span', 'label', S('ui_region')));
+    const dd = el('div', 'dd');
+    const options = [{ value: '', label: S('ui_admin_new') }].concat(state.admin.map((r) => ({ value: r.id, label: `${r.label} (${r.id})` })));
+    setupDd(dd, options, state.adminSel, (v) => {
+        state.adminSel = v;
+        const r = state.admin.find((x) => x.id === v);
+        state.adminForm = r ? formFrom(r) : blankForm();
+        render();
+    });
+    pick.appendChild(dd);
+    box.appendChild(pick);
+
+    const top = el('div', 'field-row');
+    top.appendChild(field(S('ui_admin_id'), textInput(form.id, (v) => { form.id = v; }, 'new_town', form.exists)));
+    top.appendChild(field(S('ui_admin_label'), textInput(form.label, (v) => { form.label = v; })));
+    box.appendChild(top);
+
+    const mid = el('div', 'field-row');
+    mid.appendChild(field(S('ui_admin_order'), textInput(form.order, (v) => { form.order = v; })));
+    mid.appendChild(field(S('ui_admin_law'), textInput(form.lawJob, (v) => { form.lawJob = v; }, 'vallaw')));
+    box.appendChild(mid);
+
+    box.appendChild(el('div', 'section-title', S('ui_admin_officials')));
+    form.officials.forEach((o, i) => {
+        const row = el('div', 'official-row');
+        row.appendChild(textInput(o.job, (v) => { o.job = v; }, S('ui_job')));
+        row.appendChild(textInput(o.minGrade, (v) => { o.minGrade = v; }, S('ui_grade')));
+        const rm = el('button', 'wood-btn small', '✕');
+        rm.type = 'button';
+        rm.addEventListener('click', () => { form.officials.splice(i, 1); render(); });
+        row.appendChild(rm);
+        box.appendChild(row);
+    });
+    if (form.officials.length < 6) {
+        const add = el('button', 'wood-btn small', S('ui_admin_add'));
+        add.type = 'button';
+        add.addEventListener('click', () => { form.officials.push({ job: '', minGrade: 0 }); render(); });
+        box.appendChild(add);
+    }
+
+    const posRow = el('div', 'row-flex');
+    const pos = el('button', 'wood-btn small' + (form.usePos ? ' active' : ''), S('ui_admin_use_pos'));
+    pos.type = 'button';
+    pos.addEventListener('click', () => { form.usePos = !form.usePos; render(); });
+    posRow.appendChild(pos);
+    if (form.exists && form.pos) posRow.appendChild(el('span', 'sub', S('ui_admin_position').replace('%s', form.pos)));
+    box.appendChild(posRow);
+
+    const actions = el('div', 'input-row');
+    const save = el('button', 'wood-btn', S('ui_admin_save'));
+    save.type = 'button';
+    save.disabled = state.busy;
+    save.addEventListener('click', async () => {
+        if (state.busy) return;
+        state.busy = true;
+        const res = await post('adminSave', { data: {
+            id: String(form.id || '').trim().toLowerCase(), label: String(form.label || '').trim(),
+            order: Number(form.order), lawJob: String(form.lawJob || '').trim(),
+            officials: form.officials.filter((o) => String(o.job || '').trim()).map((o) => ({ job: String(o.job).trim(), minGrade: Number(o.minGrade) || 0 })),
+            useMyPosition: !!form.usePos,
+        } });
+        state.busy = false;
+        if (res && res.ok) {
+            state.adminSel = String(form.id || '').trim().toLowerCase();
+            state.adminForm = null;
+            await loadAdmin();
+            const r = state.admin.find((x) => x.id === state.adminSel);
+            if (r) state.adminForm = formFrom(r);
+            render();
+            refresh();
+        }
+    });
+    actions.appendChild(save);
+    if (form.exists && (form.custom || form.overridden)) {
+        const del = el('button', 'wood-btn', S('ui_admin_delete'));
+        del.type = 'button';
+        del.addEventListener('click', async () => {
+            if (state.busy) return;
+            state.busy = true;
+            const res = await post('adminDelete', { id: form.id });
+            state.busy = false;
+            if (res && res.ok) {
+                state.adminSel = '';
+                state.adminForm = null;
+                await loadAdmin();
+                render();
+                refresh();
+            }
+        });
+        actions.appendChild(del);
+    }
+    box.appendChild(actions);
+}
+
+async function loadAdmin() {
+    const list = await post('admin');
+    state.admin = Array.isArray(list) ? list : [];
+    if (!state.adminForm) state.adminForm = blankForm();
+    if (state.tab === 'admin') render();
+}
+
 function render() {
     const d = state.data;
     if (!d) return;
@@ -241,17 +475,24 @@ function render() {
     $('title').textContent = S('ui_title');
     $('subtitle').textContent = S('ui_subtitle');
     $('regionLabel').textContent = S('ui_region');
-    $('roleLine').textContent = region.official ? S('ui_official') : S('ui_citizen');
+    $('roleLine').textContent = (region.official ? S('ui_official') : S('ui_citizen'))
+        + (region.mayor ? ' · ' + S('ui_mayor') + ': ' + region.mayor : '');
+    const tabShown = { elections: !!d.elections, admin: !!d.admin };
+    if (tabShown[state.tab] === false) state.tab = 'taxes';
     document.querySelectorAll('#tabs .tab').forEach((b) => {
         b.textContent = S('ui_tab_' + b.dataset.tab);
+        b.classList.toggle('hidden', tabShown[b.dataset.tab] === false);
         b.classList.toggle('active', b.dataset.tab === state.tab);
     });
 
     setupDd($('regionDd'), d.regions.map((r) => ({ value: r.id, label: r.label })), region.id, (v) => {
         state.region = v;
         state.ledger = null;
+        state.remaining = null;
+        state.election = null;
         render();
         if (state.tab === 'treasury') loadLedger();
+        if (state.tab === 'elections') loadElection();
     });
 
     // keep what was typed in the amount box across a re-render
@@ -261,6 +502,8 @@ function render() {
     box.textContent = '';
     if (state.tab === 'taxes') renderTaxes(region, box);
     else if (state.tab === 'treasury') renderTreasury(region, box);
+    else if (state.tab === 'elections') renderElections(region, box);
+    else if (state.tab === 'admin') renderAdmin(box);
     else renderMarket(region, box);
     const now = document.getElementById('amountInput');
     if (now && typed) now.value = typed;
@@ -270,9 +513,10 @@ async function loadLedger() {
     const region = currentRegion();
     if (!region) return;
     const id = region.id;
-    const rows = await post('ledger', { region: id });
+    const res = await post('ledger', { region: id });
     if (state.region === id) {
-        state.ledger = Array.isArray(rows) ? rows : [];
+        state.ledger = res && Array.isArray(res.rows) ? res.rows : [];
+        state.remaining = res && typeof res.remaining === 'number' ? res.remaining : null;
         if (state.tab === 'treasury') render();
     }
 }
@@ -289,10 +533,15 @@ async function refresh() {
 function openUi(data, strings) {
     state.data = data;
     state.strings = strings || {};
-    state.region = (data.regions[0] || {}).id;
+    state.region = data.defaultRegion || (data.regions[0] || {}).id;
     state.tab = 'taxes';
     state.pending = {};
     state.ledger = null;
+    state.remaining = null;
+    state.election = null;
+    state.admin = null;
+    state.adminSel = '';
+    state.adminForm = null;
     state.busy = false;
     root.classList.remove('hidden');
     render();
@@ -315,6 +564,8 @@ document.querySelectorAll('#tabs .tab').forEach((b) => {
         state.tab = b.dataset.tab;
         render();
         if (state.tab === 'treasury') loadLedger();
+        if (state.tab === 'elections') loadElection();
+        if (state.tab === 'admin') loadAdmin();
     });
 });
 

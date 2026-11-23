@@ -1,15 +1,14 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
--- rsg-core callback wrapper: handlers return their result(s) instead of calling cb
-local function Callback(name, fn)
-    RSGCore.Functions.CreateCallback(name, function(src, cb, ...) cb(fn(src, ...)) end)
-end
+local Callback = DrugsCallback -- server/utils.lua
 
 local Labs = {}        -- [citizenid] = lab data
 local Dirty = {}       -- [citizenid] = true when needs saving
 local Candidates = {}  -- [citizenid] = { list = {}, at = os.time() }
 local Cooldown = {}
 local Viewing = {}     -- [src] = true while the lab UI is open (only those get tick refreshes)
+local Raids = {}       -- [citizenid] = { at, expires } labs the law has been called on
+local Q = Config.Quality
 
 ---------------------------------
 -- helpers
@@ -26,6 +25,8 @@ local function newLab()
         progress = { dryer = 0.0, processor = 0.0, bag = 0.0, brick = 0.0 },
         pantry = { food = 0, water = 0 },
         payroll = 0.0,
+        q = { raw = Q.Default, dried = Q.Default, processed = Q.Default, bag = Q.Default, brick = Q.Default }, -- stock potency
+        heat = 0,
         employees = {},
         nextId = 1,
     }
@@ -36,6 +37,9 @@ local function migrateLab(lab)
     local base = newLab()
     for k, v in pairs(base.stock) do lab.stock[k] = lab.stock[k] or v end
     for k, v in pairs(base.progress) do lab.progress[k] = lab.progress[k] or v end
+    lab.q = lab.q or {}
+    for k, v in pairs(base.q) do lab.q[k] = lab.q[k] or v end
+    lab.heat = lab.heat or 0
     for _, e in ipairs(lab.employees) do
         if e.role == 'packer' and not Config.Packing[e.pack or ''] then e.pack = 'bag' end
     end
@@ -81,11 +85,13 @@ end
 
 local NpcPos = vector3(Config.NPC.coords.x, Config.NPC.coords.y, Config.NPC.coords.z)
 
-local function nearLab(src)
+local function nearLab(src, silent)
     local dist = #(GetEntityCoords(GetPlayerPed(src)) - NpcPos)
     if dist <= Config.NPC.interactDistance + 2.0 then return true end
-    notify(src, locale('too_far'), 'error')
-    DrugsLog('security', 'Lab request out of range', src, { { 'Distance', ('%.1fm'):format(dist) } })
+    if not silent then
+        notify(src, locale('too_far'), 'error')
+        DrugsLog('security', 'Lab request out of range', src, { { 'Distance', ('%.1fm'):format(dist) } })
+    end
     return false
 end
 
@@ -115,9 +121,10 @@ local function buildPayload(cid)
             maxEmployees = Config.MaxEmployees, maxStorage = Config.MaxStorage,
             hireFee = Config.HireFee, tick = Config.TickSeconds,
             skills = Config.Skill, roles = Config.Roles,
-            items = Config.Items, packing = Config.Packing, seedChance = Config.SeedChance,
+            items = Config.Items, packing = Config.Packing, seedChance = Config.SeedChance, heat = Config.Heat.Enabled,
         },
         nextTickIn = math.max(0, NextTick - os.time()),
+        raid = Raids[cid] ~= nil,
     }
 end
 
@@ -128,6 +135,20 @@ end
 local function itemLabel(name)
     local it = RSGCore.Shared.Items[name]
     return it and it.label or name
+end
+
+-- what the player is carrying that the lab can use (sent with every lab payload)
+local function suppliesFor(src)
+    local out = { raw = countItem(src, Config.Items.raw), food = {}, water = {} }
+    for item, value in pairs(Config.Food) do
+        local c = countItem(src, item)
+        if c > 0 then out.food[#out.food + 1] = { item = item, label = itemLabel(item), count = c, value = value } end
+    end
+    for item, value in pairs(Config.Water) do
+        local c = countItem(src, item)
+        if c > 0 then out.water[#out.water + 1] = { item = item, label = itemLabel(item), count = c, value = value } end
+    end
+    return out
 end
 
 ---------------------------------
@@ -147,12 +168,19 @@ Callback('rsg-drugs:server:getLab', function(src)
         DrugsXP.Add(src, xp, 'produce')
     end
     lab.canBrick = DrugsXP.CanPackBricks(Player)
-    return buildPayload(cid)
+    if lab.raidNotice then -- raided while the owner was away
+        notify(src, locale('raid_done_owner', lab.raidNotice), 'error')
+        lab.raidNotice = nil
+        Dirty[cid] = true
+    end
+    local payload = buildPayload(cid)
+    payload.supplies = suppliesFor(src)
+    return payload
 end)
 
 RegisterNetEvent('rsg-drugs:server:closed', function() Viewing[source] = nil end)
 
-Callback('rsg-drugs:server:action', function(src, action, data)
+local function handleAction(src, action, data)
     local Player, cid, lab = validate(src)
     if not Player then return end
     data = type(data) == 'table' and data or {}
@@ -241,7 +269,8 @@ Callback('rsg-drugs:server:action', function(src, action, data)
         local item = Config.Items[kind]
         if not exports['rsg-inventory']:CanAddItem(src, item, amount) then notify(src, locale('inv_full'), 'error') return buildPayload(cid) end
         -- only take stock out of the lab once the item actually landed in the inventory
-        if not exports['rsg-inventory']:AddItem(src, item, amount, nil, nil, 'rsg-drugs-withdraw') then
+        local info = kind ~= 'seed' and DrugsPotencyInfo(lab.q[kind]) or nil -- potency travels with the item
+        if not exports['rsg-inventory']:AddItem(src, item, amount, info, nil, 'rsg-drugs-withdraw') then
             notify(src, locale('inv_full'), 'error') return buildPayload(cid)
         end
         lab.stock[kind] = lab.stock[kind] - amount
@@ -261,22 +290,12 @@ Callback('rsg-drugs:server:action', function(src, action, data)
 
     Dirty[cid] = true
     return buildPayload(cid)
-end)
+end
 
--- player's pantry options (items they actually hold)
-Callback('rsg-drugs:server:getSupplies', function(src)
-    local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player then return end
-    local out = { raw = countItem(src, Config.Items.raw), food = {}, water = {} }
-    for item, value in pairs(Config.Food) do
-        local c = countItem(src, item)
-        if c > 0 then out.food[#out.food + 1] = { item = item, label = itemLabel(item), count = c, value = value } end
-    end
-    for item, value in pairs(Config.Water) do
-        local c = countItem(src, item)
-        if c > 0 then out.water[#out.water + 1] = { item = item, label = itemLabel(item), count = c, value = value } end
-    end
-    return out
+Callback('rsg-drugs:server:action', function(src, action, data)
+    local payload = handleAction(src, action, data)
+    if payload then payload.supplies = suppliesFor(src) end
+    return payload
 end)
 
 ---------------------------------
@@ -288,6 +307,19 @@ DrugsXP.OnReset = function(cid)
     if lab and (lab.pendingXp or 0) > 0 then lab.pendingXp = 0; Dirty[cid] = true end
 end
 
+-- potency math: the output keeps part of the input's potency, the rest comes from the crew
+local function blendPotency(inputQ, crewQ)
+    local w = Q.InputWeight or 0.4
+    return (inputQ or Q.Default) * w + (crewQ or Q.Default) * (1 - w)
+end
+
+-- weighted average of what is already in stock and what was just made
+local function mixPotency(oldAmount, oldQ, addAmount, addQ)
+    local total = oldAmount + addAmount
+    if total <= 0 then return addQ end
+    return ((oldQ or Q.Default) * oldAmount + addQ * addAmount) / total
+end
+
 local function tickLab(cid, lab)
     if #lab.employees == 0 then return end
     local Owner = RSGCore.Functions.GetPlayerByCitizenId(cid)
@@ -296,7 +328,16 @@ local function tickLab(cid, lab)
     local packOut = { bag = 0.0, brick = 0.0 }
     local made = {} -- [stock key] = units finished this tick (for XP)
     -- brick packing needs the owner's level; offline owners use the last known value
-    if Owner then lab.canBrick = DrugsXP.CanPackBricks(Owner) end
+    if Owner then
+        lab.canBrick = DrugsXP.CanPackBricks(Owner)
+        lab.workBonus = DrugsSkills.Perk(src, 'speed_bonus') -- rsg-skills perk, kept for when the owner is offline
+    end
+    local bonus = 1 + (lab.workBonus or 0) / 100
+    local crewQ = {} -- [role or packed product] = { sum, n } skill-based potency of the working crew
+    local function crewPotency(key)
+        local c = crewQ[key]
+        return c and c.n > 0 and c.sum / c.n or Q.Default
+    end
 
     for _, e in ipairs(lab.employees) do
         -- needs
@@ -333,12 +374,28 @@ local function tickLab(cid, lab)
         if not e.strike then
             -- tired/hungry staff work slower
             local mood = (e.hunger < 25 or e.thirst < 25 or e.unpaid > 0) and 0.5 or 1.0
+            local key = e.role
+            if e.role == 'packer' then key = Config.Packing[e.pack or ''] and e.pack or 'bag' end
+            local cq = crewQ[key] or { sum = 0, n = 0 }
+            crewQ[key] = cq
+            cq.sum = cq.sum + (Q.CrewPotency[e.skill] or Q.Default)
+            cq.n = cq.n + 1
             if e.role == 'packer' then
-                local p = Config.Packing[e.pack or ''] and e.pack or 'bag'
-                packOut[p] = packOut[p] + e.rate * mood
+                packOut[key] = packOut[key] + e.rate * mood * bonus
             else
-                output[e.role] = output[e.role] + e.rate * mood
+                output[key] = output[key] + e.rate * mood * bonus
             end
+        end
+    end
+
+    -- low wage chest warning (owner online, once per cooldown)
+    local PW = Config.Payroll
+    if src and PW and (PW.WarnShifts or 0) > 0 then
+        local wages = 0
+        for _, e in ipairs(lab.employees) do wages = wages + e.wage end
+        if wages > 0 and lab.payroll < wages * PW.WarnShifts and os.time() - (lab.payWarnAt or 0) >= PW.WarnCooldownMinutes * 60 then
+            lab.payWarnAt = os.time()
+            notify(src, locale('payroll_low', math.floor(lab.payroll / wages)), 'warning')
         end
     end
 
@@ -348,6 +405,7 @@ local function tickLab(cid, lab)
         local whole = math.floor(lab.progress[role])
         whole = math.min(whole, lab.stock[r.from], Config.MaxStorage - lab.stock[r.to])
         if whole > 0 then
+            lab.q[r.to] = mixPotency(lab.stock[r.to], lab.q[r.to], whole, blendPotency(lab.q[r.from], crewPotency(role)))
             lab.stock[r.from] = lab.stock[r.from] - whole
             lab.stock[r.to] = lab.stock[r.to] + whole
             lab.progress[role] = lab.progress[role] - whole
@@ -376,6 +434,7 @@ local function tickLab(cid, lab)
             local whole = math.floor(lab.progress[prod])
             whole = math.min(whole, math.floor(lab.stock.processed / pk.uses), Config.MaxStorage - lab.stock[prod])
             if whole > 0 then
+                lab.q[prod] = mixPotency(lab.stock[prod], lab.q[prod], whole, blendPotency(lab.q.processed, crewPotency(prod)))
                 lab.stock.processed = lab.stock.processed - whole * pk.uses
                 lab.stock[prod] = lab.stock[prod] + whole
                 lab.progress[prod] = lab.progress[prod] - whole
@@ -383,6 +442,10 @@ local function tickLab(cid, lab)
             end
             if lab.stock.processed < pk.uses then lab.progress[prod] = math.min(lab.progress[prod], 0.99) end
         end
+    end
+
+    if Config.Heat.Enabled then -- what the crew produced draws attention
+        lab.heat = math.min(Config.Heat.Max, (lab.heat or 0) + (made.brick or 0) * Config.Heat.PerBrick + (made.bag or 0) * Config.Heat.PerBag)
     end
 
     -- production XP (one notification per tick)
@@ -399,17 +462,124 @@ local function tickLab(cid, lab)
     if src and Viewing[src] then TriggerClientEvent('rsg-drugs:client:refresh', src, buildPayload(cid)) end
 end
 
-CreateThread(function()
-    -- build the database table automatically if it doesn't exist
-    if Config.AutoDatabase ~= false then
-        MySQL.query.await([[
-            CREATE TABLE IF NOT EXISTS `rsg_drugs_labs` (
-                `citizenid` VARCHAR(50) NOT NULL,
-                `data` LONGTEXT NOT NULL,
-                PRIMARY KEY (`citizenid`)
-            )
-        ]])
+---------------------------------
+-- heat and raids
+---------------------------------
+local function isLaw(Player)
+    local H = Config.Heat
+    local job = Player.PlayerData.job
+    return job and job.onduty ~= false and (H.LawJobTypes[job.type] or H.LawJobs[job.name]) and true or false
+end
+
+-- a lab only matters to the law once it has crew or stock
+local function hasOperation(lab)
+    if #lab.employees > 0 then return true end
+    for _, n in pairs(lab.stock) do if n > 0 then return true end end
+    return false
+end
+
+-- other server files (NPC sales, brick export) add heat through this
+DrugsHeat = {}
+function DrugsHeat.Add(cid, amount)
+    local H = Config.Heat
+    local lab = Labs[cid]
+    if not H.Enabled or not lab or not hasOperation(lab) then return end
+    lab.heat = math.min(H.Max, (lab.heat or 0) + amount)
+    Dirty[cid] = true
+end
+
+local function lawOnline()
+    local ids = {}
+    for _, id in ipairs(RSGCore.Functions.GetPlayers()) do
+        local P = RSGCore.Functions.GetPlayer(id)
+        if P and isLaw(P) then ids[#ids + 1] = id end
     end
+    return ids
+end
+
+local function tickHeat(cid, lab)
+    local H = Config.Heat
+    if not H.Enabled then return end
+    local now = os.time()
+    local raid = Raids[cid]
+    if raid then
+        if now >= raid.expires then -- nobody raided in time
+            Raids[cid] = nil
+            lab.heat = H.HeatAfterEscape
+            lab.raidCooldownUntil = now + H.CooldownMinutes * 60
+            Dirty[cid] = true
+            local Owner = RSGCore.Functions.GetPlayerByCitizenId(cid)
+            if Owner then notify(Owner.PlayerData.source, locale('raid_escaped'), 'success') end
+        end
+        return
+    end
+    if (lab.heat or 0) > 0 then
+        lab.heat = math.max(0, lab.heat - H.Decay)
+        Dirty[cid] = true
+    end
+    if lab.heat >= H.RaidThreshold and hasOperation(lab) and now >= (lab.raidCooldownUntil or 0) and math.random(100) <= H.RaidChance then
+        local law = lawOnline()
+        if #law >= H.MinLaw then
+            Raids[cid] = { at = now, expires = now + H.RaidWindowMinutes * 60 }
+            for _, id in ipairs(law) do TriggerClientEvent('rsg-drugs:client:raidAlert', id, H.RaidWindowMinutes) end
+            local Owner = RSGCore.Functions.GetPlayerByCitizenId(cid)
+            if Owner then notify(Owner.PlayerData.source, locale('raid_warning'), 'error') end -- time to move the stock
+            DrugsLog('lab', 'Raid called on a lab', Owner and Owner.PlayerData.source or nil, { { 'Owner CID', cid }, { 'Heat', math.floor(lab.heat) }, { 'Law online', #law } })
+        end
+    end
+end
+
+-- an on-duty officer raids the oldest reported lab at the processing NPC
+local lastRaidTry = {}
+RegisterNetEvent('rsg-drugs:server:raid', function()
+    local src = source
+    local H = Config.Heat
+    if not H.Enabled then return end
+    local Officer = RSGCore.Functions.GetPlayer(src)
+    if not Officer then return end
+    local now = GetGameTimer()
+    if lastRaidTry[src] and now - lastRaidTry[src] < 3000 then return end
+    lastRaidTry[src] = now
+    if not isLaw(Officer) then return notify(src, locale('no_permission'), 'error') end
+    if not nearLab(src) then return end
+
+    local pickCid, pick
+    for cid, r in pairs(Raids) do
+        if not pick or r.at < pick.at then pickCid, pick = cid, r end
+    end
+    if not pick then return notify(src, locale('raid_none'), 'inform') end
+    Raids[pickCid] = nil
+
+    local lab = Labs[pickCid]
+    local seized = 0
+    if lab then
+        for kind, n in pairs(lab.stock) do
+            local take = math.floor(n * H.SeizePercent / 100)
+            if take > 0 then lab.stock[kind] = n - take; seized = seized + take end -- destroyed, not handed to anyone
+        end
+        lab.heat = H.HeatAfterRaid
+        lab.raidCooldownUntil = os.time() + H.CooldownMinutes * 60
+        Dirty[pickCid] = true
+    end
+
+    local own = pickCid == Officer.PlayerData.citizenid -- no reward for raiding your own lab
+    local reward = own and 0 or (H.OfficerReward or 0)
+    if reward > 0 then Officer.Functions.AddMoney(H.MoneyType or 'cash', reward, 'rsg-drugs-raid') end
+    notify(src, locale('raid_done_officer', seized, reward), 'success')
+    if not own then DrugsRep.Apply(src, 'raid') end
+
+    local Owner = RSGCore.Functions.GetPlayerByCitizenId(pickCid)
+    if Owner then
+        notify(Owner.PlayerData.source, locale('raid_done_owner', seized), 'error')
+    elseif lab then
+        lab.raidNotice = seized
+    end
+    DrugsLog('lab', 'Lab raided', src, { { 'Owner CID', pickCid }, { 'Units destroyed', seized }, { 'Reward', ('$%s'):format(reward) } })
+end)
+
+CreateThread(function()
+    -- build the database tables automatically if they don't exist (server/utils.lua)
+    if not DrugsEnsureDatabase() then return end
     -- load every lab so production runs while owners are offline
     local rows = MySQL.query.await('SELECT citizenid, data FROM rsg_drugs_labs') or {}
     for _, r in ipairs(rows) do
@@ -420,12 +590,12 @@ CreateThread(function()
     while true do
         Wait(Config.TickSeconds * 1000)
         NextTick = os.time() + Config.TickSeconds -- set before ticking so refresh payloads carry the new countdown
-        for cid, lab in pairs(Labs) do tickLab(cid, lab) end
+        for cid, lab in pairs(Labs) do tickLab(cid, lab); tickHeat(cid, lab) end
         for cid in pairs(Dirty) do saveLab(cid) end
     end
 end)
 
-AddEventHandler('playerDropped', function() Cooldown[source] = nil; Viewing[source] = nil end)
+AddEventHandler('playerDropped', function() Cooldown[source] = nil; Viewing[source] = nil; lastRaidTry[source] = nil end)
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     for cid in pairs(Dirty) do saveLab(cid) end

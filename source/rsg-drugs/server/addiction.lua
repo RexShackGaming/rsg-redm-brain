@@ -1,9 +1,6 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
--- rsg-core callback wrapper: handlers return their result(s) instead of calling cb
-local function Callback(name, fn)
-    RSGCore.Functions.CreateCallback(name, function(src, cb, ...) cb(fn(src, ...)) end)
-end
+local Callback = DrugsCallback -- server/utils.lua
 
 local lastUse = {}   -- [src] = os.time()
 local hookedItem = {} -- [itemName] = substance key (items consumed by rsg-consume)
@@ -101,7 +98,7 @@ for key, cfg in pairs(Config.Addiction.Substances) do
                 applyUse(src, key, cfg.items[itemName])
                 TriggerClientEvent('rsg-drugs:client:useSubstance', src, key)
                 -- stress relief happens server-side through rsg-hud
-                local relief = cfg.boost and cfg.boost.stressRelief
+                local relief = (cfg.boost and cfg.boost.stressRelief) or cfg.stressRelief
                 if relief and relief > 0 and GetResourceState('rsg-hud') == 'started' then
                     exports['rsg-hud']:RelieveStress(src, relief)
                 end
@@ -249,12 +246,14 @@ end
 
 -- Rehab bonus for lawmen / medics
 local lastNpcReward = {}
+local lastAdmitReward = {} -- [src] = os.time() of the last bonus for admitting a player
 local function payRehabReward(Officer)
     local r = Config.Addiction.Rehab.Reward
     if not r or not r.Enabled or (r.Amount or 0) <= 0 then return end
     Officer.Functions.AddMoney(r.MoneyType or 'cash', r.Amount, 'rehab-admission-bonus')
     DrugsLog('rehab', 'Rehab bonus paid', Officer.PlayerData.source, { { 'Amount', ('$%s (%s)'):format(r.Amount, r.MoneyType or 'cash') } })
     notify(Officer.PlayerData.source, locale('rehab_reward', r.Amount), 'success')
+    DrugsRep.Apply(Officer.PlayerData.source, 'rehab')
 end
 
 ---------------------------------------------------------------------
@@ -321,14 +320,23 @@ Callback('rsg-drugs:server:sellWeedBag', function(src, netId)
     if not item or (item.amount or 0) < 1 then notify(src, locale('sell_no_item'), 'error') return false end
 
     local isAddict = netId and NpcAddicts[netId] ~= nil
-    if isAddict or math.random(100) <= S.BuyChance then
+    local chance = S.BuyChance
+    if not isAddict and DrugsRep.Hostile(src) then chance = chance * (Config.Reputation.HostileBuyMult or 0.5) end -- the town is against you
+    if isAddict or math.random(100) <= chance then
         if not exports['rsg-inventory']:RemoveItem(src, S.Item, 1, item.slot, 'rsg-drugs-npc-sale') then return false end
         if netId then NpcSold[netId] = os.time() end
-        local price = math.random(S.PriceMin, S.PriceMax)
+        -- potency of the bag, rsg-skills sell perk and the town's market all move the price
+        local price = math.max(1, math.floor(math.random(S.PriceMin, S.PriceMax)
+            * DrugsPotencyMult(DrugsItemPotency(item))
+            * (1 + DrugsSkills.Perk(src, 'sell_bonus') / 100)
+            * DrugsEcon.Multiplier(src, S.Item) + 0.5))
         Player.Functions.AddMoney(S.MoneyType or 'cash', price, 'rsg-drugs-npc-sale')
         notify(src, locale('sell_success', price), 'success')
         DrugsLog('sales', 'Weed bag sold', src, { { 'Price', ('$%s (%s)'):format(price, S.MoneyType or 'cash') }, { 'Buyer', isAddict and 'Addict' or 'Ambient NPC' } })
         DrugsXP.Add(src, Config.XP.Sell[S.Item], 'sell')
+        DrugsEcon.Record(src, S.Item, 1)
+        DrugsHeat.Add(Player.PlayerData.citizenid, Config.Heat.PerSale)
+        DrugsRep.Apply(src, 'sale')
         if not ent then return 'sold', nil end -- not networked: client decides the (visual-only) addiction
         if not isAddict and math.random(100) <= (Config.Addiction.NPC.SaleChance or 100) then
             NpcAddicts[netId] = { seller = Player.PlayerData.citizenid }
@@ -340,6 +348,8 @@ Callback('rsg-drugs:server:sellWeedBag', function(src, netId)
 
     if netId then NpcRefused[netId] = true end
     notify(src, locale('sell_refused'), 'error')
+    DrugsHeat.Add(Player.PlayerData.citizenid, Config.Heat.PerRefusal) -- the NPC called the law
+    DrugsRep.Apply(src, 'refused')
     DrugsLog('sales', 'Sale refused - law alerted', src, { { 'Item', S.Item } })
     local c = GetEntityCoords(GetPlayerPed(src))
     local off = S.AlertOffset or 0.0
@@ -354,7 +364,15 @@ Callback('rsg-drugs:server:sellWeedBag', function(src, netId)
     return 'refused'
 end)
 
--- forget NPCs that despawned
+-- net ids get reused: forget an NPC the moment it is removed so a new ped can't inherit its state
+AddEventHandler('entityRemoved', function(entity)
+    if not DoesEntityExist(entity) or GetEntityType(entity) ~= 1 then return end
+    local netId = NetworkGetNetworkIdFromEntity(entity)
+    if not netId or netId <= 0 then return end
+    NpcAddicts[netId], NpcRefused[netId], NpcSold[netId] = nil, nil, nil
+end)
+
+-- safety sweep for NPCs that despawned without the event above
 CreateThread(function()
     while true do
         Wait(300000)
@@ -396,7 +414,10 @@ CreateThread(function()
         Wait(step * 1000)
         local now = GetGameTimer()
         for _, src in ipairs(RSGCore.Functions.GetPlayers()) do
-            local Player = RSGCore.Functions.GetPlayer(src)
+            -- the replicated statebag is a cheap pre-check: only copy the full player object for people in rehab
+            local st = StateOf(src).state.addiction
+            local active = RehabLeft[src] or not st or (tonumber(st.rehab) or 0) > 0
+            local Player = active and RSGCore.Functions.GetPlayer(src)
             if Player then
                 local d = getData(Player)
                 if d.rehab > 0 then
@@ -427,19 +448,13 @@ CreateThread(function()
 end)
 
 -- keep served time when the player logs out mid-stint
-AddEventHandler('RSGCore:Server:OnPlayerUnload', function(src)
+local function saveRehabProgress(src)
     local left = RehabLeft[src]
     local Player = left and RSGCore.Functions.GetPlayer(src)
     if Player then local d = getData(Player); d.rehab = math.max(1, left); saveData(Player, d) end
     RehabLeft[src], RehabSaved[src] = nil, nil
-end)
-AddEventHandler('playerDropped', function()
-    local src = source
-    local left = RehabLeft[src]
-    local Player = left and RSGCore.Functions.GetPlayer(src)
-    if Player then local d = getData(Player); d.rehab = math.max(1, left); saveData(Player, d) end
-    RehabLeft[src], RehabSaved[src] = nil, nil
-end)
+end
+AddEventHandler('RSGCore:Server:OnPlayerUnload', saveRehabProgress)
 
 ---------------------------------------------------------------------
 -- Addiction tick: craving grows while hooked; level decays while not hooked
@@ -448,7 +463,15 @@ CreateThread(function()
     while true do
         Wait(Config.Addiction.TickInterval * 1000)
         for _, src in ipairs(RSGCore.Functions.GetPlayers()) do
-            local Player = RSGCore.Functions.GetPlayer(src)
+            -- skip clean players using the replicated statebag (no full player copy needed)
+            local st = StateOf(src).state.addiction
+            local idle = st and type(st.subs) == 'table' and not RehabLeft[src] and (tonumber(st.rehab) or 0) <= 0
+            if idle then
+                for _, s in pairs(st.subs) do
+                    if (tonumber(s.level) or 0) > 0 or (tonumber(s.craving) or 0) > 0 then idle = false break end
+                end
+            end
+            local Player = not idle and RSGCore.Functions.GetPlayer(src)
             if Player then
                 local d = getData(Player)
                 if RehabLeft[src] then d.rehab = RehabLeft[src] end -- live countdown, not the last saved value
@@ -495,7 +518,11 @@ AddEventHandler('RSGCore:Server:PlayerLoaded', function(Player)
     end
 end)
 
-AddEventHandler('playerDropped', function() lastUse[source] = nil; lastNpcReward[source] = nil; lastSell[source] = nil end)
+AddEventHandler('playerDropped', function()
+    local src = source
+    saveRehabProgress(src)
+    lastUse[src], lastNpcReward[src], lastAdmitReward[src], lastSell[src] = nil, nil, nil, nil
+end)
 
 AddEventHandler('onResourceStart', function(res)
     if res ~= GetCurrentResourceName() then return end
@@ -538,7 +565,17 @@ RSGCore.Commands.Add('rehab', locale('cmd_rehab'), {
     if startRehab(target, minutes) then
         notify(src, locale('rehab_admitted_other', minutes), 'success')
         DrugsLog('rehab', 'Player admitted to rehab', src, { { 'Patient', ('%s (ID %s)'):format(GetPlayerName(target) or '?', target) }, { 'Patient CID', Target.PlayerData.citizenid }, { 'Minutes', minutes }, { 'By', isAdmin and 'Admin' or (Officer.PlayerData.job.label or Officer.PlayerData.job.name) } })
-        if not isAdmin and target ~= src then payRehabReward(Officer) end
+        if not isAdmin and target ~= src then
+            -- one bonus per cooldown per officer: stops two friends farming each other through rehab
+            local now = os.time()
+            local cd = Config.Addiction.Rehab.Reward and Config.Addiction.Rehab.Reward.PlayerCooldown or 300
+            if not lastAdmitReward[src] or now - lastAdmitReward[src] >= cd then
+                lastAdmitReward[src] = now
+                payRehabReward(Officer)
+            else
+                DrugsLog('security', 'Rehab bonus on cooldown', src, { { 'Patient CID', Target.PlayerData.citizenid } })
+            end
+        end
     end
 end, 'user')
 
@@ -566,7 +603,7 @@ RSGCore.Commands.Add('setaddiction', locale('cmd_set'), {
 }, true, function(source, args)
     local Target = RSGCore.Functions.GetPlayer(tonumber(args[1]) or -1)
     local key, level = args[2], tonumber(args[3])
-    if not Target or not Config.Addiction.Substances[key] or not level then return notify(source, locale('invalid_target'), 'error') end
+    if not Target or not Config.Addiction.Substances[key] or not level or level ~= level then return notify(source, locale('invalid_target'), 'error') end
     local d = getData(Target)
     d.subs[key].level = clamp(level)
     saveData(Target, d)

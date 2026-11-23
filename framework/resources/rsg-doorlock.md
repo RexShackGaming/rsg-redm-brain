@@ -1,6 +1,6 @@
 # rsg-doorlock
 
-Version 3.3.0. rsg-doorlock
+Version 3.4.0. rsg-doorlock
 
 A database-driven door lock system for **RedM** using the **RSG Framework**. Doors are created, edited and deleted in game through an admin editor, synced to every player in real time, and logged to Discord. - 🔒 Lock and unlock doors with a hold prompt and a key animation - 🗄️ All doors are stored in the database (`rsg_doorlocks`), with no config editing needed
 
@@ -9,6 +9,10 @@ Source: https://github.com/Rexshack-RedM/rsg-doorlock
 **Dependencies:** `rsg-core`, `oxmysql`
 
 Has NUI (`ui_page`).
+
+## Exports (call as exports['rsg-doorlock']:Name)
+
+**server:** `GetDoor(id)`, `GetDoorIdByName(name)`, `GetDoors()`, `HasAccess(src, id)`, `IsLocked(id)`, `LockDoor(id, persist)`, `SetGroupLocked(group, locked, persist)`, `SetLocked(id, locked, persist)`, `UnlockDoor(id, persist)`
 
 ## Net events registered
 
@@ -22,7 +26,7 @@ Has NUI (`ui_page`).
 
 ## Callbacks (RSGCore.Functions.CreateCallback)
 
-**server:** `rsg-doorlock:server:admin:check`, `rsg-doorlock:server:admin:delete`, `rsg-doorlock:server:admin:save`, `rsg-doorlock:server:getDoors`
+**server:** `rsg-doorlock:server:admin:check`, `rsg-doorlock:server:admin:delete`, `rsg-doorlock:server:admin:save`, `rsg-doorlock:server:canUse`, `rsg-doorlock:server:getDoors`
 
 ## Public (table) functions
 

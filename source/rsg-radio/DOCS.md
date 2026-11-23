@@ -1,4 +1,4 @@
-# rsg-radio – Docs (v3.1.0)
+# rsg-radio – Docs (v3.1.1)
 
 Technical reference for server owners and developers. For a short overview and install steps see [README.md](README.md).
 
@@ -99,7 +99,7 @@ Requires rsg-core 3.0.3+, rsg-inventory and **rsg-voice 3.1.3+** (3.1.3 binds th
 | `Config.Incapacitated` | `{ Dead = true, Cuffed = true, Hogtied = true, Rejoin = false }` | Which states drop a player off the radio, and whether they are put back when they recover |
 | `Config.Battery` | `Enabled = false` | `DrainInterval` (60 s), `DrainPerMinute` (0.5), `TransmitDrainPerMinute` (4.0), `LowWarning` (20), `ChargeItem` (`'radio_battery'`), `ChargeAmount` (100), `ChargeItemDefinition` |
 | `Config.Interference` | `Enabled = false` | `Zones`: `{ label, coords (vector3), radius, signal (0.0-1.0), falloff (bool) }` |
-| `Config.Volume` | `{ Default = 100, Step = 5 }` | Default radio volume in percent and the slider step |
+| `Config.Volume` | `50` | How loud incoming radio is for every player, in percent (0-100). Handed to rsg-voice `SetRadioVolume`. There is no player volume slider |
 | `Config.Handheld` | `Enabled = false` | `Model` (nil = no prop), `Bone`, `Offset`, `Rotation`, `Anim` / `AnimFemale` (`{ dict, clip, flag }`), `OnMount` |
 | `Config.Private`, `Config.Staff`, `Config.FavoriteHotkeys`, `Config.AutoDatabase`, `Config.MultiJob` | tables | See [section 16.1](#161-config-options) |
 
@@ -214,7 +214,7 @@ Voice-level functions are in rsg-voice: `JoinRadio(src, freq)`, `LeaveRadio(src)
 | `rsg-radio:client:open` | client | none | Sent by the server when the item is used. Ignored if triggered by another resource |
 | `rsg-radio:client:state` | client | state or `nil` | New state for an open panel; `nil` closes it. Ignored if triggered by another resource |
 | `rsg-radio:server:hogtied` | server | `state` (boolean) | Rejected unless a boolean. 400 ms cooldown. Only affects the sender's own radio |
-| `rsg-radio:server:setSettings` | server | `vol` (0-100), `muted` (boolean) | Clamped, ignored when unchanged. 250 ms cooldown. Stored in `metadata.radiosettings` |
+| `rsg-radio:server:setSettings` | server | `muted` (boolean) | Ignored when unchanged. 250 ms cooldown. Stored in `metadata.radiosettings` |
 | `rsg-radio:client:hud` | client | `{ freq, unit, members, battery }` or `nil` | Server to client only. Ignored if triggered by another resource |
 | `rsg-radio:client:battery` | client | `value` (0-100) | Server to client only. Ignored if triggered by another resource |
 | `rsg-voice:server:radioChanged` | server (listened) | `src, newFreq, oldFreq` | Used to keep `GetFrequency` correct and to refresh HUDs |
@@ -244,7 +244,7 @@ Returned by the callback and pushed through `rsg-radio:client:state`:
     recents = { { freq = '155.0', label = 'Lawmen', usable = true, locked = false } },
     ranges = { { min = '160.0', max = '169.9', label = 'Lawmen' } },  -- reserved ranges this player may use
     reservedRanges = { { min = '170.0', max = '174.9' } },            -- reserved ranges this player may not use
-    vol = 100, muted = false, volStep = 5,                            -- radio volume (percent) and mute
+    muted = false,                                                    -- radio mute
     battery = 87.5,                                                   -- nil when batteries are off
 }
 ```
@@ -334,9 +334,9 @@ What the server enforces on every request:
 | Player owns the item | join, addFavorite, getState |
 | Frequency is a number, not NaN or infinity, at most `Decimals` decimals, inside `Min`–`Max` | join, addFavorite, removeFavorite |
 | Channel access (job, type, gang, on duty) | join, addFavorite, periodic check |
-| Per-player cooldowns (500 ms join/leave, 300 ms favorites, 1 s private channels, 400 ms hogtie report, 250 ms volume save) | join, leave, favorites, private, hogtied, setSettings |
+| Per-player cooldowns (500 ms join/leave, 300 ms favorites, 1 s private channels, 400 ms hogtie report, 250 ms mute save) | join, leave, favorites, private, hogtied, setSettings |
 | Not downed, cuffed or hogtied; battery not flat | join, rejoin, instant and periodic checks |
-| Volume clamped to 0-100, mute is a boolean, nothing written when unchanged | setSettings |
+| Mute is a boolean, nothing written when unchanged | setSettings |
 | Battery is read from and written to the radio item on the server only; the client only receives the number | battery |
 | Favorites count, name cleaned and length-bounded | addFavorite |
 | Radio and access re-checked the moment inventory, job, gang, duty or metadata changes, and every `CheckInterval` seconds as a fallback | instant check, periodic check |
@@ -503,7 +503,7 @@ When rsg-voice reports a channel change the server sends every member `rsg-radio
 `Config.Recents.Max` frequencies are stored in `metadata.radiorecents` (newest first, saved on every successful join). Search and the compact toggle are client side only (the compact choice is kept in the NUI storage).
 
 ### 18.6 Volume and mute
-`metadata.radiosettings = { vol = 0-100, muted = bool }`. The panel applies changes at once through the client exports `SetRadioVolume(0.0-1.0)` and `SetRadioMuted(bool)` of rsg-voice, then saves them (`rsg-radio:server:setSettings (vol, muted)`, 250 ms cooldown, validated and clamped). They are applied again when the character loads and when rsg-voice restarts. Muting only silences incoming radio. The slider and mute button are per player: each player sets their own.
+`metadata.radiosettings = { muted = bool }`. Volume is not per player: the client hands `Config.Volume` (percent) to rsg-voice with `SetRadioVolume(0.0-1.0)`. The mute button applies at once through `SetRadioMuted(bool)`, then saves (`rsg-radio:server:setSettings (muted)`, 250 ms cooldown). Both are applied again when the character loads and when rsg-voice restarts. Muting only silences incoming radio. Old saved `vol` values are ignored.
 
 ### 18.7 Battery (`Config.Battery`)
 The charge is `info.battery` (0 to 100) on the radio item; a radio without it counts as full. While tuned in it drains `DrainPerMinute`, plus `TransmitDrainPerMinute` for the time spent transmitting (measured from rsg-voice's server-only `rsg-voice:server:radioTalkChanged (src, state)` event), applied every `DrainInterval` seconds. A notice appears at `LowWarning`, a radio at 0 is dropped (`sv_batt_dead`) and cannot connect. Using `ChargeItem` with a radio in the inventory consumes one and adds `ChargeAmount` (refunded if the write fails). Enabling batteries makes the auto-registered radio item `unique`; if you registered the item yourself set `unique = true` too. The client receives `rsg-radio:client:battery (value)` for the HUD.
@@ -526,9 +526,9 @@ rsg-voice 3.2.0 adds `Config.Priority` (call blocks radio and party voice, and `
 | `rsg-radio:client:hud` | client | `{ freq, unit, members, battery }` or `nil` (server only) |
 | `rsg-radio:client:battery` | client | `value` 0-100 (server only) |
 | `rsg-radio:server:hogtied` | server | `state` (boolean) |
-| `rsg-radio:server:setSettings` | server | `vol` (0-100), `muted` (boolean) |
+| `rsg-radio:server:setSettings` | server | `muted` (boolean) |
 | `GetBattery(src)` | server export | see 9.1 |
-NUI: messages `hud`, `battery`; callbacks `setVolume {vol, muted}` (applies locally) and `saveVolume` (stores).
+NUI: messages `hud`, `battery`; callbacks `setMute {muted}` (applies locally) and `saveMute` (stores).
 
 ## 19. Examples for the 3.1.0 features
 

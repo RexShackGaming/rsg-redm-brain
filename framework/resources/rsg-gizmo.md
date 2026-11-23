@@ -1,8 +1,8 @@
 # rsg-gizmo
 
-Version 3.0.1. Standard prop placement gizmo for the RSG Framework
+Version 3.1.0. Standard prop placement gizmo for the RSG Framework
 
-The standard prop placement gizmo for the RSG Framework. Any script that needs a player or admin to put a prop in the world calls rsg-gizmo, gets back coords + rotation, and does its own saving. **Version:** 3.0.0 · **Dependencies:** rsg-core · **Full API:** [DOCS.md](DOCS.md) - One blocking export: `exports['rsg-gizmo']:Place(model, options)` → `{ coords, rotation, heading }` or `nil`
+The standard prop placement gizmo for the RSG Framework. Any script that needs a player or admin to put a prop in the world calls rsg-gizmo, gets back coords + rotation, and does its own saving. **Version:** 3.1.0 · **Dependencies:** rsg-core · **Full API:** [DOCS.md](DOCS.md) - One blocking export: `exports['rsg-gizmo']:Place(model, options)` → `{ coords, rotation, heading }` or `nil`
 
 Source: https://github.com/Rexshack-RedM/rsg-gizmo
 
@@ -12,14 +12,20 @@ Has NUI (`ui_page`).
 
 ## Exports (call as exports['rsg-gizmo']:Name)
 
-**server:** `IsPlacementValid(src, coords, maxDistance)`, `SanitiseRotation(rot)`
+**server:** `IsGroupPlacementValid(src, items, coords, heading, maxDistance)`, `IsPlacementValid(src, coords, maxDistance)`, `SanitiseRotation(rot)`
 
-**client:** `Cancel()`, `Edit(entity, opts)`, `IsActive()`, `Place(model, opts)`
+**client:** `Cancel()`, `Edit(entity, opts)`, `IsActive()`, `Place(model, opts)`, `PlaceMany(defs, opts)`
+
+**shared:** `GroupTransform(items, coords, heading)`
 
 ## Net events registered
 
-**client:** `rsg-gizmo:client:test`
+**client:** `rsg-gizmo:client:test`, `rsg-gizmo:client:testgroup`
 
 ## Event handlers
 
-**client:** `rsg-gizmo:client:place`
+**client:** `rsg-gizmo:client:place`, `rsg-gizmo:client:placeMany`
+
+## Public (table) functions
+
+**shared/group.lua:** `Gizmo.GroupTransform(items, coords, heading)`

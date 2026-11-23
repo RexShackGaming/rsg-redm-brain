@@ -194,5 +194,22 @@
     "cfg_stage_1": "Uneasy",
     "cfg_stage_2": "Shaking",
     "cfg_stage_3": "Withdrawal",
-    "ui_skill": "Skill %s"
+    "ui_skill": "Skill %s",
+    "ui_confirm": "Confirm?",
+    "cfg_sub_tobacco": "Tobacco",
+    "payroll_low": "The wage chest only covers %s more shifts of pay",
+    "raid_warning": "The law has been tipped off about your operation. A raid is coming, move your stock!",
+    "raid_alert_title": "Drug Lab Raid",
+    "raid_alert": "A drug lab has been reported. Raid it at the processing contact within %s minutes.",
+    "raid_target": "Raid Lab",
+    "raid_none": "There is no reported lab to raid right now",
+    "raid_done_officer": "Lab raided: %s units destroyed, $%s reward",
+    "raid_done_owner": "Your lab was raided: %s units were destroyed",
+    "raid_escaped": "The law was too slow this time, but your lab is still being watched",
+    "ui_heat": "Heat",
+    "ui_raid_warn": "Raid incoming",
+    "ui_potency": "Potency",
+    "cfg_sub_opium": "Opium",
+    "cfg_skill_drugs": "Drug Dealing",
+    "cfg_skill_drugs_desc": "Run labs, pack product and move it on."
 }

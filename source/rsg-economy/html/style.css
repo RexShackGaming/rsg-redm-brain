@@ -293,3 +293,16 @@ h1 {
 .ledger-reason { color: var(--rdr-muted); font-size: 12.5px; }
 .section-title { margin: 8px 0 0; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--rdr-muted); }
 #roleLine { margin: -4px 0 10px; }
+
+/* elections and admin */
+.platform { font-style: italic; color: var(--rdr-muted); font-size: 13px; margin-top: 4px; word-break: break-word; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field > .label { font-size: 10.5px; }
+.field-row { display: flex; gap: 8px; }
+.field-row .field { flex: 1; }
+.official-row { display: flex; gap: 8px; align-items: center; }
+.official-row .txt:last-of-type { max-width: 70px; flex: none; }
+.pill.on { border-color: var(--rdr-gold); color: var(--rdr-gold); }
+.txt:disabled { opacity: 0.55; }
+.tab { font-size: 11px; padding-left: 6px; padding-right: 6px; }
+.wood-btn.active { border-color: var(--rdr-gold); color: var(--rdr-gold); }

@@ -233,14 +233,14 @@ end
 RegisterNetEvent('rsg-drugs:client:openUI', function()
     if uiOpen then return end
     uiOpen = true
-    SetNuiFocus(true, true)
+    DrugsNuiFocus(true)
     SendNUIMessage({ action = 'addiction:open', data = getData(), labels = buildLabels(), stage = currentStage, stageLabel = currentStage > 0 and Config.Addiction.Stages[currentStage].label or nil })
 end)
 
 local function closeUI()
     if not uiOpen then return end
     uiOpen = false
-    SetNuiFocus(false, false)
+    DrugsNuiFocus(false)
     SendNUIMessage({ action = 'addiction:close' })
 end
 
@@ -269,5 +269,5 @@ AddEventHandler('onResourceStop', function(res)
     for _, cfg in pairs(Config.Addiction.Substances) do
         if cfg.highEffect then AnimpostfxStop(cfg.highEffect) end
     end
-    if uiOpen then SetNuiFocus(false, false) end
+    if uiOpen then uiOpen = false; DrugsNuiFocus(false) end
 end)

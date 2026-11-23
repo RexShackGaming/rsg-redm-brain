@@ -122,7 +122,6 @@
     "ui_no_match": "検索に一致するものがありません",
     "ui_range_open": "予約済み範囲",
     "ui_compact": "コンパクトメニュー",
-    "ui_volume": "無線の音量",
     "ui_mute": "無線をミュート",
     "ui_muted": "ミュート中",
     "hud_no_signal": "圏外",

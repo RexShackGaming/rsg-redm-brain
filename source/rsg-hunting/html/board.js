@@ -59,15 +59,18 @@
         el('board-pin').title = L.pin || '';
         el('board-close').title = L.close || '';
         el('board-title').textContent = L.title;
-        el('board-sub').textContent = fmt(L.total, d.total);
+        el('board-sub').textContent = d.sub || fmt(L.total, d.total);
         mode = d.mode || 'all';
         el('tab-all').textContent = L.allTime || '';
         el('tab-weekly').textContent = L.weekly || '';
-        el('board-tabs').classList.toggle('hidden', !d.weeklyEnabled);
+        el('tab-journal').textContent = L.journal || '';
+        el('tab-weekly').classList.toggle('hidden', !d.weeklyEnabled);
+        el('tab-journal').classList.toggle('hidden', !d.journalEnabled);
+        el('board-tabs').classList.toggle('hidden', !d.weeklyEnabled && !d.journalEnabled);
         document.querySelectorAll('.board-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
 
         const me = d.me;
-        el('board-me-rank').textContent = me.rank ? '#' + me.rank : L.unranked;
+        el('board-me-rank').textContent = me.rankText || (me.rank ? '#' + me.rank : L.unranked);
         el('board-me-level').textContent = fmt(L.level, me.level, me.label);
         const toNext = me.nextXP ? fmt(L.next, me.nextXP - me.xp) : L.maxed;
         el('board-me-xp').textContent = mode === 'weekly'
@@ -97,15 +100,15 @@
         el('board-extra').innerHTML = extra.join('');
 
         const list = el('board-list');
-        if (!d.top.length) { list.innerHTML = `<div class="board-empty">${esc(L.empty)}</div>`; return; }
+        if (!d.top.length) { list.innerHTML = `<div class="board-empty">${esc(mode === 'journal' ? L.journalEmpty : L.empty)}</div>`; return; }
         list.innerHTML = d.top.map(e => `
-            <div class="board-row rank-${e.rank}${e.me ? ' me' : ''}">
+            <div class="board-row ${mode === 'journal' ? '' : 'rank-' + e.rank}${e.me ? ' me' : ''}">
                 <div class="rank-badge">${e.rank}</div>
                 <div class="row-main">
                     <div class="row-name">${esc(e.name)}</div>
-                    ${e.level ? `<div class="row-sub">${esc(fmt(L.level, e.level, e.label))}</div>` : ''}
+                    ${e.sub ? `<div class="row-sub">${esc(e.sub)}</div>` : (e.level ? `<div class="row-sub">${esc(fmt(L.level, e.level, e.label))}</div>` : '')}
                 </div>
-                <div class="row-xp">${esc(fmt(L.xp, e.xp))}</div>
+                <div class="row-xp">${esc(e.right || fmt(L.xp, e.xp))}</div>
             </div>`).join('');
     }
 

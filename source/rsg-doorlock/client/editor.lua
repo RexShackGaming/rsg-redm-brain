@@ -27,6 +27,8 @@ local function doorList()
         list[#list + 1] = {
             id = id, name = d.name, jobs = d.jobs, distance = d.distance, locked = d.locked, doors = hashes,
             lockpick = d.lockpick or '', region = d.region or '',
+            gangs = d.gangs or {}, keyItem = d.keyItem or '', group = d.group or '',
+            openFrom = d.openFrom or '', openTo = d.openTo or '',
             dist = math.floor(#(GetEntityCoords(PlayerPedId()) - d.textCoords) + 0.5)
         }
     end
@@ -55,9 +57,33 @@ local function managedHashes()
     return map
 end
 
+-- map blips for every lock, only while the editor is open
+local blips = {}
+local function clearBlips()
+    for _, b in ipairs(blips) do
+        if DoesBlipExist(b) then RemoveBlip(b) end
+    end
+    blips = {}
+end
+
+local function refreshBlips()
+    clearBlips()
+    local cfg = Config.EditorBlips
+    if not editorOpen or not cfg or not cfg.Enabled then return end
+    for _, d in pairs(Doors) do
+        local c = d.textCoords
+        local blip = BlipAddForCoords(1664425300, c.x, c.y, c.z)
+        SetBlipSprite(blip, joaat(cfg.Sprite), true)
+        SetBlipScale(blip, cfg.Scale)
+        SetBlipName(blip, d.name)
+        blips[#blips + 1] = blip
+    end
+end
+
 local function setEditorState(on)
     editorOpen = on
     LocalPlayer.state:set('doorEditor', on, false)
+    if on then refreshBlips() else clearBlips() end
 end
 
 local localeSent = false
@@ -68,9 +94,40 @@ local function sendLocale()
     localeSent = true
 end
 
+-- every focus change goes through here so push-to-talk keeps working while the editor is open
+local uiFocus = false
+local function applyNuiFocus(enable)
+    uiFocus = enable
+    if enable then
+        SetNuiFocus(true, true)
+        if Config.AllowPushToTalkWhileOpen then SetNuiFocusKeepInput(true) end
+    else
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
+end
+
+CreateThread(function()
+    while true do
+        if uiFocus and Config.AllowPushToTalkWhileOpen then
+            Wait(0)
+            DisableAllControlActions(0)
+            DisableAllControlActions(1)
+            DisableAllControlActions(2)
+            for _, c in ipairs(Config.PushToTalkControls or {}) do
+                EnableControlAction(0, c, true)
+                EnableControlAction(1, c, true)
+                EnableControlAction(2, c, true)
+            end
+        else
+            Wait(250)
+        end
+    end
+end)
+
 local function openUI(extra)
     sendLocale()
-    SetNuiFocus(true, true)
+    applyNuiFocus(true)
     SendNUIMessage({
         action = 'open',
         doors = doorList(),
@@ -83,7 +140,7 @@ local function openUI(extra)
 end
 
 local function closeUI()
-    SetNuiFocus(false, false)
+    applyNuiFocus(false)
     SendNUIMessage({ action = 'close' })
     setEditorState(false)
 end
@@ -100,7 +157,7 @@ end
 ---------------------------------------------
 local function startPicking()
     picking = true
-    SetNuiFocus(false, false)
+    applyNuiFocus(false)
     SendNUIMessage({ action = 'hide' })
     sendLocale()
 
@@ -159,7 +216,7 @@ local function startPicking()
                     hud.inUse = Doors[owner] and Doors[owner].name or ('#' .. owner)
                 end
             end
-            local key = json.encode(hud)
+            local key = ('%s|%s|%s|%s|%s|%s'):format(hud.count, hud.model or '', hud.hash or '', hud.selected and 1 or 0, hud.inUse or '', hud.max)
             if key ~= lastText then
                 SendNUIMessage({ action = 'pickHud', hud = hud })
                 lastText = key
@@ -211,8 +268,9 @@ RegisterNetEvent('rsg-doorlock:client:openEditor', function()
 end)
 
 AddEventHandler('rsg-doorlock:client:editorRefresh', function()
-    if editorOpen and not picking then
-        SendNUIMessage({ action = 'refresh', doors = doorList() })
+    if editorOpen then
+        refreshBlips()
+        if not picking then SendNUIMessage({ action = 'refresh', doors = doorList() }) end
     end
 end)
 
@@ -261,9 +319,10 @@ end)
 
 AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
+    clearBlips()
     if editorOpen then
         picking = false
-        SetNuiFocus(false, false)
+        applyNuiFocus(false)
         LocalPlayer.state:set('doorEditor', false, false)
     end
 end)

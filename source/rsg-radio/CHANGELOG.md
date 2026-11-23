@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.1.1
+Minor change.
+
+### Changed
+- **Removed the volume slider** from the panel (it did not work as expected). The mute button stays.
+- New `Config.Volume` (percent, default `50`) sets how loud incoming radio is for everyone, since the old default was too loud. It replaces the old `{ Default, Step }` table; change the value to a plain number.
+- `rsg-radio:server:setSettings` now takes only `muted`; the `ui_volume` locale key is removed from all 11 languages.
+- NUI callbacks `setVolume` / `saveVolume` renamed `setMute` / `saveMute`.
+- Panel lists keep their scroll position on live updates.
+- Opening the panel is rate limited on the server (250 ms) and debounced on the client, so key spam cannot flood the server with state builds.
+- The hogtie report, signal interference, handheld and battery loops now only run when their feature is enabled.
+- Unchanged private channel saves no longer write to the database; finished staff blocks are cleaned up hourly.
+
 ## 3.1.0
 Major update. Needs **rsg-voice 3.2.0+**.
 

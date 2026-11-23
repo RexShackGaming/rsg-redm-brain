@@ -1,8 +1,8 @@
 # rsg-radio
 
-Version 3.1.0. rsg-radio - field radio (frequencies, job channels) on top of rsg-voice
+Version 3.1.1. rsg-radio - field radio (frequencies, job channels) on top of rsg-voice
 
-Field radio for **RSG Framework (RedM)**, built on [rsg-voice](https://github.com/Rexshack-RedM/rsg-voice). Players with a radio item tune to a frequency and talk to everyone else on it, at any distance. Lawmen, medics (or any job, job type or gang you configure) get restricted channels. Version 3.1.0 · Requires rsg-core 3.0.3+, rsg-inventory, oxmysql and rsg-voice 3.2.0+ (radio volume, mute, sign
+Field radio for **RSG Framework (RedM)**, built on [rsg-voice](https://github.com/Rexshack-RedM/rsg-voice). Players with a radio item tune to a frequency and talk to everyone else on it, at any distance. Lawmen, medics (or any job, job type or gang you configure) get restricted channels. Version 3.1.1 · Requires rsg-core 3.0.3+, rsg-inventory, oxmysql and rsg-voice 3.2.0+ (radio volume, mute, sign
 
 Source: https://github.com/Rexshack-RedM/rsg-radio
 

@@ -28,17 +28,18 @@ for _, animal in ipairs(Config.Animals) do
 end
 
 local lastSkinTime = 0
+local SKIN_QUALITY = { [0] = 'poor', [1] = 'good', [2] = 'perfect' }
 
-local function onSkinned(carcass, animal)
+local function onSkinned(carcass)
     Wait(1000) -- let the game finish spawning the carried skin
     local holding = Citizen.InvokeNative(0xD806CD2A4F2C2996, PlayerPedId()) -- GetFirstEntityPedIsCarrying
     if holding and holding ~= 0 and not IsPedAPlayer(holding) then
         DeleteEntity(holding)
     end
 
-    -- only the carcass (and its pelt quality, used for the clean-kill xp bonus) is sent;
+    -- only the carcass (and its pelt quality: pelt prices, trophies, contracts, clean-kill xp) is sent;
     -- the server works out the rewards itself
-    local quality = Citizen.InvokeNative(0x7BCC6087D130312A, carcass) == 2 and 'perfect' or nil -- _GET_PED_QUALITY (natives/db)
+    local quality = SKIN_QUALITY[Citizen.InvokeNative(0x7BCC6087D130312A, carcass)] -- _GET_PED_QUALITY (natives/db): 0 poor, 1 good, 2 perfect
     local netId = NetworkGetEntityIsNetworked(carcass) and NetworkGetNetworkIdFromEntity(carcass) or 0
     TriggerServerEvent('rsg-hunting:server:giverewards', netId, quality)
 
@@ -63,7 +64,7 @@ CreateThread(function()
                         local animal = AnimalSkinLookup[GetEntityModel(carcass)]
                         if animal and animal.skinable then
                             lastSkinTime = now
-                            CreateThread(function() onSkinned(carcass, animal) end)
+                            CreateThread(function() onSkinned(carcass) end)
                         end
                     end
                 end

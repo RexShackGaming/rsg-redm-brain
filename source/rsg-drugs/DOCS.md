@@ -1,4 +1,4 @@
-# rsg-drugs – Docs (v3.1.3)
+# rsg-drugs – Docs (v3.3.0)
 
 ## Contents
 1. Files
@@ -22,8 +22,10 @@
 | `client/export.lua`, `html/export.*` | Brick export NUI |
 | `client/addiction.lua`, `html/addiction.*` | Addiction HUD and rehab countdown |
 | `client/addiction_npc.lua` | NPC addicts: inspect, rehab, sell |
-| `client/utils.lua` | NPC spawning helpers |
-| `server/server.lua` | Labs, crew, work loop |
+| `client/utils.lua` | NPC spawning, handover animation, NUI focus helper (`DrugsNuiFocus`, push-to-talk whitelist) and panel auto-close (`DrugsWatchPanel`) |
+| `server/utils.lua` | Shared server helpers: `DrugsCallback` wrapper and `DrugsEnsureDatabase()` (builds both tables once) |
+| `server/integrations.lua` | Guarded rsg-skills, rsg-reputation and rsg-economy calls (`DrugsSkills`, `DrugsRep`, `DrugsEcon`) |
+| `server/server.lua` | Labs, crew, work loop, potency, heat and raids |
 | `server/export.lua` | Brick market |
 | `server/addiction.lua` | Dependency, craving, rehab, commands |
 | `server/xp.lua` | Drug reputation |
@@ -53,6 +55,18 @@
 - Brick packing needs the owner at `XP.BrickMinLevel` (5 = Distributor) or higher.
 - Starting an rsg-prison sentence resets drug XP (`XP.ResetOnJail`).
 
+### Potency, heat and raids
+- **Potency** is 0-100 per stock type (`lab.q`). Output potency = `InputWeight` x input potency + (1 - `InputWeight`) x the working crew's average `CrewPotency[skill]`, then averaged into what is already in stock. Withdrawn items get `info.potency` (rounded to `Config.Quality.Step`, so stacks of the same potency still merge in rsg-inventory). Items without potency count as `Config.Quality.Default`. Price multiplier = `PriceMin` + (`PriceMax` - `PriceMin`) x potency / 100. Bricks are exported best potency first and you are paid for exactly what left your inventory.
+- **Heat** is stored on the lab (`lab.heat`, 0-`Max`). Sources: bricks/bags finished by the crew, NPC bag sales, exported bricks, refused NPC sales (`Config.Heat`). It only counts for players who have a lab with crew or stock. Each shift it decays by `Decay`. Above `RaidThreshold` there is a `RaidChance`% chance per shift of a raid, if at least `MinLaw` on-duty law (`LawJobTypes` / `LawJobs`) are online and the lab is not on cooldown. The law gets `rsg-drugs:client:raidAlert` (blip around the lab NPC for `RaidWindowMinutes`), the owner gets a warning.
+- **Raid:** an on-duty officer uses the *Raid Lab* target on the processing NPC (`rsg-drugs:server:raid`). The server takes the oldest pending raid, destroys `SeizePercent` of every stock type (nothing is handed to anyone), sets heat to `HeatAfterRaid`, starts the raid cooldown, pays `OfficerReward` (not for your own lab) and tells the owner (or leaves a notice for the next time they open the lab). If nobody raids in time heat drops to `HeatAfterEscape`.
+- **Wage chest warning:** `Config.Payroll.WarnShifts` / `WarnCooldownMinutes`.
+
+### Integrations
+All calls go through `server/integrations.lua`, are wrapped in `pcall` and skipped when the resource is not started.
+- **rsg-skills** (`Config.Skills`): registers the skill `Config.Skills.Key` (default `drugs`) on start and when rsg-skills announces itself. Every `DrugsXP.Add` also calls `AddXP` (scaled by `XPScale`). Perks read with `GetPerk`: `sell_bonus` (NPC bag price and brick payout, %) and `speed_bonus` (crew output, %, kept on the lab for when the owner is offline). Drug XP resets on jail also set the skill XP to 0 when `ResetOnJail` is true. The perk names in the skills panel come from rsg-skills' locale keys `perk_sell_bonus` and `perk_speed_bonus`.
+- **rsg-reputation** (`Config.Reputation.Events`): `sale`, `refused`, `export`, `rehab`, `raid` each give honor and/or standing (standing in the town found with rsg-economy `GetRegionAt`). `IsHostile` for the town cuts the NPC buy chance by `HostileBuyMult`.
+- **rsg-economy** (`Config.Economy`): NPC bag price is multiplied by `GetMarketMultiplier(item, region)` and the sale is reported with `RecordTrade(item, region, 1, 'sell')`.
+
 ### Addiction and rehab (alcohol and weed)
 - Dependency (0–100) rises each time a configured item is used. Past the substance's `threshold` the player is **hooked**.
 - While hooked, craving grows every `TickInterval` seconds and causes withdrawal effects unless the player feeds the habit. Using the substance resets craving but raises dependency.
@@ -60,6 +74,7 @@
 - The cure is rehab (jail-style stint at Sisika): belongings are confiscated and returned on release; weapons are removed and re-equipped.
 - Lawmen (`AllowedJobTypes`), medics (`AllowedJobs`) and admins can send players to rehab; players can also check in voluntarily. Officers earn a bonus per admission (`Reward`).
 - NPC addicts can be inspected, sent to rehab or sold to (`Config.Addiction.Selling`).
+- Substances: alcohol (via rsg-consume), weed (`weed_joint`), opium (`opium_resin`, for your own gathering or crafting script) and tobacco (rsg-smoking calls `AddUse(src, 'tobacco', amount)`).
 
 ## 3. Configuration
 `shared/config.lua`:
@@ -74,8 +89,15 @@
 | `Roles` | dryer, processor, packer |
 | `HireFee`, `CandidateCount`, `CandidateRefreshMinutes` | Hiring |
 | `XP` | `Enabled`, `BrickMinLevel`, `Levels`, per-item XP, `ResetOnJail` |
+| `Payroll` | `WarnShifts`, `WarnCooldownMinutes` |
+| `Quality` | `Enabled`, `Default`, `InputWeight`, `Step`, `CrewPotency`, `PriceMin`, `PriceMax` |
+| `Heat` | `Enabled`, `Max`, `Decay`, `PerBrick`, `PerBag`, `PerExportBrick`, `PerSale`, `PerRefusal`, `RaidThreshold`, `RaidChance`, `MinLaw`, `RaidWindowMinutes`, `SeizePercent`, `HeatAfterRaid`, `HeatAfterEscape`, `CooldownMinutes`, `OfficerReward`, `MoneyType`, `AlertRadius`, `LawJobTypes`, `LawJobs` |
+| `Skills` | `Enabled`, `Key`, `XPScale`, `ResetOnJail`, `Definition` (label, maxLevel, perks) |
+| `Reputation` | `Enabled`, `HostileBuyMult`, `Events` |
+| `Economy` | `Enabled` |
+| `AllowPushToTalkWhileOpen`, `PushToTalkControls` | Keep push-to-talk working while a panel has NUI focus (all other controls are blocked) |
 
-`shared/config_addiction.lua`: `Config.Addiction` with `TickInterval`, `UseCooldown`, `Substances` (alcohol, weed: `items`, `threshold`, `decay`, `cravingRate`, scenarios), `Rehab` (`DefaultMinutes`, `MaxMinutes`, `VoluntaryMinutes`, `Centre`, `Spawns`, `Release`, `AllowedJobTypes`, `AllowedJobs`, `AdminPermission`, `MaxAdmitDistance`, `Reward`, `Confiscate`) and `Selling`.
+`shared/config_addiction.lua`: `Config.Addiction` with `TickInterval`, `UseCooldown`, `Substances` (alcohol, weed: `items`, `threshold`, `decay`, `cravingRate`, scenarios), `Rehab` (`DefaultMinutes`, `MaxMinutes`, `VoluntaryMinutes`, `Centre`, `Spawns`, `Release`, `AllowedJobTypes`, `AllowedJobs`, `AdminPermission`, `MaxAdmitDistance`, `Reward` (`Amount`, `MoneyType`, `NpcCooldown`, `PlayerCooldown`), `Confiscate`) and `Selling`.
 
 `shared/config_export.lua`: `Config.Export` (`MinLevel`, `NPC`, `MaxPrice`, `MinPrice`, `Saturation`, `TickMinutes`, `DrainPerHour`, `DemandMin`, `DemandMax`, `MaxPerSale`, `Cooldown`).
 
@@ -94,6 +116,8 @@
 | `rsg-drugs:client:open` / `exportOpen` / `openUI` | client events | Open lab, export or addiction UI |
 | `rsg-consume:server:consumed` | server event (from rsg-consume 3.3.0+) | `(src, itemName, category, data, meta)` |
 | `rsg-drugs:server:npcRehab` | server event | `(netId)` |
+| `rsg-drugs:server:raid` | server event | no arguments; on-duty law at the processing NPC raids the oldest reported lab |
+| `rsg-drugs:client:raidAlert` | client event (server to law) | `(minutes)`; blip around the lab NPC and a notification |
 
 | Command | Who | What |
 |---|---|---|
@@ -117,7 +141,7 @@ Both tables are created automatically (`Config.AutoDatabase`). To install manual
 Set URLs in `server/config_discord.lua` (`ConfigDiscord.Webhooks` per category, or `ConfigDiscord.Default` for one channel; `false` turns a category off). Categories: `lab`, `sales`, `export`, `xp`, `rehab`, `admin`, `security`. Logs are queued and batched (up to 10 embeds per message every `FlushSeconds`) with back-off on Discord rate limits. `MinDeposit` / `MinWithdraw` filter small transactions.
 
 ## 7. Security
-All XP, payouts and prices come from config on the server; clients can't send amounts. Every NUI action checks distance to the NPC. Export sales check buyer distance, level, item count and cooldown. Officers can't send their own customers to rehab for the bonus (logged under `security`).
+All XP, payouts and prices come from config on the server; clients can't send amounts. Every NUI action checks distance to the NPC. Export sales check buyer distance, level, item count and cooldown. Officers can't send their own customers to rehab for the bonus (logged under `security`), and player admissions pay one bonus per `Reward.PlayerCooldown` per officer. The lab payload and its supplies list come from one server callback, so the client never asks for inventory data separately. Panels close on the client when you walk away or die, and the server still rejects any action from too far away. A raid needs an on-duty law job, distance to the NPC, a pending raid created by the server's own heat roll (the client cannot start one) and a 3 second cooldown; seized stock is destroyed, and raiding your own lab pays nothing. Potency and prices are worked out on the server from the stack's `info.potency` and config; the client never sends a price.
 
 ## 8. How-tos
 - Start: `ensure rsg-drugs` after rsg-core, rsg-inventory, rsg-target; run `install.sql`; add the items.
@@ -129,7 +153,9 @@ All XP, payouts and prices come from config on the server; clients can't send am
 |---|---|
 | Can't switch packers to bricks | Owner level is below `BrickMinLevel` |
 | No export option | Player below `Export.MinLevel` or the buyer NPC isn't where you expect |
-| Items missing | Add `installation/shared_items.lua` to your items |
+| Items missing | Add `installation/shared_items.lua` to your items (includes `opium_resin`) |
+| No raids ever happen | Heat must reach `RaidThreshold`, at least `MinLaw` on-duty law must be online and the lab needs crew or stock |
+| Standing never changes | rsg-reputation and rsg-economy must both be started (the town comes from rsg-economy `GetRegionAt`) |
 | Rehab bonus not paid | Job must be in `AllowedJobTypes`/`AllowedJobs`; NPC rewards have a cooldown |
 
 Support the Project : https://rexshack.tebex.store/
@@ -138,7 +164,7 @@ Support the Project : https://rexshack.tebex.store/
 
 ## Technical reference
 
-Generated from the source of **rsg-drugs 3.1.1**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-drugs 3.3.0**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 

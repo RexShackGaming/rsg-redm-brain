@@ -2,6 +2,12 @@
 
 All notable changes to rsg-ambush. Newest first.
 
+## 3.2.1
+
+### Added
+- Optional rsg-deliveries hook: `GetAmbushMultiplier` raises the trigger chance while the rider has a delivery contract.
+- Local server events `rsg-ambush:server:ambushStarted` and `rsg-ambush:server:ambushWon` for other resources.
+
 ## 3.2.0
 
 ### Added

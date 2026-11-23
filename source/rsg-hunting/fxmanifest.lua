@@ -5,7 +5,7 @@ game 'rdr3'
 name 'rsg-hunting'
 author 'RexShack'
 description 'Hunting, trapper and butcher script for RSG Framework'
-version '3.4.0'
+version '3.5.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
@@ -13,6 +13,7 @@ shared_scripts {
 }
 
 client_scripts {
+    'client/nui.lua',
     'client/client.lua',
     'client/vendor.lua',
     'client/leaderboard.lua',
@@ -25,8 +26,13 @@ server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/sv_config.lua',
     'server/webhooks.lua',
+    'server/database.lua',
     'server/bounty.lua',
     'server/xp.lua',
+    'server/journal.lua',
+    'server/gates.lua',
+    'server/demand.lua',
+    'server/contracts.lua',
     'server/server.lua',
     'server/vendor.lua',
     'server/butcher.lua',
@@ -39,6 +45,8 @@ dependencies {
     'rsg-target',
     'rsg-inventory',
 }
+
+-- optional: rsg-weather (trapper demand), rsg-skills, rsg-reputation, rsg-wagons (hunting cart bulk bonus)
 
 ui_page 'html/index.html'
 

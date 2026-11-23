@@ -2,10 +2,7 @@
 if not Config.Export.Enabled then return end
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
--- rsg-core callback wrapper: handlers return their result(s) instead of calling cb
-local function Callback(name, fn)
-    RSGCore.Functions.CreateCallback(name, function(src, cb, ...) cb(fn(src, ...)) end)
-end
+local Callback = DrugsCallback -- server/utils.lua
 
 local E = Config.Export
 local STATE_KEY = 'market'
@@ -28,10 +25,29 @@ local function priceAt(stock)
     return math.floor(p * Market.demand)
 end
 
-local function quote(amount)
+-- mults[i] = price multiplier of the i-th brick sold (potency and sell perk); missing entries count as 1
+local function quote(amount, mults)
     local total = 0
-    for i = 0, amount - 1 do total = total + priceAt(Market.stock + i) end
-    return total
+    for i = 0, amount - 1 do total = total + priceAt(Market.stock + i) * (mults and mults[i + 1] or 1) end
+    return math.floor(total)
+end
+
+-- the player's bricks, highest potency first, plus the price multiplier of each of the first `limit` bricks
+local function brickStacks(src, limit)
+    local bonus = 1 + DrugsSkills.Perk(src, 'sell_bonus') / 100
+    local stacks = exports['rsg-inventory']:GetItemsByName(src, E.Item) or {}
+    table.sort(stacks, function(a, b) return DrugsItemPotency(a) > DrugsItemPotency(b) end)
+    local mults, n = {}, 0
+    for _, st in ipairs(stacks) do
+        local m = DrugsPotencyMult(DrugsItemPotency(st)) * bonus
+        for _ = 1, (st.amount or 0) do
+            if n >= limit then break end
+            n = n + 1
+            mults[n] = m
+        end
+        if n >= limit then break end
+    end
+    return stacks, mults
 end
 
 local function pushHistory()
@@ -40,9 +56,7 @@ local function pushHistory()
 end
 
 MySQL.ready(function()
-    if Config.AutoDatabase ~= false then -- set false and import installation/install.sql for a manual install
-        MySQL.query.await('CREATE TABLE IF NOT EXISTS `rsg_drugs_state` (`key` VARCHAR(50) NOT NULL, `value` LONGTEXT NOT NULL, PRIMARY KEY (`key`))')
-    end
+    if not DrugsEnsureDatabase() then return end -- server/utils.lua (also honours Config.AutoDatabase)
     local raw = MySQL.scalar.await('SELECT `value` FROM rsg_drugs_state WHERE `key` = ?', { STATE_KEY })
     local ok, saved = pcall(json.decode, raw or 'null')
     if ok and type(saved) == 'table' then
@@ -82,7 +96,12 @@ local function payload(src)
         maxPrice = E.MaxPrice, minPrice = E.MinPrice,
         maxPerSale = E.MaxPerSale,
         carrying = exports['rsg-inventory']:GetItemCount(src, E.Item) or 0,
-        quotes  = (function() local q = {} for i = 1, E.MaxPerSale do q[i] = quote(i) end return q end)(),
+        quotes  = (function()
+            local _, mults = brickStacks(src, E.MaxPerSale)
+            local q = {}
+            for i = 1, E.MaxPerSale do q[i] = quote(i, mults) end
+            return q
+        end)(),
     }
 end
 
@@ -100,14 +119,28 @@ Callback('rsg-drugs:server:exportSell', function(src, amount)
     if lastSale[src] and now - lastSale[src] < E.Cooldown then notify(src, locale('export_cooldown'), 'error') return payload(src) end
     if (exports['rsg-inventory']:GetItemCount(src, E.Item) or 0) < amount then notify(src, locale('no_item'), 'error') return payload(src) end
     lastSale[src] = now
-    local total = quote(amount)
-    if not exports['rsg-inventory']:RemoveItem(src, E.Item, amount, nil, 'rsg-drugs-export') then return payload(src) end
+    local stacks, mults = brickStacks(src, amount)
+    -- take the best bricks first and pay for exactly what left the inventory
+    local left = amount
+    for _, st in ipairs(stacks) do
+        if left <= 0 then break end
+        local take = math.min(left, st.amount or 0)
+        if take > 0 then
+            if not exports['rsg-inventory']:RemoveItem(src, E.Item, take, st.slot, 'rsg-drugs-export') then break end
+            left = left - take
+        end
+    end
+    amount = amount - left
+    if amount < 1 then return payload(src) end
+    local total = quote(amount, mults)
     Player.Functions.AddMoney(E.MoneyType, total, 'rsg-drugs-export')
     Market.stock = Market.stock + amount
     save()
     notify(src, locale('export_sold', amount, total), 'success')
     DrugsLog('export', 'Bricks exported', src, { { 'Bricks', amount }, { 'Payout', ('$%s (%s)'):format(total, E.MoneyType) }, { 'Avg/brick', ('$%d'):format(math.floor(total / amount)) }, { 'Buyer stock', math.floor(Market.stock) }, { 'Demand', ('x%.2f'):format(Market.demand) } })
     DrugsXP.Add(src, (Config.XP.Sell[E.Item] or 0) * amount, 'export')
+    DrugsHeat.Add(Player.PlayerData.citizenid, amount * Config.Heat.PerExportBrick)
+    DrugsRep.Apply(src, 'export')
     local p = payload(src)
     p.sold = amount
     return p

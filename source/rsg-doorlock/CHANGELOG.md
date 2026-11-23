@@ -2,6 +2,33 @@
 
 All notable changes to rsg-doorlock. Newest first.
 
+## 3.4.0
+
+### Added
+- **Gang and key-item access:** a lock can now list gangs (PlayerData.gang and rsg-society) and a key item next to jobs. Any one grants access.
+- **"No key" prompt:** the server tells the client whether the nearest lock is usable (`rsg-doorlock:server:canUse`), so players without access see **No key** and the use prompt is disabled. The lockpick prompt now follows the same answer (admins and key holders no longer see it).
+- **Lock groups:** locks that share a group name lock and unlock together.
+- **Opening hours:** `open_from` / `open_to` in-game hours open and close a lock automatically (`Config.Schedule`).
+- **Server exports** `GetDoors`, `GetDoor`, `GetDoorIdByName`, `IsLocked`, `SetLocked`, `LockDoor`, `UnlockDoor`, `SetGroupLocked`, `HasAccess`, and the `rsg-doorlock:server:stateChanged` event.
+- **Editor:** gang, key item, group and hours fields, a **Duplicate** button, and map blips for every lock while the editor is open (`Config.EditorBlips`).
+- `Config.Lockpick.Alert` passes a lawman alert chance to rsg-lockpick.
+- Five new columns on `rsg_doorlocks` (`key_item`, `gangs`, `group_name`, `open_from`, `open_to`), added automatically while `Config.AutoDatabase = true`; manual upgrade lines are at the top of `installation/rsg_doorlocks.sql`. 19 new locale keys in all 13 languages (`ui_jobs_hint` was replaced by `ui_access_hint`).
+
+### Fixed
+- Saving a lock with an empty lockpick or region could shift the SQL parameters. Optional values are now sent as `NULLIF` placeholders, so every save has a fixed parameter list.
+
+## 3.3.1
+
+### Fixed
+- A lockpick attempt that never reported back (client crash, expired ticket) no longer blocks that player from picking again; it times out after 2 minutes.
+- `getDoors` callback no longer piles up waiting threads when spammed before the database has loaded.
+- Discord webhook mentions are limited to roles, and only when a Security ping is set.
+- Push-to-talk now works while the `/doorlock` editor is open (`Config.AllowPushToTalkWhileOpen`, `Config.PushToTalkControls`).
+
+### Changed
+- Optimisation: the prompt title is built once per state instead of every frame, and the editor's pick HUD no longer JSON-encodes every frame.
+- Cleanup: shared the duplicated distance / incapacitated checks in `server/main.lua` and the duplicated key-release wait in `client/main.lua`.
+
 ## 3.3.0
 
 ### Added

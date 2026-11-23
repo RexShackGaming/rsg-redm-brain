@@ -194,5 +194,22 @@
     "cfg_stage_1": "不安",
     "cfg_stage_2": "震え",
     "cfg_stage_3": "禁断症状",
-    "ui_skill": "スキル %s"
+    "ui_skill": "スキル %s",
+    "ui_confirm": "確認？",
+    "cfg_sub_tobacco": "タバコ",
+    "payroll_low": "賃金の備蓄はあと%s回分しかありません",
+    "raid_warning": "あなたの活動が当局に密告されました。まもなく手入れが入ります。在庫を移してください！",
+    "raid_alert_title": "ラボ摘発",
+    "raid_alert": "麻薬ラボの通報がありました。%s分以内に加工担当の所で摘発してください。",
+    "raid_target": "ラボを摘発",
+    "raid_none": "現在、摘発できる通報済みのラボはありません",
+    "raid_done_officer": "ラボを摘発：%s個を廃棄、報酬$%s",
+    "raid_done_owner": "あなたのラボが摘発されました：%s個が廃棄されました",
+    "raid_escaped": "今回は当局が間に合いませんでしたが、ラボは引き続き監視されています",
+    "ui_heat": "注目度",
+    "ui_raid_warn": "手入れが迫っています",
+    "ui_potency": "純度",
+    "cfg_sub_opium": "アヘン",
+    "cfg_skill_drugs": "麻薬取引",
+    "cfg_skill_drugs_desc": "ラボを運営し、商品を詰めて売りさばく。"
 }

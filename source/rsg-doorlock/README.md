@@ -15,6 +15,10 @@ A database-driven door lock system for **RedM** using the **RSG Framework**. Doo
 - 👮 Job-based access, with optional on-duty requirement
 - 🛡️ Admin bypass: admins can open any lock (optional)
 - 🏛️ Sisika prison front gates locked by default
+- 🔑 **Access by job, gang or key item**: any one grants access; the prompt shows **No key** when you can't use the door
+- 🔗 **Lock groups**: locks that share a group name lock and unlock together (e.g. a whole sheriff office)
+- 🕗 **Opening hours**: a lock can open and close itself at set in-game hours (e.g. a bank after hours)
+- 🧩 **Exports** so other scripts (prison, bank robbery, theatre) can lock, unlock and query doors
 - 🗝️ **Lockpickable doors** (optional): give a lock an easy / medium / hard difficulty and players without a key can pick it with rsg-lockpick; the door relocks by itself
 
 ### Admin editor (`/doorlock`)
@@ -30,6 +34,8 @@ A database-driven door lock system for **RedM** using the **RSG Framework**. Doo
 - 📍 Teleport to any lock
 - 🏷️ Job tag input, interaction range slider, default locked/unlocked state
 - 🗝️ Lockpick difficulty (Off / Easy / Medium / Hard) and an optional reputation region per lock
+- 🔑 Authorised jobs, gangs and an optional key item; 🔗 an optional group; 🕗 optional opening hours
+- 📋 **Duplicate** a lock's settings, and 📍 map blips for every lock while the editor is open
 
 ### Security
 - ✅ Everything is validated on the server: player, door, distance, job, permission and input data
@@ -103,6 +109,8 @@ Your old `Config.DoorList` doors now live in `server/seed_doors.lua` and are imp
 | `Config.MaxDoorsPerLock` | `8` | Maximum doors in a single lock |
 | `Config.PickRange` | `2.0` | How close your aim must be to a door to select it |
 | `Config.Debug` | `false` | Print MLO door lookups to the F8 console |
+| `Config.AllowPushToTalkWhileOpen` | `true` | Keep push-to-talk usable while the editor is open |
+| `Config.PushToTalkControls` | `{ 0x4BC9DABB }` | Controls left enabled while the editor has focus |
 | `Config.AllowCustomDoors` | `true` | Allow picking door props that are not in the door hash lists (frozen-object fallback) |
 | `Config.ImportConfigDoors` | `true` | Import `server/seed_doors.lua` when the table is empty |
 | `Config.JailDoors` | Sisika gates | Door hashes that are always locked |
@@ -112,6 +120,12 @@ Your old `Config.DoorList` doors now live in `server/seed_doors.lua` and are imp
 | `Config.Lockpick.Presets` | `{ 'easy', 'medium', 'hard' }` | Difficulties offered in the editor (preset names from rsg-lockpick) |
 | `Config.Lockpick.Cooldown` | `5000` | Milliseconds between lockpick requests per player (server enforced) |
 | `Config.Lockpick.RelockAfter` | `300` | Seconds a picked door stays unlocked (0 = until someone locks it) |
+| `Config.Lockpick.Alert` | `nil` | Lawman alert chance (0.0-1.0) on a pick; `nil` = rsg-lockpick's own setting, `false` = never |
+| `Config.Schedule.Enabled` | `true` | Apply the opening hours set on locks |
+| `Config.Schedule.UseGameTime` | `true` | Hours are in-game time from rsg-weather (`false` = server clock) |
+| `Config.Schedule.CheckInterval` | `20` | Seconds between schedule checks |
+| `Config.EditorBlips.Enabled` | `true` | Show a map blip for every lock to the admin while the editor is open |
+| `Config.EditorBlips.Sprite` / `.Scale` | `'blip_proc_home_locked'` / `0.6` | Blip look |
 | `Config.Lockpick.Reputation` | `'theft'` | rsg-reputation action reported on a successful pick (`nil` = none) |
 
 ### `server/sv_config.lua` (server only, webhooks)
@@ -174,6 +188,8 @@ MLO doors are not in the built-in door list, so the editor can't find them until
 2. Click **+ New Lock**.
 3. Enter a **name**, add **jobs** (type a job, press Enter), set the **interaction range** and the **starting state**.
    - Leave jobs empty to make a door nobody can open (e.g. prison doors).
+   - Access: any **one** of the authorised jobs, authorised gangs or the key item opens the lock (rsg-society gangs are supported). With all three empty nobody can use it (admins still can while `Config.AdminBypass` is on).
+   - Optional: a **Lock Group** (locks sharing the name toggle together) and **Opening Hours** (open and close hour, 0-23 in-game time).
    - Optional: choose a **Lockpicking** difficulty (Off / Easy / Medium / Hard) to let players without a key pick the lock, and a **Reputation Region** (an rsg-reputation region id such as `valentine`) that sees a picked lock as theft.
 4. Click **Select doors in world**. The editor hides and the HUD appears top-left:
    - **Aim** at a door and its model and hash show in the HUD.
@@ -186,12 +202,35 @@ MLO doors are not in the built-in door list, so the editor can't find them until
 - **Edit**: click a lock in the list, change anything (including reselecting doors), then **Save**.
 - **Delete**: open a lock, click **Delete** and confirm. Its doors are unlocked for everyone.
 - **Teleport**: click the ➤ button on a lock row.
-- **Search**: filter by name, job or door hash.
+- **Duplicate**: open a lock and click **Duplicate** to start a new lock with the same jobs, gangs, key item, group, hours and lockpick settings. Pick its own doors, since a door can only belong to one lock.
+- **Search**: filter by name, job, gang, group or door hash.
 - **ESC**: steps back (modal → form → list → close).
 
 ---
 
 ## Exports / events
+
+| Export (server only) | Returns | Description |
+|---|---|---|
+| `GetDoors()` | `table[]` | All locks: `id, name, locked, group, jobs, gangs, keyItem, openFrom, openTo` |
+| `GetDoor(id)` | `table?` | One lock, same fields |
+| `GetDoorIdByName(name)` | `id?` | Look a lock up by its editor name (case-insensitive) |
+| `IsLocked(id)` | `boolean?` | Current state (`nil` = unknown lock) |
+| `SetLocked(id, locked, persist?)` | `boolean` | Lock or unlock one lock for everyone. `persist = true` also saves it to the database |
+| `LockDoor(id, persist?)` / `UnlockDoor(id, persist?)` | `boolean` | Shortcuts for `SetLocked` |
+| `SetGroupLocked(group, locked, persist?)` | `number` | Lock or unlock every lock in a group; returns how many changed |
+| `HasAccess(src, id)` | `boolean` | Would this player be allowed to use the lock (admin bypass, job, gang or key item) |
+
+| Event | Side | Description |
+|---|---|---|
+| `rsg-doorlock:server:stateChanged` (`id`, `locked`) | server (local) | Fired after any lock changes state: player, group, schedule, lockpick, export |
+
+```lua
+-- e.g. rsg-prison locks the cell block when a lockdown starts
+local id = exports['rsg-doorlock']:GetDoorIdByName('Valentine Sheriff - Cells')
+if id then exports['rsg-doorlock']:LockDoor(id) end
+exports['rsg-doorlock']:SetGroupLocked('valentine_sheriff', true, true)
+```
 
 | Event | Side | Description |
 |---|---|---|
@@ -201,6 +240,12 @@ MLO doors are not in the built-in door list, so the editor can't find them until
 ---
 
 ## Changelog
+
+### 3.4.0
+- Gang and key-item access, lock groups, opening hours, "No key" prompt, server exports, duplicate lock and editor map blips; see CHANGELOG.md
+
+### 3.3.1
+- Fixes (stuck lockpick state, callback spam), push-to-talk in the editor, small optimisations; see CHANGELOG.md
 
 ### 3.3.0
 - Lockpickable doors (rsg-lockpick) with an optional reputation region; see CHANGELOG.md

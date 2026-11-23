@@ -194,5 +194,22 @@
     "cfg_stage_1": "Unruhig",
     "cfg_stage_2": "Zittrig",
     "cfg_stage_3": "Entzug",
-    "ui_skill": "Fähigkeit %s"
+    "ui_skill": "Fähigkeit %s",
+    "ui_confirm": "Bestätigen?",
+    "cfg_sub_tobacco": "Tabak",
+    "payroll_low": "Die Lohnkasse deckt nur noch %s Schichten",
+    "raid_warning": "Das Gesetz hat einen Tipp zu deinem Betrieb bekommen. Eine Razzia kommt, bring deinen Vorrat in Sicherheit!",
+    "raid_alert_title": "Drogenlabor-Razzia",
+    "raid_alert": "Ein Drogenlabor wurde gemeldet. Stürme es beim Verarbeitungskontakt innerhalb von %s Minuten.",
+    "raid_target": "Labor stürmen",
+    "raid_none": "Aktuell gibt es kein gemeldetes Labor zum Stürmen",
+    "raid_done_officer": "Labor gestürmt: %s Einheiten vernichtet, $%s Belohnung",
+    "raid_done_owner": "Dein Labor wurde gestürmt: %s Einheiten wurden vernichtet",
+    "raid_escaped": "Das Gesetz war diesmal zu langsam, aber dein Labor wird weiter beobachtet",
+    "ui_heat": "Hitze",
+    "ui_raid_warn": "Razzia im Anmarsch",
+    "ui_potency": "Potenz",
+    "cfg_sub_opium": "Opium",
+    "cfg_skill_drugs": "Drogenhandel",
+    "cfg_skill_drugs_desc": "Betreibe Labore, verpacke Ware und bring sie unter die Leute."
 }

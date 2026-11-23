@@ -29,9 +29,9 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-core](rsg-core.md) | The core framework for RSG RedM servers: players, characters, money, jobs (with built-in multi-job), gangs, pe | 43 | 42 |
 | [rsg-crafting](rsg-crafting.md) | An XP-based crafting book for RSG-Core (RedM). Players use a crafting book item to open a NUI menu. From t | 9 | 11 |
 | [rsg-deliveries](rsg-deliveries.md) | Wagon delivery system RSG Framework | 1 | 6 |
-| [rsg-doorlock](rsg-doorlock.md) | A database-driven door lock system for RedM using the RSG Framework. Doors are created, edited and del | 0 | 8 |
-| [rsg-drugs](rsg-drugs.md) | Drug production for RSG Framework (cannabis lab: drying, processing, packing bags & bricks with hired crew) pl | 9 | 16 |
-| [rsg-economy](rsg-economy.md) | Regional treasuries, taxes, supply-and-demand prices and town projects for RSG Framework | 16 | 1 |
+| [rsg-doorlock](rsg-doorlock.md) | A database-driven door lock system for RedM using the RSG Framework. Doors are created, edited and del | 9 | 8 |
+| [rsg-drugs](rsg-drugs.md) | Drug production for RSG Framework (cannabis lab: drying, processing, packing bags & bricks with hired crew) pl | 9 | 18 |
+| [rsg-economy](rsg-economy.md) | Regional treasuries, taxes, supply-and-demand prices and town projects for RSG Framework | 20 | 1 |
 | [rsg-essentials](rsg-essentials.md) | Quality-of-life utilities and fixes for RedM using RSG Core. > A collection of small but essential feature | 0 | 9 |
 | [rsg-factory](rsg-factory.md) | Version 3.1.0 · Requires: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` · Optional: `rsg-telegram`, | 0 | 3 |
 | [rsg-farming](rsg-farming.md) | Plant, water, fertilise and harvest crops anywhere in the world, using the water buckets from rsg-wellpump. Bu | 0 | 7 |
@@ -40,15 +40,15 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-fishmonger](rsg-fishmonger.md) | A fishmonger system for RSG-Core (RedM). Players visit a fishmonger NPC in any major town to sell their  | 0 | 1 |
 | [rsg-fortuneteller](rsg-fortuneteller.md) | Fortune teller machines for RSG-Core | 0 | 0 |
 | [rsg-gangs](rsg-gangs.md) | Gang System for RSG Framework | 10 | 66 |
-| [rsg-gizmo](rsg-gizmo.md) | Standard prop placement gizmo for the RSG Framework | 6 | 1 |
+| [rsg-gizmo](rsg-gizmo.md) | Standard prop placement gizmo for the RSG Framework | 9 | 2 |
 | [rsg-goldclaim](rsg-goldclaim.md) | Version 3.2.0 · requires rsg-core, rsg-inventory, rsg-target, oxmysql · no ox_lib · developer reference in | 0 | 31 |
 | [rsg-goldpanning](rsg-goldpanning.md) | Gold panning system for RSG Framework | 0 | 5 |
 | [rsg-guarma](rsg-guarma.md) | Boat travel between Saint Denis and Guarma for the RSG Framework | 0 | 2 |
 | [rsg-herbalist](rsg-herbalist.md) | Herbalist script for RSG Framework | 0 | 15 |
 | [rsg-hotair](rsg-hotair.md) | Hireable hot air balloons for RedM servers running the RSG-Core framework. Players hire a balloon at a doc | 0 | 7 |
 | [rsg-housing](rsg-housing.md) | Monthly house rentals for the RSG Framework (RedM). Players rent a house directly at the property, pay rent ev | 24 | 13 |
-| [rsg-hud](rsg-hud.md) | Player and horse HUD for RSG-Core (RedM): health, stamina, dead eye, hunger, thirst, cleanliness, stress, temp | 19 | 13 |
-| [rsg-hunting](rsg-hunting.md) | Hunting, trapper and butcher script for RSG Framework | 5 | 1 |
+| [rsg-hud](rsg-hud.md) | Player and horse HUD for RSG-Core (RedM): health, stamina, dead eye, hunger, thirst, cleanliness, stress, temp | 19 | 16 |
+| [rsg-hunting](rsg-hunting.md) | Hunting, trapper and butcher script for RSG Framework | 6 | 2 |
 | [rsg-huntingpets](rsg-huntingpets.md) | A combined RedM / RSG-Core resource that adds hunting dogs and hunting birds to your server in one package | 0 | 16 |
 | [rsg-inventory](rsg-inventory.md) | Slot/weight inventory for the RSG Framework (rsg-core) with a hotbar, persistent stashes, ground drops, shops  | 47 | 20 |
 | [rsg-lawman](rsg-lawman.md) | Law enforcement and sheriff management system for RedM using RSG Core. > Full-featured law enforcement fra | 0 | 19 |

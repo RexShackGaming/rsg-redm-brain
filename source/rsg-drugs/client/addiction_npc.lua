@@ -190,24 +190,29 @@ exports['rsg-target']:addGlobalPed({
             return not selling and not tried[entity] and isAmbient(entity) and hasSellItem()
         end,
         onSelect = function(data)
+            if selling then return end
             local ped = data.entity
             selling = true
-            local result, hooked = RSGCore.Functions.AwaitCallback('rsg-drugs:server:sellWeedBag', 10000, netIdOf(ped))
-            -- one sale per NPC; addicts come back for more (server enforces the rebuy cooldown)
-            if result == 'done' or (result == 'sold' and not hooked) then tried[ped] = true end
-            if result == 'sold' then
-                DrugsHandover(ped)
-                soldWeedBag(ped, hooked)
-                local a = addicts[ped]
-                if a then
-                    playScenario(ped, Config.Addiction.NPC.Scenarios.weed, Config.Addiction.NPC.FeedTime)
-                    a.busyUntil = GetGameTimer() + Config.Addiction.NPC.FeedTime
+            -- pcall so an error mid-sale can never leave `selling` stuck on (the option would stay hidden forever)
+            local ok, err = pcall(function()
+                local result, hooked = RSGCore.Functions.AwaitCallback('rsg-drugs:server:sellWeedBag', 10000, netIdOf(ped))
+                -- one sale per NPC; addicts come back for more (server enforces the rebuy cooldown)
+                if result == 'done' or (result == 'sold' and not hooked) then tried[ped] = true end
+                if result == 'sold' then
+                    DrugsHandover(ped)
+                    soldWeedBag(ped, hooked)
+                    local a = addicts[ped]
+                    if a then
+                        playScenario(ped, Config.Addiction.NPC.Scenarios.weed, Config.Addiction.NPC.FeedTime)
+                        a.busyUntil = GetGameTimer() + Config.Addiction.NPC.FeedTime
+                    end
+                elseif result == 'refused' then
+                    tried[ped] = true
+                    ClearPedTasks(ped)
+                    TaskSmartFleePed(ped, PlayerPedId(), 50.0, 10000, 0, 0, 0)
                 end
-            elseif result == 'refused' then
-                tried[ped] = true
-                ClearPedTasks(ped)
-                TaskSmartFleePed(ped, PlayerPedId(), 50.0, 10000, 0, 0, 0)
-            end
+            end)
+            if not ok then print(('^1[rsg-drugs] sale error: %s^7'):format(tostring(err))) end
             sellItemAt = 0 -- re-check stock after a sale
             selling = false
         end,

@@ -68,7 +68,7 @@ local function getStrings()
         pname = locale('ui_pname'), privCreate = locale('ui_priv_create'), privUpdate = locale('ui_priv_update'),
         privDelete = locale('ui_priv_delete'), privCost = locale('ui_priv_cost', '%s'), privYours = locale('ui_priv_yours'), locked = locale('ui_locked'),
         search = locale('ui_search'), recents = locale('ui_recents'), noMatch = locale('ui_no_match'), rangeOpen = locale('ui_range_open'),
-        compact = locale('ui_compact'), volume = locale('ui_volume'), mute = locale('ui_mute'), muted = locale('ui_muted'),
+        compact = locale('ui_compact'), mute = locale('ui_mute'), muted = locale('ui_muted'),
     }
 end
 
@@ -90,9 +90,14 @@ local function openRadio(state)
     SendNUIMessage({ action = 'open', strings = getStrings(), state = state })
 end
 
+local opening = false -- a state request is in flight (stops key/command spam from asking the server again)
 local function requestOpen()
-    if uiFocus then return end
-    RSGCore.Functions.TriggerCallback('rsg-radio:server:getState', openRadio)
+    if uiFocus or opening then return end
+    opening = true
+    RSGCore.Functions.TriggerCallback('rsg-radio:server:getState', function(state)
+        opening = false
+        openRadio(state)
+    end)
 end
 
 RegisterCommand(Config.Command, requestOpen, false)
@@ -238,7 +243,7 @@ AddEventHandler('onResourceStop', function(res)
 end)
 
 ---------------------------------------------------------------------
--- Volume and mute, channel HUD, hogtied report, signal interference
+-- Mute, channel HUD, hogtied report, signal interference
 ---------------------------------------------------------------------
 local HUD = Config.Hud or {}
 local IC  = Config.Incapacitated or {}
@@ -249,7 +254,8 @@ local hudTalkers = {}  -- [serverId] = true while that member transmits
 local hudHidden  = GetResourceKvpInt('rsg-radio:hudHidden') == 1
 local battery    = nil -- 0-100 when Config.Battery.Enabled
 local signal     = 1.0 -- 1.0 clear ... 0.0 no signal (Config.Interference)
-local settings   = { vol = tonumber(Config.Volume and Config.Volume.Default) or 100, muted = false }
+local function configVolume() return math.max(0, math.min(100, tonumber(Config.Volume) or 50)) end -- Config.Volume, percent
+local muted      = false -- radio muted (saved per character)
 
 local function mySid() return GetPlayerServerId(PlayerId()) end
 
@@ -264,44 +270,41 @@ local function sendHud()
     SendNUIMessage({
         action = 'hud', show = show, freq = hudData and hudData.freq or '', unit = hudData and hudData.unit or '',
         members = members, max = HUD.MaxRows or 8, left = HUD.Left or 18, top = HUD.Top or 18,
-        battery = battery, signal = signal, muted = settings.muted, me = mySid(),
+        battery = battery, signal = signal, muted = muted, me = mySid(),
         txt = { noSignal = locale('hud_no_signal'), weakSignal = locale('hud_weak_signal') },
     })
 end
 
--- rsg-voice does the audio: our volume, mute and signal are handed over (older rsg-voice versions just ignore them)
+-- rsg-voice does the audio: Config.Volume, our mute and signal are handed over (older rsg-voice versions just ignore them)
 local function applyVoice()
     pcall(function()
-        exports['rsg-voice']:SetRadioVolume(settings.vol / 100)
-        exports['rsg-voice']:SetRadioMuted(settings.muted)
+        exports['rsg-voice']:SetRadioVolume(configVolume() / 100)
+        exports['rsg-voice']:SetRadioMuted(muted)
         exports['rsg-voice']:SetRadioSignal(signal)
     end)
 end
 
 local function loadSettings(pd)
     local rs = pd and pd.metadata and pd.metadata.radiosettings
-    local vol = type(rs) == 'table' and tonumber(rs.vol) or tonumber(Config.Volume and Config.Volume.Default) or 100
-    vol = math.max(0, math.min(100, math.floor(vol + 0.5)))
-    local muted = type(rs) == 'table' and rs.muted == true or false
-    if vol ~= settings.vol or muted ~= settings.muted then
-        settings.vol, settings.muted = vol, muted
+    local saved = type(rs) == 'table' and rs.muted == true or false
+    if saved ~= muted then
+        muted = saved
         applyVoice()
         sendHud()
     end
 end
 
--- Panel: the slider and mute button apply at once, the server only stores them (saveVolume is debounced by the NUI)
-RegisterNUICallback('setVolume', function(data, cb)
+-- Panel: the mute button applies at once, the server only stores it (saveMute is debounced by the NUI)
+RegisterNUICallback('setMute', function(data, cb)
     cb('ok')
     if type(data) ~= 'table' then return end
-    settings.vol = math.max(0, math.min(100, math.floor((tonumber(data.vol) or 100) + 0.5)))
-    settings.muted = data.muted == true
+    muted = data.muted == true
     applyVoice()
     sendHud()
 end)
-RegisterNUICallback('saveVolume', function(_, cb)
+RegisterNUICallback('saveMute', function(_, cb)
     cb('ok')
-    TriggerServerEvent('rsg-radio:server:setSettings', settings.vol, settings.muted)
+    TriggerServerEvent('rsg-radio:server:setSettings', muted)
 end)
 
 RegisterNetEvent('rsg-radio:client:hud', function(data)
@@ -344,11 +347,11 @@ if HUD.Command and HUD.Command ~= '' then
 end
 
 -- Hogtied is not stored on the server: report it so the radio can be dropped (only affects this player's own radio)
-CreateThread(function()
-    local last = false
-    while true do
-        Wait(750)
-        if IC.Hogtied then
+if IC.Hogtied then
+    CreateThread(function()
+        local last = false
+        while true do
+            Wait(750)
             local r = IsPedHogtied(PlayerPedId())
             local on = r == true or r == 1
             if on ~= last then
@@ -356,15 +359,15 @@ CreateThread(function()
                 TriggerServerEvent('rsg-radio:server:hogtied', on)
             end
         end
-    end
-end)
+    end)
+end
 
 -- Signal interference: the weakest zone the player stands in decides the signal
-CreateThread(function()
+if INT.Enabled then CreateThread(function()
     while true do
         Wait(1000)
         local q = 1.0
-        if INT.Enabled and hudData and INT.Zones then
+        if hudData and INT.Zones then
             local p = GetEntityCoords(PlayerPedId())
             for _, z in ipairs(INT.Zones) do
                 local radius = tonumber(z.radius) or 0.0
@@ -388,7 +391,7 @@ CreateThread(function()
             end
         end
     end
-end)
+end) end
 
 RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
     SetTimeout(1000, function() loadSettings(RSGCore.Functions.GetPlayerData()) end)
@@ -396,7 +399,7 @@ end)
 RegisterNetEvent('RSGCore:Player:SetPlayerData', function(pd) loadSettings(pd) end)
 RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
     hudData, hudTalkers, battery, signal = nil, {}, nil, 1.0
-    settings = { vol = tonumber(Config.Volume and Config.Volume.Default) or 100, muted = false }
+    muted = false
     applyVoice()
     sendHud()
 end)
@@ -471,22 +474,24 @@ local function showHandheld()
     if not transmitting then removeHandheld() end -- the key was released while the model loaded
 end
 
-AddEventHandler('rsg-voice:client:onRadioTalk', function(state)
-    transmitting = state == true
-    if transmitting then CreateThread(showHandheld) else removeHandheld() end
-end)
+if HH.Enabled then
+    AddEventHandler('rsg-voice:client:onRadioTalk', function(state)
+        transmitting = state == true
+        if transmitting then CreateThread(showHandheld) else removeHandheld() end
+    end)
 
--- drop it if the player stops being able to hold it (died, mounted, left the channel...)
-CreateThread(function()
-    while true do
-        if handActive then
-            if not hudData or not canShowHandheld(PlayerPedId()) then removeHandheld() end
-            Wait(500)
-        else
-            Wait(1000)
+    -- drop it if the player stops being able to hold it (died, mounted, left the channel...)
+    CreateThread(function()
+        while true do
+            if handActive then
+                if not hudData or not canShowHandheld(PlayerPedId()) then removeHandheld() end
+                Wait(500)
+            else
+                Wait(1000)
+            end
         end
-    end
-end)
+    end)
+end
 
 AddEventHandler('RSGCore:Client:OnPlayerUnload', removeHandheld)
 AddEventHandler('onResourceStop', function(res)

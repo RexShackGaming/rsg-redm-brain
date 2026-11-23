@@ -22,11 +22,16 @@ end
 
 local function numberOf(src, arg)
     local n = tonumber(arg)
-    if not n or n ~= n or n == math.huge or n == -math.huge then
+    if not n or not RSGEcon.finite(n) or math.abs(n) > RSGEcon.MaxBalance then
         reply(src, locale('cmd_invalid_amount'), 'error')
         return nil
     end
     return n
+end
+
+-- who ran the command, for the ledger
+local function who(src)
+    return src == 0 and 'console' or RSGEcon.ActorName(src)
 end
 
 local function add(name, help, params, required, cb)
@@ -45,7 +50,7 @@ add('settax', locale('cmd_settax_help'), {
     local cat = tostring(args[2] or ''):lower()
     if not region or not pct then return end
     if not Config.Tax.Categories[cat] then return reply(source, locale('cmd_unknown_category', cat), 'error') end
-    local ok, rate = RSGEcon.SetTaxRate(region, cat, pct / 100, 'admin')
+    local ok, rate = RSGEcon.SetTaxRate(region, cat, pct / 100, who(source))
     if not ok then return reply(source, locale('cmd_invalid_amount'), 'error') end
     reply(source, locale('cmd_tax_now', region, cat, ('%.1f%%'):format(rate * 100)), 'success')
 end)
@@ -56,8 +61,8 @@ add('addtreasury', locale('cmd_addtreasury_help'), {
     local region, n = regionOf(source, args[1]), numberOf(source, args[2])
     if not region or not n then return end
     local bal
-    if n >= 0 then bal = RSGEcon.DepositTreasury(region, n, 'admin', 'admin', 'admin')
-    else bal = RSGEcon.WithdrawTreasury(region, -n, 'admin', 'admin', 'admin') end
+    if n >= 0 then bal = RSGEcon.DepositTreasury(region, n, 'admin', who(source), 'admin')
+    else bal = RSGEcon.WithdrawTreasury(region, -n, 'admin', who(source), 'admin') end
     if not bal then return reply(source, locale('msg_insufficient_treasury'), 'error') end
     reply(source, locale('cmd_treasury_now', region, ('%.2f'):format(bal)), 'success')
 end)
@@ -67,7 +72,7 @@ add('settreasury', locale('cmd_settreasury_help'), {
 }, true, function(source, args)
     local region, n = regionOf(source, args[1]), numberOf(source, args[2])
     if not region or not n then return end
-    local bal = RSGEcon.SetTreasury(region, n, 'admin')
+    local bal = RSGEcon.SetTreasury(region, n, who(source))
     reply(source, locale('cmd_treasury_now', region, ('%.2f'):format(bal or 0)), 'success')
 end)
 
@@ -94,4 +99,66 @@ add('economyinfo', locale('cmd_info_help'), {
     local items = 0
     for _ in pairs(RSGEcon.Market[region] or {}) do items = items + 1 end
     reply(source, locale('cmd_info_line', region, ('%.2f'):format(RSGEcon.GetTreasury(region)), table.concat(parts, ', '), items))
+end)
+
+------------------------------------------
+-- elections and mayors
+------------------------------------------
+local ELECTION_REASONS = {
+    unknown = 'cmd_unknown_region', disabled = 'cmd_election_disabled', running = 'cmd_election_running',
+    none = 'cmd_election_none', busy = 'msg_busy', notready = 'cmd_not_ready', citizen = 'cmd_unknown_citizen',
+}
+
+local function fail(src, reason)
+    reply(src, locale(ELECTION_REASONS[reason] or 'msg_failed', ''), 'error')
+end
+
+add('startelection', locale('cmd_startelection_help'), {
+    { name = 'region', help = locale('cmd_arg_region') },
+}, true, function(source, args)
+    local region = regionOf(source, args[1])
+    if not region then return end
+    local ok, reason = RSGEcon.StartElection(region)
+    if not ok then return fail(source, reason) end
+    reply(source, locale('cmd_election_done', region), 'success')
+end)
+
+add('endelection', locale('cmd_endelection_help'), {
+    { name = 'region', help = locale('cmd_arg_region') },
+}, true, function(source, args)
+    local region = regionOf(source, args[1])
+    if not region then return end
+    local ok, reason = RSGEcon.AdvanceElection(region)
+    if not ok then return fail(source, reason) end
+    reply(source, locale('cmd_election_done', region), 'success')
+end)
+
+add('cancelelection', locale('cmd_cancelelection_help'), {
+    { name = 'region', help = locale('cmd_arg_region') },
+}, true, function(source, args)
+    local region = regionOf(source, args[1])
+    if not region then return end
+    local ok, reason = RSGEcon.CancelElection(region)
+    if not ok then return fail(source, reason) end
+    reply(source, locale('cmd_election_done', region), 'success')
+end)
+
+add('setmayor', locale('cmd_setmayor_help'), {
+    { name = 'region', help = locale('cmd_arg_region') }, { name = 'citizenid', help = locale('cmd_arg_citizenid') },
+}, true, function(source, args)
+    local region = regionOf(source, args[1])
+    if not region then return end
+    local ok, result = RSGEcon.SetMayor(region, tostring(args[2] or ''))
+    if not ok then return fail(source, result) end
+    reply(source, locale('cmd_mayor_set', result, region), 'success')
+end)
+
+add('clearmayor', locale('cmd_clearmayor_help'), {
+    { name = 'region', help = locale('cmd_arg_region') },
+}, true, function(source, args)
+    local region = regionOf(source, args[1])
+    if not region then return end
+    local ok, reason = RSGEcon.ClearMayor(region)
+    if not ok then return fail(source, reason) end
+    reply(source, locale('cmd_election_done', region), 'success')
 end)

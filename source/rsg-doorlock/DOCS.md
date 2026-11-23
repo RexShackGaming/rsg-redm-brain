@@ -1,4 +1,4 @@
-# rsg-doorlock – Docs (v3.3.0)
+# rsg-doorlock – Docs (v3.4.0)
 
 ## Contents
 1. Files
@@ -63,6 +63,9 @@
 | `Lockpick.HoldDuration` | `750` | ms the player holds the key |
 | `Lockpick.Presets` | `{ 'easy', 'medium', 'hard' }` | Difficulties offered in the editor; names must exist in rsg-lockpick's `Config.Presets` |
 | `Lockpick.Cooldown` | `5000` | ms between lockpick requests per player |
+| `Lockpick.Alert` | `nil` | lawman alert chance on a pick (0.0-1.0); `nil` = rsg-lockpick's own `Config.Alert`, `false` = never (passed as `data.alert` to `StartAttempt`) |
+| `Schedule.Enabled` / `UseGameTime` / `CheckInterval` | `true` / `true` / `20` | opening hours: on/off, in-game time from `rsg-weather:getTime()` (false = server clock), seconds between checks |
+| `EditorBlips.Enabled` / `Sprite` / `Scale` | `true` / `'blip_proc_home_locked'` / `0.6` | map blip per lock for the admin while the editor is open |
 | `Lockpick.RelockAfter` | `300` | Seconds before a picked door locks again (0 = never automatically) |
 | `Lockpick.Reputation` | `'theft'` | rsg-reputation action reported on success; must be listed in rsg-lockpick's `Config.Reputation.Actions` (`nil` = none) |
 
@@ -111,10 +114,43 @@ CREATE TABLE IF NOT EXISTS `rsg_doorlocks` (
     `locked` TINYINT(1) NOT NULL DEFAULT 1,
     `lockpick` VARCHAR(16) NULL DEFAULT NULL,
     `region` VARCHAR(32) NULL DEFAULT NULL,
+    `key_item` VARCHAR(64) NULL DEFAULT NULL,
+    `gangs` LONGTEXT NULL,
+    `group_name` VARCHAR(32) NULL DEFAULT NULL,
+    `open_from` TINYINT NULL DEFAULT NULL,
+    `open_to` TINYINT NULL DEFAULT NULL,
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
-`lockpick` is the difficulty (empty = not pickable) and `region` the rsg-reputation region. Tables from older versions get the two columns added automatically on start (never destructive). For a manual upgrade run the two `ALTER TABLE` lines at the top of `installation/rsg_doorlocks.sql`; without the columns lockpicking stays off. The table is created on start. If your database user lacks `CREATE` permission, import `installation/rsg_doorlocks.sql` manually. Lock states survive restarts.
+`lockpick` is the difficulty (empty = not pickable), `region` the rsg-reputation region, `key_item` an item name that grants access, `gangs` a JSON list of gang names, `group_name` the lock group and `open_from` / `open_to` the opening hours (game hours 0-23). Tables from older versions get the new columns added automatically on start (never destructive). For a manual upgrade run the `ALTER TABLE` lines at the top of `installation/rsg_doorlocks.sql`; without all of the columns lockpicking, key items, gangs, groups and schedules stay off. The table is created on start. If your database user lacks `CREATE` permission, import `installation/rsg_doorlocks.sql` manually. Lock states survive restarts.
+
+## 7b. Access, groups, hours and exports
+- **Access:** a player may use a lock when any of these is true: admin bypass (`Config.AdminBypass`), their job is listed (and on duty when `Config.RequireOnDuty`), their gang is listed (`PlayerData.gang`, then `rsg-society:GetPlayerGang`), or they carry the key item (`rsg-inventory:HasItem`). Everything is decided on the server; the client only asks `canUse` to show **No key**.
+- **Groups:** when a player uses a lock, every lock with the same `group_name` is set to the same new state and saved. Only the lock being used needs the player's access.
+- **Opening hours:** `open_from` / `open_to` (0-23, may wrap past midnight). The server checks every `Config.Schedule.CheckInterval` seconds and only acts when the open/closed state changes, so a manual toggle holds until the next opening or closing. Scheduled states are not saved, so a restart re-applies the schedule. Hours come from `rsg-weather:getTime()` unless `Config.Schedule.UseGameTime = false`.
+- **Exports:**
+
+| Export (server only) | Returns | Description |
+|---|---|---|
+| `GetDoors()` | `table[]` | All locks: `id, name, locked, group, jobs, gangs, keyItem, openFrom, openTo` |
+| `GetDoor(id)` | `table?` | One lock, same fields |
+| `GetDoorIdByName(name)` | `id?` | Look a lock up by its editor name (case-insensitive) |
+| `IsLocked(id)` | `boolean?` | Current state (`nil` = unknown lock) |
+| `SetLocked(id, locked, persist?)` | `boolean` | Lock or unlock one lock for everyone. `persist = true` also saves it to the database |
+| `LockDoor(id, persist?)` / `UnlockDoor(id, persist?)` | `boolean` | Shortcuts for `SetLocked` |
+| `SetGroupLocked(group, locked, persist?)` | `number` | Lock or unlock every lock in a group; returns how many changed |
+| `HasAccess(src, id)` | `boolean` | Would this player be allowed to use the lock (admin bypass, job, gang or key item) |
+
+| Event | Side | Description |
+|---|---|---|
+| `rsg-doorlock:server:stateChanged` (`id`, `locked`) | server (local) | Fired after any lock changes state: player, group, schedule, lockpick, export |
+
+```lua
+-- e.g. rsg-prison locks the cell block when a lockdown starts
+local id = exports['rsg-doorlock']:GetDoorIdByName('Valentine Sheriff - Cells')
+if id then exports['rsg-doorlock']:LockDoor(id) end
+exports['rsg-doorlock']:SetGroupLocked('valentine_sheriff', true, true)
+```
 
 ## 8. Discord webhooks
 Set URLs in `server/sv_config.lua` (`SvConfig.Webhooks`). Separate channels, or one default channel, for: door use, denied access, admin actions, security and system. Embeds include character name, citizen ID, job and grade, server ID and Discord mention. Edit logs show a before → after list. Messages are batched and Discord 429 replies are handled. Security alerts (non-admin editor requests, fake doors, using doors from far away) can ping a role.
@@ -191,6 +227,8 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.MaxDoorsPerLock` | `8` | e.g. 2 for double doors |
 | `Config.PickRange` | `2.0` | how close your aim must be to a door to select it in the editor |
 | `Config.Debug` | `false` | print MLO door lookups to the F8 console |
+| `Config.AllowPushToTalkWhileOpen` | `true` | keep push-to-talk usable while the editor has NUI focus |
+| `Config.PushToTalkControls` | `{ 0x4BC9DABB }` | controls left enabled while the editor has focus |
 | `Config.AllowCustomDoors` | `true` | allow picking MLO / custom door objects that aren't in shared/doorhashes.lua |
 | `Config.ImportConfigDoors` | `true` | On first start (empty table) the doors in server/seed_doors.lua are imported once. |
 | `Config.JailDoors` | `table` |  |
@@ -200,6 +238,7 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | Callback | Side | Arguments | File |
 |---|---|---|---|
 | `rsg-doorlock:server:getDoors` | server | `_, cb` | `server/main.lua` |
+| `rsg-doorlock:server:canUse` | server | `src, cb, doorID` | `server/main.lua` (read-only; drives the "No key" prompt, answers `nil` when asked more than 5 times a second) |
 | `rsg-doorlock:server:admin:check` | server | `src, cb` | `server/main.lua` |
 | `rsg-doorlock:server:admin:save` | server | `src, cb, data` | `server/main.lua` |
 | `rsg-doorlock:server:admin:delete` | server | `src, cb, id` | `server/main.lua` |

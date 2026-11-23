@@ -91,6 +91,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 .wood-btn:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
 .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
 #btn-delete { margin-right: auto; }
+.access-hint { display: block; margin: -6px 0 14px; font-style: italic; }
 
 .modal-wrap { position: fixed; inset: 0; display: grid; place-items: center; }
 .modal { width: 380px; padding: 22px; text-align: center; border-radius: 3px; border: 1px solid var(--rdr-gold-dim);

@@ -3,6 +3,17 @@ local stockFile = 'vendor_stock.json'
 local stockData = {}
 -- stockData[vendorIndex as string][itemName] = amount (each trapper has its own stock)
 local function LoadStock()
+
+-- trophies (Config.Trophies) are bought by every trapper at a flat price
+if Config.Trophies and Config.Trophies.Enabled then
+    for _, vendor in ipairs(Config.Vendors) do
+        local has = false
+        for _, it in ipairs(vendor.items) do if it.name == Config.Trophies.Item then has = true break end end
+        if not has then
+            vendor.items[#vendor.items + 1] = { name = Config.Trophies.Item, label = 'Trophy', sellPrice = Config.Trophies.SellPrice or 10.0, maxStock = 50, canSell = true, stockBasedPrice = false }
+        end
+    end
+end
     local file = LoadResourceFile(GetCurrentResourceName(), stockFile)
     stockData = file and json.decode(file) or {}
     -- migrate the old shared format { item = amount } to per trapper
@@ -33,9 +44,24 @@ local function vendorStock(vendorIndex)
     return stockData[key]
 end
 
-local function SaveStock()
+local function WriteStock()
     SaveResourceFile(GetCurrentResourceName(), stockFile, json.encode(stockData), -1)
 end
+
+-- sales only mark the stock dirty; the file is written at most every 5 seconds and on resource stop
+local saveQueued = false
+local function SaveStock()
+    if saveQueued then return end
+    saveQueued = true
+    SetTimeout(5000, function()
+        saveQueued = false
+        WriteStock()
+    end)
+end
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName == GetCurrentResourceName() and saveQueued then WriteStock() end
+end)
 
 LoadStock()
 
@@ -87,6 +113,7 @@ end
 -- trapper sell UI: data + basket checkout
 --------------------------------------
 local SELL_DISTANCE = 6.0
+local demandShown = {} -- [src] = GetGameTimer() of the last demand notification
 
 -- vendor pays more for items it's short on (same rules as single sells)
 local function getSellUnitPrice(itemConfig, src, vendorIndex)
@@ -94,6 +121,7 @@ local function getSellUnitPrice(itemConfig, src, vendorIndex)
     if src then
         price = price * (1 + (HuntingXP.GetPerks(src).trapperBonus or 0) / 100)
     end
+    price = price * HuntingDemand.Multiplier(itemConfig.name)
     if itemConfig.stockBasedPrice then
         local stockRatio = (vendorStock(vendorIndex)[itemConfig.name] or 0) / (itemConfig.maxStock or 50)
         if stockRatio < 0.25 then
@@ -112,19 +140,68 @@ local function isNearVendor(src, vendor)
     return #(GetEntityCoords(ped) - vector3(c.x, c.y, c.z)) <= SELL_DISTANCE
 end
 
+-- pelt quality of an inventory stack: 0 plain, 1 good, 2 perfect (set when the item was skinned)
+local PELT_RANK = { good = 1, perfect = 2 }
+
+local function peltMultiplier(rank)
+    local cfg = Config.PeltQuality
+    if not cfg or not cfg.Enabled then return 1.0 end
+    if rank == 2 then return cfg.perfect or 1.0 end
+    if rank == 1 then return cfg.good or 1.0 end
+    return 1.0
+end
+
+-- the player's stacks of an item, best quality first
+local function stacksOf(src, name)
+    local inv = exports['rsg-inventory']:GetInventory(src) or {}
+    local out = {}
+    for slot, it in pairs(inv) do
+        if it.name == name then
+            out[#out + 1] = { slot = slot, amount = it.amount, rank = PELT_RANK[it.info and it.info.pelt] or 0, info = it.info }
+        end
+    end
+    table.sort(out, function(a, b)
+        if a.rank ~= b.rank then return a.rank > b.rank end
+        return a.slot < b.slot
+    end)
+    return out
+end
+
+local function copyInfo(info)
+    local out = {}
+    for k, v in pairs(info or {}) do out[k] = v end
+    return out
+end
+
+-- one pass over the inventory: [item] = { owned, good, perfect }
+local function tallyInventory(src)
+    local tally = {}
+    for _, it in pairs(exports['rsg-inventory']:GetInventory(src) or {}) do
+        local t = tally[it.name]
+        if not t then t = { owned = 0, good = 0, perfect = 0 }; tally[it.name] = t end
+        t.owned = t.owned + it.amount
+        local rank = PELT_RANK[it.info and it.info.pelt]
+        if rank == 2 then t.perfect = t.perfect + it.amount elseif rank == 1 then t.good = t.good + it.amount end
+    end
+    return tally
+end
+
 local function buildSellData(Player, vendorIndex)
     local vendor = Config.Vendors[vendorIndex]
+    local src = Player.PlayerData.source
+    local tally = tallyInventory(src)
     local items = {}
     for _, item in ipairs(vendor.items) do
         if item.canSell then
             local shared = RSGCore.Shared.Items[item.name]
-            local owned = Player.Functions.GetItemByName(item.name)
+            local t = tally[item.name] or { owned = 0, good = 0, perfect = 0 }
+            local owned, good, perfect = t.owned, t.good, t.perfect
             items[#items + 1] = {
                 name  = item.name,
                 label = item.label or (shared and shared.label) or item.name,
                 image = (shared and shared.image) or (item.name .. '.png'),
-                price = getSellUnitPrice(item, Player.PlayerData.source, vendorIndex),
-                owned = owned and owned.amount or 0,
+                price = getSellUnitPrice(item, src, vendorIndex),
+                owned = owned, good = good, perfect = perfect,
             }
         end
     end
@@ -139,7 +216,19 @@ local function handler_getSellData(src, vendorIndex)
         TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('vendor'), description = locale('too_far'), type = 'error' })
         return nil
     end
-    return { title = vendor.blipname or locale('vendor'), items = buildSellData(Player, vendorIndex) }
+    -- name the active demand rules, at most once every 5 minutes per player
+    local notes = {}
+    for _, d in ipairs(HuntingDemand.Active()) do notes[#notes + 1] = ('%s +%s%%'):format(d.label, d.pct) end
+    local now = GetGameTimer()
+    if #notes > 0 and (not demandShown[src] or now - demandShown[src] > 300000) then
+        demandShown[src] = now
+        TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('vendor'), description = locale('demand_note', table.concat(notes, ', ')), type = 'inform', duration = 8000 })
+    end
+    return {
+        title = vendor.blipname or locale('vendor'),
+        items = buildSellData(Player, vendorIndex),
+        qualityMult = { good = peltMultiplier(1), perfect = peltMultiplier(2) },
+    }
 end
 RSGCore.Functions.CreateCallback('rsg-hunting:server:getSellData', function(src, cb, vendorIndex) cb(handler_getSellData(src, vendorIndex)) end)
 
@@ -172,28 +261,36 @@ local function handler_sellBasket(src, vendorIndex, basket)
     end
     if #order == 0 then return { ok = false, message = locale('basket_empty') } end
 
+    -- plan the sale stack by stack, best quality first, and price it with the stock level as it was before this sale
+    local plans, rawTotal, totalItems = {}, 0, 0
     for _, name in ipairs(order) do
-        local owned = Player.Functions.GetItemByName(name)
-        if not owned or owned.amount < lines[name] then
+        local unit = getSellUnitPrice(accepted[name], src, vendorIndex)
+        local left = lines[name]
+        local plan = {}
+        for _, st in ipairs(stacksOf(src, name)) do
+            if left <= 0 then break end
+            local take = math.min(st.amount, left)
+            plan[#plan + 1] = { slot = st.slot, n = take, info = st.info }
+            rawTotal = rawTotal + unit * take * peltMultiplier(st.rank)
+            left = left - take
+        end
+        if left > 0 then
             return { ok = false, message = locale('not_enough_items'), items = buildSellData(Player, vendorIndex) }
         end
-    end
-
-    -- price with the stock level as it was before this sale
-    local rawTotal, totalItems = 0, 0
-    for _, name in ipairs(order) do
-        rawTotal = rawTotal + getSellUnitPrice(accepted[name], src, vendorIndex) * lines[name]
+        plans[name] = plan
         totalItems = totalItems + lines[name]
     end
 
     -- remove everything; roll back if any removal fails
     local removed = {}
     for _, name in ipairs(order) do
-        if exports['rsg-inventory']:RemoveItem(src, name, lines[name], nil, 'rsg-hunting-trapper-sale') then
-            removed[#removed + 1] = name
-        else
-            for _, r in ipairs(removed) do exports['rsg-inventory']:AddItem(src, r, lines[r], nil, nil, 'rsg-hunting-sale-rollback') end
-            return { ok = false, message = locale('not_enough_items'), items = buildSellData(Player, vendorIndex) }
+        for _, step in ipairs(plans[name]) do
+            if exports['rsg-inventory']:RemoveItem(src, name, step.n, step.slot, 'rsg-hunting-trapper-sale') then
+                removed[#removed + 1] = { name = name, n = step.n, info = step.info }
+            else
+                for _, r in ipairs(removed) do exports['rsg-inventory']:AddItem(src, r.name, r.n, copyInfo(r.info), nil, 'rsg-hunting-sale-rollback') end
+                return { ok = false, message = locale('not_enough_items'), items = buildSellData(Player, vendorIndex) }
+            end
         end
     end
 
@@ -224,6 +321,15 @@ local function handler_sellBasket(src, vendorIndex, basket)
 end
 RSGCore.Functions.CreateCallback('rsg-hunting:server:sellBasket', function(src, cb, vendorIndex, basket) cb(handler_sellBasket(src, vendorIndex, basket)) end)
 
+-- hunting contract: talk to the trapper (pay a finished one, show progress or get a new one)
+RegisterNetEvent('rsg-hunting:server:contract', function(vendorIndex)
+    local src = source
+    local vendor = type(vendorIndex) == 'number' and Config.Vendors[vendorIndex]
+    if not vendor or not isNearVendor(src, vendor) then return end
+    if isOnCooldown(src) then return end
+    HuntingContracts.Interact(src)
+end)
+
 RegisterCommand('resetvendorstock', function(src)
     if src ~= 0 then return end
 
@@ -238,4 +344,5 @@ end, false)
 --------------------------------------
 AddEventHandler('playerDropped', function()
     PlayerCooldowns[source] = nil
+    demandShown[source] = nil
 end)

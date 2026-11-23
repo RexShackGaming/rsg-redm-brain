@@ -11,11 +11,10 @@ local function clamp(v, lo, hi)
     return v
 end
 
-local function finite(v)
-    return type(v) == 'number' and v == v and v > -math.huge and v < math.huge
-end
+local finite, round2 = RSGEcon.finite, RSGEcon.round2
 
-local function round2(v) return math.floor(v * 100 + 0.5) / 100 end
+-- the saved data is loaded a moment after start; wait for it so early calls are not overwritten by the load
+local function ready() return RSGEcon.Ready or RSGEcon.WaitReady() end
 
 local function validRegion(r) return type(r) == 'string' and Config.Regions[r] ~= nil end
 local function validItem(i) return type(i) == 'string' and #i > 0 and #i <= 50 end
@@ -53,6 +52,7 @@ function RSGEcon.SetTaxRate(region, category, rate, actor)
     local cat = Config.Tax.Categories[category]
     if not cat then return false, 'unknown' end
     if not finite(rate) then return false, 'invalid' end
+    if not ready() then return false, 'unknown' end
     local step = tonumber(Config.Tax.Step) or 0.005
     if step > 0 then rate = math.floor(rate / step + 0.5) * step end
     rate = clamp(math.floor(rate * 10000 + 0.5) / 10000, cat.min, cat.max)
@@ -81,8 +81,9 @@ end
 function RSGEcon.DepositTreasury(region, amount, reason, actor, kind, awaitLedger)
     if not validRegion(region) or not finite(amount) then return nil end
     amount = round2(amount)
-    if amount <= 0 then return nil end
+    if amount <= 0 or not ready() then return nil end
     local bal = round2((RSGEcon.Treasury[region] or 0) + amount)
+    if bal > RSGEcon.MaxBalance then return nil end
     RSGEcon.Treasury[region] = bal
     RSGEcon.MarkTreasury(region)
     if kind ~= 'tax' or Config.Treasury.Ledger.LogTax then
@@ -96,7 +97,7 @@ end
 function RSGEcon.WithdrawTreasury(region, amount, reason, actor, kind, awaitLedger)
     if not validRegion(region) or not finite(amount) then return nil end
     amount = round2(amount)
-    if amount <= 0 then return nil end
+    if amount <= 0 or not ready() then return nil end
     local cur = RSGEcon.Treasury[region] or 0
     if cur + 0.0001 < amount then return nil end
     local bal = math.max(0, round2(cur - amount))
@@ -108,8 +109,8 @@ function RSGEcon.WithdrawTreasury(region, amount, reason, actor, kind, awaitLedg
 end
 
 function RSGEcon.SetTreasury(region, value, actor)
-    if not validRegion(region) or not finite(value) then return nil end
-    local bal = math.max(0, round2(value))
+    if not validRegion(region) or not finite(value) or not ready() then return nil end
+    local bal = clamp(round2(value), 0, RSGEcon.MaxBalance)
     local old = RSGEcon.Treasury[region] or 0
     RSGEcon.Treasury[region] = bal
     RSGEcon.MarkTreasury(region)
@@ -156,7 +157,7 @@ end
 function RSGEcon.RecordTrade(item, region, qty, mode)
     if not Config.Market.Enabled or not validItem(item) or not validRegion(region) then return false end
     qty = tonumber(qty) or 1
-    if not finite(qty) or qty < 1 then return false end
+    if not finite(qty) or qty < 1 or not ready() then return false end
     qty = math.min(math.floor(qty), 10000)
     local c = marketCfg(item)
     local delta = qty * c.perUnit * (mode == 'sell' and 1 or -1)
@@ -209,14 +210,18 @@ local function repModifier(src, region)
     if not src or not Config.UseReputation then return 0.0 end
     if GetResourceState('rsg-reputation') ~= 'started' then return 0.0 end
     local ok, mod = pcall(function() return exports['rsg-reputation']:GetPriceModifier(src, region) end)
-    if ok and finite(mod) then return mod end
+    if ok and finite(mod) then
+        local limit = tonumber(Config.ReputationLimit) or 0.5
+        return clamp(mod, -limit, limit)
+    end
     return 0.0
 end
 
---[[ opts: { region, mode = 'buy'|'sell', base = unit price, qty = 1, item = 'name'?, category = 'sales'|'trade'|..., market = false?, reputation = false? }
+--[[ opts: { region, mode = 'buy'|'sell', base = unit price, qty = 1, item = 'name'?, origin = 'region id'?, category = 'sales'|'trade'|..., market = false?, reputation = false? }
      returns nil for bad input, otherwise
-     { region, mode, category, item, qty, base, marketMultiplier, repModifier, unitPrice, subtotal, taxRate, tax, total }
-     buy:  total = subtotal + tax (what the player pays). sell: total = subtotal - tax (what the player receives). ]]
+     { region, mode, category, item, qty, base, marketMultiplier, repModifier, unitPrice, subtotal, taxRate, tax, origin, dutyRate, duty, total }
+     buy:  total = subtotal + tax + duty (what the player pays). sell: total = subtotal - tax - duty (what the player receives).
+     duty is only charged when the goods' origin town (o.origin, or Config.Duties.Origins[item]) differs from the region. ]]
 function RSGEcon.Quote(src, o)
     if type(o) ~= 'table' or not validRegion(o.region) then return nil end
     local mode = o.mode == 'sell' and 'sell' or 'buy'
@@ -238,15 +243,38 @@ function RSGEcon.Quote(src, o)
     local factor = mode == 'buy' and (1 + rep) or (1 - rep)
     if factor < 0.1 then factor = 0.1 end
 
+    -- road repairs and similar: goods sold to shops pay more while the project is active
+    if mode == 'sell' then
+        for _, e in ipairs(RSGEcon.ActiveEffects(o.region, 'tradeBonus')) do
+            factor = factor * (1 + (tonumber(e.percent) or 0))
+        end
+    end
+
     local unit = round2(base * mult * factor)
     local subtotal = round2(unit * qty)
     local rate = RSGEcon.GetTaxRate(o.region, category)
+    -- town festival and similar: no tax in this category while the project is active
+    for _, e in ipairs(RSGEcon.ActiveEffects(o.region, 'taxHoliday')) do
+        for _, c in ipairs(e.categories or {}) do
+            if c == category then rate = 0 end
+        end
+    end
     local tax = round2(subtotal * rate)
-    local total = mode == 'buy' and round2(subtotal + tax) or round2(math.max(0, subtotal - tax))
+
+    -- import duty: goods made in another town pay this town's duty rate
+    local origin = o.origin or (o.item and Config.Duties and Config.Duties.Origins and Config.Duties.Origins[o.item])
+    local duty, dutyRate = 0, 0
+    if Config.Duties and Config.Duties.Enabled and validRegion(origin) and origin ~= o.region and Config.Tax.Categories.duty then
+        dutyRate = RSGEcon.GetTaxRate(o.region, 'duty') or 0
+        duty = round2(subtotal * dutyRate)
+    end
+
+    local charges = tax + duty
+    local total = mode == 'buy' and round2(subtotal + charges) or round2(math.max(0, subtotal - charges))
     return {
         region = o.region, mode = mode, category = category, item = o.item, qty = qty, base = base,
         marketMultiplier = mult, repModifier = rep, unitPrice = unit, subtotal = subtotal,
-        taxRate = rate, tax = tax, total = total,
+        taxRate = rate, tax = tax, origin = origin, dutyRate = dutyRate, duty = duty, total = total,
     }
 end
 
@@ -256,6 +284,10 @@ function RSGEcon.Record(src, q)
     local ok = false
     if finite(q.tax) and q.tax > 0 then
         ok = RSGEcon.DepositTreasury(q.region, q.tax, ('%s tax%s'):format(tostring(q.category), q.item and (': ' .. tostring(q.item)) or ''), actorName(src), 'tax') ~= nil
+    end
+    if finite(q.duty) and q.duty > 0 then
+        local paid = RSGEcon.DepositTreasury(q.region, q.duty, ('duty%s'):format(q.item and (': ' .. tostring(q.item)) or ''), actorName(src), 'tax') ~= nil
+        ok = ok or paid
     end
     if q.item ~= nil and validItem(q.item) then
         RSGEcon.RecordTrade(q.item, q.region, q.qty, q.mode)
@@ -274,6 +306,17 @@ function RSGEcon.HasProject(region, id)
     return e == 0 or e > os.time()
 end
 
+-- effects of the projects active in a region, optionally only one type
+function RSGEcon.ActiveEffects(region, etype)
+    local out = {}
+    for _, p in ipairs(Config.Projects) do
+        if p.effect and (not etype or p.effect.type == etype) and RSGEcon.HasProject(region, p.id) then
+            out[#out + 1] = p.effect
+        end
+    end
+    return out
+end
+
 function RSGEcon.GetProjectDef(id)
     for _, p in ipairs(Config.Projects) do
         if p.id == id then return p end
@@ -283,23 +326,31 @@ end
 ------------------------------------------
 -- officials
 ------------------------------------------
+-- the sitting mayor of a town (nil when there is none or the term has ended)
+function RSGEcon.GetMayor(region)
+    local m = RSGEcon.Mayors[region]
+    if m and m.term_end > os.time() then return m end
+end
+
 function RSGEcon.IsOfficial(src, region)
     if not validRegion(region) then return false end
     local P = RSGCore.Functions.GetPlayer(src)
     if not P then return false end
+    local mayor = RSGEcon.GetMayor(region)
+    if mayor and mayor.citizenid == P.PlayerData.citizenid then return true end
+    local job = P.PlayerData.job
     for _, o in ipairs(Config.Regions[region].officials or {}) do
         local minGrade = tonumber(o.minGrade) or 0
-        local held, grade = false, nil
-        local ok, h, g = pcall(function() return exports['rsg-core']:HasPlayerJob(src, o.job) end)
-        if ok then held, grade = h, g end
-        if held and (tonumber(grade) or 0) >= minGrade then
-            -- on-duty only matters for the active job
-            if not Config.RequireOnDuty or (P.PlayerData.job and P.PlayerData.job.name == o.job and P.PlayerData.job.onduty) then return true end
-        end
-        local job = P.PlayerData.job
-        if job and job.name == o.job then
-            local level = job.grade and tonumber(job.grade.level) or 0
-            if (job.isboss or level >= minGrade) and (not Config.RequireOnDuty or job.onduty) then return true end
+        local active = job and job.name == o.job
+        -- on-duty only matters for the active job
+        if not Config.RequireOnDuty or (active and job.onduty) then
+            if active then
+                local level = job.grade and tonumber(job.grade.level) or 0
+                if job.isboss or level >= minGrade then return true end
+            end
+            -- multi-job: a job held but not active also counts
+            local ok, held, grade = pcall(function() return exports['rsg-core']:HasPlayerJob(src, o.job) end)
+            if ok and held and (tonumber(grade) or 0) >= minGrade then return true end
         end
     end
     return false
@@ -321,23 +372,29 @@ exports('RecordTrade', RSGEcon.RecordTrade)
 exports('ResetMarket', RSGEcon.ResetMarket)
 exports('IsOfficial', RSGEcon.IsOfficial)
 exports('HasProject', RSGEcon.HasProject)
+exports('GetMayor', function(region)
+    local m = validRegion(region) and RSGEcon.GetMayor(region)
+    return m and { citizenid = m.citizenid, name = m.name, since = m.since, termEnd = m.term_end } or nil
+end)
 exports('GetRegions', function() return Config.Regions end)
 
 -- nearest region (with `coords`) to a position, within maxDistance (default Config.RegionRadius); nil when none is close enough.
 -- coords may be a vector3/vector4 or a table with x, y, z. Returns regionId, distance.
-exports('GetRegionAt', function(coords, maxDistance)
+function RSGEcon.GetRegionAt(coords, maxDistance)
     if type(coords) ~= 'vector3' and type(coords) ~= 'vector4' and type(coords) ~= 'table' then return nil end
     local x, y, z = tonumber(coords.x), tonumber(coords.y), tonumber(coords.z) or 0.0
     if not x or not y then return nil end
     local limit = tonumber(maxDistance) or Config.RegionRadius or 800.0
+    local here = vector3(x, y, z)
     local best, bestDist
     for id, r in pairs(Config.Regions) do
         local c = r.coords
         if c then
-            local d = #(vector3(x, y, z) - vector3(c.x, c.y, c.z))
+            local d = #(here - vector3(c.x, c.y, c.z))
             if d <= limit and (not bestDist or d < bestDist) then best, bestDist = id, d end
         end
     end
     return best, bestDist
-end)
+end
+exports('GetRegionAt', RSGEcon.GetRegionAt)
 exports('GetCategories', function() return Config.Tax.Categories end)

@@ -147,8 +147,9 @@ Config.Interference = {
     },
 }
 
--- Radio volume and mute are set by each player in the panel (stored per character). Default volume in percent.
-Config.Volume = { Default = 100, Step = 5 }
+-- How loud incoming radio transmissions are for every player, in percent (0-100). Lower it if the radio is too loud.
+-- Players can still mute the radio from the panel (saved per character), but there is no volume slider.
+Config.Volume = 50
 
 -- Handheld radio: while the player transmits they hold a prop and play an animation, which nearby players can see.
 -- RDR2 has no radio model or radio animation. Set `Model` to a prop to hold one (megaphone p_cs_megaphone01x is the closest);

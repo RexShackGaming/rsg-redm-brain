@@ -84,6 +84,9 @@ end)
 AddEventHandler('onResourceStop', function(resourceName)
     if resourceName ~= GetCurrentResourceName() then return end
     for _, ped in pairs(spawnedPeds) do
-        if type(ped) == 'number' and DoesEntityExist(ped) then DeletePed(ped) end
+        if type(ped) == 'number' and DoesEntityExist(ped) then
+            if Config.EnableTarget then exports['rsg-target']:removeLocalEntity(ped, 'npc_butcher') end
+            DeletePed(ped)
+        end
     end
 end)

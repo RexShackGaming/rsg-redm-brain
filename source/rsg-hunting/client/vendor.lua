@@ -1,72 +1,104 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-local vendorPeds = {}
+--------------------------------------
+-- trapper npcs: spawn when close, despawn when far
+--------------------------------------
+local vendorPeds = {} -- [index] = ped | true while spawning
+
+local function spawnVendor(vendorIndex, vendor)
+    local model = joaat(vendor.pedModel)
+    RequestModel(model)
+    local timeout = GetGameTimer() + 5000
+    while not HasModelLoaded(model) and GetGameTimer() < timeout do Wait(50) end
+    if not HasModelLoaded(model) then
+        print(('[rsg-hunting] vendor: failed to load ped model "%s", skipping vendor "%s"'):format(tostring(vendor.pedModel), tostring(vendor.blipname or vendor.pedModel)))
+        return nil
+    end
+
+    local c = vendor.coords
+    local ped = CreatePed(model, c.x, c.y, c.z - 1.0, c.w, false, false)
+    SetModelAsNoLongerNeeded(model)
+    if not DoesEntityExist(ped) then return nil end
+
+    SetEntityInvincible(ped, true)
+    SetRandomOutfitVariation(ped, true)
+    SetEntityAsMissionEntity(ped, true, true)
+    SetBlockingOfNonTemporaryEvents(ped, true)
+    FreezeEntityPosition(ped, true)
+    TaskStandStill(ped, -1)
+
+    exports['rsg-target']:addLocalEntity(ped, {
+        {
+            name = 'vendor_sell',
+            label = locale('sell_items'),
+            icon = 'fa-solid fa-hand-holding-dollar',
+            distance = 2.0,
+            onSelect = function()
+                OpenSellMenu(vendorIndex)
+            end
+        },
+        {
+            name = 'vendor_contract',
+            label = locale('contract_option'),
+            icon = 'fa-solid fa-file-signature',
+            distance = 2.0,
+            canInteract = function() return Config.Contracts and Config.Contracts.Enabled end,
+            onSelect = function() TriggerServerEvent('rsg-hunting:server:contract', vendorIndex) end
+        },
+        {
+            name = 'vendor_bounties',
+            label = locale('bounty_option'),
+            icon = 'fa-solid fa-scroll',
+            distance = 2.0,
+            canInteract = function() return Config.Bounty and Config.Bounty.Enabled end,
+            onSelect = function() ShowDailyBounties(vendorIndex) end
+        },
+        {
+            name = 'vendor_weekly_claim',
+            label = locale('weekly_claim_option'),
+            icon = 'fa-solid fa-sack-dollar',
+            distance = 2.0,
+            canInteract = function() return Config.HuntingXP.Enabled and Config.HuntingXP.Weekly and Config.HuntingXP.Weekly.Enabled end,
+            onSelect = function() ClaimWeeklyReward() end
+        },
+        {
+            name = 'vendor_hunting_board',
+            label = locale('hunting_board_option'),
+            icon = 'fa-solid fa-trophy',
+            distance = 2.0,
+            canInteract = function()
+                return Config.HuntingXP and Config.HuntingXP.Enabled and Config.HuntingXP.Leaderboard.AtTrapper
+            end,
+            onSelect = function()
+                OpenHuntingLeaderboard()
+            end
+        }
+    })
+    return ped
+end
+
+local function despawnVendor(ped)
+    if not DoesEntityExist(ped) then return end
+    exports['rsg-target']:removeLocalEntity(ped)
+    DeleteEntity(ped)
+end
+
 CreateThread(function()
-    for vendorIndex, vendor in ipairs(Config.Vendors) do
-        local model = GetHashKey(vendor.pedModel)
-        RequestModel(model)
-        local timeout = 0
-        while not HasModelLoaded(model) and timeout < 100 do
-            Wait(10)
-            timeout = timeout + 1
+    local range = Config.DistanceSpawn or 20.0
+    while true do
+        local coords = GetEntityCoords(PlayerPedId())
+        for k, vendor in ipairs(Config.Vendors) do
+            local near = #(coords - vector3(vendor.coords.x, vendor.coords.y, vendor.coords.z)) < range
+            local current = vendorPeds[k]
+
+            if near and not current then
+                vendorPeds[k] = true
+                CreateThread(function() vendorPeds[k] = spawnVendor(k, vendor) end)
+            elseif not near and type(current) == 'number' then
+                vendorPeds[k] = nil
+                despawnVendor(current)
+            end
         end
-
-        if not HasModelLoaded(model) then
-            print(('[rsg-hunting] vendor: failed to load ped model "%s", skipping vendor "%s"'):format(tostring(vendor.pedModel), tostring(vendor.blipname or vendor.pedModel)))
-            goto continue
-        end
-
-        local ped = CreatePed(model, vendor.coords.x, vendor.coords.y, vendor.coords.z - 1.0, vendor.coords.w, false, false)
-        SetModelAsNoLongerNeeded(model)
-        SetEntityInvincible(ped, true)
-        SetRandomOutfitVariation(ped, true)
-        SetEntityAsMissionEntity(ped, true, true)
-        SetBlockingOfNonTemporaryEvents(ped, true)
-        FreezeEntityPosition(ped, true)
-        TaskStandStill(ped, -1)
-
-        vendorPeds[#vendorPeds + 1] = ped
-
-        exports['rsg-target']:addLocalEntity(ped, {
-            {
-                name = 'vendor_sell',
-                label = locale('sell_items'),
-                icon = 'fa-solid fa-hand-holding-dollar',
-                distance = 2.0,
-                onSelect = function()
-                    OpenSellMenu(vendorIndex)
-                end
-            },
-            {
-                name = 'vendor_bounties',
-                label = locale('bounty_option'),
-                icon = 'fa-solid fa-scroll',
-                distance = 2.0,
-                canInteract = function() return Config.Bounty and Config.Bounty.Enabled end,
-                onSelect = function() ShowDailyBounties() end
-            },
-            {
-                name = 'vendor_weekly_claim',
-                label = locale('weekly_claim_option'),
-                icon = 'fa-solid fa-sack-dollar',
-                distance = 2.0,
-                canInteract = function() return Config.HuntingXP.Enabled and Config.HuntingXP.Weekly and Config.HuntingXP.Weekly.Enabled end,
-                onSelect = function() ClaimWeeklyReward() end
-            },
-            {
-                name = 'vendor_hunting_board',
-                label = locale('hunting_board_option'),
-                icon = 'fa-solid fa-trophy',
-                distance = 2.0,
-                canInteract = function()
-                    return Config.HuntingXP and Config.HuntingXP.Enabled and Config.HuntingXP.Leaderboard.AtTrapper
-                end,
-                onSelect = function()
-                    OpenHuntingLeaderboard()
-                end
-            }
-        })
-
-        ::continue::
+        Wait(1500)
     end
 end)
 
@@ -76,39 +108,11 @@ end)
 local sellUiOpen = false
 local currentVendor = nil
 
-local function applyNuiFocus(enable)
-    if enable then
-        SetNuiFocus(true, true)
-        if Config.AllowPushToTalkWhileOpen then
-            SetNuiFocusKeepInput(true)
-        end
-    else
-        SetNuiFocusKeepInput(false)
-        SetNuiFocus(false, false)
-    end
-end
-
-local function runPttWhitelist()
-    if not Config.AllowPushToTalkWhileOpen then return end
-    DisableAllControlActions(0)
-    DisableAllControlActions(1)
-    DisableAllControlActions(2)
-    local list = Config.PushToTalkControls
-    if list then
-        for i = 1, #list do
-            local c = list[i]
-            EnableControlAction(0, c, true)
-            EnableControlAction(1, c, true)
-            EnableControlAction(2, c, true)
-        end
-    end
-end
-
 local function closeSellUi()
     if not sellUiOpen then return end
     sellUiOpen = false
     currentVendor = nil
-    applyNuiFocus(false)
+    HuntingNui.Focus('sell', false)
     SendNUIMessage({ action = 'close' })
 end
 
@@ -119,12 +123,13 @@ function OpenSellMenu(vendorIndex)
 
     sellUiOpen = true
     currentVendor = vendorIndex
-    applyNuiFocus(true)
+    HuntingNui.Focus('sell', true)
     SendNUIMessage({
         action = 'open',
         title = data.title,
         imagePath = 'nui://' .. Config.Image,
         items = data.items,
+        qualityMult = data.qualityMult,
         labels = {
             subtitle = locale('ui_goods_wanted'), search = locale('ui_search'), ownedOnly = locale('ui_owned_only'),
             addAll = locale('ui_add_all'), basket = locale('ui_basket'), total = locale('ui_total'),
@@ -138,8 +143,8 @@ function OpenSellMenu(vendorIndex)
     })
 end
 
-function ShowDailyBounties()
-    local list = RSGCore.Functions.AwaitCallback('rsg-hunting:server:getBounties', nil) or {}
+function ShowDailyBounties(vendorIndex)
+    local list = RSGCore.Functions.AwaitCallback('rsg-hunting:server:getBounties', nil, vendorIndex) or {}
     RSGCore.Functions.Notify({
         title = locale('bounty_title'),
         description = #list > 0 and locale('bounty_desc', table.concat(list, ', '), Config.Bounty.ButcherBonus or 0, Config.Bounty.XPMultiplier or 1) or locale('bounty_none'),
@@ -187,23 +192,10 @@ CreateThread(function()
     end
 end)
 
-CreateThread(function()
-    while true do
-        if sellUiOpen and Config.AllowPushToTalkWhileOpen then
-            Wait(0)
-            runPttWhitelist()
-        else
-            Wait(250)
-        end
-    end
-end)
-
 AddEventHandler('onResourceStop', function(resourceName)
-    if GetCurrentResourceName() == resourceName then
-        for _, ped in ipairs(vendorPeds) do
-            exports['rsg-target']:removeLocalEntity(ped)
-            DeleteEntity(ped)
-        end
-        if sellUiOpen then applyNuiFocus(false) end
+    if GetCurrentResourceName() ~= resourceName then return end
+    for _, ped in pairs(vendorPeds) do
+        if type(ped) == 'number' then despawnVendor(ped) end
     end
+    if sellUiOpen then HuntingNui.Focus('sell', false) end
 end)

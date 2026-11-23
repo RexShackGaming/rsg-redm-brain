@@ -1,6 +1,63 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 -- Shared client helpers: handover animation (NPC bag sales + brick export) and the proximity NPC spawner.
 -- Anim settings: Config.Addiction.Selling.Anim
+-- NUI focus helper used by every panel in this resource (lab, export, addiction).
+-- With keep-input on, all keys also reach the game, so a per-frame whitelist blocks every control except
+-- push-to-talk. A counter lets two panels overlap without one closing the other's focus.
+local focusCount = 0
+local function applyFocus(enable)
+    if enable then
+        SetNuiFocus(true, true)
+        if Config.AllowPushToTalkWhileOpen then SetNuiFocusKeepInput(true) end
+    else
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
+end
+
+function DrugsNuiFocus(enable)
+    if enable then
+        focusCount = focusCount + 1
+        if focusCount == 1 then applyFocus(true) end
+    elseif focusCount > 0 then
+        focusCount = focusCount - 1
+        if focusCount == 0 then applyFocus(false) end
+    end
+end
+
+CreateThread(function()
+    while true do
+        if focusCount > 0 and Config.AllowPushToTalkWhileOpen then
+            Wait(0)
+            DisableAllControlActions(0)
+            DisableAllControlActions(1)
+            DisableAllControlActions(2)
+            local list = Config.PushToTalkControls or {}
+            for i = 1, #list do
+                EnableControlAction(0, list[i], true)
+                EnableControlAction(1, list[i], true)
+                EnableControlAction(2, list[i], true)
+            end
+        else
+            Wait(250)
+        end
+    end
+end)
+
+-- closes a panel when the player walks away from the NPC or dies. close() is called once.
+function DrugsWatchPanel(pos, maxDistance, isOpen, close)
+    CreateThread(function()
+        while isOpen() do
+            Wait(500)
+            local ped = PlayerPedId()
+            if IsEntityDead(ped) or #(GetEntityCoords(ped) - pos) > maxDistance then
+                close()
+                break
+            end
+        end
+    end)
+end
+
 -- paired handover: both face each other, then play the player/NPC halves of the same anim
 -- frozen = true for our own frozen NPCs (brick buyer), so they don't try to turn
 function DrugsHandover(ped, frozen)
@@ -26,11 +83,16 @@ function DrugsHandover(ped, frozen)
 end
 
 -- Spawns a frozen, invincible rsg-target NPC while the player is within cfg.spawnDistance.
--- cfg = { coords = vector4, model, spawnDistance, targetDistance }; option = rsg-target option table (needs name).
+-- cfg = { coords = vector4, model, spawnDistance, targetDistance }; option = rsg-target option table (needs name) or a list of them.
 -- Returns a getter for the current ped handle (nil while despawned). Cleans itself up on resource stop.
 function DrugsProximityNpc(cfg, option)
     local npc
-    option.distance = option.distance or cfg.targetDistance
+    local options = option.name and { option } or option
+    local names = {}
+    for _, o in ipairs(options) do
+        o.distance = o.distance or cfg.targetDistance
+        names[#names + 1] = o.name
+    end
 
     local function spawn()
         local c = cfg.coords
@@ -41,12 +103,12 @@ function DrugsProximityNpc(cfg, option)
         FreezeEntityPosition(npc, true)
         SetBlockingOfNonTemporaryEvents(npc, true)
         SetModelAsNoLongerNeeded(cfg.model)
-        exports['rsg-target']:addLocalEntity(npc, { option })
+        exports['rsg-target']:addLocalEntity(npc, options)
     end
 
     local function remove()
         if npc and DoesEntityExist(npc) then
-            exports['rsg-target']:removeLocalEntity(npc, option.name)
+            exports['rsg-target']:removeLocalEntity(npc, names)
             DeleteEntity(npc)
         end
         npc = nil

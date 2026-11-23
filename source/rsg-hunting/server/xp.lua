@@ -52,38 +52,38 @@ local function weeklyEnabled()
     return weeklyReady and Cfg and Cfg.Enabled and Cfg.Weekly and Cfg.Weekly.Enabled
 end
 
+-- keep in sync with install.sql
+local WEEKLY_TABLES = {
+    [[CREATE TABLE IF NOT EXISTS `hunting_weekly` (
+        `citizenid` VARCHAR(50) NOT NULL,
+        `week` INT NOT NULL,
+        `name` VARCHAR(100) NOT NULL DEFAULT '',
+        `xp` INT NOT NULL DEFAULT 0,
+        PRIMARY KEY (`citizenid`, `week`),
+        KEY `week_xp` (`week`, `xp`)
+    )]],
+    [[CREATE TABLE IF NOT EXISTS `hunting_weekly_rewards` (
+        `id` INT NOT NULL AUTO_INCREMENT,
+        `citizenid` VARCHAR(50) NOT NULL,
+        `week` INT NOT NULL,
+        `rank` INT NOT NULL,
+        `cash` DECIMAL(10,2) NOT NULL DEFAULT 0,
+        `claimed` TINYINT(1) NOT NULL DEFAULT 0,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `cid_week` (`citizenid`, `week`)
+    )]],
+    [[CREATE TABLE IF NOT EXISTS `hunting_weekly_state` (
+        `key` VARCHAR(50) NOT NULL,
+        `value` INT NOT NULL DEFAULT 0,
+        PRIMARY KEY (`key`)
+    )]],
+}
+
 CreateThread(function()
     if not (Cfg and Cfg.Enabled and Cfg.Weekly and Cfg.Weekly.Enabled) then return end
     local ok, err = pcall(function()
-        if Config.AutoDatabase ~= false then
-            MySQL.query.await([[CREATE TABLE IF NOT EXISTS `hunting_weekly` (
-                `citizenid` VARCHAR(50) NOT NULL,
-                `week` INT NOT NULL,
-                `name` VARCHAR(100) NOT NULL DEFAULT '',
-                `xp` INT NOT NULL DEFAULT 0,
-                PRIMARY KEY (`citizenid`, `week`),
-                KEY `week_xp` (`week`, `xp`)
-            )]])
-        end
-        if Config.AutoDatabase ~= false then
-            MySQL.query.await([[CREATE TABLE IF NOT EXISTS `hunting_weekly_rewards` (
-                `id` INT NOT NULL AUTO_INCREMENT,
-                `citizenid` VARCHAR(50) NOT NULL,
-                `week` INT NOT NULL,
-                `rank` INT NOT NULL,
-                `cash` DECIMAL(10,2) NOT NULL DEFAULT 0,
-                `claimed` TINYINT(1) NOT NULL DEFAULT 0,
-                PRIMARY KEY (`id`),
-                UNIQUE KEY `cid_week` (`citizenid`, `week`)
-            )]])
-        end
-        if Config.AutoDatabase ~= false then
-            MySQL.query.await([[CREATE TABLE IF NOT EXISTS `hunting_weekly_state` (
-                `key` VARCHAR(50) NOT NULL,
-                `value` INT NOT NULL DEFAULT 0,
-                PRIMARY KEY (`key`)
-            )]])
-        end
+        if Config.AutoDatabase == false then return end
+        for _, query in ipairs(WEEKLY_TABLES) do MySQL.query.await(query) end
     end)
     if ok then
         weeklyReady = true
@@ -283,6 +283,7 @@ local function handler_claimWeekly(src)
         })
     end
     claiming[src] = nil
+    unclaimedCache[src] = nil
     return { ok = total > 0, cash = total }
 end
 RSGCore.Functions.CreateCallback('rsg-hunting:server:claimWeekly', function(src, cb)
@@ -291,15 +292,36 @@ RSGCore.Functions.CreateCallback('rsg-hunting:server:claimWeekly', function(src,
     cb(ok and result or { ok = false })
 end)
 
-local lastRequest = {}
+local unclaimedCache = {} -- [src] = { value, time }, so spamming the board can't hammer the database
 local function handler_getLeaderboard(src, mode)
     if not Cfg or not Cfg.Enabled then return nil end
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return nil end
 
-    local now = GetGameTimer()
-    if lastRequest[src] and now - lastRequest[src] < 1000 then return nil end
-    lastRequest[src] = now
+    -- journal tab: the player's own species list instead of a ranking
+    if mode == 'journal' and HuntingJournal.Enabled() then
+        local journal = HuntingJournal.Board(src, Cfg.Leaderboard.MaxEntries or 500)
+        if journal then
+            local myXP = Player.Functions.GetRep(Cfg.RepName) or 0
+            local lvl, nextLvl = HuntingXP.GetLevelData(myXP)
+            return {
+                mode = 'journal',
+                weeklyEnabled = weeklyEnabled() and true or false,
+                journalEnabled = true,
+                top = journal.top,
+                total = journal.total,
+                sub = journal.sub,
+                bounties = HuntingBounty.List(HuntingBounty.RegionAt(GetEntityCoords(GetPlayerPed(src)))),
+                rewards = {},
+                unclaimed = 0,
+                me = {
+                    rankText = journal.rankText, xp = myXP, weekXP = 0,
+                    level = lvl.level, label = lvl.label, levelXP = lvl.xp, nextXP = nextLvl and nextLvl.xp or nil,
+                    perks = lvl.perks or {},
+                },
+            }
+        end
+    end
 
     local weekly = mode == 'weekly' and weeklyEnabled()
     local source_
@@ -329,14 +351,21 @@ local function handler_getLeaderboard(src, mode)
     local lvl, nextLvl = HuntingXP.GetLevelData(myXP)
     local unclaimed = 0
     if weeklyEnabled() then
-        unclaimed = MySQL.scalar.await('SELECT COALESCE(SUM(cash), 0) FROM hunting_weekly_rewards WHERE citizenid = ? AND claimed = 0', { myCid }) or 0
+        local cached = unclaimedCache[src]
+        if cached and GetGameTimer() - cached.time < 10000 then
+            unclaimed = cached.value
+        else
+            unclaimed = MySQL.scalar.await('SELECT COALESCE(SUM(cash), 0) FROM hunting_weekly_rewards WHERE citizenid = ? AND claimed = 0', { myCid }) or 0
+            unclaimedCache[src] = { value = unclaimed, time = GetGameTimer() }
+        end
     end
     return {
         mode = weekly and 'weekly' or 'all',
         weeklyEnabled = weeklyEnabled() and true or false,
+        journalEnabled = HuntingJournal.Enabled() and true or false,
         top = top,
         total = #source_,
-        bounties = HuntingBounty.List(),
+        bounties = HuntingBounty.List(HuntingBounty.RegionAt(GetEntityCoords(GetPlayerPed(src)))),
         rewards = weeklyEnabled() and Cfg.Weekly.Rewards or {},
         unclaimed = tonumber(unclaimed) or 0,
         me = {
@@ -358,6 +387,6 @@ RSGCore.Functions.CreateCallback('rsg-hunting:server:getLeaderboard', function(s
 end)
 
 AddEventHandler('playerDropped', function()
-    lastRequest[source] = nil
+    unclaimedCache[source] = nil
     claiming[source] = nil
 end)

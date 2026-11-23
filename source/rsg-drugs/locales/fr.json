@@ -194,5 +194,22 @@
     "cfg_stage_1": "Mal à l'aise",
     "cfg_stage_2": "Tremblant",
     "cfg_stage_3": "Manque",
-    "ui_skill": "Compétence %s"
+    "ui_skill": "Compétence %s",
+    "ui_confirm": "Confirmer ?",
+    "cfg_sub_tobacco": "Tabac",
+    "payroll_low": "La caisse des salaires ne couvre plus que %s services",
+    "raid_warning": "La loi a reçu un tuyau sur ton activité. Une descente arrive, déplace ton stock !",
+    "raid_alert_title": "Descente de Laboratoire",
+    "raid_alert": "Un laboratoire de drogue a été signalé. Fais une descente chez le contact de traitement dans les %s minutes.",
+    "raid_target": "Perquisitionner le labo",
+    "raid_none": "Aucun laboratoire signalé à perquisitionner pour le moment",
+    "raid_done_officer": "Labo perquisitionné : %s unités détruites, récompense de $%s",
+    "raid_done_owner": "Ton labo a été perquisitionné : %s unités détruites",
+    "raid_escaped": "La loi a été trop lente cette fois, mais ton labo reste surveillé",
+    "ui_heat": "Chaleur",
+    "ui_raid_warn": "Descente imminente",
+    "ui_potency": "Puissance",
+    "cfg_sub_opium": "Opium",
+    "cfg_skill_drugs": "Trafic de Drogue",
+    "cfg_skill_drugs_desc": "Gère des labos, emballe la marchandise et écoule-la."
 }

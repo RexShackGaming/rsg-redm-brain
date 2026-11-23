@@ -17,7 +17,8 @@ local dropped      = {} -- [src] = freq string dropped because the player was do
 local hogtied      = {} -- [src] = true while the client reports the player is hogtied
 local batt         = {} -- [src] = last known battery % of the player's radio (Config.Battery)
 local hogCooldown  = {} -- [src] = GetGameTimer() when the next hogtie report is accepted
-local setCooldown  = {} -- [src] = GetGameTimer() when the next volume/mute save is accepted
+local setCooldown  = {} -- [src] = GetGameTimer() when the next mute save is accepted
+local stateCooldown = {} -- [src] = GetGameTimer() when the next panel-open request is accepted
 local talkStart, talkAcc = {}, {} -- battery: transmit start time and accumulated transmit seconds per player
 local recheckPending = {} -- [src] = true while an access re-check is queued
 local readBattery -- defined below (Config.Battery), used by buildState
@@ -297,8 +298,6 @@ local function buildState(src)
     end
 
     local rs = Player.PlayerData.metadata and Player.PlayerData.metadata.radiosettings
-    local vol = type(rs) == 'table' and tonumber(rs.vol) or tonumber(Config.Volume and Config.Volume.Default) or 100
-    vol = math.max(0, math.min(100, math.floor(vol + 0.5)))
     local muted = type(rs) == 'table' and rs.muted == true or false
     local battery = readBattery(src)
 
@@ -331,7 +330,7 @@ local function buildState(src)
         freq = freq, channels = list, reserved = reserved, count = members and #members or 0,
         favorites = favorites, maxFavorites = Config.MaxFavorites, priv = priv,
         recents = recents, ranges = rangeList, reservedRanges = rangeReserved,
-        vol = vol, muted = muted, volStep = tonumber(Config.Volume and Config.Volume.Step) or 5, battery = battery,
+        muted = muted, battery = battery,
         min = FREQ.Min, max = FREQ.Max, dec = DEC, unit = UNIT,
     }
 end
@@ -657,6 +656,10 @@ CreateThread(function()
         for cid, w in pairs(wrongCodes) do -- forget old failed attempts
             if (w.lockUntil or 0) < now then wrongCodes[cid] = nil end
         end
+        local t = os.time()
+        for cid, untilT in pairs(staffMuted) do -- forget finished staff blocks
+            if untilT <= t then staffMuted[cid] = nil end
+        end
     end
 end)
 
@@ -664,6 +667,7 @@ end)
 -- Callbacks and events
 ---------------------------------------------------------------------
 RSGCore.Functions.CreateCallback('rsg-radio:server:getState', function(src, cb)
+    if rateLimit(stateCooldown, src, 250) then return cb(nil) end -- buildState is the heaviest call: stop spamming
     local state = buildState(src)
     panelOpen[src] = state and true or nil
     cb(state)
@@ -800,8 +804,10 @@ RegisterNetEvent('rsg-radio:server:savePrivate', function(freq, name, code)
     if ch then
         if ch.owner ~= cid then return notify(src, 'sv_priv_taken', 'error') end
         local codeChanged = ch.code ~= code
-        ch.name, ch.code = name, code
-        MySQL.update('UPDATE rsg_radio_private SET name = ?, code = ? WHERE freq = ?', { name, code, key })
+        if codeChanged or ch.name ~= name then -- nothing to write when neither changed
+            ch.name, ch.code = name, code
+            MySQL.update('UPDATE rsg_radio_private SET name = ?, code = ? WHERE freq = ?', { name, code, key })
+        end
         if codeChanged then kickFrom(key, cid, 'sv_priv_code_changed') end -- others must enter the new passcode
         notify(src, 'sv_priv_updated', 'success', withUnit(key))
     else
@@ -921,7 +927,7 @@ end
 local function cleanup(src)
     connected[src], dropped[src], hogtied[src], batt[src] = nil, nil, nil, nil
     cooldown[src], favCooldown[src], privCooldown[src] = nil, nil, nil
-    hogCooldown[src], setCooldown[src], recheckPending[src] = nil, nil, nil
+    hogCooldown[src], setCooldown[src], stateCooldown[src], recheckPending[src] = nil, nil, nil, nil
     talkStart[src], talkAcc[src] = nil, nil
     panelOpen[src], unlocked[src], jobCache[src] = nil, nil, nil
 end
@@ -943,19 +949,16 @@ RegisterNetEvent('rsg-radio:server:hogtied', function(state)
     scheduleRecheck(src)
 end)
 
--- Radio volume and mute (stored per character, applied by the client through rsg-voice)
-RegisterNetEvent('rsg-radio:server:setSettings', function(vol, muted)
+-- Radio mute (stored per character, applied by the client through rsg-voice). Volume comes from Config.Volume
+RegisterNetEvent('rsg-radio:server:setSettings', function(muted)
     local src = source
     if rateLimit(setCooldown, src, 250) then return end
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return end
-    vol = tonumber(vol)
-    if not vol or vol ~= vol then return end
-    vol = math.max(0, math.min(100, math.floor(vol + 0.5)))
     muted = muted == true
     local cur = Player.PlayerData.metadata and Player.PlayerData.metadata.radiosettings
-    if type(cur) == 'table' and tonumber(cur.vol) == vol and (cur.muted == true) == muted then return end -- unchanged: no write
-    Player.Functions.SetMetaData('radiosettings', { vol = vol, muted = muted })
+    if type(cur) == 'table' and (cur.muted == true) == muted then return end -- unchanged: no write
+    Player.Functions.SetMetaData('radiosettings', { muted = muted })
 end)
 
 -- Battery: count the time spent transmitting (rsg-voice's own transmit event, sent by the client)
@@ -972,11 +975,12 @@ AddEventHandler('rsg-voice:server:radioTalkChanged', function(src, state)
 end)
 
 CreateThread(function()
+    if not B.Enabled then return end -- nothing drains with batteries off
     local interval = math.max(10, tonumber(B.DrainInterval) or 60)
     local low = tonumber(B.LowWarning) or 20
     while true do
         Wait(interval * 1000)
-        if B.Enabled then
+        do
             local now = GetGameTimer()
             local list = {}
             for src in pairs(connected) do list[#list + 1] = src end

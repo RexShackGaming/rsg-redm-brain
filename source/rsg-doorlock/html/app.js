@@ -7,7 +7,7 @@ let maxDoors = 8;
 let defaultDistance = 1.25;
 let lockpickEnabled = false;
 let lockpickPresets = [];
-let form = null; // { id, name, jobs[], distance, locked, lockpick, region, doors[] }
+let form = null; // { id, name, jobs[], gangs[], keyItem, group, openFrom, openTo, distance, locked, lockpick, region, doors[] }
 let pendingDelete = null;
 let L = {}; // locale dictionary sent from Lua (rsg-core locale(), locales/*.json)
 
@@ -57,7 +57,12 @@ function showForm(data) {
     $('btn-back').style.visibility = 'visible';
     $('subtitle').textContent = form.id ? t('ui_editing', form.id) : t('ui_new_lock_sub');
     $('btn-delete').classList.toggle('hidden', !form.id);
+    $('btn-duplicate').classList.toggle('hidden', !form.id);
     $('f-name').value = form.name;
+    $('f-keyitem').value = form.keyItem || '';
+    $('f-group').value = form.group || '';
+    $('f-open-from').value = form.openFrom === '' || form.openFrom == null ? '' : form.openFrom;
+    $('f-open-to').value = form.openTo === '' || form.openTo == null ? '' : form.openTo;
     $('f-distance').value = form.distance;
     $('f-region').value = form.region || '';
     renderForm();
@@ -68,6 +73,8 @@ function renderList() {
     const rows = doors.filter((d) => !q
         || d.name.toLowerCase().includes(q)
         || d.jobs.some((j) => j.toLowerCase().includes(q))
+        || (d.gangs || []).some((g) => g.toLowerCase().includes(q))
+        || (d.group || '').toLowerCase().includes(q)
         || d.doors.some((h) => String(h.hash).includes(q)));
 
     $('count').textContent = t('ui_count', rows.length, doors.length);
@@ -76,7 +83,7 @@ function renderList() {
             <div class="badge-icon">${d.doors.length > 1 ? '&#9707;' : '&#9634;'}</div>
             <div class="row-main">
                 <div class="row-title">${esc(d.name)}</div>
-                <div class="row-sub">${d.jobs.length ? esc(d.jobs.join(', ')) : esc(t('ui_no_access'))} · ${esc(t('ui_door_count', d.doors.length))} · ${esc(t('ui_distance_away', d.dist))}</div>
+                <div class="row-sub">${(d.jobs.length + (d.gangs || []).length || d.keyItem) ? esc([...d.jobs, ...(d.gangs || []), d.keyItem].filter(Boolean).join(', ')) : esc(t('ui_no_access'))} · ${esc(t('ui_door_count', d.doors.length))} · ${esc(t('ui_distance_away', d.dist))}</div>
             </div>
             <span class="pill ${d.locked ? 'locked' : 'unlocked'}">${esc(t(d.locked ? 'ui_locked' : 'ui_open'))}</span>
             <button class="circle-btn row-tp" data-tp="${d.id}" title="${esc(t('ui_teleport'))}">&#10148;</button>
@@ -87,14 +94,8 @@ function renderForm() {
     $('f-dist-val').textContent = `${Number(form.distance).toFixed(2)}m`;
     document.querySelectorAll('#f-locked button').forEach((b) => b.classList.toggle('on', (b.dataset.v === '1') === form.locked));
 
-    const chips = $('f-jobs');
-    chips.querySelectorAll('.chip').forEach((c) => c.remove());
-    form.jobs.forEach((j, i) => {
-        const c = document.createElement('span');
-        c.className = 'chip';
-        c.innerHTML = `${esc(j)} <i data-job="${i}">&#10005;</i>`;
-        chips.insertBefore(c, $('f-job-input'));
-    });
+    renderChips('jobs', 'f-jobs', 'f-job-input');
+    renderChips('gangs', 'f-gangs', 'f-gang-input');
 
     // lockpick difficulty: Off + the presets sent from Lua (custom buttons, no native select)
     $('f-lp-wrap').classList.toggle('hidden', !lockpickEnabled);
@@ -110,21 +111,52 @@ function renderForm() {
         </div>`).join('') : `<em class="hint">${esc(t('ui_no_doors'))}</em>`;
 }
 
-function addJob() {
-    const input = $('f-job-input');
+function renderChips(key, boxId, inputId) {
+    const box = $(boxId);
+    box.querySelectorAll('.chip').forEach((c) => c.remove());
+    (form[key] || []).forEach((name, i) => {
+        const c = document.createElement('span');
+        c.className = 'chip';
+        c.innerHTML = `${esc(name)} <i data-chip="${i}">&#10005;</i>`;
+        box.insertBefore(c, $(inputId));
+    });
+}
+
+// adds the typed name to form[key] (jobs or gangs)
+function addChip(key, inputId) {
+    const input = $(inputId);
     const v = input.value.trim().toLowerCase();
     if (!v) return;
     if (!/^[\w-]+$/.test(v)) return toast(t('ui_err_job_chars'), 'error');
-    if (!form.jobs.includes(v)) form.jobs.push(v);
+    form[key] = form[key] || [];
+    if (!form[key].includes(v)) form[key].push(v);
     input.value = '';
     renderForm();
 }
+
+function chipEvents(key, boxId, inputId) {
+    $(inputId).addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addChip(key, inputId); }
+        else if (e.key === 'Backspace' && !e.target.value && form[key].length) { form[key].pop(); renderForm(); }
+    });
+    $(boxId).addEventListener('click', (e) => {
+        if (e.target.dataset.chip !== undefined) { form[key].splice(Number(e.target.dataset.chip), 1); renderForm(); }
+        else $(inputId).focus();
+    });
+}
+chipEvents('jobs', 'f-jobs', 'f-job-input');
+chipEvents('gangs', 'f-gangs', 'f-gang-input');
 
 function readForm() {
     form.name = $('f-name').value;
     form.region = $('f-region').value.trim().toLowerCase();
     form.distance = parseFloat($('f-distance').value);
-    if ($('f-job-input').value.trim()) addJob();
+    form.keyItem = $('f-keyitem').value.trim().toLowerCase();
+    form.group = $('f-group').value.trim().toLowerCase();
+    form.openFrom = $('f-open-from').value.trim();
+    form.openTo = $('f-open-to').value.trim();
+    if ($('f-job-input').value.trim()) addChip('jobs', 'f-job-input');
+    if ($('f-gang-input').value.trim()) addChip('gangs', 'f-gang-input');
 }
 
 function closeAll() {
@@ -166,7 +198,7 @@ $('search').addEventListener('input', renderList);
 $('btn-close').onclick = closeAll;
 $('btn-back').onclick = showList;
 $('btn-cancel').onclick = showList;
-$('btn-new').onclick = () => showForm({ id: null, name: '', jobs: [], distance: defaultDistance, locked: true, lockpick: '', region: '', doors: [] });
+$('btn-new').onclick = () => showForm({ id: null, name: '', jobs: [], gangs: [], keyItem: '', group: '', openFrom: '', openTo: '', distance: defaultDistance, locked: true, lockpick: '', region: '', doors: [] });
 
 $('list').addEventListener('click', (e) => {
     const tp = e.target.closest('[data-tp]');
@@ -174,17 +206,9 @@ $('list').addEventListener('click', (e) => {
     const row = e.target.closest('.row');
     if (!row) return;
     const d = doors.find((x) => x.id === Number(row.dataset.id));
-    if (d) showForm({ ...d, jobs: [...d.jobs], doors: d.doors.map((h) => ({ ...h, model: h.model || t('ui_door') })) });
+    if (d) showForm({ ...d, jobs: [...d.jobs], gangs: [...(d.gangs || [])], doors: d.doors.map((h) => ({ ...h, model: h.model || t('ui_door') })) });
 });
 
-$('f-job-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addJob(); }
-    else if (e.key === 'Backspace' && !e.target.value && form.jobs.length) { form.jobs.pop(); renderForm(); }
-});
-$('f-jobs').addEventListener('click', (e) => {
-    if (e.target.dataset.job !== undefined) { form.jobs.splice(Number(e.target.dataset.job), 1); renderForm(); }
-    else $('f-job-input').focus();
-});
 $('f-distance').addEventListener('input', (e) => { form.distance = parseFloat(e.target.value); renderForm(); });
 $('f-lockpick').addEventListener('click', (e) => {
     const b = e.target.closest('button');
@@ -211,6 +235,12 @@ $('btn-save').onclick = async () => {
     $('btn-save').disabled = false;
     if (res.ok) { toast(res.message || t('saved'), 'success'); showList(); }
     else toast(res.error || t('ui_save_failed'), 'error');
+};
+
+$('btn-duplicate').onclick = () => {
+    readForm();
+    // same settings, new lock: pick its own doors (a door can only belong to one lock)
+    showForm({ ...form, id: null, name: t('ui_copy_name', form.name).slice(0, 64), jobs: [...form.jobs], gangs: [...form.gangs], doors: [] });
 };
 
 $('btn-delete').onclick = () => {

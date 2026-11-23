@@ -194,5 +194,22 @@
     "cfg_stage_1": "Onrustig",
     "cfg_stage_2": "Trillend",
     "cfg_stage_3": "Ontwenning",
-    "ui_skill": "Vaardigheid %s"
+    "ui_skill": "Vaardigheid %s",
+    "ui_confirm": "Bevestigen?",
+    "cfg_sub_tobacco": "Tabak",
+    "payroll_low": "De loonkas dekt nog maar %s diensten",
+    "raid_warning": "De wet heeft een tip over je bedrijf gekregen. Er komt een inval, verplaats je voorraad!",
+    "raid_alert_title": "Inval Drugslab",
+    "raid_alert": "Er is een drugslab gemeld. Val het binnen bij het verwerkingscontact binnen %s minuten.",
+    "raid_target": "Lab binnenvallen",
+    "raid_none": "Er is nu geen gemeld lab om binnen te vallen",
+    "raid_done_officer": "Lab binnengevallen: %s eenheden vernietigd, beloning $%s",
+    "raid_done_owner": "Je lab is binnengevallen: %s eenheden zijn vernietigd",
+    "raid_escaped": "De wet was deze keer te laat, maar je lab wordt nog steeds in de gaten gehouden",
+    "ui_heat": "Hitte",
+    "ui_raid_warn": "Inval op komst",
+    "ui_potency": "Sterkte",
+    "cfg_sub_opium": "Opium",
+    "cfg_skill_drugs": "Drugshandel",
+    "cfg_skill_drugs_desc": "Beheer labs, verpak product en breng het aan de man."
 }

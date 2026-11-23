@@ -194,5 +194,22 @@
     "cfg_stage_1": "Neliniștit",
     "cfg_stage_2": "Tremurând",
     "cfg_stage_3": "Sevraj",
-    "ui_skill": "Abilitate %s"
+    "ui_skill": "Abilitate %s",
+    "ui_confirm": "Confirmi?",
+    "cfg_sub_tobacco": "Tutun",
+    "payroll_low": "Fondul de salarii acoperă doar încă %s ture",
+    "raid_warning": "Legea a primit un pont despre operațiunea ta. Vine un raid, mută-ți stocul!",
+    "raid_alert_title": "Raid în Laborator",
+    "raid_alert": "A fost raportat un laborator de droguri. Fă raid la contactul de procesare în %s minute.",
+    "raid_target": "Raid în laborator",
+    "raid_none": "Nu există niciun laborator raportat pentru raid acum",
+    "raid_done_officer": "Laborator percheziționat: %s unități distruse, recompensă $%s",
+    "raid_done_owner": "Laboratorul tău a fost percheziționat: au fost distruse %s unități",
+    "raid_escaped": "Legea a fost prea lentă de data asta, dar laboratorul tău e tot sub supraveghere",
+    "ui_heat": "Căldură",
+    "ui_raid_warn": "Raid iminent",
+    "ui_potency": "Puritate",
+    "cfg_sub_opium": "Opiu",
+    "cfg_skill_drugs": "Comerț cu Droguri",
+    "cfg_skill_drugs_desc": "Condu laboratoare, ambalează marfa și vinde-o mai departe."
 }

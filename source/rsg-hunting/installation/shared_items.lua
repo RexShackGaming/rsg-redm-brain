@@ -1,6 +1,8 @@
     -----------------------------------------------
     -- YOUR CUSTOM ITEMS
     -----------------------------------------------
+    -- hunting trophy (rsg-hunting Config.Trophies, image hunting_trophy.png)
+    hunting_trophy              = { name = 'hunting_trophy',              label = 'Hunting Trophy',       weight = 500, type = 'item', image = 'hunting_trophy.png',              unique = false, useable = false, shouldClose = true, description = 'A trophy from a perfect kill',  category = 'resource'},
     -- skins, hides & pelts
     resource_skin_alligator     = { name = 'resource_skin_alligator',     label = 'Alligator Skin',       weight = 100, type = 'item', image = 'resource_skin_alligator.png',     unique = false, useable = false, shouldClose = true, description = '',  category = 'resource'},
     resource_skin_bear_black    = { name = 'resource_skin_bear_black',    label = 'Black Bear Skin',      weight = 100, type = 'item', image = 'resource_skin_bear_black.png',    unique = false, useable = false, shouldClose = true, description = '',  category = 'resource'},

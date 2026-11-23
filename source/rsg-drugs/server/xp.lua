@@ -20,6 +20,7 @@ local function wipe(Player)
         DrugsLog('xp', 'Drug XP reset', Player.PlayerData.source, { { 'XP removed', xp }, { 'Reason', 'Jail sentence or ResetXP export' } })
     end
     if DrugsXP.OnReset then DrugsXP.OnReset(Player.PlayerData.citizenid) end
+    if DrugsSkills and Config.Skills.ResetOnJail then DrugsSkills.Reset(Player.PlayerData.source) end
     return xp
 end
 
@@ -57,6 +58,7 @@ function DrugsXP.Add(src, amount, reason)
     if Config.XP.ResetOnJail and inJail(Player) then return false end -- no XP while doing time
     local before = getXP(Player)
     Player.Functions.AddRep(Config.XP.RepName, amount)
+    if DrugsSkills then DrugsSkills.AddXP(src, amount, reason) end -- rsg-skills mirror (server/integrations.lua)
     local after = before + amount
     if Config.XP.Notify then
         local key = reason and ('xp_reason_' .. reason)
