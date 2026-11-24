@@ -2,6 +2,7 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 
 local spawnedPeds = {}
 local blips = {}
+local blipOpen = {}
 local uiOpen = false
 local activeLocation = nil
 
@@ -10,6 +11,7 @@ local activeLocation = nil
 ---------------------------------
 local function loadModel(model)
     if HasModelLoaded(model) then return true end
+    if not IsModelValid(model) then return false end
     RequestModel(model, false)
     local timeout = GetGameTimer() + 10000
     while not HasModelLoaded(model) do
@@ -30,17 +32,62 @@ local function buildFishList()
             price = data.price,
             fillets = data.fillets,
             filletLabel = fillet and fillet.label or locale('cl_fillet_fallback'),
+            kind = 'fish',
         }
     end
-    table.sort(list, function(a, b) return a.label < b.label end)
+    -- fillets can be sold back (never processed)
+    local sale = Config.FilletSale
+    if sale and sale.enabled then
+        for item, price in pairs(sale.items or {}) do
+            local shared = RSGCore.Shared.Items[item]
+            if shared then
+                list[#list + 1] = { item = item, label = shared.label, price = price, fillets = 0, filletLabel = '', kind = 'fillet' }
+            end
+        end
+    end
+    table.sort(list, function(a, b)
+        if a.kind ~= b.kind then return a.kind == 'fish' end
+        return a.label < b.label
+    end)
     return list
 end
-local fishList = buildFishList()
+
+---------------------------------
+-- NUI focus (keeps push-to-talk working while the menu is open)
+---------------------------------
+local function applyNuiFocus(enable)
+    if enable then
+        SetNuiFocus(true, true)
+        if Config.AllowPushToTalkWhileOpen then SetNuiFocusKeepInput(true) end
+    else
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
+end
+
+-- KeepInput passes every key to the game, so block all controls except push-to-talk while focused
+CreateThread(function()
+    while true do
+        if uiOpen and Config.AllowPushToTalkWhileOpen then
+            Wait(0)
+            DisableAllControlActions(0)
+            DisableAllControlActions(1)
+            DisableAllControlActions(2)
+            for _, c in ipairs(Config.PushToTalkControls or {}) do
+                EnableControlAction(0, c, true)
+                EnableControlAction(1, c, true)
+                EnableControlAction(2, c, true)
+            end
+        else
+            Wait(250)
+        end
+    end
+end)
 
 local function closeUI()
     uiOpen = false
     activeLocation = nil
-    SetNuiFocus(false, false)
+    applyNuiFocus(false)
     SendNUIMessage({ action = 'close' })
 end
 
@@ -53,7 +100,8 @@ local function getUiStrings()
         'ui_process', 'ui_clear', 'ui_cancel', 'ui_confirm', 'ui_close', 'ui_remove', 'ui_add', 'ui_all',
         'ui_each', 'ui_fillets', 'ui_owned', 'ui_in_cart', 'ui_no_fish', 'ui_cart_empty', 'ui_sell_title',
         'ui_process_title', 'ui_sell_confirm', 'ui_process_confirm', 'ui_sell_all', 'ui_demand', 'ui_bonus',
-        'ui_stock_left', 'ui_unlimited', 'ui_over_stock',
+        'ui_stock_left', 'ui_unlimited', 'ui_over_stock', 'ui_orders', 'ui_order_deliver', 'ui_order_done',
+        'ui_order_reward', 'ui_order_title', 'ui_order_confirm', 'ui_fillet_tag',
     }) do uiStrings[key] = locale(key) end
     return uiStrings
 end
@@ -69,22 +117,16 @@ local function notify(message, ntype)
     })
 end
 
--- quick client-side hours check (the server re-checks everything)
-local function checkOpen(locationIndex)
-    local open, oh, ch = FishmongerIsOpen(Config.Locations[locationIndex], GetClockHours())
-    if not open then notify(locale('sv_closed', oh, ch), 'error') end
-    return open
-end
-
+-- the server decides if the shop is open and the player is in range, and says why when it is not
 local function getMenuData(locationIndex)
     local data = RSGCore.Functions.AwaitCallback('rsg-fishmonger:server:getMenuData', 10000, locationIndex)
-    if data and data.closed then notify(data.message, 'error') return nil end
+    if data and data.denied then notify(data.message, 'error') return nil end
     return data
 end
 
 local opening = false
 local function openUI(locationIndex)
-    if uiOpen or opening or not checkOpen(locationIndex) then return end
+    if uiOpen or opening then return end
     opening = true -- guard against double-open while the callback is in flight
     local data = getMenuData(locationIndex)
     opening = false
@@ -92,12 +134,12 @@ local function openUI(locationIndex)
     local filletData = RSGCore.Shared.Items[Config.FilletItem]
     uiOpen = true
     activeLocation = locationIndex
-    SetNuiFocus(true, true)
+    applyNuiFocus(true)
     SendNUIMessage({
         action = 'open',
         title = locale('loc_' .. Config.Locations[locationIndex].key),
         subtitle = locale('cl_subtitle'),
-        fish = fishList,
+        fish = buildFishList(),
         data = data,
         imagePath = Config.ImagePath,
         filletLabel = filletData and filletData.label or locale('cl_fillet_fallback'),
@@ -105,8 +147,27 @@ local function openUI(locationIndex)
     })
 end
 
+-- blip colour follows the town's opening hours (the server sends the states)
+local function setBlipStatus(i, open)
+    local blip = blips[i]
+    if not blip or blipOpen[i] == open then return end
+    if blipOpen[i] ~= nil then
+        BlipRemoveModifier(blip, joaat(blipOpen[i] and Config.Blip.openColor or Config.Blip.closedColor))
+    end
+    BlipAddModifier(blip, joaat(open and Config.Blip.openColor or Config.Blip.closedColor))
+    blipOpen[i] = open
+end
+
+local function applyHours(states)
+    if not Config.OpeningHours.enabled or type(states) ~= 'table' then return end
+    for i = 1, #Config.Locations do
+        if states[i] ~= nil then setBlipStatus(i, states[i]) end
+    end
+end
+
+RegisterNetEvent('rsg-fishmonger:client:hours', applyHours)
+
 local function openShop(locationIndex)
-    if not checkOpen(locationIndex) then return end
     TriggerServerEvent('rsg-fishmonger:server:openShop', locationIndex)
 end
 
@@ -166,16 +227,21 @@ CreateThread(function()
         for i, loc in ipairs(Config.Locations) do
             local blip = BlipAddForCoords(Config.Blip.style, loc.coords.x, loc.coords.y, loc.coords.z)
             SetBlipSprite(blip, Config.Blip.sprite, true)
-            SetBlipScale(blip, 0.2)
+            SetBlipScale(blip, Config.Blip.scale or 0.2)
             SetBlipName(blip, locale('cl_blip_name'))
             blips[i] = blip
+        end
+        if Config.OpeningHours.enabled then
+            applyHours(RSGCore.Functions.AwaitCallback('rsg-fishmonger:server:getHours', 10000))
         end
     end
 
     while true do
         local pos = GetEntityCoords(PlayerPedId())
+        local nearest = math.huge
         for i, loc in ipairs(Config.Locations) do
             local dist = #(pos - loc.coords.xyz)
+            if dist < nearest then nearest = dist end
             if dist < Config.SpawnDistance and not spawnedPeds[i] then
                 spawnPed(i)
             elseif dist >= Config.SpawnDistance and spawnedPeds[i] then
@@ -189,7 +255,8 @@ CreateThread(function()
             local c = Config.Locations[activeLocation].coords
             if #(pos - c.xyz) > Config.MaxUseDistance then closeUI() end
         end
-        Wait(1000)
+        -- check less often while far from every fishmonger
+        Wait(nearest > Config.SpawnDistance * 3 and 3000 or 1000)
     end
 end)
 
@@ -218,6 +285,25 @@ RegisterNUICallback('checkout', function(data, cb)
     local fresh = getMenuData(locationIndex)
     if not fresh then return closeUI() end
     SendNUIMessage({ action = 'refresh', data = fresh, error = result.message })
+end)
+
+-- release the menu if the character logs out
+RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
+    if uiOpen then closeUI() end
+end)
+
+-- deliver a daily order; the menu stays open with fresh counts either way
+RegisterNUICallback('order', function(data, cb)
+    if not uiOpen or type(data) ~= 'table' or type(data.slot) ~= 'number' then return cb({ ok = false }) end
+    local locationIndex = activeLocation
+    cb({ ok = true })
+    local result = RSGCore.Functions.AwaitCallback('rsg-fishmonger:server:deliverOrder', 10000, locationIndex, data.slot)
+    result = result or { ok = false, message = locale('sv_failed') }
+    notify(result.message, result.ok and 'success' or 'error')
+    if not uiOpen or activeLocation ~= locationIndex then return end
+    local fresh = getMenuData(locationIndex)
+    if not fresh then return closeUI() end
+    SendNUIMessage({ action = 'refresh', data = fresh, error = (not result.ok) and result.message or nil })
 end)
 
 ---------------------------------

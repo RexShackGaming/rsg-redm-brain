@@ -78,10 +78,11 @@ function Webhook.Send(logType, data)
         clean[i] = { name = trunc(f.name, 256), value = trunc(f.value ~= '' and f.value or '-', 1024), inline = f.inline and true or false }
     end
 
+    local ping = data.alert and Cfg.mentionOnAlert ~= ''
     local payload = {
         username = Cfg.username,
         avatar_url = Cfg.avatar ~= '' and Cfg.avatar or nil,
-        content = (data.alert and Cfg.mentionOnAlert ~= '') and Cfg.mentionOnAlert or nil,
+        content = ping and Cfg.mentionOnAlert or nil,
         embeds = { {
             title = trunc(data.title, 256),
             description = data.description and trunc(data.description, 4096) or nil,
@@ -91,7 +92,8 @@ function Webhook.Send(logType, data)
             footer = { text = Cfg.footer },
             timestamp = isoTime(),
         } },
-        allowed_mentions = { parse = { 'roles', 'users' } },
+        -- embeds never ping; only the alert ping in `content` may mention roles / users
+        allowed_mentions = { parse = ping and { 'roles', 'users' } or {} },
     }
 
     if #queue >= Cfg.maxQueue then table.remove(queue, 1) end

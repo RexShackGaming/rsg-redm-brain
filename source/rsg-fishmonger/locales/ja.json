@@ -95,5 +95,18 @@
     "ui_bonus": "あなたのボーナス",
     "ui_stock_left": "本日の買取枠",
     "ui_unlimited": "無制限",
-    "ui_over_stock": "魚屋が今日買い取る数を超えています"
+    "ui_over_stock": "魚屋が今日買い取る数を超えています",
+    "ui_orders": "本日の注文",
+    "ui_order_deliver": "納品",
+    "ui_order_done": "納品済み",
+    "ui_order_reward": "報酬",
+    "ui_order_title": "注文を納品",
+    "ui_order_confirm": "{fish} x {qty} を {cash} で納品しますか？",
+    "ui_fillet_tag": "切り身",
+    "sv_order_done": "注文を納品しました！$%s を受け取りました",
+    "sv_order_invalid": "その注文は利用できません",
+    "sv_order_already": "この注文は今日すでに納品済みです",
+    "sv_shop_next_tier": "釣りレベル%sに到達すると、ここでより良い用品が解放されます",
+    "item_sell_hint": "魚屋で約$%sで売れます",
+    "wh_order_title": "釣りの注文を納品"
 }

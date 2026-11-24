@@ -41,3 +41,41 @@ end
 function StripComposite(plant)
     return (plant:gsub('COMPOSITE_LOOTABLE_', ''):gsub('_INTERACTABLE', ''))
 end
+
+-- Tonic quality tier for a herbalism level (nil level = rsg-skills unavailable -> lowest tier).
+function GetTonicTier(level)
+    local q = Config.TonicQuality
+    if not q or not q.enabled or not q.tiers or #q.tiers == 0 then return nil end
+    local best, lowest
+    for _, t in ipairs(q.tiers) do
+        if not lowest or t.level < lowest.level then lowest = t end
+        if level and level >= t.level and (not best or t.level >= best.level) then best = t end
+    end
+    return best or lowest
+end
+
+function GetTonicTierByKey(key)
+    local q = Config.TonicQuality
+    if not q or not q.enabled then return nil end
+    for _, t in ipairs(q.tiers) do
+        if t.key == key then return t end
+    end
+    return nil
+end
+
+-- A recipe is only usable when its ingredient and output items are registered.
+function HerbalistRecipeValid(recipe, items)
+    if not items[recipe.output.item] then return false end
+    for _, ingredient in ipairs(recipe.ingredients) do
+        if not items[ingredient.item] then return false end
+    end
+    return true
+end
+
+function HerbalistRecipeLabel(recipe)
+    if recipe.labelItem then
+        local def = exports['rsg-core']:GetCoreObject().Shared.Items[recipe.labelItem]
+        return locale(recipe.label, def and def.label or recipe.labelItem)
+    end
+    return locale(recipe.label)
+end

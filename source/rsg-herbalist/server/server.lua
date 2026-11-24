@@ -6,11 +6,8 @@ local function Debug(msg)
     end
 end
 
-local function Notify(src, title, description, nType)
-    TriggerClientEvent('RSGCore:Client:Notify', src, {
-        title = title, description = description, type = nType or 'error', duration = 5000,
-    })
-end
+local Notify = Herbalist.Notify
+local IsDead = Herbalist.IsDead
 
 local function ItemLabel(item)
     local def = RSGCore.Shared.Items[item]
@@ -34,12 +31,12 @@ local function CanCarry(src, item, amount)
     return exports['rsg-inventory']:CanAddItem(src, item, amount) and true or false
 end
 
-local function GiveItem(src, item, amount, reason)
-    return exports['rsg-inventory']:AddItem(src, item, amount, nil, nil, reason) and true or false
+local function GiveItem(src, item, amount, reason, info)
+    return exports['rsg-inventory']:AddItem(src, item, amount, info, nil, reason) and true or false
 end
 
-local function TakeItem(src, item, amount, reason)
-    return exports['rsg-inventory']:RemoveItem(src, item, amount, nil, reason) and true or false
+local function TakeItem(src, item, amount, reason, slot)
+    return exports['rsg-inventory']:RemoveItem(src, item, amount, slot, reason) and true or false
 end
 
 -- rsg-skills (optional): award XP and read perks, both on the server
@@ -54,9 +51,26 @@ local function skillPerk(src, perk)
     return tonumber(exports['rsg-skills']:GetPerk(src, Config.Skills.Skill, perk)) or 0
 end
 
-local function IsDead(Player)
-    local md = Player.PlayerData.metadata
-    return md and md.isdead
+-- Herbalism level, or nil when rsg-skills is off/not started (then no level gating applies).
+local function HerbalismLevel(src)
+    if not Config.Skills.Enabled or GetResourceState('rsg-skills') ~= 'started' then return nil end
+    local ok, lvl = pcall(function() return exports['rsg-skills']:GetLevel(src, Config.Skills.Skill) end)
+    return ok and tonumber(lvl) or nil
+end
+
+-- Field guide: per-player gather counts in player metadata (rsg-core saves it, no table needed).
+function Herbalist.RecordFound(src, Player, item, amount)
+    if not Config.FieldGuide.Enabled or not Player or not item then return end
+    local current = Player.PlayerData.metadata and Player.PlayerData.metadata.herbalist_guide
+    local guide = {}
+    if type(current) == 'table' then for k, v in pairs(current) do guide[k] = v end end
+    local isNew = guide[item] == nil
+    guide[item] = (tonumber(guide[item]) or 0) + (amount or 1)
+    Player.Functions.SetMetaData('herbalist_guide', guide)
+    if isNew then
+        Notify(src, locale('guide_new_title'), locale('guide_new_description', ItemLabel(item)), 'success')
+        skillXP(src, Config.FieldGuide.DiscoveryXP, 'herb discovered')
+    end
 end
 
 ----------------------------------------------------------------------------
@@ -140,25 +154,119 @@ for key, item in pairs(toItem) do
     end
 end
 
+-- Nodes whose plant has no registered item can never be gathered. Spawn ids must stay
+-- identical on client and server, so instead of dropping them from the list we re-point
+-- them at a gatherable plant from the same zone (sent to clients as a plant override),
+-- or, if the zone has none, mark them disabled (sent as permanently suppressed).
+local function isMapped(plant)
+    return toItem[StripComposite(plant)] ~= nil
+end
+
+local disabledSet = {}
+local disabledIds = {}
 do
-    local warned = {}
-    for _, s in ipairs(spawns) do
-        local key = StripComposite(s.plant)
-        if not toItem[key] and not warned[key] then
-            warned[key] = true
-            print(('[rsg-herbalist] ^3warning: no item mapping for plant %s^7'):format(s.plant))
+    local warned, reassigned = {}, 0
+    for id, s in ipairs(spawns) do
+        if not isMapped(s.plant) then
+            local key = StripComposite(s.plant)
+            if not warned[key] then
+                warned[key] = true
+                print(('[rsg-herbalist] ^3warning: no item mapping for plant %s^7'):format(s.plant))
+            end
+            local replacement
+            for _, p in ipairs(Config.Zones[s.zone].plants) do
+                if isMapped(p) then replacement = p break end
+            end
+            if replacement then
+                s.plant = replacement
+                reassigned = reassigned + 1
+            else
+                disabledSet[id] = true
+                disabledIds[#disabledIds + 1] = id
+            end
         end
+    end
+    if reassigned > 0 or #disabledIds > 0 then
+        print(('[rsg-herbalist] ^3%d node(s) re-pointed to a gatherable plant, %d disabled (no registered item)^7'):format(reassigned, #disabledIds))
     end
     Debug(('built %d spawn entries'):format(#spawns))
 end
 
+-- Persistence: regrow timers and regrown plants survive restarts (resource KVP, no database).
+local KVP_KEY = 'nodes_v1'
+local nodesDirty = false
+
+local function SaveNodes()
+    if not nodesDirty then return end
+    nodesDirty = false
+    local data = { count = #spawns, suppressed = {}, plants = {} }
+    for id, wearoff in pairs(suppressedUntil) do data.suppressed[#data.suppressed + 1] = { id, wearoff } end
+    for id, s in ipairs(spawns) do
+        if s.plant ~= defaultPlant[id] then data.plants[#data.plants + 1] = { id, s.plant } end
+    end
+    SetResourceKvp(KVP_KEY, json.encode(data))
+end
+
+do
+    local raw = GetResourceKvpString(KVP_KEY)
+    local ok, data = pcall(json.decode, raw or '')
+    -- ids are positions in the spawn list, so ignore saved state if the list changed size
+    if ok and type(data) == 'table' and data.count == #spawns then
+        for _, e in ipairs(data.plants or {}) do
+            local s = spawns[e[1]]
+            if s and type(e[2]) == 'string' and not disabledSet[e[1]] and isMapped(e[2]) then
+                for _, p in ipairs(Config.Zones[s.zone].plants) do
+                    if p == e[2] then s.plant = e[2] break end
+                end
+            end
+        end
+        local restored = 0
+        for _, e in ipairs(data.suppressed or {}) do
+            if spawns[e[1]] and not disabledSet[e[1]] and type(e[2]) == 'number' then
+                suppressedUntil[e[1]] = e[2]
+                restored = restored + 1
+            end
+        end
+        Debug(('restored %d regrow timers'):format(restored))
+    end
+end
+
+-- Every herb the field guide lists: gatherable plants plus the mystery box pools.
+local guideItems = {}
+do
+    local seen = {}
+    local function add(item)
+        if item and not seen[item] and RSGCore.Shared.Items[item] then
+            seen[item] = true
+            guideItems[#guideItems + 1] = item
+        end
+    end
+    for _, item in pairs(toItem) do add(item) end
+    local mb = Config.MysteryBox
+    if mb then
+        for _, item in ipairs(mb.herbPool or {}) do add(item) end
+        for _, item in ipairs(mb.orchidPool or {}) do add(item) end
+    end
+    table.sort(guideItems)
+end
+
+RSGCore.Functions.CreateCallback('rsg-herbalist:server:getGuide', function(source, cb)
+    local Player = RSGCore.Functions.GetPlayer(source)
+    if not Config.FieldGuide.Enabled or not Player then return cb(nil) end
+    local found = Player.PlayerData.metadata and Player.PlayerData.metadata.herbalist_guide
+    cb({ items = guideItems, found = type(found) == 'table' and found or {} })
+end)
+
 RegisterNetEvent('rsg-herbalist:server:gathered', function(id)
     local src = source
+    Debug(('gather request src=%s id=%s'):format(src, tostring(id)))
     local spawn = type(id) == 'number' and spawns[id]
     if not spawn then
         Webhook.FlagSuspicious(src, 'gather_unknown_spawn', 'id=' .. tostring(id))
         return
     end
+
+    if disabledSet[id] then Debug(('rejected id=%d: node disabled (no registered item)'):format(id)) return end
 
     if suppressedUntil[id] then
         Debug(('already gathered id=%d'):format(id)) -- common race when two players pick at once
@@ -172,7 +280,7 @@ RegisterNetEvent('rsg-herbalist:server:gathered', function(id)
     end
 
     local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player or IsDead(Player) then return end
+    if not Player or IsDead(Player) then Debug('rejected: no player or dead') return end
 
     local ped = GetPlayerPed(src)
     if ped == 0 then return end
@@ -184,24 +292,33 @@ RegisterNetEvent('rsg-herbalist:server:gathered', function(id)
     end
 
     local item = toItem[StripComposite(spawn.plant)]
-    if not item then return end
+    if not item then
+        Debug(('rejected id=%d: plant %s has no item'):format(id, spawn.plant))
+        TriggerClientEvent('rsg-herbalist:client:ForceReload', src, id)
+        return
+    end
 
     lastGatherAt[src] = now
 
     if not CanCarry(src, item, 1) or not GiveItem(src, item, 1, 'rsg-herbalist:gather') then
+        Debug(('rejected id=%d: could not add %s'):format(id, item))
         Notify(src, locale('inventory_full_title'), locale('inventory_full_description'))
         TriggerClientEvent('rsg-herbalist:client:ForceReload', src, id)
         return
     end
 
+    Herbalist.RecordFound(src, Player, item, 1)
     suppressedUntil[id] = os.time() + Config.SuppressionWearoffSeconds
+    nodesDirty = true
     TriggerClientEvent('rsg-herbalist:client:SetSuppressed', -1, id, true)
     Webhook.LogGather(src, ItemLabel(item), ('#%d %s'):format(id, tostring(spawn.coord)))
 
     -- rsg-skills: XP and the extra_yield perk (chance of one more herb)
     skillXP(src, Config.Skills.GatherXP, 'herb gathered')
     if Config.Skills.ExtraYield and math.random(100) <= skillPerk(src, 'extra_yield') and CanCarry(src, item, 1) then
-        GiveItem(src, item, 1, 'rsg-herbalist:skill-bonus')
+        if GiveItem(src, item, 1, 'rsg-herbalist:skill-bonus') then
+            Herbalist.RecordFound(src, Player, item, 1)
+        end
     end
 end)
 
@@ -213,11 +330,12 @@ CreateThread(function()
         for id, wearoff in pairs(suppressedUntil) do
             if wearoff <= now then
                 suppressedUntil[id] = nil
+                nodesDirty = true
                 local spawn = spawns[id]
                 local plants = Config.Zones[spawn.zone].plants
                 local candidates = {}
                 for _, p in ipairs(plants) do
-                    if p ~= spawn.plant then candidates[#candidates + 1] = p end
+                    if p ~= spawn.plant and isMapped(p) then candidates[#candidates + 1] = p end
                 end
                 if #candidates > 0 then
                     spawn.plant = candidates[math.random(#candidates)]
@@ -225,6 +343,7 @@ CreateThread(function()
                 TriggerClientEvent('rsg-herbalist:client:SetSuppressed', -1, id, false, spawn.plant)
             end
         end
+        SaveNodes()
     end
 end)
 
@@ -237,6 +356,7 @@ RegisterNetEvent('rsg-herbalist:server:requestSync', function()
 
     local ids, overrides = {}, {}
     for id in pairs(suppressedUntil) do ids[#ids + 1] = id end
+    for i = 1, #disabledIds do ids[#ids + 1] = disabledIds[i] end
     for id, s in ipairs(spawns) do
         if s.plant ~= defaultPlant[id] then
             overrides[#overrides + 1] = { id, s.plant }
@@ -256,17 +376,43 @@ end)
 
 local tonicsById = {}
 for _, tonic in ipairs(Config.Tonics) do
-    tonicsById[tonic.id] = tonic
+    if HerbalistRecipeValid(tonic, RSGCore.Shared.Items) then
+        tonicsById[tonic.id] = tonic
+    else
+        print(('[rsg-herbalist] ^3warning: recipe "%s" skipped, an ingredient or output item is not registered^7'):format(tonic.id))
+    end
 end
 
 local lastCraftAt = {}
 local pendingCraft = {}   -- src -> { id, startedAt }
 local lastTonicUseAt = {}
 
+-- A craft the client never finished or cancelled (crash, killed thread) must not
+-- lock the player out forever: a pending craft expires shortly after its duration.
+local CRAFT_EXPIRY_GRACE_MS = 15000
+
+local function IsCraftPending(src)
+    local pending = pendingCraft[src]
+    if not pending then return false end
+    local tonic = tonicsById[pending.id]
+    if tonic and GetGameTimer() - pending.startedAt > tonic.durationMs + CRAFT_EXPIRY_GRACE_MS then
+        pendingCraft[src] = nil
+        return false
+    end
+    return true
+end
+
 local function HasHerbalistJob(Player)
     if not Config.LockTonicCraftingToJob then return true end
+    local name = Config.TonicCraftingJobName
     local job = Player.PlayerData.job
-    return job and job.name == Config.TonicCraftingJobName
+    if job and job.name == name then return true end
+    -- multi-job (rsg-core): a job the player holds but isn't currently on also counts
+    if Config.LockAllowAnyHeldJob then
+        local ok, held = pcall(function() return exports['rsg-core']:HasPlayerJob(Player.PlayerData.source, name) end)
+        return ok and held == true
+    end
+    return false
 end
 
 local function HasIngredients(Player, tonic)
@@ -289,28 +435,36 @@ RSGCore.Functions.CreateUseableItem('mortarpestle', function(source)
         Notify(src, locale('craft_locked_title'), locale('craft_locked_description'))
         return
     end
-    if pendingCraft[src] then return end
+    if IsCraftPending(src) then return end
 
-    TriggerClientEvent('rsg-herbalist:client:OpenTonicCrafting', src)
+    TriggerClientEvent('rsg-herbalist:client:OpenTonicCrafting', src, HerbalismLevel(src))
 end)
 
 for itemName in pairs(Config.TonicEffects) do
-    RSGCore.Functions.CreateUseableItem(itemName, function(source)
+    RSGCore.Functions.CreateUseableItem(itemName, function(source, usedItem)
         local src = source
         local Player = RSGCore.Functions.GetPlayer(src)
         if not Player or IsDead(Player) then return end
 
         local now = GetGameTimer()
-        local cooldownMs = Config.TonicUseCooldownMs or 0
-        if cooldownMs > 0 and lastTonicUseAt[src] and (now - lastTonicUseAt[src]) < cooldownMs then
-            local remaining = math.ceil((cooldownMs - (now - lastTonicUseAt[src])) / 1000)
+        local effect = Config.TonicEffects[itemName]
+        local group = effect.group or 'tonic'
+        local cooldownMs = effect.cooldownMs or Config.TonicUseCooldownMs or 0
+        local lastUse = lastTonicUseAt[src] and lastTonicUseAt[src][group]
+        if cooldownMs > 0 and lastUse and (now - lastUse) < cooldownMs then
+            local remaining = math.ceil((cooldownMs - (now - lastUse)) / 1000)
             Notify(src, locale('tonic_cooldown_title'), locale('tonic_cooldown_description', remaining))
             return
         end
 
-        if not TakeItem(src, itemName, 1, 'rsg-herbalist:drink-tonic') then return end
-        lastTonicUseAt[src] = now
-        TriggerClientEvent('rsg-herbalist:client:ApplyTonicEffect', src, itemName)
+        -- remove the exact stack that was used (tiers stack separately) and read its tier
+        local tierKey = type(usedItem) == 'table' and type(usedItem.info) == 'table' and usedItem.info.tonic_tier
+        local tier = tierKey and GetTonicTierByKey(tierKey)
+        local slot = type(usedItem) == 'table' and math.tointeger(tonumber(usedItem.slot)) or nil
+        if not TakeItem(src, itemName, 1, 'rsg-herbalist:drink-tonic', slot) then return end
+        lastTonicUseAt[src] = lastTonicUseAt[src] or {}
+        lastTonicUseAt[src][group] = now
+        TriggerClientEvent('rsg-herbalist:client:ApplyTonicEffect', src, itemName, tier and tier.boost or 1.0)
     end)
 end
 
@@ -321,7 +475,7 @@ RegisterNetEvent('rsg-herbalist:server:requestCraft', function(tonicId)
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player or IsDead(Player) then return end
 
-    if pendingCraft[src] then
+    if IsCraftPending(src) then
         Webhook.FlagSuspicious(src, 'craft_double_request', 'tonicId=' .. tostring(tonicId))
         return
     end
@@ -339,9 +493,22 @@ RegisterNetEvent('rsg-herbalist:server:requestCraft', function(tonicId)
         return
     end
 
-    local tonic = tonicsById[tonicId]
+    -- The mortarpestle item is the only way in, so a request without one never came from the menu.
+    if PlayerItemCount(Player, 'mortarpestle') < 1 then
+        Webhook.FlagSuspicious(src, 'craft_no_mortarpestle', 'tonicId=' .. tostring(tonicId))
+        return
+    end
+
+    tonicId = type(tonicId) == 'string' and tonicId or nil
+    local tonic = tonicId and tonicsById[tonicId]
     if not tonic then
         Webhook.FlagSuspicious(src, 'craft_unknown_tonic', 'tonicId=' .. tostring(tonicId))
+        return
+    end
+
+    local level = HerbalismLevel(src)
+    if level and level < (tonic.minLevel or 1) then
+        Notify(src, locale('craft_level_title'), locale('craft_level_description', tonic.minLevel or 1))
         return
     end
 
@@ -396,14 +563,19 @@ RegisterNetEvent('rsg-herbalist:server:finishCraft', function()
         removed[#removed + 1] = ingredient
     end
 
-    if not GiveItem(src, tonic.output.item, tonic.output.amount, 'rsg-herbalist:craft') then
+    local tier = tonic.quality ~= false and GetTonicTier(HerbalismLevel(src)) or nil
+    local info = tier and { tonic_tier = tier.key } or nil
+    if not GiveItem(src, tonic.output.item, tonic.output.amount, 'rsg-herbalist:craft', info) then
         Refund(removed)
         Notify(src, locale('inventory_full_title'), locale('craft_inventory_full_description'))
         Webhook.LogCraft(src, tonic, 'refunded')
         return
     end
 
-    Notify(src, locale('craft_done_title'), locale('craft_done_description', tonic.output.amount, ItemLabel(tonic.output.item)), 'success')
+    local doneText = tier
+        and locale('craft_done_tier_description', tonic.output.amount, ItemLabel(tonic.output.item), locale(tier.label))
+        or locale('craft_done_description', tonic.output.amount, ItemLabel(tonic.output.item))
+    Notify(src, locale('craft_done_title'), doneText, 'success')
     Webhook.LogCraft(src, tonic, 'success')
 end)
 
@@ -428,6 +600,7 @@ end)
 
 AddEventHandler('onResourceStop', function(resourceName)
     if GetCurrentResourceName() == resourceName then
+        SaveNodes()
         Webhook.LogResourceEvent('stopped')
     end
 end)

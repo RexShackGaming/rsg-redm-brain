@@ -6,12 +6,11 @@ lua54 'yes'
 author 'RexShack'
 name 'rsg-herbalist'
 description 'Herbalist script for RSG Framework'
-version '3.2.0'
+version '3.5.4'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
     'shared/config.lua',
-    'shared/webhook_config.lua',
     'shared/zones_data.lua',
     'shared/spawns.lua',
 }
@@ -24,9 +23,12 @@ client_scripts {
 }
 
 server_scripts {
+    'server/utils.lua',
+    'server/webhook_config.lua',
     'server/webhook.lua',
     'server/server.lua',
     'server/mysterybox.lua',
+    'server/buyer.lua',
     'server/versionchecker.lua'
 }
 
@@ -42,6 +44,7 @@ files {
 dependencies {
     'rsg-core',
     'rsg-inventory',
+    'rsg-target',
 }
 
 exports {

@@ -95,5 +95,18 @@
     "ui_bonus": "Twój bonus",
     "ui_stock_left": "Skup dzisiaj",
     "ui_unlimited": "Bez limitu",
-    "ui_over_stock": "Więcej ryb, niż handlarz kupi dzisiaj"
+    "ui_over_stock": "Więcej ryb, niż handlarz kupi dzisiaj",
+    "ui_orders": "Dzisiejsze zamówienia",
+    "ui_order_deliver": "Dostarcz",
+    "ui_order_done": "Dostarczono",
+    "ui_order_reward": "Nagroda",
+    "ui_order_title": "Dostarcz zamówienie",
+    "ui_order_confirm": "Dostarczyć {qty} x {fish} za {cash}?",
+    "ui_fillet_tag": "Filet",
+    "sv_order_done": "Zamówienie dostarczone! Otrzymano $%s",
+    "sv_order_invalid": "To zamówienie jest niedostępne",
+    "sv_order_already": "Dzisiaj już dostarczyłeś to zamówienie",
+    "sv_shop_next_tier": "Osiągnij poziom wędkarstwa %s, aby odblokować tu lepsze zaopatrzenie",
+    "item_sell_hint": "Sprzedaje się u rybaka za około $%s",
+    "wh_order_title": "Dostarczono zamówienie wędkarskie"
 }

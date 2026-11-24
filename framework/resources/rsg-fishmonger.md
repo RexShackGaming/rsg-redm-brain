@@ -1,6 +1,6 @@
 # rsg-fishmonger
 
-Version 3.2.0. rsg-fishmonger
+Version 3.3.1. rsg-fishmonger
 
 A fishmonger system for **RSG-Core (RedM)**. Players visit a fishmonger NPC in any major town to **sell their catch for cash** or **process fish into fillets**, using a cart-based menu styled to match the rest of the RSG UI. - **8 fishmonger NPCs**: Saint Denis, Blackwater, Valentine, Rhodes, Annesburg, Van Horn, Tumbleweed and the river trading post. Each has an optional map blip. - **Sell or pro
 
@@ -14,9 +14,11 @@ Has NUI (`ui_page`).
 
 **server:** `rsg-fishmonger:server:openShop`
 
+**client:** `RSGCore:Client:OnPlayerUnload`, `rsg-fishmonger:client:hours`
+
 ## Callbacks (RSGCore.Functions.CreateCallback)
 
-**server:** `rsg-fishmonger:server:checkout`, `rsg-fishmonger:server:getMenuData`
+**server:** `rsg-fishmonger:server:checkout`, `rsg-fishmonger:server:deliverOrder`, `rsg-fishmonger:server:getHours`, `rsg-fishmonger:server:getMenuData`
 
 ## Commands (RSGCore.Commands.Add)
 
@@ -28,4 +30,4 @@ Has NUI (`ui_page`).
 
 ## Database tables
 
-`rsg_fishmonger_stock`
+`rsg_fishmonger_orders`, `rsg_fishmonger_stock`

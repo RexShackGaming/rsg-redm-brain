@@ -12,6 +12,15 @@ Config.NearbyRange = 15.0              -- radius refreshed once/sec for interact
 Config.PickupRange = 3.0               -- client-side distance within which a node can be picked
 Config.CompositeLoadTimeoutMs = 10000  -- max time to wait for a composite asset to stream in
 
+-- Controls that count as "pick up" for herbs and the mystery box. 0xF6BB7378 is the one the
+-- game's herb prompt fires on keyboard (confirmed with Config.Debug, which logs the control that
+-- fired). R (0xE30CD707, reload) is deliberately not accepted. If a controller layout doesn't
+-- work, play with Config.Debug = true and add the hash it logs. Old alternates from the original
+-- script: 0xCEFD9220 (E), 0x41AC83D1 (Loot), 0xEB2AC491, 0xFF8109D8, 0x27D1C284, 0xBE8593AF.
+Config.PickupControls = {
+    0xF6BB7378,
+}
+
 -- Gathering
 Config.GatherDurationMs = 3000            -- length of the gather progress bar
 
@@ -23,6 +32,12 @@ Config.GatherProgressBarEnabled = false
 Config.GatherCooldownMs = 2500            -- server-side minimum time between gather attempts per player
 Config.ScopeRangeGather = 3.5             -- server-side distance check before a gather is accepted
 Config.SuppressionWearoffSeconds = 10 * 60 -- how long a gathered node stays empty before it regrows
+
+-- While the crafting UI is open, game controls are blocked but push-to-talk (rsg-voice) still works.
+Config.AllowPushToTalkWhileOpen = true
+Config.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK
+}
 
 -- Tonic crafting
 -- The menu has a single entry point: using the 'mortarpestle' item from the
@@ -111,6 +126,12 @@ Config.TonicEffects = {
     tonic_stamina  = { staminaBoost = 0.5 },
     tonic_antidote = { healthBoost = 0.3 },
     tonic_energy   = { staminaBoost = 0.35, healthBoost = 0.1 },
+
+    -- Teas: weaker, shorter cooldown (own group), and thirstBoost (0-100 points on the HUD thirst bar).
+    herbal_tea_mint  = { thirstBoost = 30, staminaBoost = 0.1, group = 'tea', cooldownMs = 30 * 1000 },
+    herbal_tea_yarrow= { thirstBoost = 20, healthBoost = 0.2, group = 'tea', cooldownMs = 30 * 1000 },
+    herbal_tea_sage  = { thirstBoost = 20, staminaBoost = 0.2, group = 'tea', cooldownMs = 30 * 1000 },
+    herbal_tea_thyme = { thirstBoost = 25, healthBoost = 0.1, staminaBoost = 0.1, group = 'tea', cooldownMs = 30 * 1000 },
 }
 
 -- Minimum time (ms) a player must wait between drinking tonics, enforced
@@ -125,6 +146,8 @@ Config.TonicUseCooldownMs = 5 * 60 * 1000 -- 5 minutes
 -- the database via rsg-core's /jobadmin (see installation/shared_jobs.lua for grades).
 Config.LockTonicCraftingToJob = false
 Config.TonicCraftingJobName = 'herbalist'
+-- rsg-core multi-job: also accept players who hold the job without it being their active one.
+Config.LockAllowAnyHeldJob = true
 
 Config.MysteryBox = {
     enabled = true,
@@ -209,6 +232,7 @@ Config.MysteryBox = {
 Config.Tonics = {
     {
         id = 'tonic_healing',
+        minLevel = 1, -- herbalism level (rsg-skills) needed to brew this; ignored when rsg-skills is off
         label = 'tonic_healing_label', -- locale key (locales/*.json)
         description = 'tonic_healing_description', -- locale key (locales/*.json)
         image = 'tonic_healing.png',
@@ -221,6 +245,7 @@ Config.Tonics = {
     },
     {
         id = 'tonic_stamina',
+        minLevel = 5, -- herbalism level (rsg-skills) needed to brew this; ignored when rsg-skills is off
         label = 'tonic_stamina_label', -- locale key (locales/*.json)
         description = 'tonic_stamina_description', -- locale key (locales/*.json)
         image = 'tonic_stamina.png',
@@ -233,6 +258,7 @@ Config.Tonics = {
     },
     {
         id = 'tonic_antidote',
+        minLevel = 10, -- herbalism level (rsg-skills) needed to brew this; ignored when rsg-skills is off
         label = 'tonic_antidote_label', -- locale key (locales/*.json)
         description = 'tonic_antidote_description', -- locale key (locales/*.json)
         image = 'tonic_antidote.png',
@@ -246,6 +272,7 @@ Config.Tonics = {
     },
     {
         id = 'tonic_energy',
+        minLevel = 3, -- herbalism level (rsg-skills) needed to brew this; ignored when rsg-skills is off
         label = 'tonic_energy_label', -- locale key (locales/*.json)
         description = 'tonic_energy_description', -- locale key (locales/*.json)
         image = 'tonic_energy.png',
@@ -256,6 +283,185 @@ Config.Tonics = {
             { item = 'herb_golden_currant', amount = 1 },
         },
         output = { item = 'tonic_energy', amount = 1 },
+    },
+    -- Drying and tea recipes (same crafting menu, own tabs). Optional recipe fields:
+    --   category  'tonic' (default) | 'drying' | 'tea' - which tab it appears on
+    --   labelItem item whose name replaces %s in `label`
+    --   quality   false = never gets a quality tier
+    -- A recipe whose items aren't registered is skipped with a console warning.
+    {
+        id = 'dry_yarrow',
+        category = 'drying',
+        minLevel = 1,
+        quality = false, -- dried herbs have no quality tier
+        label = 'recipe_dried_label',
+        labelItem = 'herb_yarrow', -- the %s in the label is this item's name
+        description = 'recipe_dried_description',
+        image = 'dried_yarrow.png',
+        durationMs = 5000,
+        ingredients = { { item = 'herb_yarrow', amount = 3 } },
+        output = { item = 'dried_yarrow', amount = 3 },
+    },
+    {
+        id = 'dry_wild_mint',
+        category = 'drying',
+        minLevel = 1,
+        quality = false, -- dried herbs have no quality tier
+        label = 'recipe_dried_label',
+        labelItem = 'herb_wild_mint', -- the %s in the label is this item's name
+        description = 'recipe_dried_description',
+        image = 'dried_wild_mint.png',
+        durationMs = 5000,
+        ingredients = { { item = 'herb_wild_mint', amount = 3 } },
+        output = { item = 'dried_wild_mint', amount = 3 },
+    },
+    {
+        id = 'dry_red_sage',
+        category = 'drying',
+        minLevel = 1,
+        quality = false, -- dried herbs have no quality tier
+        label = 'recipe_dried_label',
+        labelItem = 'herb_red_sage', -- the %s in the label is this item's name
+        description = 'recipe_dried_description',
+        image = 'dried_red_sage.png',
+        durationMs = 5000,
+        ingredients = { { item = 'herb_red_sage', amount = 3 } },
+        output = { item = 'dried_red_sage', amount = 3 },
+    },
+    {
+        id = 'dry_oregano',
+        category = 'drying',
+        minLevel = 1,
+        quality = false, -- dried herbs have no quality tier
+        label = 'recipe_dried_label',
+        labelItem = 'herb_oregano', -- the %s in the label is this item's name
+        description = 'recipe_dried_description',
+        image = 'dried_oregano.png',
+        durationMs = 5000,
+        ingredients = { { item = 'herb_oregano', amount = 3 } },
+        output = { item = 'dried_oregano', amount = 3 },
+    },
+    {
+        id = 'dry_creeping_thyme',
+        category = 'drying',
+        minLevel = 1,
+        quality = false, -- dried herbs have no quality tier
+        label = 'recipe_dried_label',
+        labelItem = 'herb_creeping_thyme', -- the %s in the label is this item's name
+        description = 'recipe_dried_description',
+        image = 'dried_creeping_thyme.png',
+        durationMs = 5000,
+        ingredients = { { item = 'herb_creeping_thyme', amount = 3 } },
+        output = { item = 'dried_creeping_thyme', amount = 3 },
+    },
+    {
+        id = 'dry_wild_feverfew',
+        category = 'drying',
+        minLevel = 1,
+        quality = false, -- dried herbs have no quality tier
+        label = 'recipe_dried_label',
+        labelItem = 'herb_wild_feverfew', -- the %s in the label is this item's name
+        description = 'recipe_dried_description',
+        image = 'dried_wild_feverfew.png',
+        durationMs = 5000,
+        ingredients = { { item = 'herb_wild_feverfew', amount = 3 } },
+        output = { item = 'dried_wild_feverfew', amount = 3 },
+    },
+    {
+        id = 'herbal_tea_mint',
+        category = 'tea',
+        minLevel = 2,
+        label = 'recipe_tea_label',
+        labelItem = 'herbal_tea_mint',
+        description = 'tea_mint_description',
+        image = 'herbal_tea_mint.png',
+        durationMs = 7000,
+        ingredients = { { item = 'dried_wild_mint', amount = 2 } },
+        output = { item = 'herbal_tea_mint', amount = 1 },
+    },
+    {
+        id = 'herbal_tea_yarrow',
+        category = 'tea',
+        minLevel = 4,
+        label = 'recipe_tea_label',
+        labelItem = 'herbal_tea_yarrow',
+        description = 'tea_yarrow_description',
+        image = 'herbal_tea_yarrow.png',
+        durationMs = 8000,
+        ingredients = { { item = 'dried_yarrow', amount = 2 }, { item = 'dried_wild_mint', amount = 1 } },
+        output = { item = 'herbal_tea_yarrow', amount = 1 },
+    },
+    {
+        id = 'herbal_tea_sage',
+        category = 'tea',
+        minLevel = 6,
+        label = 'recipe_tea_label',
+        labelItem = 'herbal_tea_sage',
+        description = 'tea_sage_description',
+        image = 'herbal_tea_sage.png',
+        durationMs = 8000,
+        ingredients = { { item = 'dried_red_sage', amount = 1 }, { item = 'dried_oregano', amount = 1 } },
+        output = { item = 'herbal_tea_sage', amount = 1 },
+    },
+    {
+        id = 'herbal_tea_thyme',
+        category = 'tea',
+        minLevel = 8,
+        label = 'recipe_tea_label',
+        labelItem = 'herbal_tea_thyme',
+        description = 'tea_thyme_description',
+        image = 'herbal_tea_thyme.png',
+        durationMs = 9000,
+        ingredients = { { item = 'dried_creeping_thyme', amount = 2 }, { item = 'dried_wild_feverfew', amount = 1 } },
+        output = { item = 'herbal_tea_thyme', amount = 1 },
+    },
+}
+
+-- Tonic quality: the crafter's herbalism level decides the tier of every tonic they brew.
+-- The highest tier whose level is met wins. The tier is stored on the item (info.tonic_tier)
+-- and multiplies the health/stamina boost when the tonic is drunk (capped at a full core).
+-- Different tiers stack separately in the inventory. Without rsg-skills everything is the lowest tier.
+Config.TonicQuality = {
+    enabled = true,
+    tiers = {
+        { key = 'common',   level = 1,  boost = 1.0,  priceMult = 1.0,  label = 'tier_common' },
+        { key = 'fine',     level = 8,  boost = 1.25, priceMult = 1.25, label = 'tier_fine' },
+        { key = 'superior', level = 15, boost = 1.5,  priceMult = 1.5,  label = 'tier_superior' },
+    },
+}
+
+-- Field guide: records every herb a player has gathered (player metadata, no database table)
+-- and shows it in the NUI. Opened with /<Command>.
+Config.FieldGuide = {
+    Enabled = true,
+    Command = 'herbguide',
+    DiscoveryXP = 10, -- rsg-skills XP for the first time a herb is found (0 = none)
+}
+
+-- Herb buyer: NPC that buys tonics, teas and dried herbs at fixed server-side prices.
+-- Quality tiers multiply the price (tier.priceMult). Place buyers in game with /addherbbuyer
+-- (admin) or list fixed spots in `locations` as { coords = vector4(x, y, z, heading) }.
+-- Fresh herbs are deliberately not sold here.
+Config.Buyer = {
+    Enabled = true,
+    Model = `cs_exoticcollector`,   -- buyer ped; swap for any valid ped model
+    SpawnDistance = 50.0,
+    TargetDistance = 2.5,
+    MaxUseDistance = 5.0,           -- menu closes beyond this; the server allows a little extra
+    MoneyType = 'cash',
+    AdminPermission = 'admin',      -- ACE permission for /addherbbuyer and /removeherbbuyer
+    MaxPlaced = 20,                 -- cap on admin-placed buyers
+    SaleCooldownMs = 1000,
+    MaxPerSale = 100,
+    UseEconomy = true,              -- rsg-economy town tax / standing modifier, when it is running
+    locations = {
+        { coords = vector4(2429.99, -1262.82, 47.17, 354.84) },
+    },
+    prices = {
+        tonic_healing = 5.0, tonic_stamina = 6.0, tonic_antidote = 8.0, tonic_energy = 6.0,
+        herbal_tea_mint = 2.0, herbal_tea_yarrow = 3.0, herbal_tea_sage = 3.0, herbal_tea_thyme = 4.0,
+        dried_yarrow = 0.4, dried_wild_mint = 0.4, dried_red_sage = 0.4,
+        dried_oregano = 0.4, dried_creeping_thyme = 0.4, dried_wild_feverfew = 0.4,
     },
 }
 

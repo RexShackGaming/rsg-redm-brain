@@ -9,6 +9,7 @@ SvConfig.Webhooks = {
     username  = 'Moonshine Logs',
     avatar    = '',                -- optional avatar image url
     footer    = 'rsg-moonshine',
+    maxQueue  = 100,               -- max queued webhook messages (oldest dropped when exceeded)
     mirrorRsgLog = false,          -- also send each log to rsg-log (TriggerEvent 'rsg-log:server:CreateLog')
 
     -- fallback url used by any event whose own url is empty
@@ -25,6 +26,9 @@ SvConfig.Webhooks = {
         unload    = { enabled = false, url = '', color = 9807270  },
         recipe    = { enabled = true,  url = '', color = 10181046 },   -- purple
         levelup   = { enabled = true,  url = '', color = 16776960 },   -- yellow
-        suspicious= { enabled = true,  url = '', color = 10038562 },   -- dark red (failed server checks)
+        explosion = { enabled = true,  url = '', color = 15158332 },   -- red (a still blew up)
+    inspect   = { enabled = false, url = '', color = 9807270  },   -- grey (law inspections, noisy)
+    sell      = { enabled = true,  url = '', color = 3066993  },   -- green (bootlegger sale)
+    suspicious= { enabled = true,  url = '', color = 10038562 },   -- dark red (failed server checks)
     },
 }

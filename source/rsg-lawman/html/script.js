@@ -2,8 +2,8 @@ const $ = id => document.getElementById(id);
 const res = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'rsg-lawman';
 const post = (cb, data = {}) => fetch(`https://${res}/${cb}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).catch(() => {});
 let mode = null;
+let maxValue = 0;
 
-function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 function hideAll() { $('root').classList.add('hidden'); $('menu').classList.add('hidden'); $('input').classList.add('hidden'); mode = null; }
 
 function openMenu(d) {
@@ -13,9 +13,15 @@ function openMenu(d) {
   (d.options || []).forEach(o => {
     const row = document.createElement('div');
     row.className = 'row' + (o.disabled ? ' disabled' : '');
-    row.innerHTML = `<div class="badge-icon"><i class="${esc(o.icon || 'fa-solid fa-star')}"></i></div>
-      <div class="row-text"><div class="row-title">${esc(o.title)}</div>${o.description ? `<div class="row-desc">${esc(o.description)}</div>` : ''}</div>
-      <i class="fa-solid fa-chevron-right row-arrow"></i>`;
+    const badge = document.createElement('div'); badge.className = 'badge-icon';
+    const icon = document.createElement('i'); icon.className = String(o.icon || 'fa-solid fa-star').replace(/[^a-z0-9 -]/gi, '');
+    badge.appendChild(icon);
+    const text = document.createElement('div'); text.className = 'row-text';
+    const title = document.createElement('div'); title.className = 'row-title'; title.textContent = o.title || '';
+    text.appendChild(title);
+    if (o.description) { const desc = document.createElement('div'); desc.className = 'row-desc'; desc.textContent = o.description; text.appendChild(desc); }
+    const arrow = document.createElement('i'); arrow.className = 'fa-solid fa-chevron-right row-arrow';
+    row.append(badge, text, arrow);
     if (!o.disabled) row.addEventListener('click', () => { hideAll(); post('menuSelect', { id: o.id }); });
     list.appendChild(row);
   });
@@ -27,14 +33,15 @@ function openInput(d) {
   $('input-label').textContent = d.label || '';
   $('input-confirm').textContent = d.confirm || 'Confirm';
   $('input-cancel').textContent = d.cancel || 'Cancel';
-  const i = $('input-value'); i.value = ''; i.classList.remove('err');
+  maxValue = parseInt(d.max, 10) || 0;
+  const i = $('input-value'); i.value = ''; i.classList.remove('err'); i.placeholder = maxValue ? '1 - ' + maxValue : '';
   $('root').classList.remove('hidden'); $('input').classList.remove('hidden'); mode = 'input';
   setTimeout(() => i.focus(), 50);
 }
 
 function confirmInput() {
   const i = $('input-value'); const v = parseInt(i.value, 10);
-  if (!Number.isInteger(v) || v <= 0 || String(v) !== i.value.trim()) { i.classList.add('err'); return; }
+  if (!Number.isInteger(v) || v <= 0 || (maxValue && v > maxValue) || String(v) !== i.value.trim()) { i.classList.add('err'); return; }
   hideAll(); post('inputSubmit', { value: v });
 }
 function cancel() { const m = mode; hideAll(); post(m === 'input' ? 'inputSubmit' : 'close', { value: null }); }

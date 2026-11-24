@@ -95,5 +95,18 @@
     "ui_bonus": "Your bonus",
     "ui_stock_left": "Buying today",
     "ui_unlimited": "Unlimited",
-    "ui_over_stock": "More fish than the fishmonger will buy today"
+    "ui_over_stock": "More fish than the fishmonger will buy today",
+    "ui_orders": "Today's orders",
+    "ui_order_deliver": "Deliver",
+    "ui_order_done": "Delivered",
+    "ui_order_reward": "Reward",
+    "ui_order_title": "Deliver Order",
+    "ui_order_confirm": "Deliver {qty} x {fish} for {cash}?",
+    "ui_fillet_tag": "Fillet",
+    "sv_order_done": "Order delivered! You received $%s",
+    "sv_order_invalid": "That order is not available",
+    "sv_order_already": "You already delivered this order today",
+    "sv_shop_next_tier": "Reach fishing level %s to unlock better supplies here",
+    "item_sell_hint": "Sells to fishmongers for about $%s",
+    "wh_order_title": "Fishing Order Delivered"
 }

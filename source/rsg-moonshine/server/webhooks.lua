@@ -72,6 +72,7 @@ function WebhookLog(event, src, title, description, extra)
         fields[#fields + 1] = { name = f[1], value = tostring(f[2]), inline = f[3] ~= false }
     end
 
+    if #queue >= (W.maxQueue or 100) then table.remove(queue, 1) end -- never let a flood grow the queue without bound
     queue[#queue + 1] = {
         url = url,
         payload = {

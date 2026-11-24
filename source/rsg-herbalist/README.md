@@ -2,7 +2,7 @@
 
 A herb gathering, tonic crafting, and mystery box script for **RSG-Core** RedM servers, by RexShack.
 
-**Version 3.1.0** · No ox_lib required · Full developer/server-owner reference: [DOCS.md](DOCS.md)
+**Version 3.5.4** · No ox_lib required · Full developer/server-owner reference: [DOCS.md](DOCS.md)
 
 Players gather herbs from world-placed nodes, brew them into tonics at a mortar & pestle, and can stumble on a roaming mystery box that relocates around the map every so often. Every gather, craft, and loot roll is validated server-side, and an optional Discord webhook system can log activity (and flag likely exploiting) to your Discord.
 
@@ -33,7 +33,12 @@ Players gather herbs from world-placed nodes, brew them into tonics at a mortar 
 - Same server-authoritative validation as gathering: distance, cooldown, and one-shot looting so two players can't loot the same box.
 
 ### Discord webhook logging
-- Optional, fully configurable per event category (`shared/webhook_config.lua`): tonic crafting, mystery box loot, herb gathering, resource start/stop, and version checks each have their own on/off switch and webhook URL, so you can route them to different channels.
+- **Drying and teas:** the mortar and pestle has `Tonics`, `Drying` and `Teas` tabs. Dry fresh herbs into dried herbs, then brew teas from them. Teas restore a little health/stamina plus thirst (via `hud:client:UpdateThirst`) and have their own short cooldown.
+- **Herb buyer:** an NPC that buys tonics, teas and dried herbs at fixed server-side prices (quality tiers pay more; optional rsg-economy tax). Admins place buyers in game with `/addherbbuyer` and remove the nearest with `/removeherbbuyer`.
+- **Tonic quality:** your herbalism level (rsg-skills) sets the tier of every tonic you brew (Common / Fine / Superior), which scales its health/stamina boost. Each recipe has a minimum level. Without rsg-skills everything is Common and nothing is level-locked.
+- **Field guide:** `/herbguide` opens a NUI listing every herb, filled in as you gather them (saved on the character, no database table), with an optional XP reward for each first discovery.
+- Herb regrow timers and regrown plants are saved (resource KVP, no database tables) and survive restarts.
+- Optional, fully configurable per event category (`server/webhook_config.lua`): tonic crafting, mystery box loot, herb gathering, resource start/stop, and version checks each have their own on/off switch and webhook URL, so you can route them to different channels.
 - Built-in **anti-cheat alerting**: distance violations, plant-mismatch attempts, cooldown spam, and other rejected requests are tracked per player and only escalate to a Discord alert once a player racks up repeated violations in a short window - so one packet hiccup won't spam your log channel, but a real exploit attempt will.
 - Queued delivery that respects Discord's rate limits, with automatic retry on HTTP 429.
 
@@ -42,12 +47,16 @@ Players gather herbs from world-placed nodes, brew them into tonics at a mortar 
 
 ---
 
+## New items (3.5.0)
+Add the new `dried_*` and `herbal_tea_*` entries from `installation/shared_items.lua` to your items and copy the matching images from `installation/images/`. The images are placeholders (herb icons / the healing tonic icon), replace them with your own art. Recipes whose items are missing are skipped with a console warning. Add `rsg-target` to your start order before this resource.
+
 ## Dependencies
 
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
+- [rsg-target](https://github.com/Rexshack-RedM/rsg-target) (herb buyer NPC)
 
-Both must be started **before** `rsg-herbalist` in your `server.cfg`.
+All of these must be started **before** `rsg-herbalist` in your `server.cfg`.
 
 ---
 
@@ -55,7 +64,7 @@ Both must be started **before** `rsg-herbalist` in your `server.cfg`.
 
 1. Drop the `rsg-herbalist` folder into your server's `resources` directory.
 2. *(Only if you job-lock crafting with `Config.LockTonicCraftingToJob`)* create a `herbalist` job in-game with rsg-core's `/jobadmin` (jobs live in the database). `installation/shared_jobs.lua` shows the grades/fields to use.
-3. Add the items in `installation/shared_items.lua` to your `rsg-core` (or `rsg-inventory`, depending on your setup) `shared/items.lua`. This covers every herb, all four tonics, and the `mortarpestle` crafting item.
+3. Add the items in `installation/shared_items.lua` to your `rsg-core` (or `rsg-inventory`, depending on your setup) `shared/items.lua`. This covers every herb, all four tonics, the dried herbs, the herbal teas, and the `mortarpestle` crafting item.
 4. Copy every file in `installation/images/` into your inventory resource's item image folder (wherever `rsg-inventory` serves item icons from - commonly `rsg-inventory/html/images/`). This covers all the herb icons and the mortar & pestle icon.
    - Tonic icons (`tonic_*.png`) are included too. The crafting UI loads icons from `Config.InventoryImagePath` (default `nui://rsg-inventory/html/images/`) - change it if your inventory serves images from elsewhere.
 5. Add `ensure rsg-herbalist` to your `server.cfg`, after `rsg-core` and `rsg-inventory`. No database tables are needed.
@@ -65,7 +74,7 @@ Both must be started **before** `rsg-herbalist` in your `server.cfg`.
 
 ## Configuration
 
-All gameplay settings live in `shared/config.lua`. Webhook settings are in their own file, `shared/webhook_config.lua` (see below).
+All gameplay settings live in `shared/config.lua`. Webhook settings are in their own file, `server/webhook_config.lua` (see below).
 
 ### General
 
@@ -88,6 +97,15 @@ All gameplay settings live in `shared/config.lua`. Webhook settings are in their
 | Setting | Description |
 |---|---|
 | `Config.GatherDurationMs` | Length of the gather progress bar. |
+| `Config.Buyer` | Herb buyer: `Enabled`, `Model`, distances, `MoneyType`, `AdminPermission`, `MaxPlaced`, `locations`, `prices`. |
+| `Config.Tonics[n].category` / `labelItem` / `quality` | Recipe tab (`tonic`, `drying`, `tea`), name substitution, and `quality = false` to skip tiers. |
+| `Config.TonicEffects[item]` | Per item: `healthBoost`, `staminaBoost`, `thirstBoost`, plus `group` and `cooldownMs` for a separate cooldown. |
+| `Config.TonicQuality` | Quality tiers: `{ key, level, boost, label }`. Highest tier whose level is met wins. |
+| `Config.Tonics[n].minLevel` | Herbalism level needed to brew that tonic. |
+| `Config.FieldGuide` | `Enabled`, `Command` (default `herbguide`), `DiscoveryXP`. |
+| `Config.PickupControls` | Control hashes that count as "pick up" for herbs and the mystery box (default: the herb prompt control, `0xF6BB7378`). |
+| `Config.LockAllowAnyHeldJob` | With the job lock on, also accept players who hold the herbalist job (rsg-core multi-job) without it being active. |
+| `Config.AllowPushToTalkWhileOpen` / `Config.PushToTalkControls` | Keep push-to-talk working while the tonic crafting UI is open (all other game controls are blocked). |
 | `Config.GatherCooldownMs` | Server-side minimum time between gather attempts, per player. |
 | `Config.ScopeRangeGather` | Server-side distance check before a gather is accepted (tighter than the client's streaming range). |
 | `Config.SuppressionWearoffSeconds` | How long a gathered node stays empty before it regrows (as a new random plant from its zone). |
@@ -122,7 +140,7 @@ All under `Config.MysteryBox`:
 | `herbCountMin` / `herbCountMax` / `herbPool` | How many regular herbs (picked with repetition) are rolled per box, and the pool they're drawn from. |
 | `orchidPool` | Exactly one entry from this pool is guaranteed in every box - the "rare" reward. |
 
-### Discord webhooks (`shared/webhook_config.lua`)
+### Discord webhooks (`server/webhook_config.lua`)
 
 | Setting | Description |
 |---|---|
@@ -153,13 +171,14 @@ client/
   mysterybox.lua              mystery box prop streaming + interaction
   controls.lua                "pick up" input binding helper
 server/
+  utils.lua                    shared server helpers (Notify, IsDead)
+  webhook_config.lua           Discord webhook config (server-only, never sent to clients)
   webhook.lua                 Discord webhook queue/delivery + anti-cheat violation tracking
   server.lua                   gather validation, tonic crafting validation, item granting
   mysterybox.lua               mystery box location/loot authority
   versionchecker.lua           GitHub version check on start
 shared/
   config.lua                   gameplay config
-  webhook_config.lua            Discord webhook config
   spawns.lua                    deterministic herb spawn list (shared ids for client/server)
   zones_data.lua                herb spawn point data
 html/                         tonic crafting NUI (index.html, script.js, style.css)

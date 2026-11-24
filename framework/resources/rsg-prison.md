@@ -1,6 +1,6 @@
 # rsg-prison
 
-Version 3.3.1. rsg-prison
+Version 3.5.0. rsg-prison
 
 **Prison system for RedM servers using RSG Core.** - [rsg-core](https://github.com/Rexshack-RedM/rsg-core) - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
 
@@ -16,13 +16,21 @@ Has NUI (`ui_page`).
 
 ## Net events registered
 
-**server:** `rsg-prison:server:checkRelease`, `rsg-prison:server:escapeAttempt`, `rsg-prison:server:requestRation`, `rsg-prison:server:startSentence`
+**server:** `rsg-prison:server:checkRelease`, `rsg-prison:server:collectProperty`, `rsg-prison:server:escapeAttempt`, `rsg-prison:server:labourFinish`, `rsg-prison:server:requestBail`, `rsg-prison:server:requestRation`, `rsg-prison:server:startSentence`
 
-**client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `rsg-prison:client:Enter`, `rsg-prison:client:disarm`, `rsg-prison:client:freedom`, `rsg-prison:client:reequip`, `rsg-prison:client:requestRation`, `rsg-prison:client:updateTime`
+**client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Client:OnPlayerUnload`, `rsg-prison:client:Enter`, `rsg-prison:client:disarm`, `rsg-prison:client:freedom`, `rsg-prison:client:reequip`, `rsg-prison:client:return`, `rsg-prison:client:updateTime`
 
 ## Event handlers
 
 **client:** `rsg-medic:client:revive`
+
+## Callbacks (RSGCore.Functions.CreateCallback)
+
+**server:** `rsg-prison:server:labourStart`
+
+## Commands (RSGCore.Commands.Add)
+
+**server:** `/searchprisoner`
 
 ## Public (table) functions
 

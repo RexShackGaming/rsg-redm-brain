@@ -1,6 +1,6 @@
 -- rsg-zonenotify
 -- Shows a location banner (custom NUI or native RDR2) when you enter a new state, district or town.
--- Zone data ported from VORPCORE/vorp_zonenotify (credits: freedy69 / Bytesized).
+-- Zone data lives in shared/zones.lua (ported from VORPCORE/vorp_zonenotify, credits: freedy69 / Bytesized).
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
 local ZONE <const> = {
@@ -8,171 +8,50 @@ local ZONE <const> = {
     CREEK = 7, POND = 8, DISTRICT = 10, TEXT_PRINTED = 11, TEXT_WRITTEN = 12
 }
 
-local KVP_KEY <const> = 'rsg-zonenotify:enabled'
+local KVP_KEY   <const> = 'rsg-zonenotify:enabled' -- old on/off flag (2 = off), still read once
+local PREFS_KEY <const> = 'rsg-zonenotify:prefs'
+local LANDMARK_SCAN_MS <const> = 1500 -- landmark/water scan runs less often than the town/district/state check
 
 local isLoggedIn  = false
-local enabled     = GetResourceKvpInt(KVP_KEY) ~= 2 -- 2 = player turned banners off
+local prefs       = { banners = true, sound = true, time = true, temperature = true, wind = true } -- per player, saved in KVP
+local PREF_KEYS <const> = { banners = true, sound = true, time = true, temperature = true, wind = true }
 local stored      = { state = 0, district = 0, town = 0 }
-local pending     = nil -- banner waiting for the feed to be free: { text, zoneType, hash }
+local pending     = nil -- banner waiting to show: { text, zoneType, hash, kind, since }
 local lastManual  = 0
+local lastScan    = 0
 local discovered  = {}    -- [labelKey] = true, loaded from the server per character
+local discoveredCount = 0
 local discoveriesLoaded = false
+local loadGeneration = 0  -- guards against a late callback from a previous character
 local suppressed  = {}    -- [reason] = true, set by other resources (cinematic cameras etc.)
 local bannerVisible = false
+local currentZone = { state = nil, district = nil, town = nil } -- lower-case place keys, for the GetCurrentZone export
+
+local function LoadPrefs()
+    local raw = GetResourceKvpString(PREFS_KEY)
+    if raw then
+        local ok, t = pcall(json.decode, raw)
+        if ok and type(t) == 'table' then
+            for k in pairs(PREF_KEYS) do if type(t[k]) == 'boolean' then prefs[k] = t[k] end end
+        end
+    elseif GetResourceKvpInt(KVP_KEY) == 2 then
+        prefs.banners = false -- migrate the old /zonenotify choice
+    end
+end
+
+local function SavePrefs() SetResourceKvp(PREFS_KEY, json.encode(prefs)) end
+
+-- sound/time/temperature/wind follow the player's choice only when player options are on
+local function Pref(k) return not Config.PlayerOptions or prefs[k] end
+
+LoadPrefs()
 
 ----------------------------------------------------------------
--- zone data (built once, not on every lookup)
+-- zone data (tables are shared, see shared/zones.lua)
 ----------------------------------------------------------------
-local TOWNS <const> = {
-    [459833523] = 'TOWN_VALENTINE',    -- valentine
-    [2046780049] = 'TOWN_RHODES',      -- rhodes
-    [-765540529] = 'TOWN_SAINTDENIS',  -- saint denis
-    [427683330] = 'TOWN_STRAWBERRY',   -- strawberry
-    [1053078005] = 'TOWN_BLACKWATER',  -- blackwater
-    [-744494798] = 'TOWN_ARMADILLO',   -- armadillo
-    [-1524959147] = 'TOWN_TUMBLEWEED', -- tumbleweed
-    [7359335] = 'TOWN_ANNESBURG',      -- annesburg
-    [2126321341] = 'TOWN_VANHORN',     -- van horn
-    [201158410] = 'TOWN_MANICATO',
-    [1463094051] = 'SETTLEMENT_MANZANITA_POST'
-}
-
-local TEXT_WRITTEN <const> = {
-    [1350749955] = 'LANDMARK_MERKINS_WALLER',
-    [1062452343] = 'LANDMARK_MACOMBS_END',
-    [30800579] = 'LANDMARK_HAGEN_ORCHARDS',
-    [866178028] = 'HIDEOUT_SHADY_BELLE',
-    [930788089] = 'LANDMARK_SILTWATER_STRAND',
-    [-419963911] = 'SETTLEMENT_APPLESEED_TIMBER_CO',
-    [1212679502] = 'LANDMARK_BERYLS_DREAM',
-    [-828659305] = 'SETTLEMENT_FORT_RIGGS_HOLDING_CAMP',
-    [-103399754] = 'HIDEOUT_HANGING_DOG_RANCH',
-    [-576782619] = 'HOMESTEAD_LONE_MULE_STEAD',
-    [-1521776363] = 'HOMESTEAD_PAINTED_SKY',
-    [-120578354] = 'SETTLEMENT_PRONGHORN_RANCH', -- only shown when the mansion IPL is active (see below)
-    [-504005310] = 'HOMESTEAD_SHEPHERDS_RISE',
-    [-1161186391] = 'HOMESTEAD_WATSONS_CABIN',
-    [580715948] = 'LANDMARK_CANEBREAK_MANOR',
-    [1082216465] = 'LANDMARK_COPPERHEAD_LANDING',
-    [-61172588] = 'SETTLEMENT_COOTS_CHAPEL',
-    [1544029611] = 'SETTLEMENT_RIDGEWOOD_FARM',
-    [738939338] = 'LANDMARK_RILEYS_CHARGE',
-    [-146460093] = 'HOMESTEAD_FIRWOOD_RISE',
-    [2056953687] = 'HIDEOUT_SIX_POINT_CABIN',
-    [39999178] = 'HIDEOUT_GAPTOOTH_BREACH',
-    [1677148641] = 'SETTLEMENT_BEECHERS_HOPE',
-    [-1043500161] = 'HOMESTEAD_ADLER_RANCH',
-    [-2034338067] = 'HOMESTEAD_CHEZ_PORTER',
-    [-1496551068] = 'HIDEOUT_COLTER',
-    [2132554759] = 'LANDMARK_MILLESANI_CLAIM',
-    [-438809735] = 'LANDMARK_THE_LOFT',
-    [-291091669] = 'LANDMARK_OLD_GREENBANK_MILL',
-    [-1902025470] = 'HOMESTEAD_CARMODY_DELL',
-    [492552869] = 'SETTLEMENT_CORNWALL_KEROSENE_TAR',
-    [-1472363892] = 'HOMESTEAD_GUTHRIE_FARM',
-    [-657053325] = 'HOMESTEAD_DOWNES_RANCH',
-    [-870780939] = 'LANDMARK_GRANGERS_HOGGERY',
-    [1767462106] = 'HOMESTEAD_LARNED_SOD',
-    [229479634] = 'LANDMARK_LUCKYS_CABIN',
-    [219097977] = 'HOMESTEAD_ABERDEEN_PIG_FARM',
-    [-425430549] = 'SETTLEMENT_BUTCHER_CREEK',
-    [-969933882] = 'LANDMARK_BLACK_BALSAM_RISE',
-    [-645154787] = 'HOMESTEAD_DOVERHILL',
-    [-1592070727] = 'HOMESTEAD_MACLEANS_HOUSE',
-    [1016304714] = 'LANDMARK_MOSSY_FLATS',
-    [-154855189] = 'HOMESTEAD_WILLARDS_REST',
-    [1701820039] = 'HOMESTEAD_CATFISH_JACKSONS',
-    [1830267951] = 'HIDEOUT_CLEMENS_POINT',
-    [522499758] = 'HOMESTEAD_COMPSONS_STEAD',
-    [-1769528472] = 'HOMESTEAD_HILL_HAVEN_RANCH',
-    [770707682] = 'HOMESTEAD_LONNIES_SHACK',
-    [-259784188] = 'LANDMARK_RADLEYS_PASTURE',
-    [-264897431] = 'LANDMARK_BEAR_CLAW',
-    [1557904547] = 'SETTLEMENT_CENTRAL_UNION_RAILROAD_CAMP',
-    [-1419869345] = 'LANDMARK_TANNERS_REACH',
-    [690770514] = 'LANDMARK_VALLEY_VIEW',
-    [-545967610] = 'LANDMARK_EWING_BASIN',
-    -- test the ones below
-    [`W_5_BEAVER_HOLLOW`] = 'HIDEOUT_BEAVER_HOLLOW',
-    [`w_4_pleasance`] = 'LANDMARK_PLEASANCE_HOUSE',
-    [`w_5_limpany`] = 'SETTLEMENT_LIMPANY',
-    [`W_4_SCRATCHING_POST`] = 'LANDMARK_SCRATCHING_POST',
-    [`W_4_ODDFELLOWS_REST`] = 'LANDMARK_ODDFELLOWS_REST',
-    [`W_4_RATTLESNAKE_HOLLOW`] = 'LANDMARK_RATTLESNAKE_HOLLOW',
-    [`W_4_SILENT_STEAD`] = 'LANDMARK_SILENT_STEAD',
-    [`W_4_THE_HANGING_ROCK`] = 'LANDMARK_THE_HANGING_ROCK',
-    [`W_4_THE_OLD_BACCHUS_PLACE`] = 'LANDMARK_THE_OLD_BACCHUS_PLACE',
-    [`W_4_TWO_CROWS`] = 'LANDMARK_TWO_CROWS',
-    [`W_4_REPENTANCE`] = 'LANDMARK_REPENTANCE',
-    [`W_4_PIKES_BASIN`] = 'HIDEOUT_PIKES_BASIN',
-    [`W_4_EL_NIDO`] = 'SETTLEMENT_EL_NIDO',
-    [`W_4_BRITTLEBRUSH_TRAWL`] = 'LANDMARK_BRITTLEBUSH_TRAWL',
-    [`W_4_VENTERS_PLACE`] = 'LANDMARK_VENTERS_PLACE',
-    [`W_5_CHADWICK_FARM`] = 'HOMESTEAD_CHADWICK_FARM',
-    [`W_5_BLACK_BONE_FOREST`] = 'LANDMARK_BLACK_BONE_FOREST',
-    [`W_4_CUEVA_SECA`] = 'LANDMARK_CUEVA_SECA',
-    [`W_4_SOLOMONS_FOLLY`] = 'HIDEOUT_SOLOMONS_FOLLY',
-    [`W_5_FORT_BRENNAND`] = 'LANDMARK_FORT_BRENNAND',
-    [`W_4_HORSESHOE_OVERLOOK`] = 'HIDEOUT_HORSESHOE_OVERLOOK',
-    [`W_4_RIO_DEL_LOBO_HOUSE`] = 'LANDMARK_RIO_DEL_LOBO_HOUSE',
-    [`W_5_BROKEN_TREE`] = 'LANDMARK_BROKEN_TREE',
-    [`W_4_FACE_ROCK`] = 'LANDMARK_FACE_ROCK',
-    [`W_4_NEKOTI_ROCK`] = 'LANDMARK_NEKOTI_ROCK'
-}
-
-local TEXT_PRINTED <const> = {
-    [894611678] = 'SETTLEMENT_LAGRAS',
-    [466986025] = 'HIDEOUT_LAKAY',
-    [-1225359404] = 'LANDMARK_MONTOS_REST',
-    [1573733873] = 'LANDMARK_OWANJILA_DAM',
-    [769580703] = 'LANDMARK_RIGGS_STATION',
-    [-1532919875] = 'TOWN_MACFARLANES_RANCH',
-    [1453682244] = 'LANDMARK_WALLACE_STATION',
-    [1106871234] = 'SETTLEMENT_SISIKA_PENITENTIARY',
-    [-1988735197] = 'HIDEOUT_TWIN_ROCKS',
-    [-99881305] = 'SETTLEMENT_FORT_WALLACE',
-    [-864457539] = 'SETTLEMENT_RATHSKELLER_FORK',
-    [721024961] = 'LANDMARK_QUAKERS_COVE',
-    --[1737121879] = 'LANDMARK_QUAKERS_COVE', -- prolly not correct, this is hash for P_3_SAN_LUIS_RIVER
-    [422513214] = 'LANDMARK_CALUMET_RAVINE',
-    [-735849380] = 'SETTLEMENT_WAPITI',
-    [1246510947] = 'LANDMARK_WINDOW_ROCK',
-    [-2038495927] = 'LANDMARK_TEMPEST_RIM',
-    [-1288973891] = 'SETTLEMENT_AGUASDULCES',
-    [-2028095666] = 'LANDMARK_CINCO_TORRES',
-    [1073515151] = 'LANDMARK_LA_CAPILLA',
-    [903669278] = 'SETTLEMENT_THIEVES_LANDING',
-    [206751400] = 'LANDMARK_BACCHUS_BRIDGE', -- so this IS correct
-    [350117545] = 'SETTLEMENT_EMERALD_RANCH',
-    [-847222477] = 'LANDMARK_FLATNECK_STATION',
-    -- [-2001518509] = 'HIDEOUT_BEAVER_HOLLOW',
-    [`P_5_BRANDYWINE_DROP`] = 'LANDMARK_BRANDYWINE_DROP', -- USED TO BE 1595262844, TEST THIS
-    [1490773376] = 'LANDMARK_ROANOKE_VALLEY',
-    [-745404624] = 'SETTLEMENT_BENEDICT_POINT',
-    [-1037423548] = 'HIDEOUT_FORT_MERCER',
-    [278622988] = 'SETTLEMENT_PLAINVIEW',
-    [-166839571] = 'SETTLEMENT_BRAITHWAITE_MANOR',
-    [-67181220] = 'LANDMARK_BOLGER_GLADE',
-    [2084778330] = 'SETTLEMENT_CALIGA_HALL',
-    -- check these
-    [`P_3_MOUNT_HAGEN`] = 'LANDMARK_MOUNT_HAGEN',
-    [`P_4_JORGES_GAP`] = 'LANDMARK_JORGES_GAP',
-    [`p_4_mercer_station`] = 'LANDMARK_MERCER_STATION',
-    [`P_4_BENEDICT_PASS`] = 'LANDMARK_BENEDICT_PASS',
-    [`P_4_MANTECA_FALLS`] = 'WATER_MANTECA_FALLS',
-    [`P_4_MOUNT_SHANN`] = 'WATER_MOUNT_SHANN',
-    [`P_4_THREE_SISTERS`] = 'LANDMARK_THREE_SISTERS',
-    [`P_3_ERIS_FIELD`] = 'LANDMARK_ERIS_FIELD',
-    [`P_4_GRANITE_PASS`] = 'LANDMARK_GRANITE_PASS',
-    [`P_4_CITADEL_ROCK`] = 'LANDMARK_CITADEL_ROCK',
-    [`P_3_DEWBERRY_CREEK`] = 'LANDMARK_DEWBERRY_CREEK',
-    [`P_4_DIABLO_RIDGE`] = 'LANDMARK_DIABLO_RIDGE',
-    [`P_4_DONNER_FALLS`] = 'LANDMARK_DONNER_FALLS',
-    [`P_4_CALIBANS_SEAT`] = 'LANDMARK_CALIBANS_SEAT',
-    [`P_4_RIO_DEL_LOBO_ROCK`] = 'LANDMARK_RIO_DEL_LOBO_ROCK',
-    [`P_4_BARDS_CROSSING`] = 'LANDMARK_BARDS_CROSSING',
-    [`P_3_HEARTLAND_OVERFLOW`] = 'LANDMARK_HEARTLAND_OVERFLOW'
-}
+local TOWNS, TEXT_WRITTEN, TEXT_PRINTED = Zones.TOWNS, Zones.TEXT_WRITTEN, Zones.TEXT_PRINTED
+local LAKES, SWAMPS, OCEANS, CREEKS, PONDS = Zones.LAKES, Zones.SWAMPS, Zones.OCEANS, Zones.CREEKS, Zones.PONDS
+local DISTRICTS, STATES, RIVERS = Zones.DISTRICTS, Zones.STATES, Zones.RIVERS
 
 local CAVES <const> = {
     [`Q0304_TUNNEL_ENT`] = true,
@@ -198,85 +77,6 @@ local CAVES <const> = {
     [1633500362] = true,
     [`J_16_TUNNEL_INT`] = true
 }
-
-local LAKES <const> = {
-    [`WATER_AURORA_BASIN`] = 'WATER_AURORA_BASIN',
-    [`WATER_BARROW_LAGOON`] = 'WATER_BARROW_LAGOON',
-    [`WATER_ELYSIAN_POOL`] = 'WATER_ELYSIAN_POOL',
-    [`WATER_FLAT_IRON_LAKE`] = 'WATER_FLAT_IRON_LAKE',
-    [`WATER_HEARTLANDS_OVERFLOW`] = 'LANDMARK_HEARTLAND_OVERFLOW',
-    [`WATER_LAKE_DON_JULIO`] = 'WATER_LAKE_DON_JULIO',
-    [`WATER_LAKE_ISABELLA`] = 'WATER_LAKE_ISABELLA',
-    [`WATER_O_CREAGHS_RUN`] = 'WATER_OCREAGHS_RUN',
-    [`WATER_OWANJILA`] = 'WATER_OWANJILA',
-    [`WATER_SEA_OF_CORONADO`] = 'WATER_SEA_OF_CORONADO'
-}
-
-local SWAMPS <const> = {
-    [`WATER_BAYOU_NWA`] = 'district_bayou_nwa'
-}
-
-local OCEANS <const> = {
-    [`WATER_BAHIA_DE_LA_PAZ`] = 'WATER_BAHIA_DE_LA_PAZ'
-}
-
-local CREEKS <const> = {
-    [`WATER_DEADBOOT_CREEK`] = 'WATER_DEADBOOT_CREEK',
-    [`WATER_HAWKS_EYE_CREEK`] = 'WATER_HAWKS_EYE_CREEK',
-    [`WATER_RINGNECK_CREEK`] = 'WATER_RINGNECK_CREEK',
-    [`WATER_SPIDER_GORGE`] = 'WATER_SPIDER_GORGE',
-    [`WATER_STILLWATER_CREEK`] = 'WATER_STILLWATER_CREEK',
-    [`WATER_WHINYARD_STRAIT`] = 'WATER_WHINYARD_STRAIT'
-}
-
-local PONDS <const> = {
-    [`WATER_CAIRN_LAKE`] = 'WATER_CAIRN_LAKE',
-    [`WATER_CATTIAL_POND`] = 'WATER_CATTAIL_POND',
-    [`WATER_HOT_SPRINGS`] = 'WATER_COTORRA_SPRINGS',
-    [`WATER_MATTLOCK_POND`] = 'WATER_MATTLOCK_POND',
-    [`WATER_MOONSTONE_POND`] = 'WATER_MOONSTONE_POND',
-    [`WATER_SOUTHFIELD_FLATS`] = 'WATER_SOUTHFIELD_FLATS'
-}
-
-local DISTRICTS <const> = {
-    [2025841068] = 'district_bayou_nwa',
-    [822658194] = 'district_big_valley',
-    [1308232528] = 'district_bluewater_marsh',
-    [1835499550] = 'district_cumberland_forest',
-    [476637847] = 'DISTRICT_GREAT_PLAINS',
-    [1645618177] = 'district_grizzlies', -- grizzlies west
-    [-120156735] = 'district_grizzlies', -- grizzlies east
-    [-512529193] = 'district_guarma',
-    [131399519] = 'district_heartlands',
-    [178647645] = 'district_roanoake_ridge',
-    [-864275692] = 'district_scarlett_meadows',
-    [1684533001] = 'district_tall_Trees',
-    [-2066240242] = 'district_gaptooth_ridge',
-    [-2145992129] = 'district_rio_bravo',
-    [-108848014] = 'district_cholla_springs',
-    [892930832] = 'DISTRICT_HENNIGANS_STEAD'
-}
-
-local STATES <const> = {
-    [`Ambarino`] = 'STATE_AMBARINO',
-    [`Guarma`] = 'state_guarma',
-    [`lemoyne`] = 'state_lemoyne',
-    [`LowerWestElizabeth`] = 'state_west_elizabeth',
-    [`UpperWestElizabeth`] = 'state_west_elizabeth',
-    [`WestElizabeth`] = 'state_west_elizabeth',
-    [`NewAustin`] = 'state_new_austin',
-    [`NewHanover`] = 'state_new_hanover'
-}
-
-local RIVERS <const> = {
-    [`WATER_ARROYO_DE_LA_VIBORA`] = 'WATER_ARROYO_DE_LA_VIBORA',
-    [`WATER_DAKOTA_RIVER`] = 'WATER_DAKOTA_RIVER',
-    [`WATER_LANNAHECHEE_RIVER`] = 'WATER_LANNAHECHEE_RIVER',
-    [`WATER_LITTLE_CREEK_RIVER`] = 'WATER_LITTLE_CREEK_RIVER',
-    [`WATER_LOWER_MONTANA_RIVER`] = 'WATER_LOWER_MONTANA_RIVER',
-    [`WATER_UPPER_MONTANA_RIVER`] = 'WATER_UPPER_MONTANA_RIVER'
-}
-
 local BEAVER_HOLLOW_CAVE <const> = vector3(2318.291, 1448.150, 84.413)
 local BACCHUS_CUMBERLAND_HASH <const> = -138648964
 local PRONGHORN_HASH <const> = -120578354
@@ -326,29 +126,36 @@ local function IsGoodLabel(txt, key)
     return txt and txt ~= '' and txt ~= 'NULL' and txt:upper() ~= key:upper() and not txt:find('_')
 end
 
--- turn a game label key (e.g. 'district_heartlands') into its display text
+-- turn a game label key (e.g. 'district_heartlands') into its display text (cached: GetLabelText is a native call)
+local labelCache = {}
 local function Label(key)
-    if Config.LabelNames and Config.LabelNames[key] then return Config.LabelNames[key] end
-    for _, k in ipairs({ key, key:upper() }) do
-        local ok, txt = pcall(GetLabelText, k)
-        if ok and IsGoodLabel(txt, key) then return txt end
+    key = Zones.Original[key] or key -- place keys from the server are lower-case
+    local cached = labelCache[key]
+    if cached then return cached end
+    local name
+    if Config.LabelNames and Config.LabelNames[key] then
+        name = Config.LabelNames[key]
+    else
+        for _, k in ipairs({ key, key:upper() }) do
+            local ok, txt = pcall(GetLabelText, k)
+            if ok and IsGoodLabel(txt, key) then name = txt break end
+        end
     end
-    return Prettify(key)
+    name = name or Prettify(key)
+    labelCache[key] = name
+    return name
 end
 
-local function Notify(title, description, duration)
-    RSGCore.Functions.Notify({ title = title, description = description, type = 'inform', duration = duration, icon = 'fa-solid fa-map-location-dot' })
-end
-
-local function StripCodes(text)
-    return (text:gsub('~[%w_]+~', ''))
+local function Notify(title, description, duration, nType)
+    RSGCore.Functions.Notify({ title = title, description = description, type = nType or 'inform', duration = duration, icon = 'fa-solid fa-map-location-dot' })
 end
 
 ----------------------------------------------------------------
 -- discovery / flavour / sound
 ----------------------------------------------------------------
+-- only places that exist in shared/zones.lua can be discovered (the server checks the same list)
 local function ValidKey(key)
-    return type(key) == 'string' and #key <= 64 and key:match('^[%w_]+$') ~= nil
+    return type(key) == 'string' and Zones.Keys[key:lower()] == true
 end
 
 -- returns true the first time this character sees a place
@@ -357,7 +164,8 @@ local function MarkDiscovered(key)
     local k = key:lower()
     if discovered[k] then return false end
     discovered[k] = true
-    TriggerServerEvent('rsg-zonenotify:server:discover', k)
+    discoveredCount = discoveredCount + 1
+    TriggerServerEvent('rsg-zonenotify:server:discover', k, GetEntityCoords(PlayerPedId()))
     return true
 end
 
@@ -367,11 +175,67 @@ local function ZoneMessage(key)
 end
 
 local function PlaySound(kind)
-    if not Config.Sound.Enabled then return end
+    if not Config.Sound.Enabled or not Pref('sound') then return end
     SendNUIMessage({ action = 'sound', kind = kind, file = Config.Sound.Files[kind], volume = Config.Sound.Volume })
 end
 
-local function ShowLocationUi(bottomText, topText, mode, zoneKind)
+----------------------------------------------------------------
+-- bottom line (time | temperature | wind) as parts: { text = '14:05', code = '~COLOR_WHITE~' }
+----------------------------------------------------------------
+local function FormatTime(h, m)
+    if ShouldUse_24HourClock() then return ('%02d:%02d'):format(h, m) end
+    local period = locale(h >= 12 and 'cl_time_pm' or 'cl_time_am')
+    h = h % 12
+    return ('%d:%02d%s'):format(h == 0 and 12 or h, m, period)
+end
+
+local function GetBottomParts(c)
+    local parts = {}
+    local gameMetric = ShouldUseMetricTemperature()
+    local tempUnit, speedUnit = Config.TemperatureUnit or 'auto', Config.SpeedUnit or 'auto'
+    local celsius = tempUnit == 'celsius' or (tempUnit ~= 'fahrenheit' and gameMetric)
+    local kmh = speedUnit == 'kmh' or (speedUnit ~= 'mph' and gameMetric)
+
+    if Config.ShowTime and Pref('time') then
+        local h, m = GetClockHours(), GetClockMinutes()
+        local night = h >= Config.NightStart or h < Config.NightEnd
+        parts[#parts + 1] = { text = FormatTime(h, m), code = night and Config.TimeNightColor or Config.TimeDayColor }
+    end
+
+    if Config.ShowTemperature and Pref('temperature') then
+        local t = GetTemperatureAtCoords(c.x, c.y, c.z)
+        parts[#parts + 1] = {
+            text = celsius and locale('cl_temp_c', math.ceil(t)) or locale('cl_temp_f', math.ceil(t * 9 / 5 + 32)),
+            code = t < Config.TemperatureColdDegree and Config.TemperatureColdColor or Config.TemperatureHotColor,
+        }
+    end
+
+    if Config.ShowWind and Pref('wind') then
+        local w = GetWindSpeed()
+        parts[#parts + 1] = {
+            text = kmh and locale('cl_wind_kph', math.floor(w)) or locale('cl_wind_mph', math.floor(w * 0.621371)),
+            code = Config.WindColor,
+        }
+    end
+
+    return parts
+end
+
+-- '~COLOR_X~' -> 'COLOR_X'
+local function CodeName(code)
+    return type(code) == 'string' and code:match('^~([%w_]+)~$') or nil
+end
+
+local function NativeBottomText(parts)
+    local out = {}
+    for i, p in ipairs(parts) do out[i] = (p.code or '') .. p.text end
+    return table.concat(out, ' ~COLOR_WHITE~| ')
+end
+
+----------------------------------------------------------------
+-- banner output
+----------------------------------------------------------------
+local function ShowLocationUi(parts, topText, mode, zoneKind)
     local title = Label(topText)
     mode = mode or Config.DisplayMode
     local isNew = MarkDiscovered(topText)
@@ -380,30 +244,29 @@ local function ShowLocationUi(bottomText, topText, mode, zoneKind)
     PlaySound(isNew and 'discovery' or (zoneKind or 'manual'))
 
     if mode == 'nui' then
-        -- split "~COLOR_X~text ~COLOR_WHITE~| ~COLOR_Y~text" into coloured parts
-        local parts = {}
-        for seg in (bottomText .. ' ~COLOR_WHITE~| '):gmatch('(.-) ~COLOR_WHITE~| ') do
-            local code, txt = seg:match('^~([%w_]+)~(.*)$')
-            txt = StripCodes(txt or seg)
-            if txt ~= '' then
-                parts[#parts + 1] = { text = txt, color = code and Config.NuiColors[code] or nil }
-            end
+        local nuiParts = {}
+        for i, p in ipairs(parts) do
+            local name = CodeName(p.code)
+            nuiParts[i] = { text = p.text, color = name and Config.NuiColors[name] or nil }
         end
-        SendNUIMessage({ action = 'show', title = title, parts = parts, duration = Config.DisplayTime, stamp = stamp, flavour = flavour })
+        SendNUIMessage({ action = 'show', title = title, parts = nuiParts, duration = Config.DisplayTime, stamp = stamp, flavour = flavour, queue = Config.BannerQueue })
         bannerVisible = true
         return
     end
 
     if mode == 'notify' then
-        local desc = StripCodes(bottomText)
+        local plain = {}
+        for i, p in ipairs(parts) do plain[i] = p.text end
+        local desc = table.concat(plain, ' | ')
         if flavour then desc = flavour .. '\n' .. desc end
         if stamp then desc = stamp .. ' - ' .. desc end
         Notify(title, desc, Config.DisplayTime)
         return
     end
 
+    local bottom = NativeBottomText(parts)
     local str1 = CreateVarString(10, 'LITERAL_STRING', title)
-    local str2 = CreateVarString(10, 'LITERAL_STRING', (stamp and (stamp .. ' ~COLOR_WHITE~| ') or '') .. (flavour and (flavour .. ' ~COLOR_WHITE~| ') or '') .. bottomText)
+    local str2 = CreateVarString(10, 'LITERAL_STRING', (stamp and (stamp .. ' ~COLOR_WHITE~| ') or '') .. (flavour and (flavour .. ' ~COLOR_WHITE~| ') or '') .. bottom)
     local struct1 = DataView.ArrayBuffer(8 * 7)
     local struct2 = DataView.ArrayBuffer(8 * 5)
     struct1:SetInt32(8 * 0, Config.DisplayTime)
@@ -428,40 +291,6 @@ local function IsSuppressed()
         if cam and cam ~= -1 and cam ~= 0 and DoesCamExist(cam) then return true end
     end
     return false
-end
-
-local function FormatTime(h, m)
-    if ShouldUse_24HourClock() then return ('%02d:%02d'):format(h, m) end
-    local period = locale(h >= 12 and 'cl_time_pm' or 'cl_time_am')
-    h = h % 12
-    return ('%d:%02d%s'):format(h == 0 and 12 or h, m, period)
-end
-
-local function GetBottomText(c)
-    local parts = {}
-    local gameMetric = ShouldUseMetricTemperature()
-    local tempUnit, speedUnit = Config.TemperatureUnit or 'auto', Config.SpeedUnit or 'auto'
-    local celsius = tempUnit == 'celsius' or (tempUnit ~= 'fahrenheit' and gameMetric)
-    local kmh = speedUnit == 'kmh' or (speedUnit ~= 'mph' and gameMetric)
-
-    if Config.ShowTime then
-        local h, m = GetClockHours(), GetClockMinutes()
-        local night = h >= Config.NightStart or h < Config.NightEnd
-        parts[#parts + 1] = (night and Config.TimeNightColor or Config.TimeDayColor) .. FormatTime(h, m)
-    end
-
-    if Config.ShowTemperature then
-        local t = GetTemperatureAtCoords(c.x, c.y, c.z)
-        local col = t < Config.TemperatureColdDegree and Config.TemperatureColdColor or Config.TemperatureHotColor
-        parts[#parts + 1] = col .. (celsius and locale('cl_temp_c', math.ceil(t)) or locale('cl_temp_f', math.ceil(t * 9 / 5 + 32)))
-    end
-
-    if Config.ShowWind then
-        local w = GetWindSpeed()
-        parts[#parts + 1] = Config.WindColor .. (kmh and locale('cl_wind_kph', math.floor(w)) or locale('cl_wind_mph', math.floor(w * 0.621371)))
-    end
-
-    return table.concat(parts, ' ~COLOR_WHITE~| ')
 end
 
 ----------------------------------------------------------------
@@ -526,13 +355,20 @@ end
 -- zone change banners
 ----------------------------------------------------------------
 local function CanShowBanner()
-    return enabled and not IsSuppressed() and not IsScreenFadedOut() and not IsPauseMenuActive() and not IsEntityDead(PlayerPedId())
+    return prefs.banners and not IsSuppressed() and not IsScreenFadedOut() and not IsPauseMenuActive() and not IsEntityDead(PlayerPedId())
+end
+
+-- lower-case place keys of the zones the player is in (nil = unmapped), for the GetCurrentZone export
+local function SetCurrentZone(state, district, town)
+    local s, d, t = STATES[state], DISTRICTS[district], TOWNS[town]
+    currentZone.state, currentZone.district, currentZone.town = s and s:lower(), d and d:lower(), t and t:lower()
 end
 
 local function ResetStored(c)
     stored.state    = ZoneAt(c, ZONE.STATE)
     stored.district = ZoneAt(c, ZONE.DISTRICT)
     stored.town     = ZoneAt(c, ZONE.TOWN)
+    SetCurrentZone(stored.state, stored.district, stored.town)
     pending = nil
 end
 
@@ -547,8 +383,8 @@ local function BestBannerFor(state, district, town, townChanged, districtChanged
     if townChanged and town ~= 0 and Config.Notify.Town and TOWNS[town] then
         return MakePending(TOWNS[town], ZONE.TOWN, town)
     end
-    -- leaving a town counts as re-entering the surrounding district
-    if (districtChanged or townChanged) and district ~= 0 and Config.Notify.District and DISTRICTS[district] then
+    -- leaving a town counts as re-entering the surrounding district (but walking into an unmapped town does not)
+    if (districtChanged or (townChanged and town == 0)) and district ~= 0 and Config.Notify.District and DISTRICTS[district] then
         return MakePending(DISTRICTS[district], ZONE.DISTRICT, district)
     end
     if (stateChanged or districtChanged or townChanged) and state ~= 0 and Config.Notify.State and STATES[state] then
@@ -558,6 +394,10 @@ local function BestBannerFor(state, district, town, townChanged, districtChanged
         end
     end
     return nil
+end
+
+local function FireZoneChanged(kind, key)
+    TriggerEvent('rsg-zonenotify:client:zoneChanged', { kind = kind, key = key:lower(), name = Label(key) })
 end
 
 local function CheckZones(c)
@@ -573,17 +413,28 @@ local function CheckZones(c)
         print(('[rsg-zonenotify] state=%s district=%s town=%s'):format(state, district, town))
     end
 
+    -- other scripts can listen to this whatever the banner settings are
+    local sKey, dKey, tKey = STATES[state], DISTRICTS[district], TOWNS[town]
+    if stateChanged or districtChanged or townChanged then SetCurrentZone(state, district, town) end
+    if stateChanged and sKey then FireZoneChanged('state', sKey) end
+    if districtChanged and dKey then FireZoneChanged('district', dKey) end
+    if townChanged and tKey then FireZoneChanged('town', tKey) end
+
     -- leaving a town, or crossing into an unmapped area, only matters when we land somewhere mapped
     local onlyLeftTown = townChanged and town == 0 and not districtChanged and not stateChanged
     if onlyLeftTown and not Config.Notify.LeaveTown then townChanged = false end
 
     local newPending = BestBannerFor(state, district, town, townChanged, districtChanged, stateChanged)
 
-    -- first visit to a landmark, lake or river shows a banner once per character
+    -- first visit to a landmark, lake or river shows a banner once per character (scanned less often: it costs ~10 natives)
     if not newPending and not pending and Config.Discovery.Enabled and Config.Discovery.Landmarks and discoveriesLoaded then
-        local lm = GetWaterName(c) or GetMiscName(c)
-        if lm and not discovered[lm:lower()] then
-            newPending = { text = lm, kind = 'landmark', since = GetGameTimer(), coords = c }
+        local now = GetGameTimer()
+        if now - lastScan >= LANDMARK_SCAN_MS then
+            lastScan = now
+            local lm = GetWaterName(c) or GetMiscName(c)
+            if lm and not discovered[lm:lower()] then
+                newPending = { text = lm, kind = 'landmark', since = now, coords = c }
+            end
         end
     end
 
@@ -591,6 +442,13 @@ local function CheckZones(c)
     if newPending then pending = newPending end
 
     if not pending then return end
+
+    -- banners are switched off by the player: the place still counts as discovered (silently)
+    if not prefs.banners then
+        MarkDiscovered(pending.text)
+        pending = nil
+        return
+    end
 
     -- drop it if the player already left that zone
     if pending.zoneType and ZoneAt(c, pending.zoneType) ~= pending.hash then
@@ -614,9 +472,9 @@ local function CheckZones(c)
     if moving and Config.WhileMoving == 'wait' then return end -- hold until the player slows down
 
     if Config.Debug then print('[rsg-zonenotify] showing ' .. pending.text) end
-    local text, pending_kind = pending.text, pending.kind
+    local text, kind = pending.text, pending.kind
     pending = nil
-    ShowLocationUi(GetBottomText(c), text, (moving and Config.WhileMoving == 'notify') and 'notify' or nil, pending_kind)
+    ShowLocationUi(GetBottomParts(c), text, (moving and Config.WhileMoving == 'notify') and 'notify' or nil, kind)
 end
 
 ----------------------------------------------------------------
@@ -645,7 +503,7 @@ local function ShowCurrentLocation()
         return
     end
 
-    ShowLocationUi(GetBottomText(c), name)
+    ShowLocationUi(GetBottomParts(c), name)
 end
 
 ----------------------------------------------------------------
@@ -653,7 +511,9 @@ end
 ----------------------------------------------------------------
 CreateThread(function()
     while true do
-        if isLoggedIn then
+        if not isLoggedIn then
+            Wait(1000)
+        else
             if bannerVisible and IsSuppressed() then HideBanner() end
             local ok, err = pcall(CheckZones, GetEntityCoords(PlayerPedId()))
             if not ok then
@@ -661,41 +521,295 @@ CreateThread(function()
                 print('^1[rsg-zonenotify] error: ' .. tostring(err) .. '^7')
             end
             Wait(Config.CheckInterval)
-        else
-            Wait(1000)
         end
     end
 end)
 
+-- "where am I" key: rebindable key mapping (key NAME in Config.Key, e.g. 'L'), or the old control-hash polling
 if Config.Key then
+    if Config.UseKeyMapping and type(Config.Key) == 'string' then
+        RSGCore.Functions.RegisterKey('rsgzonenotify_location', locale('key_location'), Config.Key, ShowCurrentLocation, nil, {
+            canTrigger = function() return isLoggedIn and not IsPauseMenuActive() end,
+        })
+    elseif type(Config.Key) == 'number' then
+        CreateThread(function()
+            while true do
+                if isLoggedIn then
+                    if IsControlJustPressed(0, Config.Key) then ShowCurrentLocation() end
+                    Wait(0)
+                else
+                    Wait(1000)
+                end
+            end
+        end)
+    end
+end
+
+----------------------------------------------------------------
+-- journal (NUI): places found per category, leaderboard, options
+----------------------------------------------------------------
+local journalOpen = false
+local uiFocus     = false
+local lastJournal = 0
+
+-- one place for every focus change, so push-to-talk keeps working while the journal is open
+local function applyNuiFocus(enable)
+    if enable then
+        SetNuiFocus(true, true)
+        if Config.AllowPushToTalkWhileOpen then SetNuiFocusKeepInput(true) end
+    else
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
+end
+
+-- keep-input passes every key to the game: block all controls except push-to-talk while the journal is up
+local function runPttWhitelist()
+    DisableAllControlActions(0)
+    DisableAllControlActions(1)
+    DisableAllControlActions(2)
+    local list = Config.PushToTalkControls
+    if list then
+        for i = 1, #list do
+            local c = list[i]
+            EnableControlAction(0, c, true)
+            EnableControlAction(1, c, true)
+            EnableControlAction(2, c, true)
+        end
+    end
+end
+
+CreateThread(function()
+    while true do
+        if uiFocus and Config.AllowPushToTalkWhileOpen then
+            Wait(0)
+            runPttWhitelist()
+        else
+            Wait(250)
+        end
+    end
+end)
+
+local function CloseJournal()
+    if not journalOpen then return end
+    journalOpen = false
+    uiFocus = false
+    applyNuiFocus(false)
+    SendNUIMessage({ action = 'journalClose' })
+end
+
+-- close the journal if the player dies or the pause menu opens
+CreateThread(function()
+    while true do
+        if journalOpen then
+            if IsEntityDead(PlayerPedId()) or IsPauseMenuActive() then CloseJournal() end
+            Wait(250)
+        else
+            Wait(500)
+        end
+    end
+end)
+
+local JOURNAL_TEXT <const> = {
+    'title', 'subtitle', 'cat_state', 'cat_district', 'cat_town', 'cat_landmark', 'cat_water', 'tab_leaderboard',
+    'tab_options', 'claimed', 'overall', 'close', 'you', 'lb_empty', 'places', 'milestones',
+    'opt_banners', 'opt_sound', 'opt_time', 'opt_temperature', 'opt_wind', 'on', 'off',
+}
+
+local function JournalText()
+    local t = {}
+    for _, k in ipairs(JOURNAL_TEXT) do t[k] = locale('journal_' .. k) end
+    return t
+end
+
+local function BuildJournal(data, startTab)
+    local found = {}
+    for _, k in ipairs(data.discovered or {}) do found[k] = true end
+    local claimed = data.claimed or {}
+    local milestones = Config.Milestones or {}
+
+    local categories = {}
+    if Config.Discovery.Enabled then
+        for _, kind in ipairs(Zones.KindOrder) do
+            local places, count = {}, 0
+            for _, key in ipairs(Zones.KindKeys[kind]) do
+                local isFound = found[key] == true
+                if isFound then count = count + 1 end
+                if isFound or Config.Journal.ShowUndiscovered then
+                    places[#places + 1] = { name = Label(key), found = isFound }
+                else
+                    places[#places + 1] = { name = '???', found = false }
+                end
+            end
+            table.sort(places, function(a, b)
+                if a.found ~= b.found then return a.found end
+                return a.name < b.name
+            end)
+            local reward = milestones.Enabled and milestones.Categories and milestones.Categories[kind] or nil
+            categories[#categories + 1] = {
+                kind = kind, label = locale('journal_cat_' .. kind), found = count, total = #Zones.KindKeys[kind],
+                reward = reward and { cash = reward.cash or 0, xp = reward.xp or 0 } or nil,
+                claimed = claimed['cat_' .. kind] == true, places = places,
+            }
+        end
+    end
+
+    local overall = {}
+    if Config.Discovery.Enabled and milestones.Enabled and milestones.Overall then
+        local thresholds = {}
+        for t in pairs(milestones.Overall) do thresholds[#thresholds + 1] = t end
+        table.sort(thresholds)
+        for _, t in ipairs(thresholds) do
+            local r = milestones.Overall[t]
+            overall[#overall + 1] = { percent = t, cash = r.cash or 0, xp = r.xp or 0, claimed = claimed['all_' .. t] == true }
+        end
+    end
+
+    local board = {}
+    for i, r in ipairs(data.leaderboard or {}) do
+        board[i] = { rank = r.rank, name = r.name or locale('journal_anonymous', r.rank), found = r.found, me = r.me == true }
+    end
+
+    return {
+        action = 'journal',
+        tab = startTab,
+        found = data.found or 0,
+        total = Zones.KeyCount,
+        categories = categories,
+        overall = overall,
+        leaderboard = board,
+        showLeaderboard = Config.Leaderboard.Enabled and Config.Discovery.Enabled,
+        prefs = prefs,
+        toggles = { banners = true, sound = Config.PlayerOptions, time = Config.PlayerOptions and Config.ShowTime, temperature = Config.PlayerOptions and Config.ShowTemperature, wind = Config.PlayerOptions and Config.ShowWind },
+        text = JournalText(),
+    }
+end
+
+local function OpenJournal(startTab)
+    if not Config.Journal.Enabled or journalOpen or not isLoggedIn then return end
+    if IsPauseMenuActive() or IsScreenFadedOut() or IsEntityDead(PlayerPedId()) then return end
+    local now = GetGameTimer()
+    if now - lastJournal < 1000 then return end
+    lastJournal = now
+
     CreateThread(function()
-        while true do
-            if isLoggedIn then
-                if IsControlJustPressed(0, Config.Key) then ShowCurrentLocation() end
-                Wait(0)
-            else
-                Wait(1000)
+        local data = { discovered = {}, claimed = {}, leaderboard = {}, found = 0 }
+        if Config.Discovery.Enabled then
+            data = RSGCore.Functions.AwaitCallback('rsg-zonenotify:server:getJournal', 5000)
+            if not data then
+                Notify(locale('cl_title'), locale('cl_journal_unavailable'), 4000, 'error')
+                return
             end
         end
+        if journalOpen or not isLoggedIn then return end
+        journalOpen = true
+        uiFocus = true
+        applyNuiFocus(true)
+        SendNUIMessage(BuildJournal(data, startTab))
     end)
 end
+
+RegisterNUICallback('journalClose', function(_, cb)
+    CloseJournal()
+    cb('ok')
+end)
+
+-- the player flips an option in the journal; only known keys and booleans are accepted
+RegisterNUICallback('journalPref', function(data, cb)
+    if type(data) == 'table' and PREF_KEYS[data.key] and type(data.value) == 'boolean' then
+        if data.key == 'banners' or Config.PlayerOptions then
+            prefs[data.key] = data.value
+            SavePrefs()
+            if data.key == 'banners' and not data.value then pending = nil; HideBanner() end
+        end
+    end
+    cb(prefs)
+end)
+
+----------------------------------------------------------------
+-- rewards and milestones (the server decides and pays; this only shows the result)
+----------------------------------------------------------------
+RegisterNetEvent('rsg-zonenotify:client:reward', function(data)
+    if type(data) ~= 'table' or not ValidKey(data.key) then return end
+    local parts = {}
+    local cash, xp = math.floor(tonumber(data.cash) or 0), math.floor(tonumber(data.xp) or 0)
+    if cash > 0 then parts[#parts + 1] = locale('cl_reward_cash', cash) end
+    if xp > 0 then parts[#parts + 1] = locale('cl_reward_xp', xp) end
+    if #parts == 0 then return end
+    Notify(Label(data.key), table.concat(parts, '  '), 5000, 'success')
+end)
+
+RegisterNetEvent('rsg-zonenotify:client:milestone', function(data)
+    if type(data) ~= 'table' then return end
+    local what
+    if type(data.kind) == 'string' and Zones.KindCount[data.kind] then
+        what = locale('cl_milestone_category', locale('journal_cat_' .. data.kind))
+    elseif tonumber(data.percent) then
+        what = locale('cl_milestone_overall', math.floor(tonumber(data.percent)) .. '%')
+    else
+        return
+    end
+    local cash, xp = math.floor(tonumber(data.cash) or 0), math.floor(tonumber(data.xp) or 0)
+    if cash > 0 then what = what .. '\n' .. locale('cl_reward_cash', cash) end
+    if xp > 0 then what = what .. (cash > 0 and '  ' or '\n') .. locale('cl_reward_xp', xp) end
+    PlaySound('discovery')
+    Notify(locale('cl_milestone_title'), what, 8000, 'success')
+end)
 
 ----------------------------------------------------------------
 -- commands
 ----------------------------------------------------------------
-if Config.Command then
-    RegisterCommand(Config.Command, ShowCurrentLocation, false)
-    TriggerEvent('chat:addSuggestion', '/' .. Config.Command, locale('cl_cmd_location'))
+local suggestions = {}
+local function AddCommand(name, helpKey, handler)
+    if not name then return end
+    RegisterCommand(name, handler, false)
+    suggestions[#suggestions + 1] = { name = '/' .. name, help = helpKey }
 end
 
-if Config.ToggleCommand then
-    RegisterCommand(Config.ToggleCommand, function()
-        enabled = not enabled
-        SetResourceKvpInt(KVP_KEY, enabled and 1 or 2)
-        if not enabled then pending = nil; HideBanner() end
-        Notify(locale('cl_title'), locale(enabled and 'cl_enabled' or 'cl_disabled'))
+local function RegisterSuggestions()
+    for _, s in ipairs(suggestions) do TriggerEvent('chat:addSuggestion', s.name, locale(s.help)) end
+end
+
+local function CountDiscovered() return discoveredCount end
+
+AddCommand(Config.Command, 'cl_cmd_location', ShowCurrentLocation)
+
+AddCommand(Config.ToggleCommand, 'cl_cmd_toggle', function()
+    prefs.banners = not prefs.banners
+    SavePrefs()
+    if not prefs.banners then pending = nil; HideBanner() end
+    Notify(locale('cl_title'), locale(prefs.banners and 'cl_enabled' or 'cl_disabled'))
+end)
+
+if Config.Journal.Enabled then
+    AddCommand(Config.Journal.Command, 'cl_cmd_journal', function() OpenJournal() end)
+    if Config.UseKeyMapping and type(Config.Journal.Key) == 'string' then
+        RSGCore.Functions.RegisterKey('rsgzonenotify_journal', locale('key_journal'), Config.Journal.Key, function() OpenJournal() end, nil, {
+            canTrigger = function() return isLoggedIn and not IsPauseMenuActive() end,
+        })
+    end
+end
+
+if Config.Discovery.Enabled then
+    AddCommand(Config.Discovery.Command, 'cl_cmd_places', function()
+        Notify(locale('cl_title'), locale('cl_places', CountDiscovered(), Zones.KeyCount))
+    end)
+end
+
+RegisterSuggestions()
+-- the chat resource may start after (or restart without) us
+AddEventHandler('onClientResourceStart', function(res)
+    if res == 'chat' or res == 'rsg-chat' then RegisterSuggestions() end
+end)
+
+if Config.Debug then -- test command: /zonetest [delay seconds]
+    RegisterCommand('zonetest', function(_, args)
+        local delay = tonumber(args[1]) or 0
+        if delay > 0 then print(('[rsg-zonenotify] banner in %ds - start riding'):format(delay)) end
+        SetTimeout(delay * 1000, function()
+            ShowLocationUi(GetBottomParts(GetEntityCoords(PlayerPedId())), 'district_heartlands')
+        end)
     end, false)
-    TriggerEvent('chat:addSuggestion', '/' .. Config.ToggleCommand, locale('cl_cmd_toggle'))
 end
 
 ----------------------------------------------------------------
@@ -705,10 +819,15 @@ local function OnLoaded()
     if Config.Debug then print('[rsg-zonenotify] player loaded, zone checks running') end
     ResetStored(GetEntityCoords(PlayerPedId())) -- no banner on spawn
     isLoggedIn = true
-    discovered, discoveriesLoaded = {}, false
+    discovered, discoveredCount, discoveriesLoaded = {}, 0, false
+    loadGeneration = loadGeneration + 1
+    local generation = loadGeneration
     if Config.Discovery.Enabled then
         RSGCore.Functions.TriggerCallback('rsg-zonenotify:server:getDiscoveries', function(list)
-            for _, k in ipairs(list or {}) do discovered[k] = true end
+            if generation ~= loadGeneration then return end -- character changed while waiting
+            for _, k in ipairs(list or {}) do
+                if not discovered[k] then discovered[k] = true; discoveredCount = discoveredCount + 1 end
+            end
             discoveriesLoaded = true
         end)
     end
@@ -717,9 +836,11 @@ end
 RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', OnLoaded)
 
 RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
+    if journalOpen then CloseJournal() end
     isLoggedIn = false
     pending = nil
-    discovered, discoveriesLoaded = {}, false
+    loadGeneration = loadGeneration + 1
+    discovered, discoveredCount, discoveriesLoaded = {}, 0, false
     HideBanner()
 end)
 
@@ -728,42 +849,24 @@ AddEventHandler('onResourceStart', function(res)
 end)
 
 AddEventHandler('onResourceStop', function(res)
+    if suppressed[res] then suppressed[res] = nil end -- a resource that suppressed us is gone
     if res ~= GetCurrentResourceName() then return end
-    if Config.Command then TriggerEvent('chat:removeSuggestion', '/' .. Config.Command) end
-    if Config.ToggleCommand then TriggerEvent('chat:removeSuggestion', '/' .. Config.ToggleCommand) end
-    if Config.Discovery.Enabled and Config.Discovery.Command then TriggerEvent('chat:removeSuggestion', '/' .. Config.Discovery.Command) end
+    if journalOpen then CloseJournal() end
+    for _, s in ipairs(suggestions) do TriggerEvent('chat:removeSuggestion', s.name) end
     HideBanner()
 end)
-
-if Config.Debug then -- test command: /zonetest [delay seconds]
-    RegisterCommand('zonetest', function(_, args)
-        local delay = tonumber(args[1]) or 0
-        if delay > 0 then print(('[rsg-zonenotify] banner in %ds - start riding'):format(delay)) end
-        SetTimeout(delay * 1000, function()
-            ShowLocationUi(GetBottomText(GetEntityCoords(PlayerPedId())), 'district_heartlands')
-        end)
-    end, false)
-end
-
-if Config.Discovery.Enabled and Config.Discovery.Command then
-    RegisterCommand(Config.Discovery.Command, function()
-        local n = 0
-        for _ in pairs(discovered) do n = n + 1 end
-        Notify(locale('cl_title'), locale('cl_places', n))
-    end, false)
-    TriggerEvent('chat:addSuggestion', '/' .. Config.Discovery.Command, locale('cl_cmd_places'))
-end
 
 ----------------------------------------------------------------
 -- custom banners (other resources: ferry, trams, guarma...)
 ----------------------------------------------------------------
 local function ShowBanner(title, subtitle, duration)
-    if type(title) ~= 'string' or title == '' or not isLoggedIn or not enabled or IsSuppressed() then return false end
-    subtitle = type(subtitle) == 'string' and subtitle or nil
+    if type(title) ~= 'string' or title == '' or not isLoggedIn or not prefs.banners or IsSuppressed() then return false end
+    title = title:sub(1, 64)
+    subtitle = type(subtitle) == 'string' and subtitle:sub(1, 120) or nil
     duration = math.min(math.max(tonumber(duration) or Config.DisplayTime, 1000), 15000)
     PlaySound('custom')
     if Config.DisplayMode == 'nui' then
-        SendNUIMessage({ action = 'show', title = title, flavour = subtitle, parts = {}, duration = duration })
+        SendNUIMessage({ action = 'show', title = title, flavour = subtitle, parts = {}, duration = duration, queue = Config.BannerQueue })
         bannerVisible = true
     else
         Notify(title, subtitle or '', duration)
@@ -783,12 +886,12 @@ local function SetSuppressed(reason, state)
     if state then pending = nil; HideBanner() end
 end
 
-AddEventHandler('onResourceStop', function(res)
-    if suppressed[res] then suppressed[res] = nil end
-end)
-
 exports('ShowCurrentLocation', ShowCurrentLocation)
 exports('ShowBanner', ShowBanner)
 exports('SetSuppressed', SetSuppressed)
 exports('IsDiscovered', function(key) return type(key) == 'string' and discovered[key:lower()] == true end)
-exports('GetDiscoveryCount', function() local n = 0 for _ in pairs(discovered) do n = n + 1 end return n end)
+exports('GetDiscoveryCount', CountDiscovered)
+exports('OpenJournal', function(tab) OpenJournal(tab) end)
+exports('CloseJournal', CloseJournal)
+-- { state = 'state_lemoyne', district = 'district_heartlands', town = 'town_valentine' } (lower-case keys, nil when unmapped)
+exports('GetCurrentZone', function() return { state = currentZone.state, district = currentZone.district, town = currentZone.town } end)

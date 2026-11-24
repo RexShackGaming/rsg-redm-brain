@@ -245,3 +245,40 @@ html, body {
 .xp-label b { color: var(--rdr-text); font-size: 13px; margin-left: 4px; }
 .xp-text { font-variant-numeric: tabular-nums; }
 .pill.lock { border-color: var(--rdr-cost-over); color: var(--rdr-cost-over); }
+
+/* ---------- access list ---------- */
+.access-row { padding: 8px 12px; align-items: center; }
+#btn-trust { margin-top: 6px; width: 100%; }
+#quality-wrap b { color: var(--rdr-amber); font-weight: 500; }
+
+/* ---------- bottle label ---------- */
+.label-row { display: flex; gap: 6px; }
+#label-input {
+    flex: 1; min-width: 0; padding: 7px 9px; font-family: inherit; font-size: 13px; color: var(--rdr-text);
+    background: rgba(0,0,0,0.35); border: 1px solid var(--rdr-gold-dim); border-radius: 2px; outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+#label-input:focus { border-color: var(--rdr-gold); box-shadow: 0 0 0 2px rgba(201,162,75,0.15); }
+
+/* ---------- heat, cuts, cask ---------- */
+.seg { display: flex; gap: 6px; }
+.seg .wood-btn { flex: 1; padding: 6px 4px; font-size: 11px; }
+.seg .wood-btn.active { border-color: var(--rdr-gold); color: var(--rdr-gold); background: linear-gradient(180deg, #3a3a3a, #1a1a1a); }
+.hint.small { font-size: 11px; margin: 6px 0 0; }
+.cask-card { align-items: stretch; gap: 8px; }
+.cask-card .meta { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--rdr-muted); }
+.cask-card .meta b { color: var(--rdr-text); font-weight: 500; }
+.cask-card .cask-actions { display: flex; gap: 6px; }
+.cask-card .cask-actions .wood-btn { flex: 1; }
+#rerun-box { margin-top: 8px; text-align: center; }
+#btn-rerun { width: 100%; }
+
+.barrel .still-only { display: none !important; }
+#wash-box { margin-top: 8px; text-align: center; }
+#btn-wash { width: 100%; }
+
+.care-row { margin-top: 6px; }
+.care-row .wood-btn, #btn-sample { width: 100%; }
+#btn-sample { margin-top: 6px; }
+#dry-warn, #sample-info.foul { color: var(--rdr-cost-over); font-style: normal; }
+#sample-info.safe { color: var(--rdr-cost-ok); font-style: normal; }

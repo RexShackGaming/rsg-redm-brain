@@ -95,5 +95,18 @@
     "ui_bonus": "Tu bonificación",
     "ui_stock_left": "Compra hoy",
     "ui_unlimited": "Ilimitado",
-    "ui_over_stock": "Más peces de los que el pescadero comprará hoy"
+    "ui_over_stock": "Más peces de los que el pescadero comprará hoy",
+    "ui_orders": "Pedidos de hoy",
+    "ui_order_deliver": "Entregar",
+    "ui_order_done": "Entregado",
+    "ui_order_reward": "Recompensa",
+    "ui_order_title": "Entregar pedido",
+    "ui_order_confirm": "¿Entregar {qty} x {fish} por {cash}?",
+    "ui_fillet_tag": "Filete",
+    "sv_order_done": "¡Pedido entregado! Recibiste $%s",
+    "sv_order_invalid": "Ese pedido no está disponible",
+    "sv_order_already": "Ya entregaste este pedido hoy",
+    "sv_shop_next_tier": "Alcanza el nivel de pesca %s para desbloquear mejores suministros aquí",
+    "item_sell_hint": "Se vende al pescadero por unos $%s",
+    "wh_order_title": "Pedido de pesca entregado"
 }

@@ -22,7 +22,8 @@ local function teleport(dest)
     busy = true
     local ped = PlayerPedId()
     DoScreenFadeOut(cfg.fadeTime)
-    while not IsScreenFadedOut() do Wait(0) end
+    local fadeTimeout = GetGameTimer() + cfg.fadeTime + 2000
+    while not IsScreenFadedOut() and GetGameTimer() < fadeTimeout do Wait(0) end
 
     FreezeEntityPosition(ped, true)
     RequestCollisionAtCoord(dest.x, dest.y, dest.z)

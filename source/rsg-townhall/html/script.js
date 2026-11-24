@@ -311,12 +311,17 @@ function openApply(v) {
     ];
     if (v.slots > 1) nodes.push(metaLine([[t('ui_openings_label'), String(v.openings) + ' / ' + v.slots]]));
     if (v.fee > 0) nodes.push(metaLine([[t('ui_fee'), money(v.fee)]]));
-    if (v.prereqs && ((v.prereqs.items && v.prereqs.items.length) || v.prereqs.job)) {
+    if (v.probation > 0) nodes.push(metaLine([[t('ui_post_probation'), t('ui_probation_days', v.probation)]]));
+    const pr = v.prereqs || {};
+    if ((pr.items && pr.items.length) || pr.job || pr.skill || pr.honor || pr.standing) {
         const box = h('div', 'prereq-box');
         box.append(h('div', 'block-label', t('ui_prereqs')));
         (v.prereqs.items || []).forEach(i => box.append(h('div', 'prereq ' + (i.met ? 'met' : 'unmet'), (i.met ? '✔ ' : '✘ ') + t('ui_prereq_item', i.label))));
         if (v.prereqs.job) box.append(h('div', 'prereq ' + (v.prereqs.job.met ? 'met' : 'unmet'),
             (v.prereqs.job.met ? '✔ ' : '✘ ') + t('ui_prereq_job', v.prereqs.job.label, v.prereqs.job.grade)));
+        if (pr.skill) box.append(h('div', 'prereq ' + (pr.skill.met ? 'met' : 'unmet'), (pr.skill.met ? '✔ ' : '✘ ') + t('ui_prereq_skill', pr.skill.label, pr.skill.level)));
+        if (pr.honor) box.append(h('div', 'prereq ' + (pr.honor.met ? 'met' : 'unmet'), (pr.honor.met ? '✔ ' : '✘ ') + t('ui_prereq_honor', pr.honor.min)));
+        if (pr.standing) box.append(h('div', 'prereq ' + (pr.standing.met ? 'met' : 'unmet'), (pr.standing.met ? '✔ ' : '✘ ') + t('ui_prereq_standing', pr.standing.min, pr.standing.region)));
         nodes.push(box);
     }
     const inputs = [];
@@ -410,8 +415,35 @@ async function renderMine(body) {
     clear(view);
     if (!res.ok) { view.append(h('div', 'empty', res.err)); return; }
     const apps = res.applications || [];
+    const invites = res.invites || [];
     if (perms.unseen > 0) clearUnseen();
-    if (!apps.length) { view.append(h('div', 'empty', t('ui_no_apps'))); return; }
+    if (invites.length) {
+        view.append(h('div', 'section-title', t('ui_my_invites')));
+        const ilist = h('div', 'list');
+        invites.forEach(i => {
+            const row = h('div', 'row');
+            const main = h('div', 'row-main');
+            let sub = `${i.gradeLabel} · ${money(i.pay)} · ${t('ui_invited_by')}: ${i.invitedBy || '—'}`;
+            if (i.probation > 0) sub += ` · ${t('ui_probation_days', i.probation)}`;
+            if (i.expiresIn !== null && i.expiresIn !== undefined) sub += ` · ${t('ui_closes_in', fmtDur(i.expiresIn))}`;
+            main.append(h('div', 'row-title', i.jobLabel), h('div', 'row-sub', sub));
+            if (i.message) main.append(h('div', 'row-sub', i.message));
+            const side = h('div', 'row-side');
+            const answer = async accept => {
+                if (busy) return;
+                busy = true;
+                const r = await rpc('answerInvite', { id: i.id, accept });
+                busy = false;
+                if (r.ok) { toast('success', r.msg); render(); } else toast('error', r.err);
+            };
+            side.append(button(t('ui_decline'), 'bad small', () => answer(false)), button(t('ui_accept'), 'good small', () => answer(true)));
+            row.append(h('div', 'icon-badge', '✦'), main, side);
+            ilist.append(row);
+        });
+        view.append(ilist);
+        if (apps.length) view.append(h('div', 'section-title', t('ui_tab_mine')));
+    }
+    if (!apps.length) { if (!invites.length) view.append(h('div', 'empty', t('ui_no_apps'))); return; }
 
     const list = h('div', 'list');
     apps.forEach(a => {
@@ -508,6 +540,7 @@ async function renderJobs(body) {
         const main = h('div', 'row-main');
         main.append(h('div', 'row-title', j.label), h('div', 'row-sub', `${j.grade} · ${money(j.pay)}`));
         const side = h('div', 'row-side');
+        if (j.probationEnds !== undefined && j.probationEnds !== null) side.append(h('span', 'pill warn', t('ui_on_probation', fmtDur(j.probationEnds))));
         if (res.canResign) {
             side.append(button(t('ui_resign'), 'bad small', () => confirmModal(t('ui_confirm_resign', j.label), async () => {
                 const r = await rpc('resign', { job: j.job });
@@ -532,6 +565,7 @@ async function renderManage(body) {
     const res = await rpc('getManageData');
     if (!res.ok) { clear(view); view.append(h('div', 'empty', res.err)); return; }
     manage = res;
+    bulkSel.clear();
     if (perms.pending !== manage.pending.length) { perms.pending = manage.pending.length; buildTabs(); }
 
     const defs = [
@@ -539,6 +573,9 @@ async function renderManage(body) {
         { id: 'postings', label: t('ui_manage_postings') },
         { id: 'post', label: t('ui_manage_post') },
     ];
+    if (perms.invites) defs.push({ id: 'invites', label: t('ui_manage_invites') });
+    defs.push({ id: 'probation', label: t('ui_manage_probation'), badge: (manage.probation || []).length });
+    defs.push({ id: 'stats', label: t('ui_manage_stats') });
     if (manage.blacklistEnabled) defs.push({ id: 'blacklist', label: t('ui_manage_blacklist') });
     if (manage.admin) defs.push({ id: 'managers', label: t('ui_manage_managers') });
     if (!defs.some(d => d.id === currentSub)) currentSub = 'apps';
@@ -559,6 +596,9 @@ async function renderManage(body) {
         if (currentSub === 'apps') drawApps(view);
         else if (currentSub === 'postings') drawPostings(view);
         else if (currentSub === 'post') drawPostForm(view);
+        else if (currentSub === 'invites') drawInvites(view);
+        else if (currentSub === 'probation') drawProbation(view);
+        else if (currentSub === 'stats') drawStats(view);
         else if (currentSub === 'blacklist') drawBlacklist(view);
         else drawManagers(view);
     };
@@ -566,23 +606,68 @@ async function renderManage(body) {
     drawSub();
 }
 
-function appRow(a, onClick) {
+const bulkSel = new Set();
+let updateBulkBar = () => {};
+
+function appRow(a, onClick, selectable) {
     const row = h('div', 'row click');
     const main = h('div', 'row-main');
     main.append(h('div', 'row-title', a.applicant), h('div', 'row-sub', `${a.title} · ${a.jobLabel} · ${a.gradeLabel} · ${fmtDate(a.created)}`));
     const side = h('div', 'row-side');
+    if (a.claimedBy) side.append(h('span', 'pill ' + (a.claimMine ? 'good' : 'warn'), a.claimMine ? t('ui_claimed_mine') : t('ui_claimed_by', a.claimedBy)));
     side.append(pill(a.status));
     row.append(h('div', 'icon-badge', '✦'), main, side);
+    if (selectable) {
+        const box = h('span', 'check' + (bulkSel.has(a.id) ? ' on' : ''));
+        box.addEventListener('click', e => {
+            e.stopPropagation();
+            if (bulkSel.has(a.id)) bulkSel.delete(a.id);
+            else if (bulkSel.size < perms.bulk) bulkSel.add(a.id);
+            box.classList.toggle('on', bulkSel.has(a.id));
+            updateBulkBar();
+        });
+        row.insertBefore(box, row.firstChild);
+    }
     row.addEventListener('click', onClick);
     return row;
+}
+
+function openBulk(decision) {
+    const ids = Array.from(bulkSel);
+    if (!ids.length) return;
+    const ta = h('textarea', 'textarea');
+    ta.placeholder = t('ui_feedback_ph');
+    ta.maxLength = perms.limits.feedback || 600;
+    const f = h('div', 'field');
+    f.append(h('label', null, t('ui_feedback_label')), ta);
+    openModal(t('ui_bulk_feedback_title', ids.length), [f], [
+        button(t('ui_cancel'), 'muted', closeModal),
+        button(decision === 'approve' ? t('ui_approve') : t('ui_reject'), decision === 'approve' ? 'good' : 'bad', async () => {
+            if (busy) return;
+            const fb = ta.value.trim();
+            if (perms.minFeedback > 0 && fb.length < perms.minFeedback) { toast('error', t('err_feedback_required', perms.minFeedback)); return; }
+            busy = true;
+            const res = await rpc('bulkReview', { ids, decision, feedback: fb });
+            busy = false;
+            if (res.ok) { toast('success', res.msg); bulkSel.clear(); closeModal(); render(); } else toast('error', res.err);
+        }),
+    ]);
 }
 
 function drawApps(view) {
     view.append(h('div', 'section-title', t('ui_pending_reviews')));
     if (!manage.pending.length) view.append(h('div', 'empty', t('ui_no_pending')));
     else {
+        const bulkOn = perms.bulk > 0;
+        if (bulkOn) {
+            const bar = h('div', 'bulk-bar hidden');
+            const label = h('span', 'grow');
+            bar.append(label, button(t('ui_bulk_reject'), 'bad small', () => openBulk('reject')), button(t('ui_bulk_approve'), 'good small', () => openBulk('approve')));
+            updateBulkBar = () => { bar.classList.toggle('hidden', bulkSel.size === 0); label.textContent = t('ui_bulk_selected', bulkSel.size); };
+            view.append(bar);
+        }
         const list = h('div', 'list');
-        manage.pending.forEach(a => list.append(appRow(a, () => openReview(a))));
+        manage.pending.forEach(a => list.append(appRow(a, () => openReview(a), bulkOn)));
         view.append(list);
     }
     if (manage.reviewed.length) {
@@ -643,6 +728,16 @@ function openReview(a) {
     }
     if (perms.messages) nodes.push(threadBox(a.id));
     const actions = [button(t('ui_cancel'), 'muted', closeModal)];
+    if (a.claimedBy && !a.claimMine) nodes.push(h('div', 'note', t('ui_claimed_by', a.claimedBy)));
+    if (perms.claim) {
+        actions.push(button(a.claimMine ? t('ui_release') : t('ui_claim'), 'muted', async () => {
+            if (busy) return;
+            busy = true;
+            const res = await rpc('claimApplication', { applicationId: a.id, release: !!a.claimMine });
+            busy = false;
+            if (res.ok) { toast('success', res.msg); closeModal(); render(); } else toast('error', res.err);
+        }));
+    }
     if (perms.interviews && a.status === 'pending') {
         actions.push(button(t('ui_interview'), 'muted', async () => {
             if (busy) return;
@@ -801,6 +896,40 @@ function drawPostForm(view) {
         jobWrap.append(mk(t('ui_post_prereq_job'), rjDd), mk(t('ui_post_prereq_grade'), rgInp));
     }
 
+    // probation + skill / honor / standing requirements
+    const probOpts = (perms.probationOptions || [0]).map(d => ({ value: d, label: d === 0 ? t('ui_probation_none') : t('ui_probation_days', d) }));
+    const probDd = h('div');
+    const probCtl = setupDd(probDd, probOpts, 0, null);
+    const extraWrap = h('div', 'two-col');
+    const skills = manage.skills || [];
+    const skillDd = h('div');
+    const skillLvl = h('input', 'input'); skillLvl.type = 'number'; skillLvl.min = '1'; skillLvl.value = '1';
+    let skillCtl = null;
+    if (skills.length) {
+        skillCtl = setupDd(skillDd, [{ value: '', label: t('ui_none') }].concat(skills.map(s => ({ value: s.key, label: s.label }))), '', null);
+        extraWrap.append(mk(t('ui_post_prereq_skill'), skillDd), mk(t('ui_post_prereq_skill_level'), skillLvl));
+    }
+    const honorInp = h('input', 'input'); honorInp.type = 'number'; honorInp.placeholder = t('ui_none');
+    const regDd = h('div');
+    const standInp = h('input', 'input'); standInp.type = 'number'; standInp.value = '0';
+    let regCtl = null;
+    if (manage.honorEnabled) {
+        const lim = manage.limits || {};
+        if (lim.honor) { honorInp.min = String(lim.honor[0]); honorInp.max = String(lim.honor[1]); }
+        if (lim.standing) { standInp.min = String(lim.standing[0]); standInp.max = String(lim.standing[1]); }
+        extraWrap.append(mk(t('ui_post_prereq_honor'), honorInp));
+        if ((manage.regions || []).length) {
+            regCtl = setupDd(regDd, [{ value: '', label: t('ui_none') }].concat(manage.regions.map(r => ({ value: r.key, label: r.label }))), '', null);
+            extraWrap.append(mk(t('ui_post_prereq_standing_region'), regDd), mk(t('ui_post_prereq_standing'), standInp));
+        }
+    }
+    const extraFields = () => ({
+        reqSkill: skillCtl ? (skillDd.dataset.value || '') : '', reqSkillLevel: Number(skillLvl.value) || 1,
+        reqHonor: (manage.honorEnabled && honorInp.value !== '') ? Number(honorInp.value) : null,
+        reqStandingRegion: regCtl ? (regDd.dataset.value || '') : '', reqStanding: Number(standInp.value) || 0,
+        probationDays: Number(probDd.dataset.value || 0),
+    });
+
     const qWrap = h('div', 'field');
     qWrap.append(h('div', 'label', t('ui_post_questions')));
     const qList = h('div');
@@ -832,6 +961,7 @@ function drawPostForm(view) {
             requirements: reqs.value.trim(), questions: qInputs.map(i => i.value.trim()).filter(Boolean),
             slots: Number(slots.value), expiryDays: Number(exDd.dataset.value), locationId: Number(locDd.dataset.value || 0),
             reqItems: reqItems.slice(), reqJob: hasJobPrereq ? (rjDd.dataset.value || '') : '', reqJobGrade: Number(rgInp.value) || 0,
+            ...extraFields(),
         });
         busy = false;
         if (res.ok) { toast('success', res.msg); currentSub = 'postings'; render(); }
@@ -844,6 +974,8 @@ function drawPostForm(view) {
     if ((manage.locations || []).length > 1) form.append(mk(t('ui_post_location'), locDd));
     if (itemWrap.firstChild) form.append(itemWrap);
     if (hasJobPrereq) form.append(jobWrap);
+    if (extraWrap.children.length) form.append(extraWrap);
+    if ((perms.probationOptions || [0]).length > 1) form.append(mk(t('ui_post_probation'), probDd));
     form.append(qWrap, actions);
 
     // read the whole form back (used for templates)
@@ -853,6 +985,7 @@ function drawPostForm(view) {
         questions: qInputs.map(i => i.value.trim()).filter(Boolean),
         slots: Number(slots.value), expiryDays: Number(exDd.dataset.value),
         reqItems: reqItems.slice(), reqJob: hasJobPrereq ? (rjDd.dataset.value || '') : '', reqJobGrade: Number(rgInp.value) || 0,
+        ...extraFields(),
     });
 
     // fill the form from a template or a copied vacancy
@@ -876,6 +1009,10 @@ function drawPostForm(view) {
         });
         drawChips();
         if (hasJobPrereq && rjCtl) { rjCtl.set(d.reqJob || '', false); rgInp.value = String(d.reqJobGrade || 0); }
+        if (skillCtl) { skillCtl.set(d.reqSkill || '', false); skillLvl.value = String(d.reqSkillLevel || 1); }
+        if (manage.honorEnabled) honorInp.value = (d.reqHonor === undefined || d.reqHonor === null) ? '' : String(d.reqHonor);
+        if (regCtl) { regCtl.set(d.reqStandingRegion || '', false); standInp.value = String(d.reqStanding || 0); }
+        probCtl.set(String(d.probation !== undefined ? d.probation : (d.probationDays || 0)), false);
         clear(qList);
         qInputs.length = 0;
         addBtn.disabled = perms.maxCustom <= 0;
@@ -1019,6 +1156,139 @@ function drawManagers(view) {
         list.append(row);
     });
     view.append(list);
+}
+
+/* ------------------------------------------------------------- invitations */
+function drawInvites(view) {
+    if (!manage.jobs.length) { view.append(h('div', 'empty', t('ui_no_jobs'))); return; }
+    const mk = (label, el) => { const f = h('div', 'field'); f.append(h('label', null, label), el); return f; };
+    const form = h('div', 'form');
+
+    const idInp = h('input', 'input'); idInp.type = 'text'; idInp.maxLength = 50;
+    const jobDd = h('div'), gradeDd = h('div');
+    let gradeCtl = null;
+    const buildGrades = name => {
+        const j = manage.jobs.find(x => x.name === name);
+        const opts = j ? j.grades.map(g => ({ value: g.level, label: `${g.label} — ${money(g.payment)}` })) : [];
+        gradeCtl = setupDd(gradeDd, opts, '', null, t('ui_select_grade'));
+    };
+    setupDd(jobDd, manage.jobs.map(j => ({ value: j.name, label: j.label })), '', v => buildGrades(v), t('ui_select_job'));
+    buildGrades('');
+    const probDd = h('div');
+    setupDd(probDd, (perms.probationOptions || [0]).map(d => ({ value: d, label: d === 0 ? t('ui_probation_none') : t('ui_probation_days', d) })), 0, null);
+    const msg = h('textarea', 'textarea'); msg.maxLength = (perms.limits && perms.limits.message) || 300;
+
+    const jobField = h('div', 'field'); jobField.append(h('div', 'label', t('ui_post_job')), jobDd);
+    const gradeField = h('div', 'field'); gradeField.append(h('div', 'label', t('ui_post_grade')), gradeDd);
+    const two = h('div', 'two-col'); two.append(jobField, gradeField);
+    const three = h('div', 'two-col');
+    three.append(mk(t('ui_mgr_id'), idInp));
+    if ((perms.probationOptions || [0]).length > 1) three.append(mk(t('ui_post_probation'), probDd));
+
+    const send = button(t('ui_invite_send'), 'good', async () => {
+        if (busy) return;
+        const job = jobDd.dataset.value, grade = gradeDd.dataset.value;
+        if (!idInp.value.trim() || !job || grade === '' || grade === undefined) { toast('error', t('err_required')); return; }
+        busy = true;
+        const res = await rpc('invitePlayer', { player: idInp.value.trim(), job, grade: Number(grade), message: msg.value.trim(), probationDays: Number(probDd.dataset.value || 0) });
+        busy = false;
+        if (res.ok) { toast('success', res.msg); render(); } else toast('error', res.err);
+    });
+    const actions = h('div', 'actions');
+    actions.append(send);
+    form.append(three, two, mk(t('ui_invite_message'), msg), actions);
+    view.append(form, h('div', 'section-title', t('ui_manage_invites')));
+
+    if (!(manage.invites || []).length) { view.append(h('div', 'empty', t('ui_invites_none'))); return; }
+    const list = h('div', 'list');
+    manage.invites.forEach(i => {
+        const row = h('div', 'row');
+        const main = h('div', 'row-main');
+        let sub = `${i.jobLabel} · ${i.gradeLabel} · ${t('ui_invited_by')}: ${i.invitedBy || '—'}`;
+        if (i.probation > 0) sub += ` · ${t('ui_probation_days', i.probation)}`;
+        if (i.expiresIn !== null && i.expiresIn !== undefined) sub += ` · ${t('ui_closes_in', fmtDur(i.expiresIn))}`;
+        main.append(h('div', 'row-title', i.name || '—'), h('div', 'row-sub', sub));
+        const side = h('div', 'row-side');
+        side.append(button(t('ui_invite_cancel'), 'bad small', async () => {
+            const res = await rpc('cancelInvite', { id: i.id });
+            if (res.ok) { toast('success', res.msg); render(); } else toast('error', res.err);
+        }));
+        row.append(h('div', 'icon-badge', '✦'), main, side);
+        list.append(row);
+    });
+    view.append(list);
+}
+
+/* ---------------------------------------------------------------- probation */
+function drawProbation(view) {
+    if (!(manage.probation || []).length) { view.append(h('div', 'empty', t('ui_probation_none_list'))); return; }
+    const list = h('div', 'list');
+    manage.probation.forEach(p => {
+        const row = h('div', 'row');
+        const main = h('div', 'row-main');
+        main.append(h('div', 'row-title', p.name || '—'), h('div', 'row-sub', `${p.jobLabel} · ${t('ui_probation_ends', fmtDur(p.endsIn))}`));
+        const side = h('div', 'row-side');
+        side.append(
+            button(t('ui_end_probation'), 'bad small', () => confirmModal(t('ui_confirm_end_probation', p.name || '—'), async () => {
+                const res = await rpc('decideProbation', { id: p.id, decision: 'end' });
+                if (res.ok) { toast('success', res.msg); render(); } else toast('error', res.err);
+            })),
+            button(t('ui_confirm_hire'), 'good small', async () => {
+                const res = await rpc('decideProbation', { id: p.id, decision: 'confirm' });
+                if (res.ok) { toast('success', res.msg); render(); } else toast('error', res.err);
+            }));
+        row.append(h('div', 'icon-badge', '✦'), main, side);
+        list.append(row);
+    });
+    view.append(list);
+}
+
+/* --------------------------------------------------------------- statistics */
+let statsDays = null;
+let statsToken = 0;
+
+async function drawStats(view) {
+    const token = ++statsToken;
+    const windows = perms.statsDays || [30];
+    const days = (statsDays !== null && windows.includes(statsDays)) ? statsDays : windows[0];
+    const bar = h('div', 'toolbar');
+    const ddEl = h('div');
+    setupDd(ddEl, windows.map(d => ({ value: d, label: d === 0 ? t('ui_stats_window_all') : t('ui_stats_days', d) })), days, v => { statsDays = Number(v); render(); });
+    bar.append(ddEl);
+    if (perms.canExport) {
+        bar.append(button(t('ui_stats_export'), 'muted', async () => {
+            if (busy) return;
+            busy = true;
+            const r = await rpc('exportStats', { days });
+            busy = false;
+            if (r.ok) toast('success', r.msg); else toast('error', r.err);
+        }));
+    }
+    view.append(bar);
+    const holder = h('div');
+    view.append(holder);
+    holder.append(h('div', 'empty', t('ui_loading')));
+    const res = await rpc('getStats', { days });
+    if (token !== statsToken || currentSub !== 'stats') return;
+    clear(holder);
+    if (!res.ok) { holder.append(h('div', 'empty', res.err)); return; }
+    if (!(res.rows || []).length) { holder.append(h('div', 'empty', t('ui_stats_none'))); return; }
+
+    const table = h('table', 'stats-table');
+    const head = h('tr');
+    ['ui_stats_col_job', 'ui_stats_col_posts', 'ui_stats_col_apps', 'ui_stats_col_approved', 'ui_stats_col_rejected', 'ui_stats_col_rate',
+        'ui_stats_col_decision', 'ui_stats_col_hires', 'ui_stats_col_fill'].forEach(k => head.append(h('th', null, t(k))));
+    const thead = h('thead'); thead.append(head);
+    const tbody = h('tbody');
+    const dur = m => (m === null || m === undefined) ? '—' : fmtDur(m * 60);
+    res.rows.forEach(r => {
+        const tr = h('tr');
+        [r.label, r.postings, r.applications, r.approved, r.rejected, r.rate === null || r.rate === undefined ? '—' : r.rate + '%',
+            dur(r.avgDecisionMin), r.hires || 0, dur(r.avgFillMin)].forEach(c => tr.append(h('td', null, c)));
+        tbody.append(tr);
+    });
+    table.append(thead, tbody);
+    holder.append(table);
 }
 
 /* ------------------------------------------------------------- open / close */

@@ -95,5 +95,18 @@
     "ui_bonus": "Dein Bonus",
     "ui_stock_left": "Ankauf heute",
     "ui_unlimited": "Unbegrenzt",
-    "ui_over_stock": "Mehr Fisch, als der Fischhändler heute kauft"
+    "ui_over_stock": "Mehr Fisch, als der Fischhändler heute kauft",
+    "ui_orders": "Heutige Aufträge",
+    "ui_order_deliver": "Liefern",
+    "ui_order_done": "Geliefert",
+    "ui_order_reward": "Belohnung",
+    "ui_order_title": "Auftrag liefern",
+    "ui_order_confirm": "{qty} x {fish} für {cash} liefern?",
+    "ui_fillet_tag": "Filet",
+    "sv_order_done": "Auftrag geliefert! Du hast $%s erhalten",
+    "sv_order_invalid": "Dieser Auftrag ist nicht verfügbar",
+    "sv_order_already": "Du hast diesen Auftrag heute bereits geliefert",
+    "sv_shop_next_tier": "Erreiche Angelstufe %s, um hier besseres Zubehör freizuschalten",
+    "item_sell_hint": "Wird beim Fischhändler für etwa $%s verkauft",
+    "wh_order_title": "Angelauftrag geliefert"
 }

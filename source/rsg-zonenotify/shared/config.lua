@@ -42,7 +42,8 @@ Config.WindColor = '~COLOR_RADAR_CENTER_BLIP~'
 ---------------------------------
 -- "where am I" (shows landmarks, lakes and rivers too)
 ---------------------------------
-Config.Key            = false        -- e.g. 0x80F28E95 (L); false = no keybind
+Config.UseKeyMapping  = true         -- true = rebindable key (players can change it in the game's key settings); false = fixed control hash
+Config.Key            = false        -- default key NAME for "where am I", e.g. 'L'; false = no keybind. (A control hash like 0x80F28E95 still works when UseKeyMapping is false)
 Config.Command        = 'location'   -- false to disable
 Config.ToggleCommand  = 'zonenotify' -- players turn auto banners on/off (saved per player); false to disable
 Config.ManualCooldown = 3000         -- ms between manual checks
@@ -77,7 +78,6 @@ Config.LabelNames = {
     LANDMARK_JORGES_GAP       = "Jorge's Gap",
     LANDMARK_BARDS_CROSSING   = "Bard's Crossing",
     LANDMARK_CALIBANS_SEAT    = "Caliban's Seat",
-    LANDMARK_SOLOMONS_FOLLY   = "Solomon's Folly",
     HIDEOUT_SOLOMONS_FOLLY    = "Solomon's Folly",
     HOMESTEAD_LONNIES_SHACK   = "Lonnie's Shack",
     HOMESTEAD_WILLARDS_REST   = "Willard's Rest",
@@ -140,12 +140,114 @@ Config.Sound = {
 -- flavour lines under the title: label key (see LabelNames / Debug) = locale key
 ---------------------------------
 Config.ZoneMessages = {
-    state_new_austin = 'zone_msg_new_austin',
-    state_guarma     = 'zone_msg_guarma',
-    TOWN_SAINTDENIS  = 'zone_msg_saint_denis',
+    -- states
+    state_new_hanover    = 'zone_msg_new_hanover',
+    state_lemoyne        = 'zone_msg_lemoyne',
+    state_west_elizabeth = 'zone_msg_west_elizabeth',
+    state_new_austin     = 'zone_msg_new_austin',
+    state_guarma         = 'zone_msg_guarma',
+    STATE_AMBARINO       = 'zone_msg_ambarino',
+    -- towns
+    TOWN_VALENTINE       = 'zone_msg_valentine',
+    TOWN_RHODES          = 'zone_msg_rhodes',
+    TOWN_SAINTDENIS      = 'zone_msg_saint_denis',
+    TOWN_STRAWBERRY      = 'zone_msg_strawberry',
+    TOWN_BLACKWATER      = 'zone_msg_blackwater',
+    TOWN_ARMADILLO       = 'zone_msg_armadillo',
+    TOWN_TUMBLEWEED      = 'zone_msg_tumbleweed',
+    TOWN_ANNESBURG       = 'zone_msg_annesburg',
+    TOWN_VANHORN         = 'zone_msg_van_horn',
 }
 
 ---------------------------------
 -- hide the banner while a scripted camera is rendering (rsg-moviemaker, cutscenes, character creator...)
 ---------------------------------
 Config.HideWhileScriptedCam = true
+
+---------------------------------
+-- banner queue (DisplayMode 'nui'): a banner that arrives while another is on screen waits its turn
+-- instead of replacing it (max 3 waiting, stale ones are dropped)
+---------------------------------
+Config.BannerQueue = true
+
+---------------------------------
+-- per-player options: every player can switch banners, sound and the time/temperature/wind line
+-- on or off in the journal (Options tab). Saved on their PC. false = the Config values above apply to everyone.
+---------------------------------
+Config.PlayerOptions = true
+
+---------------------------------
+-- journal (NUI): places found per category, leaderboard and options
+---------------------------------
+Config.Journal = {
+    Enabled          = true,
+    Command          = 'journal', -- false to disable
+    Key              = false,     -- default key NAME, e.g. 'J' (rebindable in the game's key settings); needs Config.UseKeyMapping
+    ShowUndiscovered = false,     -- true = list the names of places not found yet (greyed out); false = show '???'
+}
+
+-- While NUI is open, block game controls but allow push-to-talk.
+Config.AllowPushToTalkWhileOpen = true
+Config.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK
+}
+
+---------------------------------
+-- leaderboard: characters with the most places discovered
+---------------------------------
+Config.Leaderboard = {
+    Enabled      = true,
+    Size         = 10,
+    CacheSeconds = 300,       -- the list is built at most this often
+    Names        = 'initial', -- 'full' = John Marston, 'initial' = John M., 'anonymous' = Explorer #1
+}
+
+---------------------------------
+-- rewards for the first visit to a place (paid by the server, once per character per place)
+-- cash is paid with AddMoney, XP goes to rsg-skills (skill is registered automatically),
+-- standing goes to rsg-reputation. A missing resource is simply skipped. Set an amount to 0 to turn it off.
+---------------------------------
+Config.Rewards = {
+    Enabled = true,
+    Cash = { state = 5, district = 3, town = 3, landmark = 2, water = 1 },
+    XP = {
+        Skill   = 'explorer',
+        Label   = 'Explorer',
+        Amounts = { state = 40, district = 25, town = 25, landmark = 15, water = 10 },
+    },
+    Standing = {
+        Amount  = 1, -- rsg-reputation standing for a first visit to a town or state listed below
+        Regions = {  -- place key (lower-case) = rsg-reputation region
+            town_valentine = 'valentine', town_rhodes = 'rhodes', town_saintdenis = 'saint_denis',
+            town_strawberry = 'strawberry', town_blackwater = 'blackwater', town_armadillo = 'armadillo',
+            town_tumbleweed = 'tumbleweed', town_annesburg = 'annesburg', town_vanhorn = 'van_horn',
+            state_new_hanover = 'new_hanover', state_lemoyne = 'lemoyne', state_west_elizabeth = 'west_elizabeth',
+            state_new_austin = 'new_austin', state_ambarino = 'ambarino', state_guarma = 'guarma',
+        },
+    },
+    -- anti-abuse: discoveries are still saved when one of these fails, they just pay nothing
+    MinInterval = 8,   -- seconds between two paid discoveries
+    MinTravel   = 40.0,-- metres between two paid discoveries
+    MaxCoordGap = 60.0,-- metres the reported position may differ from the server's position of the player
+    MaxPerDay   = 40,  -- paid discoveries per character per day (database day)
+}
+
+---------------------------------
+-- milestones: one-time bonus when a category is completed or the overall percentage is reached
+---------------------------------
+Config.Milestones = {
+    Enabled = true,
+    Categories = { -- paid once at 100% of the category
+        state    = { cash = 50,  xp = 200 },
+        district = { cash = 100, xp = 300 },
+        town     = { cash = 100, xp = 300 },
+        landmark = { cash = 250, xp = 600 },
+        water    = { cash = 100, xp = 300 },
+    },
+    Overall = { -- percentage of all places
+        [25]  = { cash = 25,  xp = 100 },
+        [50]  = { cash = 75,  xp = 250 },
+        [75]  = { cash = 150, xp = 500 },
+        [100] = { cash = 500, xp = 1500 },
+    },
+}

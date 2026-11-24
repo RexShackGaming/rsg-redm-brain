@@ -1,10 +1,22 @@
 # rsg-townhall
 
-**Version 3.0.0** · Dependencies: `rsg-core` (multi-job built in), `rsg-target`, `oxmysql`
+**Version 3.2.0** · Dependencies: `rsg-core` (multi-job built in), `rsg-target`, `rsg-inventory`, `oxmysql`
 
 A Town Hall employment office for RSG Framework. Players walk up to a clerk NPC, open the Town Hall from the target menu and browse **vacant whitelisted jobs**. They apply with a form, a manager or admin reviews the application, and an approval grants the job and rank (with feedback). Rejections give feedback and the vacancy stays open.
 
 Full developer / server-owner documentation: [DOCS.md](DOCS.md)
+
+## New in 3.2.0
+
+- **Prerequisites**: rsg-skills level, honor and regional standing (rsg-skills / rsg-reputation optional).
+- **Society permission** `townhall_post` (rsg-society optional; its label shows as the raw name unless rsg-society adds `ui_perm_townhall_post`).
+- **Telegram** notices for offline players (rsg-telegram optional).
+- **Probation** after hiring with automatic removal unless confirmed.
+- **Direct invites** to a citizen.
+- **Claim / bulk review** of applications.
+- **Stats tab** and CSV export (saved to the `exports/` folder).
+
+New config options: `AllowSkillPrerequisites`, `AllowReputationPrerequisites`, `ReputationLimits`, `UseSocietyPermission`, `SocietyPermission`, `TelegramNotify`, `TelegramSender`, `ProbationOptions`, `AllowInvites`, `InviteExpiryDays`, `MaxPendingInvites`, `AllowClaim`, `ClaimMinutes`, `AllowBulkReview`, `MaxBulkReview`, `StatsDays`, `StatsExportFolder`. Tables and columns are created automatically; `install.sql` is kept in sync for manual installs.
 
 ## Features
 - Clerk NPC placed in game by admins (`/createtownhall`), targetable with rsg-target

@@ -6,6 +6,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="journal.css">
 </head>
 <body>
 <div id="banner" class="hidden">
@@ -15,6 +16,24 @@
     <div class="divider"><span>&#10022;</span></div>
     <div class="info" id="info"></div>
 </div>
+
+<div id="journal" class="hidden">
+    <div class="panel">
+        <button class="round close" id="jClose" title="">&#10005;</button>
+        <div class="head">
+            <div class="h-title" id="jTitle"></div>
+            <div class="h-sub" id="jSubtitle"></div>
+        </div>
+        <div class="overall">
+            <div class="bar"><div class="fill" id="jOverallFill"></div></div>
+            <div class="overall-text"><span id="jOverallText"></span><span id="jOverallPct"></span></div>
+        </div>
+        <div class="tabs" id="jTabs"></div>
+        <div class="ink-divider"></div>
+        <div class="body" id="jBody"></div>
+    </div>
+</div>
 <script src="script.js"></script>
+<script src="journal.js"></script>
 </body>
 </html>

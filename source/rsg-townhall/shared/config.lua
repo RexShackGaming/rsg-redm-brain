@@ -99,6 +99,47 @@ Config.PrerequisiteItems = {}
 Config.MaxPrerequisiteItems = 3
 Config.AllowJobPrerequisites = true   -- "must already hold job X at rank Y or higher" (promotion paths)
 
+-- Prerequisites from other resources -----------------------------------------------
+-- Each only works while its resource is started; a vacancy keeps its requirement but it counts as met
+-- when the resource is stopped, so nobody is locked out.
+Config.AllowSkillPrerequisites = true       -- "needs skill X at level Y" (rsg-skills)
+Config.AllowReputationPrerequisites = true  -- "needs honor of at least N" / "standing of at least N in a region" (rsg-reputation)
+-- Accepted ranges for the numbers a poster types (keep in step with rsg-reputation's Config.Honor / Config.Standing)
+Config.ReputationLimits = { honor = { -1000, 1000 }, standing = { -100, 100 } }
+
+-- rsg-society ----------------------------------------------------------------------
+-- A rank that has this permission in the job's society may post and review vacancies for that job.
+-- Tick it per rank in the society's Ranks tab. Bosses always have it.
+Config.UseSocietyPermission = true
+Config.SocietyPermission = 'townhall_post'
+
+-- rsg-telegram ---------------------------------------------------------------------
+-- Offline players get decisions, interview calls, invitations and probation results as a telegram.
+Config.TelegramNotify = true
+Config.TelegramSender = 'Town Hall'
+
+-- Probation ------------------------------------------------------------------------
+-- Days a poster can choose (0 = no probation). The new hire keeps the job on probation; when it ends
+-- without a boss confirming, the job is removed again. Bosses confirm or end it in the Probation tab.
+Config.ProbationOptions = { 0, 3, 7, 14 }
+
+-- Invitations ----------------------------------------------------------------------
+-- A boss or manager invites a specific citizen to a job without a public vacancy.
+Config.AllowInvites = true
+Config.InviteExpiryDays = 7           -- 0 = never expires
+Config.MaxPendingInvites = 3          -- open invitations per citizen
+
+-- Reviewing -----------------------------------------------------------------------
+Config.AllowClaim = true              -- a reviewer can claim an application so two people do not clash
+Config.ClaimMinutes = 30              -- a claim lapses after this long (admins can always override)
+Config.AllowBulkReview = true         -- approve or reject several applications in one go
+Config.MaxBulkReview = 10
+
+-- Statistics ----------------------------------------------------------------------
+Config.StatsDays = { 7, 30, 90, 0 }   -- windows offered in the Stats tab (0 = all time)
+-- Admins can export the statistics as a CSV file into this folder inside the resource.
+Config.StatsExportFolder = 'exports'
+
 -- Text limits (characters) -------------------------------------------------------
 Config.Limits = {
     title = 60,

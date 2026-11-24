@@ -3,7 +3,7 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 
 description 'rsg-moonshine'
-version '3.0.3'
+version '3.7.1'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
@@ -27,6 +27,7 @@ dependencies {
     'rsg-core',
     'rsg-inventory',
     'rsg-target',
+    'rsg-gizmo',
     'oxmysql',
 }
 

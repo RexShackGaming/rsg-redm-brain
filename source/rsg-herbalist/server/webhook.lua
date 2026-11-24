@@ -95,6 +95,7 @@ local COLORS = {
     mysterybox = 15844367, -- gold
     anticheat = 15158332,  -- red
     gather = 5763719,      -- light green
+    sales = 15844367,      -- gold
     resource = 3447003,    -- blurple
     version = 10181046,    -- purple
 }
@@ -193,25 +194,86 @@ end
 -- server/mysterybox.lua and server/versionchecker.lua.
 ----------------------------------------------------------------------------
 
-function Webhook.LogGather(src, itemLabel, coordKey)
+local gatherBuffer = {} -- src -> { items = { [label] = n }, total, startedAt, player }
+
+local function FlushGather(src)
+    local b = gatherBuffer[src]
+    if not b then return end
+    gatherBuffer[src] = nil
+    local lines = {}
+    for label, n in pairs(b.items) do lines[#lines + 1] = ('%dx %s'):format(n, label) end
+    table.sort(lines)
     local fields = {}
-    AddField(fields, 'Player', PlayerFieldValue(src), false)
-    AddField(fields, 'Item', itemLabel)
-    AddField(fields, 'Node', coordKey)
-    Send('gather', BuildEmbed('Herb gathered', nil, COLORS.gather, fields))
+    AddField(fields, 'Player', b.player, false)
+    AddField(fields, 'Gathered', table.concat(lines, '\n'), false)
+    AddField(fields, 'Total', b.total)
+    AddField(fields, 'Period', ('%ds'):format(os.time() - b.startedAt))
+    Send('gather', BuildEmbed('Herbs gathered', nil, COLORS.gather, fields))
 end
+
+function Webhook.LogGather(src, itemLabel, coordKey)
+    local target = CategoryTarget('gather')
+    if not target then return end
+
+    if (target.batchSeconds or 0) <= 0 then
+        local fields = {}
+        AddField(fields, 'Player', PlayerFieldValue(src), false)
+        AddField(fields, 'Item', itemLabel)
+        AddField(fields, 'Node', coordKey)
+        Send('gather', BuildEmbed('Herb gathered', nil, COLORS.gather, fields))
+        return
+    end
+
+    local b = gatherBuffer[src]
+    if not b then
+        -- the player text is captured now so the batch can still flush after they disconnect
+        b = { items = {}, total = 0, startedAt = os.time(), player = PlayerFieldValue(src) }
+        gatherBuffer[src] = b
+    end
+    b.items[itemLabel] = (b.items[itemLabel] or 0) + 1
+    b.total = b.total + 1
+end
+
+CreateThread(function()
+    while true do
+        Wait(10000)
+        local target = CategoryTarget('gather')
+        local batch = target and target.batchSeconds or 0
+        local now = os.time()
+        for src, b in pairs(gatherBuffer) do
+            if batch <= 0 or now - b.startedAt >= batch then FlushGather(src) end
+        end
+    end
+end)
+
+AddEventHandler('playerDropped', function()
+    FlushGather(source)
+end)
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    for src in pairs(gatherBuffer) do FlushGather(src) end
+end)
 
 function Webhook.LogCraft(src, tonic, outcome)
     local title = outcome == 'success' and 'Tonic crafted' or 'Tonic craft refunded'
     local fields = {}
     AddField(fields, 'Player', PlayerFieldValue(src), false)
-    AddField(fields, 'Recipe', locale(tonic.label))
+    AddField(fields, 'Recipe', HerbalistRecipeLabel(tonic))
     if outcome == 'success' then
         AddField(fields, 'Yield', ('%dx %s'):format(tonic.output.amount, tonic.output.item))
     else
         AddField(fields, 'Reason', 'Inventory full - ingredients refunded, no output granted')
     end
     Send('craft', BuildEmbed(title, nil, COLORS.craft, fields))
+end
+
+function Webhook.LogSale(src, itemLabel, amount, total)
+    local fields = {}
+    AddField(fields, 'Player', PlayerFieldValue(src), false)
+    AddField(fields, 'Item', ('%dx %s'):format(amount, itemLabel))
+    AddField(fields, 'Paid', ('$%.2f'):format(total))
+    Send('sales', BuildEmbed('Herb buyer sale', nil, COLORS.sales, fields))
 end
 
 function Webhook.LogMysteryBox(src, lootItems)

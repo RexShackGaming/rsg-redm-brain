@@ -4,6 +4,7 @@ local Stills  = {}   -- [id] = data
 local Objects = {}   -- [id] = entity
 local placing = false
 local Fx      = {}    -- [id] = { particle handles }
+local FxHeat  = {}    -- [id] = heat the smoke was started with
 local uiOpen  = nil   -- still id while the NUI is open
 local uiReady = false -- page confirmed it rendered
 local WorldObj = {}   -- [id] = map prop entity for static world stills (never deleted by us)
@@ -40,6 +41,7 @@ end
 -- brewing particle effects
 ---------------------------------
 local function stopFx(id)
+    FxHeat[id] = nil
     if not Fx[id] then return end
     for _, h in ipairs(Fx[id]) do StopParticleFxLooped(h, false) end
     Fx[id] = nil
@@ -57,9 +59,13 @@ local function startFx(id)
         if not HasNamedPtfxAssetLoaded(hash) then return end
     end
     local handles = {}
+    local heat = (Stills[id] and Stills[id].heat) or 'medium'
+    local mult = 1.0
+    for _, h in ipairs(Config.Heat) do if h.key == heat then mult = h.smoke end end
+    FxHeat[id] = heat
     for _, e in ipairs(Config.BrewFx.effects) do
         UseParticleFxAsset(dict)
-        local h = StartParticleFxLoopedOnEntity(e.name, obj, e.offset.x, e.offset.y, e.offset.z, 0.0, 0.0, 0.0, e.scale, false, false, false)
+        local h = StartParticleFxLoopedOnEntity(e.name, obj, e.offset.x, e.offset.y, e.offset.z, 0.0, 0.0, 0.0, e.scale * mult, false, false, false)
         if h and h ~= 0 then handles[#handles + 1] = h end
     end
     Fx[id] = handles
@@ -67,13 +73,18 @@ end
 
 local function updateFx(id)
     local s = Stills[id]
-    if s and s.brewing then startFx(id) else stopFx(id) end
+    if s and s.brewing then
+        if FxHeat[id] and FxHeat[id] ~= (s.heat or 'medium') then stopFx(id) end -- smoke grows or shrinks with the fire
+        startFx(id)
+    else
+        stopFx(id)
+    end
 end
 
 ---------------------------------
 -- props
 ---------------------------------
-local openStillMenu, closeUi
+local openStillMenu, closeUi, applyNuiFocus
 
 local function despawnStill(id)
     stopFx(id)
@@ -87,21 +98,35 @@ end
 
 local function spawnStill(s)
     if Objects[s.id] then return end
-    if not loadModel(Config.StillProp) then return end
-    local obj = CreateObject(Config.StillProp, s.coords.x, s.coords.y, s.coords.z, false, false, false)
+    local model = s.kind == 'barrel' and Config.Barrel.prop or Config.StillProp
+    if not loadModel(model) then return end
+    local obj = CreateObject(model, s.coords.x, s.coords.y, s.coords.z, false, false, false)
     SetEntityHeading(obj, s.heading)
     PlaceObjectOnGroundProperly(obj)
     FreezeEntityPosition(obj, true)
     SetEntityInvincible(obj, true)
     Objects[s.id] = obj
+    SetModelAsNoLongerNeeded(model)
 
     exports['rsg-target']:addLocalEntity(obj, {
         {
             name = 'moonshine_check_' .. s.id,
             icon = 'fa-solid fa-whiskey-glass',
-            label = locale('cl_check'),
+            label = locale(s.kind == 'barrel' and 'cl_check_barrel' or 'cl_check'),
             distance = 2.5,
             onSelect = function() openStillMenu(s.id) end,
+        },
+        {
+            name = 'moonshine_inspect_' .. s.id,
+            icon = 'fa-solid fa-magnifying-glass',
+            label = locale('cl_inspect'),
+            distance = 2.5,
+            canInteract = function() return Config.Inspect.enabled and isLaw() end,
+            onSelect = function()
+                if progress(locale('cl_inspecting'), Config.Inspect.time, 'amb_work@world_human_crouch_inspect@male_c@idle_a', 'idle_a') then
+                    TriggerServerEvent('rsg-moonshine:server:inspect', s.id)
+                end
+            end,
         },
         {
             name = 'moonshine_destroy_' .. s.id,
@@ -120,6 +145,9 @@ end
 
 local function refreshNearby()
     local pos = GetEntityCoords(PlayerPedId())
+    -- drop props for stills the server no longer tells us about (removed, or out of sync range)
+    for id in pairs(Objects) do if not Stills[id] then despawnStill(id) end end
+    for id in pairs(WorldObj) do if not Stills[id] then stopFx(id) WorldObj[id] = nil end end
     for id, s in pairs(Stills) do
         local near = #(pos - s.coords) <= Config.SpawnDist
         if s.world then
@@ -146,11 +174,25 @@ local function refreshNearby()
 end
 
 local streaming = false
+local streamGen = 0
 local function startStreaming()
     if streaming then return end
     streaming = true
+    streamGen = streamGen + 1
+    local gen = streamGen
     CreateThread(function()
-        while streaming do
+        local tick = 0
+        while streaming and gen == streamGen do
+            -- the server only sends stills near us, so ask again every few seconds as we move
+            if tick % 3 == 0 then
+                local list = RSGCore.Functions.AwaitCallback('rsg-moonshine:server:getStills', 4000)
+                if list then
+                    local fresh = {}
+                    for _, st in ipairs(list) do fresh[st.id] = st end
+                    Stills = fresh
+                end
+            end
+            tick = tick + 1
             refreshNearby()
             Wait(2000)
         end
@@ -158,13 +200,10 @@ local function startStreaming()
 end
 
 local function loadStills()
-    local list = RSGCore.Functions.AwaitCallback('rsg-moonshine:server:getStills', nil)
     for id in pairs(Objects) do despawnStill(id) end
     for id in pairs(WorldObj) do stopFx(id) end
     WorldObj = {}
     Stills = {}
-    for _, s in ipairs(list or {}) do Stills[s.id] = s end
-    refreshNearby()
     startStreaming()
 end
 
@@ -184,6 +223,7 @@ AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     streaming = false
     closeUi()
+    applyNuiFocus(false)
     for id in pairs(Objects) do despawnStill(id) end
     for id in pairs(WorldObj) do stopFx(id) end
     if Config.WorldStills and Config.WorldStills.enabled then exports['rsg-target']:removeModel(Config.WorldStills.models, 'moonshine_world_still') end
@@ -199,6 +239,11 @@ RegisterNetEvent('rsg-moonshine:client:syncStill', function(s)
         spawnStill(s)
         updateFx(s.id)
     end
+end)
+
+RegisterNetEvent('rsg-moonshine:client:explode', function(coords)
+    -- visual and sound only (damage scale 0.0), same call and vfx hash as rsg-fireworks
+    AddExplosionWithUserVfx(coords.x, coords.y, coords.z + 0.5, 32, 0x2FDA2B4A, 0.0, true, false, 0.0)
 end)
 
 RegisterNetEvent('rsg-moonshine:client:removeStill', function(id)
@@ -217,13 +262,50 @@ local UiLocale = {
     'ui_load', 'ui_load_all', 'ui_unload', 'ui_status', 'ui_idle', 'ui_brewing', 'ui_waiting', 'ui_full',
     'ui_current_batch', 'ui_queued', 'ui_tank', 'ui_collect', 'ui_pickup', 'ui_change_recipe', 'ui_batch_time',
     'ui_makes', 'ui_close', 'ui_locked', 'ui_select',
+    'ui_access', 'ui_trust_nearest', 'ui_trusted_none', 'ui_remove', 'ui_quality', 'ui_label', 'ui_label_save', 'ui_label_hint',
     'ui_firebox', 'ui_fuel_left', 'ui_burns', 'ui_each', 'ui_nofuel', 'ui_paused', 'ui_add', 'ui_jugs', 'ui_need_jugs', 'ui_level', 'ui_requires', 'ui_max_level', 'ui_xp',
+    'ui_fermenting', 'ui_wash', 'ui_heat', 'ui_heat_low', 'ui_heat_medium', 'ui_heat_high', 'ui_heat_hint',
+    'ui_proof', 'ui_rerun', 'ui_rerun_hint', 'ui_rerunning', 'ui_cut', 'ui_cut_tight', 'ui_cut_normal', 'ui_cut_loose',
+    'ui_risk_none', 'ui_risk_low', 'ui_risk_med', 'ui_risk_high', 'ui_yield', 'ui_cask', 'ui_cask_install', 'ui_cask_none',
+    'ui_cask_empty', 'ui_cask_age', 'ui_cask_ageing', 'ui_cask_collect', 'ui_cask_hint', 'ui_cask_next', 'ui_weather_cold', 'ui_weather_wet',
+    'ui_night', 'ui_volume', 'ui_material_copper', 'ui_material_tin', 'ui_ingredient_quality', 'ui_wear', 'ui_water', 'ui_clean', 'ui_add_water', 'ui_sample', 'ui_sample_safe', 'ui_sample_foul', 'ui_dry', 'ui_barrel_title', 'ui_barrel_subtitle', 'ui_wash_take', 'ui_wash_load', 'ui_wash_carried',
 }
+
+-- every focus change goes through here so push-to-talk keeps working while the menu is open
+local uiFocus = false
+applyNuiFocus = function(enable)
+    uiFocus = enable
+    if enable then
+        SetNuiFocus(true, true)
+        if Config.AllowPushToTalkWhileOpen then SetNuiFocusKeepInput(true) end
+    else
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
+end
+
+CreateThread(function()
+    while true do
+        if uiFocus and Config.AllowPushToTalkWhileOpen then
+            Wait(0)
+            DisableAllControlActions(0)
+            DisableAllControlActions(1)
+            DisableAllControlActions(2)
+            for _, c in ipairs(Config.PushToTalkControls or {}) do
+                EnableControlAction(0, c, true)
+                EnableControlAction(1, c, true)
+                EnableControlAction(2, c, true)
+            end
+        else
+            Wait(250)
+        end
+    end
+end)
 
 closeUi = function()
     if not uiOpen then return end
     uiOpen, uiReady = nil, false
-    SetNuiFocus(false, false)
+    applyNuiFocus(false)
     SendNUIMessage({ action = 'close' })
 end
 
@@ -243,7 +325,7 @@ openStillMenu = function(id)
         if uiOpen == id and not uiReady then
             print('^1[rsg-moonshine] NUI did not respond - check the html files are on the server and run "refresh" then "ensure rsg-moonshine"^7')
             uiOpen = nil
-            SetNuiFocus(false, false)
+            applyNuiFocus(false)
         end
     end)
 
@@ -270,7 +352,7 @@ end
 RegisterNUICallback('opened', function(_, cb)
     if uiOpen then
         uiReady = true
-        SetNuiFocus(true, true)
+        applyNuiFocus(true)
     end
     cb('ok')
 end)
@@ -279,14 +361,14 @@ RegisterNUICallback('uiError', function(data, cb)
     print(('^1[rsg-moonshine] NUI error: %s^7'):format(tostring(data and data.msg)))
     uiReady = false
     uiOpen = nil
-    SetNuiFocus(false, false)
+    applyNuiFocus(false)
     cb('ok')
 end)
 
 -- emergency release if the cursor ever gets stuck
 RegisterCommand('moonshine_unfocus', function()
     uiOpen, uiReady = nil, false
-    SetNuiFocus(false, false)
+    applyNuiFocus(false)
     SendNUIMessage({ action = 'close' })
 end, false)
 
@@ -298,7 +380,7 @@ end)
 RegisterNUICallback('action', function(data, cb)
     if not uiOpen then return cb('ok') end
     local id = uiOpen
-    local state = RSGCore.Functions.AwaitCallback('rsg-moonshine:server:action', nil, id, data.action, data.data)
+    local state = RSGCore.Functions.AwaitCallback('rsg-moonshine:server:action', 5000, id, data.action, data.data)
     if state then
         SendNUIMessage({ action = 'update', state = state })
     elseif data.action == 'pickup' then
@@ -336,64 +418,60 @@ if Config.WorldStills and Config.WorldStills.enabled then
 end
 
 ---------------------------------
+-- bootlegger buyers
+---------------------------------
+local BuyerZones = {}
+if Config.Buyers and Config.Buyers.enabled then
+    for i, spot in ipairs(Config.BuyerSpots) do
+        BuyerZones[#BuyerZones + 1] = exports['rsg-target']:addSphereZone({
+            coords = spot.coords, radius = Config.Buyers.distance,
+            options = {{
+                name = 'moonshine_buyer_' .. i, icon = 'fa-solid fa-sack-dollar', label = locale('cl_sell'), distance = Config.Buyers.distance,
+                onSelect = function() RSGCore.Functions.AwaitCallback('rsg-moonshine:server:sell', 5000, i) end,
+            }},
+        })
+    end
+end
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    for _, z in ipairs(BuyerZones) do exports['rsg-target']:removeZone(z) end
+end)
+
+---------------------------------
 -- placement
 ---------------------------------
-RegisterNetEvent('rsg-moonshine:client:placeStill', function()
-    if placing then return end
-    if not loadModel(Config.StillProp) then return end
+RegisterNetEvent('rsg-moonshine:client:placeStill', function(kind, material)
+    if placing or uiOpen then return end
+    kind = kind == 'barrel' and 'barrel' or 'still'
     placing = true
 
-    local ped = PlayerPedId()
-    local heading = GetEntityHeading(ped)
-    local ghost = CreateObject(Config.StillProp, 0.0, 0.0, 0.0, false, false, false)
-    SetEntityAlpha(ghost, 170, false)
-    SetEntityCollision(ghost, false, false)
-    FreezeEntityPosition(ghost, true)
-    exports['rsg-core']:DrawText(locale('cl_place_help'))
-
     CreateThread(function()
-        local result
-        while placing do
-            Wait(0)
-            local pos = GetOffsetFromEntityInWorldCoords(ped, 0.0, 2.0, 0.0)
-            local found, gz = GetGroundZFor_3dCoord(pos.x, pos.y, pos.z + 2.0, false)
-            local z = found and gz or pos.z - 1.0
-            SetEntityCoordsNoOffset(ghost, pos.x, pos.y, z, false, false, false)
-            SetEntityHeading(ghost, heading)
-
-            DisableControlAction(0, 0x07CE1E61, true) -- attack (LMB)
-            DisableControlAction(0, 0xF84FA74F, true) -- aim (RMB)
-            if IsControlPressed(0, 0xA65EBAB4) then heading = heading + 1.5 end -- left arrow
-            if IsControlPressed(0, 0xDEB34313) then heading = heading - 1.5 end -- right arrow
-
-            if IsDisabledControlJustPressed(0, 0x07CE1E61) then
-                result = { coords = vector3(pos.x, pos.y, z), heading = heading % 360.0 }
-                placing = false
-            elseif IsDisabledControlJustPressed(0, 0xF84FA74F) or IsEntityDead(ped) then
-                placing = false
-            end
-        end
-
-        DeleteObject(ghost)
-        exports['rsg-core']:HideText()
-        if not result then
+        local res = exports['rsg-gizmo']:Place(kind == 'barrel' and Config.Barrel.prop or Config.StillProp, {
+            rotation = 'z',
+            maxDistance = Config.PlaceDist,
+            allowWater = false,
+            validate = function(coords)
+                for _, z in ipairs(Config.BlockedZones) do
+                    if #(coords - z.coords) < z.radius then return false, locale('sv_blocked'):format(z.name) end
+                end
+                for _, st in pairs(Stills) do
+                    local minD = (kind == 'barrel' or st.kind == 'barrel') and Config.Barrel.minDist or Config.MinStillDist
+                    if #(coords - st.coords) < minD then return false, locale('sv_too_close') end
+                end
+                return true
+            end,
+        })
+        if not res then
+            placing = false
             return RSGCore.Functions.Notify({ title = locale('cl_still'), description = locale('cl_place_cancel'), type = 'inform' })
         end
-        -- quick client pre-check so players aren't made to sit through the progress bar for a placement the server will refuse
-        for _, z in ipairs(Config.BlockedZones) do
-            if #(result.coords - z.coords) < z.radius then
-                return RSGCore.Functions.Notify({ title = locale('cl_still'), description = locale('sv_blocked'):format(z.name), type = 'error' })
-            end
-        end
-        for _, st in pairs(Stills) do
-            if #(result.coords - st.coords) < Config.MinStillDist then
-                return RSGCore.Functions.Notify({ title = locale('cl_still'), description = locale('sv_too_close'), type = 'error' })
-            end
-        end
-        TaskTurnPedToFaceCoord(ped, result.coords.x, result.coords.y, result.coords.z, 1000)
+
+        local ped = PlayerPedId()
+        TaskTurnPedToFaceCoord(ped, res.coords.x, res.coords.y, res.coords.z, 1000)
         Wait(1000)
         if progress(locale('cl_loading'), 5000, 'amb_work@world_human_crouch_inspect@male_c@idle_a', 'idle_a') then
-            TriggerServerEvent('rsg-moonshine:server:placeStill', result.coords, result.heading)
+            TriggerServerEvent('rsg-moonshine:server:placeStill', res.coords, res.heading, kind, material)
         end
+        placing = false
     end)
 end)

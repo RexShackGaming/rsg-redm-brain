@@ -95,5 +95,18 @@
     "ui_bonus": "Jouw bonus",
     "ui_stock_left": "Inkoop vandaag",
     "ui_unlimited": "Onbeperkt",
-    "ui_over_stock": "Meer vis dan de visboer vandaag koopt"
+    "ui_over_stock": "Meer vis dan de visboer vandaag koopt",
+    "ui_orders": "Bestellingen van vandaag",
+    "ui_order_deliver": "Leveren",
+    "ui_order_done": "Geleverd",
+    "ui_order_reward": "Beloning",
+    "ui_order_title": "Bestelling leveren",
+    "ui_order_confirm": "{qty} x {fish} leveren voor {cash}?",
+    "ui_fillet_tag": "Filet",
+    "sv_order_done": "Bestelling geleverd! Je ontving $%s",
+    "sv_order_invalid": "Die bestelling is niet beschikbaar",
+    "sv_order_already": "Je hebt deze bestelling vandaag al geleverd",
+    "sv_shop_next_tier": "Bereik visniveau %s om hier betere benodigdheden te ontgrendelen",
+    "item_sell_hint": "Verkoopt aan viskramers voor ongeveer $%s",
+    "wh_order_title": "Visbestelling geleverd"
 }

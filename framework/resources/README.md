@@ -37,21 +37,21 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-farming](rsg-farming.md) | Plant, water, fertilise and harvest crops anywhere in the world, using the water buckets from rsg-wellpump. Bu | 0 | 11 |
 | [rsg-fireworks](rsg-fireworks.md) | Firework script for RSG Framework | 0 | 11 |
 | [rsg-fishing](rsg-fishing.md) | Fishing for RSG-Core (RedM), version 3.2.0. Full technical reference: [DOCS.md](DOCS.md). Players equip a  | 0 | 4 |
-| [rsg-fishmonger](rsg-fishmonger.md) | A fishmonger system for RSG-Core (RedM). Players visit a fishmonger NPC in any major town to sell their  | 0 | 1 |
+| [rsg-fishmonger](rsg-fishmonger.md) | A fishmonger system for RSG-Core (RedM). Players visit a fishmonger NPC in any major town to sell their  | 0 | 3 |
 | [rsg-fortuneteller](rsg-fortuneteller.md) | Fortune teller machines for RSG-Core | 0 | 0 |
 | [rsg-gangs](rsg-gangs.md) | Gang System for RSG Framework | 10 | 66 |
 | [rsg-gizmo](rsg-gizmo.md) | Standard prop placement gizmo for the RSG Framework | 9 | 2 |
 | [rsg-goldclaim](rsg-goldclaim.md) | Version 3.2.0 · requires rsg-core, rsg-inventory, rsg-target, oxmysql · no ox_lib · developer reference in | 0 | 31 |
 | [rsg-goldpanning](rsg-goldpanning.md) | Gold panning system for RSG Framework | 0 | 5 |
 | [rsg-guarma](rsg-guarma.md) | Boat travel between Saint Denis and Guarma for the RSG Framework | 0 | 2 |
-| [rsg-herbalist](rsg-herbalist.md) | Herbalist script for RSG Framework | 0 | 15 |
+| [rsg-herbalist](rsg-herbalist.md) | Herbalist script for RSG Framework | 0 | 19 |
 | [rsg-hotair](rsg-hotair.md) | Hireable hot air balloons for RedM servers running the RSG-Core framework. Players hire a balloon at a doc | 0 | 7 |
 | [rsg-housing](rsg-housing.md) | Monthly house rentals for the RSG Framework (RedM). Players rent a house directly at the property, pay rent ev | 24 | 13 |
 | [rsg-hud](rsg-hud.md) | Player and horse HUD for RSG-Core (RedM): health, stamina, dead eye, hunger, thirst, cleanliness, stress, temp | 19 | 16 |
 | [rsg-hunting](rsg-hunting.md) | Hunting, trapper and butcher script for RSG Framework | 6 | 2 |
 | [rsg-huntingpets](rsg-huntingpets.md) | A combined RedM / RSG-Core resource that adds hunting dogs and hunting birds to your server in one package | 0 | 16 |
 | [rsg-inventory](rsg-inventory.md) | Slot/weight inventory for the RSG Framework (rsg-core) with a hotbar, persistent stashes, ground drops, shops  | 47 | 20 |
-| [rsg-lawman](rsg-lawman.md) | Law enforcement and sheriff management system for RedM using RSG Core. > Full-featured law enforcement fra | 0 | 19 |
+| [rsg-lawman](rsg-lawman.md) | Law enforcement and sheriff management system for RedM using RSG Core. > Full-featured law enforcement fra | 2 | 27 |
 | [rsg-legendary](rsg-legendary.md) | rsg-legendary - legendary animal hunting | 1 | 4 |
 | [rsg-loading](rsg-loading.md) | RSG RedM Loading Screen | 0 | 0 |
 | [rsg-lockpick](rsg-lockpick.md) | Lockpicking minigame for RSG Core | 6 | 3 |
@@ -64,12 +64,12 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-medic](rsg-medic.md) | Death system and medic job for RSG Framework | 1 | 23 |
 | [rsg-menubase](rsg-menubase.md) | A lightweight menu framework for RedM, built for the RSG-Core ecosystem. It gives other resources a simple exp | 2 | 0 |
 | [rsg-mining](rsg-mining.md) | rsg-mining - mine lease & NPC worker management | 0 | 0 |
-| [rsg-moonshine](rsg-moonshine.md) | Placeable moonshine stills for RedM on the RSG Framework. Players set up a still in the wild, load a m | 0 | 7 |
+| [rsg-moonshine](rsg-moonshine.md) | Version 3.7.1 Placeable moonshine stills for RedM on the RSG Framework. Players set up a still in the  | 6 | 9 |
 | [rsg-noticeboard](rsg-noticeboard.md) | rsg-noticeboard - player notice boards with NUI, fees, expiry/renewal and admin management | 0 | 3 |
 | [rsg-npcs](rsg-npcs.md) | Lightweight, distance-based ambient NPC spawner with optional blips, scenarios and proximity audio for RedM. | 0 | 0 |
 | [rsg-playerinfo](rsg-playerinfo.md) | Full-screen player information dashboard for RedM (RSG Core). > `/info` opens a dashboard that fills 80% o | 19 | 13 |
 | [rsg-poison](rsg-poison.md) | Poison script for RSG Framework | 3 | 4 |
-| [rsg-prison](rsg-prison.md) | Prison system for RedM servers using RSG Core. - [rsg-core](https://github.com/Rexshack-RedM/rsg-core) - [ | 1 | 12 |
+| [rsg-prison](rsg-prison.md) | Prison system for RedM servers using RSG Core. - [rsg-core](https://github.com/Rexshack-RedM/rsg-core) - [ | 1 | 15 |
 | [rsg-queue](rsg-queue.md) | rsg-queue - connect queue with VIP priority, reserved slots and crash grace | 7 | 1 |
 | [rsg-radialmenu](rsg-radialmenu.md) | Radial interaction menu for RedM using RSG Core. A fast, themed radial menu with nested submenus, job-spec | 2 | 7 |
 | [rsg-radio](rsg-radio.md) | rsg-radio - field radio (frequencies, job channels) on top of rsg-voice | 2 | 21 |
@@ -88,10 +88,10 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-stores](rsg-stores.md) | Version 3.6.0 · requires rsg-core, rsg-inventory, rsg-target, rsg-gizmo, oxmysql (no ox_lib) · optional: r | 1 | 22 |
 | [rsg-target](rsg-target.md) | targeting system for RSG RedM Framework | 19 | 6 |
 | [rsg-targetpractise](rsg-targetpractise.md) | Placeable archery and throwing-knife practice targets for RSG Framework | 0 | 18 |
-| [rsg-telegram](rsg-telegram.md) | Telegram system for RSG Framework (RedM). Send and receive telegrams at any post office, with an address book, | 17 | 4 |
+| [rsg-telegram](rsg-telegram.md) | Telegram system for RSG Framework (RedM). Send and receive telegrams at any post office, with an address book, | 18 | 9 |
 | [rsg-telephone](rsg-telephone.md) | rsg-telephone - persistent telephone props with private voice calls | 0 | 16 |
 | [rsg-theatre](rsg-theatre.md) | Theatre Raleur (Saint Denis) stage shows | 0 | 4 |
-| [rsg-townhall](rsg-townhall.md) | rsg-townhall - Town Hall job vacancies, applications and approvals | 3 | 2 |
+| [rsg-townhall](rsg-townhall.md) | rsg-townhall - Town Hall job vacancies, applications and approvals | 4 | 2 |
 | [rsg-trader](rsg-trader.md) | Dynamic-price NPC traders for RSG-Core (RedM). Players buy and sell items at prices that move with stock l | 1 | 1 |
 | [rsg-trams](rsg-trams.md) | rsg-trams - Saint Denis trolley network (one trolley per track) | 0 | 3 |
 | [rsg-trapdoors](rsg-trapdoors.md) | Version 2.1.0 · Full developer reference: [DOCS.md](DOCS.md) Synced, animated trapdoors for RSG-Core (Re | 1 | 1 |
@@ -103,4 +103,4 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-weapons](rsg-weapons.md) | Weapon handling for RSG Framework: dual wield, serial-based equipping, weapon wear, repairs, saved loadouts  | 6 | 14 |
 | [rsg-weather](rsg-weather.md) | rsg-weather - time, weather and wind sync for RSG Framework (weathersync compatible) | 16 | 15 |
 | [rsg-wellpump](rsg-wellpump.md) | Well pumps for RSG Framework: place, fill buckets, pack up, and shared bucket API | 17 | 4 |
-| [rsg-zonenotify](rsg-zonenotify.md) | rsg-zonenotify - location banner when entering states, districts and towns | 8 | 4 |
+| [rsg-zonenotify](rsg-zonenotify.md) | rsg-zonenotify - location banner when entering states, districts and towns | 13 | 6 |

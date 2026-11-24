@@ -6,11 +6,19 @@ Config = {}
 Config.NpcModel       = `cs_fishcollector`
 Config.SpawnDistance  = 50.0   -- npc spawns / despawns at this range
 Config.TargetDistance = 2.5    -- rsg-target interaction distance
-Config.MaxUseDistance = 5.0    -- server-side distance check to the npc
+Config.MaxUseDistance = 5.0    -- the menu closes beyond this range; the server allows a little extra for lag
 Config.Cooldown       = 2000   -- ms between checkouts per player (anti-spam)
-Config.MoneyType      = 'cash' -- 'cash' | 'bank' | 'bloodmoney'
+Config.MoneyType      = 'cash' -- 'cash' | 'bank' | 'bloodmoney' ('bank' is forwarded to the player's home branch by rsg-banking)
 Config.FilletItem     = 'raw_fish'
+Config.ItemHints      = true   -- add "sells for about $x" to each fish's item description (rsg-core UpdateItem, applied on start)
+Config.BanOnTamper    = false  -- true = ExploitBan a player who sends a request the menu can never produce (invalid mode, malformed cart). Leave false until you are happy with the logs
 Config.ImagePath      = 'nui://rsg-inventory/html/images/'
+
+-- While the menu is open game controls are blocked, but push-to-talk keeps working
+Config.AllowPushToTalkWhileOpen = true
+Config.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK
+}
 
 ---------------------------------
 -- blip
@@ -19,6 +27,10 @@ Config.Blip = {
     enabled = true,
     sprite  = `blip_mg_fishing`,
     style   = 1664425300,
+    scale   = 0.2,
+    -- colour of the blip while the town is open / closed (only used when Config.OpeningHours.enabled)
+    openColor   = 'BLIP_MODIFIER_MP_COLOR_8',   -- green
+    closedColor = 'BLIP_MODIFIER_MP_COLOR_10',  -- red
 }
 
 ---------------------------------
@@ -40,6 +52,7 @@ Config.Locations = {
 -- opening hours (in-game clock, synced by rsg-weather)
 -- close lower than open wraps past midnight (e.g. open 20, close 4)
 -- a location can override with  hours = { open = 8, close = 18 }
+-- the map blip turns red while a town is closed
 ---------------------------------
 Config.OpeningHours = {
     enabled = false,
@@ -58,13 +71,15 @@ Config.Demand = {
 }
 
 ---------------------------------
--- seller bonus (added together, applied on top of demand when selling)
----------------------------------
 -- rsg-economy integration (optional): sales are taxed and scaled by the player's town standing
+---------------------------------
 Config.Economy = {
     Enabled = true,
 }
 
+---------------------------------
+-- seller bonus (added together, applied on top of demand when selling)
+---------------------------------
 Config.Bonus = {
     jobs = {                 -- current job name = extra fraction (0.10 = +10%)
         -- fishmonger = 0.10,
@@ -85,12 +100,50 @@ Config.Bonus = {
 }
 
 ---------------------------------
--- daily stock: how many fish each town will BUY per real day (processing is not limited)
+-- stock: how many fish each town will BUY (processing is not limited)
 -- a location can override with  stock = 300  (0 = unlimited)
+-- recoveryPerHour = fish the town can buy again per real hour after a sale (0 = the count resets at midnight instead)
 ---------------------------------
 Config.DailyStock = {
-    enabled     = true,
-    perLocation = 200,
+    enabled         = true,
+    perLocation     = 200,
+    recoveryPerHour = 20,
+}
+
+---------------------------------
+-- fish quality: each fish is paid by its own size and freshness (read from the item's info)
+-- size      = info.weight (kg), +perKg per kg, capped at +max
+-- freshness = info.quality (0-100, only exists when rsg-inventory decay is on); 100 = full price, 0 = `min` x price
+---------------------------------
+Config.Quality = {
+    enabled   = true,
+    size      = { enabled = true, perKg = 0.04, max = 0.15 },
+    freshness = { enabled = true, min = 0.60 },
+}
+
+---------------------------------
+-- daily orders: each town posts a few fish orders per real day (same for everyone, one delivery each per player)
+-- reward = fish price x quantity x payMultiplier, plus rep and fishing XP. A location can set  orders = false
+---------------------------------
+Config.Contracts = {
+    enabled       = true,
+    perLocation   = 2,
+    minQty        = 3,
+    maxQty        = 10,
+    payMultiplier = 1.6,
+    repReward     = 5,   -- fishing rep per delivered order (0 = off)
+    xpReward      = 25,  -- rsg-skills fishing XP per delivered order (0 = off)
+}
+
+---------------------------------
+-- fillet market: fillets can be sold back to the fishmonger (keep the price per fillet well below the fish it came from)
+-- add your own fillet items here, e.g.  salmon_fillet = 0.60
+---------------------------------
+Config.FilletSale = {
+    enabled = true,
+    items   = {
+        raw_fish = 0.30,
+    },
 }
 
 Config.AutoDatabase = true -- create the rsg_fishmonger_stock table on start; set false and import install.sql to install manually
@@ -102,6 +155,7 @@ Config.AutoDatabase = true -- create the rsg_fishmonger_stock table on start; se
 Config.Shop = {
     enabled         = true,
     persistentStock = false,
+    skill           = 'fishing', -- rsg-skills skill whose level unlocks the tiers below
     items = {
         { name = 'p_baitbread01x',     price = 0.10, amount = 100 },
         { name = 'p_baitcorn01x',      price = 0.10, amount = 100 },
@@ -114,6 +168,14 @@ Config.Shop = {
         { name = 'p_finishdcrawd01x',     price = 1.50, amount = 20 },
         { name = 'p_lgoc_spinner_v4',     price = 2.50, amount = 10 },
         { name = 'p_lgoc_spinner_v6',     price = 2.50, amount = 10 },
+    },
+    -- extra stock for experienced anglers; each tier includes everything below it. Needs rsg-skills (without it only the base list is sold)
+    tiers = {
+        { level = 10, items = {
+            { name = 'p_finishedragonflylegendary01x', price = 6.00, amount = 5 },
+            { name = 'p_finisdfishlurelegendary01x',   price = 6.00, amount = 5 },
+            { name = 'p_finishdcrawdlegendary01x',     price = 6.00, amount = 5 },
+        } },
     },
 }
 

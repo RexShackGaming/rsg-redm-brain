@@ -148,6 +148,55 @@ local UI_KEYS = {
     'ui_sort_new',
     'ui_sort_pay_high',
     'ui_sort_pay_low',
+    'ui_accept',
+    'ui_bulk_approve',
+    'ui_bulk_feedback_title',
+    'ui_bulk_reject',
+    'ui_bulk_selected',
+    'ui_claim',
+    'ui_claimed_by',
+    'ui_claimed_mine',
+    'ui_confirm_end_probation',
+    'ui_confirm_hire',
+    'ui_decline',
+    'ui_end_probation',
+    'ui_invite_cancel',
+    'ui_invite_message',
+    'ui_invite_send',
+    'ui_invited_by',
+    'ui_invites_none',
+    'ui_manage_invites',
+    'ui_manage_probation',
+    'ui_manage_stats',
+    'ui_my_invites',
+    'ui_on_probation',
+    'ui_post_prereq_honor',
+    'ui_post_prereq_skill',
+    'ui_post_prereq_skill_level',
+    'ui_post_prereq_standing',
+    'ui_post_prereq_standing_region',
+    'ui_post_probation',
+    'ui_prereq_honor',
+    'ui_prereq_skill',
+    'ui_prereq_standing',
+    'ui_probation_days',
+    'ui_probation_ends',
+    'ui_probation_none',
+    'ui_probation_none_list',
+    'ui_release',
+    'ui_stats_col_approved',
+    'ui_stats_col_apps',
+    'ui_stats_col_decision',
+    'ui_stats_col_fill',
+    'ui_stats_col_hires',
+    'ui_stats_col_job',
+    'ui_stats_col_posts',
+    'ui_stats_col_rate',
+    'ui_stats_col_rejected',
+    'ui_stats_days',
+    'ui_stats_export',
+    'ui_stats_none',
+    'ui_stats_window_all',
 }
 
 local RPC = {
@@ -158,6 +207,8 @@ local RPC = {
     getMessages = true, sendMessage = true, editApplication = true,
     getTemplates = true, saveTemplate = true, deleteTemplate = true,
     addBlacklist = true, removeBlacklist = true,
+    decideProbation = true, invitePlayer = true, cancelInvite = true, answerInvite = true,
+    bulkReview = true, claimApplication = true, getStats = true, exportStats = true,
 }
 
 ---------------------------------------------------------------------------
@@ -245,9 +296,8 @@ RegisterNUICallback('rpc', function(data, cb)
         cb({ ok = false })
         return
     end
-    RSGCore.Functions.TriggerCallback('rsg-townhall:server:' .. data.name, function(result)
-        cb(result or { ok = false })
-    end, data.payload)
+    local result = RSGCore.Functions.AwaitCallback('rsg-townhall:server:' .. data.name, 15000, data.payload)
+    cb(result or { ok = false })
 end)
 
 ---------------------------------------------------------------------------

@@ -95,5 +95,18 @@
     "ui_bonus": "Bonusul tău",
     "ui_stock_left": "Cumpără azi",
     "ui_unlimited": "Nelimitat",
-    "ui_over_stock": "Mai mulți pești decât cumpără negustorul astăzi"
+    "ui_over_stock": "Mai mulți pești decât cumpără negustorul astăzi",
+    "ui_orders": "Comenzile de azi",
+    "ui_order_deliver": "Livrează",
+    "ui_order_done": "Livrat",
+    "ui_order_reward": "Recompensă",
+    "ui_order_title": "Livrează comanda",
+    "ui_order_confirm": "Livrezi {qty} x {fish} pentru {cash}?",
+    "ui_fillet_tag": "File",
+    "sv_order_done": "Comandă livrată! Ai primit $%s",
+    "sv_order_invalid": "Această comandă nu este disponibilă",
+    "sv_order_already": "Ai livrat deja această comandă azi",
+    "sv_shop_next_tier": "Atinge nivelul de pescuit %s pentru a debloca provizii mai bune aici",
+    "item_sell_hint": "Se vinde la pescar pentru aproximativ $%s",
+    "wh_order_title": "Comandă de pescuit livrată"
 }

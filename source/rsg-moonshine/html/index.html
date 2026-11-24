@@ -14,8 +14,8 @@
         <header class="panel-header">
             <button class="circle-btn" id="btn-back" data-t-title="ui_change_recipe" title="Change recipe">&#8249;</button>
             <div class="titles">
-                <h1 data-t="ui_title">Moonshine Still</h1>
-                <div class="subtitle" data-t="ui_subtitle">Copper Pot Distillery</div>
+                <h1 id="title-h" data-t="ui_title">Moonshine Still</h1>
+                <div class="subtitle" id="title-sub" data-t="ui_subtitle">Copper Pot Distillery</div>
             </div>
             <button class="circle-btn" id="btn-close" data-t-title="ui_close" title="Close">&#10005;</button>
         </header>
@@ -44,6 +44,7 @@
                         <div class="row-main">
                             <div class="row-title" id="ra-label"></div>
                             <div class="row-desc" id="ra-desc"></div>
+                            <div class="row-desc" id="ra-iq"></div>
                         </div>
                         <button class="wood-btn muted small" id="btn-change" data-t="ui_change_recipe">Change Recipe</button>
                     </div>
@@ -58,21 +59,43 @@
                 <div class="divider"><span data-t="ui_status">Still Status</span></div>
 
                 <div class="status-card">
-                    <div class="still-art" id="still-art">
+                    <div class="still-art still-only" id="still-art">
                         <div class="flame"></div><div class="flame f2"></div><div class="flame f3"></div>
                     </div>
                     <div class="pill" id="status-pill">—</div>
 
-                    <div class="stat">
-                        <div class="stat-head"><span data-t="ui_current_batch">Current batch</span><span id="batch-time">--:--</span></div>
+                    <div class="stat still-only">
+                        <div class="stat-head"><span id="batch-label" data-t="ui_current_batch">Current batch</span><span id="batch-time">--:--</span></div>
                         <div class="track"><div class="fill stat-warn" id="batch-fill" style="width:0%"></div></div>
                     </div>
+                    <div class="stat hidden" id="ferment-stat">
+                        <div class="stat-head"><span data-t="ui_fermenting">Fermenting</span><span id="ferment-time">--:--</span></div>
+                        <div class="track"><div class="fill stat-good" id="ferment-fill" style="width:0%"></div></div>
+                    </div>
+                    <div class="kv"><span data-t="ui_wash">Wash ready</span><b id="wash">0</b></div>
+                    <div class="hint small" id="env-hint"></div>
                     <div class="kv"><span data-t="ui_queued">Batches queued</span><b id="queued">0</b></div>
                 </div>
 
-                <div class="divider"><span data-t="ui_firebox">Firebox</span></div>
+                <div class="divider still-only"><span data-t="ui_firebox">Firebox</span></div>
 
-                <div class="status-card fire-card">
+                <div class="status-card fire-card still-only">
+                    <div class="stat">
+                        <div class="stat-head"><span data-t="ui_heat">Fire heat</span></div>
+                        <div class="seg" id="heat-seg"></div>
+                        <div class="hint small" data-t="ui_heat_hint">Hotter is faster but burns more fuel, spoils the batch and risks an explosion</div>
+                    </div>
+                    <div class="stat" id="water-stat">
+                        <div class="stat-head"><span data-t="ui_water">Cooling water</span><span id="water-time">00:00</span></div>
+                        <div class="track"><div class="fill stat-good" id="water-fill" style="width:0%"></div></div>
+                        <div class="care-row"><button class="wood-btn small" id="btn-water" data-t="ui_add_water">Add water</button></div>
+                        <div class="hint small hidden" id="dry-warn" data-t="ui_dry">No cooling water</div>
+                    </div>
+                    <div class="stat" id="wear-stat">
+                        <div class="stat-head"><span data-t="ui_wear">Grime</span><span id="wear-val">0%</span></div>
+                        <div class="track"><div class="fill stat-good" id="wear-fill" style="width:0%"></div></div>
+                        <div class="care-row"><button class="wood-btn small" id="btn-clean" data-t="ui_clean">Scrub still</button></div>
+                    </div>
                     <div class="stat">
                         <div class="stat-head"><span data-t="ui_fuel_left">Fuel remaining</span><span id="fuel-time">00:00</span></div>
                         <div class="track big"><div class="fill stat-good" id="fuel-fill" style="width:0%"></div></div>
@@ -80,22 +103,61 @@
                     <div id="fuel-list" class="list fuel-list"></div>
                 </div>
 
-                <div class="divider"><span data-t="ui_tank">Output Tank</span></div>
+                <div class="divider still-only"><span data-t="ui_tank">Output Tank</span></div>
 
-                <div class="row tank-row">
+                <div class="row tank-row still-only">
                     <div class="badge-icon"><img id="out-img" alt=""></div>
                     <div class="row-main">
                         <div class="row-title" id="out-label">—</div>
                         <div class="track big"><div class="fill stat-good" id="tank-fill" style="width:0%"></div></div>
                         <div class="meta tank-meta">
                             <span id="tank-text">0 / 0</span>
+                            <span id="proof-wrap" class="hidden"><span data-t="ui_proof">Proof</span> <b id="proof">0</b></span>
+                            <span id="quality-wrap" class="hidden"><span data-t="ui_quality">Quality</span> <b id="quality">0</b></span>
                             <span><span data-t="ui_jugs">Empty jugs</span> <b id="jug-count">0</b></span>
                         </div>
                     </div>
                 </div>
 
+                <div id="wash-box" class="hidden">
+                    <button class="wood-btn small" id="btn-wash" data-t="ui_wash_take">Draw off wash</button>
+                    <div class="hint small" id="wash-hint"></div>
+                </div>
+
+                <div id="rerun-box" class="hidden">
+                    <button class="wood-btn small" id="btn-rerun" data-t="ui_rerun">Run it again</button>
+                    <div class="hint small" id="rerun-hint" data-t="ui_rerun_hint">Distil the tank a second time for a stronger spirit, at the cost of some volume</div>
+                </div>
+
+                <div id="cask-box" class="hidden">
+                    <div class="divider"><span data-t="ui_cask">Oak cask</span></div>
+                    <div class="status-card cask-card" id="cask-body"></div>
+                </div>
+
+                <div id="label-box" class="hidden">
+                    <div class="divider"><span data-t="ui_label">Bottle label</span></div>
+                    <div class="label-row">
+                        <input type="text" id="label-input" autocomplete="off" spellcheck="false" data-t-placeholder="ui_label_hint" placeholder="Name your moonshine">
+                        <button class="wood-btn small" id="btn-label" data-t="ui_label_save">Save</button>
+                    </div>
+                </div>
+
+                <div id="access" class="hidden">
+                    <div class="divider"><span data-t="ui_access">Access</span></div>
+                    <div id="access-list" class="list"></div>
+                    <button class="wood-btn small" id="btn-trust" data-t="ui_trust_nearest">Trust nearest person</button>
+                </div>
+
+                <div id="cut-box" class="still-only">
+                    <div class="divider"><span data-t="ui_cut">Cut</span></div>
+                    <div class="seg" id="cut-seg"></div>
+                    <div class="hint small" id="cut-info"></div>
+                    <button class="wood-btn small" id="btn-sample" data-t="ui_sample">Test a sample</button>
+                    <div class="hint small" id="sample-info"></div>
+                </div>
+
                 <div class="actions">
-                    <button class="wood-btn" id="btn-collect" data-t="ui_collect">Bottle &amp; Collect</button>
+                    <button class="wood-btn still-only" id="btn-collect" data-t="ui_collect">Bottle &amp; Collect</button>
                     <button class="wood-btn muted" id="btn-pickup" data-t="ui_pickup">Pack Up Still</button>
                 </div>
             </section>

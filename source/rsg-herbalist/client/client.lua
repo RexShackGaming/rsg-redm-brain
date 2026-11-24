@@ -114,11 +114,15 @@ local spawnEntries = BuildHerbSpawns()
 local suppressed = {}
 local nearbyEntries = {}
 local isGathering = false
+local lastPromptId = nil
 
 local SCOPE_RANGE_LOAD = Config.ScopeRangeLoad
 local SCOPE_RANGE_UNLOAD = Config.ScopeRangeUnload
+-- squared ranges: the scope loop compares these instead of taking a square root per node
+local LOAD_SQ = SCOPE_RANGE_LOAD * SCOPE_RANGE_LOAD
+local UNLOAD_SQ = SCOPE_RANGE_UNLOAD * SCOPE_RANGE_UNLOAD
+local NEARBY_SQ = Config.NearbyRange * Config.NearbyRange
 local PICKUP_RANGE = Config.PickupRange
-local NEARBY_RANGE = Config.NearbyRange
 local COMPOSITE_LOAD_TIMEOUT_MS = Config.CompositeLoadTimeoutMs
 
 Debug(('built %d spawn entries'):format(#spawnEntries))
@@ -218,19 +222,29 @@ end)
 CreateThread(function()
     while true do
         local playerPos = GetEntityCoords(PlayerPedId())
+        local px, py, pz = playerPos.x, playerPos.y, playerPos.z
         local newNearby = {}
         for id = 1, #spawnEntries do
             local entry = spawnEntries[id]
             if not suppressed[id] then
-                local dist = #(playerPos - entry.coord)
-                if entry.entity then
-                    if dist >= SCOPE_RANGE_UNLOAD then
-                        UnloadEntry(entry)
-                    elseif dist <= NEARBY_RANGE then
-                        newNearby[#newNearby + 1] = entry
+                local c = entry.coord
+                local dx, dy = px - c.x, py - c.y
+                local d2 = dx * dx + dy * dy
+                -- cheap flat-distance reject first; only near nodes pay for the 3D check
+                if d2 <= UNLOAD_SQ then
+                    local dz = pz - c.z
+                    d2 = d2 + dz * dz
+                    if entry.entity then
+                        if d2 >= UNLOAD_SQ then
+                            UnloadEntry(entry)
+                        elseif d2 <= NEARBY_SQ then
+                            newNearby[#newNearby + 1] = entry
+                        end
+                    elseif d2 <= LOAD_SQ then
+                        LoadEntry(entry)
                     end
-                elseif dist <= SCOPE_RANGE_LOAD then
-                    LoadEntry(entry)
+                elseif entry.entity then
+                    UnloadEntry(entry)
                 end
             end
         end
@@ -256,12 +270,29 @@ end
 local function TryGather(entry)
     if isGathering then return end
     isGathering = true
+    Debug(('pickup pressed, gathering node id=%d plant=%s'):format(entry.id, tostring(entry.plant)))
 
     local ped = PlayerPedId()
     TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_GATHER_HERBS', 0, true)
     local completed = ProgressOrWait(Config.GatherDurationMs, locale('gathering_herb'), Config.GatherProgressBarEnabled)
     ClearPedTasks(ped)
 
+    -- With the progress bar off the wait can't be cancelled, so check the player is
+    -- still at the plant (the server enforces the same range and would drop it silently).
+    if completed and (IsPedDeadOrDying(ped, true)
+        or #(GetEntityCoords(ped) - entry.coord) > Config.ScopeRangeGather - 0.1) then
+        completed = false
+        if not IsPedDeadOrDying(ped, true) then
+            RSGCore.Functions.Notify({
+                title = locale('gather_moved_away_title'),
+                description = locale('gather_moved_away_description'),
+                type = 'warning',
+                duration = 4000,
+            })
+        end
+    end
+
+    Debug(('gather finished id=%d completed=%s suppressed=%s'):format(entry.id, tostring(completed), tostring(suppressed[entry.id])))
     if completed and not suppressed[entry.id] then
         TriggerServerEvent('rsg-herbalist:server:gathered', entry.id)
     end
@@ -277,6 +308,10 @@ CreateThread(function()
             local entry = GetClosestPickable(GetEntityCoords(ped))
             if entry then
                 sleep = 0
+                if lastPromptId ~= entry.id then
+                    lastPromptId = entry.id
+                    Debug(('node in pickup range id=%d plant=%s'):format(entry.id, tostring(entry.plant)))
+                end
                 DisplayCompositePickupThisFrame(entry.entity)
                 if IsPickupControlPressed() and not IsPedOnMount(ped) and not IsPedInAnyVehicle(ped, false)
                     and not IsPedDeadOrDying(ped, true) then
@@ -310,13 +345,15 @@ local function CountItem(itemName)
     return total
 end
 
-local craftMenuOpen = false
+local uiOpen = false
+local activeBuyer = nil -- coords of the buyer whose sell menu is open
 local isCrafting = false
 local activeCraftCam, activeDrinkProp = nil, nil -- tracked so onResourceStop can clean up mid-action
 
-local function BuildTonicPayload()
+local function BuildTonicPayload(level)
     local list = {}
-    for i, tonic in ipairs(Config.Tonics) do
+    for _, tonic in ipairs(Config.Tonics) do
+      if HerbalistRecipeValid(tonic, RSGCore.Shared.Items) then
         local ingredients = {}
         for _, ingredient in ipairs(tonic.ingredients) do
             local itemDef = RSGCore.Shared.Items[ingredient.item]
@@ -328,33 +365,76 @@ local function BuildTonicPayload()
             }
         end
         local outputDef = RSGCore.Shared.Items[tonic.output.item]
-        list[i] = {
+        list[#list + 1] = {
             id = tonic.id,
-            label = locale(tonic.label),
+            category = tonic.category or 'tonic',
+            label = HerbalistRecipeLabel(tonic),
+            outputLabel = outputDef and outputDef.label or tonic.output.item,
             description = tonic.description and locale(tonic.description) or '',
             image = tonic.image or (outputDef and outputDef.image) or (tonic.output.item .. '.png'),
             durationMs = tonic.durationMs,
+            minLevel = tonic.minLevel or 1,
+            locked = level ~= nil and level < (tonic.minLevel or 1),
             outputAmount = tonic.output.amount,
             ingredients = ingredients,
         }
+      end
     end
     return list
 end
 
+-- All focus changes go through here so push-to-talk keeps working while the UI is open.
+local function applyNuiFocus(enable)
+    if enable then
+        SetNuiFocus(true, true)
+        if Config.AllowPushToTalkWhileOpen then
+            SetNuiFocusKeepInput(true)
+        end
+    else
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
+end
+
+-- KeepInput passes every key to the game, so block all controls except push-to-talk while focused.
+CreateThread(function()
+    while true do
+        if uiOpen and Config.AllowPushToTalkWhileOpen then
+            Wait(0)
+            DisableAllControlActions(0)
+            DisableAllControlActions(1)
+            DisableAllControlActions(2)
+            local list = Config.PushToTalkControls
+            if list then
+                for i = 1, #list do
+                    EnableControlAction(0, list[i], true)
+                    EnableControlAction(1, list[i], true)
+                    EnableControlAction(2, list[i], true)
+                end
+            end
+        else
+            Wait(250)
+        end
+    end
+end)
+
 local function CloseTonicMenu()
-    if not craftMenuOpen then return end
-    craftMenuOpen = false
-    SetNuiFocus(false, false)
+    if not uiOpen then return end
+    uiOpen = false
+    activeBuyer = nil
+    applyNuiFocus(false)
     SendNUIMessage({ action = 'close' })
 end
 
-local function OpenTonicMenu()
-    if craftMenuOpen or isCrafting then return end
-    craftMenuOpen = true
-    SetNuiFocus(true, true)
+local function OpenTonicMenu(level)
+    if uiOpen or isCrafting then return end
+    level = tonumber(level)
+    local tier = GetTonicTier(level)
+    uiOpen = true
+    applyNuiFocus(true)
     SendNUIMessage({
         action = 'open',
-        tonics = BuildTonicPayload(),
+        tonics = BuildTonicPayload(level),
         imagePath = Config.InventoryImagePath,
         locale = {
             title = locale('ui_title'),
@@ -365,6 +445,11 @@ local function OpenTonicMenu()
             empty = locale('ui_empty'),
             seconds = locale('ui_seconds_short'),
             minutes = locale('ui_minutes_short'),
+            requires = locale('ui_requires_level'),
+            tabTonic = locale('ui_tab_tonic'),
+            tabDrying = locale('ui_tab_drying'),
+            tabTea = locale('ui_tab_tea'),
+            quality = tier and locale('ui_quality', locale(tier.label)) or '',
         },
     })
 end
@@ -421,12 +506,198 @@ RegisterNetEvent('rsg-herbalist:client:StartCraftProgress', function(durationMs)
 end)
 
 ----------------------------------------------------------------------------
+-- Field guide (/herbguide): data comes from the server callback, display only
+----------------------------------------------------------------------------
+
+local function OpenFieldGuide()
+    if not Config.FieldGuide.Enabled or uiOpen or isCrafting then return end
+    RSGCore.Functions.TriggerCallback('rsg-herbalist:server:getGuide', function(data)
+        if not data or uiOpen then return end
+        local entries, foundCount = {}, 0
+        for _, name in ipairs(data.items or {}) do
+            local def = RSGCore.Shared.Items[name]
+            local count = tonumber(data.found and data.found[name]) or 0
+            if count > 0 then foundCount = foundCount + 1 end
+            entries[#entries + 1] = {
+                label = def and def.label or name,
+                image = def and def.image or (name .. '.png'),
+                count = count,
+            }
+        end
+        table.sort(entries, function(a, b) return a.label < b.label end)
+        uiOpen = true
+        applyNuiFocus(true)
+        SendNUIMessage({
+            action = 'openGuide',
+            entries = entries,
+            imagePath = Config.InventoryImagePath,
+            locale = {
+                title = locale('guide_title'),
+                subtitle = locale('guide_progress', foundCount, #entries),
+                close = locale('ui_close'),
+                gathered = locale('guide_gathered'),
+                unknown = locale('guide_unknown'),
+            },
+        })
+    end)
+end
+
+if Config.FieldGuide.Enabled then
+    RegisterCommand(Config.FieldGuide.Command, OpenFieldGuide, false)
+end
+
+----------------------------------------------------------------------------
+-- Herb buyer NPC (spawned from the server's buyer list, sells via the NUI)
+----------------------------------------------------------------------------
+
+local buyers, buyerPeds = {}, {}
+
+local function LoadPedModel(model)
+    if HasModelLoaded(model) then return true end
+    if not IsModelValid(model) then return false end
+    RequestModel(model, false)
+    local deadline = GetGameTimer() + 10000
+    while not HasModelLoaded(model) do
+        if GetGameTimer() > deadline then return false end
+        Wait(50)
+    end
+    return true
+end
+
+local function BuildBuyerRows(rows)
+    local out = {}
+    for _, r in ipairs(rows or {}) do
+        local def = RSGCore.Shared.Items[r.name]
+        local tier = r.tier and GetTonicTierByKey(r.tier)
+        out[#out + 1] = {
+            slot = r.slot,
+            label = def and def.label or r.name,
+            image = def and def.image or (r.name .. '.png'),
+            tier = tier and locale(tier.label) or '',
+            amount = r.amount,
+            unit = r.unit,
+        }
+    end
+    return out
+end
+
+local function OpenBuyer(i)
+    local b = buyers[i]
+    if not b or uiOpen or isCrafting then return end
+    RSGCore.Functions.TriggerCallback('rsg-herbalist:server:getBuyerStock', function(rows)
+        if not rows or uiOpen then return end
+        activeBuyer = vector3(b.x, b.y, b.z)
+        uiOpen = true
+        applyNuiFocus(true)
+        SendNUIMessage({
+            action = 'openBuyer',
+            rows = BuildBuyerRows(rows),
+            imagePath = Config.InventoryImagePath,
+            locale = {
+                title = locale('buyer_title'),
+                subtitle = locale('buyer_subtitle'),
+                close = locale('ui_close'),
+                owned = locale('buyer_owned'),
+                each = locale('buyer_each'),
+                sellOne = locale('buyer_sell_one'),
+                sellAll = locale('buyer_sell_all'),
+                empty = locale('buyer_empty'),
+            },
+        })
+    end)
+end
+
+RegisterNetEvent('rsg-herbalist:client:BuyerStock', function(rows)
+    if uiOpen and activeBuyer then
+        SendNUIMessage({ action = 'buyerStock', rows = BuildBuyerRows(rows) })
+    end
+end)
+
+RegisterNUICallback('sell', function(data, cb)
+    if activeBuyer and type(data) == 'table' and tonumber(data.slot) and tonumber(data.amount) then
+        TriggerServerEvent('rsg-herbalist:server:sell', tonumber(data.slot), tonumber(data.amount))
+    end
+    cb('ok')
+end)
+
+local function BuyerOptionName(i) return 'rsg_herbalist_buyer_' .. i end
+
+local function SpawnBuyer(i)
+    local b, bc = buyers[i], Config.Buyer
+    if not b or buyerPeds[i] or not LoadPedModel(bc.Model) then return end
+    local ped = CreatePed(bc.Model, b.x, b.y, b.z - 1.0, b.w, false, false, false, false)
+    local deadline = GetGameTimer() + 5000
+    while not DoesEntityExist(ped) do
+        if GetGameTimer() > deadline then return end
+        Wait(10)
+    end
+    Citizen.InvokeNative(0x283978A15512B2FE, ped, true) -- SetRandomOutfitVariation
+    SetEntityCanBeDamaged(ped, false)
+    SetEntityInvincible(ped, true)
+    FreezeEntityPosition(ped, true)
+    SetBlockingOfNonTemporaryEvents(ped, true)
+    SetPedCanBeTargetted(ped, false)
+    exports['rsg-target']:addLocalEntity(ped, {
+        {
+            name = BuyerOptionName(i),
+            icon = 'fa-solid fa-hand-holding-dollar',
+            label = locale('buyer_target'),
+            distance = bc.TargetDistance,
+            onSelect = function() OpenBuyer(i) end,
+        },
+    })
+    buyerPeds[i] = ped
+end
+
+local function DespawnBuyer(i)
+    local ped = buyerPeds[i]
+    if ped and DoesEntityExist(ped) then
+        exports['rsg-target']:removeLocalEntity(ped, { BuyerOptionName(i) })
+        DeleteEntity(ped)
+    end
+    buyerPeds[i] = nil
+end
+
+local function DespawnAllBuyers()
+    for i in pairs(buyerPeds) do DespawnBuyer(i) end
+end
+
+RegisterNetEvent('rsg-herbalist:client:SetBuyers', function(list)
+    DespawnAllBuyers()
+    buyers = type(list) == 'table' and list or {}
+end)
+
+if Config.Buyer and Config.Buyer.Enabled then
+    CreateThread(function()
+        TriggerServerEvent('rsg-herbalist:server:requestBuyers')
+        local bc = Config.Buyer
+        while true do
+            local pos = GetEntityCoords(PlayerPedId())
+            local nearest = math.huge
+            for i, b in ipairs(buyers) do
+                local dist = #(pos - vector3(b.x, b.y, b.z))
+                if dist < nearest then nearest = dist end
+                if dist < bc.SpawnDistance and not buyerPeds[i] then
+                    SpawnBuyer(i)
+                elseif dist >= bc.SpawnDistance and buyerPeds[i] then
+                    DespawnBuyer(i)
+                end
+            end
+            if not next(buyerPeds) and HasModelLoaded(bc.Model) then SetModelAsNoLongerNeeded(bc.Model) end
+            if activeBuyer and #(pos - activeBuyer) > bc.MaxUseDistance then CloseTonicMenu() end
+            Wait(nearest > bc.SpawnDistance * 3 and 3000 or 1000)
+        end
+    end)
+end
+
+----------------------------------------------------------------------------
 -- Tonic consumption
 ----------------------------------------------------------------------------
 
-RegisterNetEvent('rsg-herbalist:client:ApplyTonicEffect', function(itemName)
+RegisterNetEvent('rsg-herbalist:client:ApplyTonicEffect', function(itemName, boost)
     local effect = Config.TonicEffects[itemName]
     if not effect then return end
+    boost = tonumber(boost) or 1.0
 
     local ped = PlayerPedId()
     local attr = Config.TonicAttributeIndex or {}
@@ -449,10 +720,13 @@ RegisterNetEvent('rsg-herbalist:client:ApplyTonicEffect', function(itemName)
     end
 
     if effect.healthBoost and attr.health then
-        Citizen.InvokeNative(0xF6A7C08DF2E28B28, ped, attr.health, effect.healthBoost, true)
+        Citizen.InvokeNative(0xF6A7C08DF2E28B28, ped, attr.health, math.min(1.0, effect.healthBoost * boost), true)
     end
     if effect.staminaBoost and attr.stamina then
-        Citizen.InvokeNative(0xF6A7C08DF2E28B28, ped, attr.stamina, effect.staminaBoost, true)
+        Citizen.InvokeNative(0xF6A7C08DF2E28B28, ped, attr.stamina, math.min(1.0, effect.staminaBoost * boost), true)
+    end
+    if effect.thirstBoost then
+        TriggerEvent('hud:client:UpdateThirst', math.max(0, math.min(100, (LocalPlayer.state.thirst or 0) + effect.thirstBoost * boost)))
     end
 end)
 
@@ -462,6 +736,7 @@ AddEventHandler('onResourceStop', function(resourceName)
         UnloadEntry(spawnEntries[i])
     end
     CloseTonicMenu()
+    DespawnAllBuyers()
     if activeCraftCam then DestroyCraftingCam(activeCraftCam, Config.TonicCraftCamera) end
     DeleteHandProp(activeDrinkProp)
     if isCrafting or isGathering then ClearPedTasks(PlayerPedId()) end

@@ -7,20 +7,13 @@
 -- once so the two interaction systems can't drift out of sync.
 ----------------------------------------------------------------------------
 
-PICKUP_CONTROL_HASHES = {
-    0xCEFD9220, -- INPUT_PICKUP
-    0xE30CD707, -- INPUT_PICKUP_ALT (gamepad)
-    0xF6BB7378,
-    0xEB2AC491,
-    0xFF8109D8,
-    0x27D1C284,
-    0xBE8593AF,
-    0x41AC83D1,
-}
-
 function IsPickupControlPressed()
-    for _, hash in ipairs(PICKUP_CONTROL_HASHES) do
-        if IsDisabledControlJustPressed(0, hash) then
+    local list = Config.PickupControls
+    for i = 1, #list do
+        if IsDisabledControlJustPressed(0, list[i]) then
+            if Config.Debug then
+                print(('[rsg-herbalist] pickup control fired: 0x%X (Config.PickupControls entry %d)'):format(list[i], i))
+            end
             return true
         end
     end

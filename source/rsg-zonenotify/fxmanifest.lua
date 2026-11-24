@@ -4,11 +4,12 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-zonenotify - location banner when entering states, districts and towns'
-version '3.2.0'
+version '3.4.1'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
     'shared/config.lua',
+    'shared/zones.lua',
 }
 
 client_scripts {
@@ -29,6 +30,8 @@ files {
     'html/index.html',
     'html/style.css',
     'html/script.js',
+    'html/journal.css',
+    'html/journal.js',
     'html/sounds/*.ogg',
     'html/sounds/*.mp3',
 }

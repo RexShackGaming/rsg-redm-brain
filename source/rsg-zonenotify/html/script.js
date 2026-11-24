@@ -4,8 +4,39 @@ const infoEl = document.getElementById('info');
 const stampEl = document.getElementById('stamp');
 const flavourEl = document.getElementById('flavour');
 let hideTimer, removeTimer;
+let playing = false;
+const queue = []; // banners waiting for the current one to finish (Config.BannerQueue)
+
+// long place names ("Settlement Fort Riggs Holding Camp") shrink to fit instead of running off screen
+function fitTitle() {
+    titleEl.style.fontSize = '';
+    const maxW = window.innerWidth * 0.7 - 80;
+    let size = parseFloat(getComputedStyle(titleEl).fontSize) || 40;
+    banner.style.visibility = 'hidden';
+    banner.classList.remove('hidden');
+    while (titleEl.scrollWidth > maxW && size > 18) { size -= 2; titleEl.style.fontSize = size + 'px'; }
+    banner.style.visibility = '';
+}
 
 function show(data) {
+    if (data.queue && playing) {
+        queue.push({ data, at: Date.now() });
+        while (queue.length > 3) queue.shift();
+        return;
+    }
+    play(data);
+}
+
+function next() {
+    playing = false;
+    while (queue.length) {
+        const q = queue.shift();
+        if (Date.now() - q.at < 15000) { play(q.data); return; } // skip banners that waited too long
+    }
+}
+
+function play(data) {
+    playing = true;
     clearTimeout(hideTimer); clearTimeout(removeTimer);
     titleEl.textContent = data.title || '';
     stampEl.textContent = data.stamp || '';
@@ -21,11 +52,12 @@ function show(data) {
     });
     infoEl.classList.toggle('hidden', !(data.parts && data.parts.length));
     banner.classList.remove('hidden', 'show', 'leave');
+    fitTitle();
     void banner.offsetWidth;
     banner.classList.add('show');
     hideTimer = setTimeout(() => {
         banner.classList.remove('show'); banner.classList.add('leave');
-        removeTimer = setTimeout(() => banner.classList.add('hidden'), 650);
+        removeTimer = setTimeout(() => { banner.classList.add('hidden'); next(); }, 650);
     }, data.duration || 5000);
 }
 
@@ -35,6 +67,7 @@ const CHIMES = { state: [392, 523.25, 659.25], district: [440, 587.33], town: [5
 function chime(kind, volume) {
     try {
         audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
         const notes = CHIMES[kind] || CHIMES.manual;
         const t0 = audioCtx.currentTime;
         notes.forEach((f, i) => {
@@ -62,5 +95,5 @@ window.addEventListener('message', (e) => {
     const d = e.data || {};
     if (d.action === 'show') show(d);
     else if (d.action === 'sound') playSound(d);
-    else if (d.action === 'hide') { clearTimeout(hideTimer); banner.classList.add('hidden'); }
+    else if (d.action === 'hide') { queue.length = 0; playing = false; clearTimeout(hideTimer); clearTimeout(removeTimer); banner.classList.remove('show', 'leave'); banner.classList.add('hidden'); }
 });

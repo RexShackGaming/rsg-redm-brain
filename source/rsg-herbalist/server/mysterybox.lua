@@ -36,11 +36,8 @@ local currentCoord, currentIndex, relocateAt = nil, nil, nil
 local lastOpenAt = {}
 local lastRequestAt = {}
 
-local function Notify(src, title, description, nType)
-    TriggerClientEvent('RSGCore:Client:Notify', src, {
-        title = title, description = description, type = nType or 'error', duration = 5000,
-    })
-end
+local Notify = Herbalist.Notify
+local IsDead = Herbalist.IsDead
 
 local function RelocateBox()
     local idx = math.random(#mb.coords)
@@ -101,7 +98,7 @@ RegisterNetEvent('rsg-herbalist:server:openMysteryBox', function()
     end
 
     local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player or (Player.PlayerData.metadata and Player.PlayerData.metadata.isdead) then return end
+    if not Player or IsDead(Player) then return end
 
     local ped = GetPlayerPed(src)
     if ped == 0 then return end
@@ -140,13 +137,15 @@ RegisterNetEvent('rsg-herbalist:server:openMysteryBox', function()
     for item, amount in pairs(counts) do
         if exports['rsg-inventory']:AddItem(src, item, amount, nil, nil, 'rsg-herbalist:mysterybox') then
             granted[#granted + 1] = ('%dx %s'):format(amount, RSGCore.Shared.Items[item].label or item)
+            Herbalist.RecordFound(src, Player, item, amount)
         end
     end
 
-    Notify(src, locale('mysterybox_found_title'), locale('mysterybox_found_description'), 'success')
-
     if #granted > 0 then
+        Notify(src, locale('mysterybox_found_title'), locale('mysterybox_found_description'), 'success')
         Webhook.LogMysteryBox(src, granted)
+    else
+        print(('[rsg-herbalist] ^1mystery box: no loot could be granted to %s^7'):format(src))
     end
 
     RelocateBox()

@@ -4,7 +4,7 @@ game 'rdr3'
 lua54 'yes'
 
 description 'rsg-townhall - Town Hall job vacancies, applications and approvals'
-version '3.1.1'
+version '3.2.0'
 
 ui_page 'html/index.html'
 
@@ -27,6 +27,7 @@ client_scripts {
 dependencies {
     'rsg-core',
     'rsg-target',
+    'rsg-inventory',
     'oxmysql',
 }
 

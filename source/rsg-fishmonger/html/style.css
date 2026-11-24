@@ -101,3 +101,13 @@ h1 { font-size: 26px; text-transform: uppercase; letter-spacing: 1px; text-shado
 .modal-text { color: var(--rdr-muted); font-style: italic; font-size: 13.5px; line-height: 1.5; margin-bottom: 16px; }
 .modal-actions { display: flex; gap: 10px; justify-content: center; }
 
+
+.orders { margin-bottom: 12px; }
+.order-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 8px; }
+.order { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 2px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.15));
+    border: 1px solid rgba(90,90,90,0.5); transition: all .15s ease; }
+.order:hover { border-color: var(--rdr-gold-dim); }
+.order.done { opacity: 0.55; }
+.order .badge-icon { width: 36px; height: 36px; }
+.order .badge-icon img { width: 28px; height: 28px; }

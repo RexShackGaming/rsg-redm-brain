@@ -7,6 +7,10 @@
 ---------------------------------
 moonshine_still         = { name = 'moonshine_still', label = 'Moonshine Still', weight = 5000, type = 'item', image = 'moonshine_still.png', unique = false, useable = true, shouldClose = true, description = 'A copper still for brewing moonshine' },
 moonshine_jug_empty     = { name = 'moonshine_jug_empty', label = 'Empty Moonshine Jug', weight = 300, type = 'item', image = 'moonshine_jug_empty.png', unique = false, useable = false, shouldClose = true, description = 'An empty jug for bottling moonshine' },
+moonshine_still_tin      = { name = 'moonshine_still_tin', label = 'Tin Moonshine Still', weight = 5000, type = 'item', image = 'moonshine_still_tin.png', unique = false, useable = true, shouldClose = true, description = 'A cheap tin still. Dirties faster and makes rougher spirit' },
+moonshine_barrel        = { name = 'moonshine_barrel', label = 'Fermenting Barrel', weight = 12000, type = 'item', image = 'moonshine_barrel.png', unique = false, useable = true, shouldClose = true, description = 'A barrel to ferment mash into wash' },
+moonshine_wash          = { name = 'moonshine_wash', label = 'Fermented Wash', weight = 3000, type = 'item', image = 'moonshine_wash.png', unique = false, useable = false, shouldClose = true, description = 'Fermented mash ready for the still' },
+moonshine_cask          = { name = 'moonshine_cask', label = 'Charred Oak Cask', weight = 8000, type = 'item', image = 'moonshine_cask.png', unique = false, useable = false, shouldClose = true, description = 'A charred oak cask for ageing moonshine' },
 
 ---------------------------------
 -- moonshine (recipe outputs)

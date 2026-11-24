@@ -11,9 +11,14 @@ A fishmonger system for **RSG-Core (RedM)**. Players visit a fishmonger NPC in a
 - **8 fishmonger NPCs**: Saint Denis, Blackwater, Valentine, Rhodes, Annesburg, Van Horn, Tumbleweed and the river trading post. Each has an optional map blip.
 - **Sell or process**: sell fish for money (`cash`, `bank` or `bloodmoney`) or turn them into fillets (`raw_fish` by default).
 - **Daily demand**: each town rolls a price multiplier every real day (80%–125% by default), so it pays to shop around.
-- **Seller bonus**: extra pay from fishing reputation (earned per fish traded) and optional per-job bonuses.
-- **Daily stock**: each town only buys a set number of fish per day; the count survives restarts.
-- **Fishing supplies shop**: buy bait and lures from the same NPC (rsg-inventory shop, one per town).
+- **Seller bonus**: extra pay from fishing reputation (earned per fish traded), the rsg-skills fishing perk and optional per-job bonuses.
+- **Fish quality**: bigger and fresher fish pay more. The menu shows the exact amount, including this bonus.
+- **Daily orders**: each town posts a few fish orders every day (the same for everyone). Deliver one for a bonus payout, fishing rep and XP.
+- **Fillet market**: sell fillets back to the fishmonger from the same menu, so processing has a payoff even if you don't cook.
+- **Town stock**: each town only buys a set number of fish. The limit recovers a little every hour (or resets at midnight, your choice) and survives restarts.
+- **Fishing supplies shop**: buy bait and lures from the same NPC (rsg-inventory shop, one per town). Better lures unlock as the player's fishing level goes up.
+- **Map blips** turn red while a town is closed (when opening hours are on).
+- **Sell hint**: every fish's item description says roughly what it sells for.
 - **Fillet types**: any fish can give its own fillet item instead of the default.
 - **Opening hours** (optional) using the rsg-weather in-game clock.
 - **Cart-based menu**:
@@ -33,7 +38,8 @@ A fishmonger system for **RSG-Core (RedM)**. Players visit a fishmonger NPC in a
   - If any step fails, the trade is fully reversed, so nothing is lost or duplicated.
 - **Discord webhook logging** with separate channels for sales, processing, suspicious activity, errors and system events. Posts include the player's character, citizen ID and identifiers. Suspicious activity and large trades can ping staff, and sends are queued to stay within Discord's rate limits.
 - **Translations** (rsg-core locales): `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. This covers notifications, the menu, the blip, location names and webhook logs.
-- **Performance**: NPCs spawn only when a player is nearby, the fish list is built once, and the model is released when no NPCs are nearby.
+- **Performance**: NPCs spawn only when a player is nearby, the spawn check slows down when you are far from every fishmonger, and the model is released when no NPCs are nearby.
+- **Push-to-talk keeps working** while the menu is open.
 - **Version checker** that reports on startup whether an update is available.
 
 ---
@@ -45,8 +51,9 @@ A fishmonger system for **RSG-Core (RedM)**. Players visit a fishmonger NPC in a
 | [rsg-core](https://github.com/Rexshack-RedM/rsg-core) | Framework |
 | [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory) | Needs a recent build with the `AddItem`, `RemoveItem` and `CanAddItem` exports |
 | [rsg-target](https://github.com/Rexshack-RedM/rsg-target) | NPC interaction |
-| [oxmysql](https://github.com/overextended/oxmysql) | Saves the daily stock (`rsg_fishmonger_stock`, created automatically; set `Config.AutoDatabase = false` and import `install.sql` to install by hand) |
+| [oxmysql](https://github.com/overextended/oxmysql) | Saves the town stock and delivered orders (`rsg_fishmonger_stock`, `rsg_fishmonger_orders`; created automatically, and the new `updated` column is added to an older stock table). Set `Config.AutoDatabase = false` and import `install.sql` to install by hand; upgrading by hand also needs the `ALTER TABLE` line in `install.sql` |
 | [rsg-weather](https://github.com/Rexshack-RedM/rsg-weather) | Optional, only for opening hours |
+| [rsg-skills](https://github.com/Rexshack-RedM/rsg-skills) | Optional: fishing sell bonus, order XP and the shop tiers (without it only the base shop list is sold) |
 
 No ox_lib required: callbacks, notifications, locales and commands all use rsg-core.
 
@@ -83,21 +90,43 @@ No ox_lib required: callbacks, notifications, locales and commands all use rsg-c
 | `Config.NpcModel` | `cs_fishcollector` | Ped model used for every fishmonger |
 | `Config.SpawnDistance` | `50.0` | Distance at which NPCs spawn and despawn |
 | `Config.TargetDistance` | `2.5` | rsg-target interaction range |
-| `Config.MaxUseDistance` | `5.0` | Maximum distance from the NPC allowed by the server, and the distance at which the menu closes itself |
+| `Config.MaxUseDistance` | `5.0` | Distance at which the menu closes itself. The server allows 1.5 m extra to cover lag |
 | `Config.Cooldown` | `2000` | Milliseconds between trades per player (anti-spam) |
 | `Config.MoneyType` | `'cash'` | Payout type: `'cash'`, `'bank'` or `'bloodmoney'` |
 | `Config.FilletItem` | `'raw_fish'` | Item given when processing |
 | `Config.ImagePath` | `nui://rsg-inventory/html/images/` | Where item images are loaded from |
-| `Config.Blip` | enabled | `enabled`, `sprite`, `style`. The blip name comes from the locale key `cl_blip_name` |
+| `Config.AllowPushToTalkWhileOpen` / `Config.PushToTalkControls` | on | Keep push-to-talk working while the menu is open (all other game controls are blocked) |
+| `Config.ItemHints` | `true` | Add "sells for about $x" to each fish's description |
+| `Config.BanOnTamper` | `false` | Ban a player who sends a request the menu can never produce (invalid mode, malformed cart). Check your logs before turning this on |
+| `Config.Blip` | enabled | `enabled`, `sprite`, `style`, `scale`, `openColor`, `closedColor` (blip colour while open / closed, only used with opening hours). The blip name comes from the locale key `cl_blip_name` |
 
 | `Config.OpeningHours` | off | `enabled`, `open`, `close` (in-game hours). `close` lower than `open` wraps past midnight |
 | `Config.Demand` | on | `enabled`, `min`, `max`: daily sell-price multiplier per town |
 | `Config.Bonus.jobs` | empty | `{ jobname = 0.10 }` gives +10% to players whose current job matches |
 | `Config.Bonus.rep` | on | `name` (rsg-core rep key), `perPoint`, `max` bonus, `gainPerFish` rep earned |
-| `Config.DailyStock` | on, 200 | Fish each town buys per real day. Processing is not limited |
-| `Config.Shop` | on | `enabled`, `persistentStock`, `items` (`name`, `price`, `amount`). Bait names match rsg-fishing |
+| `Config.DailyStock` | on, 200 | `perLocation` fish each town buys. `recoveryPerHour` (default 20) fish come back every real hour; `0` resets the count at midnight instead. Processing is not limited |
+| `Config.Quality` | on | `size` (`perKg`, `max`) and `freshness` (`min`) bonuses read from the fish's item info |
+| `Config.Contracts` | on | Daily orders: `perLocation`, `minQty`, `maxQty`, `payMultiplier`, `repReward`, `xpReward`. A location can set `orders = false` |
+| `Config.FilletSale` | on | `items = { raw_fish = 0.30 }`: fillets that can be sold back, with the price per fillet |
+| `Config.Shop` | on | `enabled`, `persistentStock`, `skill`, `items` (`name`, `price`, `amount`) and `tiers` (`level`, `items`). Bait names match rsg-fishing |
 
-The sale price is `base price x demand x (1 + bonus)`, worked out on the server.
+The sale price is `base price x quality x demand x (1 + bonus)`, worked out on the server, where *quality* is each fish's own size and freshness bonus.
+
+#### Fish quality
+
+Each fish is its own item with its own info. Size is `info.weight` (kg): `+Config.Quality.size.perKg` per kg, up to `+size.max`. Freshness is `info.quality` (0-100, which only exists when rsg-inventory decay is switched on): 100 pays full price and 0 pays `freshness.min` of it. Fish are sold in inventory slot order, and the menu uses the same order for its preview. Set `Config.Quality.enabled = false` for flat prices.
+
+#### Daily orders
+
+Every real day each town posts `Config.Contracts.perLocation` orders such as "6 x Smallmouth Bass". They are picked from `Config.Fish` and are the same for every player. A player can deliver each order once a day for `fish price x quantity x payMultiplier`, plus fishing rep and XP. Delivered orders are kept in `rsg_fishmonger_orders` and cleared the next day.
+
+#### Fillet market
+
+Anything in `Config.FilletSale.items` can be sold in the menu (shown with a **Fillet** tag). Fillets are not counted against the town's stock and give no rep. **Keep the price per fillet below the fish it came from**, otherwise processing and selling becomes a money loop. The defaults are safe: the best fish gives 5 fillets worth $1.50, against a fish price of $4.00.
+
+#### Supplies shop tiers
+
+`Config.Shop.items` is always for sale. Each entry in `Config.Shop.tiers` adds more stock once the player's `Config.Shop.skill` level (rsg-skills) reaches its `level`. Tiers stack, and a hint tells the player what the next tier needs. Without rsg-skills only the base list is sold.
 
 #### Locations
 
@@ -151,6 +180,8 @@ This file is **server-only** and is never sent to players, so your webhook URLs 
 
 Leave any URL as `''` to turn that log off. You can point several channels at the same URL.
 
+Suspicious alerts are limited to one per player every 5 seconds.
+
 **The suspicious channel catches:** an invalid checkout mode, a trade attempted away from an NPC, a malformed cart, invalid or unknown items, more fish than the player owns, 5 requests blocked by the cooldown, and large sales or processing runs.
 
 ### Locales (`locales/*.json`)
@@ -201,7 +232,8 @@ rsg-fishmonger/
 │   ├── server.lua           # validated sell / process logic
 │   └── versionchecker.lua
 ├── shared/config.lua        # general config, locations, fish, shop
-├── shared/utils.lua         # opening-hours + fillet helpers
+├── shared/utils.lua         # fillet helper
+├── install.sql              # stock + orders tables (manual install)
 ├── html/                    # NUI (index.html, style.css, script.js)
 ├── locales/                 # en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
 └── fxmanifest.lua
@@ -218,6 +250,11 @@ rsg-fishmonger/
 | "You do not have enough inventory space" | Processing needs room for the fillets. Free up space and try again |
 | Text shows as a key, e.g. `ui_sell` | The key is missing from your locale file. Copy it from `en.json` |
 | Webhooks not posting | Check the URLs in `sv_config.lua`, run `/fishmonger_webhooktest` and look for `webhook failed (HTTP …)` in the console |
+| Can't talk while the menu is open | Make sure `Config.AllowPushToTalkWhileOpen = true` and that your push-to-talk control is listed in `Config.PushToTalkControls` |
+| Items sell for less than expected | Quality applies: small or old fish pay less. Check `Config.Quality`, or turn it off |
+| Order panel missing | `Config.Contracts.enabled`, and the town must not have `orders = false` |
+| Shop has no lures | The tier needs rsg-skills started and the fishing level in `Config.Shop.tiers` |
+| Map blip never changes colour | Only works with `Config.OpeningHours.enabled = true` |
 | Images missing | Check `Config.ImagePath` and that `<item>.png` exists |
 
 ---
@@ -229,6 +266,16 @@ rsg-fishmonger/
 ---
 
 ## Changelog
+
+### 3.3.1
+- Final review: no code changes needed. DOCS.md is now a complete reference with code examples.
+
+### 3.3.0
+- New: fish quality (size and freshness), daily orders, fillet market, supplies shop tiers by fishing level, closed-town blips, gradual stock recovery, sell hint on fish items, optional tamper bans. Adds the `rsg_fishmonger_orders` table and an `updated` column on the stock table (automatic; see the database note below).
+
+### 3.2.1
+- Fixes: menu lock-up after a refused checkout, closed-hours check now server-only, price preview includes rsg-economy tax, optional integrations can no longer break the menu, oversized carts rejected, webhook flood limit and no embed pings.
+- Added push-to-talk while the menu is open, `Config.Blip.scale`, and `ensureDatabase()` console messages. Removed unused code.
 
 ### 3.2.0
 - Daily stock is now saved in the `rsg_fishmonger_stock` table instead of resource KVP, so the server no longer creates a `db` folder. Adds the `oxmysql` dependency and `Config.AutoDatabase`. Today's sold counts from before the update are not migrated.
@@ -251,7 +298,7 @@ rsg-fishmonger/
 ---
 
 ## rsg-economy integration (optional)
-When `rsg-economy` is started and `Config.Economy.Enabled = true`, the sale total (after demand and bonus) is taxed by the location's town and scaled by the player's standing there (hated pays less, celebrated pays more). The tax goes to the town treasury. Processing is unaffected.
+When `rsg-economy` is started and `Config.Economy.Enabled = true`, the sale total (after demand and bonus) is taxed by the location's town and scaled by the player's standing there (hated pays less, celebrated pays more). The tax goes to the town treasury. Processing is unaffected. The menu preview and confirm pop-up include this, so the amount shown matches the payout.
 
 ## rsg-skills integration
 

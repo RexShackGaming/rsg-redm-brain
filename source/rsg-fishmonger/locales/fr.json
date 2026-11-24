@@ -95,5 +95,18 @@
     "ui_bonus": "Votre bonus",
     "ui_stock_left": "Achats du jour",
     "ui_unlimited": "Illimité",
-    "ui_over_stock": "Plus de poissons que le poissonnier n'en achètera aujourd'hui"
+    "ui_over_stock": "Plus de poissons que le poissonnier n'en achètera aujourd'hui",
+    "ui_orders": "Commandes du jour",
+    "ui_order_deliver": "Livrer",
+    "ui_order_done": "Livré",
+    "ui_order_reward": "Récompense",
+    "ui_order_title": "Livrer la commande",
+    "ui_order_confirm": "Livrer {qty} x {fish} pour {cash} ?",
+    "ui_fillet_tag": "Filet",
+    "sv_order_done": "Commande livrée ! Vous avez reçu $%s",
+    "sv_order_invalid": "Cette commande n'est pas disponible",
+    "sv_order_already": "Vous avez déjà livré cette commande aujourd'hui",
+    "sv_shop_next_tier": "Atteignez le niveau de pêche %s pour débloquer de meilleures fournitures ici",
+    "item_sell_hint": "Se vend au poissonnier pour environ $%s",
+    "wh_order_title": "Commande de pêche livrée"
 }
