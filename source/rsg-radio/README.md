@@ -2,7 +2,7 @@
 
 Field radio for **RSG Framework (RedM)**, built on [rsg-voice](https://github.com/Rexshack-RedM/rsg-voice). Players with a radio item tune to a frequency and talk to everyone else on it, at any distance. Lawmen, medics (or any job, job type or gang you configure) get restricted channels.
 
-Version 3.1.1 · Requires rsg-core 3.0.3+, rsg-inventory, oxmysql and rsg-voice 3.2.0+ (radio volume, mute, signal and call priority). Full reference: [DOCS.md](DOCS.md).
+Version 3.3.2 · Requires rsg-core 3.0.3+, rsg-inventory, oxmysql and rsg-voice 3.2.0+ (radio volume, mute, signal and call priority; 3.3.0+ for the volume test). Full reference: [DOCS.md](DOCS.md).
 
 ---
 
@@ -17,7 +17,7 @@ Version 3.1.1 · Requires rsg-core 3.0.3+, rsg-inventory, oxmysql and rsg-voice 
 - **Channel feedback**: a live hint under the frequency box shows the public range, warns about out-of-range or restricted frequencies and names channels you can join, and each channel in the list shows how many people are on it (counts refresh when you open the panel or join/leave).
 - **Movable panel**: drag the header to move the radio anywhere on screen, double-click the header to reset it. Your position is remembered between sessions.
 - **Automatic cleanup**: you leave the channel the moment you lose the radio, lose job or gang access, go off duty (on duty-only channels), get downed, cuffed or hogtied, log out or disconnect. If rsg-voice restarts, everyone is put back on their channel. Optionally you are put back on your channel when you recover (`Config.Incapacitated.Rejoin`).
-- **Volume and mute**: radio loudness is set server-wide with `Config.Volume` (default 50%); players get a mute button in the panel, saved per character.
+- **Volume and mute**: a volume slider and mute button in the panel, saved per character, with a short bleep at the chosen volume as you drag, and a play button (or `/radiotest`) that has rsg-voice play a simulated incoming transmission at its real radio volume, so you can check how loud the radio is (needs rsg-voice 3.3.0). New characters start at `Config.Volume.Default` (50%).
 - **Channel HUD**: a small list of who is on your channel, with a light on whoever is speaking, even with the panel closed (`/radiohud` to hide it).
 - **Search, recents and a compact menu**: search every list, jump back to recently used frequencies, shrink the panel.
 - **Reserved frequency ranges** for jobs, job types, gangs, with duty, grade and permission rules.
@@ -31,7 +31,7 @@ Version 3.1.1 · Requires rsg-core 3.0.3+, rsg-inventory, oxmysql and rsg-voice 
 
 ## Installation
 
-1. Update **rsg-voice to 3.2.0 or later** (radio channels, volume, mute, signal and call priority that this resource relies on).
+1. Update **rsg-voice to 3.2.0 or later** (radio channels, volume, mute, signal and call priority that this resource relies on), or **3.3.0** for the volume test.
 2. Drop the `rsg-radio` folder into your resources, then start it after `rsg-voice` and `rsg-inventory`:
 
 ```cfg
@@ -86,7 +86,7 @@ The private channel table `rsg_radio_private` is created automatically on first 
 | `Config.Staff` | `{ Permission = 'admin', MuteMinutes = 10, Webhook = '' }` | Staff command permission, default block length and optional Discord webhook |
 | `Config.AutoDatabase` | `true` | Create the `rsg_radio_private` table on start (false = import `install.sql`) |
 | `Config.CheckInterval` | `10` | Seconds between checks that radio and access are still valid |
-| `Config.TransmitKeyLabel` | `'O'` | Key name shown in the hint. Keep in line with rsg-voice `Config.Radio.Key` |
+| `Config.TransmitKeyLabel` | `'O'` | Key name shown in the hint when rsg-voice cannot report it (older rsg-voice or `UseKeyMapping = false`). With rsg-voice 3.4.0+ the hint follows rsg-voice's `Config.Radio.Key` |
 | `Config.AllowPushToTalkWhileOpen` | `true` | Keep push-to-talk and the transmit key working while the panel is open |
 | `Config.PushToTalkControls` | `{ 0x4BC9DABB }` | Controls left enabled while the panel is open |
 | `Config.Ranges` | empty | Reserved frequency ranges: `min`, `max`, `label` (locale key) and the same rules as channels |
@@ -95,7 +95,7 @@ The private channel table `rsg_radio_private` is created automatically on first 
 | `Config.Incapacitated` | `{ Dead, Cuffed, Hogtied = true, Rejoin = false }` | Leave the radio while downed, cuffed or hogtied |
 | `Config.Battery` | `Enabled = false` | Battery: drain rates, low warning, recharge item |
 | `Config.Interference` | `Enabled = false` | Dead zones and weak spots (`Zones`) |
-| `Config.Volume` | `50` | How loud incoming radio is for everyone, in percent (0-100). Lower it if the radio is too loud |
+| `Config.Volume` | `{ Default = 50, Step = 5, Bleep = true, TestCommand = 'radiotest' }` | Starting radio volume (percent), slider step, a short bleep while the slider moves (`Bleep = false` turns it off) and the volume test command (`''` = none). Lower `Default` if the radio is too loud |
 | `Config.Handheld` | `Enabled = false` | Prop, bone, offsets and animation while transmitting |
 
 A channel matches a player if **any** of `jobs`, `jobtypes`, `gangs` or `permission` (an rsg-core permission level, bypasses duty and grade) matches. A channel with none of them is open to everyone with a radio. Only the player's active job is checked. The default lawman channel uses job type `leo` and the medic channel uses job name `medic`; change them to match your server.
@@ -112,7 +112,7 @@ With the config, frequency rules, favorites format, events, state object and int
 Open **Private** in the radio, type any free frequency, a name and a passcode (letters/numbers, length set by `Config.Private`), then **Create**. Creating a channel costs `Config.Private.Cost` (default $250 cash, `MoneyType`; 0 = free); updating or deleting your own channel is free. Others join by typing the frequency and the passcode. The owner can update the name/passcode (everyone else is removed and must enter the new one) or delete the channel with ✕. Channels nobody uses for `ExpireDays` are removed. Restricted job channels cannot be turned private.
 
 ## Volume, mute, search, recents and the compact menu
-- Radio loudness is set by the server in `Config.Volume`. The speaker button mutes incoming radio for **you** (saved per character); you can still transmit.
+- The slider and the speaker button set how loud radio transmissions are for **you** (saved per character). Muting only silences incoming radio; you can still transmit.
 - The search box filters channels, private channels, favorites and recents. **Recent** lists your last used frequencies; press ☆ to turn one into a favorite.
 - The ⇕ button in the header switches between the full and the compact panel (remembered).
 

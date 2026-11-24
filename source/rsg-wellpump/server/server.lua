@@ -411,6 +411,7 @@ RSGCore.Functions.CreateCallback('rsg-wellpump:server:pack', function(source, cb
     if not Player then return cb(false, err) end
 
     Pumps[pump.id] = nil
+    TriggerEvent('rsg-wellpump:internal:pumpRemoved', pump.id)
     MySQL.query('DELETE FROM rsg_wellpumps WHERE id = ?', { pump.id })
     giveOrDrop(source, Config.Item, 1, nil, 'rsg-wellpump:pack') -- never lose the pump item
     syncAll()
@@ -464,3 +465,63 @@ exports('IsNearPump', function(src, distance)
     end
     return false
 end)
+
+---------------------------------
+-- water supply exports (sprinklers / irrigation)
+---------------------------------
+local Reservoir = {}  -- [pumpId] = { level, t } refilled lazily from the time of the last read
+
+local function waterOf(id)
+    local S = Config.Sprinkler
+    if not S or not S.Enabled or not Pumps[id] then return 0 end
+    local now = GetGameTimer()
+    local r = Reservoir[id]
+    if not r then r = { level = S.Capacity + 0.0, t = now }; Reservoir[id] = r end
+    local add = (now - r.t) / 60000.0 * S.RefillPerMinute
+    r.level = math.min(S.Capacity + 0.0, r.level + math.max(0.0, add))
+    r.t = now
+    return r.level
+end
+
+local function pumpInfo(p)
+    return { id = p.id, x = p.x, y = p.y, z = p.z, h = p.h, water = math.floor(waterOf(p.id)) }
+end
+
+-- GetPump(id) -> { id, x, y, z, h, water } or nil
+exports('GetPump', function(id)
+    local p = Pumps[tonumber(id)]
+    return p and pumpInfo(p) or nil
+end)
+
+-- GetNearestPump(coords, maxDistance?) -> pump info (+ distance) or nil
+exports('GetNearestPump', function(coords, maxDistance)
+    local c = toCoords(coords)
+    if not c then return nil end
+    maxDistance = tonumber(maxDistance) or (Config.Sprinkler and Config.Sprinkler.MaxLinkDistance) or 60.0
+    local best, bd
+    for _, p in pairs(Pumps) do
+        local d = #(c - vector3(p.x, p.y, p.z))
+        if d <= maxDistance and (not bd or d < bd) then best, bd = p, d end
+    end
+    if not best then return nil end
+    local info = pumpInfo(best)
+    info.distance = bd
+    return info
+end)
+
+-- GetPumpWater(id) -> units of water in the pump's reservoir (0 when missing or disabled)
+exports('GetPumpWater', function(id) return math.floor(waterOf(tonumber(id))) end)
+
+-- DrawWater(id, amount) -> ok, drawn
+--   takes up to `amount` units (partial draws allowed); the caller checks distance and ownership first.
+exports('DrawWater', function(id, amount)
+    id, amount = tonumber(id), tonumber(amount)
+    if not id or not amount or amount ~= amount or amount <= 0 then return false, 0 end
+    local have = waterOf(id)
+    if have < 1 then return false, 0 end
+    local take = math.min(have, amount)
+    Reservoir[id].level = have - take
+    return true, take
+end)
+
+AddEventHandler('rsg-wellpump:internal:pumpRemoved', function(id) Reservoir[id] = nil end)

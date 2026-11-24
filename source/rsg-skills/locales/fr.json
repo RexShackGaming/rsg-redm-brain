@@ -64,6 +64,8 @@
     "perk_rare_chance": "Chance de trouvaille rare",
     "perk_speed_bonus": "Bonus de vitesse de travail",
     "perk_save_chance": "Chance d'économiser des matériaux",
+    "perk_bite_chance": "Chance de touche",
+    "perk_line_strength": "Résistance de la ligne",
     "ui_title": "Compétences",
     "ui_subtitle": "Expérience de la frontière",
     "ui_tab_skills": "Mes compétences",

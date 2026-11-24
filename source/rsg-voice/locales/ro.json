@@ -65,5 +65,7 @@
     "ui_party_share": "Partajează punct",
     "ui_radio": "RADIO",
     "ui_radio_key": "Transmitere radio (ține apăsat)",
+    "key_cycle": "Schimbă raza vocii",
+    "key_party": "Voce de grup (ține apăsat)",
     "cl_radio_timeout": "Ai atins limita de transmisie de %s secunde, eliberează tasta"
 }

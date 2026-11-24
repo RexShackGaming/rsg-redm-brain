@@ -186,7 +186,12 @@
     const renderStatus = () => {
         const notes = [];
         if (state.owned && state.blocked) notes.push([S[state.blocked] || '', 'bad']);
-        if (state.fee > 0) notes.push([`${S.ui_fee}: ${money(state.fee)}`, '']);
+        if (state.fee > 0 && !state.isOwner) {
+            const off = state.discount > 0 ? ` (${S.ui_discount}: ${state.discount}%)` : '';
+            notes.push([`${S.ui_fee}: ${money(state.feeEff)}${off}`, '']);
+        } else if (state.fee > 0) {
+            notes.push([`${S.ui_fee}: ${money(state.fee)}`, '']);
+        }
         if (state.speedPct > 0) notes.push([`${S.ui_upgrade_speed}: -${state.speedPct}%`, '']);
         if (state.owned && state.access !== 'public') notes.push([`${S.ui_access}: ${accessLabel(state.access)}`, '']);
         notes.forEach(([text, cls]) => view.append(h('div', 'notice' + (cls ? ' ' + cls : ''), text)));
@@ -222,6 +227,17 @@
             collect.onclick = async () => { await post('collect'); refresh(); };
             actions.append(collect);
             view.append(actions);
+        }
+
+        if (state.owned && state.last && !state.blocked) {
+            const L = state.last;
+            const rep = h('button', 'wood-btn', S.ui_repeat);
+            rep.onclick = async () => {
+                rep.disabled = true;
+                await post('start', { recipe: L.recipe, batches: L.batches });
+                refresh();
+            };
+            view.append(infoRow(L.label, `${S.ui_batches}: ${L.batches}`, rep));
         }
 
         view.append(divider(S.ui_recipes));
@@ -394,6 +410,18 @@
         view.append(infoRow(S.ui_staffed, null, toggleBtn(state.staffed, v => act('setStaffed', { value: v }))));
         view.append(infoRow(S.ui_paused, null, toggleBtn(state.paused, v => act('setPaused', { value: v }))));
 
+        if (m.wageMax !== undefined && m.wageMax !== null) {
+            const wage = numInput(m.wage, 0, m.wageMax);
+            const wageBtn = h('button', 'wood-btn', S.ui_apply);
+            wageBtn.onclick = async () => { wageBtn.disabled = true; await act('setWage', { value: parseInt(wage.value, 10) || 0 }); };
+            view.append(infoRow(S.ui_wage, `0 - ${money(m.wageMax)}`, withButton(wage, wageBtn)));
+        }
+        if (m.stash) {
+            const open = h('button', 'wood-btn', S.ui_open);
+            open.onclick = async () => { open.disabled = true; await act('openStash'); };
+            view.append(infoRow(S.ui_stash, S.ui_stash_desc, open));
+        }
+
         view.append(divider(S.ui_access_trusted));
         m.trusted.forEach(t => {
             const rm = h('button', 'mini-btn', '✕');
@@ -445,6 +473,14 @@
             await act('sell');
         }, S.ui_sell);
         view.append(infoRow(S.ui_sell, money(m.sellValue + m.bank), sell));
+
+        view.append(divider(S.ui_top_users.replace('{days}', String(m.topDays))));
+        if (!m.top.length) view.append(h('div', 'empty', S.ui_no_activity));
+        m.top.forEach(t => view.append(infoRow(t.name, `${S.ui_batches}: ${t.batches} · ${S.ui_fee}: ${money(t.fees)}`)));
+
+        view.append(divider(S.ui_activity));
+        if (!m.activity.length) view.append(h('div', 'empty', S.ui_no_activity));
+        m.activity.forEach(a => view.append(infoRow(`${a.name} · ${a.label}`, `${a.at} · ${S.ui_batches}: ${a.batches} · ${S.ui_fee}: ${money(a.fee)}`)));
     };
 
     const renderPlayer = () => {

@@ -3,11 +3,12 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 
 description 'rsg-fishing'
-version '3.1.0'
+version '3.2.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
     'shared/config.lua',
+    'shared/regions.lua',
 }
 
 client_scripts {
@@ -16,6 +17,8 @@ client_scripts {
 }
 
 server_scripts {
+    '@oxmysql/lib/MySQL.lua',
+    'server/journal.lua',
     'server/server.lua',
     'server/versionchecker.lua'
 }
@@ -29,7 +32,8 @@ files {
 
 dependencies {
     'rsg-core',
-    'rsg-inventory'
+    'rsg-inventory',
+    'oxmysql'
 }
 
 

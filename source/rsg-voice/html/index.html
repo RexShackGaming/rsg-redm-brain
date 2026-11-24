@@ -264,8 +264,32 @@ function hiss(on,vol){
     n.g.gain.linearRampToValueAtTime(0,t+0.05);n.src.stop(t+0.08);
   }
 }
+// Volume test: squelch, ~2.5 s of speech-like audio, squelch. gain is rsg-voice's own radio gain (volume x signal)
+let testing=false;
+function radioTest(gain,signal){
+  if(testing||!(gain>0))return;
+  const c=ac();testing=true;
+  const sig=Math.max(0,Math.min(1,signal==null?1:signal)),dur=2.5,t=c.currentTime+0.02;
+  const master=c.createGain();master.gain.value=0.5*Math.min(1,gain);master.connect(c.destination);
+  const click=(at,len)=>{const o=c.createOscillator(),g=c.createGain();o.type='square';o.frequency.value=1800;
+    g.gain.setValueAtTime(0.25,at);g.gain.exponentialRampToValueAtTime(0.0001,at+len);o.connect(g);g.connect(master);o.start(at);o.stop(at+len+0.02);};
+  click(t,0.06);
+  const t1=t+0.08,src=c.createBufferSource();src.buffer=buf;src.loop=true;
+  const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1400;bp.Q.value=0.9;
+  const buzz=c.createOscillator();buzz.type='sawtooth';buzz.frequency.value=115;
+  const bg=c.createGain();bg.gain.value=0.35;
+  const vg=c.createGain();vg.gain.value=0;
+  for(let k=0;k<9;k++){const a=t1+k*0.26,p=0.5+Math.random()*0.5;vg.gain.setValueAtTime(0.0001,a);vg.gain.linearRampToValueAtTime(p,a+0.05);vg.gain.linearRampToValueAtTime(0.1,a+0.2);}
+  vg.gain.linearRampToValueAtTime(0,t1+dur-0.1);
+  const hiss=c.createGain();hiss.gain.value=0.06+(1-sig)*0.25; // weaker signal = more static
+  src.connect(bp);bp.connect(vg);buzz.connect(bg);bg.connect(vg);vg.connect(master);src.connect(hiss);hiss.connect(master);
+  src.start(t1);src.stop(t1+dur);buzz.start(t1);buzz.stop(t1+dur);
+  click(t1+dur,0.09);
+  setTimeout(()=>{testing=false;try{master.disconnect();}catch(e){}},(dur+0.4)*1000);
+}
 window.addEventListener('message',e=>{
   const d=e.data||{};
+  if(d.action==='radioTest'){try{radioTest(+d.gain,d.signal);}catch(err){testing=false;}return;}
   if(d.action!=='radioStatic')return;
   const vol=Math.max(0,Math.min(1,+d.volume||0)),src=d.source==='self'?'self':'in';
   try{

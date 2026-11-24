@@ -65,5 +65,7 @@
     "ui_party_share": "ウェイポイント共有",
     "ui_radio": "無線",
     "ui_radio_key": "無線送信（長押し）",
+    "key_cycle": "音声の範囲を変更",
+    "key_party": "パーティー音声（長押し）",
     "cl_radio_timeout": "送信時間の上限（%s 秒）に達しました。キーを離してください"
 }

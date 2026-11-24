@@ -12,7 +12,30 @@ CREATE TABLE IF NOT EXISTS `rsg_farming_plants` (
     `health` FLOAT NOT NULL DEFAULT 100,
     `dead` TINYINT(1) NOT NULL DEFAULT 0,
     `dead_time` INT(11) NOT NULL DEFAULT 0,
+    `share_key` VARCHAR(80) NOT NULL DEFAULT '',
     `planted_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `citizenid` (`citizenid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `rsg_farming_props` (
+    `id` INT(11) NOT NULL AUTO_INCREMENT,
+    `citizenid` VARCHAR(50) NOT NULL,
+    `kind` VARCHAR(20) NOT NULL,
+    `x` FLOAT NOT NULL, `y` FLOAT NOT NULL, `z` FLOAT NOT NULL, `h` FLOAT NOT NULL DEFAULT 0,
+    `pump_id` INT(11) NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    KEY `citizenid` (`citizenid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `rsg_farming_soil` (
+    `cell_x` INT(11) NOT NULL,
+    `cell_y` INT(11) NOT NULL,
+    `crop` VARCHAR(50) NOT NULL,
+    `fatigue` FLOAT NOT NULL DEFAULT 0,
+    `updated` INT(11) NOT NULL DEFAULT 0,
+    PRIMARY KEY (`cell_x`, `cell_y`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Upgrading an existing rsg_farming_plants table from 3.4.x (manual install only; the auto database does this itself):
+-- ALTER TABLE `rsg_farming_plants` ADD COLUMN `share_key` VARCHAR(80) NOT NULL DEFAULT '' AFTER `dead_time`;

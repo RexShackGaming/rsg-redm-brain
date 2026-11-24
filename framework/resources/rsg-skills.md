@@ -1,8 +1,8 @@
 # rsg-skills
 
-Version 3.0.0. Framework-wide skills, XP, levels, perks and leaderboards for RSG Framework
+Version 3.0.1. Framework-wide skills, XP, levels, perks and leaderboards for RSG Framework
 
-Framework-wide skills for the RSG Framework: one shared place for XP, levels, rank titles, perks and leaderboards, so hunting, mining, farming and every other script can use the same progression instead of each keeping its own. Version 3.0.0 · Requires `rsg-core` and `oxmysql` · No ox_lib, no target and no inventory dependency Full developer and server owner documentation is in [DOCS.md](DOCS.md).
+Framework-wide skills for the RSG Framework: one shared place for XP, levels, rank titles, perks and leaderboards, so hunting, mining, farming and every other script can use the same progression instead of each keeping its own. Version 3.0.1 · Requires `rsg-core` and `oxmysql` · No ox_lib, no target and no inventory dependency Full developer and server owner documentation is in [DOCS.md](DOCS.md).
 
 Source: https://github.com/Rexshack-RedM/rsg-skills
 

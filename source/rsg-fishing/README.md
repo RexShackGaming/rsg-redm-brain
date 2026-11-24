@@ -1,6 +1,6 @@
 # rsg-fishing
 
-Fishing for **RSG-Core** (RedM), version 3.1.0. Full technical reference: [DOCS.md](DOCS.md).
+Fishing for **RSG-Core** (RedM), version 3.2.0. Full technical reference: [DOCS.md](DOCS.md).
 
  Players equip a fishing rod, bait it with an item from their inventory, cast, hook and reel in fish. Caught fish go into the inventory with their weight. An on-screen HUD guides the player through each step.
 
@@ -19,6 +19,11 @@ Fishing for **RSG-Core** (RedM), version 3.1.0. Full technical reference: [DOCS.
 - **Bobber indicator:** a float image follows the bobber on screen. It turns into a wriggling fish when a fish is hooked, and back into a float if the fish gets away.
 - **Server-side checks:** only real bait items are accepted, a minigame catch needs a spent bait (one catch per bait), a catch cooldown applies, fish weight is capped and inventory space is checked before the fish is added.
 - **Ground pickup:** fish picked up off the ground go straight into the inventory (can be turned off with `Config.GroundPickup`).
+- **Bite conditions:** the bite chance rises at dawn and dusk and in drizzle or rain, and falls at midday, at night and in storms (`Config.BiteModifiers`, weather from rsg-weather). The controls HUD shows Bites: Poor / Fair / Good.
+- **Regional fish:** the state under the hook decides which species can bite (`Config.Regions.Pools`). The legendary sockeye salmon only bites at the waters in `Config.Regions.LegendarySpots`.
+- **Angler's journal:** `/fishjournal` opens a window with your catalogue of species (times caught and best weight), the server's record for each species and the top anglers. Records are announced when beaten and can pay a reward (`Config.Records`).
+- **Skill perks (rsg-skills):** the `fishing` skill adds `bite_chance` (more bites), `line_strength` (the line strains less) and `rare_chance` (heavier fish).
+- **Reputation (rsg-reputation):** a first catch of a species, a beaten record and a completed journal give honor and standing (`Config.Reputation`).
 - **Logging:** catches are sent to `rsg-log` (`fishing` channel) when `Config.Log` is on.
 - **Languages:** cs, de, el, en, es, fr, it, ja, nl, pl, pt-br, ro, ru. Set with `setr rsg:locale <lang>`.
 
@@ -26,7 +31,9 @@ Fishing for **RSG-Core** (RedM), version 3.1.0. Full technical reference: [DOCS.
 
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
+- [oxmysql](https://github.com/overextended/oxmysql) (journal and records)
 - `rsg-log` (optional, for catch logs)
+- `rsg-weather`, `rsg-skills`, `rsg-reputation` (optional; each feature is skipped when the resource is not started)
 
 ## Installation
 
@@ -38,7 +45,9 @@ Fishing for **RSG-Core** (RedM), version 3.1.0. Full technical reference: [DOCS.
    ensure rsg-inventory
    ensure rsg-fishing
    ```
-4. Restart the server. After updating the UI files, restart the resource (players may need to reconnect).
+4. The database tables (`rsg_fishing_journal`, `rsg_fishing_records`) are created automatically on first start. To install them manually, set `Config.AutoDatabase = false` and import `install.sql`.
+5. For the perks and reputation, use rsg-skills 3.0.1+ and rsg-reputation 3.0.3+ (they add the fishing perks and actions).
+6. Restart the server. After updating the UI files, restart the resource (players may need to reconnect).
 
 ## How to fish (players)
 
@@ -60,6 +69,11 @@ Fishing for **RSG-Core** (RedM), version 3.1.0. Full technical reference: [DOCS.
 | `Config.CatchCooldown` | Minimum ms between accepted catches |
 | `Config.MaxRawFishWeight` | Upper limit on the weight accepted from clients |
 | `Config.GroundPickup` | Store fish picked up off the ground (no bait needed). Set `false` to stop it |
+| `Config.GroundPickupLimit` | `Max` ground pickups per player per `Window` seconds (default 10 per hour) |
+| `Config.MinCatchTime` | Minimum ms between bait on the rod and an accepted catch |
+| `Config.EnforceBaitList` | Fish only bite, and the server only accepts them, when the bait is listed for them in `Config.BaitsPerFish` |
+| `Config.BiteChance` | Chance per second that a fish next to the hook bites (0.0–1.0) |
+| `Config.WeightBands` / `Config.WeightFactor` | Weight ranges for small / medium / large fish |
 | `Config.Log` | Send catches to `rsg-log` |
 | `Config.LineSnap` | `Enabled`, `Gain` (tension per frame while reeling a struggling fish), `Recover` (tension lost per frame otherwise) |
 | `Config.Sounds` | `Enabled`, `Soundset`, and the sound `Names` (set one to `''` to mute it) |
@@ -71,9 +85,17 @@ Fishing for **RSG-Core** (RedM), version 3.1.0. Full technical reference: [DOCS.
 | `Config.BobberMarker` | `Enabled`, `ScreenIcon` (float/fish image), `ScreenIconSize` (px) |
 | `Config.Baits` | Items that can be used as bait |
 | `Config.BaitsPerFish` | Which baits attract which fish |
-| `Config.fishData` | Fish names and provision data |
+| `Config.fishData` | Fish model, display name and weight band |
 
 If a HUD key name is wrong for your keybinds, change it in `Config.ControlKeys`. If a row doesn't light up when the key is pressed, change its control in `Config.ControlInputs`.
+
+## Journal, records and regions
+
+- **Command:** `/fishjournal` (`Config.Journal.Command`). Set `Config.Journal.Key` to a key name such as `'J'` for a key that players can rebind in the game's key settings (needs rsg-core 3.5.0+).
+- While the journal is open, game controls are blocked but push-to-talk keeps working (`Config.AllowPushToTalkWhileOpen`, `Config.PushToTalkControls`).
+- **Regions:** change which species can bite in each state in `Config.Regions.Pools`; set `Config.Regions.Enabled = false` to allow every fish everywhere. Add `coords` and `radius` to a legendary spot to have the server check the player's position too.
+- **Bite conditions:** tune `Config.BiteModifiers.Time` and `.Weather`, or turn them off with `Enabled = false`.
+- **Records:** `Config.Records` (`Enabled`, `Announce`, `Reward`, `TopCount`).
 
 ## Files
 
@@ -93,9 +115,23 @@ shared/config.lua     Settings
 
 ## Server events
 
+- `rsg-fishing:server:newRecord` (local event for other scripts): `(src, family, kg, previousHolderName)`, fired when a server record is beaten.
+
 - `rsg-fishing:server:catchFish` (renamed from `rsg-fishing:FishToInventory`; update any script that triggered the old name)
 
 ## Changelog
+
+**3.2.0**
+- New: bite conditions (time of day and weather), regional fish pools and legendary spots, angler's journal with server records and top anglers (`/fishjournal`), rsg-skills perks and rsg-reputation actions.
+- New dependency: oxmysql. Two tables are created automatically.
+- `Config.fishData` rows now carry a species family as a third value.
+
+**3.1.1**
+- Security: the server now checks the fish against the bait used (`Config.EnforceBaitList`), the time since the bait went on the rod (`Config.MinCatchTime`) and the weight band of the fish, and caps ground pickups (`Config.GroundPickupLimit`). Before, a modified client could claim any fish, including the most valuable ones, for the price of one bait.
+- Bait is now spent when it is put on the rod, not when the item is used, so holstering the rod early no longer wastes it.
+- Fewer game calls while fishing (minigame writes are sent once per frame and only when changed) and fewer NUI messages for the bobber marker.
+- Items are added and removed through rsg-inventory exports.
+- Removed unused provision strings from `Config.fishData`; weight bands now live in `Config.WeightBands` / `Config.fishData`; new `Config.BiteChance`.
 
 **3.1.0**
 - Optional rsg-skills integration: fishing XP per catch (`Config.Skills`).

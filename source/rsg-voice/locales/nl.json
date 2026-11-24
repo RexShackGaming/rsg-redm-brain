@@ -65,5 +65,7 @@
     "ui_party_share": "Waypoint delen",
     "ui_radio": "RADIO",
     "ui_radio_key": "Radio zenden (vasthouden)",
+    "key_cycle": "Spraakbereik wisselen",
+    "key_party": "Groepsspraak (vasthouden)",
     "cl_radio_timeout": "Zendlimiet van %s seconden bereikt, laat de toets los"
 }

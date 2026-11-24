@@ -64,6 +64,8 @@
     "perk_rare_chance": "レア発見の確率",
     "perk_speed_bonus": "作業速度ボーナス",
     "perk_save_chance": "素材節約の確率",
+    "perk_bite_chance": "魚のアタリ率",
+    "perk_line_strength": "ラインの強さ",
     "ui_title": "スキル",
     "ui_subtitle": "フロンティアの経験",
     "ui_tab_skills": "マイスキル",

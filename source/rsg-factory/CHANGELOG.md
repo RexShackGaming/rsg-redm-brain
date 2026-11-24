@@ -2,6 +2,34 @@
 
 All notable changes to rsg-factory. Newest first.
 
+## 3.2.0
+
+### Added
+- **Activity log and report:** the owner tab lists the last runs (player, line, batches, fee) and the top users of the last 7 days (new `rsg_factory_log` table, pruned after `Config.Log.KeepDays`).
+- **Worker wages** (`Config.Wages`): owners set a wage per batch for trusted workers, paid from the society account.
+- **Fee discounts** (`Config.Fees.TrustedDiscount`, `Config.Fees.JobDiscounts`): trusted workers run free by default; jobs can get a % off.
+- **Repeat last run** button on the production tab.
+- **Supply stash** (`Config.Stash`): an rsg-inventory stash per factory whose wood, coal and buckets refill fuel and water automatically.
+- **Ready blip:** factories with finished products for you get their own blip colour and a "(ready)" label.
+- **Sell-back of upgrades** (`Config.SellbackUpgradePercent`).
+- New texts in all 11 languages.
+
+### Changed
+- Selling pays a share of the price the owner **paid** (new `paid` column) instead of the current price, plus the upgrade share. The next owner starts with no upgrades, no wage and a clean log; selling is refused while the supply stash holds items.
+- Deleting a factory hands queued products to online players first and warns once about anything still lost (delete again within 60 s to confirm).
+- The trusted-worker and transfer pickers list only online players at the factory. The database search of every character is gone, and trusted workers must be present to be added.
+- A request sent while another one is still running now shows a notice.
+
+## 3.1.1
+
+### Fixed
+- Adding water no longer eats the filled bucket when the player has no room for the empty bucket: the supply is refused with an inventory-full message before anything is taken.
+- Deleting a factory is refused while its owner is offline and its earnings account holds money, so the balance can no longer be destroyed (new `delete_owner_offline` text in all 11 languages).
+- The panel closes by itself if the player dies while it is open.
+
+### Changed
+- New `idx_finish` index on `rsg_factory_queue` for the 30 second finished-production check. Added automatically (and in `install.sql`).
+
 ## 3.1.0
 
 ### Added

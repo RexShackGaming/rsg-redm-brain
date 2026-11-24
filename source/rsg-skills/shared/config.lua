@@ -100,6 +100,8 @@ Config.Skills = {
         perks = {
             rare_chance = { suffix = '%', levels = { [4] = 5, [10] = 10, [18] = 15, [26] = 20 } },
             sell_bonus  = { suffix = '%', levels = { [3] = 5, [9] = 10, [16] = 15, [24] = 20 } },
+            bite_chance   = { suffix = '%', levels = { [2] = 5, [7] = 10, [13] = 15, [20] = 20 } },   -- used by rsg-fishing
+            line_strength = { suffix = '%', levels = { [5] = 10, [12] = 20, [19] = 30, [27] = 40 } }, -- used by rsg-fishing
         },
     },
     mining = {

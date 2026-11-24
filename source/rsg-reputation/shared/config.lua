@@ -110,4 +110,7 @@ Config.Actions = {
     donation         = { honor = 3,   standing = 5 },
     delivery         = { honor = 0,   standing = 2 },
     gang_territory   = { honor = -3,  standing = -5 }, -- a gang claims turf in a town (rsg-gangs)
+    fishing_discovery = { honor = 1,  standing = 1 },  -- first catch of a species (rsg-fishing)
+    fishing_record    = { honor = 3,  standing = 4 },  -- beat a server fishing record (rsg-fishing)
+    fishing_master    = { honor = 10, standing = 10 }, -- completed the angler's journal (rsg-fishing)
 }

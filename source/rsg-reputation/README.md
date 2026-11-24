@@ -2,7 +2,7 @@
 
 Honor and regional standing for the RSG Framework. Every character has one **honor** score (how honorable they are overall) and a **standing** in each state and town (how that place sees them, from infamy to fame). Other scripts report what players do, and read the result to change prices, lawman reactions and access.
 
-Version 3.0.0 · Requires `rsg-core` and `oxmysql` · No ox_lib, no target and no inventory dependency
+Version 3.0.3 · Requires `rsg-core` and `oxmysql` · No ox_lib, no target and no inventory dependency
 
 Full developer and server owner documentation is in [DOCS.md](DOCS.md).
 

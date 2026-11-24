@@ -73,9 +73,18 @@ settings = { fee = 0, access = 'public' | 'trusted' | 'owner', staffed = false, 
 - **Fee:** `fee * batches` cash is taken from non-owners and added to `bank` in the same step that takes fuel and water; every rollback path refunds it.
 - **Upgrades:** tank adds `Upgrades.tank.bonus` per level to both capacities; speed shortens every stage time by `Upgrades.speed.percent` % per level (minimum 1 second per stage) when the run is planned.
 - **Breakdowns:** after a successful start there is a `Breakdown.chance` % chance that `settings.broken` becomes true and the owner is alerted. New starts are refused until `repair` (cash, or 1x `Breakdown.repairItem` when set).
-- **Sell:** pays `price * SellbackPercent / 100 + bank` after the database row is updated; clears owner, `bank`, fuel, water, fee, access, staffing, pause and trusted workers.
+- **Sell:** pays `paid * SellbackPercent / 100 + upgradeSpent * SellbackUpgradePercent / 100 + earnings` after the database row is updated (`paid` = price at purchase, falls back to `price`); clears owner, `paid`, `bank`, fuel, water, fee, wage, access, staffing, pause, trusted workers, upgrades and the activity log. Refused while the supply stash holds items.
 - **Transfer:** the owner sends an offer to a player standing at the factory; the receiver types `/acceptfactory` within `Config.TransferExpiry` seconds while at the factory. The row is updated first (`WHERE owner = old owner`), then the previous owner receives the earnings.
 - **Alerts:** a thread every `Config.Alerts.interval` seconds claims finished queue rows (`notified` 0 -> 1, so each is handled once). With `AutoDeliver` an online player gets the products directly when they all fit; otherwise they get a notification, or an `rsg-telegram` telegram if offline (`SendTelegram(citizenid, subject, message, { senderName })`). Low fuel/water and breakdown alerts go to the owner the same way, throttled by `lowStockCooldown`.
+### Features added in v3.2.0
+- **Fee discount:** `feeFor(f, Player, batches)` applies `Config.Fees.TrustedDiscount` (trusted workers) or the best matching `Config.Fees.JobDiscounts` entry; the owner pays nothing. The panel shows the discounted fee.
+- **Wages:** `settings.wage` (0..`Config.Wages.MaxPerBatch`). After a successful start by a trusted worker, `wage * batches` is taken from the society account and paid in cash; if the account cannot cover it nothing is paid. Needs rsg-society with `EarningsToSociety`.
+- **Supply stash:** `rsg_factory_<id>` is an rsg-inventory stash (`Config.Stash`). When a run is short of fuel or water, or stock is low, `restockFromStash` removes whole `Config.Supplies` items from the stash and adds their units to the tanks (a `returnItem` goes back into the stash). Only the owner can open it (`ownerAction openStash`).
+- **Activity log:** every start writes a row to `rsg_factory_log` (player, line, batches, fee, wage). The owner tab shows the last `Config.Log.Entries` rows and the top users of the last `Config.Log.ReportDays` days. Rows older than `Config.Log.KeepDays` are pruned; selling or transferring clears a factory's log.
+- **Repeat last run:** `factoryState.last` is the player's previous run here (`recipe`, `batches`), offered only while that line still has the same label.
+- **Ready blip:** `rsg-factory:client:ready` (list of factory ids) is sent when a production finishes and after a collect; the same list comes with `getFactories` on login. Those factories get `Config.Blips.readyColor` and a "(ready)" name.
+- **Busy lock:** a request sent while another one from the same player is still running now gets a short notice instead of silence.
+
 - **Per-player sync:** `rsg-factory:client:sync` is sent per player and each factory carries `status` = `mine` | `sale` | `owned`, which drives the map blips. Ownership changes (buy, sell, transfer) re-sync everyone.
 
 ## Callbacks and events
@@ -83,16 +92,16 @@ All use the rsg-core callback system (`RSGCore.Functions.AwaitCallback` on the c
 
 | Name | Args | Returns | Notes |
 |---|---|---|---|
-| `rsg-factory:server:getFactories` | – | `{ factories, isAdmin }` or `nil` while loading | Public list for NPC spawning |
+| `rsg-factory:server:getFactories` | – | `{ factories, isAdmin, ready }` or `nil` while loading | Public list for NPC spawning; `ready` = factory ids where the player has finished products |
 | `rsg-factory:server:getFactory` | `factoryId` | factory state or `nil` | Distance checked |
 | `rsg-factory:server:getItems` | – | `{ {name,label}... }` or `nil` | Admin only |
 | `rsg-factory:server:saveFactory` | `factoryId, data` | `bool` | Admin; `data = { name, ped_model, price, recipes }` |
-| `rsg-factory:server:deleteFactory` | `factoryId` | `bool` | Admin; removes running productions |
+| `rsg-factory:server:deleteFactory` | `factoryId` | `bool` | Admin. Hands queued products to online players first; warns once about anything still lost (offline players' products, stash items) and deletes on a second call within 60 s. Refused while the owner is offline and the earnings account holds money |
 | `rsg-factory:server:startProduction` | `factoryId, recipeIndex, batches` | `bool` | Takes inputs, queues output |
 | `rsg-factory:server:buyFactory` | `factoryId` | `bool` | Takes cash, sets the owner |
 | `rsg-factory:server:addSupply` | `factoryId, key, amount` | `bool` | Owner only; adds fuel or water to the stock |
-| `rsg-factory:server:findPlayers` | `factoryId, query, mode` | `{ {cid, name, online} }` | Owner only, throttled. Player picker: online players first, then a database search of `players` (name or citizenid, min 2 characters; `mode = 'transfer'` lists online players only). Max 30 results |
-| `rsg-factory:server:ownerAction` | `factoryId, action, data` | `bool` | Owner only. Actions: `setFee {value}`, `setAccess {value}`, `setStaffed {value}`, `setPaused {value}`, `addTrusted {cid}`, `removeTrusted {cid}`, `withdraw`, `upgrade {kind = 'tank'|'speed'}`, `repair`, `sell`, `transfer {cid}` (online, at the factory) |
+| `rsg-factory:server:findPlayers` | `factoryId, query, mode` | `{ {cid, name, online} }` | Owner only, throttled. Player picker: online players standing at the factory only (name or server id; `mode = 'transfer'` also lists current trusted workers). No database lookups. Max 30 results |
+| `rsg-factory:server:ownerAction` | `factoryId, action, data` | `bool` | Owner only. Actions: `setFee {value}`, `setAccess {value}`, `setStaffed {value}`, `setPaused {value}`, `setWage {value}`, `openStash`, `addTrusted {cid}` (online, at the factory), `removeTrusted {cid}`, `withdraw`, `upgrade {kind = 'tank'|'speed'}`, `repair`, `sell`, `transfer {cid}` (online, at the factory) |
 | `rsg-factory:server:collect` | `factoryId` | `bool` | Pays out every finished production |
 
 Events: `rsg-factory:client:sync` (server → all, public factory list) and `rsg-factory:client:openAdmin` (server → admin, opens the editor).
@@ -118,7 +127,7 @@ Factories and their lines live in `rsg_factories`. Running productions live in `
 - Buying and stocking are server-side: ownership and price come from the server cache, the owner check uses the citizenid, supply items/units come from `Config.Supplies` (the client only sends a key and an amount), and the amount is clamped to the storage room. Money is removed before the owner is set, and the owner is set before any wait so two buyers cannot both succeed.
 - Buying, stocking, starting production and collecting run through `lockedCallback`: one request at a time per player (released on error and on disconnect), so double-clicks or parallel calls can't beat the queue limit or spend the same items twice.
 - A failed queue insert rolls back the inputs and the fuel/water; a failed purchase save refunds the cash and clears the owner. A price of 0 never calls `RemoveMoney`.
-- Every owner action re-checks ownership by citizenid, distance to the factory and its own limits (fee range, access values, trusted list size, upgrade level, money). Trusted workers are validated on the server by citizenid against the `players` table (online or offline); transfer receivers must be online and at the factory. The picker callback only answers the owner and is throttled. Starts, upgrades, repairs, sales and transfers run through the per-player lock; the sale and transfer rows are updated with `WHERE owner = ...` before any money moves.
+- Every owner action re-checks ownership by citizenid, distance to the factory and its own limits (fee range, wage range, access values, trusted list size, upgrade level, money). Trusted workers and transfer receivers must be online and at the factory, so nobody can be given the factory job without being there, and there is no way to list other characters. The picker callback only answers the owner, only lists players at the factory and is throttled. Starts, upgrades, repairs, sales and transfers run through the per-player lock; the sale and transfer rows are updated with `WHERE owner = ...` before any money moves.
 - Alerts only send server-built text (locale keys) to `rsg-telegram`; no client input is forwarded.
 - Fuel and water cost per line is validated on save (`0..MaxUtilityPerBatch`); stock can never go below zero.
 - Items and amounts are sanitised on save (existing item, no duplicates, `1..MaxAmount`, time `MinTime..MaxTime`, bounded text lengths); the client never supplies prices or output amounts at production time.
@@ -126,7 +135,7 @@ Factories and their lines live in `rsg_factories`. Running productions live in `
 - SQL uses `?` parameters only.
 
 ## Database schema
-`rsg_factories` (`id`, `name`, `ped_model`, `x`, `y`, `z`, `h`, `recipes` JSON, `created_by`, `owner`, `owner_name`, `price` default 5000, `fuel`, `water`, `bank`, `settings` JSON) and `rsg_factory_queue` (`id`, `factory_id`, `citizenid`, `label`, `outputs` JSON, `finish_at`, `stages` JSON for chained runs, `notified` 0/1 for the ready alert). See `install.sql`. With `Config.AutoDatabase = true` they are created with `CREATE TABLE IF NOT EXISTS` on start; set it to `false` to import `install.sql` yourself.
+`rsg_factories` (`id`, `name`, `ped_model`, `x`, `y`, `z`, `h`, `recipes` JSON, `created_by`, `owner`, `owner_name`, `price` default 5000, `fuel`, `water`, `bank`, `settings` JSON) and `rsg_factory_queue` (`id`, `factory_id`, `citizenid`, `label`, `outputs` JSON, `finish_at`, `stages` JSON for chained runs, `notified` 0/1 for the ready alert; index `idx_finish` on `notified, finish_at`) and `rsg_factory_log` (`id`, `factory_id`, `citizenid`, `name`, `label`, `recipe`, `batches`, `fee`, `wage`, `created_at`). `rsg_factories.paid` holds the price the current owner paid. See `install.sql`. With `Config.AutoDatabase = true` they are created with `CREATE TABLE IF NOT EXISTS` on start; set it to `false` to import `install.sql` yourself.
 
 ## Server owner how-tos
 - **Create a factory:** stand where the NPC should be, face the direction it should face, run `/createfactory Sawmill`.
@@ -163,6 +172,10 @@ Factories and their lines live in `rsg_factories`. Running productions live in `
 | "Nobody is working here" | The factory has *Needs staff online* on: the owner or a trusted worker must be online (or be the one starting) |
 | "This factory has broken down" | The owner repairs it in the owner panel (*Condition*) |
 | Can't add a trusted worker / transfer | The other player must be online, within about 12 m of the factory, and (for transfers) below `MaxFactoriesPerPlayer` |
+| Can't sell the factory | The supply stash still holds items; open it from the owner tab and empty it |
+| Delete asks twice | Something would be lost (offline players' products or stash items): the first delete only warns, repeat within 60 seconds |
+| Delete refused, owner offline | The earnings account holds money that would be paid to the owner; wait until they are online |
+| Wage row missing | Needs rsg-society running and `Config.Society.EarningsToSociety = true`, and `Config.Wages.Enabled` |
 | No "ready" telegram for offline players | `rsg-telegram` must be started and `Config.Alerts.telegram` true; the sender can still be blocked by the recipient |
 | No blip | `Config.Blips.enabled`; owned-by-others factories are hidden unless `showOwnedByOthers` |
 | Collect says inventory full | Free space; unpaid items stay queued |
@@ -173,7 +186,7 @@ Support: https://rexshack.tebex.store
 
 ## Technical reference
 
-Generated from the source of **rsg-factory 3.1.0**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-factory 3.2.0**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 
@@ -181,7 +194,7 @@ Generated from the source of **rsg-factory 3.1.0**. Names, arguments and default
 
 ### Database
 
-Tables: `rsg_factories`, `rsg_factory_queue`.
+Tables: `rsg_factories`, `rsg_factory_queue`, `rsg_factory_log`.
 
 Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
 For a manual install set `Config.AutoDatabase = false` and import `install.sql` once.
@@ -212,8 +225,12 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.ImagePath` | `'nui://rsg-inventory/html/images/'` | where item pictures are loaded from |
 | `Config.MaxSupplyAtOnce` | `100` | items an owner can add in one go |
 | `Config.Supplies` | `table` | Remove the returnItem field to give nothing back. It is skipped if the item does not exist. |
-| `Config.Fees` | `{ MaxPerBatch = 500 }` | highest fee per batch an owner can charge other players |
-| `Config.SellbackPercent` | `60` | % of the factory price the owner gets when selling it back |
+| `Config.Fees` | `{ MaxPerBatch = 500, TrustedDiscount = 100, JobDiscounts = {} }` | highest fee per batch; % off for trusted workers; % off per job name |
+| `Config.SellbackPercent` | `60` | % of the price the owner paid that comes back on a sale |
+| `Config.SellbackUpgradePercent` | `50` | % of the upgrade money that comes back on a sale |
+| `Config.Wages` | `{ Enabled = true, MaxPerBatch = 50 }` | wage per batch for trusted workers, paid from the society account |
+| `Config.Stash` | `{ Enabled = true, Slots = 20, MaxWeight = 100000 }` | owner's supply stash that refills fuel and water |
+| `Config.Log` | `{ KeepDays = 30, ReportDays = 7, Entries = 10 }` | activity log on the owner tab |
 | `Config.TransferExpiry` | `60` | seconds the receiver has to type /acceptfactory |
 | `Config.TrustedMax` | `8` | trusted workers per factory |
 | `Config.Upgrades` | `table` | Upgrades the owner buys with cash. Cost of the next level = cost * (current level + 1). |
@@ -259,6 +276,7 @@ Server events can be fired by any client, so every handler re-validates the play
 |---|---|---|---|
 | `rsg-factory:client:openAdmin` | client | `id` | `client/client.lua` |
 | `rsg-factory:client:sync` | client | `list` | `client/client.lua` |
+| `rsg-factory:client:ready` | client | `ids` | `client/client.lua` |
 | `RSGCore:Client:OnPlayerLoaded` | client | `` | `client/client.lua` |
 
 ```lua

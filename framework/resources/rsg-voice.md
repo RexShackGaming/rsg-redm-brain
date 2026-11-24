@@ -1,8 +1,8 @@
 # rsg-voice
 
-Version 3.2.0. rsg-voice - proximity voice for RSG Framework
+Version 3.4.0. rsg-voice - proximity voice for RSG Framework
 
-Proximity voice for **RSG Framework (RedM)**, built on RedM's native Mumble voice. It adds selectable voice ranges, a draggable HUD, riding parties (group voice), automatic muting while dead or cuffed, and a server-enforced admin mute. - **Proximity voice ranges**: Whisper (2.5m), Normal (8m), Shout (20m) and Trail (35m), all configurable. - **Cycle range** with a key (default **]**) or the `/voic
+Proximity voice for **RSG Framework (RedM)**, built on RedM's native Mumble voice. It adds selectable voice ranges, a draggable HUD, riding parties (group voice), automatic muting while dead or cuffed, and a server-enforced admin mute. - **Proximity voice ranges**: Whisper (2.5m), Normal (8m), Shout (20m) and Trail (35m), all configurable. - **Cycle range** with a key (default **]**, rebindable in
 
 Source: https://github.com/Rexshack-RedM/rsg-voice
 
@@ -14,7 +14,7 @@ Has NUI (`ui_page`).
 
 **server:** `GetPartyMembers(src)`, `GetPlayerRadio(src)`, `GetRadioMembers(freq)`, `IsInParty(src)`, `IsPlayerMuted(src)`, `JoinRadio(src, freq)`, `LeaveRadio(src)`, `SetPlayerMuted(src, state, reason)`
 
-**client:** `GetPartyMembers()`, `GetRadio()`, `GetRadioSignal()`, `GetRadioTalkKey()`, `GetRadioVolume()`, `GetVoiceRange()`, `IsCallActive()`, `IsInParty()`, `IsMuted()`, `IsPlayerTalking(sid)`, `IsRadioMuted()`, `IsRadioTalking()`, `SetCallActive(state)`, `SetMuteOverride(state, reason)`, `SetRadioMuted(state)`, `SetRadioSignal(q)`, `SetRadioVolume(v)`, `SetVoiceRangeIndex(i)`
+**client:** `GetPartyMembers()`, `GetRadio()`, `GetRadioKeyLabel()`, `GetRadioSignal()`, `GetRadioTalkKey()`, `GetRadioVolume()`, `GetVoiceRange()`, `IsCallActive()`, `IsInParty()`, `IsMuted()`, `IsPlayerTalking(sid)`, `IsRadioMuted()`, `IsRadioTalking()`, `SetCallActive(state)`, `SetMuteOverride(state, reason)`, `SetRadioInputBlocked(state)`, `SetRadioMuted(state)`, `SetRadioSignal(q)`, `SetRadioVolume(v)`, `SetVoiceRangeIndex(i)`, `TestRadioIncoming()`
 
 ## Net events registered
 
@@ -32,7 +32,7 @@ Has NUI (`ui_page`).
 
 ## Commands (RegisterCommand)
 
-**client:** `/+rsgvoice_radio`, `/-rsgvoice_radio`
+**client:** `/+`, `/-`
 
 ## Database tables
 

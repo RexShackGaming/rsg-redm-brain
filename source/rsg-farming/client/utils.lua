@@ -87,13 +87,6 @@ function Utils.place(model, check)
     return res.coords, res.heading
 end
 
-function Utils.inBlockedZone(coords)
-    for _, z in ipairs(Config.NoPlantZones or {}) do
-        if #(coords - z.coords) <= z.radius then return true end
-    end
-    return false
-end
-
 ---------------------------------
 -- scenarios
 ---------------------------------
@@ -103,40 +96,67 @@ local function snapshotObjects()
     return set
 end
 
--- removes props a scenario spawned (bucket, feed bag, tools) whether still held or dropped
-local function cleanupScenarioProps(ped, before)
+local function removeObject(obj, ped)
+    if not DoesEntityExist(obj) then return end
+    if IsEntityAttachedToEntity(obj, ped) then DetachEntity(obj, true, true) end
+    SetEntityAsMissionEntity(obj, true, true)
+    DeleteObject(obj)
+    if DoesEntityExist(obj) then DeleteEntity(obj) end
+end
+
+-- 'sweep' mode (old behaviour): removes any new object that is attached to the ped or within 3 m of it
+local function sweepScenarioProps(ped, before)
     local myId = PlayerId()
     local pedPos = GetEntityCoords(ped)
     for _, obj in ipairs(GetGamePool('CObject')) do
         if not before[obj] and not Utils.ownProps[obj] and DoesEntityExist(obj) then
-            local attached = IsEntityAttachedToEntity(obj, ped)
             local nearMine = #(GetEntityCoords(obj) - pedPos) < 3.0
                 and (not NetworkGetEntityIsNetworked(obj) or NetworkGetEntityOwner(obj) == myId)
-            if attached or nearMine then
-                if attached then DetachEntity(obj, true, true) end
-                SetEntityAsMissionEntity(obj, true, true)
-                DeleteObject(obj)
-                if DoesEntityExist(obj) then DeleteEntity(obj) end
+            if IsEntityAttachedToEntity(obj, ped) or nearMine then removeObject(obj, ped) end
+        end
+    end
+end
+
+-- 'tracked' mode: remembers new objects the moment they attach to the ped (bucket, feed bag, tools),
+-- so only those are removed afterwards and nothing else in the world is touched
+local function trackHeldProps(ped, before, held, isRunning)
+    while isRunning() do
+        for _, obj in ipairs(GetGamePool('CObject')) do
+            if not before[obj] and not held[obj] and not Utils.ownProps[obj] and IsEntityAttachedToEntity(obj, ped) then
+                held[obj] = true
             end
         end
+        Wait(200)
     end
 end
 
 -- plays a scenario with a progress bar, returns true if completed
 function Utils.playScenario(scenario, duration, label)
     local ped = PlayerPedId()
+    local tracked = Config.ScenarioCleanup ~= 'sweep'
     local before = snapshotObjects()
+    local held, running = {}, true
     TaskStartScenarioInPlaceHash(ped, joaat(scenario), -1, true, false, false, false)
+    if tracked then
+        CreateThread(function() trackHeldProps(ped, before, held, function() return running end) end)
+    end
     local ok = RSGCore.Functions.ProgressBar({
         duration = duration, label = label, useWhileDead = false, canCancel = true,
         disable = { move = true, combat = true, mount = true },
     })
     ClearPedTasks(ped, true, true)
-    Wait(1500) -- let the exit anim finish / drop the prop
+    Wait(Config.ScenarioExitWait or 1000) -- let the exit anim finish / drop the prop
     ClearPedTasksImmediately(ped)
-    cleanupScenarioProps(ped, before)
-    Wait(500)  -- second pass for props dropped late
-    cleanupScenarioProps(ped, before)
+    running = false
+    if tracked then
+        for obj in pairs(held) do removeObject(obj, ped) end
+        Wait(300) -- second pass for props dropped late
+        for obj in pairs(held) do removeObject(obj, ped) end
+    else
+        sweepScenarioProps(ped, before)
+        Wait(500)
+        sweepScenarioProps(ped, before)
+    end
     return ok
 end
 

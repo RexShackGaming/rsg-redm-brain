@@ -50,6 +50,10 @@ All are `exports['rsg-wellpump']:Name(...)`.
 | `GetMaxUses()` | number | `Config.BucketUses` |
 | `GetFillTime()` | number | `Config.FillTime` in ms (for rate limits in your own script) |
 | `GetPumps()` | list | Every placed pump as `{ id, x, y, z, h }` (no owner) |
+| `GetPump(id)` | table or nil | `{ id, x, y, z, h, water }` for one pump (no owner) |
+| `GetNearestPump(coords, maxDistance?)` | table or nil | Nearest pump within `maxDistance` (default `Config.Sprinkler.MaxLinkDistance`), with `water` and `distance` |
+| `GetPumpWater(id)` | number | Water units left in the pump's reservoir (0 when missing or `Config.Sprinkler.Enabled = false`) |
+| `DrawWater(id, amount)` | `ok, drawn` | Takes up to `amount` units from the reservoir (partial draws allowed). The reservoir refills `Config.Sprinkler.RefillPerMinute` per minute up to `Capacity`, is kept in memory and starts full after a restart. **Does not check distance or ownership: do that in your own script** |
 | `IsNearPump(src, distance?)` | bool | Whether the player is within `distance` (default `Config.InteractDist + 2`) of any pump |
 
 ## 5. Client exports
@@ -140,5 +144,8 @@ On start, for each entry in `Config.Migration.Sources` whose table exists and is
 | No Fill / Pack option | `rsg-target` must start before rsg-wellpump; you must be within `InteractDist`; Pack is owner-only while `OwnerOnlyPackup = true` |
 | Drink option does nothing | You are above `Config.Drink.notThirstyAbove`, or still in the cooldown; your HUD must handle `hud:client:UpdateThirst` |
 | Old pumps are missing | Check the console for the import line on first start; the old tables must exist and `Config.Migration.Enabled` must be `true` |
+
+## 12. Changelog
+- **3.1.0**: water supply exports (`GetPump`, `GetNearestPump`, `GetPumpWater`, `DrawWater`) and `Config.Sprinkler`, used by rsg-farming sprinklers.
 
 Support: https://rexshack.tebex.store

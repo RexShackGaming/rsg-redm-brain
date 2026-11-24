@@ -65,5 +65,7 @@
     "ui_party_share": "Udostępnij punkt",
     "ui_radio": "RADIO",
     "ui_radio_key": "Nadawanie przez radio (przytrzymaj)",
+    "key_cycle": "Zmień zasięg głosu",
+    "key_party": "Głos drużyny (przytrzymaj)",
     "cl_radio_timeout": "Osiągnięto limit nadawania (%s s), puść klawisz"
 }

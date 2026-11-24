@@ -33,10 +33,10 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-drugs](rsg-drugs.md) | Drug production for RSG Framework (cannabis lab: drying, processing, packing bags & bricks with hired crew) pl | 9 | 18 |
 | [rsg-economy](rsg-economy.md) | Regional treasuries, taxes, supply-and-demand prices and town projects for RSG Framework | 20 | 1 |
 | [rsg-essentials](rsg-essentials.md) | Quality-of-life utilities and fixes for RedM using RSG Core. > A collection of small but essential feature | 0 | 9 |
-| [rsg-factory](rsg-factory.md) | Version 3.1.0 · Requires: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` · Optional: `rsg-telegram`, | 0 | 3 |
-| [rsg-farming](rsg-farming.md) | Plant, water, fertilise and harvest crops anywhere in the world, using the water buckets from rsg-wellpump. Bu | 0 | 7 |
+| [rsg-factory](rsg-factory.md) | Version 3.2.0 · Requires: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` · Optional: `rsg-telegram`, | 0 | 4 |
+| [rsg-farming](rsg-farming.md) | Plant, water, fertilise and harvest crops anywhere in the world, using the water buckets from rsg-wellpump. Bu | 0 | 11 |
 | [rsg-fireworks](rsg-fireworks.md) | Firework script for RSG Framework | 0 | 11 |
-| [rsg-fishing](rsg-fishing.md) | Fishing for RSG-Core (RedM), version 3.1.0. Full technical reference: [DOCS.md](DOCS.md). Players equip a  | 0 | 3 |
+| [rsg-fishing](rsg-fishing.md) | Fishing for RSG-Core (RedM), version 3.2.0. Full technical reference: [DOCS.md](DOCS.md). Players equip a  | 0 | 4 |
 | [rsg-fishmonger](rsg-fishmonger.md) | A fishmonger system for RSG-Core (RedM). Players visit a fishmonger NPC in any major town to sell their  | 0 | 1 |
 | [rsg-fortuneteller](rsg-fortuneteller.md) | Fortune teller machines for RSG-Core | 0 | 0 |
 | [rsg-gangs](rsg-gangs.md) | Gang System for RSG Framework | 10 | 66 |
@@ -96,11 +96,11 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-trams](rsg-trams.md) | rsg-trams - Saint Denis trolley network (one trolley per track) | 0 | 3 |
 | [rsg-trapdoors](rsg-trapdoors.md) | Version 2.1.0 · Full developer reference: [DOCS.md](DOCS.md) Synced, animated trapdoors for RSG-Core (Re | 1 | 1 |
 | [rsg-treasure](rsg-treasure.md) | Treasure map hunting for RSG Framework | 1 | 5 |
-| [rsg-voice](rsg-voice.md) | rsg-voice - proximity voice for RSG Framework | 26 | 16 |
+| [rsg-voice](rsg-voice.md) | rsg-voice - proximity voice for RSG Framework | 29 | 16 |
 | [rsg-wagons](rsg-wagons.md) | rsg-wagons - wagon store with full NUI catalogue, 3D preview and wagon ownership | 2 | 8 |
 | [rsg-wardrobe](rsg-wardrobe.md) | Version 3.2.0 · RSG Framework (RedM) Take individual clothing items off and put them back on from a wardro | 9 | 9 |
 | [rsg-weaponcomp](rsg-weaponcomp.md) | Weapon customisation for RSG Framework (RedM). Players place a portable gunsmith workbench, then use it to | 1 | 18 |
 | [rsg-weapons](rsg-weapons.md) | Weapon handling for RSG Framework: dual wield, serial-based equipping, weapon wear, repairs, saved loadouts  | 6 | 14 |
 | [rsg-weather](rsg-weather.md) | rsg-weather - time, weather and wind sync for RSG Framework (weathersync compatible) | 16 | 15 |
-| [rsg-wellpump](rsg-wellpump.md) | Well pumps for RSG Framework: place, fill buckets, pack up, and shared bucket API | 13 | 4 |
+| [rsg-wellpump](rsg-wellpump.md) | Well pumps for RSG Framework: place, fill buckets, pack up, and shared bucket API | 17 | 4 |
 | [rsg-zonenotify](rsg-zonenotify.md) | rsg-zonenotify - location banner when entering states, districts and towns | 8 | 4 |

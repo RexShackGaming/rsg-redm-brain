@@ -1,4 +1,4 @@
-# rsg-voice – Docs (v3.2.0)
+# rsg-voice – Docs (v3.4.0)
 
 ## Contents
 1. Files
@@ -40,7 +40,9 @@ Proximity voice on RedM's native Mumble voice.
 | Option | Default | Meaning |
 |---|---|---|
 | `Ranges` | list | `{ name, range, default? }` |
-| `CycleKey` / `CycleCommand` | `]` / `'voice'` | Change range |
+| `UseKeyMapping` | `true` | Range key and party talk key are bound by name through rsg-core `RegisterKey` (rebindable in the game's key settings). `false` = poll the control hashes |
+| `CycleKeyName` / `CycleKey` / `CycleCommand` | `'RBRACKET'` / `0xA5BDCD3C` (fallback) / `'voice'` | Change range |
+| `AllowPushToTalkWhileOpen` / `PushToTalkControls` | `true` / `{ 0x4BC9DABB }` | Keep push-to-talk working while the party menu, an invite or the HUD editor is open |
 | `SaveRange` | `true` | Remember last range (client KVP) |
 | `ShowRangeRing`, `RingDuration`, `RingColour` | | Ground ring |
 | `ShowHud`, `HudEditCommand`, `HudToggleCommand` | `true`, `voicehud`, `togglevoicehud` | HUD |
@@ -53,7 +55,7 @@ Proximity voice on RedM's native Mumble voice.
 | `Radio` | table | `Enabled`, `UseKeyMapping` (`true`), `Key` (`'O'`), `TalkKey` (`0xF1301666`, fallback), `NearbyHear` (`true`), `MaxMembers` (`64`), `Debug` (`false`), `Static` (`Enabled`, `Volume` 0.3, `Hiss`, `Squelch`, `SelfHiss`) |
 | `Radio.MaxTransmitSeconds` / `Radio.TransmitCooldown` | `0` / `3` | Longest single transmission (0 = unlimited) and the wait after hitting it |
 | `Priority` | table | `RadioVsParty` (`'first'`, `'radio'`, `'party'`) and `Call` (`Enabled`, `BlockRadioTransmit`, `BlockPartyTransmit`, `MuteIncomingRadio`, `MutePartyVoice`), see [Priority](#priority) |
-| `Party` | table | `Enabled`, `Command`, `TalkKey`, `TalkRange` (100), `InviteRange` (10), `MaxMembers` (8), `InviteTimeout` (30), `Blips`, `Waypoint` |
+| `Party` | table | `Enabled`, `Command`, `Key` (`'LBRACKET'`), `TalkKey` (control hash, used only when `UseKeyMapping = false`), `TalkRange` (100), `InviteRange` (10), `MaxMembers` (8), `InviteTimeout` (30), `Blips`, `Waypoint` |
 
 ## 4. Exports, events and commands
 ### Client exports
@@ -68,9 +70,12 @@ Proximity voice on RedM's native Mumble voice.
 | `GetRadio()` | `{ freq, members = { serverId, ... } }` or nil |
 | `IsRadioTalking()` | bool, true while the transmit key is held |
 | `GetRadioTalkKey()` | Control hash of the transmit key (keep it enabled in your own NUI) |
+| `GetRadioKeyLabel()` | Default transmit key name (`'O'`) for hints, `nil` when `Config.Radio.UseKeyMapping = false` |
+| `SetRadioInputBlocked(state)` | `true` while a text box in another UI has focus: the transmit key does not key the mic until you call it with `false` (rsg-radio does this) |
 | `SetRadioVolume(v)` / `GetRadioVolume()` | Radio volume for this player, `0.0`-`1.0` (rsg-radio sets it from the saved settings) |
 | `SetRadioMuted(state)` / `IsRadioMuted()` | Mute incoming radio (transmitting still works) |
 | `SetRadioSignal(q)` / `GetRadioSignal()` | Radio signal `0.0`-`1.0`: scales incoming radio, `0.0` also blocks transmitting |
+| `TestRadioIncoming()` | Plays a simulated incoming radio transmission (about 2.5 s) at the live radio gain (volume x signal; silent when muted, no signal or in a call). Returns `{ gain, volume, signal, muted, call, reason }`, `reason` being `'muted'`, `'signal'`, `'call'` or nil. rsg-radio's play button and `/radiotest` call it. With `Config.Radio.Debug` it also prints the values in F8 |
 | `SetCallActive(state)` / `IsCallActive()` | A phone call is running (rsg-telephone). Applies `Config.Priority.Call` |
 
 ### Priority
@@ -143,7 +148,7 @@ Radio membership can only be changed by server scripts (there is no client event
 | Can't talk after unmute | Check `MuteWhenDead`/`MuteWhenCuffed` and `SetMuteOverride` calls |
 | HUD missing | `ShowHud`, or the player toggled it off |
 | Party invite fails | Target must be within `InviteRange` |
-| Can't hear the radio | The player must be on a channel (`GetPlayerRadio`), not muted, and the transmitter must hold `Config.Radio.TalkKey` |
+| Can't hear the radio | The player must be on a channel (`GetPlayerRadio`), not muted, and the transmitter must hold the radio key (`Config.Radio.Key`, rebindable; `TalkKey` only when `UseKeyMapping = false`) and no text box in rsg-radio may have focus |
 | No radio static | `Config.Radio.Static.Enabled`, `Volume`, and that the HUD page is loaded (the page must be running; it is the same page as the voice HUD) |
 | Radio drops after restarting rsg-voice | Channels live in memory; the joining resource must call `JoinRadio` again (`rsg-radio` does this) |
 
@@ -177,7 +182,11 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 |---|---|---|
 | `Config.AutoDatabase` | `true` | build the database tables automatically on start (set false and import the SQL file for a manual install) |
 | `Config.Ranges` | `table` | Voice ranges (metres). The entry with default = true is used on spawn. |
-| `Config.CycleKey` | `0xA5BDCD3C` | RIGHTBRACKET |
+| `Config.UseKeyMapping` | `true` | range and party keys through rsg-core `RegisterKey` |
+| `Config.CycleKeyName` | `'RBRACKET'` | default key for the range key |
+| `Config.CycleKey` | `0xA5BDCD3C` | RIGHTBRACKET, only used when `UseKeyMapping = false` |
+| `Config.AllowPushToTalkWhileOpen` | `true` | keep push-to-talk while a voice window is open |
+| `Config.PushToTalkControls` | `{ 0x4BC9DABB }` | controls left enabled while a voice window is open |
 | `Config.CycleCommand` | `'voice'` |  |
 | `Config.SaveRange` | `true` | remember each player's last range between sessions (client KVP) |
 | `Config.ShowRangeRing` | `true` | Ground ring shown when changing range |
@@ -209,7 +218,8 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.RadioColour` | `{ r = 111, g = 191, b = 115, a = 230 }` | Speaker icon colour for radio transmitters |
 | `Config.Party` | `table` | Party members within TalkRange hear each other while holding the party talk key. |
 | `Config.Command` | `'party'` |  |
-| `Config.TalkKey` | `0x430593AA` |  |
+| `Config.Key` | `'LBRACKET'` | default party talk key (key mapping) |
+| `Config.TalkKey` | `0x430593AA` | fallback control hash, only used when `Config.UseKeyMapping = false` |
 | `Config.TalkRange` | `100.0` |  |
 | `Config.InviteRange` | `10.0` |  |
 | `Config.MaxMembers` | `8` |  |
@@ -246,6 +256,8 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `GetRadio` | `` | `client/client.lua` |
 | `IsRadioTalking` | `` | `client/client.lua` |
 | `GetRadioTalkKey` | `` | `client/client.lua` |
+| `GetRadioKeyLabel` | `` | `client/client.lua` |
+| `SetRadioInputBlocked` | `state` | `client/client.lua` |
 
 ```lua
 -- example

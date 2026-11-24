@@ -1,6 +1,6 @@
 # rsg-factory
 
-**Version 3.1.0** · Requires: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` · Optional: `rsg-telegram`, `rsg-society`
+**Version 3.2.0** · Requires: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` · Optional: `rsg-telegram`, `rsg-society`
 
 Admin-built factories for the RSG Framework. An admin stands where the factory NPC should be, runs `/createfactory`, and then defines production lines in an NUI: which items go in, which items come out, and how long it takes. Players buy a factory at its NPC and become its owner. The owner keeps it stocked with fuel (wood or coal) and water, and every production line burns some of both. Anyone can then use the factory to start production, wait, and collect.
 
@@ -16,17 +16,23 @@ See [DOCS.md](DOCS.md) for the full developer and server-owner documentation.
 - **Fuel and water:** only the owner can add them (wood `resource_wood`, coal `resource_coal`, water `fullbucket`). Each line has its own fuel and water cost per batch; production cannot start without enough of both in the factory's stock
 - **Owner panel** (a tab in *Use Factory*, owners only):
   - **Earnings:** the owner sets a fee per batch that other players pay; it builds up in the factory and is withdrawn here
-  - **Access:** everyone, trusted workers only, or owner only; pick trusted workers from a searchable player list (online players first, then a database search of every character, so offline players work too) and remove them again
+  - **Access:** everyone, trusted workers only, or owner only; pick trusted workers from a searchable list of the players standing at the factory (nobody can be added without being there) and remove them again
   - **Staffing:** optionally require the owner or a trusted worker to be online before anyone can start production
   - **Pause:** the owner can pause and resume production
   - **Upgrades:** storage tanks (more fuel/water capacity) and faster production (shorter times), bought with cash
   - **Breakdowns:** each production start has a small chance to break the factory; it can't start new runs until the owner repairs it (cash, or an item if you configure one). Running and finished products are never lost
-  - **Sell or transfer:** sell back for a percentage of the price (earnings are paid out), or hand it to a nearby online player picked from the list, who accepts with `/acceptfactory`
+  - **Sell or transfer:** sell back for a percentage of the price you **paid** plus a share of what you spent on upgrades (earnings are paid out), or hand it to a nearby online player picked from the list, who accepts with `/acceptfactory`. The supply stash must be empty to sell; the next owner starts at upgrade level 0
+  - **Worker wages:** set a wage per batch for trusted workers; it is paid from the factory's society account (nothing is paid when the account is empty)
+  - **Supply stash:** an rsg-inventory stash at the factory. Wood, coal and full buckets put in it refill the fuel and water tanks by themselves when a run needs them (and when stock runs low)
+  - **Activity:** the last runs (who, which line, batches, fee) and the top users of the last 7 days
+- **Fee discounts:** trusted workers pay no fee (`Config.Fees.TrustedDiscount`); `Config.Fees.JobDiscounts` gives other jobs a % off
+- **Repeat last run:** one button starts your previous line with the same batch count again
+- **Ready blip:** a factory where you have finished products to collect gets its own blip colour and a "(ready)" label, even if you don't own it
 - **rsg-society:** every new factory gets its own job (`factory_<id>`) and society the moment `/createfactory` runs. The owner becomes boss, trusted workers get the first grade, and the owner's earnings are the society account (treasury, members, ranks, storage and audit in the society menu). Selling or transferring the factory moves the people on; deleting it closes the society. Optional: without rsg-society the factory works as before
 - **Alerts and delivery:** finished products are delivered straight to the player's inventory when they're online and have room (otherwise they get a "ready" notice, or a telegram if offline). The owner gets low fuel/water warnings and breakdown alerts, by telegram when offline (needs `rsg-telegram`, skipped if it isn't running)
 - **Movable, fitted window:** the panel sizes itself to its content (wider for the admin editor); drag the header to move it anywhere on screen and double-click the header to recentre it
 - **Item pictures:** recipes, the queue, supplies and the admin item picker show each item's picture from rsg-inventory (falls back to the item's first letter if an image is missing)
-- **Map blips:** green for factories you own, default colour for ones for sale
+- **Map blips:** green for factories you own, default colour for ones for sale, a third colour for factories with products ready for you
 - The Produce row shows the fuel and water a line will burn and is disabled when a single line can't be afforded
 - Players pick a line and a batch count; inputs are taken and production runs in real time
 - Production keeps running while the player is offline and survives restarts; collect any time at the NPC
@@ -70,15 +76,19 @@ See [DOCS.md](DOCS.md) for the full developer and server-owner documentation.
 | `MaxSupplyAtOnce` | `100` | Items an owner can add in one go |
 | `ImagePath` | `nui://rsg-inventory/html/images/` | Where item pictures are loaded from (`<item image>` from rsg-core, else `<item>.png`) |
 | `Supplies` | wood, coal, water | Items the owner can add: `key`, `item`, `stock` (`'fuel'`/`'water'`), `units` per item, optional `returnItem` |
-| `Fees.MaxPerBatch` | `500` | Highest fee per batch an owner can charge |
-| `SellbackPercent` | `60` | % of the price an owner gets when selling back |
+| `Fees` | `500`, `100`, `{}` | `MaxPerBatch` (highest fee per batch), `TrustedDiscount` (% off for trusted workers), `JobDiscounts` (`{ jobname = percent }`, best discount applies) |
+| `SellbackPercent` | `60` | % of the price the owner **paid** that comes back when selling |
+| `SellbackUpgradePercent` | `50` | % of the money spent on upgrades that comes back on a sale |
+| `Wages` | enabled, `50` | `Enabled`, `MaxPerBatch` (highest wage per batch an owner can set; needs rsg-society with `EarningsToSociety`) |
+| `Stash` | enabled | `Enabled`, `Slots` (`20`), `MaxWeight` (`100000`) of the owner's supply stash |
+| `Log` | `30`, `7`, `10` | `KeepDays` (log is pruned), `ReportDays` (top users window), `Entries` (rows shown) |
 | `TransferExpiry` | `60` | Seconds to accept a transfer |
 | `TrustedMax` | `8` | Trusted workers per factory |
 | `Upgrades.tank` / `Upgrades.speed` | see file | `maxLevel`, `cost` (next level costs `cost * (level + 1)`), tank `bonus` capacity per level, speed `percent` shorter per level |
 | `Breakdown` | enabled, `2.0`% | `enabled`, `chance` (% per production start), `repairCost` (cash) or `repairItem` (item name; leave `nil` unless the item exists on your server) |
 | `AutoDeliver` | `true` | Deliver finished products straight to online players with room |
 | `Alerts` | see file | `interval` (s), `ready`, `telegram`, `lowStockPercent`, `lowStockCooldown` |
-| `Blips` | enabled | `sprite` (`blip_shop_blacksmith`), `scale`, `mineColor`, `saleColor`, `showOwnedByOthers` |
+| `Blips` | enabled | `sprite` (`blip_shop_blacksmith`), `scale`, `mineColor`, `saleColor`, `readyColor`, `showOwnedByOthers` |
 | `MaxRecipes` | `20` | Production lines per factory |
 | `MaxItemsPerRecipe` | `6` | Distinct inputs and distinct outputs per line |
 | `MaxAmount` | `1000` | Max amount of one item in a line |
@@ -95,14 +105,14 @@ See [DOCS.md](DOCS.md) for the full developer and server-owner documentation.
 ## Notes
 - The default NPC model could not be checked against the RedM brain while writing this; if it does not spawn on your build, change the model in the editor or `Config.DefaultPedModel`.
 - Chains: a linked line must make at least one item the next line uses, and loops are not allowed. The next line runs as many batches as the previous line's output can feed (so batches may need to be higher if a line makes less than the next one needs). Inputs the next line needs that the previous line doesn't make are taken at the start, and surplus or by-products are paid out with the final products.
-- Deleting a factory also deletes productions still running there.
+- Deleting a factory: products queued for players who are online are handed to them first. If anything would still be lost (offline players' products, items in the supply stash) the admin is told how many and has to delete again within 60 seconds to confirm. Deleting is refused while the owner is offline and the factory's earnings account holds money.
 - Fuel and water used is `fuel`/`water` per batch of each stage times the batches that stage runs, taken from the factory's stock when production starts.
 - Coal counts as 3 fuel units and wood as 1; a full bucket adds 10 water units (see `Config.Supplies`). Each full bucket used gives the owner an empty `bucket` back (`returnItem` on the water supply; remove it to give nothing back).
 - Existing factories keep working after the update: they become unowned and for sale at 5000 (set the real price in the editor), their lines default to 1 fuel and 1 water per batch, and the new columns are added automatically.
-- Selling back pays `SellbackPercent` of the price plus any earnings, clears the owner and the factory's fuel and water, and resets fee, access, staffing, pause and trusted workers. Upgrades and breakdown state stay with the factory.
+- Selling back pays `SellbackPercent` of the price the owner paid (the purchase price is stored per factory; older factories use the current price), `SellbackUpgradePercent` of the upgrade money and any earnings. It clears the owner, the factory's fuel and water and the activity log, and resets fee, wage, access, staffing, pause, trusted workers and upgrades. Breakdown state stays with the factory. The owner's supply stash must be empty first.
 - A transfer hands over the factory with its stock and settings (trusted workers are cleared); earnings are paid to the previous owner, who must still be online.
 - Fees are charged to other players only, per batch, and refunded if the start fails. Productions already running keep the time they were started with; speed upgrades apply to new runs.
-- Existing databases get the new columns (`bank`, `settings`, `notified`) automatically; nothing is removed.
+- Existing databases get the new columns (`bank`, `settings`, `notified`, `paid`), the `rsg_factory_log` table and the `idx_finish` index automatically; nothing is removed.
 - Auto delivery only pays rows whose products all fit; anything that doesn't fit stays ready to collect at the NPC.
 
 Support: https://rexshack.tebex.store

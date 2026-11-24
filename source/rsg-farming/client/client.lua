@@ -3,6 +3,7 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 local Plants   = {}   -- [id] = plant data from server (no citizenid)
 local Mine     = {}   -- [id] = true for plants this character owns (sent by the server)
 local Spawned  = {}   -- [id] = { entity, stage, dead, zone }
+local Blips    = {}   -- [id] = map blip for plants this character can tend
 local UIPlant  = nil  -- id of plant open in the UI
 local GpsPlant = nil  -- id of plant we are routing to
 
@@ -26,6 +27,33 @@ local function clearGps()
     end
 end
 
+---------------------------------
+-- map blips (Config.Blips): one per plant you can tend
+---------------------------------
+local function removeBlip(id)
+    local b = Blips[id]
+    if b and DoesBlipExist(b) then RemoveBlip(b) end
+    Blips[id] = nil
+end
+
+local function refreshBlips()
+    local cfg = Config.Blips
+    for id in pairs(Blips) do
+        if not (cfg.enabled and Mine[id] and Plants[id]) then removeBlip(id) end
+    end
+    if not cfg.enabled then return end
+    for id in pairs(Mine) do
+        local p = Plants[id]
+        if p and not Blips[id] and Config.Crops[p.crop] then
+            local blip = Citizen.InvokeNative(0x554D9D53F696D002, 1664425300, p.x, p.y, p.z) -- BlipAddForCoords
+            SetBlipSprite(blip, joaat(cfg.sprite), true)
+            SetBlipScale(blip, cfg.scale or 0.4)
+            Citizen.InvokeNative(0x9CB1A1623062F402, blip, locale('blip_plant', Config.Crops[p.crop].label)) -- SetBlipName
+            Blips[id] = blip
+        end
+    end
+end
+
 local function closeUI()
     UIPlant = nil
     Utils.setNuiFocus(false)
@@ -37,7 +65,7 @@ end
 ---------------------------------
 local UI_KEYS = {
     'ui_my_plants', 'ui_close', 'ui_back', 'ui_growth', 'ui_water', 'ui_fertiliser', 'ui_health',
-    'ui_stage', 'ui_withered', 'ui_dead', 'ui_ready', 'ui_needs_water', 'ui_thirsty', 'ui_growing',
+    'ui_stage', 'ui_soil', 'ui_withered', 'ui_dead', 'ui_ready', 'ui_needs_water', 'ui_thirsty', 'ui_growing',
     'ui_btn_water', 'ui_btn_fertilise', 'ui_btn_harvest', 'ui_btn_remove', 'ui_btn_treat', 'ui_pests', 'ui_note_pests', 'ui_my_crops',
     'ui_plant_count', 'ui_plants_count', 'ui_note_dead', 'ui_note_ready', 'ui_note_dry',
     'ui_note_minute', 'ui_note_minutes', 'ui_note_fertilised', 'ui_not_yours', 'ui_empty', 'ui_away',
@@ -65,6 +93,7 @@ local function uiPayload(p, pedPos)
         ownerOnly = Config.OwnerOnlyHarvest,
         remaining = p.eta or 0, -- worked out by the server (season, fertiliser and pests included)
         pest = p.pest == true,
+        soil = p.soil, -- nil when Config.Soil.enabled = false
         pestsEnabled = Config.Pests.enabled,
         thirsty = p.water <= Config.MinWaterToGrow,
         distance = math.floor(#((pedPos or GetEntityCoords(PlayerPedId())) - plantPos(p))),
@@ -154,6 +183,7 @@ local function applySync(list, mine)
     Mine = {}
     for _, id in ipairs(mine or {}) do Mine[id] = true end
     if GpsPlant and not Plants[GpsPlant] then clearGps() end
+    refreshBlips()
     refreshUI()
 end
 
@@ -171,6 +201,7 @@ end)
 RegisterNetEvent('rsg-farming:client:plantRemove', function(id)
     Plants[id] = nil
     Mine[id] = nil
+    removeBlip(id)
     despawn(id)
     if GpsPlant == id then clearGps() end
     if UIPlant == id then closeUI() end
@@ -178,6 +209,7 @@ end)
 
 RegisterNetEvent('rsg-farming:client:plantMine', function(id)
     Mine[id] = true
+    refreshBlips()
 end)
 
 local function loadPlants()
@@ -192,6 +224,7 @@ RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
     clearGps()
     for id in pairs(Spawned) do despawn(id) end
     Plants, Mine = {}, {}
+    refreshBlips()
 end)
 
 CreateThread(function()
@@ -227,31 +260,32 @@ end)
 
 ---------------------------------
 -- [G] prompt interaction (only when rsg-target is disabled)
+-- The key is rebindable through rsg-core RegisterKey (Config.UseKeyMapping); the old control
+-- polling is kept as the fallback when Config.UseKeyMapping = false.
 ---------------------------------
 if not Config.UseTarget then
+    local nearest = nil
+
+    -- nearest plant + on-screen text (no control polling here, so a slow loop is enough)
     CreateThread(function()
         local shown = false
         while true do
-            local sleep = 750
-            local pos = GetEntityCoords(PlayerPedId())
-            local nearest, nearestDist = nil, Config.InteractDistance
-
+            local sleep = 500
+            nearest = nil
             if not UIPlant and Utils.canAct() then
+                local pos = GetEntityCoords(PlayerPedId())
+                local nearestDist = Config.InteractDistance
                 for id, p in pairs(Plants) do
                     local d = #(pos - plantPos(p))
-                    if d < 10.0 then sleep = 0 end
+                    if d < 10.0 then sleep = 150 end
                     if d < nearestDist then nearest, nearestDist = id, d end
                 end
             end
 
             if nearest then
                 if shown ~= nearest then
-                    exports['rsg-core']:DrawText(locale('tend_plant', Config.Crops[Plants[nearest].crop].label), 'left')
+                    exports['rsg-core']:DrawText(locale('tend_plant', Config.InteractKeyName, Config.Crops[Plants[nearest].crop].label), 'left')
                     shown = nearest
-                end
-                if IsControlJustReleased(0, Config.InteractKey) then
-                    exports['rsg-core']:HideText(); shown = false
-                    openUI(nearest)
                 end
             elseif shown then
                 exports['rsg-core']:HideText(); shown = false
@@ -259,6 +293,27 @@ if not Config.UseTarget then
             Wait(sleep)
         end
     end)
+
+    local function tendNearest()
+        if not nearest or UIPlant or not Utils.canAct() then return end
+        exports['rsg-core']:HideText()
+        openUI(nearest)
+    end
+
+    if Config.UseKeyMapping then
+        RSGCore.Functions.RegisterKey('rsgfarming_tend', locale('key_tend'), Config.InteractKeyName, tendNearest)
+    else
+        CreateThread(function()
+            while true do
+                if nearest then
+                    Wait(0)
+                    if IsControlJustReleased(0, Config.InteractKey) then tendNearest() end
+                else
+                    Wait(250)
+                end
+            end
+        end)
+    end
 end
 
 ---------------------------------
@@ -272,11 +327,14 @@ local ACTIONS = {
     destroy   = { cb = 'rsg-farming:server:destroy' },
 }
 
+local REOPEN = { water = true, fertilize = true, treat = true } -- tending actions that keep the plant
+
 local function runAction(name, id)
     local act, p = ACTIONS[name], Plants[id]
     closeUI()
     if not act or not p or not Utils.canAct() then return end
 
+    local reopen = false
     Utils.guard(function()
         local proceed = true
         if act.scenario then
@@ -292,10 +350,17 @@ local function runAction(name, id)
         if proceed then
             local ok, msg = RSGCore.Functions.AwaitCallback(act.cb, nil, id)
             Utils.notify(msg, ok and 'success' or 'error')
+            reopen = ok and Config.ReopenAfterAction and REOPEN[name] or false
         else
             Utils.notify(locale('cancelled'), 'error')
         end
     end)
+
+    -- back to the panel so the next tending step is one click (busy is cleared by now)
+    local np = Plants[id]
+    if reopen and np and #(GetEntityCoords(PlayerPedId()) - plantPos(np)) <= Config.InteractDistance + 1.0 then
+        openUI(id)
+    end
 end
 
 ---------------------------------
@@ -307,7 +372,8 @@ RegisterNetEvent('rsg-farming:client:startPlacing', function(cropKey)
 
     Utils.guard(function()
         local coords, heading = Utils.place(crop.stages[#crop.stages].prop, function(pos)
-            if Utils.inBlockedZone(pos) then return false, locale('place_blocked_zone') end
+            if Zones.blocked(pos) then return false, locale('place_blocked_zone') end
+            if not Zones.farmland(pos) then return false, locale('place_not_farmland') end
             local minSq = Config.MinPlantDistance * Config.MinPlantDistance
             for _, p in pairs(Plants) do
                 local dx, dy, dz = p.x - pos.x, p.y - pos.y, p.z - pos.z
@@ -398,6 +464,131 @@ end, false)
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     for id in pairs(Spawned) do despawn(id) end
+    for id in pairs(Blips) do removeBlip(id) end
     exports['rsg-core']:HideText()
     ClearGpsMultiRoute()
+end)
+
+---------------------------------
+-- scarecrows and sprinklers
+---------------------------------
+local PropList   = {}   -- [id] = { id, kind, x, y, z, h }
+local PropMine   = {}   -- [id] = true for props this character owns
+local PropSpawn  = {}   -- [id] = { entity, zone }
+
+local function propCfg(kind)
+    return kind == 'scarecrow' and Config.Scarecrow or kind == 'sprinkler' and Config.Sprinkler or nil
+end
+
+local function despawnProp(id)
+    local s = PropSpawn[id]
+    if not s then return end
+    if s.zone then exports['rsg-target']:removeZone(s.zone) end
+    Utils.deleteProp(s.entity)
+    PropSpawn[id] = nil
+end
+
+local function packProp(id)
+    if Utils.busy or not Utils.canAct() then return end
+    Utils.guard(function()
+        local pr = PropList[id]
+        if pr then Utils.face(pr.x, pr.y) end
+        if not Utils.playScenario(Config.Scenarios.plant, Config.PlantTime, locale('prop_placing')) then
+            return Utils.notify(locale('cancelled'), 'error')
+        end
+        local ok, msg = RSGCore.Functions.AwaitCallback('rsg-farming:server:packProp', nil, id)
+        Utils.notify(msg, ok and 'success' or 'error')
+    end)
+end
+
+local function spawnProp(pr)
+    local c = propCfg(pr.kind)
+    if not c then return end
+    local obj = Utils.spawnProp(c.model, pr.x, pr.y, pr.z, pr.h)
+    if not obj then return end
+    local zone
+    if Config.UseTarget then
+        zone = exports['rsg-target']:addSphereZone({
+            coords = vector3(pr.x, pr.y, pr.z + 0.8),
+            radius = Config.TargetRadius,
+            debug = Config.Debug,
+            options = {{
+                name = ('rsg_farming_prop_%s'):format(pr.id),
+                label = locale('target_pack_prop', locale('prop_' .. pr.kind)),
+                icon = Config.TargetIcon,
+                distance = Config.InteractDistance + 0.5,
+                canInteract = function() return PropMine[pr.id] == true and not Utils.busy end,
+                onSelect = function() packProp(pr.id) end,
+            }},
+        })
+    end
+    PropSpawn[pr.id] = { entity = obj, zone = zone }
+end
+
+RegisterNetEvent('rsg-farming:client:propAdd', function(pr)
+    if type(pr) == 'table' and pr.id then PropList[pr.id] = pr end
+end)
+
+RegisterNetEvent('rsg-farming:client:propRemove', function(id)
+    PropList[id], PropMine[id] = nil, nil
+    despawnProp(id)
+end)
+
+RegisterNetEvent('rsg-farming:client:propMine', function(id) PropMine[id] = true end)
+
+local function loadProps()
+    local list, mine = RSGCore.Functions.AwaitCallback('rsg-farming:server:getProps', nil)
+    for id in pairs(PropSpawn) do despawnProp(id) end
+    PropList, PropMine = {}, {}
+    for _, pr in ipairs(list or {}) do PropList[pr.id] = pr end
+    for _, id in ipairs(mine or {}) do PropMine[id] = true end
+end
+
+RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', loadProps)
+RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
+    for id in pairs(PropSpawn) do despawnProp(id) end
+    PropList, PropMine = {}, {}
+end)
+
+CreateThread(function()
+    Wait(1500)
+    loadProps()
+    while true do
+        local pos = GetEntityCoords(PlayerPedId())
+        for id, pr in pairs(PropList) do
+            local near = #(pos - vector3(pr.x, pr.y, pr.z)) <= Config.RenderDistance
+            local s = PropSpawn[id]
+            if near and (not s or not DoesEntityExist(s.entity)) then
+                despawnProp(id)
+                spawnProp(pr)
+            elseif not near and s then
+                despawnProp(id)
+            end
+        end
+        Wait(1500)
+    end
+end)
+
+RegisterNetEvent('rsg-farming:client:startPlacingProp', function(kind)
+    local c = propCfg(kind)
+    if not c or not Utils.canAct() then return end
+    Utils.guard(function()
+        local coords, heading = Utils.place(c.model, function(pos)
+            if Zones.blocked(pos) then return false, locale('place_blocked_zone') end
+            return true
+        end)
+        if not coords then return end
+        Utils.face(coords.x, coords.y)
+        if Utils.playScenario(Config.Scenarios.plant, Config.PlantTime, locale('prop_placing')) then
+            local ok, msg = RSGCore.Functions.AwaitCallback('rsg-farming:server:placeProp', nil, kind, coords, heading)
+            Utils.notify(msg, ok and 'success' or 'error')
+        else
+            Utils.notify(locale('cancelled'), 'error')
+        end
+    end)
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    for id in pairs(PropSpawn) do despawnProp(id) end
 end)

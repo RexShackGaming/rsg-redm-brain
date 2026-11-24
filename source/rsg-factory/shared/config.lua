@@ -39,8 +39,23 @@ Config.Supplies = {
 }
 
 -- Owner features
-Config.Fees = { MaxPerBatch = 500 }   -- highest fee per batch an owner can charge other players
-Config.SellbackPercent = 60           -- % of the factory price the owner gets when selling it back
+-- Fees: the owner charges other players a fee per batch (up to MaxPerBatch).
+-- TrustedDiscount = % off for the owner's trusted workers (100 = they run it free).
+-- JobDiscounts = % off per job name, the best discount applies, e.g. { sheriff = 50, blacksmith = 25 }
+Config.Fees = { MaxPerBatch = 500, TrustedDiscount = 100, JobDiscounts = {} }
+Config.SellbackPercent = 60           -- % of the price the owner PAID that comes back when selling the factory
+Config.SellbackUpgradePercent = 50    -- % of the money spent on upgrades that comes back as well (the next owner starts at level 0)
+
+-- Worker wages: the owner can set a wage per batch for trusted workers, paid from the factory's society account
+-- (needs rsg-society and Config.Society.EarningsToSociety). Nothing is paid when the account cannot cover it.
+Config.Wages = { Enabled = true, MaxPerBatch = 50 }
+
+-- Supply stash: the owner gets a storage (rsg-inventory stash) at the factory. Wood, coal and water buckets put in it
+-- (anything listed in Config.Supplies) refill the fuel and water tanks by themselves when a run needs them.
+Config.Stash = { Enabled = true, Slots = 20, MaxWeight = 100000 }
+
+-- Activity log shown on the owner's tab: last entries and the top users of the last ReportDays days.
+Config.Log = { KeepDays = 30, ReportDays = 7, Entries = 10 }
 Config.TransferExpiry = 60            -- seconds the receiver has to type /acceptfactory
 Config.TrustedMax = 8                 -- trusted workers per factory
 
@@ -72,6 +87,7 @@ Config.Blips = {
     scale = 0.2,
     mineColor = 'BLIP_MODIFIER_MP_COLOR_8',  -- factories you own
     saleColor = nil,                          -- factories for sale (default colour)
+    readyColor = 'BLIP_MODIFIER_MP_COLOR_2',  -- a factory where you have finished products to collect (shown even if it is not yours)
     showOwnedByOthers = false,
 }
 

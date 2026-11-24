@@ -79,10 +79,13 @@ No ox_lib and no ox_target are needed.
 | `Config.RenderDistance` | `60.0` | Prop spawn / despawn distance |
 | `Config.OwnerOnlyPackup` | `true` | Only the placer can pack a pump up |
 | `Config.TargetIcons` | droplet / box / glass | Target icons (`fill`, `pack`, `drink`) |
+| `Config.Sprinkler` | enabled | `Enabled`, `Capacity` (400 water units per pump), `RefillPerMinute` (40), `MaxLinkDistance` (60.0). Reservoir for sprinklers and irrigation (in memory, refills over time) |
 | `Config.Drink` | enabled | `enabled`, `time` (10000 ms), `cooldown` (20000 ms), `thirst` (`min` 40, `max` 70), `notThirstyAbove` (95), `scenarioMale`, `scenarioFemale` |
 | `Config.Migration` | enabled | One-time import from old pump tables |
 
 ## For developers
+
+Water supply (v3.1.0), for sprinklers and irrigation: `GetPump(id)`, `GetNearestPump(coords, maxDistance?)`, `GetPumpWater(id)` and `DrawWater(id, amount)` (server). See DOCS.md section 4.
 
 ```lua
 -- server: fill a bucket (you check access and distance first)

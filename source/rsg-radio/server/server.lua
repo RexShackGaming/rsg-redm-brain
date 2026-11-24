@@ -17,7 +17,7 @@ local dropped      = {} -- [src] = freq string dropped because the player was do
 local hogtied      = {} -- [src] = true while the client reports the player is hogtied
 local batt         = {} -- [src] = last known battery % of the player's radio (Config.Battery)
 local hogCooldown  = {} -- [src] = GetGameTimer() when the next hogtie report is accepted
-local setCooldown  = {} -- [src] = GetGameTimer() when the next mute save is accepted
+local setCooldown  = {} -- [src] = GetGameTimer() when the next volume/mute save is accepted
 local stateCooldown = {} -- [src] = GetGameTimer() when the next panel-open request is accepted
 local talkStart, talkAcc = {}, {} -- battery: transmit start time and accumulated transmit seconds per player
 local recheckPending = {} -- [src] = true while an access re-check is queued
@@ -298,6 +298,8 @@ local function buildState(src)
     end
 
     local rs = Player.PlayerData.metadata and Player.PlayerData.metadata.radiosettings
+    local vol = type(rs) == 'table' and tonumber(rs.vol) or tonumber(Config.Volume and Config.Volume.Default) or 50
+    vol = math.max(0, math.min(100, math.floor(vol + 0.5)))
     local muted = type(rs) == 'table' and rs.muted == true or false
     local battery = readBattery(src)
 
@@ -330,7 +332,7 @@ local function buildState(src)
         freq = freq, channels = list, reserved = reserved, count = members and #members or 0,
         favorites = favorites, maxFavorites = Config.MaxFavorites, priv = priv,
         recents = recents, ranges = rangeList, reservedRanges = rangeReserved,
-        muted = muted, battery = battery,
+        vol = vol, muted = muted, volStep = tonumber(Config.Volume and Config.Volume.Step) or 5, battery = battery,
         min = FREQ.Min, max = FREQ.Max, dec = DEC, unit = UNIT,
     }
 end
@@ -949,16 +951,19 @@ RegisterNetEvent('rsg-radio:server:hogtied', function(state)
     scheduleRecheck(src)
 end)
 
--- Radio mute (stored per character, applied by the client through rsg-voice). Volume comes from Config.Volume
-RegisterNetEvent('rsg-radio:server:setSettings', function(muted)
+-- Radio volume and mute (stored per character, applied by the client through rsg-voice)
+RegisterNetEvent('rsg-radio:server:setSettings', function(vol, muted)
     local src = source
     if rateLimit(setCooldown, src, 250) then return end
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player then return end
+    vol = tonumber(vol)
+    if not vol or vol ~= vol then return end
+    vol = math.max(0, math.min(100, math.floor(vol + 0.5)))
     muted = muted == true
     local cur = Player.PlayerData.metadata and Player.PlayerData.metadata.radiosettings
-    if type(cur) == 'table' and (cur.muted == true) == muted then return end -- unchanged: no write
-    Player.Functions.SetMetaData('radiosettings', { muted = muted })
+    if type(cur) == 'table' and tonumber(cur.vol) == vol and (cur.muted == true) == muted then return end -- unchanged: no write
+    Player.Functions.SetMetaData('radiosettings', { vol = vol, muted = muted })
 end)
 
 -- Battery: count the time spent transmitting (rsg-voice's own transmit event, sent by the client)

@@ -83,7 +83,8 @@ Config.AutoDatabase = true
 -- Seconds between checks that connected players still own the radio and still have access to their channel
 Config.CheckInterval = 10
 
--- Shown in the hint. Must match rsg-voice's Config.Radio.TalkKey.
+-- Shown in the hint when rsg-voice cannot tell the key (older rsg-voice, or Config.Radio.UseKeyMapping = false).
+-- With rsg-voice 3.3.1+ the hint uses rsg-voice's Config.Radio.Key automatically.
 Config.TransmitKeyLabel = 'O'
 
 -- While the radio is open, block game controls but allow push-to-talk and the radio transmit key.
@@ -147,9 +148,10 @@ Config.Interference = {
     },
 }
 
--- How loud incoming radio transmissions are for every player, in percent (0-100). Lower it if the radio is too loud.
--- Players can still mute the radio from the panel (saved per character), but there is no volume slider.
-Config.Volume = 50
+-- Radio volume slider and mute button in the panel (saved per character). Default is the volume a character starts
+-- with, in percent (0-100); Step is the slider step. Lower Default if the radio is too loud out of the box.
+-- TestCommand: chat command that plays a simulated incoming transmission at your volume ('' = no command; the panel button stays)
+Config.Volume = { Default = 50, Step = 5, Bleep = true, TestCommand = 'radiotest' } -- Bleep: short tone at the chosen volume while the slider moves
 
 -- Handheld radio: while the player transmits they hold a prop and play an animation, which nearby players can see.
 -- RDR2 has no radio model or radio animation. Set `Model` to a prop to hold one (megaphone p_cs_megaphone01x is the closest);

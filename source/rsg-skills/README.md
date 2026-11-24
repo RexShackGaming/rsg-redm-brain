@@ -2,7 +2,7 @@
 
 Framework-wide skills for the RSG Framework: one shared place for XP, levels, rank titles, perks and leaderboards, so hunting, mining, farming and every other script can use the same progression instead of each keeping its own.
 
-Version 3.0.0 · Requires `rsg-core` and `oxmysql` · No ox_lib, no target and no inventory dependency
+Version 3.0.1 · Requires `rsg-core` and `oxmysql` · No ox_lib, no target and no inventory dependency
 
 Full developer and server owner documentation is in [DOCS.md](DOCS.md).
 

@@ -10,8 +10,18 @@ Config.Ranges = {
     { name = 'trail',   range = 35.0 },
 }
 
-Config.CycleKey     = 0xA5BDCD3C -- RIGHTBRACKET
-Config.CycleCommand = 'voice'
+-- Keys: with UseKeyMapping the range key and the party talk key are bound by name through rsg-core RegisterKey, so players
+-- can rebind them in the game's key settings and nothing runs every frame. false = read the control hashes below instead.
+Config.UseKeyMapping = true
+Config.CycleKeyName  = 'RBRACKET'  -- default key for the range key (key mapping)
+Config.CycleKey      = 0xA5BDCD3C  -- RIGHTBRACKET, only used when UseKeyMapping = false
+Config.CycleCommand  = 'voice'
+
+-- While a voice window (party menu, invite, HUD editor) is open, block game controls but keep push-to-talk working.
+Config.AllowPushToTalkWhileOpen = true
+Config.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK (N)
+}
 Config.SaveRange    = true -- remember each player's last range between sessions (client KVP)
 
 -- Ground ring shown when changing range
@@ -63,7 +73,8 @@ Config.TalkIcon = {
 Config.Party = {
     Enabled      = true,
     Command      = 'party',      -- opens the party menu
-    TalkKey      = 0x430593AA,   -- hold to talk to your party (default: [ LEFTBRACKET)
+    Key          = 'LBRACKET',   -- hold to talk to your party (default key for the key mapping, [ )
+    TalkKey      = 0x430593AA,   -- LEFTBRACKET, only used when Config.UseKeyMapping = false
     TalkRange    = 100.0,        -- metres: party members further away than this can't hear party talk
     InviteRange  = 10.0,         -- metres: how close a player must be to be invited
     MaxMembers   = 8,            -- including the leader

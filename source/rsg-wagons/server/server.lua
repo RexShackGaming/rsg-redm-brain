@@ -672,6 +672,12 @@ RSGCore.Functions.CreateCallback('rsg-wagons:server:sellCargo', function(source,
         end
     end
 
+    -- rsg-hunting bulk bonus: a full load pays more (needs rsg-hunting 3.5.0+, Config.BulkBonus)
+    if cash > 0 and GetResourceState('rsg-hunting') == 'started' then
+        local ok, pct = pcall(function() return exports['rsg-hunting']:GetBulkBonus(#cargo) end)
+        if ok and tonumber(pct) and pct > 0 then cash = cash * (1 + pct / 100) end
+    end
+
     saveCargo(active, cart, row, {})
     cash = math.floor(cash * 100 + 0.5) / 100
     if cash > 0 then Player.Functions.AddMoney(HC.moneyType or 'cash', cash, 'rsg-wagons hunting cart') end

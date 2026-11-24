@@ -3,6 +3,11 @@
 All notable changes to rsg-reputation. Newest first.
 
 
+## 3.0.3
+
+### Added
+- New actions `fishing_discovery`, `fishing_record` and `fishing_master` in `Config.Actions`, used by rsg-fishing.
+
 ## 3.0.2
 
 ### Added

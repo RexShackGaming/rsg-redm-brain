@@ -19,7 +19,7 @@ html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden
              linear-gradient(160deg,var(--rdr-panel-2),var(--rdr-panel) 60%,var(--rdr-black));
   box-shadow:0 20px 60px var(--rdr-shadow),inset 0 0 40px rgba(0,0,0,.5);color:var(--rdr-text);
 }
-#radio{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:380px;max-height:92vh;overflow-y:auto;box-sizing:border-box;padding:18px 20px 20px;pointer-events:auto}
+#radio{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:380px;max-height:92vh;overflow-x:hidden;overflow-y:auto;box-sizing:border-box;padding:18px 20px 20px;pointer-events:auto}
 #radio::-webkit-scrollbar{width:4px}#radio::-webkit-scrollbar-thumb{background:var(--rdr-gold-dim)}
 .hdr{display:flex;align-items:center;justify-content:space-between;cursor:move}
 .hdr .cbtn{cursor:pointer}
@@ -67,14 +67,16 @@ html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden
 .wbtn:hover{border-color:var(--rdr-gold);filter:brightness(1.3)}
 .wbtn.mut{background:linear-gradient(180deg,#1c1c1c,#0a0a0a);color:var(--rdr-muted)}
 .wbtn:disabled{opacity:.45;cursor:not-allowed;filter:none}
-.list{display:flex;flex-direction:column;gap:6px;max-height:96px;overflow-y:auto}
+.list{display:flex;flex-direction:column;gap:6px;max-height:96px;overflow-x:hidden;overflow-y:auto}
 .list::-webkit-scrollbar{width:4px}.list::-webkit-scrollbar-thumb{background:var(--rdr-gold-dim)}
 .row{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:2px;border:1px solid rgba(201,162,75,.18);
      background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.15));transition:all .15s ease}
-.row:hover{border-color:var(--rdr-gold-dim);transform:translateX(2px)}
+.row{min-width:0;box-sizing:border-box;flex-shrink:0}
+.row:hover{border-color:var(--rdr-gold-dim);background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(0,0,0,.1))} /* no transform: it pushed rows past the list edge and made scrollbars appear */
+.row>.badge,.row>.wbtn,.row>.cbtn,.row>.pill{flex-shrink:0}
 .badge{min-width:30px;height:30px;padding:0 9px;box-sizing:border-box;border-radius:15px;border:1px solid var(--rdr-gold-dim);
        background:radial-gradient(circle,#2e2e2e,#0a0a0a);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
-.row .n{flex:1;font-size:14px;font-weight:500}
+.row .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:500}
 .empty{padding:8px 4px;font-size:12.5px;font-style:italic;color:var(--rdr-muted);text-align:center}
 .foot{margin-top:16px;text-align:center;font-size:11.5px;font-style:italic;color:var(--rdr-muted)}
 #admin{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:780px;max-width:96vw;max-height:92vh;display:flex;flex-direction:column;box-sizing:border-box;padding:18px 20px 16px;pointer-events:auto}
@@ -110,7 +112,10 @@ html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden
 /* volume, search, recents, compact, HUD */
 .pill.low{color:var(--rdr-cost-over);border-color:var(--rdr-cost-over)}
 .vol{display:flex;align-items:center;gap:10px;margin-top:10px}
-.vol .vv{text-align:left;font-size:12px;font-weight:600;color:var(--rdr-muted)}
+.vol.off input{opacity:.4}
+.vol input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:rgba(0,0,0,.45);border:1px solid var(--rdr-gold-dim);outline:none;cursor:pointer}
+.vol input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle,#fff,#9a9a9a);border:1px solid #000;cursor:pointer}
+.vol .vv{min-width:46px;text-align:right;font-size:12px;font-weight:600;color:var(--rdr-muted)}
 #search{display:block;width:100%;box-sizing:border-box;margin-top:14px;padding:6px 10px;font:400 12.5px 'Roboto',sans-serif;color:var(--rdr-text);
         background:rgba(0,0,0,.35);border:1px solid var(--rdr-gold-dim);border-radius:2px;outline:none;transition:all .15s ease}
 #search:focus{border-color:var(--rdr-gold);box-shadow:0 0 0 2px rgba(201,162,75,.15)}
@@ -143,7 +148,7 @@ html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden
   <div id="radio" class="panel hidden">
     <div class="hdr" id="hdr"><button class="cbtn" id="cmp">⇕</button><div class="t"><h1 id="title"></h1><small id="subtitle"></small></div><button class="cbtn" id="x">✕</button></div>
     <div id="status" class="status"><div class="dot"></div><span id="stext"></span><span id="members" class="pill hidden"></span><span id="batt" class="pill hidden"></span></div>
-    <div class="vol" id="vol"><button class="cbtn mini" id="mute">🔊</button><span class="vv" id="vval"></span></div>
+    <div class="vol hidden" id="vol"><button class="cbtn mini" id="mute">🔊</button><input type="range" id="vslider" min="0" max="100" step="5"><span class="vv" id="vval"></span><button class="cbtn mini" id="vtest">▶</button></div>
     <div class="div" id="divFreq"></div>
     <div class="tune"><button class="cbtn" id="minus">−</button><input id="freq" inputmode="decimal" maxlength="8" autocomplete="off"><button class="cbtn" id="plus">+</button><span class="unit" id="unit"></span><button class="cbtn star" id="fav">☆</button></div>
     <div class="fhint" id="fhint"></div>
@@ -196,7 +201,10 @@ function renderLists(){
   const bt=st.battery;
   $('batt').classList.toggle('hidden',bt==null);
   if(bt!=null){$('batt').textContent='🔋 '+Math.round(bt)+'%';$('batt').classList.toggle('low',bt<=20);}
-  if(Date.now()>muteHold){muted=!!st.muted;muteUi();}
+  if(st.vol!=null){
+    $('vol').classList.remove('hidden');$('vslider').step=st.volStep||5;
+    if(Date.now()>volHold){vs={vol:st.vol,muted:!!st.muted};$('vslider').value=vs.vol;vui(vs.vol,vs.muted);}
+  }else $('vol').classList.add('hidden');
   hint();
   const q=($('search').value||'').trim().toLowerCase();
   const m=(...a)=>!q||a.join(' ').toLowerCase().includes(q);
@@ -233,11 +241,24 @@ function renderLists(){
       (!isFav&&f.usable?`<button class="cbtn mini" data-addrec="${esc(f.freq)}" data-label="${esc(f.label||'')}" title="${esc(S.favAdd)}">☆</button>`:'')+`</div>`;
   }).join(''):`<div class="empty">${esc(S.noMatch)}</div>`;
 }
-let muted=false,muteHold=0,muteTimer=null;
-function muteUi(){$('vval').textContent=muted?S.muted:'';$('mute').textContent=muted?'🔇':'🔊';}
-function muteSend(){
-  muteUi();post('setMute',{muted});muteHold=Date.now()+1500;
-  clearTimeout(muteTimer);muteTimer=setTimeout(()=>post('saveMute'),400);
+let vs={vol:100,muted:false},volHold=0,volTimer=null,bleepOn=true,actx=null,lastBleep=0;
+// short tone while the slider moves: loudness and pitch follow the chosen volume (silent when muted or at 0)
+function bleep(){
+  if(!bleepOn||vs.muted||vs.vol<=0)return;
+  const now=Date.now();if(now-lastBleep<90)return;lastBleep=now;
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state==='suspended')actx.resume();
+    const t=actx.currentTime,o=actx.createOscillator(),g=actx.createGain(),v=vs.vol/100;
+    o.type='sine';o.frequency.value=500+v*700;
+    g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(0.001,v*0.3),t+0.01);g.gain.exponentialRampToValueAtTime(0.0001,t+0.09);
+    o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+0.1);
+  }catch(e){}
+}
+function vui(vol,muted){$('vval').textContent=muted?S.muted:vol+'%';$('mute').textContent=muted?'🔇':'🔊';$('vol').classList.toggle('off',!!muted);}
+function volSend(){
+  vui(vs.vol,vs.muted);post('setVolume',vs);volHold=Date.now()+1500;
+  clearTimeout(volTimer);volTimer=setTimeout(()=>post('saveVolume',vs),400);
 }
 function applyCompact(on){$('radio').classList.toggle('compact',on);try{localStorage.setItem('rsg-radio:compact',on?'1':'0');}catch(e){}}
 const scale=()=>Math.pow(10,st.dec||0);
@@ -292,7 +313,9 @@ function toggleFav(){
 $('x').onclick=()=>post('close');
 $('cmp').onclick=()=>applyCompact(!$('radio').classList.contains('compact'));
 $('search').addEventListener('input',render);
-$('mute').onclick=()=>{muted=!muted;muteSend();};
+$('vslider').addEventListener('input',e=>{vs.vol=+e.target.value;volSend();bleep();});
+$('mute').onclick=()=>{vs.muted=!vs.muted;volSend();};
+$('vtest').onclick=()=>post('testVolume');
 $('connect').onclick=connect;
 $('disconnect').onclick=()=>post('leave');
 $('minus').onclick=()=>{const v=curFreq();setFreq(v===null?st.min:v-step());};
@@ -320,6 +343,9 @@ $('list').addEventListener('click',listClick);
 $('favs').addEventListener('click',listClick);
 $('recs').addEventListener('click',listClick);
 $('plist').addEventListener('click',listClick);
+// typing in a text box must not key the radio mic (the transmit key is an ordinary letter)
+document.addEventListener('focusin',e=>{if(e.target&&e.target.tagName==='INPUT')post('typing',{state:true});});
+document.addEventListener('focusout',e=>{if(e.target&&e.target.tagName==='INPUT')post('typing',{state:false});});
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   if(modalOpen()){closeModal();return;}
@@ -454,7 +480,7 @@ function renderHud(d){
 window.addEventListener('message',ev=>{
   const d=ev.data||{};
   if(d.action==='open'){
-    S=d.strings;st=d.state;
+    S=d.strings;st=d.state;bleepOn=d.bleep!==false;
     $('title').textContent=S.title;$('subtitle').textContent=S.subtitle;
     $('divFreq').textContent=S.frequency;$('divCh').textContent=S.channels;
     $('connect').textContent=S.connect;$('disconnect').textContent=S.disconnect;
@@ -466,7 +492,7 @@ window.addEventListener('message',ev=>{
     $('code').placeholder=S.code;$('pname').placeholder=S.pname;$('ptoggle').textContent=S.private;$('divPriv').textContent=S.privateList;
     $('divFav').textContent=S.favorites;$('flabel').placeholder=S.favLabel;$('flabel').value='';
     $('divRec').textContent=S.recents;$('search').placeholder=S.search;$('search').value='';
-    $('cmp').title=S.compact;$('mute').title=S.mute;muteHold=0;
+    $('cmp').title=S.compact;$('mute').title=S.mute;$('vslider').title=S.volume;$('vtest').title=S.testVol;volHold=0;
     try{$('radio').classList.toggle('compact',localStorage.getItem('rsg-radio:compact')==='1');}catch(e){}
     $('radio').classList.remove('hidden');
     $('hdr').title=S.move;

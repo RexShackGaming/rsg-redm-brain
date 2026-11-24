@@ -7,7 +7,7 @@ Proximity voice for **RSG Framework (RedM)**, built on RedM's native Mumble voic
 ## Features
 
 - **Proximity voice ranges**: Whisper (2.5m), Normal (8m), Shout (20m) and Trail (35m), all configurable.
-- **Cycle range** with a key (default **]**) or the `/voice` command. Your last range is remembered between sessions.
+- **Cycle range** with a key (default **]**, rebindable in the game's key settings) or the `/voice` command. Your last range is remembered between sessions.
 - **Range ring**: a ground ring briefly shows how far your voice carries when you change range.
 - **Always hear shouting**: you hear players out to the largest range, whatever your own range is.
 - **Draggable HUD**: a compact indicator shows your range, a talking light and your muted state. Move it with `/voicehud`; each player's position is saved on their own client.
@@ -106,7 +106,11 @@ Config.Ranges = {
 | Option | Default | Description |
 |---|---|---|
 | `Config.Ranges` | see above | Voice ranges in metres. `default = true` sets the starting range. |
-| `Config.CycleKey` | `0xA5BDCD3C` (RIGHTBRACKET) | Control hash used to cycle range |
+| `Config.UseKeyMapping` | `true` | Bind the range key and the party talk key by name with rsg-core `RegisterKey`: rebindable in the game's key settings, nothing polled every frame. `false` reads the control hashes below |
+| `Config.CycleKeyName` | `'RBRACKET'` | Default key for the range key (key mapping) |
+| `Config.CycleKey` | `0xA5BDCD3C` (RIGHTBRACKET) | Control hash, only used when `UseKeyMapping = false` |
+| `Config.AllowPushToTalkWhileOpen` | `true` | While the party menu, an invite or the HUD editor is open: keep game input but block controls except push-to-talk |
+| `Config.PushToTalkControls` | `{ 0x4BC9DABB }` | Controls left enabled while a voice window is open (N, push-to-talk) |
 | `Config.CycleCommand` | `'voice'` | Command to cycle range |
 | `Config.ShowRangeRing` | `true` | Show a ground ring when changing range |
 | `Config.RingDuration` | `1500` | How long the ring shows (ms) |
@@ -116,7 +120,8 @@ Config.Ranges = {
 | `Config.HudToggleCommand` | `'togglevoicehud'` | Command for a player to hide/show their own HUD (saved per client) |
 | `Config.Party.Enabled` | `true` | Enable riding parties (group voice chat) |
 | `Config.Party.Command` | `'party'` | Opens the party menu |
-| `Config.Party.TalkKey` | `0x430593AA` (LEFTBRACKET) | Hold to talk to your party |
+| `Config.Party.Key` | `'LBRACKET'` | Default key for the party talk key (hold to talk, rebindable in the game's key settings) |
+| `Config.Party.TalkKey` | `0x430593AA` (LEFTBRACKET) | Control hash, only used when `Config.UseKeyMapping = false` |
 | `Config.Party.TalkRange` | `100.0` | Max distance (metres) party talk reaches |
 | `Config.Party.InviteRange` | `10.0` | How close (metres) a player must be to be invited |
 | `Config.Party.MaxMembers` | `8` | Max party size, leader included |
@@ -199,6 +204,8 @@ local members = exports['rsg-voice']:GetPartyMembers() -- { { id, name, leader }
 local radio = exports['rsg-voice']:GetRadio()            -- { freq = '101', members = { serverId, ... } } or nil
 local tx    = exports['rsg-voice']:IsRadioTalking()      -- true while you hold the transmit key
 local key   = exports['rsg-voice']:GetRadioTalkKey()     -- control hash, keep it enabled in your own NUI
+local name  = exports['rsg-voice']:GetRadioKeyLabel()    -- 'O' (default key name for hints), nil when the key is a control hash
+exports['rsg-voice']:SetRadioInputBlocked(true)          -- while your NUI has a text box focused (stops the transmit key keying the mic); false when done
 AddEventHandler('rsg-voice:client:onRadioTalk', function(state) end) -- local event, fires when you start/stop transmitting
 ```
 
@@ -264,6 +271,12 @@ rsg-voice/
 ---
 
 ## Changelog
+
+### 3.4.0
+- **Rebindable range and party keys** through rsg-core `RegisterKey` (`Config.UseKeyMapping`), **push-to-talk while a voice window is open**, no more idle per-frame loops, typing in rsg-radio no longer keys the mic, and a NaN waypoint check. New exports `GetRadioKeyLabel` and `SetRadioInputBlocked`; new locale keys `key_cycle`, `key_party` in all 11 languages.
+
+### 3.3.0
+- **Radio volume test**: client export `TestRadioIncoming()` plays a simulated incoming transmission at rsg-voice's live radio gain (volume, mute, signal and call priority), so the real settings can be checked. rsg-radio's play button and `/radiotest` use it.
 
 ### 3.2.0
 - **Radio volume, mute and signal** exports for rsg-radio, a **transmit time limit**, **call priority** (rsg-telephone) and a **radio or party priority** setting. New locale key `cl_radio_timeout` in all 11 languages.

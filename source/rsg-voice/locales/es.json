@@ -65,5 +65,7 @@
     "ui_party_share": "Compartir punto",
     "ui_radio": "RADIO",
     "ui_radio_key": "Transmitir por radio (mantener)",
+    "key_cycle": "Cambiar alcance de voz",
+    "key_party": "Voz de grupo (mantener)",
     "cl_radio_timeout": "Límite de transmisión de %s segundos alcanzado, suelta la tecla"
 }

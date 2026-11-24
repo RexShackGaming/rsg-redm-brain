@@ -65,5 +65,7 @@
     "ui_party_share": "Wegpunkt teilen",
     "ui_radio": "FUNK",
     "ui_radio_key": "Funk senden (halten)",
+    "key_cycle": "Sprechreichweite ändern",
+    "key_party": "Gruppenchat (halten)",
     "cl_radio_timeout": "Sendelimit von %s Sekunden erreicht, lass die Taste los"
 }

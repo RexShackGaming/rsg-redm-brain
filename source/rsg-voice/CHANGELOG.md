@@ -2,6 +2,33 @@
 
 All notable changes to rsg-voice. Newest first.
 
+## 3.4.0
+Major update.
+
+### Added
+- **Rebindable keys**: the voice range key and the party talk key are now bound by name through rsg-core `RegisterKey` (`Config.UseKeyMapping`, `Config.CycleKeyName`, `Config.Party.Key`), so players can rebind them in the game's key settings. Nothing runs every frame for them any more. `Config.UseKeyMapping = false` keeps the old control-hash polling (`CycleKey`, `Party.TalkKey`). New locale keys `key_cycle` and `key_party` (all 11 languages). The radio key uses `RegisterKey` too, under the same command name, so existing rebinds are kept.
+- **Push-to-talk keeps working while a voice window is open** (party menu, party invite, HUD editor): `SetNuiFocusKeepInput` plus a control whitelist (`Config.AllowPushToTalkWhileOpen`, `Config.PushToTalkControls`).
+- Client exports `GetRadioKeyLabel()` (key name for hints) and `SetRadioInputBlocked(state)` (rsg-radio uses it so typing in its panel does not key the mic).
+
+### Fixed
+- Typing an `o` in rsg-radio's text boxes (favorite name, passcode) no longer transmits (see `SetRadioInputBlocked`).
+- A shared waypoint with NaN coordinates is rejected on the server.
+- The database table creation is wrapped in `pcall` and prints a clear console message, instead of failing the start-up thread.
+- `myServerId` is read again when the character loads.
+- The `voiceRange` state bag is only written when the range changes (it was written on every mute change too).
+
+### Changed
+- Performance: the range key/ring loop, radio transmit loop and party talk loop no longer run every frame while idle (key press and release are handled directly; the loops are a 100 ms safety net). The speaker icon loop only runs every frame while somebody is talking nearby. The radio debug thread only exists with `Config.Radio.Debug = true`.
+- Radio transmit starts are rate limited to one per 250 ms on the server (was 100 ms).
+
+### Removed
+- The duplicate `RSGCore:Client:OnPlayerUnload` handler and the extra server `playerDropped` mute cleanup path (merged into single handlers).
+
+## 3.3.0
+
+### Added
+- **Radio volume test**: client export `TestRadioIncoming()` plays a simulated incoming transmission (squelch, speech-like audio, squelch) in the HUD page at the live radio gain, the same value (`volume x signal`, 0 when muted, no signal or in a call) that is applied to real radio talkers. It returns `{ gain, volume, signal, muted, call, reason }` so the caller can say why it was silent, and prints the values in F8 with `Config.Radio.Debug`. rsg-radio's volume test button and `/radiotest` call it.
+
 ## 3.2.0
 
 ### Added

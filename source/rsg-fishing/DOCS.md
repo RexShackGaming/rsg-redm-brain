@@ -1,6 +1,6 @@
 # rsg-fishing — Technical Docs
 
-Version 3.1.0. For installation and player instructions see [README.md](README.md).
+Version 3.2.0. For installation and player instructions see [README.md](README.md).
 
 ## Contents
 
@@ -15,6 +15,7 @@ Version 3.1.0. For installation and player instructions see [README.md](README.m
 9. [Database](#database)
 10. [How-tos](#how-tos)
 11. [Troubleshooting](#troubleshooting)
+12. [Journal, records and regions](#journal-records-and-regions)
 
 ## Files
 
@@ -22,6 +23,8 @@ Version 3.1.0. For installation and player instructions see [README.md](README.m
 client/client.lua     Session loop, minigame states, reeling, tension, HUD and bobber updates
 client/client_js.js   Reads/writes the game's fishing task struct (needs JS for the data buffer)
 server/server.lua     Usable bait items, catch validation, inventory, logging
+server/journal.lua    Database, angler's journal, server records, top anglers, reputation
+shared/regions.lua    Lookup sets built from Config.Regions
 server/versionchecker.lua  Version check on start
 html/index.html       Controls HUD, tension bar and bobber indicator (NUI, no focus taken)
 locales/*.json        Translations (loaded by rsg-core)
@@ -31,7 +34,7 @@ shared/config.lua     Settings, baits, fish data
 ## How a fishing session runs
 
 1. The player uses a bait item. The server item callback triggers `rsg-fishing:client:usebait`.
-2. The client checks the rod is in hand, asks the server to remove the bait (`rsg-fishing:server:removeBaitItem`) and starts the session thread.
+2. The client checks the rod is in hand and starts the session thread. When the bait is put on the rod (state 1) it asks the server to remove it (`rsg-fishing:server:removeBaitItem`).
 3. Each tick the thread reads the game's fishing task struct and acts on its state (`f_0`):
 
 | State | Meaning | Handler |
@@ -90,16 +93,22 @@ Client only.
 | Event | Side | Arguments | Notes |
 |---|---|---|---|
 | `rsg-fishing:client:usebait` | client | `bait` (item name) | Sent by the server when a bait item is used |
-| `rsg-fishing:server:removeBaitItem` | server | `item` | Removes one bait and opens a 5 minute catch window |
-| `rsg-fishing:server:catchFish` | server | `fishModel` (hash), `weight` (raw) | Stores the fish. `weight = 0` means a ground pickup |
+| `rsg-fishing:server:removeBaitItem` | server | `item` | Removes one bait and opens a 5 minute catch window tied to that bait |
+| `rsg-fishing:server:catchFish` | server | `fishModel` (hash), `weight` (raw), `region`, `spot` | Stores the fish. `weight = 0` means a ground pickup. `region` is the region id under the hook and `spot` the legendary-spot zone name, both from the client |
 
-There are no callbacks.
+| Callback | Side | Returns |
+|---|---|---|
+| `rsg-fishing:server:getJournal` | server | `{ species, found, total, records, anglers }` for the calling player (read only, 1 s throttle), or `nil` |
+
+| Local event | Side | Arguments |
+|---|---|---|
+| `rsg-fishing:server:newRecord` | server | `src, family, kg, previousHolderName` (fired when a record is beaten) |
 
 ## Data formats
 
 - `Config.Baits`: list of bait item names. Each is registered as a usable item.
 - `Config.BaitsPerFish[bait]`: list of fish models the bait attracts.
-- `Config.fishData[model]`: `[1]` is the display name. The item given is the model name in lower case, with `info.weight` set to the weight in KG (two decimals).
+- `Config.fishData[model]`: `{ display name, weight band, species family }` (`small`, `medium` or `large`, see `Config.WeightBands`). The item given is the model name in lower case, with `info.weight` set to the weight in KG (two decimals).
 - Displayed weight = raw weight × `Config.FishWeightMultiplier`.
 
 ## Security model
@@ -107,16 +116,33 @@ There are no callbacks.
 The server checks, for every catch:
 
 - the player exists and the model is in `Config.fishData`;
-- the weight is a number and is capped at `Config.MaxRawFishWeight`;
-- a minigame catch has a bait spent in the last 5 minutes, and each bait pays for one catch;
+- the weight is a number, clamped to the weight band of that fish and to `Config.MaxRawFishWeight`;
+- a minigame catch has a bait spent in the last 5 minutes, at least `Config.MinCatchTime` ago, and each bait pays for one catch;
+- with `Config.Regions.Enabled`, the fish can live in the reported region and, for the legendary salmon, the reported spot is a legendary spot (and within `radius` of its `coords` when set). The region and spot come from the client, so this is a soft check; only the coords check is verified by the server;
+- with `Config.EnforceBaitList`, the fish is one the bait attracts in `Config.BaitsPerFish`;
 - `Config.CatchCooldown` has passed since the last accepted catch;
 - `CanAddItem` passes before the fish is added.
 
-Bait removal only accepts names in `Config.Baits`. Ground pickups (`weight = 0`) need no bait; set `Config.GroundPickup = false` to refuse them. The server does not check that the player is near water.
+Bait removal only accepts names in `Config.Baits`. Ground pickups (`weight = 0`) need no bait and cannot be verified by the server, so they are capped by `Config.GroundPickupLimit`; set `Config.GroundPickup = false` to refuse them. The server does not check that the player is near water.
 
 ## Database
 
-None. The script stores nothing of its own.
+Two tables, created on start when `Config.AutoDatabase = true` (identical to `install.sql`; set it to `false` to import the file manually).
+
+| Table | Columns | Purpose |
+|---|---|---|
+| `rsg_fishing_journal` | `citizenid, species, name, caught, best_weight, first_caught, last_caught` (primary key `citizenid, species`) | one row per character and species family |
+| `rsg_fishing_records` | `species, citizenid, name, weight, caught_at` (primary key `species`) | the server record per species family |
+
+## Journal, records and regions
+
+- **Regions:** the client reads the game's map zones under the hook (state, plus lake / river / swamp / ocean / creek / pond for legendary spots) once per second. A fish whose family is not in the state's `Config.Regions.Pools` entry is ignored (it neither bites nor is lured). A state with no entry has no limit.
+- **Bite chance:** `Config.BiteChance` × time factor × weather factor × (1 + `bite_chance` perk / 100), kept between `MinChance` and `MaxChance`. The HUD shows Poor below `PoorBelow`, Good from `GoodFrom`, otherwise Fair. Weather comes from `exports['rsg-weather']:getWeather()`; with rsg-weather stopped the weather factor is 1.
+- **Perks:** `bite_chance`, `line_strength` (scales the tension gain, never below 30%) and `rare_chance` (chance to roll the heavier half of the weight band) are read from rsg-skills on the client. They shape the minigame only; the server still clamps the weight to the fish's band.
+- **Journal:** each fished fish (not ground pickups) is added to the character's row for its family. The first catch of a family logs it in the journal and applies `Config.Reputation.NewSpecies`; completing every family applies `Config.Reputation.Complete`.
+- **Records:** the server keeps the heaviest fish per family. The first fish of a family sets the record quietly; beating it announces it (`Config.Records.Announce`), pays `Config.Records.Reward` cash, applies `Config.Reputation.Record` and fires `rsg-fishing:server:newRecord`.
+- **Top anglers:** the `Config.Records.TopCount` characters with the most fish (cached for 30 seconds).
+- **Opening the journal:** `Config.Journal.Command` and an optional rebindable key (`Config.Journal.Key`, through `RSGCore.Functions.RegisterKey`). Push-to-talk stays usable while it is open.
 
 ## How-tos
 
@@ -147,11 +173,11 @@ Support the Project : https://rexshack.tebex.store/
 
 ## Technical reference
 
-Generated from the source of **rsg-fishing 3.1.0**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-fishing 3.2.0**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 
-`rsg-core`, `rsg-inventory`
+`rsg-core`, `rsg-inventory`, `oxmysql`. Optional: `rsg-weather`, `rsg-skills`, `rsg-reputation`, `rsg-log`.
 
 ### Configuration
 
@@ -166,6 +192,12 @@ Generated from the source of **rsg-fishing 3.1.0**. Names, arguments and default
 | `Config.CatchCooldown` | `3000` | ms a player must wait between accepted fish catches (anti-spam/anti-exploit) |
 | `Config.MaxRawFishWeight` | `0.15` | sanity cap on the raw (pre-multiplier) weight value accepted from clients |
 | `Config.GroundPickup` | `true` | picking a fish up off the ground stores it (no bait needed, weight 0). Set false to close this off |
+| `Config.GroundPickupLimit` | `{ Max = 10, Window = 3600 }` | max ground pickups per player per Window seconds |
+| `Config.MinCatchTime` | `8000` | ms between bait on the rod and an accepted catch |
+| `Config.EnforceBaitList` | `true` | a fish only bites, and is only accepted, when listed for the bait in `Config.BaitsPerFish` |
+| `Config.BiteChance` | `0.3` | chance (0.0-1.0) per second that a fish next to the hook bites |
+| `Config.WeightBands` | `table` | `small` / `medium` / `large` raw weight range and fish size |
+| `Config.WeightFactor` | `0.25` | factor applied to the rolled band weight |
 | `Config.Log` | `true` | send catches to rsg-log ('fishing' channel) |
 | `Config.LineSnap` | `table` | line tension / snapping: reeling while a fish struggles strains the line; at 100% it snaps (fish and bait lost |
 | `Config.Enabled` | `true` |  |
@@ -199,33 +231,6 @@ Generated from the source of **rsg-fishing 3.1.0**. Names, arguments and default
 | `Config.Baits` | `table` | fishing baits |
 | `Config.BaitsPerFish` | `table` | bait to catch fish |
 | `Config.fishData` | `table` | fish data |
-| `Config.A_C_FISHBLUEGIL_01_MS` | `{ "Blue Gil (Medium)", "PROVISION_FISH_BLUEGILL", "PROVISION_BLUEGILL_` |  |
-| `Config.A_C_FISHBLUEGIL_01_SM` | `{ "Blue Gil (Small)", "PROVISION_FISH_BLUEGILL", "PROVISION_BLUEGILL_D` |  |
-| `Config.A_C_FISHBULLHEADCAT_01_MS` | `{ "Bullhead Cat (Medium)", "PROVISION_FISH_BULLHEAD_CATFISH", "PROVISI` |  |
-| `Config.A_C_FISHBULLHEADCAT_01_SM` | `{ "Bullhead Cat (Small)", "PROVISION_FISH_BULLHEAD_CATFISH", "PROVISIO` |  |
-| `Config.A_C_FISHCHAINPICKEREL_01_MS` | `{ "Chain Pickerel (Medium)", "PROVISION_FISH_CHAIN_PICKEREL", "PROVISI` |  |
-| `Config.A_C_FISHCHAINPICKEREL_01_SM` | `{ "Chain Pickerel (Small)", "PROVISION_FISH_CHAIN_PICKEREL", "PROVISIO` |  |
-| `Config.A_C_FISHCHANNELCATFISH_01_LG` | `{ "Channel Catfish (Large)", "PROVISION_FISH_CHANNEL_CATFISH", "PROVIS` |  |
-| `Config.A_C_FISHCHANNELCATFISH_01_XL` | `{ "Channel Catfish (Extra Large)", "PROVISION_FISH_CHANNEL_CATFISH", "` |  |
-| `Config.A_C_FISHLAKESTURGEON_01_LG` | `{ "Lake Sturgeon (Large)", "PROVISION_FISH_LAKE_STURGEON", "PROVISION_` |  |
-| `Config.A_C_FISHLARGEMOUTHBASS_01_LG` | `{ "Large Mouth Bass (Large)", "PROVISION_FISH_LARGEMOUTH_BASS", "PROVI` |  |
-| `Config.A_C_FISHLARGEMOUTHBASS_01_MS` | `{ "Large Mouth Bass (Medium)", "PROVISION_FISH_LARGEMOUTH_BASS", "PROV` |  |
-| `Config.A_C_FISHLONGNOSEGAR_01_LG` | `{ "Long Nose Gar (Large)", "PROVISION_FISH_LONGNOSE_GAR", "PROVISION_L` |  |
-| `Config.A_C_FISHMUSKIE_01_LG` | `{ "Muskie (Large)", "PROVISION_FISH_MUSKIE", "PROVISION_MUSKIE_DESC" }` |  |
-| `Config.A_C_FISHNORTHERNPIKE_01_LG` | `{ "Northern Pike (Large)", "PROVISION_FISH_NORTHERN_PIKE", "PROVISION_` |  |
-| `Config.A_C_FISHPERCH_01_MS` | `{ "Perch (Medium)", "PROVISION_FISH_PERCH", "PROVISION_PERCH_DESC" }` |  |
-| `Config.A_C_FISHPERCH_01_SM` | `{ "Perch (Small)", "PROVISION_FISH_PERCH", "PROVISION_PERCH_DESC" }` |  |
-| `Config.A_C_FISHRAINBOWTROUT_01_LG` | `{ "Rainbow Trout (Large)", "PROVISION_FISH_STEELHEAD_TROUT", "PROVISIO` |  |
-| `Config.A_C_FISHRAINBOWTROUT_01_MS` | `{ "Rainbow Trout (Medium)", "PROVISION_FISH_STEELHEAD_TROUT", "PROVISI` |  |
-| `Config.A_C_FISHREDFINPICKEREL_01_MS` | `{ "Red Fin Pickerel (Medium)", "PROVISION_FISH_REDFIN_PICKEREL", "PROV` |  |
-| `Config.A_C_FISHREDFINPICKEREL_01_SM` | `{ "Red Fin Pickerel (Small)", "PROVISION_FISH_REDFIN_PICKEREL", "PROVI` |  |
-| `Config.A_C_FISHROCKBASS_01_MS` | `{ "Rock Bass (Medium)", "PROVISION_FISH_ROCK_BASS", "PROVISION_ROCKBAS` |  |
-| `Config.A_C_FISHROCKBASS_01_SM` | `{ "Rock Bass (Small)", "PROVISION_FISH_ROCK_BASS", "PROVISION_ROCKBASS` |  |
-| `Config.A_C_FISHSALMONSOCKEYE_01_LG` | `{ "Salmon Sockeye (Large)", "PROVISION_FISH_SOCKEYE_SALMON_LEGENDARY",` |  |
-| `Config.A_C_FISHSALMONSOCKEYE_01_ML` | `{ "Salmon Sockeye (Medium-Large)", "PROVISION_FISH_SOCKEYE_SALMON", "P` |  |
-| `Config.A_C_FISHSALMONSOCKEYE_01_MS` | `{ "Salmon Sockeye (Medium)", "PROVISION_FISH_SOCKEYE_SALMON", "PROVISI` |  |
-| `Config.A_C_FISHSMALLMOUTHBASS_01_LG` | `{ "Small Mouth Bass (Large)", "PROVISION_FISH_SMALLMOUTH_BASS", "PROVI` |  |
-| `Config.A_C_FISHSMALLMOUTHBASS_01_MS` | `{ "Small Mouth Bass (Medium)", "PROVISION_FISH_SMALLMOUTH_BASS", "PROV` |  |
 | `Config.Skills` | `table` | rsg-skills integration (optional). Needs the rsg-skills resource; does nothing when it is not started. |
 | `Config.Skill` | `'fishing'` |  |
 | `Config.CatchXP` | `10` |  |
@@ -238,7 +243,7 @@ Server events can be fired by any client, so every handler re-validates the play
 |---|---|---|---|
 | `rsg-fishing:client:usebait` | client | `bait` | `client/client.lua` |
 | `rsg-fishing:server:removeBaitItem` | server | `item` | `server/server.lua` |
-| `rsg-fishing:server:catchFish` | server | `fishModel, weight` | `server/server.lua` |
+| `rsg-fishing:server:catchFish` | server | `fishModel, weight, region, spot` | `server/server.lua` |
 
 ```lua
 -- from a client script

@@ -57,6 +57,8 @@ function renderPlant(p) {
     setBar('water', p.water, level(p.water));
     setBar('fert', p.fertilizer, p.fertilizer > 0 ? level(p.fertilizer) : 'stat-bad');
     setBar('health', p.health, level(p.health));
+    $('row-soil').classList.toggle('hidden', p.soil == null);
+    if (p.soil != null) setBar('soil', p.soil, level(p.soil));
 
     let note;
     if (p.dead) note = t('ui_note_dead');

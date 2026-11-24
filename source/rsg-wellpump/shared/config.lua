@@ -46,6 +46,17 @@ Config.Drink = {
 }
 
 ---------------------------------
+-- water supply for other resources (sprinklers, irrigation); see the GetPumpWater / DrawWater exports
+-- each pump holds a reservoir that refills over time; it lives in memory and starts full after a restart
+---------------------------------
+Config.Sprinkler = {
+    Enabled         = true,
+    Capacity        = 400,    -- units of water one pump can hold
+    RefillPerMinute = 40,     -- units a pump regains per minute
+    MaxLinkDistance = 60.0,   -- default max distance between a pump and the thing drawing from it
+}
+
+---------------------------------
 -- one-time import of pumps placed by the old per-script pump code
 -- (each source is imported once and recorded in rsg_wellpump_migrations; the old tables are left untouched)
 ---------------------------------

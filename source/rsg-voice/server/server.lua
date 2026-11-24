@@ -135,16 +135,23 @@ end)
 CreateThread(function()
     -- Create the table on first start (same as install.sql)
     if Config.AutoDatabase ~= false then
-        MySQL.query.await([[
-            CREATE TABLE IF NOT EXISTS `rsg_voice_mutes` (
-                `license`    VARCHAR(64)  NOT NULL,
-                `reason`     VARCHAR(255) DEFAULT NULL,
-                `muted_by`   VARCHAR(100) DEFAULT NULL,
-                `expires_at` INT UNSIGNED DEFAULT NULL,
-                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (`license`)
-            )
-        ]])
+        local ok, err = pcall(function()
+            return MySQL.query.await([[
+                CREATE TABLE IF NOT EXISTS `rsg_voice_mutes` (
+                    `license`    VARCHAR(64)  NOT NULL,
+                    `reason`     VARCHAR(255) DEFAULT NULL,
+                    `muted_by`   VARCHAR(100) DEFAULT NULL,
+                    `expires_at` INT UNSIGNED DEFAULT NULL,
+                    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`license`)
+                )
+            ]])
+        end)
+        if not ok then
+            print(('^1[rsg-voice]^7 could not create the rsg_voice_mutes table, stored mutes are not loaded: %s'):format(tostring(err)))
+            return
+        end
+        print('^2[rsg-voice]^7 database table ready')
     end
     local rows = MySQL.query.await('SELECT license, reason, expires_at FROM rsg_voice_mutes') or {}
     local now = os.time()
@@ -173,6 +180,8 @@ AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     for src in pairs(muteSources) do MumbleSetPlayerMuted(src, false) end
 end)
+
+AddEventHandler('playerDropped', function() muteSources[source] = nil end)
 
 ---------------------------------------------------------------------
 -- Server exports
@@ -279,7 +288,7 @@ RegisterNetEvent('rsg-voice:server:radioTalk', function(state)
     local now = GetGameTimer()
     if state then
         if (radioTalkCooldown[src] or 0) > now then return end
-        radioTalkCooldown[src] = now + 100
+        radioTalkCooldown[src] = now + 250 -- a held key never needs more than a few starts a second
     end
     radioTalking[src] = state or nil
     for _, m in ipairs(ch.members) do
@@ -310,12 +319,7 @@ end
 exports('GetPartyMembers', partyMembers) -- returns { src, ... }, leaderSrc  (nil if not in a party)
 exports('IsInParty', function(src) return playerParty[tonumber(src)] ~= nil end)
 
-local function cleanupMute(src) muteSources[src] = nil end
-
-if not P.Enabled then
-    AddEventHandler('playerDropped', function() cleanupMute(source) end)
-    return
-end
+if not P.Enabled then return end
 
 local invites         = {} -- [targetSrc] = { party = partyId, from = src, expires = os.time() }
 local nextId          = 0
@@ -499,7 +503,8 @@ RegisterNetEvent('rsg-voice:server:partyWaypoint', function(coords)
     local wp
     if type(coords) == 'table' or type(coords) == 'vector3' then
         local x, y, z = tonumber(coords.x), tonumber(coords.y), tonumber(coords.z) or 0.0
-        if not x or not y or math.abs(x) > 10000 or math.abs(y) > 10000 or math.abs(z) > 2000 then return end
+        if not x or not y or x ~= x or y ~= y or z ~= z then return end -- also rejects NaN
+        if math.abs(x) > 10000 or math.abs(y) > 10000 or math.abs(z) > 2000 then return end
         wp = { x = x, y = y, z = z }
     end
     local name = charName(src)
@@ -544,8 +549,6 @@ local function cleanupPlayer(src)
 end
 
 AddEventHandler('playerDropped', function()
-    local src = source
-    cleanupPlayer(src)
-    cleanupMute(src)
+    cleanupPlayer(source)
 end)
 AddEventHandler('RSGCore:Server:OnPlayerUnload', cleanupPlayer)

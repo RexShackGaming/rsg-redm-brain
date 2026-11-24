@@ -24,6 +24,7 @@ local SCHEMA = {
       `water` INT NOT NULL DEFAULT 0,
       `bank` INT NOT NULL DEFAULT 0,
       `settings` LONGTEXT DEFAULT NULL,
+      `paid` INT DEFAULT NULL,
       PRIMARY KEY (`id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]],
     [[CREATE TABLE IF NOT EXISTS `rsg_factory_queue` (
@@ -36,7 +37,23 @@ local SCHEMA = {
       `stages` LONGTEXT DEFAULT NULL,
       `notified` TINYINT NOT NULL DEFAULT 0,
       PRIMARY KEY (`id`),
-      KEY `idx_factory_citizen` (`factory_id`, `citizenid`)
+      KEY `idx_factory_citizen` (`factory_id`, `citizenid`),
+      KEY `idx_finish` (`notified`, `finish_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]],
+    [[CREATE TABLE IF NOT EXISTS `rsg_factory_log` (
+      `id` INT NOT NULL AUTO_INCREMENT,
+      `factory_id` INT NOT NULL,
+      `citizenid` VARCHAR(50) NOT NULL,
+      `name` VARCHAR(64) NOT NULL,
+      `label` VARCHAR(64) NOT NULL,
+      `recipe` INT NOT NULL DEFAULT 0,
+      `batches` INT NOT NULL DEFAULT 0,
+      `fee` INT NOT NULL DEFAULT 0,
+      `wage` INT NOT NULL DEFAULT 0,
+      `created_at` BIGINT NOT NULL,
+      PRIMARY KEY (`id`),
+      KEY `idx_factory_time` (`factory_id`, `created_at`),
+      KEY `idx_factory_citizen_log` (`factory_id`, `citizenid`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]],
 }
 
@@ -59,8 +76,14 @@ local function ensureDatabase()
         { 'rsg_factories', 'bank', 'INT NOT NULL DEFAULT 0' },
         { 'rsg_factories', 'settings', 'LONGTEXT DEFAULT NULL' },
         { 'rsg_factory_queue', 'notified', 'TINYINT NOT NULL DEFAULT 0' },
+        { 'rsg_factories', 'paid', 'INT DEFAULT NULL' },
     }
     local ok, err = pcall(function()
+        local hasIdx = MySQL.scalar.await(
+            "SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'rsg_factory_queue' AND INDEX_NAME = 'idx_finish'")
+        if (hasIdx or 0) == 0 then
+            MySQL.query.await('ALTER TABLE `rsg_factory_queue` ADD INDEX `idx_finish` (`notified`, `finish_at`)')
+        end
         for _, c in ipairs(COLUMNS) do
             local has = MySQL.scalar.await(
                 'SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
@@ -106,6 +129,11 @@ local function cleanText(s, max)
     s = s:gsub('%s+$', '')
     if #s < 1 or #s > max then return nil end
     return s
+end
+
+local function displayName(Player)
+    local ci = Player.PlayerData.charinfo or {}
+    return cleanText(((ci.firstname or '') .. ' ' .. (ci.lastname or '')), 64) or Player.PlayerData.citizenid
 end
 
 local function itemLabel(name)
@@ -218,6 +246,7 @@ local function normSettings(raw)
         staffed = raw.staffed == true,
         paused = raw.paused == true,
         broken = raw.broken == true,
+        wage = clampInt(raw.wage, 0, Config.Wages.MaxPerBatch),
         tank = clampInt(raw.tank, 0, Config.Upgrades.tank.maxLevel),
         speed = clampInt(raw.speed, 0, Config.Upgrades.speed.maxLevel),
         trusted = {},
@@ -254,6 +283,91 @@ local function staffOnline(f)
         if RSGCore.Functions.GetPlayerByCitizenId(t.cid) then return true end
     end
     return false
+end
+
+---------------------------------------------------------------------
+-- Fees, sell value, supply stash
+---------------------------------------------------------------------
+-- percent off the owner's fee for this player: the owner pays nothing, trusted workers and listed jobs get a discount
+local function feeDiscount(f, Player)
+    local cid = Player.PlayerData.citizenid
+    if f.owner == cid then return 100 end
+    local pct = isTrusted(f, cid) and (Config.Fees.TrustedDiscount or 0) or 0
+    for job, p in pairs(Config.Fees.JobDiscounts or {}) do
+        if p > pct and (Player.PlayerData.job.name == job or exports['rsg-core']:HasPlayerJob(Player.PlayerData.source, job)) then
+            pct = p
+        end
+    end
+    return math.max(0, math.min(100, math.floor(pct)))
+end
+
+-- fee for `batches` batches after the discount, and the discount in percent
+local function feeFor(f, Player, batches)
+    if f.settings.fee <= 0 then return 0, 0 end
+    local d = feeDiscount(f, Player)
+    return math.ceil(f.settings.fee * batches * (100 - d) / 100), d
+end
+
+-- cash spent on upgrades so far (the cost of level n is cost * n)
+local function upgradeSpent(settings)
+    local total = 0
+    for kind, up in pairs(Config.Upgrades) do
+        for level = 1, (settings[kind] or 0) do total = total + up.cost * level end
+    end
+    return total
+end
+
+-- what the owner gets for selling: a share of the purchase price plus a share of the upgrade money
+local function sellValue(f)
+    return math.floor((f.paid or f.price) * Config.SellbackPercent / 100)
+        + math.floor(upgradeSpent(f.settings) * (Config.SellbackUpgradePercent or 0) / 100)
+end
+
+local function stashEnabled() return Config.Stash and Config.Stash.Enabled == true end
+local function stashId(f) return 'rsg_factory_' .. f.id end
+
+local function registerStash(f)
+    return pcall(function()
+        exports['rsg-inventory']:RegisterStash(stashId(f), { label = f.name, slots = Config.Stash.Slots, maxWeight = Config.Stash.MaxWeight })
+    end)
+end
+
+-- number of item stacks in the factory's supply stash
+local function stashStacks(f)
+    if not stashEnabled() then return 0 end
+    local ok, inv = pcall(function() return exports['rsg-inventory']:GetInventory(stashId(f)) end)
+    if not ok or type(inv) ~= 'table' then return 0 end
+    local n = 0
+    for _ in pairs(inv.items or inv) do n = n + 1 end
+    return n
+end
+
+-- tops fuel/water up from the supply stash until `wantFuel` / `wantWater` are reached (whole items only, capped by the tanks)
+-- returns true when something was moved
+local function restockFromStash(f, wantFuel, wantWater)
+    if not stashEnabled() or not f.owner then return false end
+    local want = { fuel = wantFuel, water = wantWater }
+    local cap = { fuel = capFuel(f), water = capWater(f) }
+    local id = stashId(f)
+    local moved = false
+    local ok = pcall(function()
+        registerStash(f) -- the only step that can wait; everything below runs without a gap
+        for _, sp in ipairs(Config.Supplies) do
+            local need = math.min(want[sp.stock], cap[sp.stock]) - f[sp.stock]
+            if need > 0 then
+                local have = exports['rsg-inventory']:GetItemCount(id, sp.item) or 0
+                local n = math.min(have, math.ceil(need / sp.units), math.floor((cap[sp.stock] - f[sp.stock]) / sp.units))
+                if n > 0 and exports['rsg-inventory']:RemoveItem(id, sp.item, n, nil, 'rsg-factory:restock') then
+                    f[sp.stock] = f[sp.stock] + n * sp.units
+                    if sp.returnItem and RSGCore.Shared.Items[sp.returnItem] then
+                        exports['rsg-inventory']:AddItem(id, sp.returnItem, n, nil, nil, 'rsg-factory:restock_return')
+                    end
+                    moved = true
+                end
+            end
+        end
+    end)
+    return ok and moved
 end
 
 -- nil when the player may start production here, otherwise the locale key that says why not
@@ -293,7 +407,9 @@ end
 
 local function checkLowStock(f)
     local pct = Config.Alerts.lowStockPercent or 0
-    if not f.owner or pct <= 0 then return end
+    if not f.owner then return end
+    if restockFromStash(f, capFuel(f), capWater(f)) then saveStock(f) end
+    if pct <= 0 then return end
     local low = f.fuel < capFuel(f) * pct / 100 or f.water < capWater(f) * pct / 100
     if not low then f.lowAt = nil return end
     local now = os.time()
@@ -373,7 +489,7 @@ end
 local busy = {}
 local function lockedCallback(name, handler)
     RSGCore.Functions.CreateCallback(name, function(source, cb, ...)
-        if busy[source] then return cb(false) end
+        if busy[source] then notify(source, 'busy', 'inform') return cb(false) end
         busy[source] = true
         local ok, res = pcall(handler, source, ...)
         busy[source] = nil
@@ -427,6 +543,20 @@ local function decorateRecipes(recipes)
     return out
 end
 
+-- factories where this player has finished productions waiting (drives the "ready" map blip)
+local function readyIds(cid)
+    local rows = MySQL.query.await(
+        'SELECT DISTINCT `factory_id` FROM `rsg_factory_queue` WHERE `citizenid` = ? AND `finish_at` <= ?', { cid, os.time() }) or {}
+    local ids = {}
+    for i = 1, #rows do ids[#ids + 1] = rows[i].factory_id end
+    return ids
+end
+
+local function pushReady(cid)
+    local P = RSGCore.Functions.GetPlayerByCitizenId(cid)
+    if P then TriggerClientEvent('rsg-factory:client:ready', P.PlayerData.source, readyIds(cid)) end
+end
+
 local function getQueue(citizenid, factoryId)
     local rows = MySQL.query.await(
         'SELECT `id`, `label`, `outputs`, `finish_at`, `stages` FROM `rsg_factory_queue` WHERE `factory_id` = ? AND `citizenid` = ? ORDER BY `finish_at`',
@@ -471,10 +601,37 @@ local function factoryState(src, Player, f)
             speedCost = s.speed < Config.Upgrades.speed.maxLevel and Config.Upgrades.speed.cost * (s.speed + 1) or nil,
             repairCost = (not repairItem) and Config.Breakdown.repairCost or nil,
             repairItem = repairItem and itemLabel(repairItem) or nil,
-            sellValue = math.floor(f.price * Config.SellbackPercent / 100),
+            sellValue = sellValue(f),
             feeMax = Config.Fees.MaxPerBatch,
+            wage = s.wage,
+            wageMax = (Config.Wages.Enabled and FactorySociety.Account(f)) and Config.Wages.MaxPerBatch or nil,
+            stash = stashEnabled(),
+            topDays = Config.Log.ReportDays,
+            activity = {}, top = {},
         }
+        local log = MySQL.query.await(
+            'SELECT `name`, `label`, `batches`, `fee`, `created_at` FROM `rsg_factory_log` WHERE `factory_id` = ? ORDER BY `id` DESC LIMIT ?',
+            { f.id, Config.Log.Entries }) or {}
+        for i = 1, #log do
+            mgmt.activity[i] = { name = log[i].name, label = log[i].label, batches = log[i].batches, fee = log[i].fee,
+                at = os.date('%d/%m %H:%M', log[i].created_at) }
+        end
+        local top = MySQL.query.await(
+            'SELECT MAX(`name`) AS `name`, SUM(`batches`) AS `batches`, SUM(`fee`) AS `fees` FROM `rsg_factory_log` WHERE `factory_id` = ? AND `created_at` >= ? GROUP BY `citizenid` ORDER BY `batches` DESC LIMIT 5',
+            { f.id, os.time() - Config.Log.ReportDays * 86400 }) or {}
+        for i = 1, #top do
+            mgmt.top[i] = { name = top[i].name, batches = tonumber(top[i].batches) or 0, fees = tonumber(top[i].fees) or 0 }
+        end
     end
+    -- the player's last run here, so it can be repeated in one click (only while the line is still the same)
+    local last = nil
+    local lr = MySQL.single.await(
+        'SELECT `recipe`, `batches`, `label` FROM `rsg_factory_log` WHERE `factory_id` = ? AND `citizenid` = ? ORDER BY `id` DESC LIMIT 1',
+        { f.id, citizenid })
+    if lr and f.recipes[lr.recipe] and f.recipes[lr.recipe].label == lr.label then
+        last = { recipe = lr.recipe, batches = math.min(lr.batches, Config.MaxBatches), label = lr.label }
+    end
+    local feeEff, discount = feeFor(f, Player, 1)
     local supplies = {}
     for _, sp in ipairs(Config.Supplies) do
         supplies[#supplies + 1] = { key = sp.key, item = sp.item, image = itemImage(sp.item), label = itemLabel(sp.item), units = sp.units, stock = sp.stock }
@@ -489,7 +646,7 @@ local function factoryState(src, Player, f)
         price = f.price,
         fuel = f.fuel, water = f.water,
         maxFuel = capFuel(f), maxWater = capWater(f),
-        fee = f.settings.fee, paused = f.settings.paused, broken = f.settings.broken, staffed = f.settings.staffed,
+        fee = f.settings.fee, feeEff = feeEff, discount = discount, last = last, paused = f.settings.paused, broken = f.settings.broken, staffed = f.settings.staffed,
         access = f.settings.access, speedPct = speedPercent(f),
         blocked = usageBlock(f, Player),
         mgmt = mgmt,
@@ -526,9 +683,10 @@ CreateThread(function()
             x = row.x, y = row.y, z = row.z, h = row.h, recipes = recipes,
             owner = row.owner, owner_name = row.owner_name,
             price = row.price or Config.DefaultPrice, fuel = row.fuel or 0, water = row.water or 0,
-            bank = row.bank or 0, settings = normSettings(row.settings and json.decode(row.settings) or nil),
+            bank = row.bank or 0, paid = row.paid, settings = normSettings(row.settings and json.decode(row.settings) or nil),
         }
     end
+    MySQL.update('DELETE FROM `rsg_factory_log` WHERE `created_at` < ?', { os.time() - Config.Log.KeepDays * 86400 })
     Loaded = true
     print(('^2[rsg-factory] loaded %d factories^7'):format(#rows))
     FactorySociety.Backfill(Factories)
@@ -573,7 +731,8 @@ RSGCore.Commands.Add(Config.CommandName, 'Create a factory at your position (adm
 ---------------------------------------------------------------------
 RSGCore.Functions.CreateCallback('rsg-factory:server:getFactories', function(source, cb)
     if not Loaded then return cb(nil) end
-    cb({ factories = publicList(source), isAdmin = isAdmin(source) })
+    local P = RSGCore.Functions.GetPlayer(source)
+    cb({ factories = publicList(source), isAdmin = isAdmin(source), ready = P and readyIds(P.PlayerData.citizenid) or {} })
 end)
 
 RSGCore.Functions.CreateCallback('rsg-factory:server:getFactory', function(source, cb, factoryId)
@@ -623,21 +782,6 @@ RSGCore.Functions.CreateCallback('rsg-factory:server:saveFactory', function(sour
     cb(true)
 end)
 
-RSGCore.Functions.CreateCallback('rsg-factory:server:deleteFactory', function(source, cb, factoryId)
-    if not isAdmin(source) then notify(source, 'no_permission', 'error') return cb(false) end
-    local f = Factories[tonumber(factoryId)]
-    if not f then notify(source, 'not_found', 'error') return cb(false) end
-    if not nearFactory(source, f, 8.0) then notify(source, 'too_far', 'error') return cb(false) end
-
-    MySQL.update.await('DELETE FROM `rsg_factory_queue` WHERE `factory_id` = ?', { f.id })
-    MySQL.update.await('DELETE FROM `rsg_factories` WHERE `id` = ?', { f.id })
-    Factories[f.id] = nil
-    FactorySociety.Close(f, f.owner and RSGCore.Functions.GetPlayerByCitizenId(f.owner) or nil)
-    notify(source, 'factory_deleted', 'success')
-    broadcast()
-    cb(true)
-end)
-
 lockedCallback('rsg-factory:server:buyFactory', function(source, factoryId)
     local src = source
     local Player = RSGCore.Functions.GetPlayer(src)
@@ -662,9 +806,10 @@ lockedCallback('rsg-factory:server:buyFactory', function(source, factoryId)
     f.owner = citizenid
     f.owner_name = cleanText(((ci.firstname or '') .. ' ' .. (ci.lastname or '')), 64) or citizenid
 
-    local saved = MySQL.update.await('UPDATE `rsg_factories` SET `owner` = ?, `owner_name` = ? WHERE `id` = ?', { f.owner, f.owner_name, f.id })
+    f.paid = f.price
+    local saved = MySQL.update.await('UPDATE `rsg_factories` SET `owner` = ?, `owner_name` = ?, `paid` = ? WHERE `id` = ?', { f.owner, f.owner_name, f.paid, f.id })
     if not saved or saved < 1 then
-        f.owner, f.owner_name = nil, nil
+        f.owner, f.owner_name, f.paid = nil, nil, nil
         if f.price > 0 then Player.Functions.AddMoney('cash', f.price, 'rsg-factory:buy-refund') end
         notify(src, 'invalid_data', 'error')
         return false
@@ -693,8 +838,14 @@ lockedCallback('rsg-factory:server:addSupply', function(source, factoryId, key, 
     if room < 1 then notify(src, 'storage_full', 'error') return false end
     amount = math.min(amount, room)
 
+    local returnItem = supply.returnItem and RSGCore.Shared.Items[supply.returnItem] and supply.returnItem or nil
     if not exports['rsg-inventory']:HasItem(src, supply.item, amount) then
         notify(src, 'missing_supply', 'error')
+        return false
+    end
+    -- make sure the returned item (e.g. empty bucket) fits before anything is taken
+    if returnItem and not exports['rsg-inventory']:CanAddItem(src, returnItem, amount) then
+        notify(src, 'inventory_full', 'error')
         return false
     end
     if not exports['rsg-inventory']:RemoveItem(src, supply.item, amount, nil, 'rsg-factory:supply') then
@@ -702,9 +853,8 @@ lockedCallback('rsg-factory:server:addSupply', function(source, factoryId, key, 
         return false
     end
     f[supply.stock] = f[supply.stock] + amount * supply.units
-    if supply.returnItem and RSGCore.Shared.Items[supply.returnItem]
-        and exports['rsg-inventory']:CanAddItem(src, supply.returnItem, amount) then
-        exports['rsg-inventory']:AddItem(src, supply.returnItem, amount, nil, nil, 'rsg-factory:supply_return')
+    if returnItem then
+        exports['rsg-inventory']:AddItem(src, returnItem, amount, nil, nil, 'rsg-factory:supply_return')
     end
     saveStock(f)
 
@@ -757,12 +907,13 @@ lockedCallback('rsg-factory:server:startProduction', function(source, factoryId,
 
     -- the factory's own fuel and water (stocked by the owner) pay for the run.
     -- checked and taken in the same step (no waits in between) so two players can't spend the same stock.
+    -- short? pull what is missing from the owner's supply stash first
+    if (f.fuel < plan.fuel or f.water < plan.water) and restockFromStash(f, plan.fuel, plan.water) then saveStock(f) end
     if f.fuel < plan.fuel then notify(src, 'no_fuel', 'error') return false end
     if f.water < plan.water then notify(src, 'no_water', 'error') return false end
 
     -- the owner's fee (other players only), paid into the factory's earnings
-    local fee = 0
-    if f.owner ~= citizenid and f.settings.fee > 0 then fee = f.settings.fee * batches end
+    local fee = feeFor(f, Player, batches)
     if fee > 0 and not Player.Functions.RemoveMoney('cash', fee, 'rsg-factory:fee') then
         notify(src, 'cannot_afford_fee', 'error', fee)
         return false
@@ -811,6 +962,24 @@ lockedCallback('rsg-factory:server:startProduction', function(source, factoryId,
     end
 
     notify(src, 'production_started', 'success', recipe.label, batches)
+
+    -- wage for trusted workers, paid from the society account (only what the account can cover)
+    local wage = 0
+    if Config.Wages.Enabled and f.owner ~= citizenid and f.settings.wage > 0 and isTrusted(f, citizenid) then
+        local w = f.settings.wage * batches
+        if FactorySociety.Debit(f, w, 'factory wages') then
+            local P2 = RSGCore.Functions.GetPlayer(src)
+            if P2 then
+                P2.Functions.AddMoney('cash', w, 'rsg-factory:wage')
+                wage = w
+                notify(src, 'wage_paid', 'success', w)
+            else
+                FactorySociety.Credit(f, w, 'factory wages refund')
+            end
+        end
+    end
+    MySQL.insert('INSERT INTO `rsg_factory_log` (`factory_id`, `citizenid`, `name`, `label`, `recipe`, `batches`, `fee`, `wage`, `created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        { f.id, citizenid, displayName(Player), recipe.label, math.floor(tonumber(recipeIndex)), batches, fee, wage, os.time() })
 
     -- chance of a breakdown (this run still finishes), then the low stock warning
     if Config.Breakdown.enabled and math.random() * 100 < Config.Breakdown.chance then
@@ -876,7 +1045,54 @@ lockedCallback('rsg-factory:server:collect', function(source, factoryId)
     local collected, blocked = payoutRows(src, Player, rows)
     if blocked then notify(src, 'inventory_full', 'error') end
     if collected then notify(src, 'collected', 'success') end
+    pushReady(Player.PlayerData.citizenid)
     return collected
+end)
+
+---------------------------------------------------------------------
+-- Admin delete (after payoutRows, which it uses)
+---------------------------------------------------------------------
+-- Online players get their queued products handed over first. Anything that would still be lost (offline players'
+-- products, supplies left in the stash) is reported once; the admin deletes again within 60 s to confirm.
+local deleteWarn = {}
+AddEventHandler('playerDropped', function() deleteWarn[source] = nil end)
+
+RSGCore.Functions.CreateCallback('rsg-factory:server:deleteFactory', function(source, cb, factoryId)
+    if not isAdmin(source) then notify(source, 'no_permission', 'error') return cb(false) end
+    local f = Factories[tonumber(factoryId)]
+    if not f then notify(source, 'not_found', 'error') return cb(false) end
+    if not nearFactory(source, f, 8.0) then notify(source, 'too_far', 'error') return cb(false) end
+
+    -- the society balance is paid to the owner on delete: don't destroy it when they are offline
+    if f.owner and bankBalance(f) > 0 and not RSGCore.Functions.GetPlayerByCitizenId(f.owner) then
+        notify(source, 'delete_owner_offline', 'error')
+        return cb(false)
+    end
+
+    local rows = MySQL.query.await('SELECT `id`, `factory_id`, `citizenid`, `outputs` FROM `rsg_factory_queue` WHERE `factory_id` = ?', { f.id }) or {}
+    for _, row in ipairs(rows) do
+        local P = RSGCore.Functions.GetPlayerByCitizenId(row.citizenid)
+        if P then payoutRows(P.PlayerData.source, P, { row }) end
+    end
+    local left = MySQL.scalar.await('SELECT COUNT(*) FROM `rsg_factory_queue` WHERE `factory_id` = ?', { f.id }) or 0
+    local lost = left + stashStacks(f)
+    local w = deleteWarn[source]
+    if lost > 0 and not (w and w.id == f.id and w.expires >= os.time()) then
+        deleteWarn[source] = { id = f.id, expires = os.time() + 60 }
+        notify(source, 'delete_queue_warning', 'error', lost)
+        return cb(false)
+    end
+    deleteWarn[source] = nil
+
+    MySQL.update.await('DELETE FROM `rsg_factory_queue` WHERE `factory_id` = ?', { f.id })
+    MySQL.update.await('DELETE FROM `rsg_factory_log` WHERE `factory_id` = ?', { f.id })
+    MySQL.update.await('DELETE FROM `rsg_factories` WHERE `id` = ?', { f.id })
+    Factories[f.id] = nil
+    if stashEnabled() then pcall(function() exports['rsg-inventory']:DeleteInventory(stashId(f)) end) end
+    FactorySociety.Close(f, f.owner and RSGCore.Functions.GetPlayerByCitizenId(f.owner) or nil)
+    notify(source, 'factory_deleted', 'success')
+    broadcast()
+    cb(true)
 end)
 
 ---------------------------------------------------------------------
@@ -894,6 +1110,7 @@ local function handleFinished(row)
             end
         end
     end
+    if P then pushReady(row.citizenid) end
     if not Config.Alerts.ready then return end
     if P then
         notify(P.PlayerData.source, 'production_ready', 'inform', row.label)
@@ -908,8 +1125,13 @@ end
 
 CreateThread(function()
     while not Loaded do Wait(1000) end
+    local lastPrune = os.time()
     while true do
         Wait(math.max(5, Config.Alerts.interval) * 1000)
+        if os.time() - lastPrune >= 86400 then
+            lastPrune = os.time()
+            MySQL.update('DELETE FROM `rsg_factory_log` WHERE `created_at` < ?', { os.time() - Config.Log.KeepDays * 86400 })
+        end
         local rows = MySQL.query.await(
             'SELECT `id`, `factory_id`, `citizenid`, `label`, `outputs` FROM `rsg_factory_queue` WHERE `finish_at` <= ? AND `notified` = 0',
             { os.time() }) or {}
@@ -938,20 +1160,6 @@ local function countOwned(cid)
     return n
 end
 
-local function displayName(Player)
-    local ci = Player.PlayerData.charinfo or {}
-    return cleanText(((ci.firstname or '') .. ' ' .. (ci.lastname or '')), 64) or Player.PlayerData.citizenid
-end
-
-local function charName(charinfo, cid)
-    if type(charinfo) == 'string' then
-        local ok, d = pcall(json.decode, charinfo)
-        charinfo = ok and d or {}
-    end
-    charinfo = type(charinfo) == 'table' and charinfo or {}
-    return cleanText(((charinfo.firstname or '') .. ' ' .. (charinfo.lastname or '')), 64) or cid
-end
-
 -- an online player (by citizenid) standing at the factory (used for transfers)
 local function playerAtFactory(f, cid)
     if type(cid) ~= 'string' or #cid > 32 then return nil end
@@ -962,8 +1170,7 @@ local function playerAtFactory(f, cid)
     return T, tsrc
 end
 
--- player picker for the owner panel: online players first, then a database lookup of every character
--- mode 'transfer' lists online players only (the buyer has to accept in person)
+-- player picker for the owner panel: online players at the factory only (nobody is added or offered a deal without being there)
 local searchAt = {}
 RSGCore.Functions.CreateCallback('rsg-factory:server:findPlayers', function(source, cb, factoryId, query, mode)
     local Player = RSGCore.Functions.GetPlayer(source)
@@ -974,37 +1181,21 @@ RSGCore.Functions.CreateCallback('rsg-factory:server:findPlayers', function(sour
     searchAt[source] = now
 
     local q = type(query) == 'string' and query:sub(1, 32):lower():gsub('^%s+', ''):gsub('%s+$', '') or ''
-    local onlineOnly = mode == 'transfer'
     local skip = { [f.owner] = true }
-    if not onlineOnly then
+    if mode ~= 'transfer' then
         for _, t in ipairs(f.settings.trusted) do skip[t.cid] = true end
     end
 
-    local out, seen = {}, {}
-    local function add(cid, name, online)
-        if seen[cid] or skip[cid] or #out >= 30 then return end
-        seen[cid] = true
-        out[#out + 1] = { cid = cid, name = name, online = online }
-    end
-
+    -- online players standing at the factory only: no database lookups of other characters
+    local out = {}
     for _, id in ipairs(RSGCore.Functions.GetPlayers()) do
         local P = RSGCore.Functions.GetPlayer(id)
-        if P then
+        if P and #out < 30 and not skip[P.PlayerData.citizenid] and nearFactory(P.PlayerData.source, f, 10.0) then
             local cid = P.PlayerData.citizenid
             local name = displayName(P)
-            if q == '' or name:lower():find(q, 1, true) or cid:lower():find(q, 1, true) or tostring(id) == q then
-                add(cid, name, true)
+            if q == '' or name:lower():find(q, 1, true) or tostring(id) == q then
+                out[#out + 1] = { cid = cid, name = name, online = true }
             end
-        end
-    end
-
-    if not onlineOnly and #q >= 2 then
-        local like = '%' .. q:gsub('[%%_\\]', '\\%0') .. '%'
-        local ok, rows = pcall(MySQL.query.await,
-            "SELECT citizenid, charinfo FROM players WHERE citizenid LIKE ? OR LOWER(CONCAT_WS(' ', JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.firstname')), JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.lastname')))) LIKE ? LIMIT 30",
-            { like, like })
-        if ok and rows then
-            for _, r in ipairs(rows) do add(r.citizenid, charName(r.charinfo, r.citizenid), false) end
         end
     end
 
@@ -1051,20 +1242,27 @@ lockedCallback('rsg-factory:server:ownerAction', function(source, factoryId, act
         saveSettings(f)
         return true
 
+    elseif action == 'setWage' then
+        local w = math.floor(tonumber(data.value) or -1)
+        if not Config.Wages.Enabled or w < 0 or w > Config.Wages.MaxPerBatch then notify(src, 'invalid_data', 'error') return false end
+        s.wage = w
+        saveSettings(f)
+        notify(src, 'factory_saved', 'success')
+        return true
+
+    elseif action == 'openStash' then
+        if not stashEnabled() then notify(src, 'invalid_data', 'error') return false end
+        registerStash(f)
+        return exports['rsg-inventory']:OpenStash(src, stashId(f), { label = f.name, slots = Config.Stash.Slots, maxWeight = Config.Stash.MaxWeight }) and true or false
+
     elseif action == 'addTrusted' then
         if #s.trusted >= Config.TrustedMax then notify(src, 'trusted_full', 'error') return false end
         local tcid = data.cid
         if type(tcid) ~= 'string' or #tcid > 32 or tcid == cid then notify(src, 'player_not_found', 'error') return false end
         if isTrusted(f, tcid) then return true end
-        local T = RSGCore.Functions.GetPlayerByCitizenId(tcid)
-        local name
-        if T then
-            name = displayName(T)
-        else
-            local row = MySQL.single.await('SELECT charinfo FROM players WHERE citizenid = ? LIMIT 1', { tcid })
-            if not row then notify(src, 'player_not_found', 'error') return false end
-            name = charName(row.charinfo, tcid)
-        end
+        local T = playerAtFactory(f, tcid)
+        if not T then notify(src, 'player_not_found', 'error') return false end
+        local name = displayName(T)
         s.trusted[#s.trusted + 1] = { cid = tcid, name = name }
         FactorySociety.StaffAdd(f, tcid)
         saveSettings(f)
@@ -1129,17 +1327,20 @@ lockedCallback('rsg-factory:server:ownerAction', function(source, factoryId, act
         return true
 
     elseif action == 'sell' then
+        if stashStacks(f) > 0 then notify(src, 'stash_not_empty', 'error') return false end
         local inSociety = FactorySociety.Balance(f)
-        local payout = math.floor(f.price * Config.SellbackPercent / 100) + f.bank + inSociety
+        local payout = sellValue(f) + f.bank + inSociety
         local ns = normSettings(s)
-        ns.fee, ns.access, ns.staffed, ns.paused, ns.trusted = 0, 'public', false, false, {}
+        -- the next owner starts clean: the upgrades were paid back in the sale value
+        ns.fee, ns.access, ns.staffed, ns.paused, ns.trusted, ns.tank, ns.speed, ns.wage = 0, 'public', false, false, {}, 0, 0, 0
         -- save first; only pay out when the sale is really stored
         local affected = MySQL.update.await(
-            'UPDATE `rsg_factories` SET `owner` = NULL, `owner_name` = NULL, `bank` = 0, `fuel` = 0, `water` = 0, `settings` = ? WHERE `id` = ? AND `owner` = ?',
+            'UPDATE `rsg_factories` SET `owner` = NULL, `owner_name` = NULL, `bank` = 0, `fuel` = 0, `water` = 0, `paid` = NULL, `settings` = ? WHERE `id` = ? AND `owner` = ?',
             { json.encode(ns), f.id, cid })
         if not affected or affected < 1 then notify(src, 'invalid_data', 'error') return false end
         local oldSettings = f.settings
-        f.owner, f.owner_name, f.bank, f.fuel, f.water, f.settings = nil, nil, 0, 0, 0, ns
+        f.owner, f.owner_name, f.bank, f.fuel, f.water, f.settings, f.paid = nil, nil, 0, 0, 0, ns, nil
+        MySQL.update('DELETE FROM `rsg_factory_log` WHERE `factory_id` = ?', { f.id })
         -- everyone loses the factory job; the society account is paid out to the seller with the sale
         FactorySociety.ClearPeople({ id = f.id, name = f.name, owner = cid, settings = oldSettings })
         if inSociety > 0 and not FactorySociety.Debit(f, inSociety, 'factory sold') then payout = payout - inSociety end
@@ -1180,7 +1381,7 @@ RSGCore.Commands.Add('acceptfactory', 'Accept a factory transfer offer', {}, fal
     busy[src] = true
     local name = displayName(Player)
     local ns = normSettings(f.settings)
-    ns.trusted = {}
+    ns.trusted, ns.wage = {}, 0
     local affected = MySQL.update.await(
         'UPDATE `rsg_factories` SET `owner` = ?, `owner_name` = ?, `bank` = 0, `settings` = ? WHERE `id` = ? AND `owner` = ?',
         { cid, name, json.encode(ns), f.id, offer.fromCid })
@@ -1192,6 +1393,7 @@ RSGCore.Commands.Add('acceptfactory', 'Accept a factory transfer offer', {}, fal
     local earnings = f.bank
     if inSociety > 0 and FactorySociety.Debit(f, inSociety, 'factory transferred') then earnings = earnings + inSociety end
     f.owner, f.owner_name, f.bank, f.settings = cid, name, 0, ns
+    MySQL.update('DELETE FROM `rsg_factory_log` WHERE `factory_id` = ?', { f.id })
     FactorySociety.OwnerChange({ id = f.id, name = f.name, owner = f.owner, settings = oldSettings }, offer.fromCid, cid)
     if earnings > 0 then old.Functions.AddMoney('cash', earnings, 'rsg-factory:transfer-earnings') end
     notify(old.PlayerData.source, 'transfer_done_owner', 'success', name)

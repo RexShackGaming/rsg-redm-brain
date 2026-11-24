@@ -6,6 +6,7 @@ local isAdmin = false
 local uiOpen, uiFocus = false, false
 local currentId = nil
 local opening = false
+local ready = {}         -- [factoryId] = true: finished products waiting for this player
 
 local UI_KEYS = {
     'ui_recipes', 'ui_inputs', 'ui_outputs', 'ui_time', 'ui_batches', 'ui_produce', 'ui_queue',
@@ -16,6 +17,7 @@ local UI_KEYS = {
     'ui_owner', 'ui_for_sale', 'ui_price', 'ui_buy', 'ui_buy_confirm', 'ui_not_owned', 'ui_fuel', 'ui_water',
     'ui_supplies', 'ui_add', 'ui_fuel_batch', 'ui_water_batch', 'ui_units_each', 'ui_needs', 'ui_sale_price',
     'ui_owner_stocks',
+    'ui_repeat', 'ui_discount', 'ui_wage', 'ui_stash', 'ui_stash_desc', 'ui_open', 'ui_activity', 'ui_top_users', 'ui_no_activity',
     'ui_tab_production', 'ui_tab_owner', 'ui_earnings', 'ui_withdraw', 'ui_fee', 'ui_access', 'ui_access_public', 'ui_access_trusted', 'ui_access_owner', 'ui_staffed', 'ui_paused', 'ui_on', 'ui_off', 'ui_player_search', 'ui_no_players', 'ui_online', 'ui_offline', 'ui_upgrades', 'ui_upgrade_tank', 'ui_upgrade_speed', 'ui_level', 'ui_max', 'ui_upgrade', 'ui_cost', 'ui_condition', 'ui_working', 'ui_broken', 'ui_repair', 'ui_sell', 'ui_sell_confirm', 'ui_transfer', 'ui_transfer_confirm', 'ui_apply', 'ui_settings',
     -- notification texts reused in the UI to say why production is blocked
     'no_access', 'paused', 'broken', 'not_staffed',
@@ -51,17 +53,6 @@ local function runPttWhitelist()
     end
 end
 
-CreateThread(function()
-    while true do
-        if uiFocus and Config.AllowPushToTalkWhileOpen then
-            Wait(0)
-            runPttWhitelist()
-        else
-            Wait(250)
-        end
-    end
-end)
-
 local function closeUi()
     if not uiOpen then return end
     uiOpen = false
@@ -70,6 +61,20 @@ local function closeUi()
     applyNuiFocus(false)
     SendNUIMessage({ action = 'close' })
 end
+
+CreateThread(function()
+    while true do
+        if uiOpen and IsEntityDead(PlayerPedId()) then
+            closeUi()
+        end
+        if uiFocus and Config.AllowPushToTalkWhileOpen then
+            Wait(0)
+            runPttWhitelist()
+        else
+            Wait(250)
+        end
+    end
+end)
 
 local function strings()
     local t = {}
@@ -148,7 +153,10 @@ end)
 
 RegisterNUICallback('owner', function(data, cb)
     if not currentId or type(data) ~= 'table' then return cb(false) end
-    local ok = RSGCore.Functions.AwaitCallback('rsg-factory:server:ownerAction', 10000, currentId, data.action, data.data)
+    local id = currentId
+    -- the stash opens in the inventory UI: give up NUI focus first so the inventory can take it
+    if data.action == 'openStash' then closeUi() end
+    local ok = RSGCore.Functions.AwaitCallback('rsg-factory:server:ownerAction', 10000, id, data.action, data.data)
     cb(ok and true or false)
 end)
 
@@ -260,12 +268,14 @@ local function refreshBlips()
     local cfg = Config.Blips
     if not cfg.enabled then return end
     for id, f in pairs(factories) do
-        if f.status == 'mine' or f.status == 'sale' or cfg.showOwnedByOthers then
+        if f.status == 'mine' or f.status == 'sale' or cfg.showOwnedByOthers or ready[id] then
             local blip = BlipAddForCoords(1664425300, f.x, f.y, f.z)
             SetBlipSprite(blip, cfg.sprite, true)
             SetBlipScale(blip, cfg.scale)
-            SetBlipName(blip, f.status == 'sale' and ('%s (%s)'):format(f.name, locale('ui_for_sale')) or f.name)
-            local color = (f.status == 'mine' and cfg.mineColor) or (f.status == 'sale' and cfg.saleColor) or nil
+            local name = f.status == 'sale' and ('%s (%s)'):format(f.name, locale('ui_for_sale')) or f.name
+            if ready[id] then name = ('%s (%s)'):format(f.name, locale('blip_ready')) end
+            SetBlipName(blip, name)
+            local color = (ready[id] and cfg.readyColor) or (f.status == 'mine' and cfg.mineColor) or (f.status == 'sale' and cfg.saleColor) or nil
             if color then BlipAddModifier(blip, joaat(color)) end
             blips[id] = blip
         end
@@ -292,6 +302,16 @@ RegisterNetEvent('rsg-factory:client:sync', function(list)
     if uiOpen and currentId and not factories[currentId] then closeUi() end
 end)
 
+local function setReady(ids)
+    ready = {}
+    for _, id in ipairs(ids or {}) do ready[id] = true end
+end
+
+RegisterNetEvent('rsg-factory:client:ready', function(ids)
+    setReady(ids)
+    refreshBlips()
+end)
+
 local function loadFactories()
     local res
     for _ = 1, 60 do
@@ -301,6 +321,7 @@ local function loadFactories()
     end
     if not res then return end
     isAdmin = res.isAdmin
+    setReady(res.ready)
     applyFactories(res.factories)
 end
 

@@ -123,6 +123,9 @@ if math.random(100) <= extra then
 end
 ```
 
+### Fishing perks
+rsg-fishing reads three perks of the `fishing` skill on the client (they only shape the minigame, never a reward): `bite_chance` (% added to the bite chance), `line_strength` (% less line tension while reeling) and `rare_chance` (% chance of a heavier fish). `sell_bonus` is applied by rsg-fishmonger.
+
 ### Gate by level
 ```lua
 if not exports['rsg-skills']:HasLevel(src, 'mining', 5) then

@@ -1,4 +1,4 @@
-# rsg-farming
+# rsg-farming (v3.6.0)
 
 Plant, water, fertilise and harvest crops anywhere in the world, using the water buckets from rsg-wellpump. Built for **RSG-Core (RedM)** with rsg-target and oxmysql. No ox_lib required.
 
@@ -9,9 +9,10 @@ Plant, water, fertilise and harvest crops anywhere in the world, using the water
 - **Plant anywhere**: use a seed item to place a ghost crop with the standard **rsg-gizmo** placement tool.
 - **Live growth simulation on the server**: water and fertiliser drain over time, health drops when the plant is dry, and plants die if neglected.
 - **Growth stages**: props change as the crop grows (configurable model and height offset per stage).
-- **Fertiliser boost**: fertilised plants grow faster.
+- **Fertiliser tiers**: fertilised plants grow faster; `Config.Fertilizers` lets you add better fertilisers or compost that also heals worn-out soil.
 - **Tending UI**: a styled RDR2 panel showing growth, water, fertiliser and health bars, status, and the estimated time to harvest.
 - **`/myplants` overview**: lists all your crops, nearest first, with mini status bars. Click a far-away plant to get a map route to it.
+- **Scarecrow** (`p_scarecrow05x`) cuts the pest chance of plants around it, and **sprinklers** water nearby plants from an rsg-wellpump pump (rsg-wellpump 3.1.0+). Both are placed with rsg-gizmo and packed up again with rsg-target.
 - **Well pumps via rsg-wellpump**: place a pump, fill empty buckets and pack it up with the standalone [rsg-wellpump](https://github.com/Rexshack-RedM/rsg-wellpump) resource, shared with other scripts.
 - **Limited-use water buckets**: a full bucket waters a set number of times (default 5) before it becomes an empty bucket again. The uses left show in the item description.
 - **Ownership**: only the planter can harvest or remove a living plant (configurable). Anyone can clear dead plants.
@@ -22,7 +23,14 @@ Plant, water, fertilise and harvest crops anywhere in the world, using the water
 - **Optimised**: props are streamed by distance, the database saves in batches (and retries on failure), and player actions send single-plant updates instead of the whole list.
 - **Farming XP and levels**: every character earns XP for planting, tending and harvesting. Higher levels bring a bonus-yield chance and more plant slots. Check progress with `/farmlevel`.
 - **Harvest quality**: plants harvested at high health give extra produce (seeds are never boosted).
-- **Seasons**: growth speed follows the server's real calendar month (slow winters, fast summers), configurable per month.
+- **Seasons**: growth speed follows the server's real calendar month (slow winters, fast summers), configurable per month and per crop (warm-season crops, hardy crops).
+- **Weather effects**: snow, blizzards, hail, sandstorms and heat slow growth, hurt plants or dry them out (rsg-weather). Hardy crops ignore the cold.
+- **Soil and crop rotation**: ground tires when the same crop keeps being harvested from it; rotate crops or use compost to heal it. A Soil bar shows in the panel.
+- **Owner alerts and map blips**: get told when crops are ready, dry, infested or withered, and see your plants on the map.
+- **Farmland and tools (optional)**: restrict planting to farm zones and require a tool such as a hoe.
+- **Shared farms (optional)**: gang or job members can tend each other's plants.
+- **Crop theft (optional)**: non-owners can steal a share of the harvest; the owner is told, lawmen can be alerted (rsg-lawman) and rsg-reputation is applied.
+- **rsg-drugs integration**: weed is an `illegal` crop here. rsg-drugs finds `seedweed` while drying and dries the harvested `weed`, so the two scripts form one loop.
 - **Rain**: while rsg-weather reports drizzle, rain, showers or storms, every plant is watered automatically.
 - **Pests (optional)**: infestations slow growth and drain health until treated with pesticide. Disabled by default.
 - **Private ownership**: citizenids are never sent to clients; each player only receives the ids of the plants they own.
@@ -57,7 +65,7 @@ Plant, water, fertilise and harvest crops anywhere in the world, using the water
    ensure rsg-wellpump
    ensure rsg-farming
    ```
-3. **Database**: nothing to import. The table `rsg_farming_plants` is created automatically on first start. Pumps placed with the old farming pump are imported by rsg-wellpump the first time it starts. To install manually, set `Config.AutoDatabase = false` and import `install.sql`.
+3. **Database**: nothing to import. The tables `rsg_farming_plants`, `rsg_farming_soil` and `rsg_farming_props` are created automatically on first start (a missing `share_key` column is added to older installs). Pumps placed with the old farming pump are imported by rsg-wellpump the first time it starts. To install manually, set `Config.AutoDatabase = false` and import `install.sql`.
 4. **Items**: add the items below to `rsg-core/shared/items.lua`. Skip any you already have.
 5. Add the item images (`seedcorn.png`, `fullbucket.png` and so on) to `rsg-inventory/html/images/`.
 6. Restart the server.
@@ -94,6 +102,12 @@ fullbucket    = { name = 'fullbucket',    label = 'Water Bucket',weight = 2000, 
 ```
 
 The `tool_wellpump` item is added with rsg-wellpump.
+
+Optional placeables (not in rsg-core by default; add them to `rsg-core/shared/items.lua`):
+```lua
+scarecrow = { name = 'scarecrow', label = 'Scarecrow', weight = 3000, type = 'item', image = 'scarecrow.png', unique = false, useable = true, shouldClose = true, description = 'Keeps pests away from nearby crops' },
+sprinkler = { name = 'sprinkler', label = 'Sprinkler', weight = 3000, type = 'item', image = 'sprinkler.png', unique = false, useable = true, shouldClose = true, description = 'Waters nearby crops from a well pump' },
+```
 
 > **Important:** `fullbucket` must be `unique = true`. Each bucket stores its own uses left in its item data, and stacked buckets would share a single count.
 
@@ -154,9 +168,13 @@ All settings are in `shared/config.lua`.
 | `Config.PushToTalkControls` | `{ 0x4BC9DABB }` | Controls left enabled while the UI is open |
 | `Config.InteractDistance` | `1.6` | Distance needed to tend a plant (m) |
 | `Config.RenderDistance` | `60.0` | Distance at which props spawn and despawn (m) |
+| `Config.SyncDistance` | `250.0` | The server only sends other players' plants within this range (yours are always sent). Keep it well above `RenderDistance` |
 | `Config.OwnerOnlyHarvest` | `true` | Only the planter can harvest |
 | `Config.UseTarget` | `true` | `true` = rsg-target, `false` = `[G]` prompt |
-| `Config.InteractKey` | `0x760A9C6F` | Prompt key (G), used only when `UseTarget = false` |
+| `Config.UseKeyMapping` | `true` | `UseTarget = false` only: the prompt key is registered through rsg-core `RegisterKey`, so players can rebind it in the game's key settings. `false` = poll `InteractKey` |
+| `Config.InteractKeyName` | `'G'` | Default key name when `UseKeyMapping = true` |
+| `Config.InteractKey` | `0x760A9C6F` | Prompt control hash (G), used only when `UseTarget = false` and `UseKeyMapping = false` |
+| `Config.ReopenAfterAction` | `true` | Reopen the plant panel after watering, fertilising or treating |
 | `Config.TargetRadius` | `0.8` | Target sphere size around each plant |
 | `Config.TargetIcon` | `fa-solid fa-seedling` | rsg-target icon |
 
@@ -169,7 +187,6 @@ All settings are in `shared/config.lua`.
 | `Config.WaterDecay` | `100 / 60` | Water lost per minute (full to empty in 60 min) |
 | `Config.FertilizerDecay` | `100 / 90` | Fertiliser lost per minute |
 | `Config.MinWaterToGrow` | `1` | The plant only grows above this water level |
-| `Config.FertilizerBoost` | `1.5` | Growth multiplier while fertilised |
 | `Config.DryDamage` | `5` | Health lost per minute without water |
 | `Config.HealthRegen` | `2` | Health gained per minute while watered |
 | `Config.DeadPlantRemoveTime` | `30` | Minutes before a dead plant is removed (`0` = never) |
@@ -180,10 +197,28 @@ All settings are in `shared/config.lua`.
 |---|---|---|
 | `Config.WaterItem` | `fullbucket` | Item used to water |
 | `Config.WaterAmount` | `100` | Water added per use |
-| `Config.FertilizerItem` | `fertilizer` | Item used to fertilise |
-| `Config.FertilizerAmount` | `100` | Fertiliser added per use |
+| `Config.Fertilizers` | `{ { item = 'fertilizer', amount = 100, boost = 1.5, soil = 0 } }` | Fertilisers, first one the player carries is used. `amount` fertiliser added, `boost` growth multiplier, `soil` fatigue healed (compost). A plant keeps the boost of the last fertiliser applied until the server restarts |
+| `Config.PlantTool` | `false` | Item the planter must carry (not consumed), e.g. a hoe. `false` = none |
+| `Config.ScenarioCleanup` | `'tracked'` | `'tracked'` removes only props that attached to the player during the action, `'sweep'` is the old "delete any new object nearby" behaviour |
+| `Config.ScenarioExitWait` | `1000` | ms to let the exit animation finish before removing props |
 | `Config.PlantTime` / `WaterTime` / `FertilizeTime` / `HarvestTime` | ms | Progress bar durations (also enforced by the server) |
 | `Config.Scenarios` | table | Animation scenario for each action |
+
+### Farmland, soil, weather and extras
+
+| Option | Default | Description |
+|---|---|---|
+| `Config.RequirePlantZone` / `Config.PlantZones` | `false` / `{}` | Only allow planting inside these `{ coords, radius }` areas (checked on the server too) |
+| `Config.WeatherEffects` | table | Per rsg-weather weather name: `waterDecay`, `growth`, `healthLoss`, `cold` (hardy crops ignore cold effects). `{}` = off |
+| `Config.Soil` | table | `enabled`, `cell` (patch size m), `depletion`, `rotateRecovery`, `recoverPerHour`, `maxYieldPenalty`, `warnAt` |
+| `Config.Alerts` | all `true` | Owner notifications: `ready`, `thirsty`, `pests`, `dead` (`enabled` = master switch) |
+| `Config.Blips` | `enabled`, `blip_ambient_companion`, `0.4` | Map blips for the plants you can tend. Use a sprite name that exists in the game |
+| `Config.Sharing` | `enabled = false`, `mode = 'gang'` | Members of the planter's gang (or job) can tend, harvest and remove that plant |
+| `Config.Scarecrow` | enabled | `item`, `model` (`p_scarecrow05x`), `radius` (15), `pestMultiplier` (0.25, only matters with `Config.Pests.enabled`), `maxPerPlayer` |
+| `Config.Sprinkler` | enabled | `item`, `model` (placeholder prop, change it), `radius` (8), `startBelow`, `waterAdded`, `pumpCost`, `linkDistance`, `maxPerPlayer`. Draws water from rsg-wellpump's `DrawWater` export |
+| `Config.Theft` | `enabled = false` | Non-owners may harvest for `yield` of the produce; `notifyOwner`, `lawAlert` (chance, rsg-lawman), `alertGap`, `lawJobType`, `reputation` (rsg-reputation action) |
+
+Crop options: `seasons = { [month] = multiplier }` overrides `Config.Seasons` for that crop, `hardy = true` ignores cold weather effects, `illegal = true` never raises a law alert when stolen.
 
 ### Crops
 
@@ -245,6 +280,7 @@ rsg-farming/
 │   ├── server.lua      -- plants, growth simulation, database
 │   └── versionchecker.lua
 ├── shared/config.lua
+├── shared/zones.lua    -- zone checks used by client and server
 ├── install.sql         -- manual database install (when AutoDatabase = false)
 ├── locales/           -- en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
 ├── html/               -- NUI (index.html, style.css, script.js)
@@ -256,6 +292,19 @@ rsg-farming/
 
 ## Changelog
 
+### 3.6.0
+- New: scarecrow and sprinkler placeables (rsg-gizmo placement, rsg-target pack up); sprinklers draw from rsg-wellpump 3.1.0+. New table `rsg_farming_props`.
+
+### 3.5.0
+- New: owner alerts, map blips, per-crop seasons, weather effects, farmland zones and tool, shared farms, crop theft (rsg-lawman / rsg-reputation), soil fatigue and compost, fertiliser tiers.
+- Changed: batched saves, tracked scenario clean-up, `[G]` prompt shows the configured key, `Config.FertilizerItem` / `FertilizerAmount` / `FertilizerBoost` replaced by `Config.Fertilizers`.
+- New table `rsg_farming_soil` and column `rsg_farming_plants.share_key` (created automatically); 11 new locale keys in all 11 languages.
+
+### 3.4.0
+- Security: players only receive their own plants plus plants within `Config.SyncDistance`, so plant locations can't be dumped from the client; planting can't be spammed by skipping the animation.
+- Performance: smaller, per-player syncs; no per-frame polling for the `[G]` prompt; pests no longer force a save every tick.
+- UX: the plant panel reopens after tending (`Config.ReopenAfterAction`); the prompt key is rebindable (`Config.UseKeyMapping`).
+- New locale keys `key_tend` and `cmd_farmlevel` in all 11 languages.
 **3.2.0**
 - Optional rsg-skills integration: rsg-skills replaces the built-in farming XP when started (`Config.Skills`); new locale keys `level_info_skills`, `level_info_skills_next`.
 

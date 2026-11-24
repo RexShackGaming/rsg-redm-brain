@@ -63,10 +63,61 @@ html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden
 .tension.danger .tension-head{color:var(--rdr-cost-over)}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @keyframes tug{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(5px) rotate(-8deg)}75%{transform:translateY(3px) rotate(8deg)}}
+/* ---- angler's journal ---- */
+#journal{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:auto}
+.jcard{position:relative;width:520px;max-width:92vw;max-height:80vh;display:flex;flex-direction:column;padding:18px 20px 20px;border-radius:3px;
+  border:1px solid var(--rdr-gold-dim);outline:1px solid rgba(0,0,0,.6);outline-offset:-5px;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.015) 0 1px,transparent 1px 3px),
+             linear-gradient(160deg,var(--rdr-panel-2),var(--rdr-panel) 60%,var(--rdr-black));
+  box-shadow:0 20px 60px var(--rdr-shadow),inset 0 0 40px rgba(0,0,0,.5)}
+.jhead{text-align:center;padding:0 40px}
+.jtitle{font-size:24px;font-weight:700;letter-spacing:1px;text-transform:uppercase;text-shadow:0 2px 4px #000}
+.jsub{margin-top:4px;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--rdr-muted)}
+.jclose{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;cursor:pointer;color:var(--rdr-text);font-size:14px;
+  border:1px solid var(--rdr-gold-dim);background:radial-gradient(circle at 35% 30%,#2e2e2e,#0a0a0a);transition:border-color .15s ease,filter .15s ease}
+.jclose:hover{border-color:var(--rdr-gold);filter:brightness(1.3)}
+.jbar{margin:8px 0 2px;height:8px;border-radius:2px;border:1px solid var(--rdr-gold-dim);background:rgba(0,0,0,.45);box-shadow:inset 0 1px 3px rgba(0,0,0,.6);overflow:hidden}
+.jbar>div{height:100%;width:0;background:linear-gradient(90deg,#7fcf82,var(--rdr-cost-ok));transition:width .35s ease}
+.jtabs{display:flex;gap:8px;justify-content:center;margin-bottom:10px}
+.wood{padding:7px 14px;font:500 12.5px 'Roboto',sans-serif;letter-spacing:1.5px;text-transform:uppercase;color:var(--rdr-muted);cursor:pointer;
+  background:linear-gradient(180deg,#1c1c1c,#0a0a0a);border:1px solid var(--rdr-gold-dim);border-radius:2px;transition:border-color .15s ease,filter .15s ease,color .15s ease}
+.wood:hover{border-color:var(--rdr-gold);filter:brightness(1.3)}
+.wood.active{color:var(--rdr-text);background:linear-gradient(180deg,#2e2e2e,#141414)}
+.jbody{overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:4px}
+.jbody::-webkit-scrollbar{width:4px}
+.jbody::-webkit-scrollbar-thumb{background:var(--rdr-gold-dim);border-radius:2px}
+.jrow{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:2px;border:1px solid rgba(201,162,75,.18);
+  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.15));transition:background .15s ease,border-color .15s ease,transform .15s ease}
+.jrow:hover{border-color:var(--rdr-gold-dim);transform:translateX(2px)}
+.jrow.unknown{opacity:.45}
+.jrow.legend{border-color:var(--rdr-amber)}
+.jmain{flex:1;min-width:0}
+.jname{font-size:14px;font-weight:500;letter-spacing:.5px;text-transform:uppercase}
+.jmeta{margin-top:2px;font-size:12px;font-style:italic;color:var(--rdr-muted)}
+.jbadge{min-width:46px;padding:3px 8px;text-align:center;font-size:11px;font-weight:700;letter-spacing:1.5px;border:1px solid var(--rdr-gold-dim);border-radius:2px}
+.jrank{width:30px;text-align:center;font-size:15px;font-weight:700;color:var(--rdr-amber)}
+.jempty{padding:24px;text-align:center;font-style:italic;color:var(--rdr-muted)}
 </style>
 </head>
 <body>
 <div id="root">
+  <div id="journal" class="hidden">
+    <div class="jcard">
+      <div class="jhead">
+        <div class="jtitle" id="jTitle">Angler's Journal</div>
+        <div class="jsub" id="jProgress"></div>
+        <div class="jbar"><div id="jBar"></div></div>
+      </div>
+      <button class="jclose" id="jClose" type="button">&#10005;</button>
+      <div class="divider">✦</div>
+      <div class="jtabs">
+        <button class="wood active" type="button" data-tab="journal" id="tabJournal">Journal</button>
+        <button class="wood" type="button" data-tab="records" id="tabRecords">Records</button>
+        <button class="wood" type="button" data-tab="anglers" id="tabAnglers">Top Anglers</button>
+      </div>
+      <div class="jbody" id="jBody"></div>
+    </div>
+  </div>
   <div id="bobber" class="hidden">
     <svg class="float" viewBox="0 0 40 60" xmlns="http://www.w3.org/2000/svg">
       <line x1="20" y1="2" x2="20" y2="14" stroke="#f2f2f2" stroke-width="2.5" stroke-linecap="round"/>
@@ -101,12 +152,55 @@ html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden
 <script>
 const panel=document.getElementById('panel'),sub=document.getElementById('sub'),rowsEl=document.getElementById('rows');
 let hideTimer=null;
+const RES=(typeof GetParentResourceName==='function')?GetParentResourceName():'rsg-fishing';
+const UI={journalTitle:"Angler's Journal",tabJournal:'Journal',tabRecords:'Records',tabAnglers:'Top Anglers',caught:'Caught',best:'Best',notCaught:'Not yet caught',
+  found:'%1 of %2 species found',heldBy:'Held by %1',noRecords:'No records yet',angler:'Angler',fish:'Fish',close:'Close'};
+const jEl=document.getElementById('journal'),jBody=document.getElementById('jBody');
+let jData=null,jTab='journal';
+const fmt=(t,...a)=>a.reduce((s,v,i)=>s.replace('%'+(i+1),v),t);
+function renderJournal(){
+  if(!jData)return;
+  document.getElementById('jTitle').textContent=UI.journalTitle;
+  document.getElementById('jProgress').textContent=fmt(UI.found,jData.found,jData.total);
+  document.getElementById('jBar').style.width=(jData.total?Math.round(jData.found/jData.total*100):0)+'%';
+  document.getElementById('tabJournal').textContent=UI.tabJournal;
+  document.getElementById('tabRecords').textContent=UI.tabRecords;
+  document.getElementById('tabAnglers').textContent=UI.tabAnglers;
+  document.querySelectorAll('.jtabs .wood').forEach(b=>b.classList.toggle('active',b.dataset.tab===jTab));
+  let html='';
+  if(jTab==='journal'){
+    html=jData.species.map(s=>{const known=s.caught>0;
+      return `<div class="jrow ${known?'':'unknown'} ${s.legendary?'legend':''}"><div class="jmain"><div class="jname">${esc(s.label)}</div>
+      <div class="jmeta">${known?esc(UI.best)+': '+Number(s.best).toFixed(2)+' kg':esc(UI.notCaught)}</div></div>
+      <div class="jbadge">${known?esc(UI.caught)+' '+s.caught:'?'}</div></div>`;}).join('');
+  }else if(jTab==='records'){
+    html=jData.records.map(r=>{const has=r.weight>0;
+      return `<div class="jrow ${has?'':'unknown'}"><div class="jmain"><div class="jname">${esc(r.label)}</div>
+      <div class="jmeta">${has?esc(fmt(UI.heldBy,r.name)):esc(UI.noRecords)}</div></div>
+      <div class="jbadge">${has?Number(r.weight).toFixed(2)+' kg':'-'}</div></div>`;}).join('');
+  }else{
+    html=(jData.anglers||[]).length?jData.anglers.map((a,i)=>`<div class="jrow"><div class="jrank">${i+1}</div><div class="jmain"><div class="jname">${esc(a.name)}</div>
+      <div class="jmeta">${esc(UI.fish)}: ${Number(a.fish)} &bull; ${Number(a.species)}/${jData.total}</div></div></div>`).join('')
+      :`<div class="jempty">${esc(UI.noRecords)}</div>`;
+  }
+  jBody.innerHTML=html;
+}
+function closeJournalUi(){fetch(`https://${RES}/journalClose`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).catch(()=>{});}
+document.getElementById('jClose').addEventListener('click',closeJournalUi);
+document.querySelectorAll('.jtabs .wood').forEach(b=>b.addEventListener('click',()=>{jTab=b.dataset.tab;jBody.scrollTop=0;renderJournal();}));
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!jEl.classList.contains('hidden'))closeJournalUi();});
+
 const bob=document.getElementById('bobber');
 const infoEl=document.getElementById('info');
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 window.addEventListener('message',e=>{
   const d=e.data; if(!d)return;
-  if(d.action==='locale'){if(d.title)document.getElementById('title').textContent=d.title;if(d.tension)document.getElementById('tensionLabel').textContent=d.tension;return;}
+  if(d.action==='locale'){if(d.title)document.getElementById('title').textContent=d.title;if(d.tension)document.getElementById('tensionLabel').textContent=d.tension;
+    if(d.ui){Object.assign(UI,d.ui);document.getElementById('jClose').title=UI.close;}return;}
+  if(d.action==='journal'){
+    if(!d.show){jEl.classList.add('hidden');return;}
+    jData=d.data;jTab='journal';jBody.scrollTop=0;renderJournal();jEl.classList.remove('hidden');return;
+  }
   if(d.action==='tension'){
     const t=document.getElementById('tension');
     if(!d.show){t.classList.add('hidden');return;}

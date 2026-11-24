@@ -21,7 +21,7 @@ local function runPttWhitelist()
     DisableAllControlActions(0)
     DisableAllControlActions(1)
     DisableAllControlActions(2)
-    local list = Config.PushToTalkControls
+    local list = Config.PushToTalkControls or {}
     for i = 1, #list do
         EnableControlAction(0, list[i], true)
         EnableControlAction(1, list[i], true)
@@ -52,6 +52,12 @@ local function notify(key, nType, ...)
     RSGCore.Functions.Notify({ title = locale('notify_title'), description = locale(key, ...), type = nType, duration = 3000 })
 end
 
+-- Key name for the hint: rsg-voice knows the real default key, the config value is the fallback
+local function transmitKeyLabel()
+    local ok, key = pcall(function() return exports['rsg-voice']:GetRadioKeyLabel() end)
+    return (ok and type(key) == 'string' and key ~= '') and key or Config.TransmitKeyLabel
+end
+
 local function getStrings()
     return {
         title = locale('ui_title'), subtitle = locale('ui_subtitle'),
@@ -59,7 +65,7 @@ local function getStrings()
         frequency = locale('ui_frequency'), connect = locale('ui_connect'), disconnect = locale('ui_disconnect'),
         channels = locale('ui_channels'), noChannels = locale('ui_no_channels'),
         active = locale('ui_active'), join = locale('ui_join'),
-        hint = locale('ui_hint', Config.TransmitKeyLabel), members = locale('ui_members', '%s'),
+        hint = locale('ui_hint', transmitKeyLabel()), members = locale('ui_members', '%s'),
         close = locale('ui_close'), move = locale('ui_move'),
         favorites = locale('ui_favorites'), noFavorites = locale('ui_no_favorites'), favAdd = locale('ui_fav_add'),
         favRemove = locale('ui_fav_remove'), favLabel = locale('ui_fav_label'),
@@ -68,14 +74,20 @@ local function getStrings()
         pname = locale('ui_pname'), privCreate = locale('ui_priv_create'), privUpdate = locale('ui_priv_update'),
         privDelete = locale('ui_priv_delete'), privCost = locale('ui_priv_cost', '%s'), privYours = locale('ui_priv_yours'), locked = locale('ui_locked'),
         search = locale('ui_search'), recents = locale('ui_recents'), noMatch = locale('ui_no_match'), rangeOpen = locale('ui_range_open'),
-        compact = locale('ui_compact'), mute = locale('ui_mute'), muted = locale('ui_muted'),
+        compact = locale('ui_compact'), volume = locale('ui_volume'), testVol = locale('ui_test_volume'), mute = locale('ui_mute'), muted = locale('ui_muted'),
     }
+end
+
+-- A text box in the panel has focus: tell rsg-voice so typing an 'o' does not key the mic
+local function setTyping(state)
+    pcall(function() exports['rsg-voice']:SetRadioInputBlocked(state == true) end)
 end
 
 local function closeRadio()
     if not uiFocus then return end
     uiFocus, adminOpen = false, false
     applyNuiFocus(false)
+    setTyping(false)
     SendNUIMessage({ action = 'close' })
     TriggerServerEvent('rsg-radio:server:panelClosed')
 end
@@ -87,7 +99,7 @@ local function openRadio(state)
     radioKey = ok and key or nil
     uiFocus = true
     applyNuiFocus(true)
-    SendNUIMessage({ action = 'open', strings = getStrings(), state = state })
+    SendNUIMessage({ action = 'open', strings = getStrings(), state = state, bleep = not (Config.Volume and Config.Volume.Bleep == false) })
 end
 
 local opening = false -- a state request is in flight (stops key/command spam from asking the server again)
@@ -122,6 +134,11 @@ end)
 RegisterNUICallback('close', function(_, cb)
     closeRadio()
     cb('ok')
+end)
+
+RegisterNUICallback('typing', function(data, cb)
+    cb('ok')
+    if uiFocus then setTyping(type(data) == 'table' and data.state == true) end
 end)
 
 -- NUI callback that forwards a frequency (and optionally a favorite name) to a server event
@@ -231,19 +248,16 @@ adminAction('adminUnmute', 'rsg-radio:server:admin:unmute', function(d) return t
 adminAction('adminDeletePrivate', 'rsg-radio:server:admin:deletePrivate', function(d) return tonumber(d.freq) end)
 adminAction('adminClear', 'rsg-radio:server:admin:clearChannel', function(d) return tonumber(d.freq) end)
 
-RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
-    closeRadio()
-end)
-
 AddEventHandler('onResourceStop', function(res)
     if res == GetCurrentResourceName() and uiFocus then
         uiFocus = false
         applyNuiFocus(false)
+        setTyping(false)
     end
 end)
 
 ---------------------------------------------------------------------
--- Mute, channel HUD, hogtied report, signal interference
+-- Volume and mute, channel HUD, hogtied report, signal interference
 ---------------------------------------------------------------------
 local HUD = Config.Hud or {}
 local IC  = Config.Incapacitated or {}
@@ -254,8 +268,8 @@ local hudTalkers = {}  -- [serverId] = true while that member transmits
 local hudHidden  = GetResourceKvpInt('rsg-radio:hudHidden') == 1
 local battery    = nil -- 0-100 when Config.Battery.Enabled
 local signal     = 1.0 -- 1.0 clear ... 0.0 no signal (Config.Interference)
-local function configVolume() return math.max(0, math.min(100, tonumber(Config.Volume) or 50)) end -- Config.Volume, percent
-local muted      = false -- radio muted (saved per character)
+local function defaultVolume() return math.max(0, math.min(100, tonumber(Config.Volume and Config.Volume.Default) or 50)) end
+local settings   = { vol = defaultVolume(), muted = false } -- radio volume (percent) and mute, saved per character
 
 local function mySid() return GetPlayerServerId(PlayerId()) end
 
@@ -270,41 +284,44 @@ local function sendHud()
     SendNUIMessage({
         action = 'hud', show = show, freq = hudData and hudData.freq or '', unit = hudData and hudData.unit or '',
         members = members, max = HUD.MaxRows or 8, left = HUD.Left or 18, top = HUD.Top or 18,
-        battery = battery, signal = signal, muted = muted, me = mySid(),
+        battery = battery, signal = signal, muted = settings.muted, me = mySid(),
         txt = { noSignal = locale('hud_no_signal'), weakSignal = locale('hud_weak_signal') },
     })
 end
 
--- rsg-voice does the audio: Config.Volume, our mute and signal are handed over (older rsg-voice versions just ignore them)
+-- rsg-voice does the audio: our volume, mute and signal are handed over (older rsg-voice versions just ignore them)
 local function applyVoice()
     pcall(function()
-        exports['rsg-voice']:SetRadioVolume(configVolume() / 100)
-        exports['rsg-voice']:SetRadioMuted(muted)
+        exports['rsg-voice']:SetRadioVolume(settings.vol / 100)
+        exports['rsg-voice']:SetRadioMuted(settings.muted)
         exports['rsg-voice']:SetRadioSignal(signal)
     end)
 end
 
 local function loadSettings(pd)
     local rs = pd and pd.metadata and pd.metadata.radiosettings
-    local saved = type(rs) == 'table' and rs.muted == true or false
-    if saved ~= muted then
-        muted = saved
+    local vol = type(rs) == 'table' and tonumber(rs.vol) or defaultVolume()
+    vol = math.max(0, math.min(100, math.floor(vol + 0.5)))
+    local muted = type(rs) == 'table' and rs.muted == true or false
+    if vol ~= settings.vol or muted ~= settings.muted then
+        settings.vol, settings.muted = vol, muted
         applyVoice()
         sendHud()
     end
 end
 
--- Panel: the mute button applies at once, the server only stores it (saveMute is debounced by the NUI)
-RegisterNUICallback('setMute', function(data, cb)
+-- Panel: the slider and mute button apply at once, the server only stores them (saveVolume is debounced by the NUI)
+RegisterNUICallback('setVolume', function(data, cb)
     cb('ok')
     if type(data) ~= 'table' then return end
-    muted = data.muted == true
+    settings.vol = math.max(0, math.min(100, math.floor((tonumber(data.vol) or 100) + 0.5)))
+    settings.muted = data.muted == true
     applyVoice()
     sendHud()
 end)
-RegisterNUICallback('saveMute', function(_, cb)
+RegisterNUICallback('saveVolume', function(_, cb)
     cb('ok')
-    TriggerServerEvent('rsg-radio:server:setSettings', muted)
+    TriggerServerEvent('rsg-radio:server:setSettings', settings.vol, settings.muted)
 end)
 
 RegisterNetEvent('rsg-radio:client:hud', function(data)
@@ -336,6 +353,17 @@ AddEventHandler('rsg-voice:client:onRadioTalk', function(state)
     hudTalkers[mySid()] = state == true or nil
     sendHud()
 end)
+
+-- Volume test: rsg-voice plays a simulated incoming transmission at its own live radio gain (volume x signal, 0 when
+-- muted / no signal / in a call), so it tests what rsg-voice really applies, not our copy of the settings
+local function testIncoming()
+    local ok, res = pcall(function() return exports['rsg-voice']:TestRadioIncoming() end)
+    if not ok or type(res) ~= 'table' then return notify('cl_test_unavailable', 'error') end
+    if not res.gain or res.gain <= 0.0 then notify('cl_test_silent', 'warning') end
+end
+RegisterNUICallback('testVolume', function(_, cb) cb('ok') testIncoming() end)
+local TC = Config.Volume and Config.Volume.TestCommand
+if TC and TC ~= '' then RegisterCommand(TC, testIncoming, false) end
 
 if HUD.Command and HUD.Command ~= '' then
     RegisterCommand(HUD.Command, function()
@@ -397,12 +425,6 @@ RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
     SetTimeout(1000, function() loadSettings(RSGCore.Functions.GetPlayerData()) end)
 end)
 RegisterNetEvent('RSGCore:Player:SetPlayerData', function(pd) loadSettings(pd) end)
-RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
-    hudData, hudTalkers, battery, signal = nil, {}, nil, 1.0
-    muted = false
-    applyVoice()
-    sendHud()
-end)
 AddEventHandler('onClientResourceStart', function(res)
     if res == 'rsg-voice' then SetTimeout(1500, applyVoice) end -- rsg-voice restarted: hand our settings over again
 end)
@@ -493,7 +515,15 @@ if HH.Enabled then
     end)
 end
 
-AddEventHandler('RSGCore:Client:OnPlayerUnload', removeHandheld)
+-- Character unloaded: close the panel, drop the handheld pose and reset the radio state
+RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
+    closeRadio()
+    removeHandheld()
+    hudData, hudTalkers, battery, signal = nil, {}, nil, 1.0
+    settings = { vol = defaultVolume(), muted = false }
+    applyVoice()
+    sendHud()
+end)
 AddEventHandler('onResourceStop', function(res)
     if res == GetCurrentResourceName() then removeHandheld() end
 end)

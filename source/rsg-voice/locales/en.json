@@ -65,5 +65,7 @@
     "ui_party_share": "Share Waypoint",
     "ui_radio": "RADIO",
     "ui_radio_key": "Radio transmit (hold)",
+    "key_cycle": "Change voice range",
+    "key_party": "Party voice (hold)",
     "cl_radio_timeout": "Transmission limit of %s seconds reached, release the key"
 }

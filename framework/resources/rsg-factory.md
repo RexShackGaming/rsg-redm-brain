@@ -1,8 +1,8 @@
 # rsg-factory
 
-Version 3.1.0. rsg-factory
+Version 3.2.0. rsg-factory
 
-**Version 3.1.0** · Requires: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` · Optional: `rsg-telegram`, `rsg-society` Admin-built factories for the RSG Framework. An admin stands where the factory NPC should be, runs `/createfactory`, and then defines production lines in an NUI: which items go in, which items come out, and how long it takes. Players buy a factory at its NPC and become its o
+**Version 3.2.0** · Requires: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` · Optional: `rsg-telegram`, `rsg-society` Admin-built factories for the RSG Framework. An admin stands where the factory NPC should be, runs `/createfactory`, and then defines production lines in an NUI: which items go in, which items come out, and how long it takes. Players buy a factory at its NPC and become its o
 
 Source: https://github.com/Rexshack-RedM/rsg-factory
 
@@ -12,7 +12,7 @@ Has NUI (`ui_page`).
 
 ## Net events registered
 
-**client:** `RSGCore:Client:OnPlayerLoaded`, `rsg-factory:client:openAdmin`, `rsg-factory:client:sync`
+**client:** `RSGCore:Client:OnPlayerLoaded`, `rsg-factory:client:openAdmin`, `rsg-factory:client:ready`, `rsg-factory:client:sync`
 
 ## Callbacks (RSGCore.Functions.CreateCallback)
 
@@ -28,4 +28,4 @@ Has NUI (`ui_page`).
 
 ## Database tables
 
-`rsg_factories`, `rsg_factory_queue`
+`rsg_factories`, `rsg_factory_log`, `rsg_factory_queue`

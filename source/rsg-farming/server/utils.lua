@@ -3,10 +3,16 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 
 Utils = {}
 
--- rsg-core callback that lets handlers `return ok, msg` like before
+-- rsg-core callback that lets handlers `return ok, msg` like before.
+-- A handler error is logged and answered with a failure, so the client never waits for the timeout.
 function Utils.callback(name, fn)
     RSGCore.Functions.CreateCallback(name, function(source, cb, ...)
-        cb(fn(source, ...))
+        local res = table.pack(pcall(fn, source, ...))
+        if not res[1] then
+            print(('^1[rsg-farming] callback %s failed: %s^7'):format(name, tostring(res[2])))
+            return cb(false, locale('action_invalid'))
+        end
+        cb(table.unpack(res, 2, res.n))
     end)
 end
 
@@ -39,14 +45,6 @@ function Utils.toHeading(h)
     h = tonumber(h)
     if not finite(h) then return 0.0 end
     return h % 360
-end
-
--- true when coords sit inside a Config.NoPlantZones entry
-function Utils.inBlockedZone(coords)
-    for _, z in ipairs(Config.NoPlantZones or {}) do
-        if #(coords - z.coords) <= z.radius then return true end
-    end
-    return false
 end
 
 ---------------------------------
@@ -102,36 +100,6 @@ function Utils.giveOrDrop(src, item, amount, info, reason, slot)
 end
 
 ---------------------------------
--- ownership sync: clients never receive citizenids.
--- Each player gets the shared list plus the ids THEY own.
----------------------------------
-function Utils.idsOwnedBy(src, ownerOf)
-    local Player = Utils.getPlayer(src)
-    local out = {}
-    if not Player then return out end
-    local cid = Player.PlayerData.citizenid
-    for id, owner in pairs(ownerOf) do
-        if owner == cid then out[#out + 1] = id end
-    end
-    return out
-end
-
-function Utils.broadcastOwned(event, items, ownerOf)
-    local byOwner = {}
-    for id, cid in pairs(ownerOf) do
-        local t = byOwner[cid]
-        if not t then t = {}; byOwner[cid] = t end
-        t[#t + 1] = id
-    end
-    for _, sid in ipairs(GetPlayers()) do
-        local src = tonumber(sid)
-        local Player = src and Utils.getPlayer(src)
-        local cid = Player and Player.PlayerData.citizenid
-        TriggerClientEvent(event, src, items, cid and byOwner[cid] or {})
-    end
-end
-
----------------------------------
 -- action tokens: the server starts a timer at the pre-check and only
 -- accepts the action once the progress bar could really have finished.
 -- Stops clients from skipping the animation / spamming callbacks.
@@ -167,10 +135,33 @@ local SCHEMA = {
         `health` FLOAT NOT NULL DEFAULT 100,
         `dead` TINYINT(1) NOT NULL DEFAULT 0,
         `dead_time` INT(11) NOT NULL DEFAULT 0,
+        `share_key` VARCHAR(80) NOT NULL DEFAULT '',
         `planted_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (`id`),
         KEY `citizenid` (`citizenid`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]],
+    [[CREATE TABLE IF NOT EXISTS `rsg_farming_props` (
+        `id` INT(11) NOT NULL AUTO_INCREMENT,
+        `citizenid` VARCHAR(50) NOT NULL,
+        `kind` VARCHAR(20) NOT NULL,
+        `x` FLOAT NOT NULL, `y` FLOAT NOT NULL, `z` FLOAT NOT NULL, `h` FLOAT NOT NULL DEFAULT 0,
+        `pump_id` INT(11) NOT NULL DEFAULT 0,
+        PRIMARY KEY (`id`),
+        KEY `citizenid` (`citizenid`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]],
+    [[CREATE TABLE IF NOT EXISTS `rsg_farming_soil` (
+        `cell_x` INT(11) NOT NULL,
+        `cell_y` INT(11) NOT NULL,
+        `crop` VARCHAR(50) NOT NULL,
+        `fatigue` FLOAT NOT NULL DEFAULT 0,
+        `updated` INT(11) NOT NULL DEFAULT 0,
+        PRIMARY KEY (`cell_x`, `cell_y`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]],
+}
+
+-- columns added after 3.4.0: existing tables get them without touching any data
+local COLUMNS = {
+    { 'rsg_farming_plants', 'share_key', "`share_key` VARCHAR(80) NOT NULL DEFAULT '' AFTER `dead_time`" },
 }
 
 local function ensureDatabase()
@@ -179,6 +170,22 @@ local function ensureDatabase()
         if not ok then
             print(('^1[rsg-farming] database setup failed: %s^7'):format(tostring(err)))
             return false
+        end
+    end
+    for _, c in ipairs(COLUMNS) do
+        local ok, count = pcall(MySQL.scalar.await,
+            'SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+            { c[1], c[2] })
+        if not ok then
+            print(('^1[rsg-farming] database setup failed: %s^7'):format(tostring(count)))
+            return false
+        end
+        if (tonumber(count) or 0) == 0 then
+            local ok2, err = pcall(MySQL.query.await, ('ALTER TABLE `%s` ADD COLUMN %s'):format(c[1], c[3]))
+            if not ok2 then
+                print(('^1[rsg-farming] database setup failed: %s^7'):format(tostring(err)))
+                return false
+            end
         end
     end
     print('^2[rsg-farming] database tables ready^7')
@@ -207,8 +214,11 @@ CreateThread(function()
         chk(crop.seed)
         for _, r in ipairs(crop.harvest) do chk(r.item) end
     end
-    chk(Config.WaterItem); chk(Config.FertilizerItem)
+    chk(Config.WaterItem); chk(Config.PlantTool)
+    for _, f in ipairs(Config.Fertilizers or {}) do chk(f.item) end
     if Config.Pests.enabled then chk(Config.Pests.item) end
+    if Config.Scarecrow and Config.Scarecrow.enabled then chk(Config.Scarecrow.item) end
+    if Config.Sprinkler and Config.Sprinkler.enabled then chk(Config.Sprinkler.item) end
 
     local names = {}
     for name in pairs(missing) do names[#names + 1] = name end

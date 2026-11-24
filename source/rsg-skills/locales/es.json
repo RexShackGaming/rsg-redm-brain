@@ -64,6 +64,8 @@
     "perk_rare_chance": "Probabilidad de hallazgo raro",
     "perk_speed_bonus": "Bonificación de velocidad de trabajo",
     "perk_save_chance": "Probabilidad de ahorrar materiales",
+    "perk_bite_chance": "Probabilidad de picada",
+    "perk_line_strength": "Resistencia del sedal",
     "ui_title": "Habilidades",
     "ui_subtitle": "Experiencia de la frontera",
     "ui_tab_skills": "Mis habilidades",

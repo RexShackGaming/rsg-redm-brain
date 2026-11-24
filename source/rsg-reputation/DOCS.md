@@ -58,6 +58,9 @@ Regions are plain ids (`valentine`, `new_hanover`, ...) chosen by the calling sc
 | `donation` | 3 | 5 |
 | `delivery` | 0 | 2 |
 | `gang_territory` | -3 | -5 |
+| `fishing_discovery` | 1 | 1 |
+| `fishing_record` | 3 | 4 |
+| `fishing_master` | 10 | 10 |
 
 ## Server exports
 `src` is the player's server ID. Calls that need the player's data wait (inside a thread or event handler) while it is loaded from the database the first time. They return `nil` when the player is not online, a value is not a finite number, or a region is unknown.

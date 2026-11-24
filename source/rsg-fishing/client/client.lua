@@ -42,6 +42,12 @@ for model, data in pairs(Config.fishData) do
     fishNames[joaat(model)] = data[1]
 end
 
+-- fish model hash -> species family
+local fishFamily = {}
+for model, data in pairs(Config.fishData) do
+    fishFamily[joaat(model)] = data[3]
+end
+
 -- bait -> set of fish model hashes it attracts
 local baitFish = {}
 for bait, list in pairs(Config.BaitsPerFish) do
@@ -50,29 +56,98 @@ for bait, list in pairs(Config.BaitsPerFish) do
     baitFish[bait] = set
 end
 
--- weight band (min, max raw kg before * 0.25) per fish model
-local weightBands = {
-    small  = { 0.5, 3.0, size = 0.2 },
-    medium = { 4.0, 6.0, size = 0.5 },
-    large  = { 14.0, 20.0, size = 1.0 },
-}
+-- weight band (min, max raw kg before Config.WeightFactor) per fish model, from Config.fishData / Config.WeightBands
 local fishBand = {}
-for model, band in pairs({
-    A_C_FISHBLUEGIL_01_SM = 'small', A_C_FISHBLUEGIL_01_MS = 'small',
-    A_C_FISHBULLHEADCAT_01_MS = 'small', A_C_FISHBULLHEADCAT_01_SM = 'small',
-    A_C_FISHCHAINPICKEREL_01_MS = 'small', A_C_FISHCHAINPICKEREL_01_SM = 'small',
-    A_C_FISHPERCH_01_MS = 'small', A_C_FISHPERCH_01_SM = 'small',
-    A_C_FISHREDFINPICKEREL_01_MS = 'small', A_C_FISHREDFINPICKEREL_01_SM = 'small',
-    A_C_FISHROCKBASS_01_MS = 'small', A_C_FISHROCKBASS_01_SM = 'small',
-    A_C_FISHLARGEMOUTHBASS_01_MS = 'medium', A_C_FISHLARGEMOUTHBASS_01_LG = 'medium',
-    A_C_FISHSMALLMOUTHBASS_01_LG = 'medium', A_C_FISHSMALLMOUTHBASS_01_MS = 'medium',
-    A_C_FISHSALMONSOCKEYE_01_MS = 'medium', A_C_FISHSALMONSOCKEYE_01_ML = 'medium', A_C_FISHSALMONSOCKEYE_01_LG = 'medium',
-    A_C_FISHRAINBOWTROUT_01_LG = 'medium', A_C_FISHRAINBOWTROUT_01_MS = 'medium',
-    A_C_FISHCHANNELCATFISH_01_XL = 'large', A_C_FISHCHANNELCATFISH_01_LG = 'large',
-    A_C_FISHLAKESTURGEON_01_LG = 'large', A_C_FISHLONGNOSEGAR_01_LG = 'large',
-    A_C_FISHMUSKIE_01_LG = 'large', A_C_FISHNORTHERNPIKE_01_LG = 'large',
-}) do
-    fishBand[joaat(model)] = weightBands[band]
+for model, data in pairs(Config.fishData) do
+    fishBand[joaat(model)] = Config.WeightBands[data[2]] or Config.WeightBands.small
+end
+
+-- =========================================================
+-- Regions, bite conditions and rsg-skills perks
+-- =========================================================
+local ZONE_STATE = 0
+local ZONE_WATER = { 2, 3, 5, 6, 7, 8 } -- lake, river, swamp, ocean, creek, pond
+local sessionRegion, sessionSpot = nil, nil -- state region and legendary spot under the hook
+
+local function signed(h)
+    h = (h or 0) & 0xFFFFFFFF
+    if h >= 0x80000000 then h = h - 0x100000000 end
+    return h
+end
+
+local stateRegion, legendaryHash = {}, {}
+for zone, region in pairs(Config.Regions.StateZones) do stateRegion[signed(joaat(zone))] = region end
+for zone in pairs(RegionSets.legendary) do legendaryHash[signed(joaat(zone))] = zone end
+
+local function zoneAt(c, zoneType)
+    -- _GET_MAP_ZONE_AT_COORDS
+    return signed(Citizen.InvokeNative(0x43AD8FC02B429D33, c.x, c.y, c.z, zoneType, Citizen.ResultAsInteger()))
+end
+
+local function regionAt(c)
+    local spot
+    for i = 1, #ZONE_WATER do
+        local hash = zoneAt(c, ZONE_WATER[i])
+        if hash ~= 0 and legendaryHash[hash] then spot = legendaryHash[hash] break end
+    end
+    return stateRegion[zoneAt(c, ZONE_STATE)], spot
+end
+
+local function fishAllowed(model)
+    if not Config.Regions.Enabled then return true end
+    local family = fishFamily[model]
+    if not family then return true end
+    local pool = sessionRegion and RegionSets.pools[sessionRegion]
+    if pool and not pool[family] then return false end
+    if RegionSets.legendaryFamily[family] and not sessionSpot then return false end
+    return true
+end
+
+local perks = { bite = 0, line = 0, trophy = 0 }
+
+local function refreshPerks()
+    perks.bite, perks.line, perks.trophy = 0, 0, 0
+    if not Config.Skills.Enabled or GetResourceState('rsg-skills') ~= 'started' then return end
+    local function get(name)
+        local ok, v = pcall(function() return exports['rsg-skills']:GetPerk(Config.Skills.Skill, name) end)
+        return ok and tonumber(v) or 0
+    end
+    perks.bite, perks.line, perks.trophy = get(Config.Perks.BiteChance), get(Config.Perks.LineStrength), get(Config.Perks.Trophy)
+end
+
+RegisterNetEvent('rsg-skills:client:levelUp', refreshPerks)
+
+local function currentWeather()
+    if GetResourceState('rsg-weather') ~= 'started' then return nil end
+    local ok, w = pcall(function() return exports['rsg-weather']:getWeather() end)
+    return ok and type(w) == 'string' and w:lower() or nil
+end
+
+-- time of day x weather x bite perk
+local function biteFactor()
+    local m = Config.BiteModifiers
+    local f = 1.0 + perks.bite / 100
+    if not m.Enabled then return f end
+    local h = GetClockHours()
+    for i = 1, #m.Time do
+        local t = m.Time[i]
+        local inside = (t.from <= t.to and h >= t.from and h < t.to) or (t.from > t.to and (h >= t.from or h < t.to))
+        if inside then f = f * t.mult break end
+    end
+    return f * (m.Weather[currentWeather()] or 1.0)
+end
+
+local function biteChance()
+    local m = Config.BiteModifiers
+    local chance = Config.BiteChance * biteFactor()
+    if m.Enabled then chance = math.max(m.MinChance, math.min(m.MaxChance, chance)) end
+    return chance
+end
+
+local function biteRating()
+    local f = biteFactor()
+    local m = Config.BiteModifiers
+    return f < m.PoorBelow and 'poor' or (f >= m.GoodFrom and 'good' or 'fair')
 end
 
 local function notify(desc, ntype)
@@ -159,8 +234,19 @@ end
 
 local function getF(f) return mg['f_' .. f] end
 
+-- writes are collected and sent to the game once per frame (flushMinigame), and only when a value really changed
+local mgDirty = false
+
 local function setF(f, v)
-    mg['f_' .. f] = v
+    local k = 'f_' .. f
+    if mg[k] == v then return end
+    mg[k] = v
+    mgDirty = true
+end
+
+local function flushMinigame()
+    if not mgDirty then return end
+    mgDirty = false
     if mg.f_0 ~= nil then
         exports['rsg-fishing']:SET_TASK_FISHING_DATA_EXTRA(mg)
     end
@@ -176,8 +262,10 @@ local function setRodWeight(v)  setF(18, v) end
 
 local function setHookedFish(entity)
     setF(7, entity)
-    local band = fishBand[GetEntityModel(entity)] or weightBands.small
-    local kg = (math.random() * (band[2] - band[1]) + band[1]) * 0.25
+    local band = fishBand[GetEntityModel(entity)] or Config.WeightBands.small
+    local roll = math.random()
+    if perks.trophy > 0 and math.random(100) <= perks.trophy then roll = 0.5 + roll * 0.5 end -- heavier half of the band
+    local kg = (roll * (band[2] - band[1]) + band[1]) * Config.WeightFactor
     fishWeight = kg / Config.FishWeightMultiplier
     setF(8, fishWeight)
     setRodWeight(2)
@@ -256,11 +344,13 @@ local function handleWaiting(ped) -- state 6: line in the water
 
     if lureCooldown > GetGameTimer() then return end
 
+    sessionRegion, sessionSpot = regionAt(hookPos)
     local fishes = getNearbyFish(hookPos, 50.0)
     if #fishes == 0 then return end
     lureCooldown = GetGameTimer() + 1000
 
     local interested = baitFish[currentLure] or {}
+    local strict = Config.EnforceBaitList
     local bobber = bobberHandle()
     local closest
     for i = 1, #fishes do
@@ -269,16 +359,18 @@ local function handleWaiting(ped) -- state 6: line in the water
         if Config.Debug then
             DrawLine(fPos.x, fPos.y, fPos.z, fPos.x, fPos.y, fPos.z + 2.0, 255, 255, 0, 255)
         end
+        local model = GetEntityModel(f)
+        local allowed = fishAllowed(model)
+        local wanted = allowed and interested[model]
         if #(hookPos - fPos) <= 1.6 then
-            closest = f
-        elseif interested[GetEntityModel(f)] then
+            if allowed and (wanted or not strict) then closest = f end
+        elseif wanted then
             TaskGoToEntity(f, bobber, 100, 1, 1.0, 2.0, 0)
         end
     end
 
     if closest and getF(5) == 1 then
-        local roll = math.random()
-        if roll > 0.9 or roll < 0.2 then -- fish bites
+        if math.random() < biteChance() then -- fish bites
             Citizen.InvokeNative(0xF0FBF193F1F5C0EA, closest)
             SetPedConfigFlag(closest, 17, true)
             Citizen.InvokeNative(0x1F298C7BD30D1240, ped)
@@ -358,7 +450,7 @@ local function handleHooked(ped) -- state 7: fish on the line
     local snap = Config.LineSnap
     if snap.Enabled then
         if fishStatus == 1 and reeling then
-            tension = tension + snap.Gain * (0.5 + fishSize)
+            tension = tension + snap.Gain * (0.5 + fishSize) * math.max(0.3, 1 - perks.line / 100)
             if now >= nextRumble then
                 nextRumble = now + 300
                 rumble('Struggle')
@@ -399,7 +491,7 @@ local function handleCaught(ped) -- state 12: fish in hand
         keptEntity = entity
         playSound('Caught', entity)
         rumble('Caught')
-        TriggerServerEvent('rsg-fishing:server:catchFish', GetEntityModel(entity), fishWeight)
+        TriggerServerEvent('rsg-fishing:server:catchFish', GetEntityModel(entity), fishWeight, sessionRegion, sessionSpot)
         endSession(ped)
         removeFishLater(entity)
     elseif IsControlJustPressed(0, INPUT_AIM) then
@@ -422,6 +514,7 @@ local function startBobberMarker()
     if not cfg or not cfg.Enabled or not cfg.ScreenIcon or bobberMarkerActive then return end
     bobberMarkerActive = true
     CreateThread(function()
+        local lastKey = ''
         while fishing do
             local state = mgState()
             local wait = 250
@@ -432,11 +525,18 @@ local function startBobberMarker()
                 if bobber and bobber ~= 0 and DoesEntityExist(bobber) then
                     local pos = GetEntityCoords(bobber)
                     local onScreen, sx, sy = GetScreenCoordFromWorldCoord(pos.x, pos.y, pos.z + 0.15)
-                    SendNUIMessage({ action = 'bobber', show = onScreen, x = sx, y = sy, hooked = state == 7, size = cfg.ScreenIconSize })
+                    local key = ('%s|%.3f|%.3f|%s'):format(onScreen, sx, sy, state == 7)
+                    if key ~= lastKey then -- only talk to the NUI when the marker actually moved
+                        lastKey = key
+                        SendNUIMessage({ action = 'bobber', show = onScreen, x = sx, y = sy, hooked = state == 7, size = cfg.ScreenIconSize })
+                    end
                     shown, wait = true, 0
                 end
             end
-            if not shown then SendNUIMessage({ action = 'bobber', show = false }) end
+            if not shown and lastKey ~= 'off' then
+                lastKey = 'off'
+                SendNUIMessage({ action = 'bobber', show = false })
+            end
             Wait(wait)
         end
         bobberMarkerActive = false
@@ -462,7 +562,9 @@ RegisterNetEvent('rsg-fishing:client:usebait', function(bait)
     fishWeight, fishStatus, horizontalMove, nextAttTime = 0, 0, 0, 0
     tension, lastTensionSent = 0, -1
     Citizen.InvokeNative(0x1096603B519C905F, 'MMFSH')
-    TriggerServerEvent('rsg-fishing:server:removeBaitItem', bait)
+    mgDirty = false
+    sessionRegion, sessionSpot = nil, nil
+    refreshPerks()
     startBobberMarker()
     music(true)
 
@@ -488,6 +590,7 @@ RegisterNetEvent('rsg-fishing:client:usebait', function(bait)
 
             if state == 1 and not ready then
                 ready = true
+                TriggerServerEvent('rsg-fishing:server:removeBaitItem', currentLure) -- bait is only spent once it is on the rod
                 if Config.Debug then print('[rsg-fishing] bait: ' .. tostring(currentLure)) end
                 TaskSwapFishingBait(ped, currentLure, 0)
                 SetFishingBait(ped, currentLure, 0, 1)
@@ -513,6 +616,7 @@ RegisterNetEvent('rsg-fishing:client:usebait', function(bait)
                     setTransition(8)
                     endSession(ped)
                 end
+                flushMinigame()
             end
             Wait(sleep)
         end
@@ -575,13 +679,21 @@ local function controlsFor(state, ped)
 end
 
 CreateThread(function()
-    SendNUIMessage({ action = 'locale', title = locale('cl_hud_title'), tension = locale('cl_line_tension') })
+    SendNUIMessage({ action = 'locale', title = locale('cl_hud_title'), tension = locale('cl_line_tension'), ui = {
+        journalTitle = locale('cl_journal_title'), tabJournal = locale('cl_tab_journal'), tabRecords = locale('cl_tab_records'),
+        tabAnglers = locale('cl_tab_anglers'), caught = locale('cl_caught'), best = locale('cl_best'), notCaught = locale('cl_not_caught'),
+        found = locale('cl_species_found', '%1', '%2'), heldBy = locale('cl_held_by', '%1'), noRecords = locale('cl_no_records'),
+        angler = locale('cl_angler'), fish = locale('cl_total_fish'), close = locale('cl_close'),
+    } })
     while true do
         local ped = PlayerPedId()
         local state = fishing and mgState() or nil
         local title, mode, rows = controlsFor(state, ped)
         local label = fishing and baitLabel()
         local info = label and (locale('cl_bait') .. ': ' .. label) or nil
+        if info and Config.BiteModifiers.Enabled then
+            info = info .. '  |  ' .. locale('cl_bites', locale('cl_bites_' .. biteRating()))
+        end
         local key = title and (tostring(state) .. '|' .. title .. '|' .. tostring(info)) or nil
         if key ~= hudKey then
             hudKey, hudRows = key, rows
@@ -648,11 +760,85 @@ if Config.GroundPickup then
     end)
 end
 
+-- =========================================================
+-- Angler's journal (NUI): journal, records, top anglers
+-- =========================================================
+local uiFocus, journalOpen = false, false
+
+local function applyNuiFocus(enable)
+    if enable then
+        SetNuiFocus(true, true)
+        if Config.AllowPushToTalkWhileOpen then SetNuiFocusKeepInput(true) end
+    else
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
+end
+
+-- KeepInput passes every key to the game, so block all controls except push-to-talk while the journal has focus
+CreateThread(function()
+    while true do
+        if uiFocus and Config.AllowPushToTalkWhileOpen then
+            Wait(0)
+            DisableAllControlActions(0)
+            DisableAllControlActions(1)
+            DisableAllControlActions(2)
+            local list = Config.PushToTalkControls
+            for i = 1, #(list or {}) do
+                EnableControlAction(0, list[i], true)
+                EnableControlAction(1, list[i], true)
+                EnableControlAction(2, list[i], true)
+            end
+        else
+            Wait(250)
+        end
+    end
+end)
+
+local function closeJournal()
+    if not journalOpen then return end
+    journalOpen, uiFocus = false, false
+    applyNuiFocus(false)
+    SendNUIMessage({ action = 'journal', show = false })
+end
+
+local function openJournal()
+    if journalOpen or fishing then return end
+    local data = RSGCore.Functions.AwaitCallback('rsg-fishing:server:getJournal', 5000)
+    if not data then
+        RSGCore.Functions.Notify({ title = locale('cl_fishing'), description = locale('cl_journal_error'), type = 'error', duration = 4000 })
+        return
+    end
+    journalOpen, uiFocus = true, true
+    applyNuiFocus(true)
+    SendNUIMessage({ action = 'journal', show = true, data = data })
+end
+
+local function toggleJournal()
+    CreateThread(function()
+        if journalOpen then closeJournal() else openJournal() end
+    end)
+end
+
+RegisterNUICallback('journalClose', function(_, cb)
+    closeJournal()
+    cb('ok')
+end)
+
+if Config.Journal.Command then
+    RegisterCommand(Config.Journal.Command, toggleJournal, false)
+end
+
+if Config.Journal.Key and RSGCore.Functions.RegisterKey then
+    RSGCore.Functions.RegisterKey('rsgfishing_journal', locale('key_journal'), Config.Journal.Key, toggleJournal)
+end
+
 AddEventHandler('onResourceStop', function(resourceName)
     if resourceName ~= GetCurrentResourceName() then return end
     SendNUIMessage({ action = 'controls', show = false })
     SendNUIMessage({ action = 'bobber', show = false })
     SendNUIMessage({ action = 'tension', show = false })
+    if journalOpen then journalOpen, uiFocus = false, false applyNuiFocus(false) end
     if fishing then
         SetFishingBait(PlayerPedId(), '', 0, 1)
         music(false)

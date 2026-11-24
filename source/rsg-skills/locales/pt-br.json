@@ -64,6 +64,8 @@
     "perk_rare_chance": "Chance de item raro",
     "perk_speed_bonus": "Bônus de velocidade de trabalho",
     "perk_save_chance": "Chance de economizar materiais",
+    "perk_bite_chance": "Chance de fisgada",
+    "perk_line_strength": "Resistência da linha",
     "ui_title": "Habilidades",
     "ui_subtitle": "Experiência da fronteira",
     "ui_tab_skills": "Minhas habilidades",
