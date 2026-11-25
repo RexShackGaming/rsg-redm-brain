@@ -1,4 +1,4 @@
-# rsg-voice – Docs (v3.4.0)
+# rsg-voice – Docs (v3.4.1)
 
 ## Contents
 1. Files
@@ -52,7 +52,7 @@ Proximity voice on RedM's native Mumble voice.
 | `MuteExpiryCheck` | `30` | Seconds between expiry checks |
 | `Muffle` | table | `Enabled`, `Volume` (0.35), `Interval` |
 | `TalkIcon` | table | `Enabled`, `Distance`, `ShowSelf`, texture, size, colours |
-| `Radio` | table | `Enabled`, `UseKeyMapping` (`true`), `Key` (`'O'`), `TalkKey` (`0xF1301666`, fallback), `NearbyHear` (`true`), `MaxMembers` (`64`), `Debug` (`false`), `Static` (`Enabled`, `Volume` 0.3, `Hiss`, `Squelch`, `SelfHiss`) |
+| `Radio` | table | `Enabled`, `UseKeyMapping` (`true`), `Key` (`'O'`), `TalkKey` (`0xF1301666`, fallback), `NearbyHear` (`true`), `MaxMembers` (`64`), `Debug` (`false`), `ForcePushToTalk` (`true`), `Static` (`Enabled`, `Volume` 0.3, `Hiss`, `Squelch`, `SelfHiss`) |
 | `Radio.MaxTransmitSeconds` / `Radio.TransmitCooldown` | `0` / `3` | Longest single transmission (0 = unlimited) and the wait after hitting it |
 | `Priority` | table | `RadioVsParty` (`'first'`, `'radio'`, `'party'`) and `Call` (`Enabled`, `BlockRadioTransmit`, `BlockPartyTransmit`, `MuteIncomingRadio`, `MutePartyVoice`), see [Priority](#priority) |
 | `Party` | table | `Enabled`, `Command`, `Key` (`'LBRACKET'`), `TalkKey` (control hash, used only when `UseKeyMapping = false`), `TalkRange` (100), `InviteRange` (10), `MaxMembers` (8), `InviteTimeout` (30), `Blips`, `Waypoint` |
@@ -214,7 +214,7 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.ZOffset` | `1.05` |  |
 | `Config.Colour` | `{ r = 255, g = 255, b = 255, a = 220 }` |  |
 | `Config.PartyColour` | `{ r = 217, g = 164, b = 65,  a = 230 }` |  |
-| `Config.Radio` | `table` | Radio channels: `Enabled`, `UseKeyMapping`, `Key`, `TalkKey` (fallback), `NearbyHear`, `MaxMembers`, `Debug` |
+| `Config.Radio` | `table` | Radio channels: `Enabled`, `UseKeyMapping`, `Key`, `TalkKey` (fallback), `NearbyHear`, `MaxMembers`, `Debug`, `ForcePushToTalk` |
 | `Config.RadioColour` | `{ r = 111, g = 191, b = 115, a = 230 }` | Speaker icon colour for radio transmitters |
 | `Config.Party` | `table` | Party members within TalkRange hear each other while holding the party talk key. |
 | `Config.Command` | `'party'` |  |

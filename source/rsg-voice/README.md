@@ -132,6 +132,7 @@ Config.Ranges = {
 | `Config.Radio.Key` | `'O'` | Default key for the key mapping (hold to transmit) |
 | `Config.Radio.NearbyHear` | `true` | Players inside your voice range also hear you while you transmit |
 | `Config.Radio.Debug` | `false` | Troubleshooting: prints the transmit key state and what is blocking it (not loaded, no channel, muted, menu focus, party talk) in the F8 console, on key changes and as a status line every 3 s, plus the names of keys the game reports as pressed |
+| `Config.Radio.ForcePushToTalk` | `true` | Holding the radio key also opens the microphone, so players do not have to hold the game's push-to-talk key (N) as well. `false` keeps the old two-key behaviour |
 | `Config.Radio.MaxMembers` | `64` | Max players on one channel |
 | `Config.Radio.Static.Enabled` | `true` | Radio static sounds (synthesised in the HUD page) |
 | `Config.Radio.Static.Volume` | `0.3` | Static volume, 0.0 - 1.0 |
@@ -271,6 +272,9 @@ rsg-voice/
 ---
 
 ## Changelog
+
+### 3.4.1
+- **Radio key works on its own**: while transmitting, the push-to-talk control is held every frame, so players no longer need to hold N as well. `Config.Radio.ForcePushToTalk` (default `true`).
 
 ### 3.4.0
 - **Rebindable range and party keys** through rsg-core `RegisterKey` (`Config.UseKeyMapping`), **push-to-talk while a voice window is open**, no more idle per-frame loops, typing in rsg-radio no longer keys the mic, and a NaN waypoint check. New exports `GetRadioKeyLabel` and `SetRadioInputBlocked`; new locale keys `key_cycle`, `key_party` in all 11 languages.

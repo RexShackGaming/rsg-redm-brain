@@ -2,6 +2,12 @@
 
 All notable changes to rsg-voice. Newest first.
 
+## 3.4.1
+Minor change.
+
+### Fixed
+- Radio transmit needed two keys: with push-to-talk, players had to hold the game's voice key (N) together with the radio key, because switching the voice target does not open the microphone. While transmitting, rsg-voice now holds the push-to-talk control every frame (a dedicated thread that sleeps when not transmitting). `Config.Radio.ForcePushToTalk` (default `true`; `false` keeps the old behaviour). Based on community PR #1, reworked so the control is held every frame instead of ten times a second.
+
 ## 3.4.0
 Major update.
 

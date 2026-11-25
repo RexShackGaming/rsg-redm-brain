@@ -565,6 +565,20 @@ CreateThread(function()
     end
 end)
 
+-- The voice target alone does not open the microphone: with push-to-talk, Mumble only sends while the game's push-to-talk
+-- control is held. SetControlValueNextFrame lasts a single frame, so it has to be called every frame (the loop above only
+-- ticks 10x a second with the key mapping). This thread sleeps unless a radio transmission is active.
+CreateThread(function()
+    while true do
+        if radioTalk and RC.ForcePushToTalk ~= false then
+            Citizen.InvokeNative(0xE8A25867FBA3B05E, 0, 0x4BC9DABB, 1.0) -- SetControlValueNextFrame(INPUT_PUSH_TO_TALK)
+            Wait(0)
+        else
+            Wait(200)
+        end
+    end
+end)
+
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     if radioTalk then

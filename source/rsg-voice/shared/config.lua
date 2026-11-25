@@ -114,6 +114,7 @@ Config.Radio = {
     MaxTransmitSeconds = 0,  -- longest single transmission in seconds (0 = unlimited). At the limit the key must be released
     TransmitCooldown   = 3,  -- seconds before the player can transmit again after hitting the limit
     Debug      = false,      -- print the transmit key state and what blocks it in the F8 console (set true to troubleshoot)
+    ForcePushToTalk = true,  -- holding the radio key also opens the microphone (with push-to-talk the game's voice key N no longer has to be held as well)
 
     -- Radio static, synthesised in the HUD page (no game sounds needed)
     Static = {
