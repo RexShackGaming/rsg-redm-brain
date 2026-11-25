@@ -28,7 +28,22 @@ end
 
 local StateOf = Player -- keep the CFX Player() statebag accessor before local 'Player' vars shadow it
 
+-- server-side copy of who is clean / in rehab. The loops below use it instead of the replicated statebag, which
+-- a modified client can overwrite on its own player to hide its addiction and skip the craving tick.
+local Flags = {} -- [src] = { active = anything above 0, rehab = in rehab }
+
+local function setFlags(src, d)
+    local active = (tonumber(d.rehab) or 0) > 0
+    if not active then
+        for _, sub in pairs(d.subs) do
+            if (tonumber(sub.level) or 0) > 0 or (tonumber(sub.craving) or 0) > 0 then active = true break end
+        end
+    end
+    Flags[src] = { active = active, rehab = (tonumber(d.rehab) or 0) > 0 }
+end
+
 local function saveData(P, d)
+    setFlags(P.PlayerData.source, d)
     P.Functions.SetMetaData('addiction', d)
     StateOf(P.PlayerData.source).state:set('addiction', d, true)
 end
@@ -136,18 +151,31 @@ local function confiscate(Player)
     stash = type(stash) == 'table' and stash or { items = {}, equipped = {} }
     -- remember equipped guns before removing them (rsg-weapons clears this as they leave the inventory)
     for serial in pairs(Player.PlayerData.metadata.equippedweapons or {}) do stash.equipped[#stash.equipped + 1] = tostring(serial) end
-    local taken = 0
     local items = {}
     for _, it in pairs(Player.PlayerData.items or {}) do items[#items + 1] = it end
+    -- write the stash FIRST: if the server dies half way, the player still has a record of what was taken
+    local pending, base = {}, #stash.items
     for _, it in ipairs(items) do
         if it and it.name and not (Conf.KeepItems or {})[it.name] and (it.amount or 0) > 0 then
-            if exports['rsg-inventory']:RemoveItem(src, it.name, it.amount, it.slot, 'rsg-drugs-rehab-confiscate') then
-                stash.items[#stash.items + 1] = { name = it.name, amount = it.amount, info = it.info, slot = it.slot }
-                taken = taken + it.amount
-            end
+            pending[#pending + 1] = { name = it.name, amount = it.amount, info = it.info, slot = it.slot }
         end
     end
+    for _, e in ipairs(pending) do stash.items[#stash.items + 1] = e end
     Player.Functions.SetMetaData('rehabitems', stash)
+    local taken, failed = 0, false
+    for _, e in ipairs(pending) do
+        if exports['rsg-inventory']:RemoveItem(src, e.name, e.amount, e.slot, 'rsg-drugs-rehab-confiscate') then
+            taken = taken + e.amount
+        else
+            e.failed, failed = true, true
+        end
+    end
+    if failed then -- whatever stayed in the inventory is not in the stash
+        local keep = {}
+        for i, e in ipairs(stash.items) do if i <= base or not e.failed then keep[#keep + 1] = e end end
+        stash.items = keep
+        Player.Functions.SetMetaData('rehabitems', stash)
+    end
     TriggerClientEvent('rsg-drugs:client:disarm', src)
     if taken > 0 then
         notify(src, locale('rehab_items_taken'), 'inform')
@@ -295,74 +323,71 @@ RegisterNetEvent('rsg-drugs:server:npcRehab', function(netId)
     payRehabReward(Officer)
 end)
 
--- Selling weed bags to NPCs (netId = 0 when the ped isn't networked)
-local lastSell = {}
-Callback('rsg-drugs:server:sellWeedBag', function(src, netId)
-    local S = Config.Addiction.Selling
+---------------------------------------------------------------------
+-- Helpers for server/corner.lua (corner selling). They keep the NPC state above private to this file.
+---------------------------------------------------------------------
+DrugsNpc = {}
+
+-- the networked ambient ped for a net id, if it is within maxDist of the player
+function DrugsNpc.FromNet(src, netId, maxDist) return npcFromNet(src, netId, maxDist) end
+
+-- can this NPC be sold to? 'ok' | 'refused' | 'done' (bought already) | 'wait' (a regular who isn't ready yet), minutes
+function DrugsNpc.Status(netId)
+    if NpcRefused[netId] then return 'refused' end
+    if NpcSold[netId] then
+        if not NpcAddicts[netId] then return 'done' end
+        local wait = (Config.Corner.AddictRebuyMinutes or 5) * 60 - (os.time() - NpcSold[netId])
+        if wait > 0 then return 'wait', math.ceil(wait / 60) end
+    end
+    return 'ok'
+end
+
+-- this NPC won't deal again (it reported the player)
+function DrugsNpc.Refused(netId) NpcRefused[netId] = true end
+
+-- call after a real sale. canHook = this product can get the buyer hooked. Returns true when the buyer is an addict now.
+-- is this ped part of the game's ambient population (not something a client spawned itself)? Checked on the server
+-- with GetEntityPopulationType against Config.Addiction.NPC.AmbientPopTypes. When that is false/nil the check is off.
+function DrugsNpc.IsAmbient(ent)
+    local types = Config.Addiction.NPC.AmbientPopTypes
+    if not types then return true end
+    local ok, pt = pcall(GetEntityPopulationType, ent)
+    if Config.Corner.Approach.Debug then print(('^3[rsg-drugs corner]^7 buyer population type: %s'):format(tostring(ok and pt or 'n/a'))) end
+    if not ok or type(pt) ~= 'number' then return true end
+    return types[pt] == true
+end
+
+function DrugsNpc.Sold(Player, ent, netId, canHook)
+    NpcSold[netId] = os.time()
+    if NpcAddicts[netId] then return true end
+    if canHook and DrugsNpc.IsAmbient(ent) and math.random(100) <= (Config.Addiction.NPC.SaleChance or 100) then
+        NpcAddicts[netId] = { seller = Player.PlayerData.citizenid }
+        Entity(ent).state:set('rsgAddict', 'weed', true)
+        return true
+    end
+    return false
+end
+
+-- true while the player is serving a rehab stint
+function DrugsInRehab(src)
     local Player = RSGCore.Functions.GetPlayer(src)
-    if not Player then return false end
-    local now = os.time()
-    if lastSell[src] and now - lastSell[src] < S.Cooldown then
-        notify(src, locale('sell_cooldown'), 'error')
-        return false
-    end
-    lastSell[src] = now
-    if getData(Player).rehab > 0 then notify(src, locale('in_rehab_block'), 'error') return false end
-    local ent; ent, netId = npcFromNet(src, netId, 4.0)
-    if not ent and S.RequireNetworkedPed ~= false then notify(src, locale('sell_no_buyer'), 'error') return false end
-    if netId and NpcRefused[netId] then notify(src, locale('sell_refused'), 'error') return 'refused' end
-    if netId and NpcSold[netId] then
-        if not NpcAddicts[netId] then notify(src, locale('sell_already'), 'error') return 'done' end
-        local wait = (S.AddictRebuyMinutes or 5) * 60 - (os.time() - NpcSold[netId])
-        if wait > 0 then notify(src, locale('sell_addict_wait', math.ceil(wait / 60)), 'error') return 'wait' end
-    end
-    local item = exports['rsg-inventory']:GetItemByName(src, S.Item)
-    if not item or (item.amount or 0) < 1 then notify(src, locale('sell_no_item'), 'error') return false end
+    return Player ~= nil and getData(Player).rehab > 0
+end
 
-    local isAddict = netId and NpcAddicts[netId] ~= nil
-    local chance = S.BuyChance
-    if not isAddict and DrugsRep.Hostile(src) then chance = chance * (Config.Reputation.HostileBuyMult or 0.5) end -- the town is against you
-    if isAddict or math.random(100) <= chance then
-        if not exports['rsg-inventory']:RemoveItem(src, S.Item, 1, item.slot, 'rsg-drugs-npc-sale') then return false end
-        if netId then NpcSold[netId] = os.time() end
-        -- potency of the bag, rsg-skills sell perk and the town's market all move the price
-        local price = math.max(1, math.floor(math.random(S.PriceMin, S.PriceMax)
-            * DrugsPotencyMult(DrugsItemPotency(item))
-            * (1 + DrugsSkills.Perk(src, 'sell_bonus') / 100)
-            * DrugsEcon.Multiplier(src, S.Item) + 0.5))
-        Player.Functions.AddMoney(S.MoneyType or 'cash', price, 'rsg-drugs-npc-sale')
-        notify(src, locale('sell_success', price), 'success')
-        DrugsLog('sales', 'Weed bag sold', src, { { 'Price', ('$%s (%s)'):format(price, S.MoneyType or 'cash') }, { 'Buyer', isAddict and 'Addict' or 'Ambient NPC' } })
-        DrugsXP.Add(src, Config.XP.Sell[S.Item], 'sell')
-        DrugsEcon.Record(src, S.Item, 1)
-        DrugsHeat.Add(Player.PlayerData.citizenid, Config.Heat.PerSale)
-        DrugsRep.Apply(src, 'sale')
-        if not ent then return 'sold', nil end -- not networked: client decides the (visual-only) addiction
-        if not isAddict and math.random(100) <= (Config.Addiction.NPC.SaleChance or 100) then
-            NpcAddicts[netId] = { seller = Player.PlayerData.citizenid }
-            Entity(ent).state:set('rsgAddict', 'weed', true)
-            isAddict = true
-        end
-        return 'sold', isAddict
-    end
-
-    if netId then NpcRefused[netId] = true end
-    notify(src, locale('sell_refused'), 'error')
-    DrugsHeat.Add(Player.PlayerData.citizenid, Config.Heat.PerRefusal) -- the NPC called the law
-    DrugsRep.Apply(src, 'refused')
-    DrugsLog('sales', 'Sale refused - law alerted', src, { { 'Item', S.Item } })
+-- a buyer reported the player: on-duty law gets a notification and a pulsing hotspot near (not exactly at) the spot
+function DrugsAlertLaw(src, exact)
+    local A = Config.Corner.Alert
     local c = GetEntityCoords(GetPlayerPed(src))
-    local off = S.AlertOffset or 0.0
+    local off = exact and 0.0 or (A.Offset or 0.0)
     local spot = vector3(c.x + math.random(-100, 100) / 100 * off, c.y + math.random(-100, 100) / 100 * off, c.z)
     for _, id in ipairs(RSGCore.Functions.GetPlayers()) do
         local P = RSGCore.Functions.GetPlayer(id)
         local job = P and P.PlayerData.job
-        if job and job.onduty ~= false and (S.AlertJobTypes[job.type] or S.AlertJobs[job.name]) then
-            TriggerClientEvent('rsg-drugs:client:sellAlert', id, spot)
+        if job and job.onduty ~= false and (A.JobTypes[job.type] or A.Jobs[job.name]) then
+            TriggerClientEvent('rsg-drugs:client:sellAlert', id, spot, exact and (A.ExactRadius or 15.0) or nil)
         end
     end
-    return 'refused'
-end)
+end
 
 -- net ids get reused: forget an NPC the moment it is removed so a new ped can't inherit its state
 AddEventHandler('entityRemoved', function(entity)
@@ -414,9 +439,9 @@ CreateThread(function()
         Wait(step * 1000)
         local now = GetGameTimer()
         for _, src in ipairs(RSGCore.Functions.GetPlayers()) do
-            -- the replicated statebag is a cheap pre-check: only copy the full player object for people in rehab
-            local st = StateOf(src).state.addiction
-            local active = RehabLeft[src] or not st or (tonumber(st.rehab) or 0) > 0
+            -- cheap pre-check from our own flags: only copy the full player object for people in rehab
+            local f = Flags[src]
+            local active = RehabLeft[src] or not f or f.rehab
             local Player = active and RSGCore.Functions.GetPlayer(src)
             if Player then
                 local d = getData(Player)
@@ -459,22 +484,38 @@ AddEventHandler('RSGCore:Server:OnPlayerUnload', saveRehabProgress)
 ---------------------------------------------------------------------
 -- Addiction tick: craving grows while hooked; level decays while not hooked
 ---------------------------------------------------------------------
+-- withdrawal stress: the highest stage across substances (same rule as the client effects) adds its stress through
+-- rsg-hud once per tick, scaled so it matches the old once-per-EffectInterval rate
+local function withdrawalStress(src, d)
+    if GetResourceState('rsg-hud') ~= 'started' then return end
+    local best = 0
+    for key, sub in pairs(d.subs) do
+        local cfg = Config.Addiction.Substances[key]
+        if cfg and isHooked(key, sub) then
+            for i = #Config.Addiction.Stages, 1, -1 do
+                if (sub.craving or 0) >= Config.Addiction.Stages[i].craving then best = math.max(best, i) break end
+            end
+        end
+    end
+    if best > 1 and d.rehab > 0 then best = 1 end -- supervised detox keeps it mild
+    local stage = Config.Addiction.Stages[best]
+    if not stage or (stage.stress or 0) <= 0 then return end
+    local per = math.max(1, math.floor(Config.Addiction.TickInterval * 1000 / Config.Addiction.EffectInterval))
+    pcall(function() exports['rsg-hud']:GainStress(src, stage.stress * per) end)
+end
+
 CreateThread(function()
     while true do
         Wait(Config.Addiction.TickInterval * 1000)
         for _, src in ipairs(RSGCore.Functions.GetPlayers()) do
-            -- skip clean players using the replicated statebag (no full player copy needed)
-            local st = StateOf(src).state.addiction
-            local idle = st and type(st.subs) == 'table' and not RehabLeft[src] and (tonumber(st.rehab) or 0) <= 0
-            if idle then
-                for _, s in pairs(st.subs) do
-                    if (tonumber(s.level) or 0) > 0 or (tonumber(s.craving) or 0) > 0 then idle = false break end
-                end
-            end
+            -- skip clean players (no full player copy needed)
+            local f = Flags[src]
+            local idle = f and not f.active and not RehabLeft[src]
             local Player = not idle and RSGCore.Functions.GetPlayer(src)
             if Player then
                 local d = getData(Player)
                 if RehabLeft[src] then d.rehab = RehabLeft[src] end -- live countdown, not the last saved value
+                withdrawalStress(src, d) -- decided here, not by the client
                 local changed = false
                 for key, sub in pairs(d.subs) do
                     local cfg = Config.Addiction.Substances[key]
@@ -521,7 +562,7 @@ end)
 AddEventHandler('playerDropped', function()
     local src = source
     saveRehabProgress(src)
-    lastUse[src], lastNpcReward[src], lastAdmitReward[src], lastSell[src] = nil, nil, nil, nil
+    lastUse[src], lastNpcReward[src], lastAdmitReward[src], Flags[src] = nil, nil, nil, nil
 end)
 
 AddEventHandler('onResourceStart', function(res)

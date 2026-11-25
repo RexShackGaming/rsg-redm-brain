@@ -41,7 +41,7 @@ RegisterNUICallback('exportSell', function(body, cb)
         close()
         local npc = getNpc()
         if npc then
-            DrugsHandover(npc, true)
+            DrugsHandover(npc, true, Config.Corner.Anim.Prop)
             if DoesEntityExist(npc) then SetBlockingOfNonTemporaryEvents(npc, true) end -- keep the buyer calm
         end
     end

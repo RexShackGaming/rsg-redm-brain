@@ -1,0 +1,33 @@
+/* corner selling haggle panel (scoped, cn- prefix). Same leather & gold look as the other panels. */
+#corner{position:fixed;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:4vw;pointer-events:none}
+.cn-panel{pointer-events:auto;width:410px;max-height:92vh;overflow-y:auto;display:flex;flex-direction:column;padding:18px 20px;border:1px solid var(--rdr-gold-dim);border-radius:3px;outline:1px solid rgba(0,0,0,.6);outline-offset:-5px;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.015) 0 1px,transparent 1px 3px),linear-gradient(160deg,var(--rdr-panel-2),var(--rdr-panel) 60%,var(--rdr-black));
+  box-shadow:0 20px 60px var(--rdr-shadow),inset 0 0 40px rgba(0,0,0,.5);animation:cn-in .25s ease}
+.cn-panel::-webkit-scrollbar{width:4px}.cn-panel::-webkit-scrollbar-thumb{background:var(--rdr-gold-dim)}
+@keyframes cn-in{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+.cn-say{padding:10px 12px;margin-bottom:8px;border:1px solid rgba(255,255,255,.08);border-radius:2px;background:rgba(0,0,0,.3)}
+.cn-say .k{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--rdr-muted)}
+.cn-say .q{font-style:italic;font-size:14px;line-height:1.35;margin-top:4px;min-height:38px}
+.cn-item.row{margin-bottom:0}
+.cn-item.row:hover{transform:none}
+.cn-offer{text-align:center;margin:12px 0 2px}
+.cn-offer .k{font-size:10.5px;text-transform:uppercase;letter-spacing:2px;color:var(--rdr-muted)}
+.cn-offer .v{font-size:30px;font-weight:700;letter-spacing:1px;text-shadow:0 2px 6px #000}
+.cn-offer .v small{font-size:12px;font-weight:400;color:var(--rdr-muted);letter-spacing:1px;text-transform:uppercase}
+.cn-offer .sub{font-size:11px;color:var(--rdr-muted);font-style:italic}
+.cn-price{display:flex;align-items:center;justify-content:center;gap:10px}
+.cn-price input.cn-input{width:120px;font-size:20px;font-weight:600;padding:8px}
+.cn-each{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--rdr-muted)}
+.cn-total{text-align:center;font-size:12px;color:var(--rdr-muted);margin-top:6px}
+.cn-total b{color:var(--rdr-text);font-size:15px}
+.cn-actions{display:flex;gap:8px;margin-top:12px}
+.cn-actions .btn{flex:1}
+.cn-hist{max-height:96px;overflow-y:auto;font-size:12px}
+.cn-hist::-webkit-scrollbar{width:4px}.cn-hist::-webkit-scrollbar-thumb{background:var(--rdr-gold-dim)}
+.cn-hist div{display:flex;justify-content:space-between;padding:4px 2px;border-bottom:1px solid rgba(255,255,255,.05);color:var(--rdr-muted)}
+.cn-hist b{color:var(--rdr-text);font-weight:500}
+.cn-final{margin-top:10px;padding:10px;text-align:center;border:1px solid var(--rdr-gold-dim);border-radius:2px;font-size:13px;text-transform:uppercase;letter-spacing:1.5px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.2))}
+.cn-final.ok{border-color:var(--rdr-cost-ok);color:var(--rdr-cost-ok)}
+.cn-final.bad{border-color:var(--rdr-cost-over);color:var(--rdr-cost-over)}
+.cn-final small{display:block;margin-top:3px;font-size:11px;letter-spacing:1px;color:var(--rdr-text);text-transform:none}
+.cn-price .circle-btn:disabled,.cn-price input:disabled{opacity:.45;cursor:not-allowed}

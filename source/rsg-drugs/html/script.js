@@ -25,9 +25,13 @@ const workRate = (list) => list.filter((e) => !e.strike).reduce((a, e) => a + e.
 function post(name, body) {
   return fetch(`https://${RES}/${name}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }).then((r) => r.json()).catch(() => null);
 }
+let acting = false; // one action at a time: the server drops anything faster than its 300 ms cooldown
 async function act(action, data) {
+  if (acting) return;
+  acting = true;
   const res = await post('action', { action, data });
   if (res) { state = res; syncTick(res); render(); }
+  setTimeout(() => { acting = false; }, 320);
 }
 function barClass(v) { return v > 50 ? 'stat-good' : v > 20 ? 'stat-warn' : 'stat-bad'; }
 function bar(label, v) {
@@ -101,7 +105,8 @@ function heatBlock() {
   const h = Math.round(state.lab.heat || 0);
   const cls = h >= 70 ? 'stat-bad' : h >= 40 ? 'stat-warn' : 'stat-good';
   return `<div class="label">${t('ui_heat')}</div>
-    <div class="prod"><div class="bar-l">${h}%${state.raid ? ' · ' + t('ui_raid_warn') : ''}</div><div class="track"><div class="fill ${cls}" style="width:${h}%"></div></div></div>`;
+    <div class="prod"><div class="bar-l">${h}%${state.raid ? ' · ' + t('ui_raid_warn') : ''}</div><div class="track"><div class="fill ${cls}" style="width:${h}%"></div></div></div>` +
+    (state.bribe && state.bribe.ready ? `<div class="row"><div class="grow"><div class="desc">${t('ui_bribe_desc')}</div></div><button class="btn" data-bribe="1">${t('ui_bribe', money(state.bribe.cost))}</button></div>` : '');
 }
 // potency of a stock type, shown next to its name
 const pq = (k) => (state.lab.q && state.lab.q[k] != null) ? ` · ${Math.round(state.lab.q[k])}%` : '';
@@ -175,6 +180,37 @@ function renderHire() {
     </div>`).join('') + '</div>';
 }
 
+function renderUpgrades() {
+  const { lab, config } = state;
+  const U = config.upgrades || {};
+  const lv = lab.upgrades || {};
+  $('#tab-upgrades').innerHTML = (U.List || []).map((key) => {
+    const def = U[key];
+    if (!def) return '';
+    const levels = Array.isArray(def.levels) ? def.levels : Object.values(def.levels || {});
+    const cur = lv[key] || 0;
+    const next = levels[cur];
+    const bonusKey = key === 'safety' ? 'ui_up_bonus_safety' : 'ui_up_bonus';
+    const now = cur > 0 ? t(bonusKey, levels[cur - 1].bonus) : t('ui_up_none');
+    const pips = levels.map((_, i) => `<span class="pip ${i < cur ? 'on' : ''}"></span>`).join('');
+    return `<div class="row"><div class="badge-icon">${cur}</div><div class="grow"><div class="name">${esc(tr(def.label))}</div>
+      <div class="desc">${esc(tr(def.desc))}</div>
+      <div class="desc">${t('ui_up_level', cur, levels.length)} · ${now}${next ? ' · ' + t('ui_up_next', next.bonus) : ''}</div><div class="pips">${pips}</div></div>
+      ${next ? `<button class="btn" data-upgrade="${esc(key)}">${t('ui_up_buy', money(next.cost))}</button>` : `<span class="pill">${t('ui_up_max')}</span>`}</div>`;
+  }).join('');
+}
+
+function renderBoard() {
+  const rows = state.board || [];
+  const me = state.me;
+  let html = `<div class="label">${t('ui_bd_title')}</div>`;
+  if (!rows.length) html += `<div class="empty">${t('ui_bd_empty')}</div>`;
+  html += rows.map((r) => `<div class="row ${r.you ? 'me' : ''}"><div class="badge-icon">${r.rank}</div><div class="grow"><div class="name">${esc(r.name)}</div>
+    <div class="desc">${t('ui_bd_row', r.sold, r.best)}</div></div><span class="pill">${money(r.earned)}</span></div>`).join('');
+  if (me && !rows.some((r) => r.you)) html += `<div class="label">${t('ui_bd_you', me.rank, me.sold, money(me.earned))}</div>`;
+  $('#tab-board').innerHTML = html;
+}
+
 function supplyRow(icon, img, title, desc, kind, item, max, btn) {
   return `<div class="row">${itemIcon(img, icon)}<div class="grow"><div class="name">${esc(title)}</div><div class="desc">${esc(desc)}</div></div>
     <input class="qty" type="number" min="1" max="${max}" value="${Math.min(1, max)}" data-qty>
@@ -203,7 +239,7 @@ function renderSupplies() {
 
 function render(keepInputs) {
   if (!state) return;
-  renderOverview(); renderCrew(); renderHire();
+  renderOverview(); renderCrew(); renderHire(); renderUpgrades(); renderBoard();
   // a background shift refresh must not wipe a quantity the player is typing
   if (!(keepInputs && document.activeElement && document.activeElement.matches('[data-qty]'))) renderSupplies();
   updateShift();
@@ -226,6 +262,8 @@ document.addEventListener('click', (e) => {
     }
     return act('fire', { id: Number(t.dataset.fire) });
   }
+  if (t.dataset.bribe) return act('bribe', {});
+  if (t.dataset.upgrade) return act('upgrade', { key: t.dataset.upgrade });
   if (t.dataset.hire) return act('hire', { index: Number(t.dataset.hire), name: t.dataset.name });
   if (t.dataset.max !== undefined) {
     // max = everything the player carries (or everything ready to collect); do it in one click

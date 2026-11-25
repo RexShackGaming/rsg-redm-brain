@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="addiction.css">
 <link rel="stylesheet" href="export.css">
+<link rel="stylesheet" href="corner.css">
 </head>
 <body>
 <div id="app" class="hidden">
@@ -23,6 +24,8 @@
     <div class="tabs">
       <button class="tab active" data-tab="operation" data-l="ui_tab_operation">Operation</button>
       <button class="tab" data-tab="hire" data-l="ui_tab_hire">Hire</button>
+      <button class="tab" data-tab="upgrades" data-l="ui_tab_upgrades">Upgrades</button>
+      <button class="tab" data-tab="board" data-l="ui_tab_board">Leaderboard</button>
     </div>
     <div class="divider"><span>✦</span></div>
     <div class="content" id="view-operation">
@@ -32,6 +35,12 @@
     </div>
     <div class="content hire-view hidden" id="view-hire">
       <div class="col"><div class="col-h" data-l="ui_tab_hire">Hire</div><section id="tab-hire"></section></div>
+    </div>
+    <div class="content hire-view hidden" id="view-upgrades">
+      <div class="col"><div class="col-h" data-l="ui_tab_upgrades">Upgrades</div><section id="tab-upgrades"></section></div>
+    </div>
+    <div class="content hire-view hidden" id="view-board">
+      <div class="col"><div class="col-h" data-l="ui_tab_board">Leaderboard</div><section id="tab-board"></section></div>
     </div>
   </div>
 </div>
@@ -73,8 +82,23 @@
     <div id="ex-body"></div>
   </div>
 </div>
+<div id="corner" class="hidden">
+  <div class="cn-panel">
+    <div class="header">
+      <span class="circle-btn invisible">‹</span>
+      <div class="titles">
+        <div class="title" id="cn-title">Street Deal</div>
+        <div class="subtitle" id="cn-subtitle">Name your price</div>
+      </div>
+      <button class="circle-btn" id="cn-close">✕</button>
+    </div>
+    <div class="divider"><span>✦</span></div>
+    <div id="cn-body"></div>
+  </div>
+</div>
 <script src="script.js"></script>
 <script src="addiction.js"></script>
 <script src="export.js"></script>
+<script src="corner.js"></script>
 </body>
 </html>

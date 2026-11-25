@@ -117,9 +117,6 @@ CreateThread(function()
                 end
             end
 
-            -- stress (same server event rsg-consume uses)
-            if s.stress > 0 then TriggerServerEvent('hud:server:GainStress', s.stress) end
-
             -- keep shake running (some actions cancel it)
             if not IsGameplayCamShaking() then ShakeGameplayCam(Config.Addiction.ShakeName, s.shake) end
 

@@ -15,6 +15,13 @@ local Q = Config.Quality
 ---------------------------------
 local function round(n) return math.floor(n * 100 + 0.5) / 100 end
 
+-- a finite whole number from client input, or 0 (rejects strings, NaN and +-inf that a modified client can send)
+local function wholeNum(v)
+    v = tonumber(v)
+    if not v or v ~= v or v == math.huge or v == -math.huge then return 0 end
+    return math.floor(v)
+end
+
 local function notify(src, desc, ntype)
     TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('title'), description = desc, type = ntype or 'inform' })
 end
@@ -27,6 +34,8 @@ local function newLab()
         payroll = 0.0,
         q = { raw = Q.Default, dried = Q.Default, processed = Q.Default, bag = Q.Default, brick = Q.Default }, -- stock potency
         heat = 0,
+        upgrades = {},
+        notices = {},
         employees = {},
         nextId = 1,
     }
@@ -40,6 +49,8 @@ local function migrateLab(lab)
     lab.q = lab.q or {}
     for k, v in pairs(base.q) do lab.q[k] = lab.q[k] or v end
     lab.heat = lab.heat or 0
+    lab.upgrades = lab.upgrades or {}
+    lab.notices = lab.notices or {}
     for _, e in ipairs(lab.employees) do
         if e.role == 'packer' and not Config.Packing[e.pack or ''] then e.pack = 'bag' end
     end
@@ -54,10 +65,11 @@ local function getLab(cid)
     return Labs[cid]
 end
 
-local function saveLab(cid)
+-- sync = wait for the database (resource stop); otherwise the write is queued and the tick carries on
+local function saveLab(cid, sync)
     if not Labs[cid] then return end
-    MySQL.insert.await('INSERT INTO rsg_drugs_labs (citizenid, data) VALUES (?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data)',
-        { cid, json.encode(Labs[cid]) })
+    local q = 'INSERT INTO rsg_drugs_labs (citizenid, data) VALUES (?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data)'
+    if sync then MySQL.insert.await(q, { cid, json.encode(Labs[cid]) }) else MySQL.insert(q, { cid, json.encode(Labs[cid]) }) end
     Dirty[cid] = nil
 end
 
@@ -109,8 +121,23 @@ end
 
 local NextTick = os.time() + Config.TickSeconds
 
+-- bribe (Config.Heat.Bribe): price and whether it can be offered now
+local function bribeCost(lab)
+    local B = Config.Heat.Bribe
+    return math.floor(B.Base + (lab.heat or 0) * B.PerHeat)
+end
+
+local function bribeInfo(cid, lab)
+    local B = Config.Heat.Bribe
+    if not Config.Heat.Enabled or not B or not B.Enabled then return nil end
+    local ready = os.time() >= (lab.bribeUntil or 0) and (Raids[cid] ~= nil or (lab.heat or 0) >= B.MinHeat)
+    return { cost = bribeCost(lab), ready = ready }
+end
+
 local function buildPayload(cid)
     local lab = getLab(cid)
+    local board, mine
+    if Config.Board and Config.Board.Enabled then board, mine = DrugsBoard.Top(cid, Config.Board.Rows or 10) end
     local Owner = RSGCore.Functions.GetPlayerByCitizenId(cid)
     return {
         lab = lab,
@@ -122,9 +149,12 @@ local function buildPayload(cid)
             hireFee = Config.HireFee, tick = Config.TickSeconds,
             skills = Config.Skill, roles = Config.Roles,
             items = Config.Items, packing = Config.Packing, seedChance = Config.SeedChance, heat = Config.Heat.Enabled,
+            upgrades = Config.Upgrades,
         },
+        board = board, me = mine,
         nextTickIn = math.max(0, NextTick - os.time()),
         raid = Raids[cid] ~= nil,
+        bribe = bribeInfo(cid, lab),
     }
 end
 
@@ -173,6 +203,10 @@ Callback('rsg-drugs:server:getLab', function(src)
         lab.raidNotice = nil
         Dirty[cid] = true
     end
+    for _, n in ipairs(lab.notices or {}) do -- things that happened while the owner was away
+        notify(src, locale(n.key, table.unpack(n.args or {})), n.kind or 'warning')
+    end
+    if #(lab.notices or {}) > 0 then lab.notices = {} Dirty[cid] = true end
     local payload = buildPayload(cid)
     payload.supplies = suppliesFor(src)
     return payload
@@ -186,7 +220,7 @@ local function handleAction(src, action, data)
     data = type(data) == 'table' and data or {}
 
     if action == 'hire' then
-        local idx = tonumber(data.index)
+        local idx = wholeNum(data.index)
         local list = getCandidates(cid)
         local cand = idx and list[idx]
         -- the list may have refreshed since the UI rendered: never hire (and charge for) someone else
@@ -210,7 +244,7 @@ local function handleAction(src, action, data)
         DrugsLog('lab', 'Worker hired', src, { { 'Worker', cand.name }, { 'Role', Config.Roles[cand.role].label }, { 'Skill', Config.Skill[cand.skill].label }, { 'Wage', ('$%.2f/shift'):format(cand.wage) }, { 'Fee', ('$%.2f'):format(Config.HireFee) }, { 'Crew', ('%d/%d'):format(#lab.employees, Config.MaxEmployees) } })
 
     elseif action == 'fire' then
-        local id = tonumber(data.id)
+        local id = wholeNum(data.id)
         for i, e in ipairs(lab.employees) do
             if e.id == id then
                 table.remove(lab.employees, i)
@@ -222,7 +256,7 @@ local function handleAction(src, action, data)
 
     elseif action == 'assign' then
         -- packers: choose what they pack
-        local id, pack = tonumber(data.id), tostring(data.pack or '')
+        local id, pack = wholeNum(data.id), tostring(data.pack or '')
         if not Config.Packing[pack] then return buildPayload(cid) end
         if pack == 'brick' and not DrugsXP.CanPackBricks(Player) then
             notify(src, locale('brick_level_locked', DrugsXP.BrickLevelLabel()), 'error')
@@ -238,7 +272,7 @@ local function handleAction(src, action, data)
 
     elseif action == 'deposit' then
         -- kind: raw | food | water
-        local amount = math.floor(tonumber(data.amount) or 0)
+        local amount = wholeNum(data.amount)
         if amount < 1 or amount > 1000 then return buildPayload(cid) end
         if data.kind == 'raw' then
             if lab.stock.raw + amount > Config.MaxStorage then notify(src, locale('storage_full'), 'error') return buildPayload(cid) end
@@ -263,8 +297,7 @@ local function handleAction(src, action, data)
     elseif action == 'withdraw' then
         local kind = data.kind
         if kind ~= 'dried' and kind ~= 'processed' and kind ~= 'brick' and kind ~= 'bag' and kind ~= 'seed' then return buildPayload(cid) end
-        local amount = math.floor(tonumber(data.amount) or 0)
-        amount = math.min(amount, lab.stock[kind])
+        local amount = math.min(wholeNum(data.amount), lab.stock[kind])
         if amount < 1 then return buildPayload(cid) end
         local item = Config.Items[kind]
         if not exports['rsg-inventory']:CanAddItem(src, item, amount) then notify(src, locale('inv_full'), 'error') return buildPayload(cid) end
@@ -277,8 +310,59 @@ local function handleAction(src, action, data)
         notify(src, locale('withdrew', amount, itemLabel(item)), 'success')
         if amount >= ConfigDiscord.MinWithdraw then DrugsLog('lab', 'Product collected', src, { { 'Item', itemLabel(item) }, { 'Amount', amount }, { 'Left in lab', lab.stock[kind] } }) end
 
+    elseif action == 'upgrade' then
+        local key = tostring(data.key or '')
+        local U = Config.Upgrades
+        local def = U[key]
+        local listed = false
+        for _, k in ipairs(U.List) do if k == key then listed = true break end end
+        if not listed or type(def) ~= 'table' then return buildPayload(cid) end
+        local nextLevel = (lab.upgrades[key] or 0) + 1
+        local L = def.levels[nextLevel]
+        if not L then notify(src, locale('up_max'), 'inform') return buildPayload(cid) end
+        if not Player.Functions.RemoveMoney(U.MoneyType or 'cash', L.cost, 'rsg-drugs-upgrade') then
+            notify(src, locale('no_money'), 'error') return buildPayload(cid)
+        end
+        lab.upgrades[key] = nextLevel
+        notify(src, locale('up_bought', locale(def.label), nextLevel), 'success')
+        DrugsLog('lab', 'Lab upgraded', src, { { 'Upgrade', key }, { 'Level', nextLevel }, { 'Cost', ('$%.2f'):format(L.cost) } })
+
+    elseif action == 'bribe' then
+        local B = Config.Heat.Bribe
+        if not Config.Heat.Enabled or not B or not B.Enabled then return buildPayload(cid) end
+        local now = os.time()
+        local raid = Raids[cid]
+        if now < (lab.bribeUntil or 0) then notify(src, locale('bribe_wait'), 'error') return buildPayload(cid) end
+        if not raid and (lab.heat or 0) < B.MinHeat then notify(src, locale('bribe_cold'), 'inform') return buildPayload(cid) end
+        local cost = bribeCost(lab)
+        if not Player.Functions.RemoveMoney(B.MoneyType or 'cash', cost, 'rsg-drugs-bribe') then
+            notify(src, locale('no_money'), 'error') return buildPayload(cid)
+        end
+        lab.bribeUntil = now + B.CooldownMinutes * 60
+        local outcome
+        if raid then
+            if math.random(100) <= B.SuccessChance then
+                Raids[cid] = nil
+                lab.heat = B.HeatAfterBribe
+                lab.raidCooldownUntil = now + Config.Heat.CooldownMinutes * 60
+                outcome = 'raid called off'
+                notify(src, locale('bribe_ok_raid'), 'success')
+            else
+                lab.heat = math.min(Config.Heat.Max, (lab.heat or 0) + B.FailHeat)
+                outcome = 'bribe failed'
+                notify(src, locale('bribe_fail'), 'error')
+            end
+        else
+            lab.heat = math.max(0, (lab.heat or 0) - B.HeatCut)
+            outcome = 'heat reduced'
+            notify(src, locale('bribe_ok'), 'success')
+        end
+        DrugsLog('lab', 'Law bribed', src, { { 'Cost', ('$%.2f'):format(cost) }, { 'Result', outcome }, { 'Heat', math.floor(lab.heat) } })
+
     elseif action == 'payroll' then
-        local amount = round(tonumber(data.amount) or 0)
+        local amount = tonumber(data.amount) or 0
+        if amount ~= amount or amount == math.huge or amount == -math.huge then amount = 0 end
+        amount = round(amount)
         if amount <= 0 or amount > 10000 then return buildPayload(cid) end
         if not Player.Functions.RemoveMoney('cash', amount, 'rsg-drugs-payroll') then
             notify(src, locale('no_money'), 'error') return buildPayload(cid)
@@ -333,6 +417,11 @@ local function tickLab(cid, lab)
         lab.workBonus = DrugsSkills.Perk(src, 'speed_bonus') -- rsg-skills perk, kept for when the owner is offline
     end
     local bonus = 1 + (lab.workBonus or 0) / 100
+    local function upBonus(key) -- % from the lab upgrade at its current level
+        local def = Config.Upgrades[key]
+        local L = def and def.levels[lab.upgrades[key] or 0]
+        return L and L.bonus or 0
+    end
     local crewQ = {} -- [role or packed product] = { sum, n } skill-based potency of the working crew
     local function crewPotency(key)
         local c = crewQ[key]
@@ -381,9 +470,9 @@ local function tickLab(cid, lab)
             cq.sum = cq.sum + (Q.CrewPotency[e.skill] or Q.Default)
             cq.n = cq.n + 1
             if e.role == 'packer' then
-                packOut[key] = packOut[key] + e.rate * mood * bonus
+                packOut[key] = packOut[key] + e.rate * mood * bonus * (1 + upBonus('packing') / 100)
             else
-                output[key] = output[key] + e.rate * mood * bonus
+                output[key] = output[key] + e.rate * mood * bonus * (1 + upBonus(e.role) / 100)
             end
         end
     end
@@ -488,6 +577,65 @@ function DrugsHeat.Add(cid, amount)
     Dirty[cid] = true
 end
 
+-- number of on-duty law online (server/corner.lua decides about undercover stings with it)
+function DrugsLawCount()
+    local n = 0
+    for _, id in ipairs(RSGCore.Functions.GetPlayers()) do
+        local P = RSGCore.Functions.GetPlayer(id)
+        if P and isLaw(P) then n = n + 1 end
+    end
+    return n
+end
+
+-- tell the lab owner now, or leave a notice for when they next open the lab
+local function labNotice(cid, lab, key, kind, ...)
+    local Owner = RSGCore.Functions.GetPlayerByCitizenId(cid)
+    if Owner then
+        notify(Owner.PlayerData.source, locale(key, ...), kind)
+    else
+        lab.notices = lab.notices or {}
+        if #lab.notices < 5 then lab.notices[#lab.notices + 1] = { key = key, kind = kind, args = { ... } } end
+    end
+end
+
+-- random lab events (Config.Events): a disgruntled worker steals and quits, or a fire destroys fresh and dried weed
+local function rollEvent(cid, lab)
+    local E = Config.Events
+    if not E or not E.Enabled or not hasOperation(lab) then return end
+    local def = Config.Upgrades.safety
+    local L = def and def.levels[lab.upgrades and lab.upgrades.safety or 0]
+    local chance = E.Chance * (1 - (L and L.bonus or 0) / 100)
+    if math.random() * 100 >= chance then return end
+
+    local sore = {}
+    for i, e in ipairs(lab.employees) do if e.strike or (e.unpaid or 0) > 0 then sore[#sore + 1] = i end end
+    if #sore > 0 and math.random(100) <= E.TheftWeight then
+        local kinds = {}
+        for _, k in ipairs({ 'dried', 'processed', 'brick', 'bag' }) do if lab.stock[k] > 0 then kinds[#kinds + 1] = k end end
+        if #kinds == 0 then return end
+        local kind = kinds[math.random(#kinds)]
+        local take = math.max(1, math.floor(lab.stock[kind] * math.random(E.TheftPercent[1], E.TheftPercent[2]) / 100))
+        take = math.min(take, lab.stock[kind])
+        local idx = sore[math.random(#sore)]
+        local worker = table.remove(lab.employees, idx)
+        lab.stock[kind] = lab.stock[kind] - take
+        Dirty[cid] = true
+        labNotice(cid, lab, 'event_theft', 'error', worker.name, take, itemLabel(Config.Items[kind]))
+        DrugsLog('lab', 'Lab theft', nil, { { 'Owner CID', cid }, { 'Worker', worker.name }, { 'Stolen', ('%dx %s'):format(take, kind) } })
+    else
+        local lost = 0
+        for _, k in ipairs({ 'raw', 'dried' }) do
+            local n = math.floor(lab.stock[k] * math.random(E.FirePercent[1], E.FirePercent[2]) / 100)
+            lab.stock[k] = lab.stock[k] - n
+            lost = lost + n
+        end
+        if lost < 1 then return end
+        Dirty[cid] = true
+        labNotice(cid, lab, 'event_fire', 'error', lost)
+        DrugsLog('lab', 'Lab fire', nil, { { 'Owner CID', cid }, { 'Destroyed', lost } })
+    end
+end
+
 local function lawOnline()
     local ids = {}
     for _, id in ipairs(RSGCore.Functions.GetPlayers()) do
@@ -590,7 +738,7 @@ CreateThread(function()
     while true do
         Wait(Config.TickSeconds * 1000)
         NextTick = os.time() + Config.TickSeconds -- set before ticking so refresh payloads carry the new countdown
-        for cid, lab in pairs(Labs) do tickLab(cid, lab); tickHeat(cid, lab) end
+        for cid, lab in pairs(Labs) do tickLab(cid, lab); tickHeat(cid, lab); rollEvent(cid, lab) end
         for cid in pairs(Dirty) do saveLab(cid) end
     end
 end)
@@ -598,5 +746,5 @@ end)
 AddEventHandler('playerDropped', function() Cooldown[source] = nil; Viewing[source] = nil; lastRaidTry[source] = nil end)
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
-    for cid in pairs(Dirty) do saveLab(cid) end
+    for cid in pairs(Dirty) do saveLab(cid, true) end
 end)

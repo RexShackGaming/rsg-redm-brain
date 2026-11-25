@@ -5,7 +5,6 @@ if not Config.Addiction.NPC.Enabled then return end
 
 local RSGCore = exports['rsg-core']:GetCoreObject()
 local addicts = {}   -- [ped] = { key = 'weed', craving = 0-100, busyUntil = ms }
-local tried = {}     -- [ped] = true, NPCs that already bought or refused (can't be asked again)
 
 local function setDrunk(ped, level)
     Citizen.InvokeNative(0x406CCF555B04FAD3, ped, level > 0.0, level) -- _SET_PED_DRUNKNESS (natives/db/PED.md)
@@ -36,13 +35,7 @@ local function playScenario(ped, name, duration)
     TaskStartScenarioInPlaceHash(ped, joaat(name), duration, true, 0, -1.0, false)
 end
 
--- ambient human townsfolk only (excludes animals, players, script/shop NPCs, riders and the dead)
-local function isAmbient(ped)
-    return DoesEntityExist(ped) and not IsPedAPlayer(ped)
-        and IsPedHuman(ped) and not Citizen.InvokeNative(0x9A100F1CF4546629, ped) -- GET_IS_ANIMAL
-        and not IsEntityDead(ped) and not IsEntityAMissionEntity(ped) and not IsPedInAnyVehicle(ped, false)
-        and not IsPedOnMount(ped)
-end
+local isAmbient = DrugsIsAmbient -- client/utils.lua
 
 -- NPCs only become addicted when sold a weed_bag.
 -- Call from your selling code (client side) after a successful sale:
@@ -64,6 +57,17 @@ end
 exports('NpcSoldWeedBag', soldWeedBag)
 AddEventHandler('rsg-drugs:client:npcSoldWeedBag', function(ped) soldWeedBag(ped) end)
 
+-- corner selling (client/corner.lua) tells us a buyer paid; the server already decided whether they got hooked
+AddEventHandler('rsg-drugs:client:npcBought', function(ped, hooked)
+    if not hooked then return end
+    soldWeedBag(ped, true)
+    local a = addicts[ped]
+    if a and DoesEntityExist(ped) then
+        playScenario(ped, Config.Addiction.NPC.Scenarios.weed, Config.Addiction.NPC.FeedTime)
+        a.busyUntil = GetGameTimer() + Config.Addiction.NPC.FeedTime
+    end
+end)
+
 CreateThread(function()
     while true do
         Wait(Config.Addiction.NPC.ScanInterval)
@@ -75,9 +79,6 @@ CreateThread(function()
             if not DoesEntityExist(ped) or IsEntityDead(ped) or #(GetEntityCoords(ped) - myPos) > Config.Addiction.NPC.ScanRadius * 2 then
                 release(ped)
             end
-        end
-        for ped in pairs(tried) do
-            if not DoesEntityExist(ped) then tried[ped] = nil end
         end
 
         -- behaviour
@@ -163,70 +164,38 @@ exports['rsg-target']:addGlobalPed({
 })
 
 ---------------------------------------------------------------------
--- rsg-target: sell weed bag
+-- law alert when a corner buyer reports a player (server/addiction.lua DrugsAlertLaw)
 ---------------------------------------------------------------------
 local alertBlips = {}
 
--- canInteract runs every frame per ped, so cache the inventory lookup for a second
-local sellItemCache, sellItemAt = false, 0
-local function hasSellItem()
-    local now = GetGameTimer()
-    if now - sellItemAt > 1000 then
-        sellItemAt = now
-        sellItemCache = exports['rsg-inventory']:HasItem(Config.Addiction.Selling.Item, 1) and true or false
-    end
-    return sellItemCache
-end
-
-local selling = false
-
-exports['rsg-target']:addGlobalPed({
-    {
-        name = 'rsg_addiction_npc_sell',
-        icon = 'fa-solid fa-cannabis',
-        label = locale('sell_weed'),
-        distance = 2.0,
-        canInteract = function(entity)
-            return not selling and not tried[entity] and isAmbient(entity) and hasSellItem()
-        end,
-        onSelect = function(data)
-            if selling then return end
-            local ped = data.entity
-            selling = true
-            -- pcall so an error mid-sale can never leave `selling` stuck on (the option would stay hidden forever)
-            local ok, err = pcall(function()
-                local result, hooked = RSGCore.Functions.AwaitCallback('rsg-drugs:server:sellWeedBag', 10000, netIdOf(ped))
-                -- one sale per NPC; addicts come back for more (server enforces the rebuy cooldown)
-                if result == 'done' or (result == 'sold' and not hooked) then tried[ped] = true end
-                if result == 'sold' then
-                    DrugsHandover(ped)
-                    soldWeedBag(ped, hooked)
-                    local a = addicts[ped]
-                    if a then
-                        playScenario(ped, Config.Addiction.NPC.Scenarios.weed, Config.Addiction.NPC.FeedTime)
-                        a.busyUntil = GetGameTimer() + Config.Addiction.NPC.FeedTime
-                    end
-                elseif result == 'refused' then
-                    tried[ped] = true
-                    ClearPedTasks(ped)
-                    TaskSmartFleePed(ped, PlayerPedId(), 50.0, 10000, 0, 0, 0)
-                end
-            end)
-            if not ok then print(('^1[rsg-drugs] sale error: %s^7'):format(tostring(err))) end
-            sellItemAt = 0 -- re-check stock after a sale
-            selling = false
-        end,
-    },
-})
-
-RegisterNetEvent('rsg-drugs:client:sellAlert', function(coords)
-    local S = Config.Addiction.Selling
-    local blip = Citizen.InvokeNative(0x45F13B7E0A15C880, -1282792512, coords.x, coords.y, coords.z, S.AlertRadius) -- BlipAddForRadius
+local function addHotspot(coords, radius)
+    local blip = Citizen.InvokeNative(0x45F13B7E0A15C880, -1282792512, coords.x, coords.y, coords.z, radius) -- BlipAddForRadius
     Citizen.InvokeNative(0x662D364ABF16DE2F, blip, joaat('BLIP_MODIFIER_AREA_PULSE'))  -- BlipAddModifier
     Citizen.InvokeNative(0x9CB1A1623062F402, blip, locale('sell_hotspot'))            -- SetBlipName
+    return blip
+end
+
+-- exactRadius is set when the spot is exact (an undercover bust). Officers who walk into a hotspot narrow it down:
+-- every few seconds inside, the circle shrinks by Alert.ShrinkStep until it is Alert.MinRadius wide.
+RegisterNetEvent('rsg-drugs:client:sellAlert', function(coords, exactRadius)
+    local S = Config.Corner.Alert
+    local radius = exactRadius or S.Radius
+    local blip = addHotspot(coords, radius)
     alertBlips[blip] = true
-    RSGCore.Functions.Notify({ title = locale('sell_alert_title'), description = locale('sell_alert'), type = 'warning', duration = 8000 })
-    SetTimeout(S.AlertDuration * 1000, function()
+    RSGCore.Functions.Notify({ title = locale('sell_alert_title'), description = locale(exactRadius and 'sell_alert_exact' or 'sell_alert'), type = 'warning', duration = 8000 })
+    local endsAt = GetGameTimer() + S.Duration * 1000
+    CreateThread(function()
+        local floor = math.min(radius, S.MinRadius or radius)
+        while GetGameTimer() < endsAt and alertBlips[blip] do
+            Wait(3000)
+            if radius > floor and #(GetEntityCoords(PlayerPedId()) - vector3(coords.x, coords.y, coords.z)) <= radius then
+                radius = math.max(floor, radius - (S.ShrinkStep or 8.0))
+                if DoesBlipExist(blip) then RemoveBlip(blip) end
+                alertBlips[blip] = nil
+                blip = addHotspot(coords, radius)
+                alertBlips[blip] = true
+            end
+        end
         if DoesBlipExist(blip) then RemoveBlip(blip) end
         alertBlips[blip] = nil
     end)
@@ -236,5 +205,5 @@ AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     for ped in pairs(addicts) do release(ped) end
     for b in pairs(alertBlips) do if DoesBlipExist(b) then RemoveBlip(b) end end
-    exports['rsg-target']:removeGlobalPed({ 'rsg_addiction_npc_inspect', 'rsg_addiction_npc_rehab', 'rsg_addiction_npc_sell' })
+    exports['rsg-target']:removeGlobalPed({ 'rsg_addiction_npc_inspect', 'rsg_addiction_npc_rehab' })
 end)

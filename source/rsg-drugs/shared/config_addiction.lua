@@ -89,7 +89,7 @@ Config.Addiction.Stages = {
     [2] = { craving = 60, label = locale('cfg_stage_2'),   shake = 0.35, fx = 'PlayerHealthPoorCS', staminaCap = 50,  stumbleChance = 8,  stress = 2 },
     [3] = { craving = 90, label = locale('cfg_stage_3'),shake = 0.60, fx = 'PlayerHealthPoorCS', staminaCap = 20,  stumbleChance = 20, stress = 4 },
 }
-Config.Addiction.EffectInterval  = 15000  -- ms between stumble/stress rolls on the client
+Config.Addiction.EffectInterval  = 15000  -- ms between stumble rolls on the client. Withdrawal stress is applied by the server each TickInterval (stage stress x TickInterval / EffectInterval)
 Config.Addiction.StumbleOnlyMoving = true
 
 ---------------------------------------------------------------------
@@ -156,31 +156,9 @@ Config.Addiction.NPC = {
         withdrawal = 'WORLD_HUMAN_DRUNK_BRACE_WALL_NO_VOMIT',
     },
     FeedTime = 12000,
-}
-
----------------------------------------------------------------------
--- Selling weed bags to NPCs (rsg-target)
----------------------------------------------------------------------
-Config.Addiction.Selling = {
-    Item        = 'weed_bag',
-    PriceMin    = 4,        -- $ paid per bag (random between min/max)
-    PriceMax    = 8,
-    MoneyType   = 'cash',
-    BuyChance   = 40,       -- % a non-addicted NPC agrees (and then becomes addicted)
-    Cooldown    = 5,        -- seconds between sell attempts per player
-    AddictRebuyMinutes = 5, -- addicted NPCs buy again after this long; other NPCs only ever buy once
-    RequireNetworkedPed = true, -- server must see the NPC within 4m (stops selling from anywhere); false = allow non-networked peds
-    -- Handover animation (rdr3_discoveries animations/ingameanims/ingameanims_list.lua)
-    Anim = {
-        Enabled = true,
-        Dict    = 'script_common@handover@generic@player_handover@money',
-        Player  = 'handover_money_plyr',   -- player hands the bag over
-        Ped     = 'handover_money_male',   -- NPC takes it
-    },
-    -- Law alert when an NPC refuses
-    AlertJobTypes = { leo = true },
-    AlertJobs     = {},
-    AlertDuration = 300,    -- seconds the hotspot stays on the law's map
-    AlertRadius   = 60.0,   -- blip radius (not exact position)
-    AlertOffset   = 30.0,   -- random offset so the exact spot isn't revealed
+    -- Server-side check that a corner buyer is part of the game's ambient crowd and not a ped a modified client
+    -- spawned to farm addicts. Set to a table of GetEntityPopulationType values that count as ambient, for example
+    -- { [1] = true, [2] = true, [3] = true, [4] = true, [5] = true }. false = off (default). To find the values on
+    -- your build set Config.Corner.Approach.Debug = true: the server prints the population type of every buyer.
+    AmbientPopTypes = false,
 }

@@ -9,7 +9,7 @@ ConfigDiscord = {
     -- one webhook per category (blank = use Default, false = don't log this category)
     Webhooks = {
         lab      = '',  -- hire, fire, assign, deposits, withdrawals, payroll
-        sales    = '',  -- weed bag NPC sales and refusals (law alerts)
+        sales    = '',  -- corner sales, buyers who report you (law alerts)
         export   = '',  -- brick export sales
         xp       = '',  -- level ups and XP resets (jail)
         rehab    = '',  -- admissions, check-ins, releases, escapes, rehab rewards

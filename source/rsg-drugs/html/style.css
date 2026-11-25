@@ -78,3 +78,7 @@ input.qty:focus{border-color:var(--rdr-gold);box-shadow:0 0 0 2px rgba(201,162,7
 .content.hire-view{grid-template-columns:1fr}
 .hire-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:8px}
 .hire-grid .row{margin-bottom:0}
+.pips{display:flex;gap:5px;margin-top:6px}
+.pip{width:22px;height:5px;border-radius:2px;background:rgba(0,0,0,.45);border:1px solid var(--rdr-gold-dim)}
+.pip.on{background:linear-gradient(180deg,#f2f2f2,#9a9a9a);border-color:var(--rdr-gold)}
+.row.me{border-color:var(--rdr-gold)}

@@ -98,7 +98,7 @@ Config.XP = {
         bag       = 1,   -- low
         brick     = 50,  -- high
     },
-    -- XP per completed sale
+    -- XP per item sold on the corner (corner sales) and per brick exported
     Sell = {
         weed_bag   = 2,
         weed_brick = 60, -- per brick exported (Config.Export)
@@ -142,6 +142,36 @@ Config.Quality = {
 -- Making and selling drugs builds heat on your lab. Hot labs get reported; on-duty law is alerted and can raid
 -- the lab at the processing NPC within the window. A raid destroys part of the stock and pays the officer.
 ---------------------------------
+---------------------------------
+-- Lab upgrades (bought at the lab, per lab). Each level adds `bonus` %: output for dryer / processor / packing,
+-- risk reduction for safety. cost is paid in MoneyType. label / desc are locale keys.
+---------------------------------
+Config.Upgrades = {
+    MoneyType = 'cash',
+    List = { 'dryer', 'processor', 'packing', 'safety' },
+    dryer     = { label = 'cfg_up_dryer',     desc = 'cfg_up_dryer_d',     levels = { { cost = 1500, bonus = 10 }, { cost = 4000, bonus = 20 }, { cost = 9000, bonus = 35 } } },
+    processor = { label = 'cfg_up_processor', desc = 'cfg_up_processor_d', levels = { { cost = 1500, bonus = 10 }, { cost = 4000, bonus = 20 }, { cost = 9000, bonus = 35 } } },
+    packing   = { label = 'cfg_up_packing',   desc = 'cfg_up_packing_d',   levels = { { cost = 1500, bonus = 10 }, { cost = 4000, bonus = 20 }, { cost = 9000, bonus = 35 } } },
+    safety    = { label = 'cfg_up_safety',    desc = 'cfg_up_safety_d',    levels = { { cost = 2000, bonus = 25 }, { cost = 4500, bonus = 50 }, { cost = 9000, bonus = 75 } } },
+}
+
+---------------------------------
+-- Random lab events, rolled once per shift per lab that has crew or stock
+---------------------------------
+Config.Events = {
+    Enabled     = true,
+    Chance      = 3,            -- % per shift (the safety upgrade lowers it)
+    TheftWeight = 60,           -- % of events that are a theft when a worker is on strike or owed pay (otherwise a fire)
+    TheftPercent = { 10, 25 },  -- share of one stock type a thief takes (he then quits)
+    FirePercent  = { 15, 40 },  -- share of fresh and dried weed a fire destroys
+}
+
+-- Dealer leaderboard shown in the lab panel (top sellers by money earned)
+Config.Board = {
+    Enabled = true,
+    Rows    = 10,
+}
+
 Config.Heat = {
     Enabled        = true,
     Max            = 100,
@@ -149,8 +179,8 @@ Config.Heat = {
     PerBrick       = 2.0,   -- per brick finished by the crew
     PerBag         = 0.1,   -- per bag finished by the crew
     PerExportBrick = 3.0,   -- per brick exported
-    PerSale        = 1.0,   -- per bag sold to an NPC
-    PerRefusal     = 10.0,  -- when an NPC refuses a sale (it called the law)
+    PerSale        = 1.0,   -- per item sold on the corner
+    PerRefusal     = 10.0,  -- when an insulted buyer reports you (it called the law)
     RaidThreshold  = 70,    -- a raid can start at or above this heat
     RaidChance     = 25,    -- % per shift while above the threshold
     MinLaw         = 1,     -- on-duty law needed before a raid is called
@@ -162,6 +192,20 @@ Config.Heat = {
     OfficerReward  = 150,
     MoneyType      = 'cash',
     AlertRadius    = 80.0,  -- law map blip radius around the lab
+    -- Bribe: the owner pays an officer to look away. While a raid is pending it may call the raid off (it can fail,
+    -- and the money is gone either way); otherwise it cools the heat down. Cost = Base + heat x PerHeat.
+    Bribe = {
+        Enabled        = true,
+        Base           = 100,
+        PerHeat        = 5,
+        SuccessChance  = 70,   -- % that a pending raid is called off
+        HeatAfterBribe = 35,   -- heat after a successful raid bribe
+        FailHeat       = 10,   -- extra heat when the bribe fails
+        HeatCut        = 30,   -- heat removed by a bribe made without a pending raid
+        MinHeat        = 30,   -- no bribe below this heat unless a raid is pending
+        CooldownMinutes = 30,  -- one bribe per lab in this time, win or lose
+        MoneyType      = 'cash',
+    },
     LawJobTypes    = { leo = true },
     LawJobs        = {},
 }
@@ -193,7 +237,7 @@ Config.Skills = {
 ---------------------------------
 Config.Reputation = {
     Enabled = true,
-    HostileBuyMult = 0.5, -- NPCs in a town that is hostile to you are this much less likely to buy
+    HostileBuyMult = 0.5, -- share of buyers that still deal with you in a town that is hostile to you
     Events = {
         sale    = { honor = -1, standing = -1 },
         refused = { honor = -2, standing = -3 },
@@ -204,7 +248,7 @@ Config.Reputation = {
 }
 
 ---------------------------------
--- rsg-economy: bag sales to NPCs follow the town's market (flooding a town lowers the price)
+-- rsg-economy: corner sales follow the town's market (flooding a town lowers the price)
 ---------------------------------
 Config.Economy = {
     Enabled = true,

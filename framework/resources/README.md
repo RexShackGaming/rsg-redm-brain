@@ -30,7 +30,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-crafting](rsg-crafting.md) | An XP-based crafting book for RSG-Core (RedM). Players use a crafting book item to open a NUI menu. From t | 9 | 11 |
 | [rsg-deliveries](rsg-deliveries.md) | Wagon delivery system RSG Framework | 1 | 6 |
 | [rsg-doorlock](rsg-doorlock.md) | A database-driven door lock system for RedM using the RSG Framework. Doors are created, edited and del | 9 | 8 |
-| [rsg-drugs](rsg-drugs.md) | Drug production for RSG Framework (cannabis lab: drying, processing, packing bags & bricks with hired crew) pl | 9 | 18 |
+| [rsg-drugs](rsg-drugs.md) | Drug production for RSG Framework (cannabis lab: drying, processing, packing bags & bricks with hired crew), c | 11 | 22 |
 | [rsg-economy](rsg-economy.md) | Regional treasuries, taxes, supply-and-demand prices and town projects for RSG Framework | 20 | 1 |
 | [rsg-essentials](rsg-essentials.md) | Quality-of-life utilities and fixes for RedM using RSG Core. > A collection of small but essential feature | 0 | 9 |
 | [rsg-factory](rsg-factory.md) | Version 3.2.0 · Requires: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql` · Optional: `rsg-telegram`, | 0 | 4 |

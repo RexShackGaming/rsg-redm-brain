@@ -136,6 +136,7 @@ Callback('rsg-drugs:server:exportSell', function(src, amount)
     Player.Functions.AddMoney(E.MoneyType, total, 'rsg-drugs-export')
     Market.stock = Market.stock + amount
     save()
+    DrugsBoard.Record(Player, amount, total, nil)
     notify(src, locale('export_sold', amount, total), 'success')
     DrugsLog('export', 'Bricks exported', src, { { 'Bricks', amount }, { 'Payout', ('$%s (%s)'):format(total, E.MoneyType) }, { 'Avg/brick', ('$%d'):format(math.floor(total / amount)) }, { 'Buyer stock', math.floor(Market.stock) }, { 'Demand', ('x%.2f'):format(Market.demand) } })
     DrugsXP.Add(src, (Config.XP.Sell[E.Item] or 0) * amount, 'export')
