@@ -6,7 +6,7 @@ lua54 'yes'
 author 'RexShack'
 name 'rsg-herbalist'
 description 'Herbalist script for RSG Framework'
-version '3.5.4'
+version '3.5.5'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
@@ -23,7 +23,9 @@ client_scripts {
 }
 
 server_scripts {
+    '@oxmysql/lib/MySQL.lua',
     'server/utils.lua',
+    'server/database.lua',
     'server/webhook_config.lua',
     'server/webhook.lua',
     'server/server.lua',
@@ -45,6 +47,7 @@ dependencies {
     'rsg-core',
     'rsg-inventory',
     'rsg-target',
+    'oxmysql',
 }
 
 exports {

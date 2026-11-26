@@ -47,7 +47,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-herbalist](rsg-herbalist.md) | Herbalist script for RSG Framework | 0 | 19 |
 | [rsg-hotair](rsg-hotair.md) | Hireable hot air balloons for RedM servers running the RSG-Core framework. Players hire a balloon at a doc | 0 | 7 |
 | [rsg-housing](rsg-housing.md) | Monthly house rentals for the RSG Framework (RedM). Players rent a house directly at the property, pay rent ev | 24 | 13 |
-| [rsg-hud](rsg-hud.md) | Version 3.4.0 · full technical reference in [DOCS.md](DOCS.md) Player and horse HUD for RSG-Core (RedM): h | 20 | 16 |
+| [rsg-hud](rsg-hud.md) | Version 3.4.1 · full technical reference in [DOCS.md](DOCS.md) Player and horse HUD for RSG-Core (RedM): h | 20 | 16 |
 | [rsg-hunting](rsg-hunting.md) | Hunting, trapper and butcher script for RSG Framework | 6 | 2 |
 | [rsg-huntingpets](rsg-huntingpets.md) | A combined RedM / RSG-Core resource that adds hunting dogs and hunting birds to your server in one package | 0 | 16 |
 | [rsg-inventory](rsg-inventory.md) | Slot/weight inventory for the RSG Framework (rsg-core) with a hotbar, persistent stashes, ground drops, shops  | 50 | 23 |

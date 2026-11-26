@@ -2,6 +2,11 @@
 
 All notable changes to rsg-herbalist. Newest first.
 
+## 3.5.5
+
+### Changed
+- Regrow state and admin-placed herb buyers are saved in MySQL (`rsg_herbalist_state`) instead of resource KVP, so the server no longer creates a `db` folder. Requires `oxmysql`. Old KVP data is not migrated: re-add placed buyers with `/addherbbuyer`.
+
 ## 3.5.4
 
 ### Changed

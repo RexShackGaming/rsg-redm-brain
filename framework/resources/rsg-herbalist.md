@@ -1,12 +1,12 @@
 # rsg-herbalist
 
-Version 3.5.4. Herbalist script for RSG Framework
+Version 3.5.5. Herbalist script for RSG Framework
 
-A herb gathering, tonic crafting, and mystery box script for **RSG-Core** RedM servers, by RexShack. **Version 3.5.4** · No ox_lib required · Full developer/server-owner reference: [DOCS.md](DOCS.md) Players gather herbs from world-placed nodes, brew them into tonics at a mortar & pestle, and can stumble on a roaming mystery box that relocates around the map every so often. Every gather, craft, an
+A herb gathering, tonic crafting, and mystery box script for **RSG-Core** RedM servers, by RexShack. **Version 3.5.5** · No ox_lib required · Full developer/server-owner reference: [DOCS.md](DOCS.md) Players gather herbs from world-placed nodes, brew them into tonics at a mortar & pestle, and can stumble on a roaming mystery box that relocates around the map every so often. Every gather, craft, an
 
 Source: https://github.com/Rexshack-RedM/rsg-herbalist
 
-**Dependencies:** `rsg-core`, `rsg-inventory`, `rsg-target`
+**Dependencies:** `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
 
 Has NUI (`ui_page`).
 
@@ -30,8 +30,14 @@ Has NUI (`ui_page`).
 
 ## Public (table) functions
 
+**server/database.lua:** `Herbalist.LoadState(key, cb)`, `Herbalist.SaveState(key, data)`
+
 **server/server.lua:** `Herbalist.RecordFound(src, Player, item, amount)`
 
 **server/utils.lua:** `Herbalist.Notify(src, title, description, nType)`, `Herbalist.IsDead(Player)`
 
 **server/webhook.lua:** `Webhook.LogGather(src, itemLabel, coordKey)`, `Webhook.LogCraft(src, tonic, outcome)`, `Webhook.LogSale(src, itemLabel, amount, total)`, `Webhook.LogMysteryBox(src, lootItems)`, `Webhook.LogResourceEvent(state)`, `Webhook.LogVersionCheck(status, message)`, `Webhook.FlagSuspicious(src, reason, details)`
+
+## Database tables
+
+`rsg_herbalist_state`

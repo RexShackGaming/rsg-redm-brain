@@ -1,8 +1,8 @@
 # rsg-hud
 
-Version 3.4.0. rsg-hud
+Version 3.4.1. rsg-hud
 
-**Version 3.4.0** · full technical reference in [DOCS.md](DOCS.md) Player and horse HUD for RSG-Core (RedM): health, stamina, dead eye, hunger, thirst, cleanliness, stress, temperature, voice, mail and outlaw badges, horse health/stamina/cleanliness/bonding/hunger/thirst, a money pop-up, and a drag-and-resize edit mode. - **Server-owned needs** (`Config.ServerNeeds`): the server decays hunger, thi
+**Version 3.4.1** · full technical reference in [DOCS.md](DOCS.md) Player and horse HUD for RSG-Core (RedM): health, stamina, dead eye, hunger, thirst, cleanliness, stress, temperature, voice, mail and outlaw badges, horse health/stamina/cleanliness/bonding/hunger/thirst, a money pop-up, and a drag-and-resize edit mode. - **Server-owned needs** (`Config.ServerNeeds`): the server decays hunger, thi
 
 Source: https://github.com/Rexshack-RedM/rsg-hud
 
@@ -37,3 +37,7 @@ Has NUI (`ui_page`).
 ## Server events it triggers in other resources
 
 **client:** `hud:server:setDefaultLayout`
+
+## Database tables
+
+`rsg_hud_state`

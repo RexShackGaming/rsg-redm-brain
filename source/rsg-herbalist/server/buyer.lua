@@ -12,7 +12,8 @@ if not cfg or not cfg.Enabled then return end
 
 local Notify = Herbalist.Notify
 local IsDead = Herbalist.IsDead
-local KVP_KEY = 'buyers_v1'
+local STATE_KEY = 'buyers_v1'
+local placedLoaded = false
 
 local placed = {}      -- admin-placed buyers: { x, y, z, w }
 local lastSaleAt = {}
@@ -20,8 +21,8 @@ local lastRequestAt = {}
 
 local function round2(n) return math.floor(n * 100 + 0.5) / 100 end
 
-local function loadPlaced()
-    local ok, data = pcall(json.decode, GetResourceKvpString(KVP_KEY) or '')
+local function loadPlaced(raw)
+    local ok, data = pcall(json.decode, raw or '')
     if not ok or type(data) ~= 'table' then return end
     for _, b in ipairs(data) do
         if type(b.x) == 'number' and type(b.y) == 'number' and type(b.z) == 'number' and type(b.w) == 'number' then
@@ -31,7 +32,7 @@ local function loadPlaced()
 end
 
 local function savePlaced()
-    SetResourceKvp(KVP_KEY, json.encode(placed))
+    Herbalist.SaveState(STATE_KEY, placed)
 end
 
 -- static config spots first, then admin-placed ones
@@ -178,6 +179,7 @@ end)
 
 RegisterCommand('addherbbuyer', function(source)
     if source == 0 or not RSGCore.Functions.HasPermission(source, cfg.AdminPermission) then return end
+    if not placedLoaded then return end
     if #placed >= cfg.MaxPlaced then return end
     local ped = GetPlayerPed(source)
     if ped == 0 then return end
@@ -190,6 +192,7 @@ end, false)
 
 RegisterCommand('removeherbbuyer', function(source)
     if source == 0 or not RSGCore.Functions.HasPermission(source, cfg.AdminPermission) then return end
+    if not placedLoaded then return end
     local ped = GetPlayerPed(source)
     if ped == 0 then return end
     local pos = GetEntityCoords(ped)
@@ -213,4 +216,8 @@ AddEventHandler('playerDropped', function()
     lastRequestAt[source] = nil
 end)
 
-loadPlaced()
+Herbalist.LoadState(STATE_KEY, function(raw)
+    loadPlaced(raw)
+    placedLoaded = true
+    broadcastBuyers()
+end)

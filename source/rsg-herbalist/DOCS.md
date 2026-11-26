@@ -1,6 +1,6 @@
 # rsg-herbalist – Developer & Server Owner Docs
 
-Version 3.5.4 · Requires `rsg-core` (3.0.3+) and `rsg-inventory`. No ox_lib, no database tables.
+Version 3.5.5 · Requires `rsg-core` (3.0.3+), `rsg-inventory` and `oxmysql`. No ox_lib.
 
 ## Contents
 1. [Architecture](#architecture)
@@ -26,6 +26,7 @@ Version 3.5.4 · Requires `rsg-core` (3.0.3+) and `rsg-inventory`. No ox_lib, no
 | `client/client.lua` | client | Herb streaming/gathering, crafting NUI, crafting anim/camera, tonic drinking |
 | `client/mysterybox.lua` | client | Mystery box prop, prompt (rsg-core DrawText), open flow |
 | `server/webhook.lua` | server | Queued Discord logger + anti-cheat violation counter (`Webhook.*`) |
+| `server/database.lua` | server | `Herbalist.LoadState` / `Herbalist.SaveState` (`rsg_herbalist_state`) |
 | `server/server.lua` | server | Gather validation, regrowth, crafting, tonic use |
 | `server/mysterybox.lua` | server | Box location, loot rolls, open validation |
 | `server/versionchecker.lua` | server | GitHub version check (also logged to the `version` webhook) |
@@ -70,7 +71,7 @@ Server → client: `client:SetSuppressed(id, suppressed, newPlant)`, `client:Syn
 - Every key in `Config.TonicEffects` – drinks the tonic (shared `TonicUseCooldownMs`).
 
 ## Persistence
-Nothing is stored in the database. Regrow timers and regrown plants are saved in the resource KVP key `nodes_v1` (written every minute when changed, and on stop) and restored on start; saved state is ignored if the number of spawn nodes changed, because ids are list positions. To reset every node, stop the resource and clear that KVP key. The box location lives in server memory and resets on restart. Nodes whose plant has no registered item are re-pointed to a gatherable plant of the same zone at start, or disabled if the zone has none (a console warning lists them). Items are written through rsg-inventory exports (which also show the ItemBox and log with a reason: `rsg-herbalist:gather|craft|craft-refund|drink-tonic|mysterybox`).
+Server state is stored in `rsg_herbalist_state` (`key` VARCHAR(50) primary key, `value` LONGTEXT JSON), created on start while `Config.AutoDatabase = true`, otherwise import `installation/install.sql`. No resource KVP is used, so the server creates no `db` folder. Gathering and buyer placement are ignored until the saved state has loaded. Regrow timers and regrown plants are saved in the row `nodes_v1` (written every minute when changed, and on stop) and restored on start; saved state is ignored if the number of spawn nodes changed, because ids are list positions. To reset every node, stop the resource and delete that row. The box location lives in server memory and resets on restart. Nodes whose plant has no registered item are re-pointed to a gatherable plant of the same zone at start, or disabled if the zone has none (a console warning lists them). Items are written through rsg-inventory exports (which also show the ItemBox and log with a reason: `rsg-herbalist:gather|craft|craft-refund|drink-tonic|mysterybox`).
 
 ## Tonic quality and field guide (3.4.0)
 - **Quality:** on `finishCraft` the server reads the crafter's herbalism level (`rsg-skills:GetLevel`), picks the tier from `Config.TonicQuality` and stores it as `info.tonic_tier` on the item (not `info.quality`, which rsg-inventory uses for decay). Tiers stack separately. When a tonic is used the server removes the exact slot used, reads its tier and sends `boost` to the client, which multiplies the boost (capped at a full core). `Config.Tonics[n].minLevel` is enforced in `requestCraft`; the menu only greys recipes out. If rsg-skills is off, there is no level gating and every tonic is the lowest tier.
@@ -79,7 +80,7 @@ Nothing is stored in the database. Regrow timers and regrown plants are saved in
 ## Drying, teas and the herb buyer (3.5.0)
 - **Recipes:** drying and tea recipes live in `Config.Tonics` with `category = 'drying'|'tea'` and share the whole craft pipeline (server timer, ingredient check, level gate, refunds). `quality = false` keeps dried herbs out of the quality system. A recipe whose items aren't registered is skipped (`HerbalistRecipeValid`).
 - **Effects:** `Config.TonicEffects[item]` accepts `thirstBoost` (HUD thirst points, applied client-side with `hud:client:UpdateThirst`), plus `group` and `cooldownMs`. Cooldowns are tracked per group, so a tea never blocks a tonic.
-- **Buyer:** `server/buyer.lua`. Locations are `Config.Buyer.locations` plus admin-placed ones saved in the resource KVP key `buyers_v1` (`/addherbbuyer`, `/removeherbbuyer`, permission `Config.Buyer.AdminPermission`). The client opens the menu through the callback `rsg-herbalist:server:getBuyerStock` and sells with the event `rsg-herbalist:server:sell(slot, amount)`. The server validates the cooldown, the player's distance to a buyer, that the slot holds a sellable item, and caps the amount; the price comes from `Config.Buyer.prices` times the tier's `priceMult` (and rsg-economy when running). Items are removed first and returned if the payout fails. Sales can be logged with the `sales` webhook category.
+- **Buyer:** `server/buyer.lua`. Locations are `Config.Buyer.locations` plus admin-placed ones saved in the `rsg_herbalist_state` row `buyers_v1` (`/addherbbuyer`, `/removeherbbuyer`, permission `Config.Buyer.AdminPermission`). The client opens the menu through the callback `rsg-herbalist:server:getBuyerStock` and sells with the event `rsg-herbalist:server:sell(slot, amount)`. The server validates the cooldown, the player's distance to a buyer, that the slot holds a sellable item, and caps the amount; the price comes from `Config.Buyer.prices` times the tier's `priceMult` (and rsg-economy when running). Items are removed first and returned if the payout fails. Sales can be logged with the `sales` webhook category.
 
 ## Security model
 - The client only ever sends ids; items, amounts, recipes, durations and loot are decided from server config.
@@ -114,16 +115,17 @@ Support the Project : https://rexshack.tebex.store/
 
 ## Technical reference
 
-Generated from the source of **rsg-herbalist 3.5.4**. Names, arguments and defaults below are read straight from the code.
+Generated from the source of **rsg-herbalist 3.5.5**. Names, arguments and defaults below are read straight from the code.
 
 ### Dependencies
 
-`rsg-core`, `rsg-inventory`
+`rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
 
 ### Configuration
 
 | Option | Default | Notes |
 |---|---|---|
+| `Config.AutoDatabase` | `true` | Create `rsg_herbalist_state` on start; `false` = import `installation/install.sql`. |
 | `Config.Debug` | `false` | leave off in production; verbose per-gather/per-craft tracing |
 | `Config.InventoryImagePath` | `'nui://rsg-inventory/html/images/'` | Where the crafting UI loads item icons from (rsg-inventory's image folder). |
 | `Config.ScopeRangeLoad` | `100.0` | distance at which a herb node starts streaming in |

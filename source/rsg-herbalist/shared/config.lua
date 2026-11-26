@@ -1,5 +1,6 @@
 Config = {}
 
+Config.AutoDatabase = true -- create the database table on start; false = import installation/install.sql yourself
 Config.Debug = false -- leave off in production; verbose per-gather/per-craft tracing
 
 -- Where the crafting UI loads item icons from (rsg-inventory's image folder).

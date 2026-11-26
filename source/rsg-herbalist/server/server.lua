@@ -192,23 +192,23 @@ do
     Debug(('built %d spawn entries'):format(#spawns))
 end
 
--- Persistence: regrow timers and regrown plants survive restarts (resource KVP, no database).
-local KVP_KEY = 'nodes_v1'
+-- Persistence: regrow timers and regrown plants survive restarts (MySQL, rsg_herbalist_state).
+local STATE_KEY = 'nodes_v1'
 local nodesDirty = false
+local nodesLoaded = false
 
 local function SaveNodes()
-    if not nodesDirty then return end
+    if not nodesLoaded or not nodesDirty then return end
     nodesDirty = false
     local data = { count = #spawns, suppressed = {}, plants = {} }
     for id, wearoff in pairs(suppressedUntil) do data.suppressed[#data.suppressed + 1] = { id, wearoff } end
     for id, s in ipairs(spawns) do
         if s.plant ~= defaultPlant[id] then data.plants[#data.plants + 1] = { id, s.plant } end
     end
-    SetResourceKvp(KVP_KEY, json.encode(data))
+    Herbalist.SaveState(STATE_KEY, data)
 end
 
-do
-    local raw = GetResourceKvpString(KVP_KEY)
+local function RestoreNodes(raw)
     local ok, data = pcall(json.decode, raw or '')
     -- ids are positions in the spawn list, so ignore saved state if the list changed size
     if ok and type(data) == 'table' and data.count == #spawns then
@@ -230,6 +230,25 @@ do
         Debug(('restored %d regrow timers'):format(restored))
     end
 end
+
+local function NodeState()
+    local ids, overrides = {}, {}
+    for id in pairs(suppressedUntil) do ids[#ids + 1] = id end
+    for i = 1, #disabledIds do ids[#ids + 1] = disabledIds[i] end
+    for id, s in ipairs(spawns) do
+        if s.plant ~= defaultPlant[id] then
+            overrides[#overrides + 1] = { id, s.plant }
+        end
+    end
+    return ids, overrides
+end
+
+-- gathering is rejected until the saved state is in
+Herbalist.LoadState(STATE_KEY, function(raw)
+    RestoreNodes(raw)
+    nodesLoaded = true
+    TriggerClientEvent('rsg-herbalist:client:SyncState', -1, NodeState())
+end)
 
 -- Every herb the field guide lists: gatherable plants plus the mystery box pools.
 local guideItems = {}
@@ -259,6 +278,7 @@ end)
 
 RegisterNetEvent('rsg-herbalist:server:gathered', function(id)
     local src = source
+    if not nodesLoaded then return end
     Debug(('gather request src=%s id=%s'):format(src, tostring(id)))
     local spawn = type(id) == 'number' and spawns[id]
     if not spawn then
@@ -354,15 +374,7 @@ RegisterNetEvent('rsg-herbalist:server:requestSync', function()
     if lastSyncAt[src] and now - lastSyncAt[src] < 10000 then return end
     lastSyncAt[src] = now
 
-    local ids, overrides = {}, {}
-    for id in pairs(suppressedUntil) do ids[#ids + 1] = id end
-    for i = 1, #disabledIds do ids[#ids + 1] = disabledIds[i] end
-    for id, s in ipairs(spawns) do
-        if s.plant ~= defaultPlant[id] then
-            overrides[#overrides + 1] = { id, s.plant }
-        end
-    end
-    TriggerClientEvent('rsg-herbalist:client:SyncState', src, ids, overrides)
+    TriggerClientEvent('rsg-herbalist:client:SyncState', src, NodeState())
 end)
 
 ----------------------------------------------------------------------------

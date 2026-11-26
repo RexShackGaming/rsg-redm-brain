@@ -2,7 +2,7 @@
 
 A herb gathering, tonic crafting, and mystery box script for **RSG-Core** RedM servers, by RexShack.
 
-**Version 3.5.4** · No ox_lib required · Full developer/server-owner reference: [DOCS.md](DOCS.md)
+**Version 3.5.5** · No ox_lib required · Full developer/server-owner reference: [DOCS.md](DOCS.md)
 
 Players gather herbs from world-placed nodes, brew them into tonics at a mortar & pestle, and can stumble on a roaming mystery box that relocates around the map every so often. Every gather, craft, and loot roll is validated server-side, and an optional Discord webhook system can log activity (and flag likely exploiting) to your Discord.
 
@@ -37,7 +37,7 @@ Players gather herbs from world-placed nodes, brew them into tonics at a mortar 
 - **Herb buyer:** an NPC that buys tonics, teas and dried herbs at fixed server-side prices (quality tiers pay more; optional rsg-economy tax). Admins place buyers in game with `/addherbbuyer` and remove the nearest with `/removeherbbuyer`.
 - **Tonic quality:** your herbalism level (rsg-skills) sets the tier of every tonic you brew (Common / Fine / Superior), which scales its health/stamina boost. Each recipe has a minimum level. Without rsg-skills everything is Common and nothing is level-locked.
 - **Field guide:** `/herbguide` opens a NUI listing every herb, filled in as you gather them (saved on the character, no database table), with an optional XP reward for each first discovery.
-- Herb regrow timers and regrown plants are saved (resource KVP, no database tables) and survive restarts.
+- Herb regrow timers and regrown plants are saved in the `rsg_herbalist_state` database table and survive restarts.
 - Optional, fully configurable per event category (`server/webhook_config.lua`): tonic crafting, mystery box loot, herb gathering, resource start/stop, and version checks each have their own on/off switch and webhook URL, so you can route them to different channels.
 - Built-in **anti-cheat alerting**: distance violations, plant-mismatch attempts, cooldown spam, and other rejected requests are tracked per player and only escalate to a Discord alert once a player racks up repeated violations in a short window - so one packet hiccup won't spam your log channel, but a real exploit attempt will.
 - Queued delivery that respects Discord's rate limits, with automatic retry on HTTP 429.
@@ -55,6 +55,7 @@ Add the new `dried_*` and `herbal_tea_*` entries from `installation/shared_items
 - [rsg-core](https://github.com/Rexshack-RedM/rsg-core)
 - [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory)
 - [rsg-target](https://github.com/Rexshack-RedM/rsg-target) (herb buyer NPC)
+- [oxmysql](https://github.com/overextended/oxmysql) (saved regrow state and herb buyers)
 
 All of these must be started **before** `rsg-herbalist` in your `server.cfg`.
 
@@ -67,7 +68,7 @@ All of these must be started **before** `rsg-herbalist` in your `server.cfg`.
 3. Add the items in `installation/shared_items.lua` to your `rsg-core` (or `rsg-inventory`, depending on your setup) `shared/items.lua`. This covers every herb, all four tonics, the dried herbs, the herbal teas, and the `mortarpestle` crafting item.
 4. Copy every file in `installation/images/` into your inventory resource's item image folder (wherever `rsg-inventory` serves item icons from - commonly `rsg-inventory/html/images/`). This covers all the herb icons and the mortar & pestle icon.
    - Tonic icons (`tonic_*.png`) are included too. The crafting UI loads icons from `Config.InventoryImagePath` (default `nui://rsg-inventory/html/images/`) - change it if your inventory serves images from elsewhere.
-5. Add `ensure rsg-herbalist` to your `server.cfg`, after `rsg-core` and `rsg-inventory`. No database tables are needed.
+5. Add `ensure rsg-herbalist` to your `server.cfg`, after `oxmysql`, `rsg-core` and `rsg-inventory`. The `rsg_herbalist_state` table is created automatically on start. To install it manually, set `Config.AutoDatabase = false` and import `installation/install.sql`.
 6. Start the server. On first start, `Config.Debug = false` by default - flip it to `true` temporarily if you want verbose per-gather/per-craft console tracing while testing.
 
 ---
@@ -80,6 +81,7 @@ All gameplay settings live in `shared/config.lua`. Webhook settings are in their
 
 | Setting | Description |
 |---|---|
+| `Config.AutoDatabase` | `true` | Create `rsg_herbalist_state` on start; `false` = import `installation/install.sql` yourself |
 | `Config.Debug` | Verbose console tracing for gathering, crafting, and streaming. Leave `false` in production. |
 | `Config.InventoryImagePath` | Where the crafting UI loads item icons from. |
 
@@ -172,6 +174,7 @@ client/
   controls.lua                "pick up" input binding helper
 server/
   utils.lua                    shared server helpers (Notify, IsDead)
+  database.lua                 saved state (rsg_herbalist_state)
   webhook_config.lua           Discord webhook config (server-only, never sent to clients)
   webhook.lua                 Discord webhook queue/delivery + anti-cheat violation tracking
   server.lua                   gather validation, tonic crafting validation, item granting
@@ -184,6 +187,7 @@ shared/
 html/                         tonic crafting NUI (index.html, script.js, style.css)
 locales/                      player-facing text (en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru)
 installation/
+  install.sql                    manual database install
   shared_items.lua              item definitions to copy into rsg-core/rsg-inventory
   shared_jobs.lua                herbalist job grades (reference for /jobadmin)
   images/                       herb/orchid/mortar & pestle icons to copy into your inventory's image folder
