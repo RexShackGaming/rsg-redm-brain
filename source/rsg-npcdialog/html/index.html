@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="dialog" class="hidden">
+        <div class="dlg panel">
+            <div class="speaker">
+                <div class="title" id="dName"></div>
+                <div class="subtitle" id="dTitle"></div>
+            </div>
+            <div class="divider"><span>&#10022;</span></div>
+            <div class="speech" id="dText"></div>
+            <div class="replies" id="dChoices"></div>
+            <div class="hint"><span id="dSkip"></span><button class="wood-btn muted" id="dLeave"></button></div>
+        </div>
+    </div>
+
+    <div id="journal" class="screen hidden">
+        <div class="jr panel">
+            <div class="header">
+                <span class="circle-btn invisible"></span>
+                <div class="titles">
+                    <div class="title" id="jTitle"></div>
+                    <div class="subtitle" id="jSubtitle"></div>
+                </div>
+                <button class="circle-btn" id="jClose">&#10005;</button>
+            </div>
+            <div class="divider"><span>&#10022;</span></div>
+            <div class="tabs" id="jTabs"></div>
+            <div class="form" id="jList"></div>
+        </div>
+    </div>
+
+    <div id="tracker" class="hidden"></div>
+
+    <div id="editor" class="hidden">
+        <div class="ed panel">
+            <div class="header">
+                <span class="circle-btn invisible"></span>
+                <div class="titles">
+                    <div class="title" id="eTitle"></div>
+                    <div class="subtitle" id="eSubtitle"></div>
+                </div>
+                <button class="circle-btn" id="eClose">&#10005;</button>
+            </div>
+            <div class="divider"><span>&#10022;</span></div>
+            <div class="ed-body">
+                <aside>
+                    <div class="tabs" id="eModes"></div>
+                    <input class="field" id="eSearch" maxlength="50">
+                    <div class="list" id="eList"></div>
+                    <button class="wood-btn" id="eNew"></button>
+                </aside>
+                <main>
+                    <div class="tabs" id="eTabs"></div>
+                    <div class="form" id="eForm"></div>
+                    <div class="actions" id="eActions"></div>
+                </main>
+            </div>
+        </div>
+        <div class="modal-wrap hidden" id="preview">
+            <div class="panel pv">
+                <div class="card-head"><span class="section" id="pvTitle"></span><button class="circle-btn" id="pvClose">&#10005;</button></div>
+                <div class="note" id="pvNote"></div>
+                <div class="pv-body">
+                    <div class="pv-main">
+                        <div class="title" id="pvName"></div>
+                        <div class="speech" id="pvText"></div>
+                        <div class="replies" id="pvChoices"></div>
+                    </div>
+                    <div class="pv-side">
+                        <div class="inline" id="pvTools"></div>
+                        <div class="section" id="pvFlagsLabel"></div>
+                        <div class="note" id="pvFlags"></div>
+                        <div class="section" id="pvLogLabel"></div>
+                        <div class="pv-log" id="pvLog"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-wrap hidden" id="modal">
+            <div class="panel modal">
+                <div class="modal-text" id="mText"></div>
+                <div class="actions center">
+                    <button class="wood-btn muted" id="mCancel"></button>
+                    <button class="wood-btn" id="mOk"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toasts"></div>
+    <script src="dialog.js"></script>
+    <script src="preview.js"></script>
+    <script src="admin.js"></script>
+    <script src="quests.js"></script>
+</body>
+</html>

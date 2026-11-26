@@ -65,6 +65,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-mining](rsg-mining.md) | rsg-mining - mine lease & NPC worker management | 0 | 0 |
 | [rsg-moonshine](rsg-moonshine.md) | Version 3.7.1 Placeable moonshine stills for RedM on the RSG Framework. Players set up a still in the  | 6 | 9 |
 | [rsg-noticeboard](rsg-noticeboard.md) | rsg-noticeboard - player notice boards with NUI, fees, expiry/renewal and admin management | 0 | 3 |
+| [rsg-npcdialog](rsg-npcdialog.md) | NPC dialog system for the RSG Framework | 21 | 10 |
 | [rsg-npcs](rsg-npcs.md) | Lightweight, distance-based ambient NPC spawner with optional blips, scenarios and proximity audio for RedM. | 0 | 0 |
 | [rsg-playerinfo](rsg-playerinfo.md) | Full-screen player information dashboard for RedM (RSG Core). > `/info` opens a dashboard that fills 80% o | 19 | 13 |
 | [rsg-poison](rsg-poison.md) | Poison script for RSG Framework | 3 | 4 |
