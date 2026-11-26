@@ -25,6 +25,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-chat](rsg-chat.md) | Version 3.4.0 A chat resource for RedM servers running RSG-Core. It replaces the default chat with | 2 | 19 |
 | [rsg-cinema](rsg-cinema.md) | rsg-cinema - moving picture shows rebuilt from RDR2 show_movie_magic_lantern | 0 | 8 |
 | [rsg-consume](rsg-consume.md) | Universal consumption system for RedM using RSG Core. > Immersive eating and drinking system for RedM serv | 1 | 11 |
+| [rsg-contracts](rsg-contracts.md) | rsg-contracts - player written contracts with held payment | 0 | 2 |
 | [rsg-cooking](rsg-cooking.md) | A cooking system for RSG-Core (RedM) that works the same way as [rsg-moonshine](https://github.com/Rexshac | 10 | 8 |
 | [rsg-core](rsg-core.md) | The core framework for RSG RedM servers: players, characters, money, jobs (with built-in multi-job), gangs, pe | 43 | 42 |
 | [rsg-crafting](rsg-crafting.md) | An XP-based crafting book for RSG-Core (RedM). Players use a crafting book item to open a NUI menu. From t | 9 | 11 |
@@ -50,7 +51,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-hud](rsg-hud.md) | Version 3.4.1 · full technical reference in [DOCS.md](DOCS.md) Player and horse HUD for RSG-Core (RedM): h | 20 | 16 |
 | [rsg-hunting](rsg-hunting.md) | Hunting, trapper and butcher script for RSG Framework | 6 | 2 |
 | [rsg-huntingpets](rsg-huntingpets.md) | A combined RedM / RSG-Core resource that adds hunting dogs and hunting birds to your server in one package | 0 | 16 |
-| [rsg-inventory](rsg-inventory.md) | Slot/weight inventory for the RSG Framework (rsg-core) with a hotbar, persistent stashes, ground drops, shops  | 50 | 23 |
+| [rsg-inventory](rsg-inventory.md) | Slot/weight inventory for the RSG Framework (rsg-core) with a hotbar, persistent stashes, ground drops, shops  | 51 | 23 |
 | [rsg-lawman](rsg-lawman.md) | Law enforcement and sheriff management system for RedM using RSG Core. > Full-featured law enforcement fra | 2 | 27 |
 | [rsg-legendary](rsg-legendary.md) | rsg-legendary - legendary animal hunting | 1 | 4 |
 | [rsg-loading](rsg-loading.md) | RSG RedM Loading Screen | 0 | 0 |
@@ -68,6 +69,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-npcdialog](rsg-npcdialog.md) | NPC dialog system for the RSG Framework | 21 | 10 |
 | [rsg-npcs](rsg-npcs.md) | Lightweight, distance-based ambient NPC spawner with optional blips, scenarios and proximity audio for RedM. | 0 | 0 |
 | [rsg-playerinfo](rsg-playerinfo.md) | Full-screen player information dashboard for RedM (RSG Core). > `/info` opens a dashboard that fills 80% o | 19 | 13 |
+| [rsg-playertrade](rsg-playertrade.md) | rsg-playertrade - secure two-way player trading | 1 | 10 |
 | [rsg-poison](rsg-poison.md) | Poison script for RSG Framework | 3 | 4 |
 | [rsg-prison](rsg-prison.md) | Prison system for RedM servers using RSG Core. - [rsg-core](https://github.com/Rexshack-RedM/rsg-core) - [ | 1 | 15 |
 | [rsg-queue](rsg-queue.md) | rsg-queue - connect queue with VIP priority, reserved slots and crash grace | 7 | 1 |

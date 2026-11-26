@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="root" class="hidden">
+        <div class="panel">
+            <header>
+                <h1 id="heading"></h1>
+                <button id="close" class="seal">&#10005;</button>
+            </header>
+            <div class="divider"><span>&#10022;</span></div>
+            <nav id="tabs"></nav>
+            <div id="body"></div>
+        </div>
+        <div id="modal" class="hidden">
+            <div class="card">
+                <h3 id="modal-title"></h3>
+                <div class="ink"></div>
+                <p id="modal-text"></p>
+                <div class="actions">
+                    <button id="modal-back" class="wood muted"></button>
+                    <button id="modal-ok" class="wood"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

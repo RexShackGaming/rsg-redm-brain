@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="root" class="hidden">
+        <div class="panel">
+            <header>
+                <h1 data-l="ui_title"></h1>
+                <div class="sub"><span data-l="ui_with"></span> <span id="partner"></span></div>
+                <button id="close" class="seal">&#10005;</button>
+            </header>
+            <div class="divider"><span>&#10022;</span></div>
+            <div class="columns">
+                <section>
+                    <h2 data-l="ui_inventory"></h2>
+                    <input id="search" type="text" maxlength="40" autocomplete="off">
+                    <div id="inventory" class="list"></div>
+                </section>
+                <section id="mine-col">
+                    <h2><span data-l="ui_your_offer"></span> <b>&#10003;</b></h2>
+                    <div id="mine" class="list"></div>
+                    <div id="cash-row" class="cash">
+                        <label><span data-l="ui_cash"></span> <small><span data-l="ui_have"></span> <span id="have"></span></small></label>
+                        <div class="cash-in">
+                            <input id="cash" type="text" inputmode="decimal" maxlength="9" autocomplete="off">
+                            <button id="cash-set" class="wood" data-l="ui_set"></button>
+                        </div>
+                    </div>
+                    <div class="total">$<span id="mine-cash">0.00</span></div>
+                </section>
+                <section id="theirs-col">
+                    <h2><span data-l="ui_their_offer"></span> <b>&#10003;</b></h2>
+                    <div id="theirs" class="list"></div>
+                    <div class="total">$<span id="theirs-cash">0.00</span></div>
+                </section>
+            </div>
+            <div id="status"></div>
+            <footer>
+                <button id="cancel" class="wood muted" data-l="ui_cancel"></button>
+                <button id="ready" class="wood"></button>
+                <button id="confirm" class="wood"></button>
+            </footer>
+        </div>
+        <div id="modal" class="hidden">
+            <div class="card">
+                <h3 id="modal-title"></h3>
+                <div class="ink"></div>
+                <label data-l="ui_quantity"></label>
+                <input id="qty" type="text" inputmode="numeric" maxlength="7" autocomplete="off">
+                <div class="actions">
+                    <button id="modal-cancel" class="wood muted" data-l="ui_cancel"></button>
+                    <button id="modal-add" class="wood" data-l="ui_add"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
