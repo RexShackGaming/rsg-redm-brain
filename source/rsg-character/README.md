@@ -1,5 +1,7 @@
 # rsg-character
 
+**Version 3.4.1**
+
 Character selection, character creation, clothing stores, wardrobe and spawn selection for **RSG-Core** (RedM).
 
 > Server owners and developers: see **[DOCS.md](DOCS.md)** for the full flow, database layout, security model, exports and how to extend the script.

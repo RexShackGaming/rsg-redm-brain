@@ -21,7 +21,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-bountyhunter](rsg-bountyhunter.md) | rsg-bountyhunter - hunt wanted outlaws and bring them in dead or alive | 3 | 7 |
 | [rsg-canteen](rsg-canteen.md) | Fill a canteen at water pumps with rsg-target, or straight from rivers and lakes, and drink from it to res | 1 | 8 |
 | [rsg-cards](rsg-cards.md) | Collectable cigarette cards for the RSG Framework | 0 | 27 |
-| [rsg-character](rsg-character.md) | Character selection, character creation, clothing stores, wardrobe and spawn selection for RSG-Core (RedM) | 33 | 21 |
+| [rsg-character](rsg-character.md) | Version 3.4.1 Character selection, character creation, clothing stores, wardrobe and spawn selection for * | 33 | 21 |
 | [rsg-chat](rsg-chat.md) | Version 3.4.0 A chat resource for RedM servers running RSG-Core. It replaces the default chat with | 2 | 19 |
 | [rsg-cinema](rsg-cinema.md) | rsg-cinema - moving picture shows rebuilt from RDR2 show_movie_magic_lantern | 0 | 8 |
 | [rsg-consume](rsg-consume.md) | Universal consumption system for RedM using RSG Core. > Immersive eating and drinking system for RedM serv | 1 | 11 |
@@ -76,7 +76,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-radialmenu](rsg-radialmenu.md) | Radial interaction menu for RedM using RSG Core. A fast, themed radial menu with nested submenus, job-spec | 2 | 7 |
 | [rsg-radio](rsg-radio.md) | rsg-radio - field radio (frequencies, job channels) on top of rsg-voice | 2 | 21 |
 | [rsg-railroad](rsg-railroad.md) | Advanced train management system for RedM (rsg-core). Buy railroad companies, hire drivers, manage trains, run | 0 | 35 |
-| [rsg-ranch](rsg-ranch.md) | A complete livestock ranching system for RedM servers running the RSG Framework. Buy a ranch, hire sta | 31 | 100 |
+| [rsg-ranch](rsg-ranch.md) | Version 3.7.1 A complete livestock ranching system for RedM servers running the RSG Framework. Buy | 31 | 100 |
 | [rsg-reputation](rsg-reputation.md) | Honor and regional standing (fame and infamy) for RSG Framework | 22 | 4 |
 | [rsg-robbery](rsg-robbery.md) | Player-to-player robbery system for RSG Framework | 0 | 7 |
 | [rsg-rocks](rsg-rocks.md) | Mining system for RSG Framework | 0 | 17 |

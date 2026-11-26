@@ -1,5 +1,7 @@
 # rsg-skills developer and server owner documentation
 
+> Version **3.0.2**
+
 For a short overview see [README.md](README.md).
 
 ## Contents
@@ -37,7 +39,7 @@ For a short overview see [README.md](README.md).
 | `client/client.lua` | Read-only client mirror and client exports. |
 | `client/ui.lua` | `/skills` command, NUI open/close, push-to-talk handling. |
 | `html/` | The panel (`index.html`, `style.css`, `script.js`). |
-| `locales/*.json` | 10 languages. |
+| `locales/*.json` | 11 languages. |
 | `install.sql` | Manual database install. |
 
 ## Levels, ranks and perks
@@ -246,7 +248,7 @@ Index `week_skill_xp (week, skill, xp)`.
 - **Add a skill:** add an entry to `Config.Skills`, then add `skill_<key>` and `skill_<key>_desc` to each file in `locales/` (a missing key shows as its raw name). Scripts then award XP to it.
 - **Change the pace:** lower or raise `Curve.Base` / `Curve.Growth`, or set `Config.XPMultiplier`. For a limited time use `/skillboost 2 60` (double XP for an hour).
 - **Add a perk type:** add it under a skill's `perks` and add `perk_<perk_key>` to the locale files. The script that should honour it has to call `GetPerk` with that name.
-- **Change the language:** `setr rsg:locale <code>` in `server.cfg` (`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`).
+- **Change the language:** `setr rsg:locale <code>` in `server.cfg` (`en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`).
 - **Turn off weekly boards:** `Config.Weekly.Enabled = false`.
 - **Import rsg-hunting's XP:** nothing to do. The first time a character is loaded without a hunting row, their `metadata.rep.hunting` value is copied in.
 

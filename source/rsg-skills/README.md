@@ -2,7 +2,7 @@
 
 Framework-wide skills for the RSG Framework: one shared place for XP, levels, rank titles, perks and leaderboards, so hunting, mining, farming and every other script can use the same progression instead of each keeping its own.
 
-Version 3.0.1 · Requires `rsg-core` and `oxmysql` · No ox_lib, no target and no inventory dependency
+Version 3.0.2 · Requires `rsg-core` and `oxmysql` · No ox_lib, no target and no inventory dependency
 
 Full developer and server owner documentation is in [DOCS.md](DOCS.md).
 
@@ -92,7 +92,7 @@ end)
 All exports, events and the runtime `RegisterSkill` are in [DOCS.md](DOCS.md).
 
 ## Locales
-Ships with `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br` and `ro`, all with the same keys. Skill names, rank titles and perk names are locale keys (`skill_<key>`, `skill_<key>_desc`, `rank_*`, `perk_<perk>`), so a new skill or perk needs matching entries in the locale files (a missing key shows as its raw name).
+Ships with `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro` and `ru`, all with the same keys. Skill names, rank titles and perk names are locale keys (`skill_<key>`, `skill_<key>_desc`, `rank_*`, `perk_<perk>`), so a new skill or perk needs matching entries in the locale files (a missing key shows as its raw name).
 
 ## Notes
 - rsg-hunting keeps its own XP in `metadata.rep.hunting`. The hunting skill here is seeded from that value once, the first time a player has no row; after that the two are separate unless rsg-hunting is changed to call rsg-skills.

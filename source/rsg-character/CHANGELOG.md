@@ -2,6 +2,11 @@
 
 All notable changes to rsg-character. Newest first. Versions follow `fxmanifest.lua`.
 
+## 3.4.1
+
+### Fixed
+- The nationality picker used a native `<select>`, which can crash RedM. The input dialog now draws its own dropdown.
+
 ## 3.4.0
 
 ### Added

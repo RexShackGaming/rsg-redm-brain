@@ -680,8 +680,7 @@ html, body {
     color: var(--rdr-muted);
     margin-bottom: 6px;
 }
-.modal-field input,
-.modal-field select {
+.modal-field input {
     width: 100%;
     background: rgba(0,0,0,0.35);
     border: 1px solid var(--rdr-gold-dim);
@@ -693,19 +692,55 @@ html, body {
     outline: none;
     transition: all 0.15s ease;
 }
-.modal-field select {
-    appearance: none;
-    -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%23c9a24b' d='M6 8 0 0h12z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 10px 7px;
-    padding-right: 32px;
-}
-.modal-field select option {
-    background: #1a1712;
+.modal-field .dd-head {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid var(--rdr-gold-dim);
+    border-radius: 2px;
     color: var(--rdr-text);
+    padding: 10px 12px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.15s ease;
 }
+.modal-field .dd-value.placeholder { color: var(--rdr-muted); }
+.modal-field .dd-arrow { color: var(--rdr-muted); transition: transform 0.15s ease; }
+.modal-field .dd.open .dd-arrow { transform: rotate(180deg); }
+.modal-field .dd-menu {
+    display: none;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 2px;
+    background: linear-gradient(160deg, var(--rdr-panel-2), var(--rdr-panel) 60%, var(--rdr-black));
+    border: 1px solid var(--rdr-gold-dim);
+    box-shadow: 0 10px 30px var(--rdr-shadow);
+}
+.modal-field .dd.open .dd-menu { display: block; }
+.modal-field .dd-menu::-webkit-scrollbar { width: 4px; }
+.modal-field .dd-menu::-webkit-scrollbar-thumb { background: var(--rdr-gold-dim); }
+.modal-field .dd-opt {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: var(--rdr-muted);
+    padding: 8px 12px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.modal-field .dd-opt:hover { color: var(--rdr-text); background: rgba(255,255,255,0.06); padding-left: 16px; }
+.modal-field .dd-opt.selected { color: var(--rdr-text); font-weight: 500; }
 .modal-field .date-stepper-row {
     display: grid;
     grid-template-columns: 1fr 1fr 1.2fr;
@@ -756,7 +791,8 @@ html, body {
     width: auto;
 }
 .modal-field input:focus,
-.modal-field select:focus {
+.modal-field .dd-head:focus,
+.modal-field .dd.open .dd-head {
     border-color: var(--rdr-gold);
     box-shadow: 0 0 0 2px rgba(201,162,75,0.15);
 }

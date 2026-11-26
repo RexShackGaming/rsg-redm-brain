@@ -366,6 +366,11 @@
 
     let dialogFieldDefs = [];
 
+    // close an open dialog dropdown when clicking anywhere else
+    document.addEventListener("mousedown", (e) => {
+        dialogFields.querySelectorAll(".dd.open").forEach((dd) => { if (!dd.contains(e.target)) dd.classList.remove("open"); });
+    });
+
     function openDialog(msg) {
         dialogFieldDefs = msg.fields || [];
         dialogTitle.textContent = msg.header || "";
@@ -379,26 +384,46 @@
             wrap.appendChild(label);
 
             if (f.type === "select") {
-                const select = document.createElement("select");
-                select.dataset.index = i;
-                if (!f.default) {
-                    const placeholderOpt = document.createElement("option");
-                    placeholderOpt.value = "";
-                    placeholderOpt.textContent = f.placeholder || "";
-                    placeholderOpt.disabled = true;
-                    placeholderOpt.selected = true;
-                    select.appendChild(placeholderOpt);
-                }
+                // Native <select> popups crash RedM's CEF - HTML dropdown; the hidden input holds the value
+                const hidden = document.createElement("input");
+                hidden.type = "hidden";
+                hidden.dataset.index = i;
+                const dd = document.createElement("div");
+                dd.className = "dd";
+                const head = document.createElement("button");
+                head.type = "button";
+                head.className = "dd-head";
+                const text = document.createElement("span");
+                text.className = "dd-value placeholder";
+                text.textContent = f.placeholder || "";
+                const arrow = document.createElement("span");
+                arrow.className = "dd-arrow";
+                arrow.textContent = "\u25BE";
+                head.append(text, arrow);
+                // the list sits in the page flow, so the scrolling modal can never clip it
+                const list = document.createElement("div");
+                list.className = "dd-menu";
                 (f.options || []).forEach((opt) => {
-                    const optionEl = document.createElement("option");
                     const value = typeof opt === "string" ? opt : opt.value;
                     const optLabel = typeof opt === "string" ? opt : (opt.label || opt.value);
-                    optionEl.value = value;
-                    optionEl.textContent = optLabel;
-                    if (f.default && value === f.default) optionEl.selected = true;
-                    select.appendChild(optionEl);
+                    const row = document.createElement("button");
+                    row.type = "button";
+                    row.className = "dd-opt";
+                    row.textContent = optLabel;
+                    const pick = () => {
+                        hidden.value = value;
+                        text.textContent = optLabel;
+                        text.classList.remove("placeholder");
+                        list.querySelectorAll(".dd-opt").forEach((o) => o.classList.toggle("selected", o === row));
+                        dd.classList.remove("open");
+                    };
+                    row.addEventListener("click", pick);
+                    if (f.default && value === f.default) pick();
+                    list.appendChild(row);
                 });
-                wrap.appendChild(select);
+                head.addEventListener("click", () => dd.classList.toggle("open"));
+                dd.append(head, list);
+                wrap.append(dd, hidden);
             } else if (f.type === "date") {
                 // Native date pickers and <select> popups crash RedM's CEF - use -/+ steppers instead
                 const hidden = document.createElement("input");
@@ -510,7 +535,7 @@
 
         show(app);
         show(dialogModal);
-        const firstInput = dialogFields.querySelector("input:not([type=hidden]), select");
+        const firstInput = dialogFields.querySelector("input:not([type=hidden]), .dd-head");
         if (firstInput) firstInput.focus();
     }
 

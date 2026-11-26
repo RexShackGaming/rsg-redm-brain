@@ -2,6 +2,11 @@
 
 All notable changes to rsg-skills. Newest first.
 
+## 3.0.2
+
+### Added
+- Russian (`ru`) language file.
+
 ## 3.0.1
 
 ### Added

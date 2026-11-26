@@ -1,6 +1,6 @@
 # rsg-core
 
-Version 3.5.1. rsg-core
+Version 3.5.2. rsg-core
 
 The core framework for RSG RedM servers: players, characters, money, jobs (with built-in multi-job), gangs, permissions, commands, callbacks, notifications and shared data. Documentation: https://rsgcore.com/docs - [oxmysql](https://github.com/overextended/oxmysql)
 

@@ -6,7 +6,7 @@ lua54 'yes'
 name 'rsg-skills'
 author 'RexShack'
 description 'Framework-wide skills, XP, levels, perks and leaderboards for RSG Framework'
-version '3.0.1'
+version '3.0.2'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
