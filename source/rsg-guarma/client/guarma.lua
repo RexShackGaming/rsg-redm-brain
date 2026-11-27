@@ -7,6 +7,7 @@ local WORLD_MAP  = -1868977180
 
 local inGuarma = false
 local weatherPaused = false
+local wreckRequested = false -- only remove the IPL if this resource loaded it
 
 local function WeatherAvailable()
     return Config.Weather.enabled and GetResourceState('rsg-weather') == 'started'
@@ -25,12 +26,21 @@ local function SetHurricaneVariation(state)
     end
 end
 
+-- pausing rsg-weather sync also stops its clock updates (the clock is frozen between them),
+-- so keep feeding it the server time while on the island
+local function ApplyServerTime(data)
+    if not weatherPaused or not data then return end
+    local t = math.floor(data.time or 0)
+    exports['rsg-weather']:setMyTime(t // 3600 % 24, t // 60 % 60, t % 60, data.transition)
+end
+
 local function ApplyIslandWeather(weather)
     if not inGuarma or not WeatherAvailable() or not weather then return end
     -- also pauses rsg-weather sync
     exports['rsg-weather']:setMyWeather(weather, Config.Weather.transition, false)
     SetHurricaneVariation(weather == 'hurricane')
     weatherPaused = true
+    ApplyServerTime(GlobalState.rsgTime)
 end
 
 local function RestoreServerWeather()
@@ -44,6 +54,19 @@ end
 
 AddStateBagChangeHandler('guarmaWeather', 'global', function(_, _, value)
     ApplyIslandWeather(value)
+end)
+
+AddStateBagChangeHandler('rsgTime', 'global', function(_, _, value)
+    ApplyServerTime(value)
+end)
+
+-- rsg-weather restarting turns its sync back on, so re-apply the island weather
+AddEventHandler('onClientResourceStart', function(resource)
+    if resource ~= 'rsg-weather' or not inGuarma then return end
+    weatherPaused = false
+    SetTimeout(2000, function()
+        ApplyIslandWeather(GlobalState.guarmaWeather)
+    end)
 end)
 
 -------------------------------------
@@ -63,8 +86,10 @@ local function SetShipwreck(state)
     local active = Citizen.InvokeNative(0xD779B9B910BD3B7C, wreck.ipl) -- IS_IPL_ACTIVE_HASH
     if state and not active then
         Citizen.InvokeNative(0x59767C5A7A9AE6DA, wreck.ipl) -- REQUEST_IPL_HASH
-    elseif not state and active then
+        wreckRequested = true
+    elseif not state and wreckRequested then
         Citizen.InvokeNative(0x5A3E5CF7B4014B96, wreck.ipl) -- REMOVE_IPL_HASH
+        wreckRequested = false
     end
     -- SET_MAPDATACULLBOX_ENABLED
     Citizen.InvokeNative(0x3CACC83F6FED837C, wreck.cullbox, state)
@@ -141,8 +166,6 @@ end)
 -------------------------------------
 AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
-    SetAmbience(false)
-    SetShipwreck(false)
-    RestoreServerWeather()
-    inGuarma = false
+    -- restores horizon, water, minimap, ambience, shipwreck and weather (no-op on the mainland)
+    SetGuarmaWorld(false)
 end)

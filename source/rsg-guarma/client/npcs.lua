@@ -20,13 +20,13 @@ local function FadePed(ped, from, to, step)
 end
 
 local function SpawnPortPed(portId, port)
-    if not LoadModel(port.npcmodel) then return nil end
+    if not LoadModel(port.npcmodel) then return end
 
     local c = port.npccoords
     local ped = CreatePed(port.npcmodel, c.x, c.y, c.z - 1.0, c.w, false, false, false, false)
     SetModelAsNoLongerNeeded(port.npcmodel)
 
-    if not ped or ped == 0 or not DoesEntityExist(ped) then return nil end
+    if not ped or ped == 0 or not DoesEntityExist(ped) then return end
 
     -- _SET_RANDOM_OUTFIT_VARIATION
     Citizen.InvokeNative(0x283978A15512B2FE, ped, true)
@@ -34,6 +34,8 @@ local function SpawnPortPed(portId, port)
     FreezeEntityPosition(ped, true)
     SetEntityInvincible(ped, true)
     SetBlockingOfNonTemporaryEvents(ped, true)
+    -- tracked before the fade, so a resource stop mid-fade can't leave the ped behind
+    spawnedPeds[portId] = ped
 
     exports['rsg-target']:addLocalEntity(ped, {
         {
@@ -50,8 +52,6 @@ local function SpawnPortPed(portId, port)
     if Config.FadeIn then
         FadePed(ped, 0, 255, 51)
     end
-
-    return ped
 end
 
 local function DespawnPed(portId, fade)
@@ -70,8 +70,9 @@ CreateThread(function()
         for portId, port in pairs(Config.Ports) do
             local dist = #(coords - port.npccoords.xyz)
             if dist < Config.DistanceSpawn then
-                if not spawnedPeds[portId] then
-                    spawnedPeds[portId] = SpawnPortPed(portId, port)
+                -- also replaces a worker the game or another script deleted
+                if not spawnedPeds[portId] or not DoesEntityExist(spawnedPeds[portId]) then
+                    SpawnPortPed(portId, port)
                 end
             elseif spawnedPeds[portId] and dist > Config.DistanceSpawn + 10.0 then
                 DespawnPed(portId, Config.FadeIn)

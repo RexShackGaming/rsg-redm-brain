@@ -5,7 +5,7 @@ lua54 'yes'
 
 name 'rsg-guarma'
 description 'Boat travel between Saint Denis and Guarma for the RSG Framework'
-version '3.0.1'
+version '3.1.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
@@ -14,12 +14,19 @@ shared_scripts {
 
 client_scripts {
     'client/guarma.lua',
+    'client/travel.lua',
     'client/client.lua',
     'client/soldiers.lua',
     'client/npcs.lua',
 }
 
 server_scripts {
+    '@oxmysql/lib/MySQL.lua',
+    'server/database.lua',
+    'server/utils.lua',
+    'server/management.lua',
+    'server/customs.lua',
+    'server/trade.lua',
     'server/server.lua',
     'server/soldiers.lua',
     'server/versionchecker.lua',
@@ -38,4 +45,5 @@ dependencies {
     'rsg-core',
     'rsg-inventory',
     'rsg-target',
+    'oxmysql',
 }

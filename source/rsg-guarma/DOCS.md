@@ -5,148 +5,111 @@
 2. Data / config
 3. Events & callbacks
 4. Security model
-5. Integration notes
-6. Troubleshooting
-7. Support
+5. Database
+6. Integration notes
+7. Troubleshooting
+8. Support
 
 ## Architecture
 
 | File | Purpose |
 |---|---|
-| `shared/config.lua` | Prices, cooldowns, ports, Guarma world, weather, soldiers |
-| `client/guarma.lua` | World horizon / water / minimap / ambience / shipwreck / weather / population |
-| `client/client.lua` | Blips, NUI ticket office, travel sequence |
+| `shared/config.lua` | All settings |
+| `client/guarma.lua` | World horizon / water / minimap / ambience / shipwreck / weather / time / population |
+| `client/travel.lua` | Boarding countdown, boarding checks, crossing and arrival |
+| `client/client.lua` | Blips and ticket office NUI |
 | `client/npcs.lua` | Port worker spawn / despawn / `rsg-target` |
 | `client/soldiers.lua` | Local owner AI for networked Fussar patrols |
-| `server/server.lua` | Buy ticket callback, travel event, island weather GlobalState |
-| `server/soldiers.lua` | Server spawn / despawn of networked soldiers |
+| `server/database.lua` | `Guarma` namespace, table setup, per-character records |
+| `server/utils.lua` | Shared server helpers |
+| `server/management.lua` | Closures, discounts, port income, command |
+| `server/customs.lua` | Arrival searches |
+| `server/trade.lua` | Island cargo |
+| `server/server.lua` | Office data, tickets, schedule, departure, rescue, island weather |
+| `server/soldiers.lua` | Soldier spawning and alert level |
 | `server/versionchecker.lua` | Optional remote version check |
-| `html/` | Ticket office NUI (house monochrome style) |
-| `locales/*.json` | Player-facing strings (rsg-core locale loader) |
+| `html/` | Ticket office, boarding countdown, crossing screen |
 
 ## Data / config
-- Ticket item: `Config.TicketItem` (default `boat_ticket`).
-- Ports keyed by id (`stdenis`, `guarma`) with `npccoords`, `arrival`, `destination`, `guarma` flag.
-- Guarma detection: client coords with `x >= 0` and `y <= -4096`.
-- Weather: `GlobalState.guarmaWeather` set by the server on an interval; clients apply only while in Guarma.
+- Ports are keyed by id (`stdenis`, `guarma`). Each has `npccoords`, `arrival`, `destination`, `guarma`, `customs`, `rescue`, `society`.
+- Guarma detection: `x >= 0` and `y <= -4096`.
+- Weather: `GlobalState.guarmaWeather`, applied by clients on the island. Because rsg-weather's sync switch also covers the clock, the client passes `GlobalState.rsgTime` to `setMyTime` while there.
+- **Schedule:** departures fall on multiples of `interval` counted from the Unix epoch (10 min = :00, :10, :20...). Keep `boarding` shorter than the interval, or boarding is always open. If a hurricane or manual closure applies at departure, nobody sails and no ticket is taken.
+- **Return pair:** two ordinary `boat_ticket` items at `ReturnTicket.price`. They can be traded like any ticket. Needs `MaxTickets >= 2`.
+- **Rescue:** only cash and bank are counted. Money or tickets kept in a stash or given to a friend are not detected; the cooldown and long crossing limit abuse.
+- **Customs:** carried inventory only. Items in horse, wagon or stash storage are not searched. The seizure happens as the boat leaves; the message and alert follow on arrival.
+- **Cargo:** goods must have no other source. Selling uses `exports['rsg-economy']:Quote` / `Record` (market price, trade tax, reputation) for `Trade.region`; without rsg-economy it pays `sell` x quantity. The daily limit is per character, per good, per UTC day. There is no separate sell limit.
+- **Alert:** only soldiers killed by a player's ped count (`GetPedSourceOfDeath`); kills credited to a vehicle or another entity do not. Reinforcements join patrols that still have a living soldier, and later spawns. A wiped patrol is replaced after `Soldiers.respawnTime`. The level resets on restart.
+- **Port income:** `incomeShare` of ticket sales is paid with `exports['rsg-society']:AddMoney`. The society must exist. Cargo money is not shared.
+- `AllowPushToTalkWhileOpen` / `PushToTalkControls`: while the office is open all game controls are disabled except these.
 
 ## Events & callbacks
 
-### Server callback
-- `rsg-guarma:server:buyTicket` `(portId, amount)` → `true|false`  
-  Registered with `RSGCore.Functions.CreateCallback`. Validates distance, cooldown, amount, item existence, inventory space, cash; refunds on failed `AddItem`.
+### Server callbacks
+- `rsg-guarma:server:getOffice` `(portId)` -> office table (price, returnPrice, discount, max, cash, owned, closed, schedule, rescue, cargo, alert) or `false`. Requires being at the port.
+- `rsg-guarma:server:buyTicket` `(portId, amount, kind)` -> `true|false`. `kind` is `'single'` or `'return'` (amount ignored).
+- `rsg-guarma:server:trade` `(portId, item, qty)` -> `true|false`. The port decides whether it is a buy or a sale.
 
-### Server event
-- `rsg-guarma:server:requestTravel` `(portId)`  
-  Validates player state (dead / cuffed / jail), distance, cooldown, removes 1 ticket, then triggers client travel.
+### Server events
+- `rsg-guarma:server:requestTravel` `(portId)`: boards the next sailing, or departs at once when the schedule is off.
+- `rsg-guarma:server:cancelBoarding`
+- `rsg-guarma:server:requestRescue` `(portId)`
 
-### Client event
-- `rsg-guarma:client:performTravel` `(destId)`  
-  Server-only (rejects if `GetInvokingResource()` is set). Fades out, applies Guarma world, teleports to arrival, fades in.
-
-### Client event (internal)
-- `rsg-guarma:client:guarmaChanged` `(state)` — fired when entering/leaving Guarma; used for population density.
+### Client events and callbacks
+- `rsg-guarma:client:performTravel` `(destId, seconds)`: server only.
+- `rsg-guarma:client:boarded` `(portId, secondsLeft)` / `rsg-guarma:client:boardingEnded`
+- `rsg-guarma:client:canBoard` (client callback): false when dead, hogtied, lassoed, mounted, in a vehicle or travelling.
+- `rsg-guarma:client:guarmaChanged` `(state)`: local event on entering or leaving Guarma.
 
 ### GlobalState
-- `guarmaWeather` — shared island weather type string.
-- `guarmaSoldiers` — list of soldier network ids (when soldiers enabled).
+- `guarmaWeather`: island weather type.
+- `guarmaSoldiers`: soldier network ids.
 
 ## Security model
-- All money and item changes are server-side only.
-- Buy and travel re-check distance with `GetEntityCoords(GetPlayerPed(src))` against `Config.InteractRadius`.
-- Amounts are clamped with `math.tointeger` / range checks; ticket name checked against `RSGCore.Shared.Items`.
-- Cooldowns are per-source tables cleaned on `playerDropped`.
-- Buy cooldown is applied only after a successful purchase; failed `AddItem` refunds cash.
-- Travel event is not trustable from the client for free travel: ticket is removed on the server before the client event is sent.
-- NUI callbacks only request server actions; they do not grant items or money.
+- All money and item changes are server-side. Prices, discounts, limits and rewards come from server config.
+- Buying, trading and boarding check distance with server coords. Departure re-checks player state, distance (`Schedule.boardRadius`), closure and ticket after waiting for the client.
+- A ticket is removed only at departure; disconnecting or walking away earlier costs nothing.
+- Cargo trades are locked per character, so parallel requests can't beat the daily limit. If the database can't be read, buying and rescue are refused.
+- Hogtied, lassoed and mounted states exist only on the player's client, so a modified client can skip those checks.
+- Teleporting runs on the client, so general teleport cheating needs an anti-cheat. A cheater who teleports skips customs.
 
-Calling scripts that teleport players to Guarma do not need extra checks for the world switch — the client loop in `guarma.lua` will apply it from coords.
+## Database
+
+| Table | Columns |
+|---|---|
+| `rsg_guarma_players` | `citizenid` (key), `trade_day`, `bought` (JSON), `rescue_at` (unix time) |
+
+Created on start when `Config.AutoDatabase = true`; otherwise import `install.sql`.
 
 ## Integration notes
-- Targeting uses `exports['rsg-target']:addLocalEntity` / `removeLocalEntity` (not ox_target).
-- Notifications use `RSGCore:Client:Notify` / `RSGCore.Functions.Notify` (not ox_lib).
-- Locales load via `@rsg-core/shared/locale.lua` and `locale('key')` (not `lib.locale`).
-- Callbacks use `RSGCore.Functions.CreateCallback` / `AwaitCallback` (not `lib.callback`).
-- Optional weather needs `rsg-weather` started; if absent, weather features no-op.
+- Targeting uses `rsg-target`; notifications, callbacks and locales come from rsg-core.
+- All optional integrations are skipped when the resource isn't started.
 
 ## Troubleshooting
 
 | Symptom | Likely cause |
 |---|---|
 | Target option missing on NPC | `rsg-target` not started, or player outside spawn distance |
-| Cannot buy tickets | Missing `boat_ticket` in shared items, inventory full, or not enough cash |
-| Travel does nothing | No ticket, on cooldown, dead/cuffed/jailed, or still mounted |
-| Wrong map / water after teleport | Client Guarma loop should correct within ~1s; check `IsGuarmaCoords` |
-| No island weather | `Config.Weather.enabled = false` or `rsg-weather` not started |
-| Soldiers not spawning | `Config.Soldiers.enabled = false`, OneSync off, or routes disabled |
-| NUI fonts missing | Google Fonts blocked offline; UI still works with system fallback |
+| Cargo tab missing or empty | `guarma_*` items not added to shared items, `Trade.enabled = false`, or (Guarma) database not ready |
+| "Port ledger is unavailable" | Database table missing or oxmysql error: check the server console |
+| Board button greyed out | No ticket, boarding not open yet, or port closed |
+| "You missed the boat" | Mounted, hogtied or slow to respond at departure |
+| No ticket income | `society` not set on the port, wrong name, or rsg-society not started |
+| No island weather or hurricane closures | `Weather.enabled = false` or rsg-weather not started |
+| Soldiers not spawning | `Soldiers.enabled = false`, OneSync off, or routes disabled |
+| Push-to-talk not working with the UI open | `AllowPushToTalkWhileOpen = false`, or your voice key isn't in `PushToTalkControls` |
 
 ## Support
-Support the Project : https://rexshack.tebex.store/
+Support: https://rexshack.tebex.store
 
 <!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
 
 ## Technical reference
 
-Generated from the source of **rsg-guarma 3.0.1**. Names, arguments and defaults below are read straight from the code.
+**rsg-guarma 3.1.0**. Dependencies: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`. Configuration defaults are in `shared/config.lua`; events and callbacks are listed above.
 
-### Dependencies
-
-`rsg-core`, `rsg-inventory`, `rsg-target`
-
-### Configuration
-
-| Option | Default | Notes |
-|---|---|---|
-| `Config.TicketItem` | `'boat_ticket'` |  |
-| `Config.TicketCost` | `10` | cash per ticket |
-| `Config.MaxTickets` | `10` | max tickets per purchase |
-| `Config.BuyCooldown` | `5` | seconds |
-| `Config.TravelCooldown` | `30` | seconds |
-| `Config.InteractRadius` | `5.0` | server-side max distance from the port NPC |
-| `Config.DistanceSpawn` | `20.0` | NPC spawn distance |
-| `Config.FadeIn` | `true` | fade NPCs in/out |
-| `Config.TravelTime` | `3000` | ms the screen stays black while travelling |
-| `Config.Blip` | `table` |  |
-| `Config.Ports` | `table` |  |
-| `Config.Guarma` | `table` |  |
-| `Config.AmbientAudio` | `true` |  |
-| `Config.Shipwreck` | `table` |  |
-| `Config.Population` | `table` |  |
-| `Config.Weather` | `table` |  |
-| `Config.Soldiers` | `table` |  |
-
-### Callbacks
-
-| Callback | Side | Arguments | File |
-|---|---|---|---|
-| `rsg-guarma:server:buyTicket` | server | `src, cb, portId, amount` | `server/server.lua` |
-
-```lua
--- client side
-RSGCore.Functions.TriggerCallback('rsg-guarma:server:buyTicket', function(result)
-    -- use result
-end, portId, amount)
-```
-
-### Events
-
-Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
-
-| Event | Side | Arguments | File |
-|---|---|---|---|
-| `rsg-guarma:client:performTravel` | client | `destId` | `client/client.lua` |
-| `rsg-guarma:server:requestTravel` | server | `portId` | `server/server.lua` |
-
-```lua
--- from a client script
-TriggerServerEvent('rsg-guarma:server:requestTravel', portId)
--- from a server script
-TriggerClientEvent('rsg-guarma:client:performTravel', source, destId)
-```
-
-### Locales
-
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
+- Items: `boat_ticket`, `guarma_sugar`, `guarma_coffee`, `guarma_rum`, `guarma_cigars`
+- Command: `/guarmaport`
+- Locales: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru` (`setr rsg:locale "en"`)
 
 <!-- END AUTO-REFERENCE -->

@@ -11,7 +11,96 @@ Config.TravelCooldown = 30      -- seconds
 Config.InteractRadius = 5.0     -- server-side max distance from the port NPC
 Config.DistanceSpawn  = 20.0    -- NPC spawn distance
 Config.FadeIn         = true    -- fade NPCs in/out
-Config.TravelTime     = 3000    -- ms the screen stays black while travelling
+Config.TravelTime     = 3000    -- ms the screen stays black while travelling (when Voyage is disabled)
+Config.AutoDatabase   = true    -- build the database table on start (false = import install.sql yourself)
+
+-- while the ticket office is open, block game controls but allow push-to-talk
+Config.AllowPushToTalkWhileOpen = true
+Config.PushToTalkControls = {
+    0x4BC9DABB, -- INPUT_PUSH_TO_TALK
+}
+
+-----------------------------------------------------------
+-- sailing schedule: boats leave both ports together every `interval` minutes.
+-- Players board during the last `boarding` seconds and must stay near the port.
+-- The ticket is only taken when the boat leaves. enabled = false: travel at once.
+-----------------------------------------------------------
+Config.Schedule = {
+    enabled     = true,
+    interval    = 10,     -- minutes between sailings
+    boarding    = 120,    -- seconds boarding stays open before departure
+    boardRadius = 25.0,   -- must be this close to the port worker when the boat leaves
+}
+
+-----------------------------------------------------------
+-- crossing screen and arrival banner
+-----------------------------------------------------------
+Config.Voyage = {
+    enabled  = true,
+    duration = 12,        -- seconds
+    banner   = true,      -- arrival banner through rsg-zonenotify (if it is running)
+}
+
+-----------------------------------------------------------
+-- return pair: two boat tickets at a discount
+-----------------------------------------------------------
+Config.ReturnTicket = {
+    enabled = true,
+    price   = 18,         -- price for the pair (normal price is 2 x TicketCost)
+}
+
+-----------------------------------------------------------
+-- rescue passage: work your way home when stranded. Only at ports with rescue = true.
+-- Needs: no ticket, cash + bank below the ticket price, and no island cargo.
+-----------------------------------------------------------
+Config.Rescue = {
+    enabled  = true,
+    voyage   = 60,        -- seconds the crossing takes
+    cooldown = 60,        -- minutes before the same character can use it again (saved in the database)
+}
+
+-----------------------------------------------------------
+-- customs search on arrival at ports with customs = true
+-- Goods are seized as the boat leaves (disconnecting does not avoid it); the player is told on arrival.
+-----------------------------------------------------------
+Config.Customs = {
+    enabled        = true,
+    chance         = 25,       -- percent chance of a search
+    fine           = 25,       -- cash fine when something is found (takes what the player has, up to this)
+    alertLawmen    = true,     -- rsg-lawman alert
+    outlawStatus   = 0,        -- rsg-lawman outlaw status added (0 = none)
+    exemptJobTypes = { leo = true }, -- never searched (job type)
+    items = { 'weed', 'weed_dried', 'weed_processed', 'weed_brick', 'weed_bag', 'moonshine' },
+}
+
+-----------------------------------------------------------
+-- island cargo: bought from the Guarma port worker, sold to the Saint Denis port worker.
+-- These items must not be obtainable anywhere else, or players can sell them without sailing.
+-----------------------------------------------------------
+Config.Trade = {
+    enabled    = true,
+    buyPort    = 'guarma',
+    sellPort   = 'stdenis',
+    dailyLimit = 20,            -- units of EACH good one character can buy per real day (UTC)
+    region     = 'saint_denis', -- rsg-economy region: market price and trade tax (if running)
+    goods = {
+        { item = 'guarma_sugar',  buy = 1.50, sell = 2.25 },
+        { item = 'guarma_coffee', buy = 2.00, sell = 3.00 },
+        { item = 'guarma_rum',    buy = 4.00, sell = 6.00 },
+        { item = 'guarma_cigars', buy = 3.00, sell = 4.50 },
+    },
+}
+
+-----------------------------------------------------------
+-- port management
+-----------------------------------------------------------
+Config.Management = {
+    discounts        = {},     -- ticket discount by active job, e.g. { stdenlaw = 0.25 } = 25% off
+    incomeShare      = 1.0,    -- share of ticket sales paid to the port's `society` (see Config.Ports)
+    hurricaneClosure = true,   -- no sailings while the island weather is a hurricane (needs Config.Weather)
+    command          = 'guarmaport', -- /guarmaport <port> <open|close> ('' to disable)
+    adminPermission  = 'admin',      -- the boss of the port's society can also use it
+}
 
 -----------------------------------------------------------
 -- blip settings
@@ -30,6 +119,9 @@ Config.Ports = {
         guarma      = false,
         destination = 'guarma',
         showblip    = true,
+        customs     = true,     -- arrivals here can be searched (Config.Customs)
+        rescue      = false,
+        society     = nil,      -- rsg-society name that receives ticket income, e.g. 'portauthority'
         npcmodel    = `u_m_o_rigtrainstationworker_01`,
         npccoords   = vector4(2662.3156, -1541.951, 45.969783, 265.44274),
         arrival     = vector4(2663.2485, -1544.214, 45.969753, 266.12268),
@@ -39,6 +131,9 @@ Config.Ports = {
         guarma      = true,
         destination = 'stdenis',
         showblip    = true,
+        customs     = false,
+        rescue      = true,     -- rescue passage offered here (Config.Rescue)
+        society     = nil,
         npcmodel    = `u_m_o_rigtrainstationworker_01`,
         npccoords   = vector4(1268.4835, -6850.459, 43.318496, 212.38269),
         arrival     = vector4(1268.4954, -6853.771, 43.318477, 241.44442),
@@ -91,6 +186,7 @@ Config.Soldiers = {
     spawnDistance   = 120.0,
     despawnDistance = 160.0,
     pedsPerRoute    = 2,
+    respawnTime     = 600,    -- seconds after a whole patrol is killed before it is replaced, even if players stay (0 = only once everyone leaves)
     weapons         = { `WEAPON_REPEATER_CARBINE`, `WEAPON_REVOLVER_CATTLEMAN` },
     sniperWeapon    = `WEAPON_SNIPERRIFLE_CARCANO`,
     routes = {
@@ -104,5 +200,23 @@ Config.Soldiers = {
         { enabled = true,  sniper = true,  nodes = { vector3(1506.142, -7520.447, 158.1895), vector3(1620.642, -7540.919, 144.9812), vector3(1542.976, -7397.477, 106.9753), vector3(1470.417, -7369.557, 97.17374) } },
         { enabled = true,  sniper = false, nodes = { vector3(1143.145, -7259.119, 73.90079), vector3(1192.581, -7217.897, 68.34444), vector3(1163.34, -7129.541, 50.03685), vector3(1230.028, -7148.012, 52.79202) } },
         { enabled = true,  sniper = false, nodes = { vector3(1208.154, -7057.239, 40.75641), vector3(1144.686, -7038.287, 41.26281), vector3(1142.318, -7114.154, 46.50215), vector3(1223.22, -7103.775, 40.93461) } },
+    },
+}
+
+-----------------------------------------------------------
+-- Fussar's alert level: killing soldiers raises it, time lowers it.
+-- Higher levels add soldiers to each active patrol route.
+-----------------------------------------------------------
+Config.Alert = {
+    enabled      = true,
+    decayMinutes = 5,        -- minutes to lose one kill from the alert
+    levels = {               -- lowest first
+        { kills = 4,  extraPeds = 1 },
+        { kills = 10, extraPeds = 2 },
+    },
+    reputation = {           -- rsg-reputation change per kill (if running); 0 = none
+        region   = 'guarma',
+        standing = -3,
+        honor    = 0,
     },
 }

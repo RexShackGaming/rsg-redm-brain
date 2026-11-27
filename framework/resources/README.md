@@ -9,7 +9,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-adminmenu](rsg-adminmenu.md) | A full staff admin panel for RSG Framework (RedM): a React NUI with tiered staff roles, player management, | 0 | 32 |
 | [rsg-ambush](rsg-ambush.md) | rsg-ambush - random gang ambushes on the trail | 0 | 5 |
 | [rsg-ammo](rsg-ammo.md) | Persistent ammunition system for RedM using the RSG Framework. Players refill their weapons by using ammo  | 1 | 7 |
-| [rsg-animations](rsg-animations.md) | Emote & animation menu for RedM (RSG Core). > A Vue.js animation menu that lets players play gestures, dan | 2 | 3 |
+| [rsg-animations](rsg-animations.md) | Emote & animation menu for RedM (RSG Core). · v3.2.1 · [Full docs](DOCS.md) > A Vue.js animation menu that | 2 | 8 |
 | [rsg-auction](rsg-auction.md) | Real-time auction system for RSG Framework | 0 | 18 |
 | [rsg-backpacks](rsg-backpacks.md) | RSG Backpacks: wearable backpacks with stashes and belt/back attachments (lanterns, lasso, machete, quiver) | 1 | 4 |
 | [rsg-bandana](rsg-bandana.md) | rsg-bandana - raise / lower your bandana (male & female) | 1 | 3 |
@@ -44,7 +44,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-gizmo](rsg-gizmo.md) | Standard prop placement gizmo for the RSG Framework | 9 | 2 |
 | [rsg-goldclaim](rsg-goldclaim.md) | Version 3.2.0 · requires rsg-core, rsg-inventory, rsg-target, oxmysql · no ox_lib · developer reference in | 0 | 31 |
 | [rsg-goldpanning](rsg-goldpanning.md) | Gold panning system for RSG Framework | 0 | 5 |
-| [rsg-guarma](rsg-guarma.md) | Boat travel between Saint Denis and Guarma for the RSG Framework | 0 | 2 |
+| [rsg-guarma](rsg-guarma.md) | Boat travel between Saint Denis and Guarma for the RSG Framework | 0 | 7 |
 | [rsg-herbalist](rsg-herbalist.md) | Herbalist script for RSG Framework | 0 | 19 |
 | [rsg-hotair](rsg-hotair.md) | Hireable hot air balloons for RedM servers running the RSG-Core framework. Players hire a balloon at a doc | 0 | 7 |
 | [rsg-housing](rsg-housing.md) | Monthly house rentals for the RSG Framework (RedM). Players rent a house directly at the property, pay rent ev | 24 | 13 |

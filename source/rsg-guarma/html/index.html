@@ -22,46 +22,95 @@
 
             <div class="divider"><span>✦</span></div>
 
-            <div class="route">
-                <div class="badge">⚓</div>
-                <div class="route-text">
-                    <div class="route-label" id="routeLabel"></div>
-                    <div class="route-dest" id="routeDest"></div>
+            <div class="tabs hidden" id="tabs">
+                <button class="wood-btn" id="tabPassage"></button>
+                <button class="wood-btn" id="tabCargo"></button>
+            </div>
+
+            <div id="passage">
+                <div class="route">
+                    <div class="badge">⚓</div>
+                    <div class="route-text">
+                        <div class="route-label" id="routeLabel"></div>
+                        <div class="route-dest" id="routeDest"></div>
+                    </div>
+                    <div class="pill" id="owned"></div>
                 </div>
-                <div class="pill" id="owned"></div>
-            </div>
 
-            <div class="row">
-                <div class="row-text">
-                    <div class="row-title" id="qtyLabel"></div>
-                    <div class="row-desc" id="priceLabel"></div>
+                <div class="status hidden" id="status"></div>
+                <div class="status warn hidden" id="alert"></div>
+
+                <div class="row">
+                    <div class="row-text">
+                        <div class="row-title" id="qtyLabel"></div>
+                        <div class="row-desc" id="priceLabel"></div>
+                        <div class="row-desc hidden" id="discount"></div>
+                    </div>
+                    <div class="stepper">
+                        <button class="step" id="minus">−</button>
+                        <div class="qty" id="qty">1</div>
+                        <button class="step" id="plus">+</button>
+                        <button class="wood-btn small-btn" id="maxBtn"></button>
+                    </div>
                 </div>
-                <div class="stepper">
-                    <button class="step" id="minus">−</button>
-                    <div class="qty" id="qty">1</div>
-                    <button class="step" id="plus">+</button>
+
+                <div class="summary">
+                    <div class="sum-line"><span id="cashLabel"></span><span id="cash"></span></div>
+                    <div class="sum-line total"><span id="totalLabel"></span><span id="total"></span></div>
+                </div>
+
+                <div class="actions">
+                    <button class="wood-btn muted" id="cancel"></button>
+                    <button class="wood-btn" id="buy"></button>
+                </div>
+                <div class="actions hidden" id="returnRow">
+                    <button class="wood-btn" id="returnBtn"></button>
+                </div>
+
+                <div class="divider"><span>✦</span></div>
+
+                <button class="travel-btn" id="travel">
+                    <span class="badge">⛴</span>
+                    <span class="travel-text">
+                        <span class="row-title" id="travelLabel"></span>
+                        <span class="row-desc" id="travelDesc"></span>
+                    </span>
+                </button>
+
+                <button class="travel-btn hidden" id="rescue">
+                    <span class="badge">⚒</span>
+                    <span class="travel-text">
+                        <span class="row-title" id="rescueLabel"></span>
+                        <span class="row-desc" id="rescueDesc"></span>
+                    </span>
+                </button>
+            </div>
+
+            <div id="cargo" class="hidden">
+                <div class="status" id="cargoNote"></div>
+                <div class="cargo-list" id="cargoList"></div>
+                <div class="summary">
+                    <div class="sum-line total"><span id="cargoCashLabel"></span><span id="cargoCash"></span></div>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <div class="summary">
-                <div class="sum-line"><span id="cashLabel"></span><span id="cash"></span></div>
-                <div class="sum-line total"><span id="totalLabel"></span><span id="total"></span></div>
+    <div id="hud" class="hidden">
+        <div class="route-label" id="hudTitle"></div>
+        <div class="hud-time" id="hudTime"></div>
+        <div class="row-desc" id="hudText"></div>
+    </div>
+
+    <div id="voyage" class="hidden">
+        <div class="voyage-card">
+            <div class="title" id="voyageTitle"></div>
+            <div class="row-desc" id="voyageText"></div>
+            <div class="sea">
+                <div class="ship" id="ship">⛵</div>
+                <div class="waves">≈ ≈ ≈ ≈ ≈ ≈ ≈ ≈ ≈ ≈ ≈ ≈ ≈ ≈</div>
             </div>
-
-            <div class="actions">
-                <button class="wood-btn muted" id="cancel"></button>
-                <button class="wood-btn" id="buy"></button>
-            </div>
-
-            <div class="divider"><span>✦</span></div>
-
-            <button class="travel-btn" id="travel">
-                <span class="badge">⛴</span>
-                <span class="travel-text">
-                    <span class="row-title" id="travelLabel"></span>
-                    <span class="row-desc" id="travelDesc"></span>
-                </span>
-            </button>
+            <div class="bar"><div class="bar-fill" id="voyageFill"></div></div>
         </div>
     </div>
     <script src="script.js"></script>
