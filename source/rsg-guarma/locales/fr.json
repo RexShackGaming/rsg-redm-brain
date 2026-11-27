@@ -2,7 +2,7 @@
     "port_stdenis": "Port de Saint-Denis",
     "port_guarma": "Port de Guarma",
     "buy_tickets_desc": "%s $ par billet",
-    "ticket_amount": "Combien (max. %s)",
+    "ticket_amount": "Combien",
     "travel_to": "Voyager vers %s",
     "travel_desc": "Utilise 1 billet de bateau",
     "open_menu": "Parler au docker",

@@ -5,7 +5,7 @@ lua54 'yes'
 
 name 'rsg-guarma'
 description 'Boat travel between Saint Denis and Guarma for the RSG Framework'
-version '3.1.0'
+version '3.1.1'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',

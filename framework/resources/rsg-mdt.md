@@ -1,8 +1,8 @@
 # rsg-mdt
 
-Version 3.1.1. Mobile Data Terminal for RSG Framework
+Version 3.1.2. Mobile Data Terminal for RSG Framework
 
-Mobile Data Terminal for RSG Framework (RedM) - **Criminal Records** — Search, create, and manage citizen criminal records - **Warrants** — Issue and manage active/served/expired warrants
+Mobile Data Terminal for RSG Framework (RedM) > Version **3.1.2** - **Criminal Records** — Search, create, and manage citizen criminal records
 
 Source: https://github.com/Rexshack-RedM/rsg-mdt
 
@@ -18,9 +18,13 @@ Has NUI (`ui_page`).
 
 ## Net events registered
 
-**server:** `RSGCore:Server:OnJobUpdate`, `RSGCore:Server:PlayerLoaded`, `rsg-mdt:roleSync:adminForceRefresh`, `rsg-mdt:roleSync:requestMyRole`, `rsg-mdt:roleSync:requestRoles`, `rsg-mdt:roleSync:validateLocalState`, `rsg-mdt:server:checkAccess`, `rsg-mdt:server:checkPermission`, `rsg-mdt:server:getConfig`, `rsg-mdt:server:reloadConfig`, `rsg-mdt:server:syncPlayerFines`
+**server:** `rsg-mdt:roleSync:adminForceRefresh`, `rsg-mdt:roleSync:requestMyRole`, `rsg-mdt:roleSync:requestRoles`, `rsg-mdt:roleSync:validateLocalState`, `rsg-mdt:server:checkAccess`, `rsg-mdt:server:checkPermission`, `rsg-mdt:server:getConfig`, `rsg-mdt:server:reloadConfig`, `rsg-mdt:server:syncPlayerFines`
 
 **client:** `RSGCore:Client:OnPlayerLoaded`, `RSGCore:Player:SetPlayerData`, `rsg-mdt:client:accessResult`, `rsg-mdt:client:chargesUpdated`, `rsg-mdt:client:configUpdated`, `rsg-mdt:client:departmentUpdated`, `rsg-mdt:client:finePaid`, `rsg-mdt:client:finePaymentResult`, `rsg-mdt:client:fineStatusUpdated`, `rsg-mdt:client:jobAssigned`, `rsg-mdt:client:notify`, `rsg-mdt:client:permissionResult`, `rsg-mdt:client:playerFinePaid`, `rsg-mdt:client:receiveConfig`, `rsg-mdt:client:rolesUpdated`, `rsg-mdt:client:staffUpdated`, `rsg-mdt:client:updatePlayerFines`, `rsg-mdt:roleSync:forceRefresh`, `rsg-mdt:roleSync:receiveMyRole`, `rsg-mdt:roleSync:receiveRoles`, `rsg-mdt:roleSync:refreshComplete`, `rsg-mdt:roleSync:roleUpdated`, `rsg-mdt:roleSync:stateMismatch`
+
+## Event handlers
+
+**server:** `RSGCore:Server:OnJobUpdate`, `RSGCore:Server:PlayerLoaded`
 
 ## Commands (RegisterCommand)
 

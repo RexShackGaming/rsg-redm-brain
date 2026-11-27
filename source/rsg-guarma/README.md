@@ -2,13 +2,13 @@
 
 Boat travel between **Saint Denis** and **Guarma** for the RSG Framework (RedM).
 
-Version **3.1.0**. See [DOCS.md](DOCS.md) for architecture, events, security and troubleshooting.
+Version **3.1.1**. See [DOCS.md](DOCS.md) for architecture, events, security and troubleshooting.
 
 Players buy boat tickets from a port worker, then sail to the other port. The script swaps the world horizon, water and minimap automatically when you enter or leave Guarma, including when you log in there or an admin teleports you.
 
 ## Features
 - Port worker NPCs (`rsg-target`) at both ports, which fade in and out with distance
-- NUI ticket office: buy tickets and travel
+- NUI ticket office: buy tickets and travel. The window can be moved, and each player's position is remembered
 - Server-authoritative purchases and travel (distance, cooldowns, inventory, money)
 - Sailing schedule with a boarding window and countdown (or instant travel)
 - Crossing screen and arrival banner
@@ -73,6 +73,9 @@ Players buy boat tickets from a port worker, then sail to the other port. The sc
 3. During the boarding window, choose **Board**. Stay near the port worker until the boat leaves; walk away to cancel. Dismount before the boat leaves.
 4. **Cargo:** buy goods from the Guarma worker and sell them to the Saint Denis worker.
 5. **Stranded:** with no ticket, no island cargo and less than a fare in cash plus bank, choose **Work your passage home** on Guarma.
+
+### Moving the window
+Drag the ticket office by its title bar. It stays on screen, and the position is saved on that player's computer. Double-click the title bar to centre it again.
 
 ### Command
 `/guarmaport <stdenis|guarma> <open|close>` stops or resumes sailings from a port. Admins and the boss of the port's `society` can use it. Closures reset when the resource restarts.

@@ -63,7 +63,7 @@ function renderPassage() {
     const maxed = state.qty >= maxAffordable() || state.busy;
 
     $('qty').textContent = state.qty;
-    $('qtyLabel').textContent = fmt(t.qty, o.max);
+    $('qtyLabel').textContent = t.qty;
     $('priceLabel').textContent = fmt(t.price, amount(o.price));
     $('discount').textContent = fmt(t.discount, `${o.discount}%`);
     show('discount', o.discount > 0);
@@ -156,6 +156,7 @@ function render() {
     $('tabCargo').classList.toggle('muted', state.tab !== 'cargo');
     renderPassage();
     renderCargo();
+    placePanel();
 }
 
 function setOffice(office) {
@@ -165,6 +166,7 @@ function setOffice(office) {
 }
 
 function hideOffice() {
+    endDrag();
     show('app', false);
     clearInterval(officeTimer);
     state.session++;
@@ -178,6 +180,73 @@ function tickOffice() {
     const gone = elapsed();
     if (!state.busy && (gone > s.departIn || (s.boardingIn > 0 && gone > s.boardingIn))) act('refresh');
 }
+
+// ---- draggable window ----
+// Uses left/top, not transform, because the panel's open animation uses transform.
+// The position is remembered per player; double-click the header to centre it again.
+const POS_KEY = 'rsg-guarma:panelPos';
+const panel = document.querySelector('.panel');
+const header = panel.querySelector('.header');
+let panelPos = null;
+let drag = null;
+
+try {
+    const saved = JSON.parse(localStorage.getItem(POS_KEY));
+    if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) panelPos = saved;
+} catch (e) { /* storage unavailable: start centred */ }
+
+function savePosition() {
+    try {
+        if (panelPos) localStorage.setItem(POS_KEY, JSON.stringify(panelPos));
+        else localStorage.removeItem(POS_KEY);
+    } catch (e) { /* storage unavailable */ }
+}
+
+// keeps the whole panel on screen, including after its height or the resolution changes
+function placePanel() {
+    panel.classList.toggle('moved', !!panelPos);
+    if (!panelPos) {
+        panel.style.left = panel.style.top = '';
+        return;
+    }
+    const maxX = Math.max(0, window.innerWidth - panel.offsetWidth);
+    const maxY = Math.max(0, window.innerHeight - panel.offsetHeight);
+    panel.style.left = `${Math.round(Math.min(maxX, Math.max(0, panelPos.x)))}px`;
+    panel.style.top = `${Math.round(Math.min(maxY, Math.max(0, panelPos.y)))}px`;
+}
+
+function endDrag() {
+    if (!drag) return;
+    if (drag.moved) {
+        panelPos = { x: parseFloat(panel.style.left), y: parseFloat(panel.style.top) };
+        savePosition();
+    }
+    drag = null;
+}
+
+header.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || e.target.closest('button')) return;
+    // offsetLeft/Top ignore the open animation's scale
+    drag = { dx: e.clientX - panel.offsetLeft, dy: e.clientY - panel.offsetTop, x: e.clientX, y: e.clientY, moved: false };
+    header.setPointerCapture(e.pointerId);
+});
+header.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    if (!drag.moved && Math.abs(e.clientX - drag.x) < 3 && Math.abs(e.clientY - drag.y) < 3) return;
+    drag.moved = true;
+    panelPos = { x: e.clientX - drag.dx, y: e.clientY - drag.dy };
+    placePanel();
+});
+header.addEventListener('pointerup', endDrag);
+header.addEventListener('pointercancel', endDrag);
+header.addEventListener('lostpointercapture', endDrag);
+header.addEventListener('dblclick', (e) => {
+    if (e.target.closest('button')) return;
+    panelPos = null;
+    savePosition();
+    placePanel();
+});
+window.addEventListener('resize', () => { if (!$('app').classList.contains('hidden')) placePanel(); });
 
 function open(data) {
     hideOffice();
@@ -202,6 +271,7 @@ function open(data) {
     $('travelLabel').textContent = data.office.schedule ? t.board : t.travel;
     render();
     show('app', true);
+    placePanel();
     officeTimer = setInterval(tickOffice, 1000);
 }
 

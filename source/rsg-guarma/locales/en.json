@@ -2,7 +2,7 @@
     "port_stdenis": "Saint Denis Port",
     "port_guarma": "Guarma Port",
     "buy_tickets_desc": "$%s per ticket",
-    "ticket_amount": "How many (max %s)",
+    "ticket_amount": "How many",
     "travel_to": "Travel to %s",
     "travel_desc": "Uses 1 boat ticket",
     "open_menu": "Talk to Port Worker",

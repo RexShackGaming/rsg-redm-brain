@@ -1,5 +1,7 @@
 # rsg-mdt — Developer Docs
 
+> Version **3.1.2**. Role sync listens to the core events `RSGCore:Server:PlayerLoaded` and `RSGCore:Server:OnJobUpdate` with `AddEventHandler` only. Never register core server events with `RegisterNetEvent`.
+
 ## Dependencies
 - **rsg-core** — callbacks, notify, locales (`@rsg-core/shared/locale.lua`)
 - **rsg-target** — fines payment NPC interaction

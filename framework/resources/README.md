@@ -27,7 +27,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-consume](rsg-consume.md) | Universal consumption system for RedM using RSG Core. > Immersive eating and drinking system for RedM serv | 1 | 11 |
 | [rsg-contracts](rsg-contracts.md) | rsg-contracts - player written contracts with held payment | 0 | 2 |
 | [rsg-cooking](rsg-cooking.md) | A cooking system for RSG-Core (RedM) that works the same way as [rsg-moonshine](https://github.com/Rexshac | 10 | 8 |
-| [rsg-core](rsg-core.md) | The core framework for RSG RedM servers: players, characters, money, jobs (with built-in multi-job), gangs, pe | 43 | 42 |
+| [rsg-core](rsg-core.md) | > Version 3.7.0 The core framework for RSG RedM servers: players, characters, money, jobs (with built-in m | 45 | 36 |
 | [rsg-crafting](rsg-crafting.md) | An XP-based crafting book for RSG-Core (RedM). Players use a crafting book item to open a NUI menu. From t | 9 | 11 |
 | [rsg-deliveries](rsg-deliveries.md) | Wagon delivery system RSG Framework | 1 | 6 |
 | [rsg-doorlock](rsg-doorlock.md) | A database-driven door lock system for RedM using the RSG Framework. Doors are created, edited and del | 9 | 8 |
@@ -61,7 +61,7 @@ When an export's parameters are not listed, open the source repo and read the fu
 | [rsg-loyalty](rsg-loyalty.md) | Loyalty script for RSG Framework | 7 | 13 |
 | [rsg-lumberjack](rsg-lumberjack.md) | Lumberjack gameplay: grow, chop, carry, and sell wagon loads of logs | 0 | 26 |
 | [rsg-mapping](rsg-mapping.md) | Mapping tool for RSG Framework | 1 | 5 |
-| [rsg-mdt](rsg-mdt.md) | Mobile Data Terminal for RSG Framework | 39 | 34 |
+| [rsg-mdt](rsg-mdt.md) | Mobile Data Terminal for RSG Framework | 39 | 32 |
 | [rsg-medic](rsg-medic.md) | Death system and medic job for RSG Framework | 1 | 23 |
 | [rsg-mining](rsg-mining.md) | rsg-mining - mine lease & NPC worker management | 0 | 0 |
 | [rsg-moonshine](rsg-moonshine.md) | Version 3.7.1 Placeable moonshine stills for RedM on the RSG Framework. Players set up a still in the  | 6 | 9 |

@@ -1,6 +1,6 @@
 # rsg-essentials
 
-Version 3.3.0. rsg-essentials
+Version 3.3.1. rsg-essentials
 
 **Quality-of-life utilities and fixes for RedM using RSG Core.** > A collection of small but essential features: AFK kick, Discord rich presence, Discord logging, eagle eye access, hands up / pointing, lantern holstering, river wash & drink, map zone colours, door unlocks, restart storm, Christmas weather and more. - [**rsg-core**](https://github.com/Rexshack-RedM/rsg-core) 🤠 *(locales, notify, ca
 

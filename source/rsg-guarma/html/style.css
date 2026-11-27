@@ -92,6 +92,14 @@ html, body {
 
 /* stepper */
 .stepper { display: flex; align-items: center; gap: 6px; }
+/* Long translations drop the stepper onto its own line instead of squashing the title. */
+.qty-row { flex-wrap: wrap; }
+.qty-row .row-text { flex: 1 0 auto; max-width: 100%; }
+.qty-row .stepper { margin-left: auto; }
+/* Draggable window: grab the header. */
+.panel .header { cursor: move; touch-action: none; }
+.panel .header button { cursor: pointer; }
+.panel.moved { position: absolute; }
 .step {
     width: 28px; height: 28px; border-radius: 50%;
     border: 1px solid var(--rdr-gold-dim);

@@ -2,6 +2,14 @@
 
 All notable changes to rsg-guarma. Newest first.
 
+## 3.1.1
+
+### Added
+- The ticket office can be moved by dragging its title bar. The position is remembered per player; double-click the title bar to centre it.
+
+### Fixed
+- The "How many" line no longer wraps onto two lines. The "(max N)" text is gone (the **Max** and **+** buttons already show the limit), and long translations move the quantity buttons to their own line.
+
 ## 3.1.0
 
 ### Added

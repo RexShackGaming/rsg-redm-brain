@@ -2,7 +2,7 @@
     "port_stdenis": "Puerto de Saint Denis",
     "port_guarma": "Puerto de Guarma",
     "buy_tickets_desc": "$%s por billete",
-    "ticket_amount": "¿Cuántos? (máx. %s)",
+    "ticket_amount": "¿Cuántos?",
     "travel_to": "Viajar a %s",
     "travel_desc": "Usa 1 billete de barco",
     "open_menu": "Hablar con el trabajador del puerto",

@@ -2,6 +2,14 @@
 
 All notable changes to rsg-mdt. Newest first.
 
+## 3.1.2
+
+### Security
+- `RSGCore:Server:PlayerLoaded` and `RSGCore:Server:OnJobUpdate` were registered as net events, which let any client trigger those core events for every resource. They are now server-only handlers.
+
+### Fixed
+- Law roles now refresh when a player's job changes (the job update handler read the wrong player id).
+
 ## 3.1.1
 
 ### Added

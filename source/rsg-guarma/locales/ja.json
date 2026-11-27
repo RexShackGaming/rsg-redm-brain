@@ -2,7 +2,7 @@
     "port_stdenis": "サンドニ港",
     "port_guarma": "グアーマ港",
     "buy_tickets_desc": "1枚 $%s",
-    "ticket_amount": "枚数（最大 %s）",
+    "ticket_amount": "枚数",
     "travel_to": "%s へ渡航",
     "travel_desc": "船のチケットを1枚使用します",
     "open_menu": "港の作業員と話す",

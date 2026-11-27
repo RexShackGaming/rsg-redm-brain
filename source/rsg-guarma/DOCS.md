@@ -1,4 +1,4 @@
-# rsg-guarma — Developer & Owner Docs
+# rsg-guarma — Developer & Owner Docs 3.1.1
 
 ## Contents
 1. Architecture
@@ -81,6 +81,9 @@
 
 Created on start when `Config.AutoDatabase = true`; otherwise import `install.sql`.
 
+## Ticket office window
+The window is dragged by its header (`html/script.js`, pointer events). The position is clamped to the screen and saved in the player's NUI `localStorage` under `rsg-guarma:panelPos`. Nothing is sent to the server or stored in the database. Double-clicking the header removes the saved position.
+
 ## Integration notes
 - Targeting uses `rsg-target`; notifications, callbacks and locales come from rsg-core.
 - All optional integrations are skipped when the resource isn't started.
@@ -97,6 +100,7 @@ Created on start when `Config.AutoDatabase = true`; otherwise import `install.sq
 | No ticket income | `society` not set on the port, wrong name, or rsg-society not started |
 | No island weather or hurricane closures | `Weather.enabled = false` or rsg-weather not started |
 | Soldiers not spawning | `Soldiers.enabled = false`, OneSync off, or routes disabled |
+| Window opens in an awkward spot | Double-click its title bar to centre it |
 | Push-to-talk not working with the UI open | `AllowPushToTalkWhileOpen = false`, or your voice key isn't in `PushToTalkControls` |
 
 ## Support
@@ -106,7 +110,7 @@ Support: https://rexshack.tebex.store
 
 ## Technical reference
 
-**rsg-guarma 3.1.0**. Dependencies: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`. Configuration defaults are in `shared/config.lua`; events and callbacks are listed above.
+**rsg-guarma 3.1.1**. Dependencies: `rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`. Configuration defaults are in `shared/config.lua`; events and callbacks are listed above.
 
 - Items: `boat_ticket`, `guarma_sugar`, `guarma_coffee`, `guarma_rum`, `guarma_cigars`
 - Command: `/guarmaport`

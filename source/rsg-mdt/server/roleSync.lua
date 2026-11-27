@@ -233,7 +233,8 @@ end)
 -- ============================================
 -- Player Connection Handlers
 -- ============================================
-RegisterNetEvent('RSGCore:Server:PlayerLoaded', function(Player)
+-- server events only: RegisterNetEvent here would let clients trigger these core events for every resource
+AddEventHandler('RSGCore:Server:PlayerLoaded', function(Player)
     if not Player then return end
     Wait(1000)
     updatePlayerRole(Player.PlayerData.source)
@@ -244,8 +245,7 @@ AddEventHandler('playerDropped', function(reason)
     removePlayerRole(src)
 end)
 
-RegisterNetEvent('RSGCore:Server:OnJobUpdate', function(job)
-    local src = source
+AddEventHandler('RSGCore:Server:OnJobUpdate', function(src)
     Wait(500)
     updatePlayerRole(src)
 end)

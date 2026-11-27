@@ -2,6 +2,8 @@
 
 Mobile Data Terminal for RSG Framework (RedM)
 
+> Version **3.1.2**
+
 ## Features
 
 - **Criminal Records** — Search, create, and manage citizen criminal records
