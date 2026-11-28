@@ -98,7 +98,7 @@ local function Migrate()
         WHERE p.charinfo IS NOT NULL
           AND JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.firstname')) IS NOT NULL
           AND JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.lastname')) IS NOT NULL
-          AND NOT EXISTS (SELECT 1 FROM rsg_character_names n WHERE n.citizenid = p.citizenid)
+          AND NOT EXISTS (SELECT 1 FROM rsg_character_names n WHERE n.citizenid = CONVERT(p.citizenid USING utf8mb4) COLLATE utf8mb4_general_ci)
     ]])
     if not ok then print(('^3[rsg-character] names table backfill skipped: %s^7'):format(tostring(err))) end
 end

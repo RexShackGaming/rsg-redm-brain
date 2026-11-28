@@ -2,6 +2,11 @@
 
 All notable changes to rsg-character. Newest first. Versions follow `fxmanifest.lua`.
 
+## 3.4.2
+
+### Fixed
+- "Illegal mix of collations" when filling `rsg_character_names` on databases where `players` uses a different collation (for example `utf8mb4_unicode_ci`). The Default outfit backfill is protected the same way.
+
 ## 3.4.1
 
 ### Fixed

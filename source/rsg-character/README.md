@@ -1,6 +1,6 @@
 # rsg-character
 
-**Version 3.4.1**
+**Version 3.4.2**
 
 Character selection, character creation, clothing stores, wardrobe and spawn selection for **RSG-Core** (RedM).
 

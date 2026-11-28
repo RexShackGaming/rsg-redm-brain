@@ -225,7 +225,7 @@ MySQL.ready(function()
         INSERT INTO playeroutfit (citizenid, name, clothes, is_default)
         SELECT s.citizenid, ?, s.clothes, 1 FROM playerskins s
         WHERE s.clothes IS NOT NULL AND s.clothes <> '' AND s.clothes <> '[]' AND s.clothes <> '{}'
-          AND NOT EXISTS (SELECT 1 FROM playeroutfit o WHERE o.citizenid = s.citizenid AND o.is_default = 1)
+          AND NOT EXISTS (SELECT 1 FROM playeroutfit o WHERE o.citizenid = CONVERT(s.citizenid USING utf8mb4) COLLATE utf8mb4_general_ci AND o.is_default = 1)
     ]], { locale('default_outfit_name') })
     if added and added > 0 then
         print(('[rsg-character] created Default outfits for %s existing characters'):format(added))

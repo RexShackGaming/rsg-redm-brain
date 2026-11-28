@@ -2,7 +2,7 @@
 
 This document explains how rsg-character works under the hood, so you can configure it confidently, troubleshoot problems and build other resources on top of it. For a quick install guide see [README.md](README.md).
 
-**Version:** 3.4.1 · **Framework:** RSG-Core · **Lua:** 5.4
+**Version:** 3.4.2 · **Framework:** RSG-Core · **Lua:** 5.4
 
 ---
 
